@@ -15,7 +15,8 @@ BACKLOG_BIN="${BACKLOG_BIN:-/Users/ctai/.npm-global/bin/backlog}"
 PRECHECK="$REPO_ROOT/skills/kanban-board/scripts/backlog_precheck.sh"
 
 # 環境預檢：工具或 precheck 缺場 → loud 失敗（靜默 no-op 與誤計 skip 都比失敗更糟）
-for tool in git rg awk date; do command -v "$tool" >/dev/null 2>&1 || { echo "[FAIL] $tool 不在 PATH"; exit 1; }; done
+for tool in git rg sed date bash; do command -v "$tool" >/dev/null 2>&1 || { echo "[FAIL] $tool 不在 PATH"; exit 1; }; done
+command -v "$BACKLOG_BIN" >/dev/null 2>&1 || { echo "[FAIL] backlog CLI 不在場：$BACKLOG_BIN"; exit 1; }
 [ -f "$PRECHECK" ] || { echo "[FAIL] precheck 不存在：$PRECHECK"; exit 1; }
 
 moved_total=0; skip_total=0; fail_total=0
@@ -60,15 +61,19 @@ for wt in "${wts[@]}"; do
   for pair in ${cands[@]+"${cands[@]}"}; do
     id=${pair%%|*}; fname=${pair##*|}
     [ -n "$id" ] || continue
-    if verdict=$(cd "$wt" && bash "$PRECHECK" "$id" 2>&1); then
+    # precheck exit 契約：0=可清／1=不可清（policy skip）／其他=runtime/依賴錯誤（非 policy——禁誤計為 skip）
+    verdict=$(cd "$wt" && bash "$PRECHECK" "$id" 2>&1); pst=$?
+    if [ "$pst" -eq 0 ]; then
       if out=$(cd "$wt" && "$BACKLOG_BIN" task complete "$id" </dev/null 2>&1); then
         echo "[moved] $id"; moved=$((moved+1)); moved_total=$((moved_total+1))
         moved_paths+=("backlog/tasks/$fname" "backlog/completed/$fname")
       else
         echo "[FAIL] ${id}：$out"; fail_total=$((fail_total+1))
       fi
-    else
+    elif [ "$pst" -eq 1 ]; then
       echo "[不可清-跳過] ${id}：$verdict"; skip_total=$((skip_total+1))
+    else
+      echo "[FAIL] ${id} precheck 異常（exit ${pst}≠契約 0/1——runtime/依賴錯誤，非 policy skip）：$verdict"; fail_total=$((fail_total+1))
     fi
   done
 
@@ -89,3 +94,5 @@ for wt in "${wts[@]}"; do
 done
 
 echo "== done：moved=$moved_total skipped=$skip_total failed=$fail_total"
+# launchd 失敗訊號：fail_total 非零必須非零退出（否則排程層永遠看到成功，清卡失敗無人知）
+if [ "$fail_total" -gt 0 ]; then exit 1; fi
