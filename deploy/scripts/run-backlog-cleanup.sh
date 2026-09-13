@@ -31,7 +31,7 @@ echo "== backlog-cleanup $REPO_ROOT $(date '+%F %T') 門檻 Done>${AGE_DAYS}d"
 
 for wt in "${wts[@]}"; do
   [ -d "$wt/backlog/tasks" ] || { echo "[skip-WT] ${wt}（無 backlog/tasks）"; continue; }
-  git -C "$wt" rev-parse --verify HEAD >/dev/null 2>&1 || { echo "[skip-WT] ${wt}（git HEAD 不可用）"; continue; }
+  git -C "$wt" rev-parse --verify HEAD >/dev/null 2>&1 || { echo "[FAIL] ${wt}（git HEAD 不可用——operational，非 policy）"; fail_total=$((fail_total+1)); continue; }
   # rebase/merge 進行中不動（半途狀態 commit 會攪進別人的手術）
   if [ -d "$(git -C "$wt" rev-parse --git-path rebase-merge)" ] || [ -d "$(git -C "$wt" rev-parse --git-path rebase-apply)" ] || [ -f "$(git -C "$wt" rev-parse --git-path MERGE_HEAD)" ]; then
     echo "[skip-WT] ${wt}（rebase/merge 進行中）"; continue
