@@ -169,7 +169,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 ### 階段 6：執行 Commit
 
-**「commit 確認」結算（pre-commit、無 hash）**：若本任務在拍板池（`ai-analysis/_inbox/pending-decisions.md`——各 repo 依對應路徑）有「commit 確認」PENDING 條目——user 於階段 5 確認後、git add 前：條目搬已結案段（一行：日期＋user 確認，**不含 hash**——hash 屬 git log 可推導）；結算敘事寫卡/EP final summary（同樣 commit 前、不含 hash）；殘餘驗收項（如 L6 驗收）拆獨立未勾條目留 queue。全部 commit 前完成 → 隨本 commit 落地。**禁止 post-commit 回寫拍板池**——記錄 commit 的文字進不了它記錄的那個 commit（雞生蛋懸掛）。
+**「commit 確認」結算（pre-commit、無 hash）**：若本任務在拍板池（ai-rules 形態＝backlog 卡 notes 的 PENDING 段——outward-action-consent「報 PENDING」的落點；mosaic 形態＝`ai-analysis/_inbox/pending-decisions.md`）有「commit 確認」PENDING 條目——user 於階段 5 確認後、git add 前：條目搬已結案段（一行：日期＋user 確認，**不含 hash**——hash 屬 git log 可推導）；結算敘事寫卡/EP final summary（同樣 commit 前、不含 hash）；殘餘驗收項（如 L6 驗收）拆獨立未勾條目留 queue。全部 commit 前完成 → 隨本 commit 落地。**禁止 post-commit 回寫拍板池**——記錄 commit 的文字進不了它記錄的那個 commit（雞生蛋懸掛）。
 
 確認後 `git add`（**納入本次開發的完整產物**：主變更 + build 5a Built 結算＋收斂後結案的 finalization 檔 —— instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）/ `backlog/`（卡＋drafts——CLI `autoCommit=false` 下只改檔，整目錄隨 finalization add）/ 任務家（EP＋spec＋Report Shell，含歸檔搬移——`ai-analysis/{_tasks,_projects}` 或 `00-tasks/`）/ `.tours/delta/`（持久 delta tour——post-build hook 2 產）/ flow-feedback 歸檔）+ `git commit`（含 attribution footer：`Co-Authored-By: <當前 harness 名>`——ZCode session 寫 `Co-Authored-By: ZCode`）。
 
@@ -199,9 +199,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 ## 流程位置
 
-```
-/implement（含 Agent Review）→ [/code-review（含 commit message）] → /commit
-```
+commit 位於主鏈末端（主鏈定義＝ai-development-guide「Session 開場導引」；review flow 詳圖**以 code-review skill「流程位置」為單一源**——本命令不重畫）。
 
 前置：`/lint-fix`（lint 不通過時）、`/code-review`
 

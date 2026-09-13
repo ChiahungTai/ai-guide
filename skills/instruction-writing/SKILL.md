@@ -21,18 +21,18 @@ instruction file 是給 AI 的協作指南，應專注於**核心原則**和**�
 
 ## 檔案命名（instruction file 雙檔模式）
 
-> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 四家都讀、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。**每層雙檔確保四家 harness 都讀得到該層 instruction**——只有 root 雙檔時，其他 harness（ZCode/OpenCode/Codex）讀不到模組層。
+> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 四家都讀、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。**每層雙檔確保四家 harness 都讀得到該層 instruction**——只有 root 雙檔時，其他 harness（ZCode/Codex/Muse）讀不到模組層。
 
-- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——四家 harness（Claude/ZCode/OpenCode/Codex）開本專案時都讀。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
+- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——四家 harness（Claude/ZCode/Codex/Muse）開本專案時都讀。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
 
-> **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-rules 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.config/opencode/AGENTS.md`、`~/.codex/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
+> **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-rules 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.config/muse/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
 - **`CLAUDE.md`**（thin wrapper, Claude 專屬）：開頭 `@AGENTS.md`（把中立規則拉進 Claude session）+ Claude 專屬段（Claude 端 hook 註冊細節、slash command workflow、repo 結構導航）。只 Claude 讀
 - 專案層級：root `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）；或 `./.claude/CLAUDE.md`
 - 模組層級：每個重要模組目錄 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` thin wrapper，通常只一行 `@AGENTS.md`——模組層少有 Claude 專屬機制，wrapper 用途是讓 Claude 讀到模組 AGENTS.md）
 - 命令層級：`skills/<command-name>/SKILL.md`（slash `/<name>`；如 `skills/instruction-clean/SKILL.md`）
 - 符號連結：`@path` 引用（**僅 CLAUDE.md 展開**；AGENTS.md 不展開 `@`——見下）
 
-> **`@` transclusion 是 Claude Code 專用**：CLAUDE.md 啟動時自動展開 `@path`；AGENTS.md（與 ZCode/OpenCode/Codex）**不展開 `@`**。所以 AGENTS.md 內**不可用 `@`** 拉內容——中立內容直接寫在 AGENTS.md，Claude 專屬才放 CLAUDE.md 用 `@`。
+> **`@` transclusion 是 Claude Code 專用**：CLAUDE.md 啟動時自動展開 `@path`；AGENTS.md（與 ZCode/Codex/Muse）**不展開 `@`**。所以 AGENTS.md 內**不可用 `@`** 拉內容——中立內容直接寫在 AGENTS.md，Claude 專屬才放 CLAUDE.md 用 `@`。
 
 ### 命令命名（Claude 端 slash commands）
 - 格式: `/{category}:{action}` 或 `/{action}`
@@ -150,7 +150,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 當目標檔案太長或 signal/noise 比例不佳，不值得 `@` 全載，但 AI 需要知道它的存在時，使用 markdown link + 內容描述。
 ```markdown
 # 偶爾才需要的背景知識（debug 時才查）
-詳細 benchmark 數據和架構探索教訓見 [lessons_learnt.md](lessons_learnt.md)
+- [架構探索教訓](docs/arch-lessons.md) — 服務選型與重構取捨的完整記錄
 ```
 
 **選擇判斷**：context 是有限資源，只載入每次對話都需要的內容。

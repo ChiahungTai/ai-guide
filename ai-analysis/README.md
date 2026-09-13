@@ -18,11 +18,10 @@
 | 產物 | 家 |
 |------|-----|
 | 新任務（EP/spec/殼） | `ai-analysis/_tasks/<MM-DD-name>/`（`/spec --write`、`/execution-plan` 自動落此——探測已接線） |
-| 新任務（線域） | `ai-analysis/_projects/<線>/tasks/<MM-DD-name>/`（域明確時，見三池對齊） |
 | user 反饋 | `flow-feedback/`（skill 接線） |
 | 服務目錄產物歸檔 | `archive/` |
 
 ## 三池與承諾紀律
 
-* **承諾池** `backlog/tasks` 為唯一承諾入口（`backlog task create`）；`_tasks`/`_projects/*/tasks` 為承諾的**執行家**（按線域切，非按大小——域明確走線家，不明走雜項家），**不另建獨立承諾**，依賴 `backlog → 執行家` 單向。
-* **去重前置**（中）：`backlog task create` 前必 `backlog search <關鍵詞>` + 查 `ai-analysis/_inbox/pending-decisions.md`（與同域 `open-items.md`；例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，避免一行指針與卡重複承諾。放置單一源見 `skills/_common/illustrate-html-mode.md`「產物位置分流」。
+* **承諾池** `backlog/tasks` 為唯一承諾入口（`backlog task create`）；`_tasks/` 為承諾的**執行家**，**不另建獨立承諾**，依賴 `backlog → 執行家` 單向。
+* **去重前置**（中）：`backlog task create` 前必 `backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿）與同域 open-items（例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，避免一行指針與卡重複承諾。放置單一源見 `skills/_common/illustrate-html-mode.md`「產物位置分流」。

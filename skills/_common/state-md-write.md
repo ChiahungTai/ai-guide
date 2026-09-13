@@ -1,6 +1,6 @@
 # STATE.md（Last session 觀察層）——定義與寫入步驟（共享段）
 
-> 共享子範本——`/at`、`/handoff`、`/deep-work` 在 session 結束寫 STATE.md 時引用此處，不各自重寫（DRY，防三處 drift）。本檔承載 STATE.md 的**定義**（定位 / 邊界 / 職責矩陣 / 生命週期 / 路徑）與**寫入操作**（時機 / 內容 / 邊界紀律）；rule 端 context-management 留 pointer。
+> 共享子範本——`/at`、`/deep-work` 在 session 結束寫 STATE.md 時引用此處，不各自重寫（DRY，防三處 drift）。本檔承載 STATE.md 的**定義**（定位 / 邊界 / 職責矩陣 / 生命週期 / 路徑）與**寫入操作**（時機 / 內容 / 邊界紀律）；rule 端 context-management 留 pointer。
 
 ## 定位（Last session 觀察層）
 

@@ -1,6 +1,6 @@
 ---
 name: rules-reminder
-description: "Enforces the most frequently violated Claude Code rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion, uv run for Python, no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
+description: "Enforces the most frequently violated cross-harness rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion, uv run for Python, no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
 ---
 
 # Rules Reminder — 最常被忘記的規則
@@ -34,7 +34,7 @@ uv run python scripts/check.py
 
 ## 2. 用 `rg` 取代 `grep`，用 `fd` 取代 `find`
 
-`find -exec` 和 `grep -r` 是 Claude Code 系統硬限制，**無法被任何 allow 規則覆蓋**，每次都需手動批准。
+`find -exec` 和 `grep -r` 是 Claude Code 系統硬限制（CC 端機制宣稱；其他 harness 依各自 sandbox 規則），**無法被任何 allow 規則覆蓋**，每次都需手動批准。
 
 ```bash
 # ❌ 禁止 — 每次都要手動批准

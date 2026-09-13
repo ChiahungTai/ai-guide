@@ -3,8 +3,8 @@
   "_comment": [
     "ZCode user-level hooks 註冊範本。本檔內容是 ~/.zcode/cli/config.json hooks: 鍵下的子樹值——merge 進去而非整檔覆蓋（整檔覆蓋會毀掉 config 的 mcp/plugins 區塊）；merge 時取 events 子樹，_comment 鍵不隨行。",
     "SessionEnd 條目＝範本預載（現版不可 merge）：ZCode 3.7.7+ user-level hooks 是 7 事件子集、無 SessionEnd（ref-docs/harness/contracts.md 定案）——待 ZCode 官方支援 SessionEnd（屆時對 zcode hooks 文檔事件表複核一次）才 merge 進 config。",
-    "維護：plugin 升級會使 cache 版號路徑漂移——plugin 升級時同步更新 delegate 條目的絕對路徑。",
-    "grok-build plugin 未安裝：安裝後照 delegate 條目形態補 SessionEnd（其 cache 的 scripts/session-lifecycle-hook.mjs）。孤兒清理落差與 remediation 詳見 hooks/AGENTS.md。",
+    "維護：plugin 升級會使 cache 版號路徑與佈局形態漂移——升級時同步更新 delegate 條目的絕對路徑與入口形態（2.0.x 起入口＝bin/delegate-lifecycle，非 scripts/*.mjs）。",
+    "grok-build plugin 未安裝：安裝後照 delegate 條目形態補 SessionEnd（以該版 plugin 自帶 hooks/hooks.json 指的入口為準）。孤兒清理落差與 remediation 詳見 hooks/AGENTS.md。",
     "PreToolUse matcher Agent＝背景 gate（zcode_agent_background_gate.py）：省略/false 的 Agent 派發以 allow+updatedInput 補 run_in_background: true（rewrite 式零浪費）；逃生口＝prompt 前 200 字含 [fg]；fail-open。2026-09-12 實證 rewrite_from_absent 生效。"
   ],
   "events": {
@@ -85,10 +85,10 @@
         "hooks": [
           {
             "type": "process",
-            "command": "node",
+            "command": "/Users/ctai/.zcode/cli/plugins/cache/delegate-market/delegate/2.0.3/bin/delegate-lifecycle",
             "args": [
-              "/Users/ctai/.zcode/cli/plugins/cache/delegate-market/delegate/1.0.0/scripts/session-lifecycle-hook.mjs",
-              "SessionEnd"
+              "SessionEnd",
+              "zcode"
             ],
             "timeoutMs": 5000
           }

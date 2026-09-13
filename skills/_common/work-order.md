@@ -2,6 +2,8 @@
 
 > 共享子範本——foreign runtime（delegate-bridge `task --family muse|codex|glm`）共用；skill 間引用＋主 session 直接填寫。prompt 為任務本文，禁含委派語言（muse-in-muse EPERM 教訓）。本檔定義十節硬欄位，缺一不可；消費端填寫時逐節落實，空缺＝未就緒。
 
+> **契約值指路不 inline**：工單涉及既有契約（卡 ref 形態、命令語義、流程步驟、規則集條款）時寫「見 `skills/<skill>/SKILL.md` 對應段」並標「以合約為準」，不複製完整值——工單是快照，內嵌值與單一源脫鉤，源更新後工單仍帶舊值，被委派方不載自家 skill 無從發現漂移（真實案例：muse 工單內嵌當時形態的 URL，中央 viewer 改版後結案卡 ref 照抄舊值；spawn prompt 內聯規則集濃縮版當場漏條款）。**pointer 必須接手方可達**：跨 repo/外部 runtime 委派用絕對路徑（同機可達形態＝`~/.agents/skills/<skill>/SKILL.md`）；不可達時嵌最小必要契約值＋標「以源 repo 為準，值僅快照」。執行中發現工單值與源漂移 → 中途注入「以 skill 段為權威＋漏項」校正，不必等收屍。
+
 ## 1. 紅線（首段，違反＝失敗）
 
 - 禁 `git add`／`git commit`／`git push`／改任何 backlog 卡狀態——止步於 working tree 編輯（「止步 commit 前」不夠，AIR-18 自行 staged 多檔教訓）

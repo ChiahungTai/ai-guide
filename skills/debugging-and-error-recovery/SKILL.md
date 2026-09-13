@@ -126,6 +126,16 @@ Run full test suite. Build. Manual spot check if applicable.
 - **ambient 快照**：判讀測試速度/效能前先拍環境快照（uptime/load/swap/`ps` top-CPU）——環境競爭是暫態跳變第一嫌疑人；serial 批次口徑不與並行 wall time 並排比較
 - **macOS 無 `timeout`/`gtimeout`**：需逾時控制用 perl `alarm` idiom（fork+KILL）；未註冊 SIGALRM handler 的 runtime（如 Go binary）**預設忽略 SIGALRM**——網傳 perl 一行版非通用
 
+## 外部工具診斷（installed vs source 先比對再歸因）
+
+診斷跨 repo 工具故障（plugin cache、安裝的 binary、bridge 腳本）時，第一步比對**安裝面版本 vs source repo HEAD**——修復常已 commit 只是未發佈/未重裝；宣稱「打包缺口／資產缺失」前先 ls 安裝面**攤平佈局**（marketplace cache 會把 source 子目錄攤平到頂層——資產常在場，只是工具解析路徑沒跟上攤平形）。序列：①查安裝面版本（cache 目錄名／plugin.json）②`git -C <source> log --oneline` 比對 HEAD 是否已有相關 fix ③ls 攤平位置確認資產在場 ④才下「修 code vs 發佈重裝」的診斷。誤診直接污染 handoff——對方照錯誤診斷重做已存在的修復。比對的第二層以上：
+
+- **雙安裝面並存**：dev 機同一工具多個安裝面（uv-pinned 與 cargo 各一）——`cargo install --path` 重建只更新 cargo 面，pinned 面不動（文檔指引的子命令「不存在」假象）；對齊需逐面更新
+- **已修仍炸＝修復面不全**：安裝面＝HEAD 且修復在場仍重現——不是「沒人修」也不是「未發佈」，是既有修復未涵蓋該 repro 路徑；handoff/下一步必帶「既有修復 commit＋勿重做、先 diff 其覆蓋面」
+- **發佈≠本機已裝**：上游 release 不自動更新本機 binary——臨時防護條款的解除條件看**本機 `--version`**（不看上游 release）；本機仍舊版時放寬文檔＝照文檔跑的 session 踩回 bug
+- **安裝面更新綁工具 repo 的 commit 事件**：未 commit 的修復要冒煙＝直接跑 `target/release/<bin>`，勿從安裝面 binary 下「子命令不存在」結論
+- **查機制先讀本地 source clone**：在用外部工具的 source clone 慣住 `~/Github/<name>`——本地 clone（含 tag、可 `git show <tag>:<file>` 對版）為權威，web 文檔鏡像會服重構前舊快照只當線索；編譯 binary 的 strings 靜態掃（payload 壓縮嵌入）下「不存在」結論前必跑**正控制組**（先掃一個確定存在的字串——控制組也 0 命中＝掃描器壞，非目標缺席）；「碼存在但行為沒生效」的接線問題靜態讀不出，對目標版本 binary 實測定案
+
 ## 視覺／圖表與 Runtime 先證據
 
 圖表／視覺化 mismatch 第一步 print 各資料源實際範圍（series 日期 min/max＋count 對比視窗），勿推理——視覺 bug 常藏在 filter 不一致；runtime bug（UI 沒反應）先讀 log 再理論——handler 從未觸發≠被打斷，log 是辨識證據；exit 0≠圖對（視覺交付物需肉眼驗）。

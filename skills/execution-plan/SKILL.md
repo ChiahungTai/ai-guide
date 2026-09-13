@@ -81,7 +81,7 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 3. **掃描 backlog 卡關聯 + 自動建卡**（repo 有 `backlog/` 時）：
    - `backlog task list --plain` 列既有卡，找出本次 EP 對應的卡（能力描述＋名稱）；EP 可能對應多張，全部列出
-   - **去重前置**（中）：建卡前 `backlog search <關鍵詞>` + 查 `ai-analysis/_inbox/pending-decisions.md`（與同域 `open-items.md`；例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾
+   - **去重前置**（中）：建卡前 `backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿；與同域 `open-items.md`，例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾
    - **自動建卡**（EP 產出後執行）：
      1. 收集 EP 中所有「新增 UC」（UC 盤點 → 新增 UC 表格中的 📋 項目）
      2. 對照既有卡，篩出**缺少卡的能力**（已含去重命中 → 跳過）

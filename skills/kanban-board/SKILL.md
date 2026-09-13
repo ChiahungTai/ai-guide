@@ -29,11 +29,19 @@ for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do
 backlog task create "<標題>" -l <labels> -d <目標一句> [--ac "<驗收條件>"]   # CLI id=本 WT max+1，無 --id 可指定
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
 ```
+**共享 WT 活躍 branch 落點分流**（多 session 共享 primary WT、checkout 停在活躍弧卡 branch 時的外卡 commit 處置；commit 前必查 `git branch --show-current`——非預期 branch 是**換策略信號非停手信號**，branch 可能在本 session 中途被平行 session 切走，開場快照不算數）：
+- **建卡 commit → 暫時 worktree 直進 main**：main 未被任何 worktree checkout 時（活躍弧佔 primary WT 是常態），`git worktree add <tmp> main` → `git -C <tmp> add <具名卡檔> && git -C <tmp> commit` → `git worktree remove <tmp>`——全程 `git -C`，絕不 cd 進暫時 worktree（cwd 懸死殺 Bash 面——前任 CC 事故）；代價＝board working copy 可見性延遲（弧 rebase/ff 後卡檔才現），接受——建卡到開工靠 handoff block 傳遞、不依賴 board 即時性；已隨弧 ff 進 main 的歷史建卡 commit 不搬
+- **其他外卡小修 → 獨立顆粒 commit 落當前 branch**：message 標源卡 id（`fix(<源卡id>):` 形態）＋「跨 session 併入，隨 ff-merge 進 main」理由行；具名 add 只帶指名檔——檔案在 WT 有即時 board 可見性
+- **懸掛 working tree 與切回 main 兩者皆禁**：前者會被活躍 session 批量 add 誤帶，後者共享 WT 切 branch 干擾活躍 session；分流 why——建卡進 main 讓線性乾淨（card commits 不搭弧便車），小修留 branch 因常與弧檔案有 context 關聯且需即時可見
+- **同 session 暫停弧形態**：被 user 叫停的卡弧佔 primary WT 時，新弧規劃段（建卡/EP/卡面修訂/雙審）落 owning 線 main——`checkout main` 前先機械對帳 working tree（handoff 宣稱的「在飛未提交變更」可能不存在）；被暫停卡的 branch＋metadata commit 原樣保留（不回滾不 `-D`），恢復＝該 branch 續行、先 rebase main 吸收卡面修訂
+
 **預掃衝突處置**：預掃輸出的全域最高 id 高於本 WT 所見最高 id → 他 WT 有未進版控的更高卡，CLI 自動配 id 會撞號 → **停下協調**（他 WT 卡 commit 進 branch 後 cross-branch 掃描接手，再建卡），不得就地建。
+
+**共享 WT 建卡 id 佔用查驗三面**（多 session 共享單 WT、撞號反覆發生後強化——working copy 單一真相不豁免）：①本 WT `ls backlog/tasks/`＋untracked 新建（平行 session 未 commit 的新卡）；②`git ls-tree <各未 merge branch> backlog/tasks/`（他 branch 上的卡本 WT 看不到）；③`git log --all -- 'backlog/tasks/<prefix>-*'`（卡 id 不可重用——歷史重用同樣撞）。撞號修復先例＝owning branch 上 `git mv`＋frontmatter id 改（任務保留不廢棄）。
 **建卡 desc gate**（跨 session To Do 卡必過；session 內即辦豁免）：`desc` 須含三必有——①`baseline`（`〔baseline：<repo> <hash>〕`）②`已決策勿重辯`（`〔已決策勿重辯：①…〕`）③`驗收`（`〔驗收：…〕`）；語義在場即可，標記形式不限。軟自查：`rg -c "baseline|已決策|驗收" backlog/tasks/<卡>.md` 應 ≥3（豁免卡除外）。風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）是「已決策」段的合法內容形態。
 **人類 viewport 層**（user 09-10 拍板——board 不只是 AI 工單池，也是 user 的主視圖）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels＋desc 承載，title 不背 AI 檢索職責。②`desc` **最頂部**放 `〔human-summary〕` 段（1-3 句人話）：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；其餘 AI 工單內容接其後。既有卡下次被觸及時順手補，不專門回填。
 
-**建卡前去重**（中）：`backlog search <關鍵詞>` + 查 `ai-analysis/_inbox/pending-decisions.md`（與同域 `open-items.md`；例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾（一行指針 ≠ 承諾，`backlog` 卡 = 承諾）。
+**建卡前去重**（中）：`backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿；與同域 `open-items.md`，例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾（一行指針 ≠ 承諾，`backlog` 卡 = 承諾）。
 
 **開工——起手式五步**（凡要動某卡的 session——implement 階段 1 是標準入口；automation／監控／report 等衍生 session 不走 implement 亦同）：
 ```bash
@@ -90,6 +98,12 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 - 起手式：`backlog draft list --plain` 巡 `drafts` → `backlog draft view DRAFT-x --plain` 看內容 → `backlog draft promote DRAFT-x` 回 `backlog/tasks`（遠期如 `ECPPE` 可先記 `ai-analysis/_projects/<線>/open-items.md` 一行指針，熬到可開工才 `task create`，避免先佔承諾池）
 
 **註記追加**（消費場景等）：`backlog task edit <id> --append-notes "<文字>"`
+
+**卡編輯前查驗**（凡 `task edit`——開工/結案/改 refs/註記同；非跨線掃描 precheck〔那是 `task complete` 前置〕）：
+- **對時卡 id 歸屬**：只引用建卡 CLI 回報的 id，禁假設下一號（編號會被平行 session 佔走——真實案例：假設下一號 AIR-26 實配 AIR-28，`task edit -s --ref` 打在平行 session 的**已結案卡**上，refs 被整組替換毀掉、status 被覆蓋）；對非本 session 建的卡操作前先讀卡（status/refs 對時）——「本 session 無其他寫入者」保證可能數小時內過時
+- **`--ref` 整組替換即毀原 refs**：誤打他卡＝直接毀卡（結案兩步靠此語義換路徑——見上結案 bash 註解）
+- **誤改復原**：已 commit 卡被誤改 → **先確認該卡 diff 全屬本次誤改**（共享 WT 下他人合法未提交變更在同檔＝停，依 collaboration-constraints 機械衝突訊號確認）→ 才 `git checkout HEAD -- <卡檔>` 全量復原（反向 CLI 操作不夠——格式化差異會留 diff）
+- **SECTION marker 雙包裹檢查**：`task edit` 類操作可把 `<!-- SECTION:*:BEGIN/END -->` 成對寫成兩層嵌套（CLI 讀卡正常不報錯、肉眼易漏——真實案例：結案複審以「marker 重複」抓到）；檢查＝`rg -c "SECTION:FINAL_SUMMARY:BEGIN" backlog/tasks/*.md` 任一檔 >1＝dup（其他 SECTION marker 同型風險）；修法＝去重留一對，發現一例後全板掃描確認是否孤例；commit 前複審抓「格式重複」類 finding 先機械驗證再修
 
 ## 卡即 handoff（卡拼裝＝self-contained）
 

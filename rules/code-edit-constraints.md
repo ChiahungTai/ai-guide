@@ -4,7 +4,7 @@ harness-scope: claude-specific
 
 # 程式碼編輯約束（Claude）
 
-> **載入機制**: 本檔 source 在 ai-rules repo `rules/`；各家 harness 經全域 guide 部署載入（Claude 端另有 `~/.claude/rules/` symlink auto-load）
+> **載入機制**: 本檔 source 在 ai-rules repo `rules/`；Claude 端經 `~/.claude/rules/` symlink auto-load（claude-specific——不進非 Claude bundle）
 
 > Claude Code 專屬的 Edit/Write 工具 API 約束。通用編輯紀律（SRP/DIP/變更紀律/禁混合寫法/向後相容）見 [edit-discipline.md](edit-discipline.md)（neutral）。
 

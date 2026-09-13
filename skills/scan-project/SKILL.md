@@ -54,10 +54,10 @@ Schema 定義：[unified-snapshot-schema.md](reference/unified-snapshot-schema.m
 
 ```bash
 # 掃描當前專案
-uv run python ${CLAUDE_SKILL_DIR}/scripts/scan_project.py --project-root . --output .project-snapshot.json
+uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root . --output .project-snapshot.json
 
 # 輸出到 stdout（pipe 用）
-uv run python ${CLAUDE_SKILL_DIR}/scripts/scan_project.py --project-root /path/to/project
+uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root /path/to/project
 ```
 
 ## Graceful Degradation

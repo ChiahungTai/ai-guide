@@ -276,7 +276,7 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 > **核心原則**：導航文檔（AGENTS.md / CLAUDE.md / architecture.md / SYSTEM-MAP.md，見 [ai-development-guide](../../ai-development-guide.md) 文檔體系）任一份內部 drift 都誤導 LLM。本次修改過的導航文檔必須通過單檔自洽閘門。
 
-1. 對 5a 結算（AGENTS.md Capabilities 行 + SYSTEM-MAP 預覽）、5b（AGENTS.md / architecture.md）**本次修改過**的文檔，逐一執行 `/consistency <doc>`（單檔內部自洽：術語 / 章節 / 引用 / 邏輯 / 格式）。5a 新增的 Capabilities ✅ 行在此複驗（原 commit 階段 3 的 consistency 職責併入此）。
+1. 對 5a 結算（AGENTS.md Capabilities 行 + SYSTEM-MAP 預覽）、5b（AGENTS.md / architecture.md）**本次修改過**的文檔，逐一執行 `/consistency <doc>`（單檔內部自洽：術語 / 章節 / 引用 / 邏輯 / 格式）。5a 新增的 Capabilities ✅ 行在此複驗。
 2. 🔴 / 🟡 inconsistency → 修正後才算 build 收尾（不把不一致文檔留給 `/commit`）
 3. **scope 邊界**：/consistency 是單檔內部自洽，**非跨檔**。跨文檔一致性（三份互相矛盾）由 `/doc-health`（maintain Phase 3）處理，非本步驟
 

@@ -19,8 +19,6 @@
 | 不需要每次載入的領域知識或工作流 | **Skill**（`.claude/skills/`） | On-demand，不消耗日常 context |
 | 按需委派的專家子能力 | **Agent**（repo `agents/` 單一來源，`~/.claude/agents` symlink → 本目錄；慣例見 `agents/AGENTS.md`） | 獨立 context，由主對話視任務委派 |
 
-**判斷原則**：
-- 如果忘了執行會造成損害 → Hook（如：攔截 `python -c` 跨行 `#` 註解免觸發權限提示 — `hooks/block-python-c-comment.py`）
-- 如果 AI 不知道就會犯錯 → Rule（如：用 `fd` 不用 `find`）
-- 如果只在特定任務才需要 → Skill（如：Mermaid 圖表生成）
-- 如果需要獨立 context 執行專家任務 → Agent（repo `agents/` 定義，symlink 部署）
+> 判準單一源＝instruction-writing skill「載體選擇」＋memory-audit skill「載體統一定義表」；本表為快查投影，衝突時以單一源為準。
+
+**判斷原則**（等價摘要——判準以單一源為準）：純機械＋單一入口＋無語義例外 → Hook；須在首個有後果決策前在場 → Rule；on-demand 方法論 → Skill；獨立 context 專家 → Agent（repo `agents/` 定義，symlink 部署）。
