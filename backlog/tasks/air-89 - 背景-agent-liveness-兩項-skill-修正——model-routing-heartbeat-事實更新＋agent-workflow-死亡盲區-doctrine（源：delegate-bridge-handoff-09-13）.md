@@ -3,11 +3,14 @@ id: AIR-89
 title: >-
   背景 agent liveness 兩項 skill 修正——model-routing heartbeat 事實更新＋agent-workflow
   死亡盲區 doctrine（源：delegate-bridge handoff 09-13）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-13 12:43'
+updated_date: '2026-09-13 12:53'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/09-13-agent-liveness-docfix/ep.md
 ordinal: 75000
 ---
 
@@ -39,3 +42,9 @@ main @ 開卡 commit。源 repo 證據錨＝delegate-bridge fdc8c47（heartbeat 
 - [ ] #2 agent-workflow doctrine 段落地且與既有條文零矛盾（drift 掃舉證）
 - [ ] #3 deploy 全端綠＋404 tests
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+兩項 skill 修正落地：model-routing:227 heartbeat 事實句（已交付＋--stuck-after＋ticker 互補語；provenance 留 EP）＋agent-workflow 死亡盲區 doctrine（Spawn 預設背景節尾；scope 限定 ZCode app-owned＋通知收斂句）。codex ep-review 五點全採納（scope 限定/去 provenance/清單補 L70L73/memory 必修/行為驗收）。S5 行為驗收 5/5 vs 0/5 鑑別成立（treatment 全 generation-checkpoint-first；control 全 generic artifact 驗證、含盲重派路徑實證）。memory reference_external-runtime-delegation-family L43 roadmap stale 同步修。S1-S4 全綠（舊詞 0/要素在場/單源/404 tests）。
+<!-- SECTION:FINAL_SUMMARY:END -->
