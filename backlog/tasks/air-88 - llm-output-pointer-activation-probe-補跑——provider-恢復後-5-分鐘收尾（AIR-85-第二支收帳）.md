@@ -1,11 +1,14 @@
 ---
 id: AIR-88
 title: llm-output pointer activation probe 補跑——provider 恢復後 5 分鐘收尾（AIR-85 第二支收帳）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-13 11:46'
+updated_date: '2026-09-13 14:27'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/09-13-conditional-loading-vertical-slice/ep.md
 ordinal: 74000
 ---
 
@@ -31,3 +34,9 @@ main @ 開卡 commit。配方完整 staged＝ai-analysis/_tasks/09-13-conditiona
 <!-- AC:BEGIN -->
 - [ ] #1 positive/nonmatch 各 ≥2 reps 四態記錄落卡；或 trigger 句調校後重跑 PASS
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+llm-output pointer activation probe 2+2 全 PASS（bridge 2.0.4 修復後）：positive×2 canary 首行命中（LLM_OUTPUT_SKILL_LOADED——skill body 於首個實質動作前真載入）、nonmatch×2 零誤觸發（canary/skill-mention 皆 False）——第二支 pilot activation 宣稱閉合；方法＝bundle+canary 注入 bridge carrier home（2.0.4 活接線），測畢復原。
+<!-- SECTION:FINAL_SUMMARY:END -->

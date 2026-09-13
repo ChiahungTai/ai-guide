@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "/Users/ctai/.zcode/cli/plugins/cache/delegate-market/delegate/2.0.3/bin/delegate-lifecycle",
+            "command": "/Users/ctai/.zcode/cli/plugins/cache/delegate-market/delegate/2.0.4/bin/delegate-lifecycle",
             "args": [
               "SessionEnd",
               "zcode"

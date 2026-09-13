@@ -4,7 +4,7 @@ title: 一致性掃描修復弧——13 中級全修＋低級順手批次（09-1
 status: Done
 assignee: []
 created_date: '2026-09-09 22:40'
-updated_date: '2026-09-13 13:35'
+updated_date: '2026-09-13 14:22'
 labels:
   - governance
   - consistency
@@ -44,6 +44,8 @@ ordinal: 56000
 09-13 雜項清掃批次一（小弧，branch air-70）：①sqr skill 條件式 fallback 段改 lsp-python 時代過去式框架（codex B2-F1）②execution-plan L155 死 link 改指自檔 Scenario Matrix 節③sqr skill L10＋desc L3「下沉 2026-08-31」日期刪除（codex B3-F1 同型）④F1 惡化修復：acceptance-evidence SKILL:43 刪「repo 內 deploy/launchd/ 只是源」stale 宣稱（目錄已 aa3c5e6 刪）⑤implement:256 提煅→提煉錯字。負詞彙全 0＋404 tests。剩餘：段一 11 群（G1/G2/G4/S1/S2/S3/S5/S6/F3/F4——需 09-10 scan report 逐條重驗 washed-out）＋先鋒 8 條 0/8 落地——維持 user 09-13 拍板：清掃 session 批次消化（與 AIR-67 剩餘合併評估），AIR-87 skills 治理前完成一致性面。
 
 09-13 批二完成（清掃 session 批次主體）：洗滌重驗 12 alive/3 washed（G4 skip 零使用者/S7/F5）→修復 13 動作（中級 G1 家族清單四處對齊+G2 boilerplate+S1 impl-lite+S2 三方+S3 純 pointer+S5/S6/F3＋低級 G10/S10/F2/S9）→先鋒 8/8 落地（skill 側 port 4：kanban 落點分流+卡編輯查驗/work-order 指路可達/debugging installed-vs-source；pool 側 fabf4e7：刪5+重寫1+事故化1+併入1、淨瘦 18.8K）→consistency 15 檔（2FAIL+4觀察全修：_inbox 三複本同步/線域/hook 2.0.x 形態/precheck 消歧）→codex NO-GO 8 點全閉（含 F2 executor shape 三段修：路徑→bin 形態→direct executable+SessionEnd zcode）＋verify-close 9/10→10/10（末點照處方逐字）。404 tests＋deploy＋404 基線全綠。**剩餘：F4 跨 repo（mosaic twin cleanup 同步）——另案 handoff/mosaic 側卡**。批一+批二完成＝段一 11 群閉合＋先鋒 8/8，本卡 Done。
+
+09-13 晚 F4 閉合（跨 repo 銷帳）：mosaic twin guard 合併由 mosaic 側 session 依 handoff（backlog/drafts/handoff-mosaic-twin-f4-2026-09-13.md）完成——本卡 09-10 承接的 13 中級 findings 全數閉合。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
