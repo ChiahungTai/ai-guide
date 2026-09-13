@@ -152,7 +152,7 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 - 邊界案例（空資料、跨日、回補多天）
 - 效能期待差異（秒級、幾十秒、慢、線性放大）
 
-**欄位含義**：見 [ai-development-guide.md](../../ai-development-guide.md) 的「Scenario Matrix」段落
+**欄位含義**：見本 skill「Scenario Matrix（大型/中型變更必填）」節
 
 **散到 UC**：實作完成後，`/implement` 階段 5a 從矩陣提煉自包含描述寫入對應 UC 的「消費場景」欄位（不引用 EP/SM 編號，因為 EP 可能歸檔或刪除）。
 

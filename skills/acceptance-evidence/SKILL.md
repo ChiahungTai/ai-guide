@@ -40,7 +40,7 @@ description: 驗收證據階層深層理論 — 認知誤差與 EP 預見極限�
 
 ## 盤點執行點雙掃（間接層＋直呼層）
 
-> **核心原則**：盤點「誰執行/呼叫 X」（CI 跑哪些測試、哪些入口呼叫某工具、cutover 影響域）時，間接層（make target/wrapper 引用）與直呼層（raw command 直接出現，**含 Makefile recipe 內**）**兩層都要掃**——只掃一層系統性漏，且自審抓不到（掃了什麼就被當成完整）。路徑集按 repo 調整——CI workflow、launchd plist（現值＝`~/Library/LaunchAgents/`，repo 內 `deploy/launchd/` 只是源）、cron 排程必含；**跨 repo 消費面同必含**：排程 registry 反查表（ai-rules `ai-analysis/schedule-registry.md`——排程→消費端映射）＋目標 workspace 的 memory 池（跨 repo 排程/接線的記載面，如 `reference_periodic-task-landscape` 條目形態）＋消費端 repo 的 `deploy/`（plist/服務腳本）。本 repo 掃不到的依賴從這幾面現身（真實案例：standup 誤刪——ai-rules 端盤點看不見 mosaic 排程載體對 skill 的依賴而誤判無消費者，時刻/載體現值見 registry 反查表 A1）。
+> **核心原則**：盤點「誰執行/呼叫 X」（CI 跑哪些測試、哪些入口呼叫某工具、cutover 影響域）時，間接層（make target/wrapper 引用）與直呼層（raw command 直接出現，**含 Makefile recipe 內**）**兩層都要掃**——只掃一層系統性漏，且自審抓不到（掃了什麼就被當成完整）。路徑集按 repo 調整——CI workflow、launchd plist（現值＝`~/Library/LaunchAgents/`）、cron 排程必含；**跨 repo 消費面同必含**：排程 registry 反查表（ai-rules `ai-analysis/schedule-registry.md`——排程→消費端映射）＋目標 workspace 的 memory 池（跨 repo 排程/接線的記載面，如 `reference_periodic-task-landscape` 條目形態）＋消費端 repo 的 `deploy/`（plist/服務腳本）。本 repo 掃不到的依賴從這幾面現身（真實案例：standup 誤刪——ai-rules 端盤點看不見 mosaic 排程載體對 skill 的依賴而誤判無消費者，時刻/載體現值見 registry 反查表 A1）。
 
 | 層 | 掃什麼 | 範例命令 |
 |----|--------|---------|

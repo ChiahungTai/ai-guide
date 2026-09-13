@@ -1,13 +1,13 @@
 ---
 name: symbol-query-routing
-description: 符號查詢路由深層參考 — LSP operation 速查表（自 rule 下沉 2026-08-31）、驗證任務 workflow 與輸出格式、rg 陷阱真實案例群（truncation/masking/local import/覆蓋判斷 false negative）、方法論限制 loopback、Agent prompt 工具指定模板（spawn agent 必填工具選擇）、跨 harness LSP 載體對照（Claude native vs ZCode bridge）、workspace staleness/reindex 與條件式 fallback。always-on 核心（cr-first 路由、任務啟動 gate、fallback/zero-hit 紀律）在 rules/symbol-query-routing.md；做依賴審計/符號查證/review 需要反例論證、operation 對照、spawn agent 工具指定或跨 harness 呼叫細節時載入。觸發詞：符號查詢路由、LSP、findReferences、reindex、workspace stale、rg 陷阱、載體對照、operation 速查、agent prompt 工具指定。
+description: 符號查詢路由深層參考 — LSP operation 速查表（自 rule 下沉）、驗證任務 workflow 與輸出格式、rg 陷阱真實案例群（truncation/masking/local import/覆蓋判斷 false negative）、方法論限制 loopback、Agent prompt 工具指定模板（spawn agent 必填工具選擇）、跨 harness LSP 載體對照（Claude native vs ZCode bridge）、workspace staleness/reindex 與條件式 fallback。always-on 核心（cr-first 路由、任務啟動 gate、fallback/zero-hit 紀律）在 rules/symbol-query-routing.md；做依賴審計/符號查證/review 需要反例論證、operation 對照、spawn agent 工具指定或跨 harness 呼叫細節時載入。觸發詞：符號查詢路由、LSP、findReferences、reindex、workspace stale、rg 陷阱、載體對照、operation 速查、agent prompt 工具指定。
 ---
 
 # 符號／型別查詢路由 — 深層參考
 
 > 本 skill 是 `rules/symbol-query-routing.md` 的 on-demand 深層載體：rule 端保留 always-on 核心（cr-first 路由、任務啟動 gate、fallback/zero-hit 紀律）；本檔承載 LSP operation 速查表、驗證 workflow 與輸出格式、反例論證、Agent prompt 工具指定模板、跨 harness 載體細節與 staleness 處置。
 
-## LSP operation 速查表（自 rule 下沉 2026-08-31）
+## LSP operation 速查表（自 rule 下沉）
 
 | 查什麼 | 首選 | 降級／備註 |
 |--------|------|-----------|
@@ -118,7 +118,7 @@ LSP 結果是 workspace 狀態相依的 — 若 `findReferences` 回傳意外少
 
 ### 條件式 fallback（無原生 reloadWorkspace 的 harness）
 
-CC 原生 LSP plugin **無 `reloadWorkspace`** —— workspace stale（冷啟動 index 未完成、git 大幅變動）時，原生 `findReferences` 回可疑少（典型症狀：只回 intra-file refs、跨檔全消失），無法主動 reindex 只能乾等。解法：連接 `lsp-python` MCP（http 模式，ZCode 已在用的同一 server）作**條件式 fallback**（非常駐取代原生）：
+CC 原生 LSP plugin **無 `reloadWorkspace`** —— workspace stale（冷啟動 index 未完成、git 大幅變動）時，原生 `findReferences` 回可疑少（典型症狀：只回 intra-file refs、跨檔全消失），無法主動 reindex 只能乾等。當時的解法（**lsp-python 時代設計，server 已於 2026-08-28 停擺——見上「現況」註**）：連接 `lsp-python` MCP（http 模式，ZCode 當時在用的同一 server）作**條件式 fallback**（非常駐取代原生）：
 
 1. 原生 `findReferences` 回**可疑少**（只 intra-file / 跨檔消失）→ 判 stale，**非符號沒人用**
 2. → 切 MCP `lsp` dispatch 立刻拿正確跨檔結果（`mcp__lsp-python__lsp(operation="findReferences", ...)`——**單一 dispatch tool**，Claude/ZCode 同 server 同 API；`symbol_name` + `current_file`（name-based）或 `line` + `character`（position-based）皆可，兩組參數同一 tool，無「分立 references tool」）

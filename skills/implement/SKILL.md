@@ -253,7 +253,7 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 | **情境 C** 小型變更（bug fix／單檔小 tweak，無新 UC） | **跳過** Capabilities／Kanban 結算（純 refactor 不自動歸此——依規模，見下方小型變更段） |
 | **情境 D** docs-mode EP（無 .py UC，EP 完成） | **EP 歸檔 only** |
 
-> **為什麼結算在 build 不在 commit**：finalization 是 working tree 編輯（改 instruction 檔 / mv EP / 搬 Kanban），不需 `outward-action-consent` rule（commit 場景）；commit 退回純 git 提交（一次帶走 code + finalization）。舊設計（commit 階段 3 內嵌）對 LLM 是建議性、會漏跑（實證：commit 歷史多個「補漏」單獨 commit）。working tree 編輯沒 commit 就不永久，跟 code 一起 stash/checkout。Kanban 搬 In-Progress/（暫時狀態）已在階段 1 完成；消費場景提煅隨 Capabilities 寫入一併落地（原「暫存供 commit 寫入」取消）。
+> **為什麼結算在 build 不在 commit**：finalization 是 working tree 編輯（改 instruction 檔 / mv EP / 搬 Kanban），不需 `outward-action-consent` rule（commit 場景）；commit 退回純 git 提交（一次帶走 code + finalization）。舊設計（commit 階段 3 內嵌）對 LLM 是建議性、會漏跑（實證：commit 歷史多個「補漏」單獨 commit）。working tree 編輯沒 commit 就不永久，跟 code 一起 stash/checkout。Kanban 搬 In-Progress/（暫時狀態）已在階段 1 完成；消費場景提煉隨 Capabilities 寫入一併落地（原「暫存供 commit 寫入」取消）。
 
 **Report Shell badge 同步**：本 EP 對應殼（任務家 `<task>/index.html`，execution-plan 定稿 hook 1 所建）存在時隨結算同步——情境 A（Built 結算）→ badge 🟡；收斂後 final 結案（post-build hook 2／階段 6 fallback）→ badge ✅；情境 B（中間段）→ 🟡；無殼（hook 1 未跑）跳過不阻擋。殼掛點全貌（hook 1/2、fallback、持久 delta tour）見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」。
 
