@@ -11,7 +11,7 @@ description: 驗收證據階層深層理論 — 認知誤差與 EP 預見極限�
 
 重構後必須重新確認測試仍驗原意；過時但綠、被改成迎合實作、行為已無關的測試都會給虛假信心。A 軸機器自驗（L1–L3）必要但不充分，天花板是 AI 自洽；B 軸人類驗收（L4–L6）提供外部正確性。獨立 context 不等於獨立智能，同家族模型仍可能共享偏誤；人類亦有疲勞與確認偏差。P0 invariant 因此要以 A 軸機械、B 軸人審、Runtime Invariant Assurance 三層共同守衛；任何一層只能降風險，不能消除風險。
 
-## Claim→Evidence taxonomy（normative——判準源自 rule 遷入 09-13）
+## Claim→Evidence taxonomy（normative——判準源自 rule）
 
 - **數字/清單類 claim**（計數、規模、盤點）:寫進文檔前用獨立計數命令（`rg | wc -l` / `rg -c`）核對完整輸出，不靠印象或截斷結果人工數——AI 寫盤點清單易憑印象混入/漏掉成員（真實案例：consumers 數 41 誤寫 20，因 `rg | head -20` 截斷）。
 - **刪除/死碼自述**（zero caller /「沒人用」）:證據須涵蓋**全消費端**——靜態 import（LSP `findReferences`）+ 字串引用（rg 跨 .py/.yaml/.json）+ **非函式庫消費者**（scripts/、lab/、demo、saved config）+ 動態派發（getattr/importlib/registry auto-discovery/StrEnum 字串值）。只跑 LSP 宣稱「zero hits = 確認」**不足**。最低門檻：刪整檔/整 class 前，rg 符號名跨全專案 + 實際執行 import 測試（L4）受影響消費者——靜態 zero-hit ≠ runtime 無消費者（真實案例：自述「雙工具驗證零 caller」，實際 scripts/ 有 hard-import caller → runtime `ModuleNotFoundError`）。
@@ -19,7 +19,7 @@ description: 驗收證據階層深層理論 — 認知誤差與 EP 預見極限�
 - **自報元資料不可信**：agent 對自己輸出的 label 統計禁當驗收統計源；正解＝llm_label vs 標準答案逐案機械比對。
 （review 雙向應用條留在 rule——屬 code-review 消費端 bootstrap）
 
-## 證據階層 L1–L6（lookup 表——自 rule 遷入 09-13）
+## 證據階層 L1–L6（lookup 表——自 rule 遷入）
 
 | 層 | 證據與覆蓋 | 限制/風險 |
 |---|---|---|
