@@ -2,6 +2,9 @@
 harness-scope: neutral
 paths:
   - "**/*.py"
+bundle-projection: pointer
+pointer-target: llm-output-convention
+bootstrap-pointer: "撰寫 Python 輸出（print/Logger/logging 配置）時，先載入 `llm-output-convention` skill——雙通道慣例、namespace 強制 module-path、tag 全表與遷移自檢以該 skill 為準。"
 ---
 
 # AI Agent 雙通道輸出慣例

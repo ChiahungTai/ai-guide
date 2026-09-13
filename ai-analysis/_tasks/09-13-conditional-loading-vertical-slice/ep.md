@@ -116,6 +116,12 @@
 7. bootstrap-pointer 句採 codex 潤稿版（trigger＝「新增或修改 instruction 檔」）
 8. interface debt 記錄：check_broken_refs/check_neutral_purity 掃 full source 非 projected 面（false-positive 潛在；第二支 pilot 前處理）
 
+## 第二支 pilot：llm-output-convention opt-in（09-13 同日插隊微弧）
+
+- 標註三鍵（trigger 精確定位「撰寫 Python 輸出（print/Logger/logging 配置）」——非所有 Python 工作，防 codex A2 過度觸發）；**interface debt 試煉 PASS**（full body 過 purity/broken-ref 零誤報——codex 段 2 審的殘餘風險預測未發生）；deploy 三端 **28,487B byte-identical**（29,161→28,487，−674B）；投影區段正確、body 零殘留；404 tests
+- bundle 累計（AIR-86+85 兩弧）：32,835→**28,487B（−4,349B）**
+- **activation 行為 probe（positive/nonmatch 成對）PENDING**：provider 端故障（z.ai coding-plan「Model creation failed」——bridge 交叉測試同款失敗、90s 重試無效，非 scratch 問題；當日稍早同配置五輪 probe 全過）。carrier＋canary＋prompt 已 staged（.agent-tmp/air85/，config 需重 stage——配方見上方方法注記）；provider 恢復後補跑，若 trigger 語義需調校為後續 commit
+
 ## 段 3 驗收證據（09-13 實測，全 AC 到齊）
 
 - **AC#1**：pilot 標註後真 deploy——三端 29,161B byte-identical（−788B）；投影區段＝凍結模板註解＋作者句逐字；IW body 零殘留；guide 引導句雙通道在場
