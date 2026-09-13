@@ -4,7 +4,7 @@ title: skills-corpus 載入/觸發契約治理——desc 1024 上限掃修＋觸
 status: In Progress
 assignee: []
 created_date: '2026-09-13 04:50'
-updated_date: '2026-09-13 21:44'
+updated_date: '2026-09-13 22:12'
 labels: []
 dependencies: []
 references:
@@ -49,3 +49,16 @@ ai-rules main @ 開卡 commit。材料源＝baseline 報告（97 active：repo 7
 - [ ] #5 desc 觸發語義抽驗（activation test）：至少 3 支高流量已改 skill，各以 isolated fresh ZCode session 跑 positive/nonmatch 各 5 reps；以「首個 consequential action 前是否實際載入／nonmatch 是否未載入」判分並記 PASS/FAIL/UNEXPECTED/INCONCLUSIVE 四態；skill-list 出現或 description recall 不算通過
 - [ ] #6 instruction-testing 改造落地：機械觀察面 protocol＋四 surface gate 入主文、pilot 案例段移出（換內容不增肥）、L10 措辭修訂、載具 adapter 落 scripts/ 或 durable report
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC#3 裁定三項（2026-09-14）：
+①撞名（code-reality repo 15,361B vs plugin 19,532B）＝維持現狀＋文檔化——載入序 user>workspace>plugin 決定論性生效 repo 版（治理源；AGENTS.md 工具用法真相源本就指 repo 版），plugin 版隨 plugin 升級自走；不改名不刪（改名斷全 repo 引用、刪失去治理控制，撞名無實害——兩版皆可載、生效者確定）。
+②mermaid 權限 0700→0755 對齊其餘 78 支（歷史異常、載入不受影響、純 hygiene；flash 執行中）。
+③plugin cache 孤兒（110 SKILL.md vs active 18）＝不動——plugin cache 是 ZCode plugin 系統自管面（版本史/未安裝殘留），清理屬 harness 維護非本 repo 契約層，誤刪傷 rollback。
+
+AC#1 出口證據（段 2）：修復前 FAIL=30（全 bare unquoted：acceptance-evidence/api-and-interface-design/arch-thinking/code-review-and-quality/compact-prep/context7/cr-query/cross-verify/debugging-and-error-recovery/deep-thinking/frontend-ui-engineering/instruction-testing/instruction-writing/kanban-board/kbar-form-analysis/llm-output-convention/metadata-sync/nt-query/nt-v1-query/post-build/review-engine/self-contained-prompt/standup/symbol-query-routing/test-driven-development/trading-analysis/ui-collab/ui-visual-verify/validation-strategy/voice-notification）＋over1024 零（cr-query 值 1,022/nt-v1-query 值 1,014 恰在線上零餘裕）→修復後（--fix 引號化＋cr-query 930/nt-v1-query 938 收斂）FAIL=0 WARN=2（python-type-gap/rules-reminder quoted-# 追蹤項）；scan exit 0；tests/test_scan_skills_desc.py 9 條契約軸回歸綠（值 chars 軸/CJK≠bytes/行前綴不計）。
+
+AC#4 舉證(a)：本 session（2026-09-14 開、hotfix ca369c2 之後的新鮮 ZCode session）harness skill 清單實際含 model-routing（desc 值 775 chars/1,189 bytes 載入在場——同時證 bytes>1024 不 drop、限額軸=值 chars）；(b) 段 3 改寫 8 支之抽樣：段 3 commit 後新鮮 session 舉證（收尾時補）。
+<!-- SECTION:NOTES:END -->
