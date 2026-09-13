@@ -1,9 +1,10 @@
 ---
 id: AIR-87
 title: skills-corpus 載入/觸發契約治理——desc 1024 上限掃修＋觸發語義前置＋撞名處置（ZCode baseline 2026-09-13）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-13 04:50'
+updated_date: '2026-09-13 21:40'
 labels: []
 dependencies: []
 ordinal: 73000
