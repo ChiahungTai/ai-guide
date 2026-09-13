@@ -22,8 +22,8 @@ ordinal: 73000
 ai-rules main @ 開卡 commit。材料源＝baseline 報告（97 active：repo 79＋plugin 18；ZCode 官方載入規則實證）＋model-routing desc hotfix（root cause 案例：raw desc 1,198>1024 被 drop——已先行修復 776 chars 觸發前置，2026-09-13，隨本卡 commit 入庫）。
 
 ## 已決策（勿重辯）
-- ZCode 載入契約（官方文檔 zcode-guide/diagnosing-skills 實證）：扁平 key:value 解析；desc 缺失或 raw 行 >1024 chars → 整支 drop；觸發呈現只取 desc 前 ~250 chars——「觸發詞尾掛」模式對 ZCode 無效，語義必須前置
-- 兩種解析器量測差異：完整 YAML 會剝 # 註解、ZCode flat parser 不剝——長度以 raw 行為準；desc 一律引號化
+- ZCode 載入契約（官方文檔 zcode-guide/diagnosing-skills 實證）：扁平 key:value 解析；desc 缺失或 **desc「值」>1024 chars → 整支 drop**〔開工軸修訂 09-14：原記「raw 行」——實證細化：cr-query 值 1,022／nt-v1-query 值 1,014 兩支在清單而整行 >1024；量測軸＝值 chars 含引號，非整行非 bytes〕；觸發呈現只取 desc 前 ~250 chars＋`when_to_use` 全文（官方鍵，repo 47/79 支既有使用）——「觸發詞尾掛」模式對 ZCode 無效，語義必須前置
+- 兩種解析器量測差異：完整 YAML 會剝 # 註解、ZCode flat parser 不剝——長度以值 as-written 為準；desc 一律引號化〔開工例外裁定 09-14：block scalar（`>`/`|`）2 支（maintain/scan-project）屬官方支援的顯式形式，維持不改〕；高流量 4 支（memory-audit/instruction-writing/acceptance-evidence/validation-strategy）補 when_to_use 對齊既有慣例（user 裁定 09-14）
 - model-routing hotfix 已先行（獨立於本卡，root cause 定案材料）
 - **行為測試方法論（09-13 codex+5.3 arch-thinking 討論收斂，AIR-85 實證背書）**：
   - desc 改寫＝**activation surface 修改**（skill 會不會被找到/觸發），非 output-shaping——驗收跑 **activation test**（positive＋nonmatch），非 micro-test；skill 清單出現或 body 可摘要（description recall）**不算**觸發成功
