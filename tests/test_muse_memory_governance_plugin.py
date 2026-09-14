@@ -1,11 +1,10 @@
 """Tests for muse-plugins/memory-governance (AIR-79 S1).
 
-Shared core (hooks/muse_memory_governance.sh) + thin launcher
-(hooks/muse_memory_inbox.sh) with per-repo marker three-state opt-in:
-absent -> allow native; protocol==1 (integer) -> divert into
-.agents/memory-inbox + deny; anything else -> deny without landing.
-Fixtures build tmp repo skeletons and drive the scripts via subprocess
-(no mocks on bash/jq/git — EP verification strategy).
+Shared core (hooks/muse_memory_governance.sh) with per-repo marker
+three-state opt-in: absent -> allow native; protocol==1 (integer) ->
+divert into .agents/memory-inbox + deny; anything else -> deny without
+landing. Fixtures build tmp repo skeletons and drive the script via
+subprocess (no mocks on bash/jq/git — EP verification strategy).
 """
 
 import hashlib
@@ -21,8 +20,6 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_DIR = ROOT / "muse-plugins" / "memory-governance"
 CORE = PLUGIN_DIR / "hooks" / "muse_memory_governance.sh"
-LAUNCHER = ROOT / "hooks" / "muse_memory_inbox.sh"
-CORE_NAME = "muse_memory_governance.sh"
 
 # SM-3/SM-4 value matrix: integer 1 is the only valid protocol; every type
 # confusion and every other value denies without landing (EP C10).
@@ -172,43 +169,6 @@ def minimal_path(tmp_path, *, with_jq=False, fake_jq=False):
         fake.write_text("#!/bin/sh\nexit 2\n")
         fake.chmod(0o755)
     return bin_dir
-
-
-def make_launcher_repo(
-    tmp_path, *, with_core_local=True, marker=None, hooks_json=None, pool_entry=True
-):
-    repo = tmp_path / "repo"
-    (repo / "hooks").mkdir(parents=True)
-    shutil.copy(LAUNCHER, repo / "hooks" / "muse_memory_inbox.sh")
-    pool = repo / ".agents" / "memory"
-    pool.mkdir(parents=True)
-    if pool_entry:
-        (pool / "note.md").write_text("---\nname: note\n---\n\nbody\n")
-    if marker == "valid":
-        write_marker(repo, {"protocol": 1})
-    elif isinstance(marker, str):
-        write_raw_marker(repo, marker)
-    if with_core_local:
-        core_dir = repo / "muse-plugins" / "memory-governance" / "hooks"
-        core_dir.mkdir(parents=True)
-        shutil.copy(CORE, core_dir / CORE_NAME)
-    if hooks_json is not None:
-        write_hooks_json(repo, hooks_json)
-    return repo
-
-
-def run_launcher(repo, payload, *, home=None):
-    env = scrub_env(
-        {"MUSE_MEMORY_GOVERNANCE_HOME": home or str(repo.parent / "no-such-install")}
-    )
-    return subprocess.run(
-        ["/bin/bash", str(repo / "hooks" / "muse_memory_inbox.sh")],
-        input=json.dumps(payload),
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
 
 
 # ------------------------------------------------- SM-1/SM-2/SM-8/SM-13
@@ -545,57 +505,6 @@ def test_broken_jq_governed_deny_fail_closed(tmp_path):
     assert inbox_files(repo) == []
 
 
-# ------------------------------------------------------------ launcher layer
-
-
-def test_launcher_repo_local_fallback_diverts_without_marker(tmp_path):
-    """Migration-window contract (EP S1 要點3): registered origin diverts
-    unconditionally — pre-marker repos stay gated, equal to legacy behavior."""
-    repo = make_launcher_repo(tmp_path, with_core_local=True, marker=None)
-    r = run_launcher(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    spec = parse_deny(r.stdout)
-    assert "已代存 inbox" in spec["permissionDecisionReason"]
-    assert len(inbox_files(repo)) == 1
-
-
-def test_launcher_install_point_resolution(tmp_path):
-    """Resolution ①: MUSE_MEMORY_GOVERNANCE_HOME/current symlink -> core."""
-    repo = make_launcher_repo(tmp_path, with_core_local=False, marker="valid")
-    install = tmp_path / "install"
-    v1 = install / "v1"
-    (v1 / "hooks").mkdir(parents=True)
-    shutil.copy(CORE, v1 / "hooks" / CORE_NAME)
-    (install / "current").symlink_to("v1")
-    r = run_launcher(repo, mem_payload(), home=str(install))
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_launcher_double_failure_static_deny(tmp_path):
-    """Resolution ③: install point + repo-local copy both missing -> the
-    launcher itself emits a static deny (no naked exec failure / fail-open)."""
-    repo = make_launcher_repo(tmp_path, with_core_local=False)
-    r = run_launcher(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    spec = parse_deny(r.stdout)
-    assert "launcher" in spec["permissionDecisionReason"].lower()
-    assert inbox_files(repo) == []
-
-
-def test_launcher_registered_origin_skips_legacy_owner_check(tmp_path):
-    """EP S1 要點3: registered origin skips the legacy-owner surrender —
-    with a working foreign owner registered, the launcher still diverts."""
-    repo = make_launcher_repo(tmp_path, with_core_local=True, marker=None)
-    stub = foreign_stub(repo)
-    write_hooks_json(repo, hooks_json_for(str(stub)))
-    r = run_launcher(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
 # --------------------------------------------------- CAS / lexical gates (⑥)
 
 
@@ -755,18 +664,6 @@ def test_no_jq_innocent_mention_denies_degraded(tmp_path):
     assert inbox_files(repo) == []
 
 
-def test_launcher_registered_origin_malformed_marker_still_diverts(tmp_path):
-    """R7a: migration-window contract third leg — registered origin with a
-    malformed marker still diverts unconditionally."""
-    repo = make_launcher_repo(
-        tmp_path, with_core_local=True, marker='{"protocol": "bogus"}'
-    )
-    r = run_launcher(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
 def test_non_md_pool_path_skips_cas_enrichment(tmp_path):
     """R7b: lexical gate — a non-.md pool-relative path never gains CAS
     meta (deny+land still happens)."""
@@ -778,50 +675,3 @@ def test_non_md_pool_path_skips_cas_enrichment(tmp_path):
     files = inbox_files(repo)
     assert len(files) == 1
     assert "_inbox_meta" not in json.loads(files[0].read_text())
-
-
-def test_launcher_non_memory_tool_silent_passthrough(tmp_path):
-    """R7c: launcher-level passthrough — a non-memory tool call through the
-    launcher exits silently with zero landing."""
-    repo = make_launcher_repo(tmp_path, with_core_local=True)
-    r = run_launcher(repo, {"tool_name": "Read", "tool_input": {"path": "x"}})
-    assert r.returncode == 0, r.stderr
-    assert r.stdout == ""
-    assert inbox_files(repo) == []
-
-
-def test_launcher_repo_local_beats_stale_install_point(tmp_path):
-    """C-C5/R3: a stale fixed install point must never shadow the repo-local
-    canonical core — repo-local wins when both exist and no env override."""
-    repo = make_launcher_repo(tmp_path, with_core_local=True, marker="valid")
-    stale = tmp_path / "stale-install"
-    v_old = stale / "v0"
-    (v_old / "hooks").mkdir(parents=True)
-    (v_old / "hooks" / CORE_NAME).write_text(
-        "#!/usr/bin/env bash\n"
-        'printf \'%s\' \'{"hookSpecificOutput":{"hookEventName":"PreToolUse",'
-        '"permissionDecision":"deny","permissionDecisionReason":"STALE CORE"}}\\n\'\n'
-        "exit 0\n"
-    )
-    (v_old / "hooks" / CORE_NAME).chmod(0o755)
-    (stale / "current").symlink_to("v0")
-    # run_launcher injects MUSE_MEMORY_GOVERNANCE_HOME (env override would win),
-    # so drive the launcher directly with only the default HOME unavailable:
-    env = scrub_env()
-    env["HOME"] = str(tmp_path / "no-home")
-    env["MUSE_MEMORY_GOVERNANCE_HOME"] = str(stale)  # env wins by design —
-    # instead prove the repo-local-priority contract via the no-env path:
-    del env["MUSE_MEMORY_GOVERNANCE_HOME"]
-    r = subprocess.run(
-        ["/bin/bash", str(repo / "hooks" / "muse_memory_inbox.sh")],
-        input=json.dumps(mem_payload()),
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
-    assert r.returncode == 0, r.stderr
-    spec = parse_deny(r.stdout)
-    assert "STALE CORE" not in spec["permissionDecisionReason"]
-    assert "已代存 inbox" in spec["permissionDecisionReason"]
-    assert len(inbox_files(repo)) == 1
