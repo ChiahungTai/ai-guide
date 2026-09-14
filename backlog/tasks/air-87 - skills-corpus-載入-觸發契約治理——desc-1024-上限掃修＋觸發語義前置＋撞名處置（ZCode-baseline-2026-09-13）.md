@@ -1,14 +1,14 @@
 ---
 id: AIR-87
 title: skills-corpus 載入/觸發契約治理——desc 1024 上限掃修＋觸發語義前置＋撞名處置（ZCode baseline 2026-09-13）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-13 04:50'
-updated_date: '2026-09-14 01:31'
+updated_date: '2026-09-14 01:34'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/09-14-skills-corpus-contract-governance/ep.md
+  - ai-analysis/_tasks/done/09-14-skills-corpus-contract-governance/ep.md
 ordinal: 73000
 ---
 
@@ -78,3 +78,9 @@ Pr7 更正：裁定② mermaid 實際 0644 非 0755（意圖＝對齊 corpus 已
 
 judge 前置條件履行：Pr1 branch 收斂（本 commit 序）✓、Fr4 雙點＋rescan ✓、Pr8 後置記錄 ✓、Fr10 不修 ✓。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+skills corpus 載入/觸發契約治理閉合——79 支 desc 全綠（值 chars 軸＋引號 gate 入庫可重跑）＋7 支高流量觸發前置＋when_to_use×4＋instruction-testing 四 surface gate/機械觀察面 protocol 改造＋activation probe 三 run 100 runs 定案（強錨點 8/10 唯一穩定、弱訊號自動觸發不成立＝機制事實、nonmatch 60/60 乾淨；修法 b）＋撞名/權限/孤兒三裁定＋model-routing judge 升級外派 rider；judge GLM-5.3 GO、20 findings 19✅全落地、consistency 收斂、416 tests 綠
+<!-- SECTION:FINAL_SUMMARY:END -->
