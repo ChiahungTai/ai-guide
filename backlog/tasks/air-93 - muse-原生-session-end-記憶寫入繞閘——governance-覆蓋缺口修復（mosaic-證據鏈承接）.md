@@ -1,14 +1,14 @@
 ---
 id: AIR-93
 title: muse 原生 session-end 記憶寫入繞閘——governance 覆蓋缺口修復（mosaic 證據鏈承接）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-14 03:13'
-updated_date: '2026-09-14 04:59'
+updated_date: '2026-09-14 05:15'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/09-14-air93-muse-session-end-bypass/dossier.md
+  - ai-analysis/_tasks/done/09-14-air93-muse-session-end-bypass/dossier.md
 ordinal: 79000
 ---
 
@@ -39,3 +39,9 @@ ordinal: 79000
 
 [09-14 probe 清場＋檢查載體查證] user 裁定驗完清理：probe fixtures（arm1-ws/arm2-ws/workorder）＋/tmp 驗證 scratch＋8 個工作單/回覆暫存全刪（內容已蒸餾卡＋ledger jobs/*.jsonl 持久）。重試需依 dossier＋卡配方重建 fixture。檢查載體查證：ai-rules workspace 有排程承載——schedule-registry 條 1（automation-751ecce2，每晚 23:40 memory 收斂波＋inbox 消費，波前 porcelain 檢查在流程內）＋條 2（automation-fed036ff，週日 23:00 治理看照，watchdog 含雙池 porcelain-vs-receipt）——但 reconcile_memory_pool.py 尚未機械接線（夜波走 memory-audit 配方的 LLM 判讀形態）；本 workspace（ai-lifecycle）CronList 空＝ZCode automation workspace 綁定，接線須 ai-rules workspace session 或改 skill 配方
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+muse session-end 原生記憶寫入繞閘缺口閉合：機制確認（post-session 原生路徑，PreToolUse/sandbox 皆不涵蓋；dossier）→ codex+5.3 雙討論收斂修法（對帳網主防線＋env var 條件 prevention＋③棄）→ 對帳網 v1 TDD 上線（31 測試，review 7 findings 全修正 verified，a2bb42f）→ 池 consolidation 補審（22 條收編 6947df6）→ live probe 正控制失敗（觸發條件更窄，如實記錄；fixture 已清）→ 夜波波前機械接線（86e5725，codex advisory 設計）。AC①②④✅、AC③ synthetic＋真實流入層✅、真 teardown 重放＝蹲守夜波待自然實證。bridge 注入凍結（delegate-bridge followup 9bc3880）
+<!-- SECTION:FINAL_SUMMARY:END -->
