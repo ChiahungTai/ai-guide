@@ -89,11 +89,56 @@ def test_viewer_url_historical_shell_exempt(tmp_path):
     assert lint.lint_shell(shell, root) == []
 
 
-def test_raw_md_http_flagged_with_new_contract_message(tmp_path):
-    """raw http .md（非 viewer 形態）仍是 violation，訊息改教新合約＝repo 相對路徑。"""
+def test_viewer_url_historical_reports_exempt(tmp_path):
+    """viewer URL 在歷史位置（reports/）豁免。"""
+    shell, root = _shell(
+        tmp_path,
+        "meta projection {SHA}（EP content SHA）\n"
+        '<a href="http://localhost:6421/viewer/_md-viewer.html?p=/ai-guide/reports/2026-09-10-x.md">EP</a>',
+        sub="reports/9999-test",
+    )
+    assert lint.lint_shell(shell, root) == []
+
+
+def test_viewer_url_historical_blueprint_exempt(tmp_path):
+    """viewer URL 在歷史位置（blueprint/）豁免。"""
+    shell, root = _shell(
+        tmp_path,
+        "meta projection {SHA}（EP content SHA）\n"
+        '<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-guide/blueprint/architecture.md">EP</a>',
+        sub="blueprint/9999-test",
+    )
+    assert lint.lint_shell(shell, root) == []
+
+
+def test_localhost_viewer_url_active_shell_flagged(tmp_path):
+    """localhost:6421 同義 host 形態在活躍殼同樣觸旗（judge r3 題 1）。"""
+    shell, root = _shell(
+        tmp_path,
+        "meta projection {SHA}（EP content SHA）\n"
+        '<a href="http://localhost:6421/ai-guide/_tasks/9999-test/ep.md">EP</a>',
+    )
+    issues = lint.lint_shell(shell, root)
+    assert sum("viewer URL 形態已退役" in i for i in issues) == 1
+
+
+def test_raw_md_on_6421_dedup_single_violation(tmp_path):
+    """6421 host 上的 raw .md：活躍殼由 viewer 規則統一承接，恰好 1 條（dedup，judge r3 題 3）。"""
     shell, root = _shell(
         tmp_path,
         '<a href="http://127.0.0.1:6421/ai-guide/_tasks/9999-test/ep.md">EP</a>',
     )
     issues = lint.lint_shell(shell, root)
-    assert any("raw .md http 連結" in i and "repo 相對路徑" in i for i in issues)
+    assert len(issues) == 1
+    assert "viewer URL 形態已退役" in issues[0]
+
+
+def test_raw_md_http_flagged_with_new_contract_message(tmp_path):
+    """raw http .md（非 6421 host、非 viewer 形態）仍是 violation，訊息教新合約＝repo 相對路徑。"""
+    shell, root = _shell(
+        tmp_path,
+        '<a href="https://example.com/ai-guide/_tasks/9999-test/ep.md">EP</a>',
+    )
+    issues = lint.lint_shell(shell, root)
+    assert len(issues) == 1
+    assert "raw .md http 連結" in issues[0] and "repo 相對路徑" in issues[0]

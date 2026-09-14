@@ -34,7 +34,7 @@ _FILE_URL = re.compile(r'(?:href|src)="(file:///Users/[^"]+)"')
 _ROUTE = re.compile(r"""/(?:ai-rules|ai-guide)/((?:_tasks|_projects)/[^"'<>\s#]+)""")
 _RAW_MD_ROUTE = re.compile(r'href="([^"]*/(?:ai-rules|ai-guide)/[^"]*\.md)"')
 # viewer URL 形態（09-14 退役）：活躍殼即 violation，歷史位置殼豁免
-_VIEWER_URL = re.compile(r"""(?:127\.0\.0\.1:6421|/viewer/_md-viewer\.html)""")
+_VIEWER_URL = re.compile(r"""(?:127\.0\.0\.1:6421|localhost:6421|/viewer/_md-viewer\.html)""")
 _HISTORICAL_PREFIXES = (
     "ai-analysis/_tasks/done/",
     "ai-analysis/reports/",
@@ -80,6 +80,10 @@ def lint_shell(shell: Path, repo_root: Path) -> list[str]:
         if "_md-viewer.html" in url:
             # viewer 形態：歷史殼豁免；活躍殼由上方 _VIEWER_URL 檢查統一承接——
             # 此處一律跳過，避免同一 viewer 連結被重複計數
+            continue
+        if _VIEWER_URL.search(url) and not historical:
+            # 6421 host 上的 raw .md：活躍殼已由 viewer 規則承接（dedup，避免一物兩報）；
+            # 歷史殼不跳過——raw 檢查維持原行為，避免豁免被誤鬆
             continue
         issues.append(
             f"raw .md http 連結（合約＝repo 相對路徑，VSCode 直接開檔）: {url}"
