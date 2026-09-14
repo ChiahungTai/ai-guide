@@ -1,0 +1,36 @@
+# .code-reality.toml — CR 工具鏈 repo 配置（AIR-67 R4）
+# module 粒度＝想被 module-level 比較（delta_tour claims／module split）報告的層。
+# exclude 一律目錄粒度帶 trailing slash（profile-load assert；無 slash 會誤命中同前綴檔）。
+# 偵測面聲明：claims regex 只認 [[module]] prefix 下的路徑提及——prefix 外宣稱讀 NONE
+# （=「無對照」非「無宣稱」）。
+
+exclude = [
+  "ref-docs/",        # 外部 harness 文檔鏡像（非代碼；crawl.py 屬鏡像工具住 external）
+  "ai-analysis/",     # 分析報告／任務家
+  "backlog/",         # 任務卡
+  ".agent-tmp/",      # 暫存
+  ".at-contexts/",    # /at 排程 context
+  ".venv/",
+  "node_modules/",
+  "ai_rules.egg-info/",
+]
+
+[[module]] # 根級工具（deploy_agents / sync_agents / scan_skills_desc / reconcile_memory_pool …）
+prefix = "scripts/"
+depth = 1
+
+[[module]] # 治理 hook（block-python-c-comment / block-memory-index-write …）
+prefix = "hooks/"
+depth = 1
+
+[[module]] # skill 附屬工具——module 粒度＝skill 名（memory-audit / corrections-weekly / standup …）
+prefix = "skills/"
+depth = 1
+
+[[module]] # 測試
+prefix = "tests/"
+depth = 1
+
+[[module]] # 部署腳本（launchd 包裝）
+prefix = "deploy/"
+depth = 1
