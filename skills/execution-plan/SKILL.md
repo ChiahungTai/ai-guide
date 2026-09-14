@@ -180,11 +180,14 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 **產出研究摘要**（放在 EP top-level，段落之前）：
 - 可複用基礎設施清單（附 `ClassName`，路徑選用）
 - 依賴關係和關鍵約束——每個下游/ripple 宣稱附工具輸出引用（scip_refs 首行 `[SRC]`；graph_query 輸出無 `[SRC]` 行、附完整命令列＋repo root；投影查詢輸出帶 `[projected]` 標籤；或 LSP 查證——不接受純讀碼推斷）
+- **negative 宣稱結構化（cr-audit R1）**：研究宣稱含「唯一 caller／零消費者／可刪／不影響 X」類 negative verdict → 以 claim 四欄記錄（type／symbol／evidence／verdict）＋查證走 CR `callers` 實測——**negative verdict 永遠不可用 rg 單腿宣稱**（rg parity 例外只適用 positive lookup；單一源＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」，judge 裁決端同步此標準）
 - 類似功能的既有實作位置
 - 風險假設清單（標注等級；致命等級附先驗結果，對應段落驗證策略）；**死路假設嫌疑入列**——宣稱被整合/觸發的既有符號 callers 查詢為空（CR＋LSP 雙空）即列（真實案例：`_lazy_populate` 宣稱被觸發、實際永不執行）
 - callstack 菜單積壓（repo 有 `ai-analysis/blueprint/callstack-plan.md` 時）：待生成鏈行——新 EP 常踩在未文檔化功能上；僅列清單，生成＝獨立觸發（blueprint-bootstrap）
 
 > **深度上限**：研究摘要層級（可複用元件清單 + 風險假設），**非 codebase 全景報告**——避免 EP 膨脹。後續段落的「基礎設施盤點」在此基礎上補段落特定細節。
+
+> **研究材料載體（cr-audit R3）**：研究產出超出摘要粒度（structural claims＋查詢＋`[SRC]`＋degraded 標記的完整紀錄）→ 落 EP 同層 `references/research.md`，EP 正文只摘要引用；機械可驗收＝`fd research.md <任務家>` 命中＋rg `[SRC]` 非空。
 
 ---
 

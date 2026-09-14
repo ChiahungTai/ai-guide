@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-09 21:43'
-updated_date: '2026-09-14 05:22'
+updated_date: '2026-09-14 05:37'
 labels:
   - cr
   - governance
@@ -38,4 +38,6 @@ cr-audit（reports/2026-09-09-cr-role-audit.md）即刻項半小時級。R2：ag
 **處置裁定（user 09-13 拍板）**：剩餘＝雜項尾巴，與 AIR-70 剩餘合併評估清掃 session 批次處理；不宣稱達成。
 
 [09-14 R4 落地 ✅] .code-reality.toml 上線（五 module：scripts/hooks/skills(depth1=skill 名)/tests/deploy＋exclude 六目錄）。smoke 四項：①profile load 反向驗證——壞 profile（exclude 無 slash）被 [FAIL] 目錄粒度 assert 攔下、snapshot 不產出 ②module 歸類正確——26 檔歸 hooks/scripts/skills/tests 桶、變動模組 ai-analysis/ref-docs 正確落 exclude 桶 ③delta_tour claims 管道全鏈通——EP 宣稱抽取→對照→0 命中+多模組變更防呆降級 WARN 正確觸發（R4 擔心的假陰性被攔的實例）④module_edges 0＝真實拓撲（工具集合型 repo 模組間零靜態呼叫；graph rebuild 520 節點/896 邊）。附註：reconciler 等零靜態邊腳本不進 snapshot files（subprocess/動態載入非 profile 問題）。delta_tour 解鎖 ✓——後續弧 EP 宣稱對照可用。卡剩：R1 剩餘＋R3（09-13 裁定歸清掃批次）＋弧A 行為面抽驗（掛下次 review dispatch）
+
+[09-14 R1 剩餘＋R3 落地 ✅] R1＝execution-plan 段落 0 negative 宣稱結構化（claim 四欄＋negative verdict 禁 rg 單腿，引用 review-engine:169 單一源）＋judge-review「negative-claim findings 裁決驗證」節（採納前 CR callers 實測複核）。R3＝execution-plan 段落 0 研究材料載體行（超摘要粒度→EP 同層 references/research.md，fd＋rg 機械可驗收；首用驗證＝下次帶研究材料的弧）。觸發面設計：R3 靠 execution-plan 流程本身（每次建 EP 必經判斷），非掛記憶。drift 掃描：negative verdict 措辭三檔一致指向 review-engine 單一源、research.md 無撞名、desc FAIL=0。卡剩：弧A 行為面抽驗（掛下次 in-harness review dispatch 事件——抽 [SRC]／未 index 驗證／CR 呼叫）
 <!-- SECTION:NOTES:END -->

@@ -106,6 +106,10 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 
 **judge-review 場景應用**：評估 AI 審查建議時，建議宣稱「X 不存在 / 無引用 / 無建構點」→ 必須獨立查證（LSP `findReferences` / `workspaceSymbol`），0 hits 換工具再查，仍 0 hits 才標「查證失敗」→ **禁止把「自己沒查到」誤判為「程式碼不存在」就 ❌ 不採納**（查證者可能是 pattern 失誤，非程式碼不存在；真實案例：審查者 rg 稱某 class 無建構點，獨立 LSP 查證立刻列出 import + 建構行）。
 
+### negative-claim findings 的裁決驗證（cr-audit R1）
+
+finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響 X）→ 採納前用 CR `callers`／`impact_radius` 實測複核（engine 缺場退 LSP `findReferences`＋rg 互補腿——見 [cr-query](../cr-query/SKILL.md) GATE）；**rg 單腿論證不可作為採納依據**（rg parity 例外只適用 positive lookup——「找到 3 個」≠「只有 3 個」；canonical 條文＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）。EP／研究面的同族宣稱（claim 四欄結構）見 [execution-plan](../execution-plan/SKILL.md) 段落 0。
+
 ---
 
 ## 特殊情況
