@@ -31,8 +31,8 @@ Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 **任務弧模式（逐段 commit 後的整弧審查）**：implement 的逐段檢查點（＋isolated worktree 弧的 pre-flight commit——共享樹不預先 commit，見 implement 平行模式）會讓變更在 build 中途落地，無參調用只剩尾段殘留甚至空 diff——逐 commit 或只看 uncommitted 都會漏跨段互動（大規模刪除段只有對照抽取段才看得出是遷移不是丟失）。
 
-- **觸發**：① 明確傳 baseline hash；② 無參且 context EP／卡 desc 記有 baseline（或殼頭可讀）→ 自動切弧模式（印 `[Code Review] mode=arc baseline=<hash>`）；無任務 baseline → uncommitted 模式；uncommitted 亦空 → 印 `[WARN] no diff（弧模式需任務 baseline）` 終止（fail-loud，同 post-build）
-- **baseline 來源**：EP 整合策略的 `baseline: <hash>`（記錄：execution-plan 建 EP 時；implement 階段 1 補記）或卡 desc 所記（無 EP standalone 弧）——優於 merge-base 推導：同 branch 可能混入他任務 commits，拓撲邊界 ≠ 任務邊界；跨 session context 無 EP 記憶 → 從 Report Shell 殼頭部讀（任務家 `*/index.html`——探測見 [illustrate html-mode](../_common/illustrate-html-mode.md)；聲明 EP 路徑＋baseline hash——hook 1 起攜帶，機制見 [post-build](../post-build/SKILL.md) 階段 0）
+- **觸發**：① 明確傳 baseline hash；② 無參且 context EP／卡 Plan 記有 baseline（或殼頭可讀）→ 自動切弧模式（印 `[Code Review] mode=arc baseline=<hash>`）；無任務 baseline → uncommitted 模式；uncommitted 亦空 → 印 `[WARN] no diff（弧模式需任務 baseline）` 終止（fail-loud，同 post-build）
+- **baseline 來源**：EP 整合策略的 `baseline: <hash>`（記錄：execution-plan 建 EP 時；implement 階段 1 補記）或卡 Plan 所記（無 EP standalone 弧）——優於 merge-base 推導：同 branch 可能混入他任務 commits，拓撲邊界 ≠ 任務邊界；跨 session context 無 EP 記憶 → 從 Report Shell 殼頭部讀（任務家 `*/index.html`——探測見 [illustrate html-mode](../_common/illustrate-html-mode.md)；聲明 EP 路徑＋baseline hash——hook 1 起攜帶，機制見 [post-build](../post-build/SKILL.md) 階段 0）
 - **非本任務 commits 註明**：`<hash>..HEAD` 範圍內不屬本 EP 的 commits 列進 reviewer prompt（避免誤判 scope；diff 連續仍涵蓋它們）
 - dual-context 兩側吃同一份 diff——範圍錯則兩側同瞎，範圍判定先於 spawn
 

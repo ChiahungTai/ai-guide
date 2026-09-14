@@ -27,6 +27,7 @@ backlog init "<project>" --agent-instructions none
 # 多 WT id 防撞預掃（單 WT repo 跳過）：跨 WT 檔案系統全域 max id——涵蓋 git 掃描盲區（他 WT untracked/staged 卡）
 for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do ls "$wt/backlog/tasks/" 2>/dev/null; done | rg -o '^[a-zA-Z]+-[0-9.]+' | sort -V | tail -1
 backlog task create "<標題>" -l <labels> -d <目標一句> [--ac "<驗收條件>"]   # CLI id=本 WT max+1，無 --id 可指定
+backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"   # desc 留人話、spec 住 Plan（詳「欄位分工」；`task create --plan` 限 active status，To Do 建卡後以 edit 補）
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
 ```
 **共享 WT 活躍 branch 落點分流**（多 session 共享 primary WT、checkout 停在活躍弧卡 branch 時的外卡 commit 處置；commit 前必查 `git branch --show-current`——非預期 branch 是**換策略信號非停手信號**，branch 可能在本 session 中途被平行 session 切走，開場快照不算數）：
@@ -38,8 +39,8 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 **預掃衝突處置**：預掃輸出的全域最高 id 高於本 WT 所見最高 id → 他 WT 有未進版控的更高卡，CLI 自動配 id 會撞號 → **停下協調**（他 WT 卡 commit 進 branch 後 cross-branch 掃描接手，再建卡），不得就地建。
 
 **共享 WT 建卡 id 佔用查驗三面**（多 session 共享單 WT、撞號反覆發生後強化——working copy 單一真相不豁免）：①本 WT `ls backlog/tasks/`＋untracked 新建（平行 session 未 commit 的新卡）；②`git ls-tree <各未 merge branch> backlog/tasks/`（他 branch 上的卡本 WT 看不到）；③`git log --all -- 'backlog/tasks/<prefix>-*'`（卡 id 不可重用——歷史重用同樣撞）。撞號修復先例＝owning branch 上 `git mv`＋frontmatter id 改（任務保留不廢棄）。
-**建卡 desc gate**（跨 session To Do 卡必過；session 內即辦豁免）：`desc` 須含三必有——①`baseline`（`〔baseline：<repo> <hash>〕`）②`已決策勿重辯`（`〔已決策勿重辯：①…〕`）③`驗收`（`〔驗收：…〕`）；語義在場即可，標記形式不限。軟自查：`rg -c "baseline|已決策|驗收" backlog/tasks/<卡>.md` 應 ≥3（豁免卡除外）。風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）是「已決策」段的合法內容形態。
-**人類 viewport 層**（user 09-10 拍板——board 不只是 AI 工單池，也是 user 的主視圖）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels＋desc 承載，title 不背 AI 檢索職責。②`desc` **最頂部**放 `〔human-summary〕` 段（1-3 句人話）：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；其餘 AI 工單內容接其後。既有卡下次被觸及時順手補，不專門回填。
+**建卡 spec gate**（跨 session To Do 卡必過；session 內即辦豁免）：工單三必有住 `Implementation Plan`——①`baseline`（`〔baseline：<repo> <hash>〕`）②`已決策勿重辯`（`〔已決策勿重辯：①…〕`）——驗收條款（③）住 AC；語義在場即可，標記形式不限。軟自查：`rg -c "baseline|已決策|驗收" backlog/tasks/<卡>.md` 應 ≥3（豁免卡除外）。風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）是「已決策」段的合法內容形態。
+**欄位分工（desc 人話／Plan 工單）**（user 拍板——board 不只是 AI 工單池，也是 user 的主視圖；09-15 改制取代舊〔human-summary〕desc 頂部標記慣例）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels 承載（人話 triage 靠 desc、spec 檢索靠 Plan），title 不背 AI 檢索職責。②`desc` **全段人話**（1-3 句）：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；AI 工單內容不進 desc。③`Implementation Plan`＝AI 工單 spec（baseline／已決策勿重辯／範圍）——原生欄位零 hack、工具寫回永不重排（檔案段落 canonical 順序＝Description→Plan→AC→Notes→Final Summary，round-trip 實證）；spec 禁放 Notes（Notes 是 `--append-notes` 的 append 目標，spec 會被進度筆記同段堆疊掩埋）。④`AC`=驗收 checklist、`Notes`=append 進度、`Final Summary`=結算。建卡流程＝`task create`（To Do，帶人話 desc）→ `task edit --plan` 補 spec。既有卡下次觸及時順手搬，不專門回填。
 
 **建卡前去重**（中）：`backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿；與同域 `open-items.md`，例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾（一行指針 ≠ 承諾，`backlog` 卡 = 承諾）。
 
@@ -47,9 +48,9 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 ```bash
 # ① 第一動——平行 session 可見
 backlog task edit <id> -s "In Progress"   # 🔴 必是動卡的第一個動作
-# ② 讀卡三層：frontmatter → desc → notes → references
-# ③ 讀卡知形態：references 有無 EP——承諾時已定（不重判）；scope 遠超 desc → 先升 EP 再動工
-# ④ 新鮮度核對：desc baseline vs `git log --oneline <baseline>..HEAD` 非空→對照 desc 範圍；notes relay 宣稱→機械驗證當前狀態
+# ② 讀卡全層：frontmatter → desc（人話）→ plan（spec）→ AC → notes → references
+# ③ 讀卡知形態：references 有無 EP——承諾時已定（不重判）；scope 遠超 Plan → 先升 EP 再動工
+# ④ 新鮮度核對：Plan baseline vs `git log --oneline <baseline>..HEAD` 非空→對照 Plan 範圍；notes relay 宣稱→機械驗證當前狀態
 # ⑤ 開工雙 ref（09-11 新制：只掛 repo 相對路徑，不掛 http——免 report-server 存活依賴）
 backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對路徑>]"
 ```
@@ -107,7 +108,7 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 
 ## 卡即 handoff（卡拼裝＝self-contained）
 
-卡 `desc`＋`notes`＋`references`＋`EP`（若有）四件拼裝即 handoff——接手 session 讀卡即接手，不重辯已定事。分工：`desc`=決策層（baseline／已決策勿重辯／範圍／驗收，不變共識）／`EP`=規劃層（怎麼做）／`notes`=留言層（接手指針，過程不沉澱）。兩層判定承諾時已定（見 [execution-plan](../execution-plan/SKILL.md) 規模分級，不新造）：small 不建 EP 直行、standard+ 建 EP。決策層變更（scope／驗收校準）→同步回寫卡 `desc`。
+卡 `desc`＋`plan`＋`AC`＋`notes`＋`references`＋`EP`（若有）拼裝即 handoff——接手 session 讀卡即接手，不重辯已定事。分工：`desc`=人話摘要層（詳「欄位分工」）／`Implementation Plan`=決策層（baseline／已決策勿重辯／範圍，不變共識）／`AC`=驗收層／`EP`=規劃層（怎麼做）／`notes`=留言層（接手指針，過程不沉澱）。兩層判定承諾時已定（見 [execution-plan](../execution-plan/SKILL.md) 規模分級，不新造）：small 不建 EP 直行、standard+ 建 EP。決策層變更（scope／驗收校準）→同步回寫卡 Plan／AC。
 
 ## UI 入口
 

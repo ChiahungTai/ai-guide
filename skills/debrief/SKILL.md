@@ -22,7 +22,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent"]
 
 ## 黑盒子（input → output）
 
-- **input**：變更範圍——commit hash / branch 參數指定優先；無參數且 context EP／卡 desc 記有 baseline（或殼頭可讀）→ 任務弧模式（`git diff <baseline>..HEAD`＋uncommitted，機制見 [code-review](../code-review/SKILL.md)「任務弧模式」）；無任務 baseline → uncommitted 模式（`git diff`＋`git diff --cached`）；uncommitted 亦空 → `git diff HEAD~1` 兜底。弧範圍內的非本弧 commits／uncommitted 檔列「**非本弧項**」清單、不納入簡報主體
+- **input**：變更範圍——commit hash / branch 參數指定優先；無參數且 context EP／卡 Plan 記有 baseline（或殼頭可讀）→ 任務弧模式（`git diff <baseline>..HEAD`＋uncommitted，機制見 [code-review](../code-review/SKILL.md)「任務弧模式」）；無任務 baseline → uncommitted 模式（`git diff`＋`git diff --cached`）；uncommitted 亦空 → `git diff HEAD~1` 兜底。弧範圍內的非本弧 commits／uncommitted 檔列「**非本弧項**」清單、不納入簡報主體
 - **output**：七段倒金字塔簡報——Console（預設，ASCII 精簡）；`--md` 寫 `ai-analysis/reports/debrief-<scope>.md`（多級標題完整展開，Mermaid 可用）
 
 ## grounding 紀律（不是只看 diff 說故事）

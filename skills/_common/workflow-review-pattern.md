@@ -112,7 +112,7 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 
 帳本檔頭帶 identity 區塊（header 級、非逐條）——跨 session resume 與「implement 已審 vs post-build 再審」的去重比對都靠它：
 
-- **task baseline**：本弧任務 baseline hash（卡 desc 或 EP 整合策略所記）
+- **task baseline**：本弧任務 baseline hash（卡 Plan 或 EP 整合策略所記）
 - **reviewed**：審查當下 HEAD hash
 - **uncommitted identity**：本弧 tracked diff hash＋untracked 路徑清單＋content hash（與 [work-order](work-order.md) §3 dirty identity 契約同詞）——只有 rev 會讓「untracked-only WIP 改變」場景（HEAD 未變、新檔內容變）假吻合跳審
 - **writer**：產生本清單的命令/session
