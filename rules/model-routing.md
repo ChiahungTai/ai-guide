@@ -16,7 +16,7 @@ model 詞彙（user 裁定）：prose/doctrine 與 bridge 委派一律 provider 
 |---|---|
 | code-reviewer / primed / review command agent | lite 預設（user 拍板）；僅高保護面/跨邊界語義升 full，禁順手升級 |
 | impl-lite | lite——規格化機械段執行；lite test 只算規格陳述，驗收/判斷密集位由主 session 補 |
-| judge-review / execution-plan / post-build 編排 | full，不可條件降級（sycophancy 非 effort 可補） |
+| judge-review / execution-plan / post-build 編排 | full，不可條件降級（sycophancy 非 effort 可補）；seat 非 full（如 flash 主模型 session）→ 升級外派 bridge full-tier model（現值查 model-routing skill tier 表），禁 in-session 降級自判——tier 約束跟角色走、不跟座位走 |
 | spec-miner / lite-verify / cross-verify-investigator / render / cron 機械段 | lite；read-only 查證，缺源標 unverified |
 | mem-distill | lite 寫入型；prompt 清單守範圍 |
 | vision-review | vision；remote 先落地、CR per-session 可掛 |
