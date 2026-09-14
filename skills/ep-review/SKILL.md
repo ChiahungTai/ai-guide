@@ -122,7 +122,7 @@ F1-F5 檢查「有沒有漏」，深層思考檢查「方向對不對」。
 - **連鎖後果追蹤**：EP 中的設計決策會導致什麼下游影響？至少追蹤兩層
 - **如果錯了**：最壞情境？可以逆轉嗎？逆轉成本？
 
-深層思考框架見 `~/Github/ai-rules/skills/deep-thinking/SKILL.md`
+深層思考框架見 `~/Github/ai-guide/skills/deep-thinking/SKILL.md`
 
 ---
 

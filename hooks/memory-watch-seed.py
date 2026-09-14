@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """CC SessionStart watch-seed (AIR-56 follow-up): point the FileChanged
-watcher at the ai-rules memory pool.
+watcher at the ai-guide memory pool.
 
 Why a seed script: FileChanged matcher seeds are cwd-scoped literal filenames,
 and watchPaths must be absolute paths (CC mirror hooks.md SessionStart

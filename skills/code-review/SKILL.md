@@ -143,7 +143,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 - **追蹤後果**：這個修改的下游影響是什麼？依賴模組是否受影響？
 - **審查者自證**：提出問題前必須查證宣稱（LSP 查證方法 + 自我否證義務：找不到 ≠ 不存在）— 完整方法見 [review-engine](../review-engine/SKILL.md)
 
-深層思考框架見 `~/Github/ai-rules/skills/deep-thinking/SKILL.md`
+深層思考框架見 `~/Github/ai-guide/skills/deep-thinking/SKILL.md`
 
 ---
 

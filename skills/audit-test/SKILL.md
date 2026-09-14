@@ -463,7 +463,7 @@ audit-test → judge-review → 實作查證 是**刻意設計的三層**，每�
 ### 反思流程
 
 1. **收集教訓**：哪些 finding 被 judge-review 推翻？哪些被實作查證推翻？哪些技術判斷推理錯？哪些流程造成重跑？
-2. **歸因到 ai-rules 具體段落**：每個教訓對應哪個 rules/skills 檔案的哪段不足？是規範缺（沒寫）還是規範有但 agent 沒讀？
+2. **歸因到 ai-guide 具體段落**：每個教訓對應哪個 rules/skills 檔案的哪段不足？是規範缺（沒寫）還是規範有但 agent 沒讀？
 3. **產出改進建議**：寫到 `ai-analysis/audit-test-improvement-proposals-{date}.md`（不直接改規範，使用者 review 後併入）
 4. **滾動更新**：建議被採納後更新對應段落，下次 audit 自動受惠
 

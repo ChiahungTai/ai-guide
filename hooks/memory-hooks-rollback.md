@@ -4,7 +4,7 @@
 
 ## Claude 端（settings.json＝repo 本地 gitignored 檔，經 `~/.claude/settings.json` symlink 生效）
 
-把下方兩條原始指令貼回對應 hook 物件的 `command`（取代 `python3 /Users/ctai/Github/ai-rules/hooks/...` 兩行）：
+把下方兩條原始指令貼回對應 hook 物件的 `command`（取代 `python3 /Users/ctai/Github/ai-guide/hooks/...` 兩行）：
 
 **Stop 陣列第二個 hook 物件**（目前是 `python3 .../memory-index-regen.py`）：
 

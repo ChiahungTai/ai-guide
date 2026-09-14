@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # MEMORY.md 索引 generator——條目檔 frontmatter 是單一 source，索引是其機械投影。
 # 用法: python3 _generate_index.py [--check]（--check 只驗證不寫入、零檔案系統副作用）
-# 部署形態：本檔是資產源 ai-rules repo skills/memory-audit/scripts/generate_index.py
+# 部署形態：本檔是資產源 ai-guide repo skills/memory-audit/scripts/generate_index.py
 #   的副本（複製進各專案 memory dir、更名 _generate_index.py）。副本與資產源 bytes
 #   不符時 Stop hook（hooks/memory-index-regen.py 信任邊界）跳過重生成並留
 #   _regen-skipped-stale 標記——刷新：cp <資產源> ./_generate_index.py.new

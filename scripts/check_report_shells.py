@@ -7,7 +7,7 @@ kanban-board 結案兩步 `--ref` 換 done/ 路徑）——本 lint 把三類已
 1. 同殼宣告多個互斥 projection SHA（一殼只能有一個 current identity）；
 2. projection SHA 與同目錄 ep.md 的 content SHA 不符（stale projection）；
 3. 回源連結失效：`file:///Users/` 絕對路徑（跨 worktree/clone 必斷）、
-   `/ai-rules/<task path>` route 指向 repo 內不存在的路徑（歸檔未補 done/）。
+   `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔未補 done/）。
 
 掃描範圍：git-tracked `ai-analysis/**/index.html`（渲染產物 diagram-*.html
 不進 git，自然排除）；存在性檢查限 .md/.json（svg 等渲染產物可重建，不查）。
@@ -27,8 +27,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 _SHA_MENTION = re.compile(r"\b([0-9a-f]{7,64})（EP content SHA")
 _FILE_URL = re.compile(r'(?:href|src)="(file:///Users/[^"]+)"')
-_ROUTE = re.compile(r"""/ai-rules/((?:_tasks|_projects)/[^"'<>\s#]+)""")
-_RAW_MD_ROUTE = re.compile(r'href="([^"]*/ai-rules/[^"]*\.md)"')
+_ROUTE = re.compile(r"""/(?:ai-rules|ai-guide)/((?:_tasks|_projects)/[^"'<>\s#]+)""")
+_RAW_MD_ROUTE = re.compile(r'href="([^"]*/(?:ai-rules|ai-guide)/[^"]*\.md)"')
 
 
 def lint_shell(shell: Path, repo_root: Path) -> list[str]:

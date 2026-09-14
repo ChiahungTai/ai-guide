@@ -34,7 +34,7 @@ EOF
 ## 操作二：讀指定 session 尾部真人互動
 
 ```bash
-uv run --project ~/Github/ai-rules python ~/.zcode/skills/zcode-session-query/scripts/zcode_tail_chat.py <session-id前綴> [輪數=4] [每則字數=400]
+uv run --project ~/Github/ai-guide python ~/.zcode/skills/zcode-session-query/scripts/zcode_tail_chat.py <session-id前綴> [輪數=4] [每則字數=400]
 ```
 
 輸出最後 N 輪 `[USER]`/`[AI]` 交錯原文——user 的話 + AI 的文字回覆，排除工具呼叫/系統噪音。適合：看對方 session「剛剛談到哪」、handoff 前確認來源狀態、compact 品質比對的「實際紀錄」側。

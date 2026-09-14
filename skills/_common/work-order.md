@@ -20,7 +20,7 @@
 
 ### Role contract（派發 registry role 時必填子段）
 
-> 派發對象是 ai-rules registry role 時（muse/codex/grok 皆同），role 紀律核心**引用不重寫**——單一源在 `agents/roles/<name>.md`：
+> 派發對象是 ai-guide registry role 時（muse/codex/grok 皆同），role 紀律核心**引用不重寫**——單一源在 `agents/roles/<name>.md`：
 
 - **role name**＋**requirement**（tier token：full/vision/lite——分配表見 `skills/model-routing/SKILL.md` role→requirement 表）
 - **role body 交接**：貼入 `agents/roles/<name>.md` 全文（附 body hash）或給絕對路徑令 runtime 自讀；與 §4 必讀的分工——§4 列 repo 材料路徑，本段承載 role 選擇依據
@@ -29,7 +29,7 @@
 
 ## 3. Baseline identity
 
-- repo root：絕對路徑（如 `/Users/ctai/Github/ai-rules`）＋是主 working tree 還是 worktree
+- repo root：絕對路徑（如 `/Users/ctai/Github/ai-guide`）＋是主 working tree 還是 worktree
 - 工作目錄：本次任務的 cwd（若與 repo root 不同需明示）
 - base commit：凍結基線 commit hash
 - 並行改動聲明：working tree 已有但不屬清理範圍的改動（如 backlog 卡、任務家產物），列出路徑與性質，避免誤判為本次改動

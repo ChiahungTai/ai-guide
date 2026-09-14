@@ -103,7 +103,7 @@ use cases + 情境矩陣分析（服務 mode A/C 的**步驟**）見 [illustrate
 
 ## 決策流程（mode 驅動）
 
-> 從使用者 **use case 判斷 mode**（非內部能力觸發）。輸入（@ep / 無參數 / 主題 / @dir）是 mode 判斷**線索**（客觀輸入，非相容保留 — ai-rules 預設不考慮向後相容，演化性重構）。
+> 從使用者 **use case 判斷 mode**（非內部能力觸發）。輸入（@ep / 無參數 / 主題 / @dir）是 mode 判斷**線索**（客觀輸入，非相容保留 — ai-guide 預設不考慮向後相容，演化性重構）。
 
 ```
 用戶輸入 → 判斷 use case → mode?

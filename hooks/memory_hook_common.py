@@ -20,7 +20,7 @@ import os
 import time
 from pathlib import Path
 
-DEFAULT_LOG = Path.home() / ".local" / "share" / "ai-rules" / "memory-hook-events.jsonl"
+DEFAULT_LOG = Path.home() / ".local" / "share" / "ai-guide" / "memory-hook-events.jsonl"
 POOL_INDEX = "MEMORY.md"
 MAX_LOG_BYTES = 2 * 1024 * 1024
 

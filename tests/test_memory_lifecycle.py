@@ -753,8 +753,8 @@ def test_truncate_threshold_cross_layer_alignment():
 
 
 def test_sha16_anchor_ai_rules():
-    # 錨：本機真實目錄 ~/.zcode/cli/memories/projects/ai-rules-01610fbb20315a8b
-    assert regen.sha16("/Users/ctai/Github/ai-rules") == "01610fbb20315a8b"
+    # 錨：本機真實目錄 ~/.zcode/cli/memories/projects/ai-guide-91ff86777c287082（2026-09-14 改名 ai-guide；sha256(絕對路徑)前 16 碼）
+    assert regen.sha16("/Users/ctai/Github/ai-guide") == "91ff86777c287082"
 
 
 def test_claude_dir_underscore_trap():
@@ -773,13 +773,13 @@ def test_zcode_dir_underscore_preserved():
 
 def test_regen_runs_generator_once_with_symlink_dedupe(tmp_path):
     """ZCode 目錄 symlink → Claude 同一實體 pool：resolve() 去重只跑一次。"""
-    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     zdir.mkdir(parents=True)
     make_pool(zdir, n=1)
-    cdir = regen.claude_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    cdir = regen.claude_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     cdir.parent.mkdir(parents=True)
     cdir.symlink_to(zdir)
-    notes = regen.run_for_cwd("/Users/ctai/Github/ai-rules", tmp_path)
+    notes = regen.run_for_cwd("/Users/ctai/Github/ai-guide", tmp_path)
     assert len(notes) == 1
     assert (zdir / "MEMORY.md").exists()
 
@@ -794,12 +794,12 @@ def test_regen_stale_copy_writes_skip_marker(tmp_path):
 
     09-06 pending-decisions ③查證產出：byte 比對跳過是 by-design（信任邊界），
     但跳過路徑 stdout 不進 context＝靜默停滯——marker 讓停滯 fail-visible。"""
-    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     zdir.mkdir(parents=True)
     make_pool(zdir, n=1)
     g = zdir / "_generate_index.py"
     g.write_text(g.read_text(encoding="utf-8") + "# stale\n", encoding="utf-8")
-    notes = regen.run_for_cwd("/Users/ctai/Github/ai-rules", tmp_path)
+    notes = regen.run_for_cwd("/Users/ctai/Github/ai-guide", tmp_path)
     assert any("不符" in n for n in notes)
     assert not (zdir / "MEMORY.md").exists()  # 未執行 generator
     assert (zdir / "_regen-skipped-stale").exists()  # 停滯可見
@@ -807,11 +807,11 @@ def test_regen_stale_copy_writes_skip_marker(tmp_path):
 
 def test_regen_fresh_run_clears_skip_marker(tmp_path):
     """副本相符成功執行 → 清 _regen-skipped-stale（殘留標記隨修復消失）。"""
-    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     zdir.mkdir(parents=True)
     make_pool(zdir, n=1)
     (zdir / "_regen-skipped-stale").write_text("殘留\n", encoding="utf-8")
-    regen.run_for_cwd("/Users/ctai/Github/ai-rules", tmp_path)
+    regen.run_for_cwd("/Users/ctai/Github/ai-guide", tmp_path)
     assert (zdir / "MEMORY.md").exists()  # generator 有跑
     assert not (zdir / "_regen-skipped-stale").exists()
 
@@ -859,11 +859,11 @@ def test_generator_frontmatter_violation_check_does_not_write(tmp_path):
 
 def test_regen_skips_tampered_generator(tmp_path):
     """F2①：池內 generator 與資產源不符 → 跳過執行（防植入持久化執行鏈）。"""
-    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     zdir.mkdir(parents=True)
     make_pool(zdir, n=1)
     (zdir / "_generate_index.py").write_text("# tampered\n", encoding="utf-8")
-    notes = regen.run_for_cwd("/Users/ctai/Github/ai-rules", tmp_path)
+    notes = regen.run_for_cwd("/Users/ctai/Github/ai-guide", tmp_path)
     assert any("不符" in n for n in notes)
     assert not (zdir / "MEMORY.md").exists()
 
@@ -893,11 +893,11 @@ def test_regen_skips_when_asset_source_missing(tmp_path, monkeypatch):
 
     信任邊界不該在無從驗證時蒸發（codex 09-06 審查 I-3：原設計資產缺場
     照舊執行＝把不可驗證狀態當可信訊號）。"""
-    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-rules", tmp_path)
+    zdir = regen.zcode_memory_dir("/Users/ctai/Github/ai-guide", tmp_path)
     zdir.mkdir(parents=True)
     make_pool(zdir, n=1)
     monkeypatch.setattr(regen, "ASSET_SOURCE", tmp_path / "no-such-asset.py")
-    notes = regen.run_for_cwd("/Users/ctai/Github/ai-rules", tmp_path)
+    notes = regen.run_for_cwd("/Users/ctai/Github/ai-guide", tmp_path)
     assert any("資產源缺席" in n for n in notes)
     assert not (zdir / "MEMORY.md").exists()  # 未執行 generator
     assert (zdir / "_regen-skipped-stale").exists()  # 停滯可見

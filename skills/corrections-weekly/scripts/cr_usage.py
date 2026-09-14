@@ -88,8 +88,15 @@ def scan_db(since_ms: int) -> tuple[dict, set, dict, int]:
 
 
 def scan_bridge(since_s: float) -> dict:
-    out = {"jobs": 0, "call_jobs": 0, "calls": 0, "write_face": 0,
-           "evid_jobs": 0, "per_repo": {}, "markers": {k: 0 for k in EVIDENCE_RES}}
+    out = {
+        "jobs": 0,
+        "call_jobs": 0,
+        "calls": 0,
+        "write_face": 0,
+        "evid_jobs": 0,
+        "per_repo": {},
+        "markers": {k: 0 for k in EVIDENCE_RES},
+    }
     if not GITHUB.is_dir():
         return out
     for jf in GITHUB.glob("*/.delegate-bridge/jobs/*.jsonl"):
@@ -101,7 +108,9 @@ def scan_bridge(since_s: float) -> dict:
             continue
         out["jobs"] += 1
         repo = jf.parts[-4] if len(jf.parts) >= 4 else "?"
-        rec = out["per_repo"].setdefault(repo, {"jobs": 0, "call_jobs": 0, "evid_jobs": 0})
+        rec = out["per_repo"].setdefault(
+            repo, {"jobs": 0, "call_jobs": 0, "evid_jobs": 0}
+        )
         rec["jobs"] += 1
         has_call = False
         for line in text.splitlines():
@@ -194,16 +203,28 @@ def main() -> int:
     print("== 源2 bridge jobs（call＝command 欄位實證；evidence≠call）==")
     b = scan_bridge(since_s)
     print(f"jobs\t{b['jobs']}")
-    print(f"call-evidence jobs\t{b['call_jobs']}（CR CLI 呼叫 {b['calls']} 次；寫入面 {b['write_face']} 次）")
-    print(f"evidence-bearing jobs\t{b['evid_jobs']}（markers: " + ", ".join(f"{k}={v}" for k, v in b["markers"].items()) + "）")
+    print(
+        f"call-evidence jobs\t{b['call_jobs']}（CR CLI 呼叫 {b['calls']} 次；寫入面 {b['write_face']} 次）"
+    )
+    print(
+        f"evidence-bearing jobs\t{b['evid_jobs']}（markers: "
+        + ", ".join(f"{k}={v}" for k, v in b["markers"].items())
+        + "）"
+    )
     for repo in sorted(b["per_repo"], key=lambda r: -b["per_repo"][r]["jobs"]):
         r = b["per_repo"][repo]
-        print(f"repo\t{repo}\tjobs={r['jobs']}\tcall={r['call_jobs']}\tevidence={r['evid_jobs']}")
+        print(
+            f"repo\t{repo}\tjobs={r['jobs']}\tcall={r['call_jobs']}\tevidence={r['evid_jobs']}"
+        )
 
     print("== 源3 agent 產出（output evidence face，無 call 證據）==")
     a = scan_agent_outputs(since_s)
     print(f"files\t{a['files']}")
-    print(f"evidence-bearing files\t{a['evid_files']}（markers: " + ", ".join(f"{k}={v}" for k, v in a["markers"].items()) + "）")
+    print(
+        f"evidence-bearing files\t{a['evid_files']}（markers: "
+        + ", ".join(f"{k}={v}" for k, v in a["markers"].items())
+        + "）"
+    )
     return 0
 
 

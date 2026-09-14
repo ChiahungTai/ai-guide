@@ -98,7 +98,7 @@ illustrate 渲染 5 張圖：**emoji-first，color 僅 accent 每圖 1-3 節點*
 - **`--invariants`**：重刷既有結構 + 掃新；`--stale`：guard 還在？新 call-site？新 consumer？
 - **🔴 Provenance 一致性（多 sub-command 交叉 refresh）**：refresh / sweep 寫入的 provenance 須標**當時**的 graph 狀態錨（以現行自報面取得：查詢 `[SRC]` 行或 `code-reality --version` 嵌入 rev）。若 graph 之後被 refresh（如 `--architecture` 重跑、或下次 sweep 起手 refresh），後跑者須 **re-stamp 所有 provenance** 到新 sha，或顯式標「refresh 對 `<舊 sha>`，graph 現 `<新 sha>`，<code 變/未變> → data valid/stale」。**禁止**讓 _invariants 的 refresh sha 與 architecture/state 的 build sha 靜默漂移（sha-based drift 追蹤是核心價值，provenance 自相矛盾削可信）。
 
-## Output structure（project-side，非 ai-rules）
+## Output structure（project-side，非 ai-guide）
 ```
 ai-analysis/codebase-review/
 ├── README.md              # 狀態表 + 廣到精細讀序 + 與 /code-review 關係
@@ -110,7 +110,7 @@ ai-analysis/codebase-review/
     ├── review.md          # §zoom 四段深審
     └── state.yaml         # 機器狀態（非人類閱讀）
 ```
-> Command 是 generic（ai-rules）；state + _invariants 是 **project content**（不准 hardcode 進命令）。
+> Command 是 generic（ai-guide）；state + _invariants 是 **project content**（不准 hardcode 進命令）。
 
 ## 🔴 受眾分離 guardrail（最關鍵，勿違反）
 > 一個檔案只伺候一個受眾。一檔兩受眾 → 壓縮 token 妥協 → token 牆 → 「人類不會看」（前次失敗根因）。

@@ -24,13 +24,13 @@ allowed-tools: ["Read", "Bash", "Glob", "Grep"]
 
 ```bash
 uv run python ${CLAUDE_SKILL_DIR}/scripts/aggregate_sessions.py --project-root .
-# ZCode 載體（無 CLAUDE_SKILL_DIR 環境變數）用 ai-rules 實體絕對路徑：
-# uv run python /Users/ctai/Github/ai-rules/skills/standup/scripts/aggregate_sessions.py --project-root .
+# ZCode 載體（無 CLAUDE_SKILL_DIR 環境變數）用 ai-guide 實體絕對路徑：
+# uv run python /Users/ctai/Github/ai-guide/skills/standup/scripts/aggregate_sessions.py --project-root .
 ```
 
 產出 JSON:`{date, repo, worktrees[], sessions[]}`;每個 session 含 `worktree` / `first_user_msg` / `user_messages[]` / `tool_calls[]` / `conclusions[]`。
 
-**Read 重複熱點（週任務選配——T2-4 可見性迴路）**：跑 `uv run python /Users/ctai/Github/ai-rules/skills/standup/scripts/read_hotspots.py`（ZCode db 面，7 天窗 (session,file) 重讀 top-N）——**≥5 次重讀＝Read 紀律衰減熱點**，列進報告供人工判讀（subagent 深挖與 main session 浪費是不同形態，判讀時區分；腳本只報數據不判斷）。
+**Read 重複熱點（週任務選配——T2-4 可見性迴路）**：跑 `uv run python /Users/ctai/Github/ai-guide/skills/standup/scripts/read_hotspots.py`（ZCode db 面，7 天窗 (session,file) 重讀 top-N）——**≥5 次重讀＝Read 紀律衰減熱點**，列進報告供人工判讀（subagent 深挖與 main session 浪費是不同形態，判讀時區分；腳本只報數據不判斷）。
 
 **範圍界定**(drift-tolerant):腳本用 `git worktree list` 列當前 main repo 的所有 wt;Claude 側 normalize(`_`≡`-`)比對 `~/.claude/projects/` 找 session dir,ZCode 側以 session.directory 精確比對 worktree 路徑——容忍 wt 改名歷史(hyphen/underscore drift)。**時間過濾**:JSONL top-level `timestamp`(UTC)轉 local tz 後取 date,比對昨日——非檔案 mtime。
 

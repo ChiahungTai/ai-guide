@@ -4,7 +4,7 @@ harness-scope: meta
 
 # Rules 層指令
 
-rules/ 是 ai-rules 的行為規範庫。**Claude 與非 Claude 的 rules 載入架構不同**（成因：rules auto-load 是 Claude 獨有功能，非 Claude 沒有）：
+rules/ 是 ai-guide 的行為規範庫。**Claude 與非 Claude 的 rules 載入架構不同**（成因：rules auto-load 是 Claude 獨有功能，非 Claude 沒有）：
 
 - **Claude 端**（雙路徑）：`~/.claude/CLAUDE.md` 是檔案 symlink → `ai-development-guide.md`（guide）；`~/.claude/rules/` 是**目錄 symlink** → `rules/`（rules auto-load，每 session 全載）。repo 改 → 即時生效，**不需 deploy**。
 - **非 Claude 端**（ZCode/Codex/Muse，單檔）：無 rules auto-load 機制 → 靠 `scripts/deploy_agents.py` 把 **guide + neutral rules 拼裝成單一 AGENTS.md**（snapshot），部署到 `~/.{zcode,codex,config/muse}/AGENTS.md`（muse＝machine-wide user rules，probe 實證 always load；專案 AGENTS.md 衝突時贏）。改 rule 後須重跑 deploy 才同步。
@@ -89,7 +89,7 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 | `@~/...` 或 `@/path` transclusion | 一般 markdown link；`@` 僅在描述 Claude 機制時用，並標明「Claude 端」 |
 | `../skills/xxx/SKILL.md` 跨域 ref | 描述該 skill 名稱（slash `/xxx` 語意跨 harness 有效）；或泛化為「跨 harness 機制，路徑從略」 |
 | 未標註的 `CLAUDE.md wrapper` | 「Claude 端 CLAUDE.md wrapper」或「instruction 檔（AGENTS.md source；Claude 端 CLAUDE.md wrapper）」 |
-| `~/Github/ai-rules/rules/xxx.md` user-specific 絕對路徑 | repo-relative markdown link `[xxx.md](xxx.md)`（同目錄）或 `xxx.md`（純名 + 「source 在 ai-rules repo」） |
+| `~/Github/ai-guide/rules/xxx.md` user-specific 絕對路徑 | repo-relative markdown link `[xxx.md](xxx.md)`（同目錄）或 `xxx.md`（純名 + 「source 在 ai-guide repo」） |
 | 「Claude 端 `~/.claude/rules/` symlink auto-load」作為主要描述 | 標準載入機制註記（見下方）|
 
 ### 標準載入機制註記
@@ -97,7 +97,7 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 載入機制集中在 guide 與本檔；neutral rule 不需每檔重複。確需描述 Claude 特例時可用：
 
 ```
-> **載入機制**: 本檔 source 在 ai-rules repo `rules/`；各家 harness 經全域 guide 部署載入（Claude 端另有 `~/.claude/rules/` symlink auto-load）
+> **載入機制**: 本檔 source 在 ai-guide repo `rules/`；各家 harness 經全域 guide 部署載入（Claude 端另有 `~/.claude/rules/` symlink auto-load）
 ```
 
 ### 通用模式：括號註隔離 Claude 機制
@@ -150,5 +150,5 @@ rg '\.\./(commands|skills)/' rules/*.md
 rg 'CLAUDE.md wrapper' rules/*.md | rg -v 'Claude 端'
 
 # user-specific 絕對路徑
-rg '~/Github/ai-rules/' rules/*.md
+rg '~/Github/ai-guide/' rules/*.md
 ```

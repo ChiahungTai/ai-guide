@@ -100,11 +100,11 @@ uv run python <scan-project-skill-dir>/scripts/scan_project.py --project-root . 
 - Key Patterns（反覆出現的設計模式）
 - Build and Development（如何建置、測試、lint）
 - "Finding Things" quick reference（常見問題 → 去哪裡找）
-- **記憶池路由行（條件段）**：先探測本 repo 的 Claude 記憶池——encoded 名＝repo 絕對路徑 `/`→`-`（實證：`/Users/ctai/Github/ai-rules`→`-Users-ctai-Github-ai-rules`），再 `ls ~/.claude/projects/<encoded>/memory/` 查存在性。三形態：
+- **記憶池路由行（條件段）**：先探測本 repo 的 Claude 記憶池——encoded 名＝repo 絕對路徑 `/`→`-`（實證：`/Users/ctai/Github/ai-guide`→`-Users-ctai-Github-ai-guide`），再 `ls ~/.claude/projects/<encoded>/memory/` 查存在性。三形態：
   - 池存在且 `_inventory.md` 在 → 蓋章路由行：含精確池路徑；檢索指引＝`rg -i "<關鍵詞>" <池>/_inventory.md` 定位後 Read 條目檔 body
   - 池存在但無 `_inventory.md` → 蓋章路由行：含精確池路徑；檢索指引＝`rg -i "<關鍵詞>" <池>/*.md` 直接搜條目檔
   - 池缺 → degraded 一行（「本 repo 無記憶池」）
-  - 路由行形態比照 ai-rules repo `AGENTS.md`「觀察池路由」bullet（含唯讀語義——池對 codex 唯讀、單一寫入點拓撲；有該寫的發現照回報慣例交 CC/ZCode 側 session，不直接寫池）
+  - 路由行形態比照 ai-guide repo `AGENTS.md`「觀察池路由」bullet（含唯讀語義——池對 codex 唯讀、單一寫入點拓撲；有該寫的發現照回報慣例交 CC/ZCode 側 session，不直接寫池）
 
 **Root CLAUDE.md** = `@AGENTS.md`（把 neutral 專案資訊拉進 Claude session）+ Claude 專屬段（Claude 端 hook 註冊細節、slash command workflow——若有）。**thin wrapper，不重複 AGENTS.md 內容**。
 

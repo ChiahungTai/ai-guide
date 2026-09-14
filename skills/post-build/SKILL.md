@@ -43,7 +43,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 | `.md` 資料/報告文檔（ai-analysis 分析文） | ❌ 跳過 | ✅ 跑（consistency 鏈） |
 | 兩者皆有 | ✅ 先跑 | ✅ 後跑（code 修正可能再動 doc，先收斂 code 再驗 doc，避免驗兩次） |
 
-> **副檔名 ≠ 影響面**：`.md` 不等於無行為影響（ai-rules 的 md 就是控制面）——一律以語義判準分流，不以副檔名或路徑枚舉分流（路徑枚舉 self-defeating：repo-root guide 與消費端控制面都不在 skills/rules/agents/commands 清單，修法自己的檔逃過自己建的 gate）。
+> **副檔名 ≠ 影響面**：`.md` 不等於無行為影響（ai-guide 的 md 就是控制面）——一律以語義判準分流，不以副檔名或路徑枚舉分流（路徑枚舉 self-defeating：repo-root guide 與消費端控制面都不在 skills/rules/agents/commands 清單，修法自己的檔逃過自己建的 gate）。
 > **純修飾快道機械排除**（規範模態詞命中 → 一律升 docs-mode，不得走快道；producer「無語義變更」自述不背書——Claim→Evidence）：diff 命中 `禁`（單字——覆蓋禁掛/禁改/禁寫/禁用，本 repo 禁令主力形態）／`必須`／`禁止`／`不得`／`應該`／`永不`／`MUST`／`SHOULD`／`NEVER`（**詞表單一源＝此處**，他處引用不重列）。反例：單檔 MUST→SHOULD 過 consistency＋rg 卻改變控制語義＝PB1 失敗模式經快道復活。
 
 **逐段 commit 後（弧模式——任務身份優先）**：context EP／卡 desc 記有 baseline（或殼頭可讀）→ 切**弧模式**：triage 與階段 1 的審查對象改為 `git diff <baseline>..HEAD`＋uncommitted（模式細則見 [code-review](../code-review/SKILL.md)「任務弧模式」）。context 無 EP 記憶（跨 session 接續）→ **從殼讀 baseline**：任務家 `*/index.html`（`ai-analysis/_tasks/`、`ai-analysis/_projects/*/tasks/`、或 `00-tasks/`——探測見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」）殼頭部聲明 EP 路徑＋baseline hash（hook 1 起攜帶）——baseline 傳遞不依賴 build session context 存活。無任務 baseline（context 與殼皆無）→ 退 uncommitted 模式；uncommitted 亦空 → 印 `[WARN] no diff（逐段 commit 已落地？弧模式需任務 baseline）` 並停止——收尾鏈靜默 no-op 等於大聲錯誤被靜默化。**同樹多任務出口**：弧範圍內的非本弧 commits／uncommitted 檔列「**非本弧項**」清單（AIR-23 allowlist 人工形態正典化）——不納入審查與修正範圍、不順手修。
@@ -86,7 +86,7 @@ findings 全空 → 報告並直接進 docs 鏈。
 2. diff 觸及 Capabilities / `SYSTEM-MAP.md` / `dependency-graph.md` / `backlog/` → 執行 `metadata-sync`（[skills/metadata-sync](../metadata-sync/SKILL.md)）
 3. **rename 反掃（結案 gate 機械收口——非 rename 弧自然空跳）**：①清單萃取（`git diff --diff-filter=R -M` 檔級＋LLM 讀 diff 提取符號級）；②反掃 `rg "<舊符號>"` 掃 AGENTS.md 家族＋專案快 drift 檔；③命中即修或記 drift；零命中＝完成證據。
 4. **政策翻轉 consumer-propagation gate**：retire／政策句改寫弧跑[下方 gate](#政策翻轉-consumer-propagation-gateair-75)；candidate 空＝空跳（證據）。他類弧空跳。
-5. **CR wiring telemetry checkpoint（AIR-67 弧B；與第 4 點 AIR-75 分軸——政策傳播 vs 行為量測）**：diff 觸及 CR 接線載體（`rules/symbol-query-routing.md`、`skills/cr-query/`、`agents/roles/*`、`skills/_common/work-order.md` §7、review-engine／implement 等 skill 的 CR 接線段）→ 收尾報告必附 `uv run python /Users/ctai/Github/ai-rules/skills/corrections-weekly/scripts/cr_usage.py --days <弧天數>` 輸出（三源計數見 [corrections-weekly](../corrections-weekly/SKILL.md)）。**checkpoint＝基線數字，非 effectiveness proof**——接線已改≠行為已形成，後續真實 review/job 樣本才是判讀面（corrections-weekly 週期承載）。candidate 空＝空跳（證據）。
+5. **CR wiring telemetry checkpoint（AIR-67 弧B；與第 4 點 AIR-75 分軸——政策傳播 vs 行為量測）**：diff 觸及 CR 接線載體（`rules/symbol-query-routing.md`、`skills/cr-query/`、`agents/roles/*`、`skills/_common/work-order.md` §7、review-engine／implement 等 skill 的 CR 接線段）→ 收尾報告必附 `uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/cr_usage.py --days <弧天數>` 輸出（三源計數見 [corrections-weekly](../corrections-weekly/SKILL.md)）。**checkpoint＝基線數字，非 effectiveness proof**——接線已改≠行為已形成，後續真實 review/job 樣本才是判讀面（corrections-weekly 週期承載）。candidate 空＝空跳（證據）。
 
 ### 政策翻轉 consumer-propagation gate（AIR-75）
 

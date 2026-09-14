@@ -43,7 +43,7 @@ build 後的「文檔狀態結算」方法論（commit 不再內嵌 finalization
 | **backlog 結案** | A（時點＝收斂後） | 已完成 UC 的卡結案兩步＋弧結案蒸餾第三動（本弧 memory 條目終態化）：`task edit <id> -s Done --final-summary` → `--ref` 換 `done/` 新 URL，卡留 Done 欄（命令合約見 [kanban-board](../kanban-board/SKILL.md)） |
 | **SYSTEM-MAP 結算** | A（時點＝收斂後） | 受影響功能生命週期升級(`✅ Built → ✅🔍 Verified`,若有整合驗證);移除已修復 ⚠️;更新全域統計(若有) |
 | **SYSTEM-MAP 預覽** | B | 中間段:生命週期 `📋→✅ Built`(全 UC ✅ + 測試通過 + build loop 收斂);**不升級 Verified**;loop 未收斂 → 阻止升級 + 標 ⚠️;**全域統計由情境 A 結算,預覽不動** |
-| **architecture.md** | 任何情境（內容條件——不綁情境 A；ai-rules 本 repo 無此檔，主服務消費端 repo） | 涉及設計決策／原則／模組結構／新抽象層 → 同步更新對應段落（refactor 弧主觸發面）；純 feature（不改設計）跳過 |
+| **architecture.md** | 任何情境（內容條件——不綁情境 A；ai-guide 本 repo 無此檔，主服務消費端 repo） | 涉及設計決策／原則／模組結構／新抽象層 → 同步更新對應段落（refactor 弧主觸發面）；純 feature（不改設計）跳過 |
 | **EP 歸檔** | A, D（時點＝收斂後） | **歸檔前查證（防 ghost-done）**：列 EP 交付物（UC盤點/收尾/各段 deliverable）逐項 rg/fd/Read 驗落地——「段落完成」≠ codebase 真有（曾發生整份 EP 100% ghost-done 誤歸檔）；有 ghost-done 不歸檔（補做或標 🔧）。全綠才歸檔 → **task 目錄整搬**（目錄級非單檔 mv；EP/spec/Report Shell 同目錄一起走）至 **任務家下 repo 既有歸檔慣例**：任務家探測（`ai-analysis/_tasks/` 在場→雜項家；線任務 EP→`ai-analysis/_projects/<線>/`、歸檔落同線 `done/`；否則 repo-root `00-tasks/`），其下探測 `done/` 或 `_done/`（含 `_done/<YYYY>/` 年分層——存在則搬入當前年層）任一存在者沿用，兩者並存沿用最近歸檔落點；皆無 → 建任務家下 `done/`（跨專案 skill 不 hardcode 單一歸檔形態——曾 hardcode `_done/<YYYY>/` 與消費端 `done/` 慣例漂移，照 skill 走會建出第二歸檔目錄；舊 `ai-analysis/execution-plans/` 慣例退役）;綱要 EP(blueprint)等所有衍生子 EP 完成才歸檔 master |
 | **flow-feedback 歸檔** | A（時點＝收斂後） | 本次實作解決的 `ai-analysis/flow-feedback/*.md`(root)→ `mv _done/`(`_done/` 不存在先建);討論中 / 未解決的不歸檔。**判斷是 judgment 非機械**(feedback↔change 非 1:1,不像 EP↔段落明確)→ forgetting 風險靠兩段式執行的「展示清單 + 用戶確認」把關(同 standalone mode) |
 | **consistency 閘門** | A, B, D | 對本次動過的 AGENTS.md / CLAUDE.md / architecture.md / SYSTEM-MAP.md 逐一跑 `/consistency`(單檔內部自洽);🔴 / 🟡 inconsistency → 修正後才算完成 |
@@ -99,7 +99,7 @@ build 情境 A 憑整合驗證升 Verified;情境 B(中間段)只到 Built 預�
 
 | 缺漏 | 跳過項 |
 |------|--------|
-| 無 SYSTEM-MAP.md | SYSTEM-MAP 預覽 / 結算(如 ai-rules 元專案無 SYSTEM-MAP) |
+| 無 SYSTEM-MAP.md | SYSTEM-MAP 預覽 / 結算(如 ai-guide 元專案無 SYSTEM-MAP) |
 | 無 `backlog/` | backlog 結案兩步（卡層動作全跳過） |
 | 無 architecture.md | architecture.md 條件更新 |
 | 無 `ai-analysis/flow-feedback/` | flow-feedback 歸檔 |

@@ -168,7 +168,7 @@ def test_purity_at_transclusion(tmp_path):
 
 
 def test_purity_abs_user_path(tmp_path):
-    _rule(tmp_path, "r.md", "neutral", "在 ~/Github/ai-rules/ 底下\n")
+    _rule(tmp_path, "r.md", "neutral", "在 ~/Github/ai-guide/ 底下\n")
     assert any(
         label == "abs-user-path" for _, label, _ in da.check_neutral_purity(tmp_path)
     )

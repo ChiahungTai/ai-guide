@@ -9,7 +9,7 @@ allowed-tools: ["Bash", "Read", "Write", "Monitor"]
 
 # Swing Analysis 協作模式
 
-> **🔴 mosaic 專屬**：本命令耦合 mosaic 專案的 Backbone Trajectory Viewer 與 `alpha_forge` 符號，屬 `instruction-writing.md` 的專案特定工具例外（同 `upgrade-nt`/`upgrade-sj` 類別），寄住 ai-rules 便於跨 worktree 共用。
+> **🔴 mosaic 專屬**：本命令耦合 mosaic 專案的 Backbone Trajectory Viewer 與 `alpha_forge` 符號，屬 `instruction-writing.md` 的專案特定工具例外（同 `upgrade-nt`/`upgrade-sj` 類別），寄住 ai-guide 便於跨 worktree 共用。
 
 啟動 Backbone Trajectory Viewer 並監控 `[ACTION]` 操作日誌，讓 LLM 即時理解使用者 UI 操作上下文。
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Single-source invariant checker for ai-rules.
+"""Single-source invariant checker for ai-guide.
 
-機械驗證 ai-rules 的「唯一/單一源/真相源」宣稱沒被 drift。
+機械驗證 ai-guide 的「唯一/單一源/真相源」宣稱沒被 drift。
 
 背景：2026-06 的 code-review 發現 review-engine 重構「正確診斷、不足處方」——
 single-source 宣稱用散文維護，靠 AI 紀律 + 手動 rg，沒有機械力把「定義源」與

@@ -12,7 +12,7 @@ Marker 語義與 governance hook 同源：absent → not_governed（native 寫�
 open）。exit 契約：0＝clean/not_governed、1＝infra/contract 錯（fail
 loud）、2＝dirty（flag）。
 
-Fixture 覆蓋兩種真實 layout：pool 為 nested 獨立 git repo（ai-rules/mosaic
+Fixture 覆蓋兩種真實 layout：pool 為 nested 獨立 git repo（ai-guide/mosaic
 現形）與 pool 在 outer repo git 內。
 """
 
@@ -26,27 +26,37 @@ import pytest
 from conftest import REPO_ROOT, load_module
 
 _mod = load_module("scripts/reconcile_memory_pool.py")
-reconcile_pool, ReconcileError, PoolDelta = _mod.reconcile_pool, _mod.ReconcileError, _mod.PoolDelta
+reconcile_pool, ReconcileError, PoolDelta = (
+    _mod.reconcile_pool,
+    _mod.ReconcileError,
+    _mod.PoolDelta,
+)
 SCRIPT = REPO_ROOT / "scripts" / "reconcile_memory_pool.py"
 
 GIT_C = ["-c", "user.email=t@t", "-c", "user.name=t"]
 
 
 def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(repo), *GIT_C, *args], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), *GIT_C, *args], check=True, capture_output=True
+    )
 
 
 def _seed_pool(repo: Path, layout: str) -> Path:
     """建 governed repo 骨架：marker protocol==1 + pool（entry + 索引）＋commit 基線。
 
-    layout="nested"：pool 自帶 .git（ai-rules/mosaic 現形）；
+    layout="nested"：pool 自帶 .git（ai-guide/mosaic 現形）；
     layout="flat"：outer repo 是 git、pool 在其內。
     """
     pool = repo / ".agents" / "memory"
     pool.mkdir(parents=True)
-    (repo / ".agents" / "memory-governance.json").write_text('{"protocol": 1}\n', encoding="utf-8")
+    (repo / ".agents" / "memory-governance.json").write_text(
+        '{"protocol": 1}\n', encoding="utf-8"
+    )
     (pool / "MEMORY.md").write_text("# index\n- [[entry-a]]\n", encoding="utf-8")
-    (pool / "entry-a.md").write_text("---\nname: entry-a\n---\nbody\n", encoding="utf-8")
+    (pool / "entry-a.md").write_text(
+        "---\nname: entry-a\n---\nbody\n", encoding="utf-8"
+    )
     git_dir = pool if layout == "nested" else repo
     _git(git_dir, "init")
     _git(git_dir, "add", "-A")
@@ -67,7 +77,9 @@ def test_clean_pool_exits_zero(tmp_path: Path, layout: str) -> None:
 @pytest.mark.parametrize("layout", ["nested", "flat"])
 def test_modified_entry_flagged(tmp_path: Path, layout: str) -> None:
     repo = _seed_pool(tmp_path / "repo", layout)
-    (repo / ".agents" / "memory" / "entry-a.md").write_text("繞閘髒寫入\n", encoding="utf-8")
+    (repo / ".agents" / "memory" / "entry-a.md").write_text(
+        "繞閘髒寫入\n", encoding="utf-8"
+    )
     r = reconcile_pool(repo)
     assert r.status == "dirty"
     paths = " ".join(e.path for e in r.entries)
@@ -76,7 +88,9 @@ def test_modified_entry_flagged(tmp_path: Path, layout: str) -> None:
 
 def test_untracked_new_file_flagged(tmp_path: Path) -> None:
     repo = _seed_pool(tmp_path / "repo", "nested")
-    (repo / ".agents" / "memory" / "muse-dropped.md").write_text("teardown 學習\n", encoding="utf-8")
+    (repo / ".agents" / "memory" / "muse-dropped.md").write_text(
+        "teardown 學習\n", encoding="utf-8"
+    )
     r = reconcile_pool(repo)
     assert r.status == "dirty"
     assert any("muse-dropped.md" in e.path for e in r.entries)
@@ -91,7 +105,9 @@ def test_deleted_entry_flagged(tmp_path: Path) -> None:
 def test_index_modification_flagged(tmp_path: Path) -> None:
     # R3：索引（MEMORY.md/_inventory.md）被改寫＝影響後續所有 recall 的污染面，不得漏
     repo = _seed_pool(tmp_path / "repo", "nested")
-    (repo / ".agents" / "memory" / "MEMORY.md").write_text("# index\n- [[evil]]\n", encoding="utf-8")
+    (repo / ".agents" / "memory" / "MEMORY.md").write_text(
+        "# index\n- [[evil]]\n", encoding="utf-8"
+    )
     r = reconcile_pool(repo)
     assert r.status == "dirty"
     assert any("MEMORY.md" in e.path for e in r.entries)
@@ -101,7 +117,9 @@ def test_gitignored_file_not_flagged(tmp_path: Path) -> None:
     # 忽略規則跟 git 走（consolidation commit 同規則）——ignored scratch 非 delta
     repo = _seed_pool(tmp_path / "repo", "nested")
     (repo / ".agents" / "memory" / ".gitignore").exists() or (
-        (repo / ".agents" / "memory" / ".gitignore").write_text("*.tmp\n", encoding="utf-8")
+        (repo / ".agents" / "memory" / ".gitignore").write_text(
+            "*.tmp\n", encoding="utf-8"
+        )
     )
     git_root = repo / ".agents" / "memory"
     _git(git_root, "add", "-A")
@@ -159,7 +177,9 @@ def test_pool_not_under_git_fails_loud(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     pool = repo / ".agents" / "memory"
     pool.mkdir(parents=True)
-    (repo / ".agents" / "memory-governance.json").write_text('{"protocol": 1}\n', encoding="utf-8")
+    (repo / ".agents" / "memory-governance.json").write_text(
+        '{"protocol": 1}\n', encoding="utf-8"
+    )
     (pool / "x.md").write_text("x\n", encoding="utf-8")
     with pytest.raises(ReconcileError):
         reconcile_pool(repo)
@@ -184,13 +204,19 @@ def test_reconciler_is_read_only(tmp_path: Path) -> None:
     before = entry.read_text(encoding="utf-8")
     git_root = repo / ".agents" / "memory"
     status_before = subprocess.run(
-        ["git", "-C", str(git_root), "status", "--porcelain"], check=True, capture_output=True, text=True
+        ["git", "-C", str(git_root), "status", "--porcelain"],
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout
     r = reconcile_pool(repo)
     assert r.status == "dirty"
     assert entry.read_text(encoding="utf-8") == before
     status_after = subprocess.run(
-        ["git", "-C", str(git_root), "status", "--porcelain"], check=True, capture_output=True, text=True
+        ["git", "-C", str(git_root), "status", "--porcelain"],
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout
     assert status_after == status_before
 
@@ -200,7 +226,10 @@ def test_reconciler_is_read_only(tmp_path: Path) -> None:
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(SCRIPT), *args], capture_output=True, text=True, check=False
+        [sys.executable, str(SCRIPT), *args],
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
 

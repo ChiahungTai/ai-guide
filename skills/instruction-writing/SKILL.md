@@ -26,7 +26,7 @@ instruction file 是給 AI 的協作指南，應專注於**核心原則**和**�
 
 - **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——四家 harness（Claude/ZCode/Codex/Muse）開本專案時都讀。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
 
-> **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-rules 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.config/muse/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
+> **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-guide 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.config/muse/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
 - **`CLAUDE.md`**（thin wrapper, Claude 專屬）：開頭 `@AGENTS.md`（把中立規則拉進 Claude session）+ Claude 專屬段（Claude 端 hook 註冊細節、slash command workflow、repo 結構導航）。只 Claude 讀
 - 專案層級：root `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）；或 `./.claude/CLAUDE.md`
 - 模組層級：每個重要模組目錄 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` thin wrapper，通常只一行 `@AGENTS.md`——模組層少有 Claude 專屬機制，wrapper 用途是讓 Claude 讀到模組 AGENTS.md）
@@ -140,7 +140,7 @@ allowed-tools: ["Read", "Write", "Edit"]
 @docs/architecture.md
 
 # 絕對路徑（個人層級）
-@~/Github/ai-rules/rules/_ai-behavior-constraints.md
+@~/Github/ai-guide/rules/_ai-behavior-constraints.md
 
 # 相對路徑（深層 instruction 檔向上回指，例為兩層深）
 @../../rules/tool-discipline.md

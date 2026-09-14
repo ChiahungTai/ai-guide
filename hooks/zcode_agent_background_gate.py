@@ -13,7 +13,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-LOG = "/Users/ctai/Github/ai-rules/.agent-tmp/zcode-agent-gate.jsonl"
+LOG = "/Users/ctai/Github/ai-guide/.agent-tmp/zcode-agent-gate.jsonl"
 
 RB_LABEL = {"<ABSENT>": "absent", True: "true", False: "false"}
 

@@ -24,7 +24,7 @@ This skill assumes the project has the code-reality engine. Detect once per task
 2. **Graph DB exists** — `.code-reality/graph.db` in repo root → graph present; if MCP tools absent, use CLI `code-reality graph_query <op> --repo <root>` (see Fallback).
 3. **Neither** — engine not present in this project.
 
-🔴 **GATE — assume + warn, do not silently degrade.** A review/planning command that expects the engine (impact/callers/scoping) and finds it absent must emit a one-line `[WARN] graph not available — structural context (impact/callers/flows) degraded; build: code-reality graph_db build --repo <root>`, then fall back. **Silent fallback = the user gets a worse review without knowing why.** Do not block — proceed with the fallback below. **查詢面缺口**（該有的邊/符號不在 graph——如 macro 鏈、動態派發）：在**自己 repo** 的 backlog 開 `[cr-demand]` label 卡（`backlog task create "<缺口>" -l cr-demand -d "<觸發場景＋實證缺口＋期望能力>"`；無 `backlog/` 的 repo 落 pending 家）——demand-pull 觸發工具弧（ai-rules roadmap relay 段），不靠工具方猜測。
+🔴 **GATE — assume + warn, do not silently degrade.** A review/planning command that expects the engine (impact/callers/scoping) and finds it absent must emit a one-line `[WARN] graph not available — structural context (impact/callers/flows) degraded; build: code-reality graph_db build --repo <root>`, then fall back. **Silent fallback = the user gets a worse review without knowing why.** Do not block — proceed with the fallback below. **查詢面缺口**（該有的邊/符號不在 graph——如 macro 鏈、動態派發）：在**自己 repo** 的 backlog 開 `[cr-demand]` label 卡（`backlog task create "<缺口>" -l cr-demand -d "<觸發場景＋實證缺口＋期望能力>"`；無 `backlog/` 的 repo 落 pending 家）——demand-pull 觸發工具弧（ai-guide roadmap relay 段），不靠工具方猜測。
 
 **EP 撰寫面**（[execution-plan](../execution-plan/SKILL.md) 段落 0 依賴分析——CR 第一消費場景）：index 在場的 repo，EP 每個下游/ripple 宣稱必走 CR 查詢（分層：主 session 與掛白名單的 registry agents 走 MCP——EP 段落 0 research spawn＝registry `cr-research`〔2026-09-01 升級①：sidecar 形態零滲透實證後換軌〕；generic 無白名單 spawn 才以 CLI 清單寫進 prompt——見 execution-plan 段落 0）並在「依賴關係」小節附工具輸出引用（scip_refs 首行 `[SRC]`；graph_query 輸出無 `[SRC]` 行、附完整命令列＋repo root）。**callers 為空是嫌疑不是乾淨**：死路假設（宣稱被觸發、實際無人呼叫——真實案例 `_lazy_populate`）或盲區隱藏消費（字串鍵/meta、動態派發——anti-over-reliance 節）——兩者都以互補腿（`rg "<literal>"`、`hub_refs --hazard`）查證後才可下結論；CR 全綠 ≠ 無 ripple。
 
@@ -101,7 +101,7 @@ Graph edges are **static parse-time** facts. They miss:
 
 CRG's `install` generates **four workflow skills** (`debug-issue`, `explore-codebase`, `refactor-safely`, `review-changes`) — *step-by-step procedures* for a task with the graph, project-local (`.claude/skills/`).
 
-**`cr-query` is the discipline** — *how to query the graph correctly* (LSP-vs-CR 分工、GATE、anti-over-reliance), global (ai-rules).
+**`cr-query` is the discipline** — *how to query the graph correctly* (LSP-vs-CR 分工、GATE、anti-over-reliance), global (ai-guide).
 
 They compose: a CRG workflow gives the steps; `cr-query` governs *how each query in those steps is interpreted* (don't over-infer, fall back to LSP/code when behavior matters). On conflict, this skill's discipline wins — workflows don't suspend verification.
 
@@ -115,6 +115,6 @@ They compose: a CRG workflow gives the steps; `cr-query` governs *how each query
 
 - **CLI commands:** `code-reality --help`（graph_query 家族＋scip_refs＋graph_db build 等）
 - **code-reality MCP 接線：** stdio `code-reality-mcp --stdio`（plugin 形態）或 streamable-http `127.0.0.1:8200/mcp`（共享 resident，服務由 OS 服務層管理——目前未部署，現值以 launchctl 為準）；工具呼叫一律帶 `repo_root`（不自動偵測）。舊 CRG server（port 5555）已**完全退場**（服務解裝；5555/launchctl 清潔態——勿再期待）。
-- **engine semantics 真相源:** ai-rules `skills/code-reality/SKILL.md`（接線語義）＋code-reality repo（`crates/AGENTS.md`＋plugin skill＝工具事實）
+- **engine semantics 真相源:** ai-guide `skills/code-reality/SKILL.md`（接線語義）＋code-reality repo（`crates/AGENTS.md`＋plugin skill＝工具事實）
 - **Sibling facts discipline:** [symbol-query-routing](../../rules/symbol-query-routing.md) (symbol queries) — this skill is its graph counterpart
 - **Consumers:** [review-engine](../review-engine/SKILL.md) (change-impact lens), [arch-thinking](../arch-thinking/SKILL.md) §二 結構機械 (structure-facts lens), [execution-plan](../execution-plan/SKILL.md) 段落 0 (EP 依賴分析——ripple 宣稱工具證據 + 死路假設信號)

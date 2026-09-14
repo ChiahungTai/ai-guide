@@ -223,9 +223,7 @@ def test_registered_origin_diverts_unconditionally_without_marker(tmp_path):
     markerless repo diverts (pre-marker repos must not silently lose the
     gate, EP review C1)."""
     repo = make_repo(tmp_path, marker=None)
-    r = run_core(
-        repo, mem_payload(), env_extra={"GOVERNANCE_ORIGIN": "registered"}
-    )
+    r = run_core(repo, mem_payload(), env_extra={"GOVERNANCE_ORIGIN": "registered"})
     assert r.returncode == 0, r.stderr
     parse_deny(r.stdout)
     assert len(inbox_files(repo)) == 1

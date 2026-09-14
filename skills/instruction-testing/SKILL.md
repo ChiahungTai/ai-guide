@@ -7,7 +7,7 @@ description: "Instruction artifact 行為驗證方法。建立或修改會約束
 
 本 skill 驗證的是「instruction artifact 是否真的改變 agent 行為」，不是文句看起來是否合理。靜態 authoring 規範仍由 [instruction-writing](../instruction-writing/SKILL.md) 擁有；證據強度與驗收宣稱遵循 [acceptance-evidence](../../rules/acceptance-evidence.md)。
 
-方法論概念吸收自 superpowers `skills/writing-skills/SKILL.md` 與 `skills/writing-skills/testing-skills-with-subagents.md`，並依 ai-rules 的 diff 觸及面分型、A/B 軸與 L1–L6 證據語彙重寫；來源決策脈絡見 [sp 借鑒分析](../../ai-analysis/reports/_done/superpowers/02-sp借鑒到ai-rules.md)。不引入 superpowers 的 bootstrap／drill eval harness／plugin 分發結構；自研 validated adapter（scripts/skill_activation_probe.py）與 scenario 配方由本 skill 擁有，易漂移細節住 scripts/／durable report，body 只留跨 harness invariant。
+方法論概念吸收自 superpowers `skills/writing-skills/SKILL.md` 與 `skills/writing-skills/testing-skills-with-subagents.md`，並依 ai-guide 的 diff 觸及面分型、A/B 軸與 L1–L6 證據語彙重寫；來源決策脈絡見 [sp 借鑒分析](../../ai-analysis/reports/_done/superpowers/02-sp借鑒到ai-rules.md)。不引入 superpowers 的 bootstrap／drill eval harness／plugin 分發結構；自研 validated adapter（scripts/skill_activation_probe.py）與 scenario 配方由本 skill 擁有，易漂移細節住 scripts/／durable report，body 只留跨 harness invariant。
 
 ## 何時載入
 

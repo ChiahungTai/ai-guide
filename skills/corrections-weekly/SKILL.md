@@ -1,6 +1,6 @@
 ---
 name: corrections-weekly
-description: "糾正模式週報＋CR 使用健檢＋memory 寫入歸因——三職週報：①挖掘本週用戶對 AI 的糾正訊息、分類計數、累積月檔；②量測 code-reality 消費指標（主形態＝事件觸發：CR wiring 變更弧收尾時跑 cr_usage、數字附卡——cr-audit R5；週期 cron 降 optional，KPI 換 negative-claim CR 覆蓋率等、penetration 只當健康診斷），advisory 趨勢對比；③memory 成功寫入歸因（AIR-40 telemetry——actor×entry 排行、copies/errors 分列、index baseline 對比；流量非品質，違規抽驗留 LLM）。腳本撈候選（ZCode db.sqlite 面）、LLM 只做判讀分類。排程載體自動跑（ai-rules workspace；時刻見 ai-analysis/schedule-registry.md）或手動觸發。產出供治理決策。"
+description: "糾正模式週報＋CR 使用健檢＋memory 寫入歸因——三職週報：①挖掘本週用戶對 AI 的糾正訊息、分類計數、累積月檔；②量測 code-reality 消費指標（主形態＝事件觸發：CR wiring 變更弧收尾時跑 cr_usage、數字附卡——cr-audit R5；週期 cron 降 optional，KPI 換 negative-claim CR 覆蓋率等、penetration 只當健康診斷），advisory 趨勢對比；③memory 成功寫入歸因（AIR-40 telemetry——actor×entry 排行、copies/errors 分列、index baseline 對比；流量非品質，違規抽驗留 LLM）。腳本撈候選（ZCode db.sqlite 面）、LLM 只做判讀分類。排程載體自動跑（ai-guide workspace；時刻見 ai-analysis/schedule-registry.md）或手動觸發。產出供治理決策。"
 when_to_use: "週期排程到點；或用戶要求糾正模式分析/月報/趨勢對比時手動載入。不適用：單一 session 的即時糾正處理（那是當下對話的事）。"
 allowed-tools: ["Read", "Bash", "Write", "Edit"]
 ---
@@ -15,7 +15,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
 1. **跑腳本撈糾正候選**（機械面——勿手打 SQL）：
 
    ```bash
-   uv run python /Users/ctai/Github/ai-rules/skills/corrections-weekly/scripts/mine_corrections.py --days 7
+   uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/mine_corrections.py --days 7
    ```
 
    輸出：候選清單（時間／session 短 id／摘錄）＋計數。腳本已排除 subagent sessions、task-notification 注入、compact 摘要。
@@ -23,7 +23,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
 2. **跑 CR 使用量腳本**（機械面）：
 
    ```bash
-   uv run python /Users/ctai/Github/ai-rules/skills/corrections-weekly/scripts/cr_usage.py --days 7
+   uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/cr_usage.py --days 7
    ```
 
    輸出三源三證據類：源1 ZCode db——CR skill 調用（cr-query＋code-reality，distinct sessions＋總計）、CR MCP 工具呼叫（per-tool distinct sessions）、對照 Bash rg part 數；源2 bridge jobs——**call 證據只認 `item.completed`＋`command_execution` 的 command 欄位 match CR CLI**（文字面提及≠呼叫——條文引用與呼叫混淆是誤報主體），寫入面 subcommand 另計，`[SRC]`／未 index 驗證／degraded marker＝evidence-bearing jobs（非 CR calls）；源3 agent 產出（`output.txt` 無工具結構，一律計 evidence 不計 call）。**判讀語義（cr-audit R5 換軌）**：滲透計數只是健康診斷（agent 在不需 CR 的任務亂 call 也達標，不作 KPI）；KPI 主軸＝**negative-claim CR 覆蓋率**（本週弧 negative claims 中附 `[SRC]`／CR 證據的比例）、**rename-delete preflight 覆蓋率**、**query not-found→retry 成功率**、**silent fallback 數**——分母取材本週弧 findings/卡面（LLM 判讀面，腳本只供工具呼叫面）。事件觸發主形態：CR wiring 變更弧收尾時必跑本腳本＋數字附卡（**runtime hook＝post-build 階段 4「CR wiring telemetry checkpoint」，detector 清單單一源在彼**）；週期 cron 跑到時若該週無 wiring 變更，CR 段寫「事件觸發制——本週無 wiring 變更，KPI 段略」。
@@ -31,10 +31,10 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
 2b. **跑 memory 寫入歸因腳本**（機械面——AIR-40；池＝本 repo 對應 CC 池）：
 
    ```bash
-   uv run python /Users/ctai/Github/ai-rules/skills/memory-audit/scripts/memory_telemetry.py writes \
-     --pool /Users/ctai/Github/ai-rules/.agents/memory \
+   uv run python /Users/ctai/Github/ai-guide/skills/memory-audit/scripts/memory_telemetry.py writes \
+     --pool /Users/ctai/Github/ai-guide/.agents/memory \
      --zcode-db ~/.zcode/cli/db/db.sqlite \
-     --cc-root ~/.claude/projects/-Users-ctai-Github-ai-rules \
+     --cc-root ~/.claude/projects/-Users-ctai-Github-ai-guide \
      --output ai-analysis/memory-telemetry/weekly-<YYYYMMDD>.json \
      --baseline-dir ai-analysis/memory-telemetry/baselines
    ```

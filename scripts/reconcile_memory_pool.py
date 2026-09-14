@@ -60,9 +60,13 @@ def _git(*args: str) -> str:
             ["git", *args], check=True, capture_output=True, text=True, env=env
         )
     except FileNotFoundError as e:
-        raise ReconcileError(f"git binary unavailable——baseline unestablishable (fail-closed): {e}") from e
+        raise ReconcileError(
+            f"git binary unavailable——baseline unestablishable (fail-closed): {e}"
+        ) from e
     except subprocess.CalledProcessError as e:
-        raise ReconcileError(f"git {' '.join(args[:2])} failed (fail-closed): {e.stderr.strip()}") from e
+        raise ReconcileError(
+            f"git {' '.join(args[:2])} failed (fail-closed): {e.stderr.strip()}"
+        ) from e
     return done.stdout
 
 
@@ -129,10 +133,21 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
         # pool 目錄缺失≠clean（F7）：刪除是 mutation。從 repo_root 解析 git，
         # tracked 刪除會以 D delta 浮出；pool 從未被追蹤則無訊號（clean 帶
         # 明確 detail）；repo_root 也不在 git 內＝無基準→fail loud。
-        git_root = Path(_git("-C", str(repo_root), "rev-parse", "--show-toplevel").strip())
+        git_root = Path(
+            _git("-C", str(repo_root), "rev-parse", "--show-toplevel").strip()
+        )
         rel = os.path.relpath(pool, git_root)
         entries = _parse_porcelain(
-            _git("-C", str(git_root), "status", "--porcelain", "-z", "--untracked-files=all", "--", rel)
+            _git(
+                "-C",
+                str(git_root),
+                "status",
+                "--porcelain",
+                "-z",
+                "--untracked-files=all",
+                "--",
+                rel,
+            )
         )
         if entries:
             return ReconcileResult(status="dirty", entries=entries)
@@ -145,7 +160,16 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
     rel = os.path.relpath(pool, git_root)
     # --untracked-files=all：顯式固定 untracked policy（F1）——不帶時
     # status.showUntrackedFiles=no config 能讓 teardown 新增檔整批隱形。
-    raw = _git("-C", str(git_root), "status", "--porcelain", "-z", "--untracked-files=all", "--", rel)
+    raw = _git(
+        "-C",
+        str(git_root),
+        "status",
+        "--porcelain",
+        "-z",
+        "--untracked-files=all",
+        "--",
+        rel,
+    )
     entries = _parse_porcelain(raw)
     if entries:
         return ReconcileResult(status="dirty", entries=entries)
@@ -153,16 +177,24 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="AIR-93 memory pool read-only reconciler")
+    parser = argparse.ArgumentParser(
+        description="AIR-93 memory pool read-only reconciler"
+    )
     parser.add_argument("repo", type=Path, help="repo root containing .agents/memory")
-    parser.add_argument("--json", action="store_true", help="machine-readable payload on stdout")
+    parser.add_argument(
+        "--json", action="store_true", help="machine-readable payload on stdout"
+    )
     args = parser.parse_args(argv)
 
     try:
         result = reconcile_pool(args.repo)
     except ReconcileError as e:
         if args.json:
-            print(json.dumps({"status": "error", "repo": str(args.repo), "detail": str(e)}))
+            print(
+                json.dumps(
+                    {"status": "error", "repo": str(args.repo), "detail": str(e)}
+                )
+            )
         else:
             print(f"[FAIL] reconcile_memory_pool: {e}")
         return 1
@@ -173,14 +205,18 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "status": result.status,
                     "repo": str(args.repo),
-                    "entries": [{"code": e.code, "path": e.path} for e in result.entries],
+                    "entries": [
+                        {"code": e.code, "path": e.path} for e in result.entries
+                    ],
                 },
                 ensure_ascii=False,
             )
         )
     elif result.status == "dirty":
         lines = "\n".join(f"  {e.code} {e.path}" for e in result.entries)
-        print(f"[FAIL] reconcile_memory_pool: unapproved pool delta ({len(result.entries)} entries)——consolidation 補審後收編或丟棄\n{lines}")
+        print(
+            f"[FAIL] reconcile_memory_pool: unapproved pool delta ({len(result.entries)} entries)——consolidation 補審後收編或丟棄\n{lines}"
+        )
     elif result.status == "not_governed":
         print(f"[OK] reconcile_memory_pool: not governed——{result.detail}")
     else:

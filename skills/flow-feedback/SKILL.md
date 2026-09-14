@@ -2,7 +2,7 @@
 name: flow-feedback
 
 description: "session 摩擦收集器——不順的 session 後，user 植入摩擦 + AI map 到 skills/commands，產 type-1（時機）/type-2（設計）建議 + 具體例子，寫 ai-analysis/flow-feedback/。/flow-feedback [摩擦描述]"
-when_to_use: "After a session that felt rough or inefficient. User seeds the friction (where it felt off, in their words); AI maps to the current ai-rules skills/commands inventory and proposes initial suggestions — type-1 (timing: should have used /X) and type-2 (design: /X has a flaw or a command is missing) — each with a concrete session example and counter-factual. Writes structured feedback for later /flow-review discussion. Low-stakes collector (A-axis); deep reflection happens in /flow-review with the human."
+when_to_use: "After a session that felt rough or inefficient. User seeds the friction (where it felt off, in their words); AI maps to the current ai-guide skills/commands inventory and proposes initial suggestions — type-1 (timing: should have used /X) and type-2 (design: /X has a flaw or a command is missing) — each with a concrete session example and counter-factual. Writes structured feedback for later /flow-review discussion. Low-stakes collector (A-axis); deep reflection happens in /flow-review with the human."
 argument-hint: "摩擦描述（哪裡不順）；無參數則互動問"
 allowed-tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 ---
@@ -13,7 +13,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Write"]
 
 ## 為何存在
 
-ai-rules 是持續演化的系統，但「session 不順 → 該改哪個 command/skill」的 insight 容易流失。本命令把演化輸入**結構化、持久化**，不靠記憶。
+ai-guide 是持續演化的系統，但「session 不順 → 該改哪個 command/skill」的 insight 容易流失。本命令把演化輸入**結構化、持久化**，不靠記憶。
 
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則

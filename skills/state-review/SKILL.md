@@ -8,7 +8,7 @@ allowed-tools: ["Read", "Bash", "Glob", "Grep", "Agent"]
 
 # /state-review — 全 repo 狀態對抗審查
 
-> **存在理由（真實案例）**：codex sol high 對 ai-rules 全 repo 深審，全部 Important findings 皆為 diff-review 結構性抓不到的 state-rot——殼 provenance 腐爛（前弧留下）、checker 的部署權威模型（多弧前寫的）、README 語義與 code 各自演化。每個當下的 diff 都通過了自己的 review，累積起來卻是錯的。
+> **存在理由（真實案例）**：codex sol high 對 ai-guide 全 repo 深審，全部 Important findings 皆為 diff-review 結構性抓不到的 state-rot——殼 provenance 腐爛（前弧留下）、checker 的部署權威模型（多弧前寫的）、README 語義與 code 各自演化。每個當下的 diff 都通過了自己的 review，累積起來卻是錯的。
 
 ## 為什麼 diff-review 抓不到
 

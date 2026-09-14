@@ -2,7 +2,7 @@
 name: daily-maintain
 
 description: "每日自動維護（排程用）— 掃描 + 自動修正低風險問題 + commit + morning report"
-when_to_use: "Automated daily maintenance run by the scheduled agent (排程載體——排程事實見 ai-rules ai-analysis/schedule-registry.md; 舊 nightly claude -p 載體已退役). Auto-fixes low-risk findings, commits, and generates a morning report. Do NOT use interactively — run /doc-health or individual --only phases instead."
+when_to_use: "Automated daily maintenance run by the scheduled agent (排程載體——排程事實見 ai-guide ai-analysis/schedule-registry.md; 舊 nightly claude -p 載體已退役). Auto-fixes low-risk findings, commits, and generates a morning report. Do NOT use interactively — run /doc-health or individual --only phases instead."
 argument-hint: "/daily-maintain — 全部執行 | --only graph | sync | doc-health"
 allowed-tools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
 ---
@@ -42,7 +42,7 @@ Commit message 格式與自動 commit 範圍：見 [maintain](../maintain/SKILL.
 
 遵循 [daily-maintain skill](../maintain/SKILL.md) 的四階段流程：
 
-0. **Phase 0（watchdog 快掃——互動/手動執行必查；排程承載分工見 schedule-registry 反查表）**：雙池（ai-rules＋mosaic `<repo>/.agents/memory-inbox/`）root `*.json` 最舊 mtime——age >48h = consolidation 停擺警訊（與收斂波不同故障域：波次不跑看不出自己停擺），🟡 列報告；**age 訊號連續兩個排程檢查週期命中 → 🔴 升級**（僅 age 訊號；手動補跑不推進計數；報告醒目行＋建議查 nightly-convergence.log 對應段落）。`processing/` 殘留與直寫發現＝**立即 🔴**（無 streak）。**第二檢查（T3-4：hook 全掛＋收斂停擺雙故障；雙池）**：`git -C <池主體> status --porcelain`——無對應 inbox receipt 的非 CC/ZCode provenance 變更（hook 故障直寫形態特徵；此時 inbox 恰無新檔、age 檢查沉默）→ 🔴 quarantine 清單。**宣稱邊界（AIR-54 P5）**：排程承載見 ai-rules `ai-analysis/schedule-registry.md`「外部依賴反查表」；排程節奏下檢出延遲上達一個檢查週期——不得宣稱每日/即時偵測
+0. **Phase 0（watchdog 快掃——互動/手動執行必查；排程承載分工見 schedule-registry 反查表）**：雙池（ai-guide＋mosaic `<repo>/.agents/memory-inbox/`）root `*.json` 最舊 mtime——age >48h = consolidation 停擺警訊（與收斂波不同故障域：波次不跑看不出自己停擺），🟡 列報告；**age 訊號連續兩個排程檢查週期命中 → 🔴 升級**（僅 age 訊號；手動補跑不推進計數；報告醒目行＋建議查 nightly-convergence.log 對應段落）。`processing/` 殘留與直寫發現＝**立即 🔴**（無 streak）。**第二檢查（T3-4：hook 全掛＋收斂停擺雙故障；雙池）**：`git -C <池主體> status --porcelain`——無對應 inbox receipt 的非 CC/ZCode provenance 變更（hook 故障直寫形態特徵；此時 inbox 恰無新檔、age 檢查沉默）→ 🔴 quarantine 清單。**宣稱邊界（AIR-54 P5）**：排程承載見 ai-guide `ai-analysis/schedule-registry.md`「外部依賴反查表」；排程節奏下檢出延遲上達一個檢查週期——不得宣稱每日/即時偵測
 1. **Phase 1**: 結構圖新鮮度——按需 prefetch（cr-audit R8）：可跳過，主路徑＝查詢時 lazy rebuild（見 [maintain](../maintain/SKILL.md) Phase 1）
 2. **Phase 2**: 執行 `/instruction-sync --changed-since yesterday --recursive` → 自動修正路徑問題
 3. **Phase 3**: 執行 `/doc-health` → 自動修正 🟢 findings + kanban hygiene
@@ -54,7 +54,7 @@ Commit message 格式與自動 commit 範圍：見 [maintain](../maintain/SKILL.
 
 ## 與排程載體的配合
 
-nightly `claude -p` 載體已退役——本 skill 由**排程載體**執行（讀 skill 檔依規範跑 Phase 1-3；Phase 4 晨報寫檔 skip，report 主體由 nightly-thin 任務（registry 反查表 A6）組裝、判讀節由該任務產生；時刻/載體現況見 ai-rules ai-analysis/schedule-registry.md 反查表）。手動補跑仍可用：
+nightly `claude -p` 載體已退役——本 skill 由**排程載體**執行（讀 skill 檔依規範跑 Phase 1-3；Phase 4 晨報寫檔 skip，report 主體由 nightly-thin 任務（registry 反查表 A6）組裝、判讀節由該任務產生；時刻/載體現況見 ai-guide ai-analysis/schedule-registry.md 反查表）。手動補跑仍可用：
 
 ```bash
 # 完整四合一（互動 session 觸發）

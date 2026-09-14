@@ -126,7 +126,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 - **Edit 優先**：修改現有檔案用 Edit，新檔案用 Write
 - **Read before Edit**：每次編輯前先讀取最新內容
 - **Write 降級**：Edit 失敗兩次後改用 Write 整檔覆寫
-- **遵循 rules**：遵守所有 `~/Github/ai-rules/rules/`
+- **遵循 rules**：遵守所有 `~/Github/ai-guide/rules/`
 
 ### 階段 4：驗證
 
