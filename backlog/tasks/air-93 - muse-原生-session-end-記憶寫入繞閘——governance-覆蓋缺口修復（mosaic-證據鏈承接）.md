@@ -4,7 +4,7 @@ title: muse 原生 session-end 記憶寫入繞閘——governance 覆蓋缺口�
 status: In Progress
 assignee: []
 created_date: '2026-09-14 03:13'
-updated_date: '2026-09-14 04:31'
+updated_date: '2026-09-14 04:59'
 labels: []
 dependencies: []
 references:
@@ -36,4 +36,6 @@ ordinal: 79000
 [09-14 post-build 鏈結算 ✅] codex fresh-eyes review（job-mu0q2pim，chatgpt-web/high）：needs-fix 6 findings＋caller 自抓 F7（pool 整刪早退 clean）→帳本 .review/main.md 7 條。GLM-5.3 judge（job-mu0qba26）：7/7 全採納零否決、修正許可 GO（逐條 hook 單一源行號覆核，非順勢）。修正迴圈 1 輪收斂：F1 --untracked-files=all／F2 broken-symlink marker fail-closed（-e -L 同源）／F3 protocol 1.0/1e0 數值相等（jq 同源）／F4 porcelain XY 兩欄 R/C 配對＋malformed loud／F5 GIT_OPTIONAL_LOCKS=0 唯讀保證／F7 pool-absent 走 repo_root rev-parse（nested 極限 docstring 如實標註）／F6 六釘測試。驗收：reconciler suite 31/31＋全量 427 passed＋F5 index-hash 機械複驗；帳本 7/7 verified。池 consolidation 補審（user 指令）同段完成：22 條流入全 CC/ZCode provenance（零 muse 直寫）→commit 6947df6＋2 筆 probe canary rejected＋投影 regen B gate 綠→對帳網重掃 clean。遺留待辦：①live replay probe（env var A/B＋真 teardown）②bridge 注入＋bridge-exit 對帳（delegate-bridge followup）③AC④ 文檔同步（muse-plugins README 動觸 def_hash 重釘併最終批次）④池 reference_muse-code-cli-facts 12,374c 超閘待壓縮＋project_* 7 條終態收斂（弧結案蒸餾時點）
 
 [09-14 live replay probe 結果——正控制失敗，誠實記錄] Arm 1（positive control，job-mu0qou9y）：disposable fixture（nested pool＋marker＋memory-intent 工作單）＋bridge muse task --trust-workspace --yolo——hook deny＋inbox 代存精確重現（receipt 20260914-122517）但 session.end 後 240s 窗零池寫入（porcelain 0 行＋reconciler clean）；session log teardown 段靜默與 incident 同形態。Arm 2（SYNC=0）取消——正控制失敗下 A/B 無對照意義，省額度。觸發條件假說收窄：表面條件（yolo＋池＋edit_memory deny＋memory 意圖）不充分——候選殘餘：工作單內容豐度（incident 是 MOS-104 蒸餾稿）/上游灰度 rollout/池歷史差異，皆無法外部區分。AC③ live 層覆蓋如實：①detector 對真實未收編 delta 會 fire＝已驗（ai-rules 池 22 條真實流入 flag exit 2）；②真 muse teardown 寫入觸發重放＝未驗（重現失敗）——但偵測路徑寫入者無關（porcelain delta 通案），synthetic 31 條＋真實流入兩層覆蓋。重試決策交 user：每次 probe 一發 muse 額度、重現率未知（可試蒸餾稿形態工作單）。probe fixture 保留 .agent-tmp/air93-probe/ 供後續重試
+
+[09-14 probe 清場＋檢查載體查證] user 裁定驗完清理：probe fixtures（arm1-ws/arm2-ws/workorder）＋/tmp 驗證 scratch＋8 個工作單/回覆暫存全刪（內容已蒸餾卡＋ledger jobs/*.jsonl 持久）。重試需依 dossier＋卡配方重建 fixture。檢查載體查證：ai-rules workspace 有排程承載——schedule-registry 條 1（automation-751ecce2，每晚 23:40 memory 收斂波＋inbox 消費，波前 porcelain 檢查在流程內）＋條 2（automation-fed036ff，週日 23:00 治理看照，watchdog 含雙池 porcelain-vs-receipt）——但 reconcile_memory_pool.py 尚未機械接線（夜波走 memory-audit 配方的 LLM 判讀形態）；本 workspace（ai-lifecycle）CronList 空＝ZCode automation workspace 綁定，接線須 ai-rules workspace session 或改 skill 配方
 <!-- SECTION:NOTES:END -->
