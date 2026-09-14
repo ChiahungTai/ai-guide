@@ -130,33 +130,6 @@ def parse_deny(stdout):
     return spec
 
 
-def write_hooks_json(repo, raw_or_obj):
-    muse = repo / ".muse"
-    muse.mkdir(parents=True, exist_ok=True)
-    text = raw_or_obj if isinstance(raw_or_obj, str) else json.dumps(raw_or_obj)
-    (muse / "hooks.json").write_text(text)
-
-
-def hooks_json_for(command, matcher="add_memory|edit_memory"):
-    return json.dumps(
-        {
-            "hooks": {
-                "PreToolUse": [
-                    {"matcher": matcher, "hooks": [{"command": command}]},
-                ]
-            }
-        }
-    )
-
-
-def foreign_stub(repo):
-    stub = repo / "hooks" / "foreign_gate.sh"
-    stub.parent.mkdir(parents=True, exist_ok=True)
-    stub.write_text("#!/usr/bin/env bash\nexit 0\n")
-    stub.chmod(0o755)
-    return stub
-
-
 def minimal_path(tmp_path, *, with_jq=False, fake_jq=False):
     """PATH dir with only `cat` (+ real or fake jq) for degraded-env tests."""
     bin_dir = tmp_path / "minbin"
@@ -242,6 +215,20 @@ def test_marker_matrix_invalid_deny_no_landing(tmp_path, raw):
     assert "marker" in spec["permissionDecisionReason"]
     assert str(repo) in spec["permissionDecisionReason"]
     assert inbox_files(repo) == []
+
+
+def test_registered_origin_diverts_unconditionally_without_marker(tmp_path):
+    """EP S1 要點3 migration contract (standalone pin, ex-SM-5 contrast):
+    registered origin (launcher env) skips repo/marker evaluation — even a
+    markerless repo diverts (pre-marker repos must not silently lose the
+    gate, EP review C1)."""
+    repo = make_repo(tmp_path, marker=None)
+    r = run_core(
+        repo, mem_payload(), env_extra={"GOVERNANCE_ORIGIN": "registered"}
+    )
+    assert r.returncode == 0, r.stderr
+    parse_deny(r.stdout)
+    assert len(inbox_files(repo)) == 1
 
 
 # ------------------------------------------------ repo resolution (SM-10/11)
@@ -384,86 +371,36 @@ def test_sm12_symlink_segment_denies_no_landing(tmp_path, segment):
         assert inbox_files(real_repo) == []
 
 
-# --------------------------------------------- SM-5 legacy-owner surrender
+# ------------------------- AIR-79 security closure (2026-09-14 codex advisory)
 
 
-def test_sm5_working_legacy_owner_plugin_origin_noop(tmp_path):
-    """SM-5: working legacy owner (matcher covers both tools, command exists
-    + executable + realpath != self) -> plugin-origin call is a no-op."""
+def test_hooks_json_foreign_gate_does_not_yield_plugin(tmp_path):
+    """2026-09-14 codex advisory regression pin: the launcher era is retired,
+    so a repo-controllable .muse/hooks.json claiming a working gate is a
+    bypass surface, not a coexistence signal — the plugin is the only write
+    gate and must divert+deny even when hooks.json registers a foreign
+    executable PreToolUse command covering both tools."""
     repo = make_repo(tmp_path)
-    stub = foreign_stub(repo)
-    write_hooks_json(repo, hooks_json_for(str(stub)))
-    r = run_core(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    assert r.stdout == ""
-    assert inbox_files(repo) == []
-
-
-def test_sm5_dual_origin_contrast(tmp_path):
-    """EP C1: same repo, working legacy owner — plugin-origin no-op vs
-    registered-origin (launcher env) deny+land."""
-    repo = make_repo(tmp_path)
-    stub = foreign_stub(repo)
-    write_hooks_json(repo, hooks_json_for(str(stub)))
-    payload = mem_payload()
-
-    plugin_leg = run_core(repo, payload)
-    assert plugin_leg.returncode == 0, plugin_leg.stderr
-    assert plugin_leg.stdout == ""
-    assert inbox_files(repo) == []
-
-    registered_leg = run_core(
-        repo, payload, env_extra={"GOVERNANCE_ORIGIN": "registered"}
+    stub = repo / "hooks" / "foreign_gate.sh"
+    stub.parent.mkdir(parents=True, exist_ok=True)
+    stub.write_text("#!/usr/bin/env bash\nexit 0\n")
+    stub.chmod(0o755)
+    muse = repo / ".muse"
+    muse.mkdir(parents=True, exist_ok=True)
+    (muse / "hooks.json").write_text(
+        json.dumps(
+            {
+                "hooks": {
+                    "PreToolUse": [
+                        {
+                            "matcher": "add_memory|edit_memory",
+                            "hooks": [{"command": str(stub)}],
+                        }
+                    ]
+                }
+            }
+        )
     )
-    assert registered_leg.returncode == 0, registered_leg.stderr
-    parse_deny(registered_leg.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_sm5_negative_malformed_hooks_json_keeps_gating(tmp_path):
-    repo = make_repo(tmp_path)
-    write_hooks_json(repo, "{oops not json")
-    r = run_core(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_sm5_negative_stale_command_keeps_gating(tmp_path):
-    repo = make_repo(tmp_path)
-    write_hooks_json(repo, hooks_json_for(str(repo / "hooks" / "ghost.sh")))
-    r = run_core(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_sm5_negative_non_executable_command_keeps_gating(tmp_path):
-    repo = make_repo(tmp_path)
-    stub = foreign_stub(repo)
-    stub.chmod(0o644)
-    write_hooks_json(repo, hooks_json_for(str(stub)))
-    r = run_core(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_sm5_negative_partial_matcher_keeps_gating(tmp_path):
-    repo = make_repo(tmp_path)
-    stub = foreign_stub(repo)
-    write_hooks_json(repo, hooks_json_for(str(stub), matcher="add_memory"))
-    r = run_core(repo, mem_payload(tool="edit_memory"))
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)
-    assert len(inbox_files(repo)) == 1
-
-
-def test_sm5_self_registration_is_not_an_owner(tmp_path):
-    """EP C1 regression pin: hooks.json registering THIS shared script must
-    not make the plugin surrender to itself (self-exclusion via realpath)."""
-    repo = make_repo(tmp_path)
-    write_hooks_json(repo, hooks_json_for(str(CORE)))
     r = run_core(repo, mem_payload())
     assert r.returncode == 0, r.stderr
     parse_deny(r.stdout)
@@ -561,22 +498,6 @@ def test_cas_lexical_gates_skip_enrichment(tmp_path, path, setup):
 
 
 # ---------------------------------- review round findings (R1-R7/C-C1-C-C5)
-
-
-@pytest.mark.parametrize(
-    "matcher",
-    ["xadd_memory|xedit_memory", "add_memory_backup|edit_memory_backup"],
-)
-def test_legacy_owner_decoy_matcher_keeps_gating(tmp_path, matcher):
-    """C-C1: matcher coverage must match whole tool-name tokens — substring
-    decoys ("xadd_memory"-style) are NOT a working legacy owner."""
-    repo = make_repo(tmp_path)
-    stub = foreign_stub(repo)
-    write_hooks_json(repo, hooks_json_for(str(stub), matcher=matcher))
-    r = run_core(repo, mem_payload())
-    assert r.returncode == 0, r.stderr
-    parse_deny(r.stdout)  # this hook keeps gating (no surrender)
-    assert len(inbox_files(repo)) == 1
 
 
 def test_deny_schema_valid_with_newline_in_repo_path(tmp_path):

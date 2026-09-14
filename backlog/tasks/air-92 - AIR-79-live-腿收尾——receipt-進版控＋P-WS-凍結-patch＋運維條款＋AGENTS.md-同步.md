@@ -4,7 +4,7 @@ title: AIR-79 live 腿收尾——receipt 進版控＋P-WS 凍結 patch＋運維
 status: Done
 assignee: []
 created_date: '2026-09-14 01:36'
-updated_date: '2026-09-14 02:05'
+updated_date: '2026-09-14 03:02'
 labels: []
 dependencies: []
 references:
@@ -29,6 +29,12 @@ ordinal: 78000
 09-14 審查修復批：
 - 驗收⑤掃描範圍解讀：活碼（hooks/tests/README）零殘留；receipt:27 屬凍結提案證據文本不在掃除域。
 - receipt 隨結算 commit 具名納入（F1——凍結主張的證據錨點必須進版控）。
+<!-- SECTION:NOTES:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+L4 開放項裁決閉合（2026-09-14）：維持現狀——untrusted workspace 下 governance hook 照 fire（防護面更大），user 裁定「codex OK 就 OK」，codex advisory 裁維持。附帶收口：codex 挑出攻擊面——legacy 退役後「legacy-owner 讓位」邏輯＝repo 可控 hooks.json 誘導的繞閘路徑（untrusted 下 legacy 不跑＋plugin 讓位＝完全繞閘）→ plugin 讓位分支已移除（fail-closed 不變，adversarial 回歸釘 RED→GREEN）＋SM-5 測試群退場＋README/structure.md 同步；ops 鏈 update→re-approve（def_hash 53e2136b→62ca0479，trusted_enabled 驗證）→live 探針 deny+inbox+池乾淨三項全中。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

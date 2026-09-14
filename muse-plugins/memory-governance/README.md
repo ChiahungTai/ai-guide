@@ -19,10 +19,7 @@ per-repo marker 檔＝`.agents/memory-governance.json`：
 - jq 缺失且偵測到 memory tool 特徵 → 保守 deny，reason 帶修復指引。
 - inbox 路徑任一已存在段是 symlink → deny 不落地（containment 防護）；尚未存在的段由閘自建。
 - 非 memory 工具一律 self-filter 早退（plugin hooks 無 matcher，腳本自濾 `tool_name`）。
-- legacy 讓位語義（保留）：repo 的 `.muse/hooks.json` 若有「可工作的 legacy owner」（PreToolUse
-  entry matcher 涵蓋兩工具、command 存在可執行、realpath 非本腳本），plugin 讓位 no-op；
-  malformed / stale / partial matcher 不讓位。（repo 本地 launcher `hooks/muse_memory_inbox.sh`
-  已隨註冊退役 2026-09-14——plugin 為唯一寫入閘。）
+- legacy 讓位語義已移除（2026-09-14 codex advisory：legacy 退役後讓位路徑＝repo 可控 hooks.json 誘導的繞閘面；plugin 為唯一閘、無讓位路徑）。
 
 ## Install（user-scope）
 
@@ -49,7 +46,7 @@ marker 的 worktree 視為 ungoverned。
 
 ## 固定安裝點維護（已退役）
 
-此維護流服務 legacy per-repo launcher 時代（2026-09-14 退役）。現行寫入閘由 plugin cache
+此維護流服務 per-repo launcher 時代（2026-09-14 退役）。現行寫入閘由 plugin cache
 承載，版本面操作＝`muse plugins update`＋重新 approve（見運維節）；`~/.local/share/muse-memory-governance/`
 殘留安裝點可刪。
 

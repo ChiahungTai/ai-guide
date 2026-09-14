@@ -75,7 +75,6 @@ L2 部署接線（各 harness 全域位置）
 | 項 | 狀態 | 處置 |
 | --- | --- | --- |
 | `blueprint/index.html` 投影落後（Priority backbone 段與本檔未入投影） | ⚠️ | 投影刷新卡承接；投影無 gate 是結構性弱點，刷新時一併補 |
-| muse 過渡註冊（legacy `.muse/hooks.json` 在場，plugin 讓位中） | ⚠️ | 09-14 額度後 live 驗證（AIR-79 遺留腿），通過即退役 legacy＋launcher |
 | grok-build 未安裝但 dispatch matrix 引用 | ⚠️ | 已標「引用前先查證」；安裝後補 SessionEnd 條目 |
 | ZCode 無 SessionEnd 事件（plugin 孤兒清理缺席） | ⚠️ | hooks/AGENTS.md 定案＝remediation 成本極低非缺口 |
 | `skills/CLAUDE.md` 索引手維護（自標 drift-prone） | ⚠️ | 無機械防線；超載時可評估 invariant 化 |

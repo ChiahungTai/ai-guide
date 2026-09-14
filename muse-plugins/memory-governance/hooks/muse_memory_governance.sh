@@ -13,20 +13,26 @@
 # - plugin origin (no governance env): resolve repo per call
 #   (GOVERNANCE_REPO > stdin cwd field [order frozen — see resolver
 #   comment; workspace/host_workspace kept as fallbacks] > git $PWD
-#   upward), structured legacy-owner surrender, marker
-#   three-state, inbox containment check, fail-closed divert.
+#   upward), marker three-state, inbox containment check, fail-closed
+#   divert.
 # - registered origin (thin launcher sets GOVERNANCE_ORIGIN=registered +
-#   GOVERNANCE_REPO=<repo root>): skips repo resolution / legacy-owner /
-#   marker — the registered gate diverts unconditionally, gate semantics
-#   identical to the pre-refactor legacy hook (migration-window contract:
-#   pre-marker repos must not silently lose the gate, EP review C1).
+#   GOVERNANCE_REPO=<repo root>): skips repo resolution / marker — the
+#   registered gate diverts unconditionally, gate semantics identical to
+#   the pre-refactor launcher hook (migration-window contract: pre-marker
+#   repos must not silently lose the gate, EP review C1).
 #
 # Decision order (EP pseudo code skeleton; each step exits early):
 #   empty stdin -> crude self-filter -> jq availability -> precise
-#   tool_name filter -> repo resolve -> legacy-owner surrender (plugin
-#   origin) -> marker three-state (plugin origin) -> inbox symlink
-#   containment (all origins) -> divert (atomic, CAS lexical gates,
-#   fail-closed) -> deny with inbox path.
+#   tool_name filter -> repo resolve -> marker three-state (plugin
+#   origin) -> inbox symlink containment (all origins) -> divert
+#   (atomic, CAS lexical gates, fail-closed) -> deny with inbox path.
+#
+# 2026-09-14 security closure (AIR-79, codex advisory): the hooks.json
+# owner-yield branch was removed — the launcher era is retired, so a
+# repo-controllable hooks.json is untrusted input and honoring a claimed
+# owner let a repo no-op the only gate (bypass surface). This plugin is
+# the sole write gate; no yield path exists (removal record: plugin
+# README Gate 語義節).
 set -euo pipefail
 umask 077
 
@@ -113,37 +119,6 @@ if [ -z "$REPO" ]; then
   REPO=$GIT_OUT
 fi
 
-# Legacy coexistence (plugin origin only, EP ④): a WORKING legacy owner
-# keeps full authority (SM-5). Structured criteria — all four must hold:
-# hooks.json parses; a PreToolUse entry's matcher covers add_memory AND
-# edit_memory as whole tool-name tokens (word-boundary match, review C-C1 —
-# substring matches would surrender to "xadd_memory"-style decoys); the
-# command file exists and is executable; its realpath differs from this
-# script (self-exclusion — own registration must not no-op itself, EP
-# review C1). Malformed/stale/wrong/partial -> keep gating.
-if [ "${GOVERNANCE_ORIGIN:-}" != registered ]; then
-  SELF_REAL=$(realpath "$0" 2>/dev/null) || SELF_REAL=$0
-  OWNER_CMDS=$(jq -r '
-    .hooks.PreToolUse[]?
-    | select(((.matcher // "") | test("(^|[^[:alnum:]_])add_memory([^[:alnum:]_]|$)")) and ((.matcher // "") | test("(^|[^[:alnum:]_])edit_memory([^[:alnum:]_]|$)")))
-    | .hooks[]?.command // empty
-  ' "$REPO/.muse/hooks.json" 2>/dev/null) || OWNER_CMDS=""
-  SURRENDER=0
-  while IFS= read -r CMD; do
-    [ -n "$CMD" ] || continue
-    if [ -f "$CMD" ] && [ -x "$CMD" ]; then
-      CMD_REAL=$(realpath "$CMD" 2>/dev/null) || CMD_REAL=""
-      if [ -n "$CMD_REAL" ] && [ "$CMD_REAL" != "$SELF_REAL" ]; then
-        SURRENDER=1
-        break
-      fi
-    fi
-  done <<<"$OWNER_CMDS"
-  if [ "$SURRENDER" = 1 ]; then
-    exit 0
-  fi
-fi
-
 # Marker three-state (plugin origin; registered origin diverts
 # unconditionally per the migration-window contract, EP S1 要點3).
 # jq numeric equality reads 1.0 as 1 — JSON has a single number type.
@@ -172,7 +147,7 @@ for SEG in "$REPO" "$REPO/.agents" "$REPO/.agents/memory-inbox"; do
   fi
 done
 
-# Divert — legacy-equivalent semantics (AIR-54): atomic tmp+rename,
+# Divert — AIR-54 semantics: atomic tmp+rename,
 # filename = timestamp + pid + content hash (no model-supplied basename),
 # CAS enrichment behind the T3-1/T4-2 lexical gates. Every internal
 # failure denies (fail-closed, EP ⑦ — muse itself is fail-open).
