@@ -76,7 +76,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Edit", "Write"]
 
 ### Inbox 消費（muse 寫入流 consolidation——AIR-54）
 
-muse `add_memory`/`edit_memory` 經 PreToolUse 閘（承載＝user-scope plugin `muse-memory-governance`〔AIR-79——install＋approve 一次，marker repo 生效；repo opt-in＝`.agents/memory-governance.json` 三態〕；過渡期 legacy 註冊 `.muse/hooks.json`→launcher `hooks/muse_memory_inbox.sh` 仍在場優先接管，live 驗證後退役）代存 `.agents/memory-inbox/`（payload＝原始 JSON；path 命中池內既有條目者附 `_inbox_meta.base_sha256`——T3-6：與 tool 名無關，add 指既有 path 亦附）——本節＝入池站。觸發：夜波（波前二分之後、收斂步驟之前）或手動（本 skill session）。**閘是純機械導流，語義判斷（六問/frontmatter 補全）全在本站**。
+muse `add_memory`/`edit_memory` 經 PreToolUse 閘（承載＝user-scope plugin `muse-memory-governance`〔AIR-79——install＋approve 一次，marker repo 生效；repo opt-in＝`.agents/memory-governance.json` 三態；運維＝muse-plugins/memory-governance/README.md 運維節〕；legacy `.muse/hooks.json` 註冊與 launcher 已隨 cutover 退役，plugin 為唯一寫入閘）代存 `.agents/memory-inbox/`（payload＝原始 JSON；path 命中池內既有條目者附 `_inbox_meta.base_sha256`——T3-6：與 tool 名無關，add 指既有 path 亦附）——本節＝入池站。觸發：夜波（波前二分之後、收斂步驟之前）或手動（本 skill session）。**閘是純機械導流，語義判斷（六問/frontmatter 補全）全在本站**。
 
 **消費端尺寸事實（muse 1.1.1 實測；升版重驗）**：`memory_pack` 開場注入＝索引 120 行上限＋單條 inline 8KB 上限（超限修剪僅列名）——條目越過 8KB 後 muse 直達面僅剩列名（`_inventory` 工具鏈兩跳讀不受限）。**8KB＝消費端軟壓力，非寫入閘**——Q5 hard gate 仍為 12,000 chars；8K-12K 區間治理政策（收緊預算或接受分級）未決、歸 AIR-69 判讀，本站不自行推導。hook deny 契約 1.1.1 相容（mosaic main/次 WT 雙探針）。
 

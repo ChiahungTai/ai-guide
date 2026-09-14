@@ -29,7 +29,7 @@ muse plugins install <repo>/muse-plugins/memory-governance --scope user
 muse plugins approve muse-memory-governance
 ```
 
-user-scope plugin 裝一次全 marker repo 生效（repo opt-in marker＝`.agents/memory-governance.json`，隨 repo 走無需重跑）。過渡期 legacy machine-local `.muse/hooks.json`（`setup-muse-hooks.sh` 重建）仍可作後備註冊；live 驗證後退役。
+user-scope plugin 裝一次全 marker repo 生效（repo opt-in marker＝`.agents/memory-governance.json`，隨 repo 走無需重跑）——plugin 是 muse memory 寫入閘唯一承載（legacy machine-local `.muse/hooks.json` 註冊已隨 AIR-79 cutover 退役）；運維（update 後必重 approve 等）見 [muse-plugins/memory-governance/README.md](../../muse-plugins/memory-governance/README.md) 運維節。
 
 ### 4. 重建排程（最易漏——僅 primary 機）
 
@@ -38,8 +38,7 @@ ZCode cron 住本機 DB，不跟 repo 走。**registry 記 primary 機的 automa
 ### 5. 驗證
 
 ```bash
-hooks/verify-memory-topology.sh           # 只讀：三段＋inode＋generator＋hooks.json
-hooks/verify-memory-topology.sh --smoke   # 加一次 hook 往返（含 trap 清理）
+hooks/verify-memory-topology.sh           # 只讀：三段＋inode＋generator
 ```
 
 ## 深層限制（架構邊界，非待修）

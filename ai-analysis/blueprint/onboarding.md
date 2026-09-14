@@ -188,7 +188,7 @@ muse plugins install <repo>/muse-plugins/memory-governance --scope user
 muse plugins approve muse-memory-governance
 ```
 
-repo opt-in marker＝`.agents/memory-governance.json`（`{"protocol": 1}`，進版控隨 repo 走）—— absent＝不攔、valid＝導流 inbox＋deny、壞掉＝deny 報錯（禁 fail-open）。過渡期 legacy `.muse/hooks.json`（`setup-muse-hooks.sh` 重建）為後備註冊，live 驗證後退役。
+repo opt-in marker＝`.agents/memory-governance.json`（`{"protocol": 1}`，進版控隨 repo 走）—— absent＝不攔、valid＝導流 inbox＋deny、壞掉＝deny 報錯（禁 fail-open）。plugin 是 muse memory 寫入閘唯一承載（legacy machine-local `.muse/hooks.json` 註冊與重建腳本已隨 AIR-79 cutover 退役）。
 
 ### 3.3 Muse 新 repo opt-in — ❌
 
@@ -268,12 +268,6 @@ hooks/setup-memory-symlinks.sh --apply
 hooks/verify-memory-topology.sh
 ```
 
-需要 hook round-trip：
-
-```
-hooks/verify-memory-topology.sh --smoke
-```
-
 現有 verifier 檢：
 
 - primary pool real-dir。
@@ -281,8 +275,8 @@ hooks/verify-memory-topology.sh --smoke
 - ZCode double-hop。
 - 三腿 `MEMORY.md` 同 inode。
 - generator `--check`。
-- 過渡期 `.muse/hooks.json` command 可執行（legacy 註冊退役後此項由 plugin 健檢取代）。
-- smoke 模式額外驗 Muse write gate deny + inbox landed，再清 probe。
+
+Muse write gate 健檢＝plugin 面（`muse plugins inspect <id> --json` 的 `runtime_capabilities[].status`），單一源＝[muse-plugins/memory-governance/README.md](../../muse-plugins/memory-governance/README.md) 運維節（legacy `.muse/hooks.json` 檢查與 `--smoke` hook 往返已隨 AIR-79 cutover 退役）。
 
 ### 4.5 Memory spine — ⚠️
 

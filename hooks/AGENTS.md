@@ -34,4 +34,4 @@
 
 ## 多機移植（clone 到新機器）
 
-- 程序見 [MULTI-MACHINE.md](MULTI-MACHINE.md)；機械支援＝`setup-memory-symlinks.sh`（dry-run 預設、`.bak` 備份）＋`verify-memory-topology.sh`（只讀驗證、`--smoke` 另加 hook 往返）。muse memory 閘＝user-scope plugin `muse-memory-governance`（source home `muse-plugins/memory-governance/`，AIR-79——install/approve 見其 README）；過渡期 legacy 註冊 `.muse/hooks.json`→`hooks/muse_memory_inbox.sh` launcher 仍在場優先接管（`setup-muse-hooks.sh` 為其重建腳本），live 驗證後一併退役。池傳輸（bundle／cp -a）與 cron 重建是手動步。
+- 程序見 [MULTI-MACHINE.md](MULTI-MACHINE.md)；機械支援＝`setup-memory-symlinks.sh`（dry-run 預設、`.bak` 備份）＋`verify-memory-topology.sh`（只讀驗證）。muse memory 閘＝user-scope plugin `muse-memory-governance`（source home `muse-plugins/memory-governance/`，AIR-79——install/approve 見其 README；plugin 為唯一寫入閘，legacy `.muse/hooks.json` 註冊與 launcher 已隨 cutover 退役，運維見其 README 運維節）。池傳輸（bundle／cp -a）與 cron 重建是手動步。
