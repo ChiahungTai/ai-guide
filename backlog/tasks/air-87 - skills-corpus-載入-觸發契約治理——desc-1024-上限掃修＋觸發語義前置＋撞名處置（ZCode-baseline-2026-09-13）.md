@@ -4,7 +4,7 @@ title: skills-corpus 載入/觸發契約治理——desc 1024 上限掃修＋觸
 status: In Progress
 assignee: []
 created_date: '2026-09-13 04:50'
-updated_date: '2026-09-13 22:12'
+updated_date: '2026-09-14 01:31'
 labels: []
 dependencies: []
 references:
@@ -42,12 +42,12 @@ ai-rules main @ 開卡 commit。材料源＝baseline 報告（97 active：repo 7
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 desc 契約機械掃 script 入庫可重跑；79 支全綠（raw≤1024、引號一致、無 # 陷阱）
-- [ ] #2 觸發語義前置：高流量 skills 前 250 chars 承載 when-to-use
-- [ ] #3 撞名/權限/孤兒處置各有裁定記錄落卡
-- [ ] #4 跨 session 載入驗證：新 ZCode session skill 清單含 model-routing（hotfix 舉證）＋抽樣舉證
-- [ ] #5 desc 觸發語義抽驗（activation test）：至少 3 支高流量已改 skill，各以 isolated fresh ZCode session 跑 positive/nonmatch 各 5 reps；以「首個 consequential action 前是否實際載入／nonmatch 是否未載入」判分並記 PASS/FAIL/UNEXPECTED/INCONCLUSIVE 四態；skill-list 出現或 description recall 不算通過
-- [ ] #6 instruction-testing 改造落地：機械觀察面 protocol＋四 surface gate 入主文、pilot 案例段移出（換內容不增肥）、L10 措辭修訂、載具 adapter 落 scripts/ 或 durable report
+- [x] #1 desc 契約機械掃 script 入庫可重跑；79 支全綠（desc 值 chars ≤1024、僅認雙引號或 block scalar、無 # 陷阱）〔開工修訂：值 chars 非 raw 行；單引號 gate 為 judge 修正批新增〕
+- [x] #2 觸發語義前置：高流量 skills 前 250 chars 承載 when-to-use
+- [x] #3 撞名/權限/孤兒處置各有裁定記錄落卡
+- [x] #4 跨 session 載入驗證：新 ZCode session skill 清單含 model-routing（hotfix 舉證）＋抽樣舉證
+- [x] #5 desc 觸發語義抽驗（activation test）：至少 3 支高流量已改 skill，各以 isolated fresh ZCode session 跑 positive/nonmatch 各 5 reps；以「首個 consequential action 前是否實際載入／nonmatch 是否未載入」判分並記 PASS/FAIL/UNEXPECTED/INCONCLUSIVE 四態；skill-list 出現或 description recall 不算通過
+- [x] #6 instruction-testing 改造落地：機械觀察面 protocol＋四 surface gate 入主文、pilot 案例段移出（換內容不增肥）、L10 措辭修訂、載具 adapter 落 scripts/ 或 durable report
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -61,4 +61,20 @@ AC#3 裁定三項（2026-09-14）：
 AC#1 出口證據（段 2）：修復前 FAIL=30（全 bare unquoted：acceptance-evidence/api-and-interface-design/arch-thinking/code-review-and-quality/compact-prep/context7/cr-query/cross-verify/debugging-and-error-recovery/deep-thinking/frontend-ui-engineering/instruction-testing/instruction-writing/kanban-board/kbar-form-analysis/llm-output-convention/metadata-sync/nt-query/nt-v1-query/post-build/review-engine/self-contained-prompt/standup/symbol-query-routing/test-driven-development/trading-analysis/ui-collab/ui-visual-verify/validation-strategy/voice-notification）＋over1024 零（cr-query 值 1,022/nt-v1-query 值 1,014 恰在線上零餘裕）→修復後（--fix 引號化＋cr-query 930/nt-v1-query 938 收斂）FAIL=0 WARN=2（python-type-gap/rules-reminder quoted-# 追蹤項）；scan exit 0；tests/test_scan_skills_desc.py 9 條契約軸回歸綠（值 chars 軸/CJK≠bytes/行前綴不計）。
 
 AC#4 舉證(a)：本 session（2026-09-14 開、hotfix ca369c2 之後的新鮮 ZCode session）harness skill 清單實際含 model-routing（desc 值 775 chars/1,189 bytes 載入在場——同時證 bytes>1024 不 drop、限額軸=值 chars）；(b) 段 3 改寫 8 支之抽樣：段 3 commit 後新鮮 session 舉證（收尾時補）。
+
+——AIR-87 結算（2026-09-14，judge GLM-5.3 GO 條件式→條件全數履行）——
+
+AC#5 定案（judge 裁決 PASS＋修法 b，落卡結論句）：activation probe 定案（三 run 100 runs，39 筆非 PASS 逐 rollout 判讀）：desc-250/when_to_use 自然語言匹配僅在 prompt↔skill 名/desc 強詞彙錨點時促成自動觸發（nt-v1-query 8/10，全數 skill-tool@0 首動作）；弱訊號（日常語言）下工作流 skills 自動觸發不成立——memory-audit 0/10、implement 0/10、execution-plan 0/15（合法條件計），啟動依賴顯式 slash 指令；nonmatch 60/60 零誤觸發。AC#2 的 desc 前置改寫價值隨之重定位：headless available-skills 呈現實測僅名稱＋路徑（與官方文檔分歧，開放機制問題），desc 改寫在 headless 名稱面無法被量測到效果——其價值面在互動端呈現與強錨點匹配，非弱訊號自動觸發。修法裁 (b)：接受「弱訊號自動觸發不成立」為機制事實；強錨點觸發已證可用，desc 撰寫以此為準。效度演進：Run A（leaked 對照）→Run B（乾淨）→Run C（seed 修復），證據＝.agent-tmp/air87/probe/summary-all.md＋flagged-cases.md（39 筆）。
+
+AC#4(b) 舉證：Run B/C rollout 機械實證——改寫 skill（memory-audit/nt-v1-query 等）於 isolated fresh-session available-skills 清單在場（名稱＋路徑呈現形態），重寫未致 drop。
+
+Pr3 裁定（judge 可貼文字）：post-build desc 裁定免改——時序觸發條件已在 desc 首句與 when_to_use 前置在場；本弧僅引號化未改寫，屬「未動筆」非「未達標」。EP「7 支」更正為「7 支改寫＋post-build 引號化（裁定免改）」。
+
+Pr7 更正：裁定② mermaid 實際 0644 非 0755（意圖＝對齊 corpus 已達成，記錄值更正）。
+
+修正批＋收斂批結算：judge 20 findings（19✅/1❌ Fr10 不修）＋codex 附錄全數落地——scan 單引號 gate（RED→GREEN＋3 測試）、BOM、docstring 已知限制、probe kind guard＋carrier shred＋跨切片註記、instruction-writing probe 但書＋轉義規約、model-routing skill 銜接句、Fr4 雙點去材料化（bundle rg 零殘留）、EP 數字更正、agent-workflow 喚醒盲區條款、CLAUDE.md when_to_use stale 宣稱修正（consistency 🔴）＋風險分級語彙收斂三檔。consistency：instruction-testing PASS、instruction-writing FAIL→收斂批後綠。416 tests 綠。
+
+ riders：agent-workflow 補「subagent 自持背景命令完成後自動續跑不可依賴」（本弧兩案例：重開機殺背景、喚醒丟失）；Pr8 pilot 死 link 修復後置至 EP 歸檔時。
+
+judge 前置條件履行：Pr1 branch 收斂（本 commit 序）✓、Fr4 雙點＋rescan ✓、Pr8 後置記錄 ✓、Fr10 不修 ✓。
 <!-- SECTION:NOTES:END -->
