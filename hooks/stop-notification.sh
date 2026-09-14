@@ -11,6 +11,16 @@
 # 不註冊 SubagentStop（避免 build --max-agents 連播 N 次）。
 # （usage-ping 召回 sentinel 已退役 09-09——/usage-ping 全面去語音，落地只回一行文字）
 
+# bounded say：語音系統掛死時 30s 自清，不留孤兒
+# （2026-09-14 實例：孤兒 say 佔住 speech 系統，使下一支前景 say 永久阻塞）
+# 語義註記：正常播完時 killer 副殼仍存活至 30s 上限才自滅——設計接受（hook 須立即退出，不可 wait；
+# codex review 09-14 提出清 guard 建議，因 wait 會阻塞 hook 而不採，見 .review/main.md M4/C2）
+_bounded_say() {
+    say -v Meijia -r 180 "$1" 2>/dev/null &
+    local pid=$!
+    ( sleep 30 && kill "$pid" 2>/dev/null ) &
+}
+
 INTERVAL=600  # 提醒間隔（秒），預設 10 分鐘
 SENTINEL="/tmp/.claude-voice-pending"
 EPOCH_RE='^[0-9]{1,11}$'  # sentinel 內容契約：trim 後 1-11 位純數字（epoch 10 位 + 餘裕；防 intmax overflow）
@@ -31,7 +41,7 @@ if [[ -f "$SENTINEL" ]]; then
     NOW=$(date +%s)
     # 首次（MTIME 空）或距上次提醒 ≥ INTERVAL 才提醒
     if [[ -z "$MTIME" ]] || (( NOW - MTIME >= INTERVAL )); then
-        say -v Meijia -r 180 "${T[$((RANDOM % ${#T[@]}))]}，做到一個段落了，該檢查囉" &
+        _bounded_say "${T[$((RANDOM % ${#T[@]}))]}，做到一個段落了，該檢查囉"
         touch "$SENTINEL"
     fi
 fi
