@@ -1,6 +1,7 @@
 ---
 name: acceptance-evidence
-description: 驗收證據階層深層理論 — 認知誤差與 EP 預見極限、Intent Drift Type A/B、filter trap 重構查證義務、L3 整合測試實例、Runtime Invariant Assurance、B 軸人類驗收層演進、盤點執行點雙掃（間接層＋直呼層）、抽樣推廣與全量對帳、機械閘門的環境前提（gate 輸出也是 claim）。rule 端留 bootstrap gates（證據獨立性＋no-impact claim gate＋禁低層冒充高層）；本 skill 擁 Claim→Evidence taxonomy、L1-L6 階層表、深層理論與案例；審查/規劃/測試策略需要判準、lookup 表或深層論證時載入。觸發詞：證據階層、L3、整合測試、filter trap、runtime invariant、intent drift、B 軸、人類驗收、認知誤差、EP 預見極限、盤點執行點、誰呼叫、影響域、CI 執行點、雙掃、抽樣、全量對帳、樣本選擇、false-red、false-green、gate 前提。
+description: "審查/規劃/測試策略需要證據判準、lookup 表或深層論證時載入——驗收證據階層深層理論：認知誤差與 EP 預見極限、Intent Drift Type A/B、filter trap 重構查證義務、L3 整合測試實例、Runtime Invariant Assurance、B 軸人類驗收層演進、盤點執行點雙掃（間接層＋直呼層）、抽樣推廣與全量對帳、機械閘門的環境前提（gate 輸出也是 claim）。rule 端留 bootstrap gates（證據獨立性＋no-impact claim gate＋禁低層冒充高層）；本 skill 擁 Claim→Evidence taxonomy、L1-L6 階層表、深層理論與案例。觸發詞：證據階層、L3、整合測試、filter trap、runtime invariant、intent drift、B 軸、人類驗收、認知誤差、EP 預見極限、盤點執行點、誰呼叫、影響域、CI 執行點、雙掃、抽樣、全量對帳、樣本選擇、false-red、false-green、gate 前提。"
+when_to_use: "Fires when judging evidence strength for acceptance claims — no-impact claims、filter trap、L1-L6 階層判定、review findings 的證據獨立性、Runtime Invariant Assurance. Load BEFORE signing off 完成宣稱 with 證據分級."
 ---
 
 # Acceptance Evidence — 驗收證據深層理論

@@ -1,7 +1,7 @@
 ---
 name: execution-plan
 
-description: "段落式實作計畫書生成器，自足生成 Self-Contained Segments（含段落 0 全域研究 + UC盤點）。/execution-plan \"任務描述\" [PROMPT檔案]"
+description: "為跨檔 feature／中型以上變更規劃實作時載入——段落式實作計畫書生成器，自足生成 Self-Contained Segments（含段落 0 全域研究 + UC盤點）。/execution-plan \"任務描述\" [PROMPT檔案]"
 when_to_use: "Use when a feature or refactor spans 3+ files, needs parallel agent execution, or scope is unclear. Skip for single-file changes, bug fixes, or straightforward tweaks unless high-risk."
 argument-hint: "<實作任務描述> [可選：PROMPT檔案路徑]"
 ---

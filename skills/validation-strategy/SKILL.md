@@ -1,6 +1,7 @@
 ---
 name: validation-strategy
-description: 驗證策略紀律 — e2e 優先於單元隔離、交易相關 replay >>> live、驗證放 scripts/、不重驗 package 已驗證的部分、整合器型變更判定（三條件＋mock 循環論證＋兩層整合測試：接線 guard＋真實邊界）、消費端驗證模式（完整流程＋測試集機械反查）、crash-only 邊界（設計方法與誤用）。用於 build/commit 驗證段決定測試類型與方式。觸發詞：e2e、replay、驗證策略、測試類型、live、不重驗 package、驗證放哪、交易驗證、回放、整合器型、真實邊界、整合測試、mock、消費端、機械反查。
+description: "build/commit 驗證段決定測試類型與方式時載入——驗證策略紀律：e2e 優先於單元隔離、交易相關 replay >>> live、驗證放 scripts/、不重驗 package 已驗證的部分、整合器型變更判定（三條件＋mock 循環論證＋兩層整合測試：接線 guard＋真實邊界）、消費端驗證模式（完整流程＋測試集機械反查）、crash-only 邊界（設計方法與誤用）。觸發詞：e2e、replay、驗證策略、測試類型、live、不重驗 package、驗證放哪、交易驗證、回放、整合器型、真實邊界、整合測試、mock、消費端、機械反查。"
+when_to_use: "Fires during build/commit 驗證段 when choosing test types（e2e vs unit isolation、replay vs live、驗證放 scripts/）, 判定整合器型變更, or planning 消費端驗證. Load BEFORE writing an EP 驗證策略 section."
 ---
 
 # Validation Strategy — 驗證策略紀律

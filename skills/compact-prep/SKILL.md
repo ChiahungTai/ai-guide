@@ -1,6 +1,6 @@
 ---
 name: compact-prep
-description: 當你要跑 /compact 壓縮對話前，外部化前置：掃全 session 產脈絡外部化檔（結構化 preserve-list，禁時序流水帳）＋驗證 memory 新鮮度，然後請 user 執行 /compact。不解決壓縮本身（harness 擁有），只解決 compact 後的接續材料。
+description: "當你要跑 /compact 壓縮對話前，外部化前置：掃全 session 產脈絡外部化檔（結構化 preserve-list，禁時序流水帳）＋驗證 memory 新鮮度，然後請 user 執行 /compact。不解決壓縮本身（harness 擁有），只解決 compact 後的接續材料。"
 ---
 
 # compact-prep：/compact 的前置外部化

@@ -1,6 +1,6 @@
 ---
 name: voice-notification
-description: 語音通知規範 — 長任務進行中定期召回提醒（Stop hook 機械執行）+ 任務完成通知（LLM say）。適用耗時實作/審查/分析任務（build/deep-work/code-review/execution-plan 等）；不適用快速查詢。觸發詞：語音通知、任務完成通知、進度提醒、召回提醒、通知用戶、say。
+description: "語音通知規範 — 長任務進行中定期召回提醒（Stop hook 機械執行）+ 任務完成通知（LLM say）。適用耗時實作/審查/分析任務（build/deep-work/code-review/execution-plan 等）；不適用快速查詢。觸發詞：語音通知、任務完成通知、進度提醒、召回提醒、通知用戶、say。"
 allowed-tools: [Bash]
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: kanban-board
-description: 當你要操作 backlog board 或查它的機制時，backlog board（Backlog.md）機制單一源——命令合約、結案兩步、ref 規則、precheck；execution-plan/implement/metadata-sync 消費端引用此處
+description: "當你要操作 backlog board 或查它的機制時，backlog board（Backlog.md）機制單一源——命令合約、結案兩步、ref 規則、precheck；execution-plan/implement/metadata-sync 消費端引用此處"
 ---
 
 # kanban-board — backlog board（Backlog.md）機制單一源

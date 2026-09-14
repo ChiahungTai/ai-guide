@@ -1,6 +1,6 @@
 ---
 name: ui-visual-verify
-description: UI 開發/健檢驗收編排配方。觸發詞：UI 驗收、視覺健檢、UI 視覺驗證、playwright 截圖、截圖判讀、DOM 量測、盲判讀、UI component 瀏覽器測試、visual-shots lane。三鏈合流：app 啟動（port 錯開＋就緒判定）→ playwright 截圖＋shadow DOM 機械量測 → vision-review agent 盲判讀 → findings 合流；確定性契約沉澱 pytest，LLM 判讀 opt-in 不入 hard gate。與 ui-collab 分工＝驗收期 vs 互動期。
+description: "UI 開發/健檢驗收編排配方。觸發詞：UI 驗收、視覺健檢、UI 視覺驗證、playwright 截圖、截圖判讀、DOM 量測、盲判讀、UI component 瀏覽器測試、visual-shots lane。三鏈合流：app 啟動（port 錯開＋就緒判定）→ playwright 截圖＋shadow DOM 機械量測 → vision-review agent 盲判讀 → findings 合流；確定性契約沉澱 pytest，LLM 判讀 opt-in 不入 hard gate。與 ui-collab 分工＝驗收期 vs 互動期。"
 ---
 
 # UI 視覺驗證（ui-visual-verify）

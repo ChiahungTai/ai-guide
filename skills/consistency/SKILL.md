@@ -1,7 +1,7 @@
 ---
 name: consistency
 
-description: "文檔品質檢查器（自洽性、矛盾性、順序、自包含、精準度、Signal/Noise Ratio）。/consistency <文檔路徑>"
+description: "文檔修改後的品質 gate——自洽性、矛盾性、順序、自包含、精準度、Signal/Noise Ratio。/consistency <文檔路徑>"
 when_to_use: "Check a single Markdown document for internal quality: self-consistency, contradictions, ordering, self-containedness, accuracy, and signal/noise ratio."
 context: fork
 agent: Explore

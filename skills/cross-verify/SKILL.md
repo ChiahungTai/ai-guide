@@ -1,6 +1,6 @@
 ---
 name: cross-verify
-description: 當你要對一個問題做多源交叉查證時。/cross-verify <問題> [軸清單]——軸群（db/git/log/memory/cr/web）平行取證→交叉對帳→verdict＋unverified 標記。源枚舉制（web 軸須顯式點名才存在）；源缺場該軸 unverified 不阻斷合成。產出軌道①（可直接餵 judge-review）。
+description: "當你要對一個問題做多源交叉查證時。/cross-verify <問題> [軸清單]——軸群（db/git/log/memory/cr/web）平行取證→交叉對帳→verdict＋unverified 標記。源枚舉制（web 軸須顯式點名才存在）；源缺場該軸 unverified 不阻斷合成。產出軌道①（可直接餵 judge-review）。"
 argument-hint: "<問題> [軸:db,git,log,memory,cr,web]"
 ---
 

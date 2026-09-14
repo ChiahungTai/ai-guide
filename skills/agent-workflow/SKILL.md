@@ -74,6 +74,7 @@ ZCode 的 Agent tool **預設前台**（阻塞主對話）——前台 spawn 期
 - pytest 與預期 >10 分鐘命令預設背景跑；短測試可併機械驗證。spawn agent 不能拿來繞 Bash timeout——真實案例：誤以為 Bash 只能 600s 而加 bridge wrapper，實際 `run_in_background` 從頭可用，代價是 agent 開銷、間接層與收斂路徑變長。
 - 先做可獨立的前台工作；沒有就回報進行中並結束 turn 等通知。禁背景阻塞長等（各 harness 機制名不同；主對話被中斷時 agent 會連帶 killed、產出遺失）；前台短等待只限結果立即依賴的 <30s probe。
 - **背景 agent liveness（死亡盲區防禦——真實案例：ZCode app 更新重啟殺掉多個背景 agents、長時間無人知）**：通知是被動喚醒——可以等通知，但**一旦被喚醒（completion／user message／resume）、準備依賴舊 agents 結果前，先過 generation/reconciliation checkpoint**：確認承載 process generation 未變（ZCode app-owned Agent-tool 背景 agents：app 重啟＝舊代全死、零歧義；delegate-bridge external runtime 背景 worker 跨 session 存活，依其 jobs 狀態判定）。generation 命中後**先收 residue 再重派**（DB＋transcript＋worktree 殘留——完成未送達者盲重派＝duplicate side effects）；per-agent 判定禁「全凍結才報」聚合；**silence ≠ death；old-generation unresolved ≠ safe-to-retry**。驗屍法：db.sqlite `MAX(time_created)`（Python `sqlite3`＋`file:...?mode=ro`——CLI 有 silent-empty 坑）＋`ps`＋transcript mtime＋`git status` 殘留＋`TaskOutput` registry 查無。防禦階梯全案（WAL receipt／generation watermark reconciliation／exact-process hard-death dual-signal／stall advisory）＝probes 後另案建卡。
+- **subagent 自持背景命令完成後的自動續跑不可依賴（死亡盲區同族——真實案例：09-14 AIR-87，ZCode 實證背景 exec 已完成而 subagent 停留 completed 狀態、續跑未發生）**：防禦＝主 session 持有 watcher／輪詢敲醒，或背景命令由主 session 自持——禁假設「subagent 會被自己背景命令的完成通知喚醒續跑」。
 
 ### Subagent 產出格式：schema 嚴格度（raw material vs deliverable）
 

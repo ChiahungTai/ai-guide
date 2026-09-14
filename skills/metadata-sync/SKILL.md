@@ -1,6 +1,6 @@
 ---
 name: metadata-sync
-description: metadata finalization 單一真相源 — build 後的文檔狀態結算(模組 Capabilities 寫入——AGENTS.md 為主、CLAUDE.md legacy、Kanban 搬 Done、SYSTEM-MAP 生命週期、architecture.md、EP 歸檔、flow-feedback 歸檔、導航文檔 /consistency 閘門)。三 mode(build 5a 依情境結算／收斂後結案／standalone 補漏)。被 /implement 階段5、/post-build hook 2（收斂後結案）、/metadata-sync 共用 invoke。觸發詞：metadata finalization、commit 收尾、Capabilities 同步、Kanban 搬 Done、EP 歸檔、SYSTEM-MAP 更新、architecture.md、漏掉 finalization、build 完更新文檔、flow-feedback 歸檔、文檔狀態結算。
+description: "metadata finalization 單一真相源 — build 後的文檔狀態結算(模組 Capabilities 寫入——AGENTS.md 為主、CLAUDE.md legacy、Kanban 搬 Done、SYSTEM-MAP 生命週期、architecture.md、EP 歸檔、flow-feedback 歸檔、導航文檔 /consistency 閘門)。三 mode(build 5a 依情境結算／收斂後結案／standalone 補漏)。被 /implement 階段5、/post-build hook 2（收斂後結案）、/metadata-sync 共用 invoke。觸發詞：metadata finalization、commit 收尾、Capabilities 同步、Kanban 搬 Done、EP 歸檔、SYSTEM-MAP 更新、architecture.md、漏掉 finalization、build 完更新文檔、flow-feedback 歸檔、文檔狀態結算。"
 ---
 
 # Metadata Sync — metadata finalization 單一真相源

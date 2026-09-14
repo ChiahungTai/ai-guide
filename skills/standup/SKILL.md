@@ -1,6 +1,6 @@
 ---
 name: standup
-description: 昨日活動 digest——跨 worktree session 聚合 + commit/kanban/SYSTEM-MAP transition。晨間簡報、昨日做了什麼、standup、morning briefing、跨 worktree 對話整理、session 摘要時使用。機械素材由 aggregate_sessions.py 萃取,LLM 寫敘事;輸出 body(無 `## ` header,delivery 由 invoker 決定——排程載體 append「## 📝 昨日活動」進 daily-report,或 /standup 直接在 chat 顯示)。
+description: "昨日活動 digest——跨 worktree session 聚合 + commit/kanban/SYSTEM-MAP transition。晨間簡報、昨日做了什麼、standup、morning briefing、跨 worktree 對話整理、session 摘要時使用。機械素材由 aggregate_sessions.py 萃取,LLM 寫敘事;輸出 body(無 `## ` header,delivery 由 invoker 決定——排程載體 append「## 📝 昨日活動」進 daily-report,或 /standup 直接在 chat 顯示)。"
 when_to_use: 每日晨間回顧昨日活動、跨 worktree 整理同一 main repo 的對話紀錄、產出 morning briefing、standup 晨間簡報。觸發詞:standup、晨間簡報、昨日活動、morning briefing、跨 worktree session。
 allowed-tools: ["Read", "Bash", "Glob", "Grep"]
 ---

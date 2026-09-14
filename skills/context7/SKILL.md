@@ -1,6 +1,6 @@
 ---
 name: context7
-description: Context7 MCP 文檔查詢 — user 問 library / framework / SDK / API / CLI tool / cloud service 用法時載入，用 Context7 取最新官方文檔再回答（優先於 web search；即使自認知道也要查——training data 可能過時）。涵蓋 API syntax、configuration、版本遷移、library-specific debugging、安裝與 CLI 用法。不適用：refactoring、從零寫 script、業務邏輯 debug、code review、通用程式概念。觸發詞：Context7、library 文檔、framework、SDK、API 用法、查官方文檔、resolve-library-id、query-docs。
+description: "Context7 MCP 文檔查詢 — user 問 library / framework / SDK / API / CLI tool / cloud service 用法時載入，用 Context7 取最新官方文檔再回答（優先於 web search；即使自認知道也要查——training data 可能過時）。涵蓋 API syntax、configuration、版本遷移、library-specific debugging、安裝與 CLI 用法。不適用：refactoring、從零寫 script、業務邏輯 debug、code review、通用程式概念。觸發詞：Context7、library 文檔、framework、SDK、API 用法、查官方文檔、resolve-library-id、query-docs。"
 ---
 
 # Context7 文檔查詢

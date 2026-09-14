@@ -1,6 +1,6 @@
 ---
 name: review-engine
-description: 決定 finding 嚴重度（Critical/Important/Suggestion）、標信心水準（confirmed/evidence-based/inferred）、查證審查宣稱、選審查模式（Workflow/Agent Tool）、理解多層驗證鏈、決定 review 執行預設（force 獨立/max-agents/model/視角/spawn-vs-session）時使用。review 命令家族通用審查邏輯的 domain 真相源 — 審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證設計；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用。
+description: "決定 finding 嚴重度（Critical/Important/Suggestion）、標信心水準（confirmed/evidence-based/inferred）、查證審查宣稱、選審查模式（Workflow/Agent Tool）、理解多層驗證鏈、決定 review 執行預設（force 獨立/max-agents/model/視角/spawn-vs-session）時使用。review 命令家族通用審查邏輯的 domain 真相源 — 審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證設計；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用。"
 ---
 
 # review-engine — 通用審查邏輯 domain 層

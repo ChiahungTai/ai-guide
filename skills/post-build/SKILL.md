@@ -3,7 +3,7 @@ name: post-build
 when_to_use: "After /implement (or any substantial change set) to orchestrate the review chain automatically: diff triage decides which sub-chains run."
 argument-hint: "無參數；自動 triage（uncommitted 或 EP baseline 任務弧）"
 allowed-tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write", "Agent"]
-description: build 後收尾鏈編排 — code-review → judge-review → 修正迴圈 → consistency → metadata-sync → tour corpus gate（general finalization）→ Report Shell refresh（hook 2：實作章節＋產圖一次＋badge ✅；持久 delta tour＝ask-once 預設略過）一次觸發。只做編排與 diff triage，方法論真相源在各被編排命令/skill。觸發詞：build 後收尾、post-build、收尾鏈、review chain 自動化、commit 前收尾。
+description: "build 後收尾鏈編排 — code-review → judge-review → 修正迴圈 → consistency → metadata-sync → tour corpus gate（general finalization）→ Report Shell refresh（hook 2：實作章節＋產圖一次＋badge ✅；持久 delta tour＝ask-once 預設略過）一次觸發。只做編排與 diff triage，方法論真相源在各被編排命令/skill。觸發詞：build 後收尾、post-build、收尾鏈、review chain 自動化、commit 前收尾。"
 ---
 
 # post-build — build 後收尾鏈編排

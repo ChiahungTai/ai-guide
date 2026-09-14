@@ -1,6 +1,6 @@
 ---
 name: llm-output-convention
-description: AI Agent 雙通道輸出細則載體 — print tag 全表（[OK]/[WARN]/[FAIL]/[LOG]/[ACTION]/[progress]）、print 慣例細則（[LOG] 路徑只印一次、何時不該 print）、Logger 慣例（action_name prefix、level 選擇、print↔Logger 閉環）、stdlib logging 與框架 Logger 並存（lastResort 陷阱、遷移非機械替換）、執行自檢清單。always-on 核心（print 當索引 Logger 當資料庫、state transition 定義、Namespace module-path 原則）在 rules/llm-output-convention.md；寫 Python 輸出/log 程式碼、設計 print 格式、診斷 log 找不到輸出時載入。觸發詞：print tag、[OK]、[LOG]、[progress]、Logger prefix、action_name、log level、namespace、module-path、addHandler、lastResort。
+description: "AI Agent 雙通道輸出細則載體 — print tag 全表（[OK]/[WARN]/[FAIL]/[LOG]/[ACTION]/[progress]）、print 慣例細則（[LOG] 路徑只印一次、何時不該 print）、Logger 慣例（action_name prefix、level 選擇、print↔Logger 閉環）、stdlib logging 與框架 Logger 並存（lastResort 陷阱、遷移非機械替換）、執行自檢清單。always-on 核心（print 當索引 Logger 當資料庫、state transition 定義、Namespace module-path 原則）在 rules/llm-output-convention.md；寫 Python 輸出/log 程式碼、設計 print 格式、診斷 log 找不到輸出時載入。觸發詞：print tag、[OK]、[LOG]、[progress]、Logger prefix、action_name、log level、namespace、module-path、addHandler、lastResort。"
 ---
 
 # LLM Output Convention — print/Logger 細則

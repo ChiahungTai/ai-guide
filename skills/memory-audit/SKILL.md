@@ -1,6 +1,7 @@
 ---
 name: memory-audit
-description: "memory 清理/稽核/過時/記憶健康檢查＋寫入端紀律（memory audit / audit MEMORY.md / auto memory）。兩級稽核：full 四層（索引機械量測→內容核實 vs repo→清理執行→EP/任務盤點）/ lite 增量核實（git log 驅動）。內容核實預設必做——索引整潔 ≠ 記憶健康。狀態戳 _audit-state.md；advisory→用戶核可→執行三分離。寫 memory 前的寫前一步（一句話測試——核心事實提煉不出一句話＝還沒想清楚＝不寫）＋寫入六問（任務終態→卡/repo 可推導就不寫/同主題加段/cluster-first/尺寸/載體判定）、單一寫入點（條目檔 frontmatter 唯一、MEMORY.md 機械投影）、desc/條目尺寸預算（新建 3,000/膨脹 12,000 hook 硬擋）＋body 形態＋desc 三不＋弧結案蒸餾（含 mem-distill 執行形態）見「寫入端紀律」段。載體統一定義表（該寫哪——三處判準合一：載體職責×常駐-按需×寫入預設交叉表＋誤置→處置＋寫入摩擦設計）見同名節。觸發詞：一句話測試、寫入六問、任務終態、cluster-first、單一寫入點、索引投影、desc 上限、結案蒸餾、body 形態、載體判定、該寫哪、統一定義表、寫入摩擦、放置閘、寫 memory、確定才寫、歸因未定、rank 排序。"
+description: "寫 memory 前的寫前一步＋memory 清理/稽核/過時/記憶健康檢查（memory audit / audit MEMORY.md / auto memory）。兩級稽核：full 四層（索引機械量測→內容核實 vs repo→清理執行→EP/任務盤點）/ lite 增量核實（git log 驅動）。內容核實預設必做——索引整潔 ≠ 記憶健康。狀態戳 _audit-state.md；advisory→用戶核可→執行三分離。寫入端紀律：一句話測試（核心事實提煉不出一句話＝還沒想清楚＝不寫）＋寫入六問（任務終態→卡/repo 可推導就不寫/同主題加段/cluster-first/尺寸/載體判定）、單一寫入點（條目檔 frontmatter 唯一、MEMORY.md 機械投影）、desc/條目尺寸預算（新建 3,000/膨脹 12,000 hook 硬擋）＋body 形態＋desc 三不＋弧結案蒸餾（含 mem-distill 執行形態）見「寫入端紀律」段。載體統一定義表（該寫哪——三處判準合一：載體職責×常駐-按需×寫入預設交叉表＋誤置→處置＋寫入摩擦設計）見同名節。觸發詞：一句話測試、寫入六問、任務終態、cluster-first、單一寫入點、索引投影、desc 上限、結案蒸餾、body 形態、載體判定、該寫哪、統一定義表、寫入摩擦、放置閘、寫 memory、確定才寫、歸因未定、rank 排序。"
+when_to_use: "Fires when the session is about to write a memory entry（寫前一步 gate：一句話測試/六問/載體判定）, when auditing MEMORY.md or the memory pool（full/lite 兩級）, or when MEMORY.md 投影與 _inventory.md 有 drift 疑慮. Load BEFORE writing any memory 條目檔."
 argument-hint: "full | lite | 無參數（讀狀態戳後建議）"
 allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Edit", "Write"]
 ---

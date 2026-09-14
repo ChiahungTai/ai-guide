@@ -1,6 +1,6 @@
 ---
 name: ui-collab
-description: UI-LLM 協作模式。當使用者啟動互動式 UI（Bokeh/Panel 等）並希望 LLM 觀察操作、提供上下文感知的協助時觸發。適用於任何有 [ACTION] 操作日誌的 UI 協作場景。
+description: "UI-LLM 協作模式。當使用者啟動互動式 UI（Bokeh/Panel 等）並希望 LLM 觀察操作、提供上下文感知的協助時觸發。適用於任何有 [ACTION] 操作日誌的 UI 協作場景。"
 ---
 
 # UI-LLM 協作模式

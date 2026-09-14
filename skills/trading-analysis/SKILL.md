@@ -1,6 +1,6 @@
 ---
 name: trading-analysis
-description: 股票與市場走勢分析的三層框架（經典技術分析 → 量化指標 → 第二層思考整合）＋事件研究與回測量測紀律（可回補模擬、單位單一源、point-in-time、探索↔正式化界線）。分析個股、市場走勢、技術分析（TA）、個股判斷、Dow Theory、Elliott Wave、Wyckoff、Darvas Box、Bollinger Bands、支撐阻力、量價分析、回測紀律、事件研究、point-in-time、data snooping、單位口徑時載入。輸出必含「各理論共識/歧異對照」表格。
+description: "股票與市場走勢分析的三層框架（經典技術分析 → 量化指標 → 第二層思考整合）＋事件研究與回測量測紀律（可回補模擬、單位單一源、point-in-time、探索↔正式化界線）。分析個股、市場走勢、技術分析（TA）、個股判斷、Dow Theory、Elliott Wave、Wyckoff、Darvas Box、Bollinger Bands、支撐阻力、量價分析、回測紀律、事件研究、point-in-time、data snooping、單位口徑時載入。輸出必含「各理論共識/歧異對照」表格。"
 ---
 
 # 股票分析框架

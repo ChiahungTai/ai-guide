@@ -1,6 +1,6 @@
 ---
 name: frontend-ui-engineering
-description: Builds production-quality UIs with Panel/Bokeh. Use when building or modifying interactive dashboards, data visualization apps, or any Panel/Bokeh-based interface. Use when creating Panel components, implementing reactive layouts, managing param state, or optimizing Bokeh rendering performance.
+description: "Builds production-quality UIs with Panel/Bokeh. Use when building or modifying interactive dashboards, data visualization apps, or any Panel/Bokeh-based interface. Use when creating Panel components, implementing reactive layouts, managing param state, or optimizing Bokeh rendering performance."
 ---
 
 # Panel / Bokeh UI Engineering

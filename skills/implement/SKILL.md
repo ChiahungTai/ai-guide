@@ -1,7 +1,7 @@
 ---
 name: implement
 
-description: "基於 Execution Plan 逐段實作（準備、TDD、驗證、提交）。/implement <EP路徑> [段落編號]"
+description: "EP 建好後逐段實作（準備、TDD、驗證、提交）。/implement <EP路徑> [段落編號]"
 when_to_use: "Implement an Execution Plan segment-by-segment using TDD. Use after /execution-plan (with built-in EP Review). Supports parallel agents with --max-agents."
 argument-hint: "<Execution Plan 檔案路徑> [段落編號] [--max-agents N | -a N]"
 allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "Workflow"]

@@ -1,6 +1,6 @@
 ---
 name: self-contained-prompt
-description: 把工作交給另一個 LLM/session/repo 時，打包成對方讀懂的 self-contained prompt 的設計原則唯一真相源。接手方三層（同 repo 新 session / 跨 repo / 跨 provider 網路 LLM）決定嵌入程度、標準 schema、決策脈絡必含（為何選 X 不選 Y）、drift 防護（嵌 code 讀回 commit 版本）、跨 provider 機密 redact。/handoff command 與 agent-review-cycle subagent prompt 共用。觸發：handoff、交接、接續、給另一個 session/LLM、問 ChatGPT/Gemini、跨 repo、self-contained、開新 session 並行、交工作給別的 worktree、給 prompt。
+description: "把工作交給另一個 LLM/session/repo 時，打包成對方讀懂的 self-contained prompt 的設計原則唯一真相源。接手方三層（同 repo 新 session / 跨 repo / 跨 provider 網路 LLM）決定嵌入程度、標準 schema、決策脈絡必含（為何選 X 不選 Y）、drift 防護（嵌 code 讀回 commit 版本）、跨 provider 機密 redact。/handoff command 與 agent-review-cycle subagent prompt 共用。觸發：handoff、交接、接續、給另一個 session/LLM、問 ChatGPT/Gemini、跨 repo、self-contained、開新 session 並行、交工作給別的 worktree、給 prompt。"
 ---
 
 # self-contained-prompt — 交接 prompt 設計原則 domain 層

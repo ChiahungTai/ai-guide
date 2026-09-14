@@ -1,13 +1,14 @@
 ---
 name: instruction-writing
-description: Instruction file（AGENTS.md / CLAUDE.md / rules / SKILL.md）撰寫與編輯規範 — 雙檔模式命名、YAML frontmatter、章節組織、High Signal / Low Noise 內容分類、導航優先（概念→符號種子）、標準段落標題、Class→檔案映射表禁令、引用語法選擇、導航 Decoder Test、元資訊禁止（行為表＋自檢清單＋第一性原理論證）、文檔自洽五維檢查、single-source drift 防護。撰寫或修改任何 instruction 檔時載入。觸發詞：AGENTS.md、CLAUDE.md、instruction、雙檔模式、wrapper、High Signal、導航種子、模組導航、Capabilities 段、instruction-clean、元資訊清理、版本號／統計／更新日期禁止、文檔自洽、single-source drift。
+description: "新增或修改 instruction 檔（AGENTS.md / CLAUDE.md / rules / SKILL.md）前載入——撰寫與編輯規範單一源：雙檔模式命名、YAML frontmatter、章節組織、High Signal / Low Noise 內容分類、導航優先（概念→符號種子）、標準段落標題、Class→檔案映射表禁令、引用語法選擇、導航 Decoder Test、元資訊禁止（行為表＋自檢清單＋第一性原理論證）、文檔自洽五維檢查、single-source drift 防護。觸發詞：AGENTS.md、CLAUDE.md、instruction、雙檔模式、wrapper、High Signal、導航種子、模組導航、Capabilities 段、instruction-clean、元資訊清理、版本號／統計／更新日期禁止、文檔自洽、single-source drift、desc 1024、skill 被 drop、when_to_use、desc 契約、跨 harness 消費。"
+when_to_use: "Fires when creating or editing instruction files — AGENTS.md、CLAUDE.md、rules/、SKILL.md、commands、agent 定義. Load BEFORE the first edit of any such file in the session."
 ---
 
 # Instruction Writing — 撰寫規範
 
 > 本 skill 是 `rules/instruction-writing.md` 與 `rules/_ai-behavior-constraints.md` 的 on-demand 完整載體：rules 端保留 always-on 核心（禁止元資訊警告、雙檔模式命名、High/Low Signal 分類精簡版、single-source drift 核心句）；本檔承載完整撰寫規範、段落標題標準、導航細則、元資訊禁止行為表與第一性原理論證、文檔自洽五維檢查。
 
-若新增或修改的 instruction 目標是**改變 agent 可觀察行為**，authoring 完成後依 [instruction-testing](../instruction-testing/SKILL.md) 做風險分級行為驗證；本檔五維檢查只證明靜態自洽，不證明 agent 會照做。
+若新增或修改的 instruction 目標是改變 agent 可觀察行為，依 [instruction-testing](../instruction-testing/SKILL.md) 以 diff 觸及面（四 surface gate）判定測試型——行為驗證在 authoring 前後以 TDD 迴圈進行（RED baseline 先行），靜態五維檢查不取代它。
 
 ## 基本原則
 
@@ -51,6 +52,16 @@ allowed-tools: ["Read", "Write", "Edit"]
 ```
 
 > skill 完整 frontmatter 欄位（`when_to_use` / `paths` / `disable-model-invocation` / `context:fork` / `allowed-tools` 等）與決策原則見 [skills/CLAUDE.md](../CLAUDE.md)（單一真相源，此處不重複）。
+
+### 跨 harness description 消費差異（desc 契約）
+
+同一份 SKILL.md desc，兩端消費面不同——撰寫時以較嚴端為準：
+
+- **ZCode（flat `key: value` 解析）**：`name`/`description` 缺失、或 **desc「值」>1024 chars → 整支 skill 靜默 drop**（不報錯、清單直接缺席）；觸發呈現＝name＋desc 前 ~250 chars 截斷＋`when_to_use` 全文，無 keyword matcher——前 250 需語義說明「何時用」。認可鍵：`name`/`description`/`when_to_use`/`license`/`metadata`。但書：~250 截斷與 `when_to_use` 呈現源於官方文檔；AIR-87 probe 實測 headless `--json` 下 available-skills 呈現僅**名稱＋路徑**（無 desc/when_to_use）——官方文檔與 runtime 分歧，開放機制問題。desc 撰寫紀律仍以此較嚴契約為準（互動端呈現＋強錨點匹配面不變）。
+- **CC**：desc 全文消費，無截斷、無 drop 閾值。
+- **量測軸＝值 chars（非整行、非 bytes）**：CJK 3 bytes/char，awk `length()` 給 bytes 是陷阱；兩種解析器對 ` #` 分歧（完整 YAML 剝註解、flat 不剝）——desc 一律引號化或 block scalar（`>`/`|`）。
+- **寫作紀律**：觸發條件句（「當…時／…前」）前置、內容索引後接；工作流 skills 配 `when_to_use`（repo 慣例）；高流量 skill desc 值建議 ≤950 留餘裕防編輯撞線；desc 值內遇雙引號優先改寫內文而非 escape；量測口徑＝as-written 含引號字元。
+- 機械 gate：`scripts/scan_skills_desc.py`（值長度/形式/# 陷阱＋`--fix` 引號化）入庫可重跑。
 
 ### 章節組織
 ```markdown

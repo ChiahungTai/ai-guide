@@ -1,6 +1,6 @@
 ---
 name: kbar-form-analysis
-description: K 線形態判讀 pipeline（雙視圖＋數值混合契約）——focus/background 雙圖＋數值包三證據層、vision agent 盲判合約、fail-visible 分層保證。標記輔助（人審模擬）、誤判歸因、策略形態複核、K 線批量掃描時載入。
+description: "K 線形態判讀 pipeline（雙視圖＋數值混合契約）——focus/background 雙圖＋數值包三證據層、vision agent 盲判合約、fail-visible 分層保證。標記輔助（人審模擬）、誤判歸因、策略形態複核、K 線批量掃描時載入。"
 when_to_use: "需要對 K 線形態做獨立判讀：單案複審（誤判嫌疑/邊界案）、批量掃描（低信心池選案）、refit/規則修訂前後 corpus 對照。"
 ---
 

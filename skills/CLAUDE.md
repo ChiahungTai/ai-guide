@@ -80,7 +80,7 @@
 - `/instruction-clean` — 清理 Markdown 元資訊；`--distill` 蒸餾低 signal 內容（保守防護欄：預設 conservative、NEVER 清單禁觸失敗教訓/設計理由/約束、換形為主僅元資訊直刪、縮減 >30% 逐條列出）
 - `/instruction-sync` — 檢查文檔與程式碼同步性
 - `instruction-writing` — instruction file 撰寫完整規範（reference skill：rule 留 always-on 核心，此處承載完整規範＋元資訊禁止行為表與論證＋文檔自洽五維檢查；rule+skill 分層控制 bundle 尺寸）
-- `instruction-testing` — instruction artifact 行為驗證（⚠️ draft：依風險分級用 pressure scenario／retrieval-application probe 驗可觀察行為；A 軸證據不取代 B 軸；pilot 尚未執行）
+- `instruction-testing` — instruction artifact 行為驗證（⚠️ draft：依 diff 觸及面四 surface gate（activation/behavior/micro-test/static）＋機械觀察面 protocol 用 pressure scenario／retrieval-application probe 驗可觀察行為；A 軸證據不取代 B 軸；pilot 尚未執行）
 - `/daily-maintain` — 每日自動維護（排程用），自動修正低風險問題 + commit
 - `corrections-weekly` — 糾正模式週報＋CR 使用健檢＋memory 寫入歸因（排程用——排程載體開新 session，時刻見 ai-analysis/schedule-registry.md）：腳本撈 ZCode db 糾正候選＋LLM 判讀分類，append 月檔 `ai-analysis/reports/corrections-<YYYY-MM>.md`；某類暴增＝規則衰減訊號；memory 段＝AIR-40 telemetry（top actor×entry 寫入排行——subagent 大戶抽驗線索）
 
@@ -161,7 +161,7 @@
 
 ## Frontmatter 配置
 
-> **跨 harness 支援度**：ZCode 僅規範 `name`/`description`（目錄名即技能名）；下表其餘欄位是 Claude 端機制，ZCode 端**靜默忽略**（實測 `context: fork` + `agent:` 被忽略、內容直接注入當前 session 執行）——寫工作流時不可依賴這些欄位在 ZCode 生效，相容行為寫進 body。
+> **跨 harness 支援度**：**`when_to_use` 是 ZCode 官方認可鍵**（觸發呈現含其全文）；headless `--json` 實測 available-skills 呈現僅名稱＋路徑——官方文檔與 runtime 分歧屬開放機制問題。ZCode desc 契約單一源＝[instruction-writing 跨 harness description 消費差異節](instruction-writing/SKILL.md)，本表其餘欄位為 Claude 端機制。
 
 > **上限是 harness-specific**：Claude 端 `description + when_to_use` 合計截斷 **1536 字元**（對齊 `skill-cleaner.ts` 的 `MAX_DESCRIPTION_CHARS`；可用 `maxSkillDescriptionChars` 覆寫），清單預算由 `skillListingBudgetFraction` 控制；ZCode 端 description **>1024 字元整顆 drop**（非截斷）、清單注入每條摘要 ~250 字元、全體共享固定預算（ZCode 官方 skill 文檔）。**寫 description 兩端約束都取交集：精簡、觸發詞前置**。
 
