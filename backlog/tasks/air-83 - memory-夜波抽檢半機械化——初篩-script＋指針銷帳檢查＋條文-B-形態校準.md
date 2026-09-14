@@ -4,6 +4,7 @@ title: memory 夜波抽檢半機械化——初篩 script＋指針銷帳檢查�
 status: To Do
 assignee: []
 created_date: '2026-09-12 21:58'
+updated_date: '2026-09-13 22:45'
 labels: []
 dependencies: []
 ordinal: 69000
@@ -21,3 +22,9 @@ ordinal: 69000
 
 範圍：skills/memory-audit/scripts/ 新 script（pool git -C 窗口枚舉新流入；候選表含評分與理由；_ 前綴檔排除）＋skills/memory-audit/SKILL.md 夜波段接線句與條文校準＋tests/＋host cron prompt 更新（自動化 #1 memory-audit）。錨點：ai-analysis/nightly-convergence.log 09-11/09-12 兩段（87.5% 實證）；hooks/block-memory-index-write.py docstring（放置閘③）。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+寫入端單案已建卡：AIR-90（狀態後綴硬擋＋19 條存量處置＋twin 偵測＋結案清池項；codex 討論共識已凍結在卡 desc）——本卡與其互補：AIR-83 偵測側（夜波初篩）、AIR-90 攔截＋處置側。
+<!-- SECTION:NOTES:END -->

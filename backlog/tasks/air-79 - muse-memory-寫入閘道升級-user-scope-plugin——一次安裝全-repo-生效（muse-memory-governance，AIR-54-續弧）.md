@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-12 01:34'
-updated_date: '2026-09-12 03:53'
+updated_date: '2026-09-14 01:36'
 labels:
   - memory-governance
   - muse-plugin
@@ -37,6 +37,8 @@ ordinal: 65000
 〔09-12 implement 進度〕S1 結算（03376b5：共享核心＋launcher＋manifest＋42 測試，331 全綠，impl-lite flash 執行＋主 session 獨立重跑驗收）；S2/S3 offline 腿結算（e9e69a7：harness 全流程綠、gate② offline 對照、overhead 7ms/50ms、P-UPGRADE 靜態半＝list 不暴露 approve；machine 復原 no plugins）。**live 腿 L1-L6 parked——muse 訂閱額度 429，2026-09-14T00:00Z 重置**（恢復程序＝poc/poc_activation.md 末段）。S4 cutover 需 gate③⑤ live 證據故暫停。review 腿已提前跑（S1 共享核心資安面先審）：flash code-reviewer＋codex bridge 平行中，judge＝GLM-5.3。manifest 經 install 實證修正（version/description 必填、timeout_ms 不支援）。
 
 〔09-12 鏈結算〕user 指定鏈=implement(flash)→post-build→code-review(flash+codex)→judge(5.3) 已跑至可達上限：S1 結算（03376b5）→S2/S3 offline（e9e69a7）→code-review 雙腿（codex job-mtxsd4ap＋flash code-reviewer；2🔴+4🟡+4ℹ️ 全採納）→judge 裁決＋修正＋12 新測試（f78a763，343 passed；帳本 .review/air-79.md）。**parked at live gates**：S4 cutover 需 gate③⑤ live 證據（muse 額度 429→2026-09-14T00:00Z）；恢復程序=poc/poc_activation.md 末段（L1-L6→凍結 P-WS→gate 判定→S4→S5→post-build 收尾鏈）。branch air-79 四顆 commit 待最終 /commit 確認後收尾。
+
+live 腿 09-14 由 mosaic 端完成（L1-L6 全綠）；收尾四件事由 follow-up 小卡承接（backlog 內 air-91 之後最新一張，title 含「AIR-79 live 腿收尾」）——receipt/patch/條款/同步，證據源＝poc/live_receipt_20260914.md
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
