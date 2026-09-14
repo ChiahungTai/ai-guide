@@ -164,6 +164,11 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
 ---
 
+## 自主授權形態（user 原話授權時）
+
+- **顧問共識授權**：「有共識就做，不用我同意」→ **user 已點名的顧問參與者**共識＝動工 gate（5.3 仍須 user 點名，見 [model-routing](../model-routing/SKILL.md)）；仍受紅線／黃線約束，commit 仍人 gate（見 [autonomous-execution](../autonomous-execution/SKILL.md)）
+- **對抗驗證／交卷互改**：review 段可用多家族各自審查→互相討論→歸納修正方向；難題位可用對抗驗證——兩者皆需 user 原話授權（睡前授權內含「用些對抗驗證」即算）
+
 ## Agent Spawn 規則
 
 Agent prompt 開頭加上 /rules-reminder 規則摘要：

@@ -23,6 +23,11 @@ model 詞彙（user 裁定）：prose/doctrine 與 bridge 委派一律 provider 
 | research / explore | 全域研究 full（v3.1 裁決，AIR-76）＋CR 白名單；內建 Explore fallback 繼承主模型 |
 | harness 內建 general-purpose / Explore | 無 pin 繼承主模型；機械/lite 工作派 registry，禁假設內建預設便宜 |
 
+## dispatch 預設（fleet 層）
+
+- **fleet 預設 lite**：未點名＝lite 檔；旗艦腿（full-tier agent／5.3）須 user 明示點名（user 裁定「只有我說要用 5.3 才用」）
+- **主 session 不親自跑機械／實作段**：打包派 lite（impl-lite 等）；判斷密集位主 session 直做（上表 impl-lite 行對偶）
+
 ## external-runtime routing（family 軸）
 
 family＝GLM/muse/codex；profile＝implement/review/advisory——tier/family/profile 詞彙由本檔定義，其他載體只引用。**委派、收法、定向接續/fork 前必載 model-routing skill**（解析表、webgpt 約束、eligibility、bridge 契約、rate limit 全在 skill）。external-runtime policy 不擴充 tier/pin；工單禁再委派時載 skill 不等於自行 spawn。

@@ -16,6 +16,17 @@ description: "build 後收尾鏈編排 — code-review → judge-review → 修�
 
 被編排項目全為 skills（`code-review` / `judge-review` / `followup-review` / `consistency` / `metadata-sync`）：Claude 端以 slash（`/code-review`）或 Skill tool 調用，ZCode 端以 Skill tool 調用——跨 harness 統一。
 
+## 標準收斂鏈（user 慣用 pipeline——「照標準鏈」即此）
+
+角色鏈（Role≠Model——寫角色不寫 model 名；現行角色→model 映射查 [model-routing](../model-routing/SKILL.md) 解析表）：
+
+```
+Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 user）
+```
+
+- 構件真相源各歸其主（implement／code-review／judge-review／commit consent），本節只鎖序與 gate
+- commit gate 恆在 user（自主模式不豁免）；收尾段只做機械（commit 前整理），不重做判斷
+
 ---
 
 ## 階段 0 — Diff Triage（決定跑哪些子鏈）

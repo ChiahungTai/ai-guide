@@ -63,6 +63,10 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 **spawn Agent 前必須印出確認**：`[Agent] model=<依 model-routing 角色 tier>, max=N, current=M`
 
+### 調查型 fan-out（N-flash＋主 session 統合）
+
+考古／稽核／掃描／分類調查→開 N 個 flash 平行拆樣（**一次三個為上限**，user 裁定）＋**主 session 統合複查**（主 session 的義務，不外包給 agent）。
+
 ### Spawn 預設背景（ZCode spawn 原生預設前台——規則補上）
 
 ZCode 的 Agent tool **預設前台**（阻塞主對話）——前台 spawn 期間使用者無法插話，steering 訊息只能中斷、連帶殺掉 agent。因此：

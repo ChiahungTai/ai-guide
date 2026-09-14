@@ -42,10 +42,12 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 - **審查類（ep-review／code-review 等 review agent 層）→ lite 預設（user 裁定；ZCode/GLM 主軸＝glm-5.3-flash、CC 端＝sonnet 詞彙——依 harness 查 tier 表）**：findings 生產層跨家族/跨層品質已實證，判斷價值集中 judge 裁決層；跨家族第二意見仍 muse 優先（非 GLM 視角）；升 full 條件＝高保護面／跨邊界語義面（保護面厚度反轉為升級觸發）；**judge 裁決層不變：固定主 session 旗艦（ZCode 主軸＝GLM 5.3，AIR-24 三防線）（seat 非 full 時依 rules/model-routing.md 角色表升級外派，禁 in-session 降級自判）**；dual-family 鏈 judge 全採納（零否決）時顯性自查三防線#2（sycophancy 下傳——AIR-46 實證零否決×2 未觸發）；外部 runtime 委派承載者＝主 session 背景 Bash（禁 subagent wrapper——見 reviewer 交接契約「承載者」）；registry 釘選＝base 非強制——顯式升級＝換 full-tier 載體（高保護面／跨邊界語義面）；跨家族第二意見換 muse（ZCode 無 spawn-time model 參數）
 - **實作（implement profile bridge 委派）＝預設 muse**（user 修訂拍板）：重實作段 muse、lite 機械段 glm-5.3-flash；**CR 工具鏈 registry agent cr-research 已裁升 full（v3.1——AIR-76 定案，脫離 muse＋glm-5.3-flash 收斂）**；全域研究 fallback＝內建 Explore（繼承主模型，釘 lite 可選非必要）——與「user 直在 muse code 開發」仍是兩種形態（委派 vs harness 切換）
 - **影像需求（vision tier）＝需「支援影像的 model」，現值＝glm-5.3-flash**（user 拍板「影像目前都用 flash」——選它因 5.3 flash 原生多模，非因 lite tier；非所有 lite 款都具影像能力）——muse `--image` 是能力備註（上表），非現值路由
-- **codex（OpenAI）→ 預設不派**（額度面 as-of 查 spine——不派屬 ad-hoc 政策非額度因素）——僅 user 顯式指定（例：「codex sol max」；顯式指定多一種形態：`chatgpt-web/*` 走 web 訊息額度 pool，例「codex web high」→ `chatgpt-web/high` 旗艦）。**webgpt 形態專責 review／規劃、禁大型實作**（三條使用約束與失敗態處置見 External-runtime 段 webgpt 專節）。定性甜蜜點實證：control-plane／docs 形態 repo 的全 repo 狀態對抗深審（[/state-review](../state-review/SKILL.md) 的候選家族之一）——產出與 in-family 盲點正交（權威模型／事務完整性／provenance 類問題）；本行是能力備註，不構成取消顯式指定授權
+- **codex（OpenAI）→ 預設不派**（額度面 as-of 查 spine——不派屬 ad-hoc 政策非額度因素）——僅 user 顯式指定（例：「codex sol max」；顯式指定多一種形態：`chatgpt-web/*` 走 web 訊息額度 pool，例「codex web high」→ `chatgpt-web/high` 旗艦）。**webgpt 形態專責 review／規劃、禁大型實作**（三條使用約束與失敗態處置見 External-runtime 段 webgpt 專節）。定性甜蜜點實證：control-plane／docs 形態 repo 的全 repo 狀態對抗深審（[/state-review](../state-review/SKILL.md) 的候選家族之一）——產出與 in-family 盲點正交（權威模型／事務完整性／provenance 類問題）；本行是能力備註，不構成取消顯式指定授權；顧問形態（user 說「跟 codex 討論」）見「顧問觸發兩層語義」節（點名即顯式指定已滿足）
 - **CC（Anthropic 詞彙面）→ sonnet／haiku／opus 可派**（user 拍板）；背後接線＝machine-local（user 維護，訂閱變更自換），規範層不記載；未訂閱家禁派（現值 as-of 查 spine `model-runtime-entitlements`）
 
 **額度 failover（僅撞牆時）**：GLM 撞 1308（錯誤訊息含重置時間戳）→ muse 承接執行段；muse 亦乾 → 等 reset（`/at`）或 user 裁定硬跑；任何降級必顯式記錄（AIR-13）
+
+**arc 內改判（user 最新一句為準）**：同弧內 user 改派（例「subagent 改用 5.3 flash」）→ 後段路由以最新指派為準，前一指示不鎖死；改判只影響該弧，不改本檔預設
 
 ### harness 部署填法（pins＝部署預設；值抄上表）
 
@@ -149,6 +151,12 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 3. **flag 面**：收 `--model`／`--write-mode`／`--background`／`--caller-session`／`--json`／`--resume`／`--disallowed-tools`（透傳）＋positional prompt（`--prompt` 恆結尾）；拒收 `--trust-workspace`／`--steps`／`--yolo`／`--effort`／`--allow-workspace-switch`／`--network`——muse 形的 flag 組合（如 `--trust-workspace --steps 800`）照抄即炸，委派範例須標 family 差異。
 4. **resume/fork semantics unverified**：`--resume` 收單在場但 session identity 連續性未證——do not infer continuation support from muse/codex。
 5. **ledger 語義**：`model`＝caller 原始拼法、`effectiveModel`＝canonical native（parsed-success attestation）、`mode`＝handed——analytics 鍵 `(family, model, effectiveModel)`、身份認 `effectiveModel`；兩欄不合并。
+
+### 顧問觸發兩層語義（「跟 codex(,5.3) 討論」）
+
+- **user 說了（指令層）**：「跟 codex(,5.3) 討論」「問顧問團」等原話＝判斷密集位的**指令動作**——**禁自收斂跳過**；顧問僅意見權（最終裁決歸 user／primary session）；**兩段式回報**（先外部收斂、再跟 user 討論；原話已授權「討論後做」者除外）；codex 授權＝點名即顯式指定已滿足（舊「逐弧原話」二次確認已退役，user 裁定）——經 bridge 照常派發，payload／eligibility／失敗態 gate 照走；bridge 不可用時出 paste-ready 工單由 user 轉貼為備用
+- **user 沒說（自判層）**：AI 按需調用——難題（架構取捨／多方案裁決／疑似 bias）才叫顧問；**勿套會議儀式**（開場群聊／三家融合需 user 明示）
+- 安全邊：大 payload 派發前段落級評估（webgpt 約束）；失敗態按表處置，禁盲重派
 
 ### eligibility gate（六條，逐條判）
 

@@ -22,6 +22,7 @@ main @ `14da94c`。源起＝2026-09-14 user×AI 詞彙治理討論（側聊三�
 1. **vision 是能力軸非強度軸，卻放在 tier 枚舉裡**——doctrine 自己承認（model-routing skill L12「能力軸非強度軸，旗艦／一般都可能具備或不具備」），AIR-24 以詞彙經濟學併入；症狀：vision row 結構上是 filter（哪些 model 有影像）非強度 profile、L44 需 footnote 自衛（「非所有 lite 款都具影像能力」）、全庫唯一消費者＝vision-review。方向素材：兩軸重構（tier: full/lite＋capability flags: vision；解析序＝capability 先過濾、tier 在過濾集內選）；今天派工結果零變化（vision-review 仍落 glm-5.3-flash，user 拍板「影像都用 flash」與 tier 無關）。
 2. **「旗艦」一詞雙義**——A 義＝full tier 中文 gloss（rules/model-routing.md:9、skill L12/L16/L22-32、agent-workflow L57/L233、agents/AGENTS.md:110、self-contained-prompt L50、skills/CLAUDE.md:132、sync_agents.py:44）；B 義＝家族在籍最強 model 屬性（skill L119「gpt-5.6-sol（原生旗艦）」、L120）。A 義的「最強」語感是假的（見題 3），兩義會打架；drift 命中清單已掃齊（上列即全清單）。
 3. **最強檔天花板沒有詞彙位置**——gpt-6-astra（最強檔；ChatGPT 帳號路徑 server 拒、需 credits 載具）與 fabel（禁派、訂閱面）強於在籍旗艦（sol／GLM-5.3）；不開新 tier（tier＝requirement 檔非 capability 排行榜）；現有落點＝family inventory＋spine `model-runtime-entitlements` 帳號面 gate，解鎖日才進 tier 表換首選——此現狀是否足夠屬討論項。
+4. **Marshal 控場框架（Role≠Model——user 09-13 宣告正式框架，ai-rules 全庫零固化）**：角色定義 What（要做什麼）、Policy 定 Who（哪個 model／harness 做）、Marshal 定 When（控場推進，不選 model 不改裁決）；六角色＝Marshal／Planner／Implementer／Reviewer／Verifier／Arbiter（Reviewer≠Arbiter：意見權 vs 裁決權）；現行映射＝Marshal 主 session、Implementer flash、Reviewer codex＋flash、Verifier 機械證據腿、Arbiter 5.3 judge-review。語義先落本卡收斂，成熟後載體＝agents/AGENTS.md（角色模型節）或獨立 skill。素材源＝sub＋model 考古報告 P11（`.agent-tmp/sub-model-usage-audit.md`）。
 
 ## 已決策（勿重辯）
 - **整體討論、不預設定稿、作法要再討論**（user 2026-09-14 側聊裁定）——本卡是討論載體＋治理承諾，開工前須先收斂做法
@@ -34,6 +35,7 @@ main @ `14da94c`。源起＝2026-09-14 user×AI 詞彙治理討論（側聊三�
 ② 旗艦去雙義方向：保留哪一義（family 屬性義 vs tier gloss 義）、另一義換什麼詞
 ③ 最強檔的詞彙位置：family inventory＋spine gate 現狀是否足夠，還是要顯式詞彙（如「最強檔」入表註記）
 ④ 遷移形態：獨立弧一次清理 vs 隨觸及漸進（AIR-89 剛動過 model-routing——時點考量）
+⑤ Marshal 框架語義收斂：六角色定義＋Role≠Model 原則＋與 tier 表關係（Marshal 不選 model、Reviewer≠Arbiter）＋落地載體（agents/AGENTS.md vs 獨立 skill）
 
 ## 漣漪清單（實作時 rg drift 全掃，命中清單現成）
 rules/model-routing.md、skills/model-routing/SKILL.md、skills/agent-workflow/SKILL.md、skills/self-contained-prompt/SKILL.md、skills/CLAUDE.md、agents/AGENTS.md、scripts/sync_agents.py（含 pin dict 生成物 registry）、agents/roles/vision-review.md（若重釘）
@@ -41,7 +43,7 @@ rules/model-routing.md、skills/model-routing/SKILL.md、skills/agent-workflow/S
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 討論材料齊：三題現況＋選項方向＋漣漪清單落卡（本卡 desc 即初版，討論中增補）
+- [ ] #1 討論材料齊：四題現況＋選項方向＋漣漪清單落卡（本卡 desc 即初版，討論中增補）
 - [ ] #2 作法經整體討論收斂：軸模型與遷移形態 user 拍板，落卡 notes（勿重辯段更新）
 - [ ] #3 落地後 rg drift 掃描零殘留＋派工行為零變化驗證（機器 token 與實際 model 解析結果不變）
 <!-- AC:END -->
