@@ -1,11 +1,14 @@
 ---
 id: AIR-93
 title: muse 原生 session-end 記憶寫入繞閘——governance 覆蓋缺口修復（mosaic 證據鏈承接）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-14 03:13'
+updated_date: '2026-09-14 03:35'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/09-14-air93-muse-session-end-bypass/dossier.md
 ordinal: 79000
 ---
 
@@ -20,3 +23,9 @@ ordinal: 79000
 
 〔驗收：①機制確認落卡（muse 原生寫入的觸發條件與路徑，文檔或實測證據）②閘覆蓋修復落地或偵測網上線（擇一或並行，user 拍板）③重放驗證：模擬 session-end 寫入被攔/被偵測④文檔同步（README 運維節＋AGENTS.md Muse memory 段若受影響）〕
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[09-14 機制確認 AC① 中間檢查點] 調查完成（文檔+binary+session log 鑑識+canary 自然實驗+bridge runner 源碼）：①寫入者=muse runtime teardown 行為（session.end 後 103s、log 已關、零 tool 事件、5 檔 working tree 直寫無 commit）②PreToolUse 天然攔不到＋sandbox 只罩 shell tool（且 yolo 全關）＝兩道既有防線皆無效 ③官方設定面無開關；binary 候選 env var MUSE_EXPERIMENTAL_MEMORY_REPOSITORY_SYNC 語義未證（bridge runner 無注入、unset 仍寫入）④非每 session 觸發（canary 零寫入）——觸發條件 H1(memory 意圖)/H2(池在場) 未區分 ⑤SessionEnd hook observational＝偵測可行攔截不可行。修法評估＋討論問題 Q1-Q5 見 dossier：ai-analysis/_tasks/09-14-air93-muse-session-end-bypass/dossier.md。下一步：codex+5.3 雙討論收斂修法（user 09-14 指令）
+<!-- SECTION:NOTES:END -->
