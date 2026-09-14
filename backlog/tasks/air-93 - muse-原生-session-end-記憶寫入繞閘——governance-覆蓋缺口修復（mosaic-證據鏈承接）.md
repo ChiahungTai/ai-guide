@@ -4,7 +4,7 @@ title: muse 原生 session-end 記憶寫入繞閘——governance 覆蓋缺口�
 status: In Progress
 assignee: []
 created_date: '2026-09-14 03:13'
-updated_date: '2026-09-14 03:35'
+updated_date: '2026-09-14 03:45'
 labels: []
 dependencies: []
 references:
@@ -28,4 +28,6 @@ ordinal: 79000
 
 <!-- SECTION:NOTES:BEGIN -->
 [09-14 機制確認 AC① 中間檢查點] 調查完成（文檔+binary+session log 鑑識+canary 自然實驗+bridge runner 源碼）：①寫入者=muse runtime teardown 行為（session.end 後 103s、log 已關、零 tool 事件、5 檔 working tree 直寫無 commit）②PreToolUse 天然攔不到＋sandbox 只罩 shell tool（且 yolo 全關）＝兩道既有防線皆無效 ③官方設定面無開關；binary 候選 env var MUSE_EXPERIMENTAL_MEMORY_REPOSITORY_SYNC 語義未證（bridge runner 無注入、unset 仍寫入）④非每 session 觸發（canary 零寫入）——觸發條件 H1(memory 意圖)/H2(池在場) 未區分 ⑤SessionEnd hook observational＝偵測可行攔截不可行。修法評估＋討論問題 Q1-Q5 見 dossier：ai-analysis/_tasks/09-14-air93-muse-session-end-bypass/dossier.md。下一步：codex+5.3 雙討論收斂修法（user 09-14 指令）
+
+[09-14 雙討論收斂（user 指令：調查好與 codex+5.3 討論後定修法）] codex advisory job-mu0oz3v8-pi9rat（chatgpt-web/high）＋GLM-5.3 judge job-mu0oz4ai-t4rs7o。兩家獨立收斂：①主防線＝池 state 對帳網（非事件攔截）——5.3：git delta 對帳掛 memory-audit 機械層（全樹含索引、基線＝上線 commit、AC 措辭『結算時對帳』）；codex：approved-state reconciliation 為 correctness boundary（cutover baseline、禁 receipt 回填）——調和＝池已是 git repo，git HEAD 即 approved baseline，porcelain delta 即偵測面；威脅模型通案化（一切無收編池寫入，不限 muse）②SessionEnd hook 降級 telemetry/早報（兩家都抓到時序缺陷：hook fire 早於寫入 103s）——v1 不做③env var MUSE_EXPERIMENTAL_MEMORY_REPOSITORY_SYNC 須 live probe 實證（字串存在≠disable 語義；disposable fixture A/B），證實後 bridge 注入＝prevention 噪音抑制、明文非防線（bridge 只罩 bridge session、TUI 直開不保護）④sandbox ③棄⑤H1/H2 觸發條件不值得單獨花額度（state invariant 條件無關）⑥驗收兩層＝synthetic regression（無 receipt 池寫入→detector fire）＋一次真 muse session-end replay（disposable fixture）⑦codex 抓到 dossier 證據錯誤已修：10:43:51 波實為 3 檔（含 tpex＝被拒工作單目標條目——teardown 套用被拒內容證據更強），08:45:48 為同日另一波 3 檔——非孤立事件。待 user 拍板 AC② 修法後實作（跨 repo 面：bridge 注入＋bridge-exit 對帳列 delegate-bridge followup）
 <!-- SECTION:NOTES:END -->
