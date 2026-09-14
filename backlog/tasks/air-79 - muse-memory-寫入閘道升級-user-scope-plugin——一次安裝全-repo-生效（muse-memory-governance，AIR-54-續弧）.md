@@ -39,6 +39,8 @@ ordinal: 65000
 〔09-12 鏈結算〕user 指定鏈=implement(flash)→post-build→code-review(flash+codex)→judge(5.3) 已跑至可達上限：S1 結算（03376b5）→S2/S3 offline（e9e69a7）→code-review 雙腿（codex job-mtxsd4ap＋flash code-reviewer；2🔴+4🟡+4ℹ️ 全採納）→judge 裁決＋修正＋12 新測試（f78a763，343 passed；帳本 .review/air-79.md）。**parked at live gates**：S4 cutover 需 gate③⑤ live 證據（muse 額度 429→2026-09-14T00:00Z）；恢復程序=poc/poc_activation.md 末段（L1-L6→凍結 P-WS→gate 判定→S4→S5→post-build 收尾鏈）。branch air-79 四顆 commit 待最終 /commit 確認後收尾。
 
 live 腿 09-14 由 mosaic 端完成（L1-L6 全綠）；收尾四件事由 follow-up 小卡承接（backlog 內 air-91 之後最新一張，title 含「AIR-79 live 腿收尾」）——receipt/patch/條款/同步，證據源＝poc/live_receipt_20260914.md
+
+live 腿 L1-L6 全綠（2026-09-14 mosaic 端執行，receipt 落 poc/），四 gate 終局 PASS，收尾四件由 AIR-92 承接。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
