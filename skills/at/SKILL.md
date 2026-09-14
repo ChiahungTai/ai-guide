@@ -29,7 +29,7 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
    |---------|---------|------|
    | `HH:MM` | 今天指定時間；已過 → 明天 | `14:30` → 今天 14:30 |
 
-   計算 cron 表達式（5-field：`分 時 日 月 週`），pinned 到具體日/月（當前日期以 `date` 輸出為準），DoW = `*`。
+   **觸發時刻 T = 輸入 +1 分鐘**（秒數誤差防護；時間邏輯同 [usage-ping](../usage-ping/SKILL.md)）。計算 cron 表達式（5-field：`分 時 日 月 週`）用 T pinned 到具體日/月（當前日期以 `date` 輸出為準，跨日跨月交給 `date -v` 疊加**不手算**），DoW = `*`。**不做整點/半點提前 shift**——usage-ping CC 端的 `:00`/`:30` +1 jitter 是探測場景防早跑需求；本命令是接續任務，提前數十秒觸發無害（user 裁定不做）。
 
 > **不支援相對時間**（`+Xh`/`+Xm`）：相對延遲須 LLM 自算換算成絕對時刻，註冊瞬間時刻已過會靜默滾到一年後才觸發。用戶給相對時間時，用 `date` 查當前時間換算成絕對時刻（跨日時明確向用戶確認目標日期），再排程。
 
@@ -103,13 +103,13 @@ prompt: |
 
 ```
 ✅ 排程已建立（/at）
-- Resume 時間：{HH:MM}
+- Resume 時間：{HH:MM}（輸入 +1 分後的實際觸發時刻）
 - Cron ID：{job_id}
 - Context：{context_file_path}
 - 任務：{task hint}
 ```
 
-語音通知：`say -v Meijia -r 180 "已排程在 HH:MM 接續工作"`
+語音通知：`say -v Meijia -r 180 "已排程在 HH:MM 接續工作"`（報實際觸發時刻）
 
 ---
 
@@ -129,7 +129,7 @@ Resume 觸發時，LLM 應：
 ## 使用範例
 
 ```bash
-# 指定時間接續
+# 指定時間接續（14:30 輸入 → 14:31 實際觸發）
 /at 14:30
 
 # 指定時間 + 任務簡述
