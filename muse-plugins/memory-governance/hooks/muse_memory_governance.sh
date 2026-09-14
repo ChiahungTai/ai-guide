@@ -11,8 +11,9 @@
 #
 # Origins (EP S1 要點2/3):
 # - plugin origin (no governance env): resolve repo per call
-#   (GOVERNANCE_REPO > stdin workspace field [provisional seam, S2 P-WS
-#   freezes] > git $PWD upward), structured legacy-owner surrender, marker
+#   (GOVERNANCE_REPO > stdin cwd field [order frozen — see resolver
+#   comment; workspace/host_workspace kept as fallbacks] > git $PWD
+#   upward), structured legacy-owner surrender, marker
 #   three-state, inbox containment check, fail-closed divert.
 # - registered origin (thin launcher sets GOVERNANCE_ORIGIN=registered +
 #   GOVERNANCE_REPO=<repo root>): skips repo resolution / legacy-owner /
@@ -75,16 +76,19 @@ case "$TOOL" in
   *) exit 0 ;;
 esac
 
-# Repo resolution: env (launcher/fallback injection) > stdin host workspace
-# field (candidate order is a provisional seam — S2 P-WS freezes it;
+# Repo resolution: env (launcher/fallback injection) > stdin repo fields
+# (order .cwd // .workspace // .host_workspace — frozen, live 2026-09-14;
 # absence tolerated) > git rev-parse upward from $PWD.
 REPO=""
 if [ -n "${GOVERNANCE_REPO:-}" ]; then
   REPO=$GOVERNANCE_REPO
 else
-  REPO=$(printf '%s' "$IN" | jq -r '.workspace // .cwd // .host_workspace // empty' 2>/dev/null || true)
+  # P-WS frozen (live 2026-09-14): muse live stdin carries `cwd` (workspace
+  # root); no `workspace`/`host_workspace` field exists. Alternates kept as
+  # backward-compat fallbacks.
+  REPO=$(printf '%s' "$IN" | jq -r '.cwd // .workspace // .host_workspace // empty' 2>/dev/null || true)
   if [ -n "$REPO" ]; then
-    # Provisional-seam hardening (review R4): a stdin-derived repo is
+    # Seam hardening (P-WS frozen order): a stdin-derived repo is
     # untrusted input — only trust it when it is itself a git root; otherwise
     # fall back to $PWD-based resolution (harness cwd-in-repo semantics).
     SEAM_OK=$(git -C "$REPO" rev-parse --show-toplevel 2>/dev/null || true)

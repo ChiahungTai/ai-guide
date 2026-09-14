@@ -303,14 +303,68 @@ def test_sm10_cwd_subdir_resolves_repo_root_via_git(tmp_path):
 
 
 def test_stdin_workspace_field_resolves_repo(tmp_path):
-    """Provisional seam (S2 P-WS freezes candidates): stdin workspace field
-    resolves the repo without GOVERNANCE_REPO or cwd dependence. R4
-    hardening: the field is honored only when it is itself a git root."""
+    """P-WS frozen (live 2026-09-14): stdin workspace is a backward-compat
+    fallback — resolves the repo when the authoritative cwd field is absent
+    (no GOVERNANCE_REPO or $PWD dependence). R4 hardening: the field is
+    honored only when it is itself a git root."""
     repo = make_repo(tmp_path)
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
     payload = mem_payload()
     payload["workspace"] = str(repo)
     r = run_core(None, payload, cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    parse_deny(r.stdout)
+    assert len(inbox_files(repo)) == 1
+
+
+def test_stdin_cwd_field_resolves_repo(tmp_path):
+    """P-WS frozen (live 2026-09-14): muse live stdin carries `cwd`
+    (workspace root) and no `workspace`/`host_workspace` field — stdin cwd
+    alone resolves the repo without GOVERNANCE_REPO or $PWD dependence."""
+    repo = make_repo(tmp_path)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    payload = mem_payload()
+    payload["cwd"] = str(repo)
+    r = run_core(None, payload, cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    parse_deny(r.stdout)
+    assert len(inbox_files(repo)) == 1
+
+
+def test_stdin_cwd_takes_priority_over_workspace(tmp_path):
+    """P-WS frozen order (.cwd // .workspace // .host_workspace): with both
+    fields present and $PWD outside any repo, the divert lands in the
+    cwd-named repo — cwd is authoritative, workspace is a legacy fallback."""
+    repo_cwd = make_repo(tmp_path)
+    subprocess.run(["git", "init", "-q", str(repo_cwd)], check=True)
+    repo_ws = tmp_path / "repo-ws"
+    (repo_ws / ".agents" / "memory").mkdir(parents=True)
+    write_marker(repo_ws, {"protocol": 1})
+    subprocess.run(["git", "init", "-q", str(repo_ws)], check=True)
+    payload = mem_payload()
+    payload["workspace"] = str(repo_ws)
+    payload["cwd"] = str(repo_cwd)
+    r = run_core(None, payload, cwd=tmp_path)
+    assert r.returncode == 0, r.stderr
+    parse_deny(r.stdout)
+    assert len(inbox_files(repo_cwd)) == 1
+    assert inbox_files(repo_ws) == []
+
+
+def test_stdin_repo_fields_null_fall_back_to_pwd(tmp_path):
+    """P-WS frozen: null cwd/workspace/host_workspace fields 與欄位缺席同待遇
+    （防禦性 pin；live 實證僅 transcript_path=null 與 workspace/host_workspace
+    缺席）— the jq chain yields empty and $PWD upward resolution is unchanged
+    (SM-10 pin)."""
+    repo = make_repo(tmp_path)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    sub = repo / "sub"
+    sub.mkdir()
+    payload = mem_payload()
+    payload["cwd"] = None
+    payload["workspace"] = None
+    payload["host_workspace"] = None
+    r = run_core(None, payload, cwd=sub)
     assert r.returncode == 0, r.stderr
     parse_deny(r.stdout)
     assert len(inbox_files(repo)) == 1
@@ -657,13 +711,29 @@ def test_marker_numeric_one_lexical_forms_valid(tmp_path, raw):
 
 
 def test_stdin_workspace_bogus_falls_back_to_cwd(tmp_path):
-    """R4 seam hardening: an stdin workspace value that is not itself a git
-    root is ignored; resolution falls back to $PWD (cwd-in-repo)."""
+    """R4 seam hardening (P-WS frozen order): an stdin workspace value that
+    is not itself a git root is ignored — with no cwd field either,
+    resolution falls back to $PWD (cwd-in-repo)."""
     repo = make_repo(tmp_path)
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
     payload = mem_payload()
     payload["workspace"] = str(tmp_path / "nonexistent-bogus")
     r = run_core(repo=None, payload=payload, cwd=repo)
+    assert r.returncode == 0, r.stderr
+    parse_deny(r.stdout)
+    assert len(inbox_files(repo)) == 1
+
+
+def test_stdin_bogus_workspace_with_cwd_resolves_cwd(tmp_path):
+    """P-WS frozen: a bogus (non-git-root) workspace alongside a valid cwd
+    still resolves the cwd-named repo — a stale workspace fallback must not
+    mask cwd authority ($PWD outside every repo)."""
+    repo = make_repo(tmp_path)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    payload = mem_payload()
+    payload["workspace"] = str(tmp_path / "nonexistent-bogus")
+    payload["cwd"] = str(repo)
+    r = run_core(None, payload, cwd=tmp_path)
     assert r.returncode == 0, r.stderr
     parse_deny(r.stdout)
     assert len(inbox_files(repo)) == 1

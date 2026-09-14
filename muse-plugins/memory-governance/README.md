@@ -28,7 +28,7 @@ per-repo marker 檔＝`.agents/memory-governance.json`：
 
 ```
 muse plugins install <path-to>/muse-plugins/memory-governance --scope user
-muse plugins approve
+muse plugins approve <id>
 muse plugins list
 ```
 
@@ -69,14 +69,26 @@ mv -f ~/.local/share/muse-memory-governance/current.tmp \
 
 ## Health check
 
-- `muse plugins list`：plugin 在冊（注意：list **不暴露 per-capability approve 狀態**——
-  approval 面靠下行行為 smoke 驗證）。
+- `muse plugins list`：plugin 在冊（list **不暴露 per-capability approve 狀態**，其
+  "hooks require review" warning 是常駐雜訊非訊號——approval 面看下方「運維（operations）」節
+  的 `inspect --json` assert＋行為 smoke）。
 - marker：`.agents/memory-governance.json` 存在且 `protocol` 為 JSON number 1。
 - 固定安裝點（若使用）：`current` symlink 可解析且目標 `hooks/muse_memory_governance.sh` 可執行。
 - **跨副本一致性**：repo 本地副本／固定安裝點／plugin cache 三份核心的 sha256 應一致
   （cache 以 reinstall 對齊；不一致＝入口依賴哪份副本、行為就依哪個版本——先對齊再除錯）。
 - 行為 smoke：governed repo 呼叫 `add_memory` 應得 deny＋inbox receipt 檔；
   ungoverned repo 應零攔截；marker 改壞後同呼叫應 deny 且無新檔。
+
+## 運維（operations）
+
+- **每次 `muse plugins update` 後必須重新 `muse plugins approve <id>`**——approve 綁
+  `definition_hash`（含 script 內容）：content update → hash 變 → runtime `status=modified`
+  → hook 停火，形成 fail-open 窗口（窗口內記憶寫入 native 直寫 canonical），重釘即恢復。
+  形態是「update 之後」而非「install 之後」（live 2026-09-14 L5 實證）。
+- **health check 應 assert** `muse plugins inspect <id> --json` 的
+  `runtime_capabilities[].status == "trusted_enabled"`（`modified`＝停火待重 approve）。
+- `plugins list` 的 "hooks require review" warning 是 third-party 常駐雜訊，**非 approval
+  訊號**——勿據此判健康（O7 修正，live 2026-09-14）。
 
 ## Uninstall
 
