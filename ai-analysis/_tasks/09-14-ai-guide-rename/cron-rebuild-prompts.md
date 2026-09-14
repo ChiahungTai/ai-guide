@@ -6,19 +6,20 @@
 ## ① 每晚 23:40 memory 收斂——✅ 已建（本弧）
 
 - automationId：`automation-c9eb6495-2301-4fb7-bf18-81e244b135a9`（active；nextRun 首發＝2026-09-14 23:40）
-- 對應舊 id：`automation-751ecce2-a79c-4309-a79c-08486e2ee893`（休眠）
+- 對應舊 id：`automation-751ecce2-a79c-4309-a79c-08486e2ee893`（已刪 2026-09-14）
 
 ## ② 每週日 23:00 治理看照——✅ 已建（2026-09-14 掃尾 session）
 
 - automationId：`automation-23c773b9-52a0-46ba-a1f5-777a6f3261bf`（active；nextRun 首發＝2026-09-20 23:00）
-- 對應舊 id：`automation-fed036ff-17bf-4cf0-a50e-3216a7de6665`（休眠）
+- 對應舊 id：`automation-fed036ff-17bf-4cf0-a50e-3216a7de6665`（已刪 2026-09-14）
 - prompt 來源：db 考古（fed036ff 最後 CronUpdate payload ts 1788997150600）`ai-rules`→`ai-guide` 全替換（13 處；title 無 ai-rules 無需替換）——payload 內 4 處 `\"`、1 處 `\\.` 字面反斜線序列為原始內容，逐字保留未修；考古暫存＝`.agent-tmp/cron-archaeology-fed036ff.json`＋`.agent-tmp/prompt-2-replaced.txt`
 
-## ③ 每週六 23:10 糾正週報——待建（新 session 貼此 spec；09-14 於已建條 ② 的 session 試建第二條被 harness 拒，constraint 實證仍有效）
+## ③ 每週六 23:10 糾正週報——✅ 已建（2026-09-14 掃尾 session；09-14 於已建條 ② 的 session 試建第二條被 harness 拒，constraint 實證仍有效）
 
+- automationId：`automation-c52d4574-bf92-4f45-bb2a-81783d2f0379`（active；nextRun 首發＝2026-09-19 23:10）
+- 對應舊 id：`automation-370fafc5-a050-479e-b62f-9c7988d23521`（已刪 2026-09-14）
 - title：`每週六 23:10 糾正週報＋CR 使用健檢（corrections-weekly skill）`
 - cron：`10 23 * * 6`，recurring=true
-- 對應舊 id：`automation-370fafc5-a050-479e-b62f-9c7988d23521`（休眠）
 - prompt 全文（直接複製）：
 
 ```text
@@ -27,4 +28,4 @@
 【2026-09-14 改名註記】本排程原掛 ai-rules workspace（automation-370fafc5），repo 改名 ai-guide 後 workspace key 失效，由本排程原樣重建（僅 ai-rules→ai-guide 路徑替換，prompt 其餘逐字保留）。
 ```
 
-> 【09-14 掃尾後狀態】僅剩 ③ 待建：建新 session 後把上節 ③ 的 title／cron（`10 23 * * 6`，recurring=true）與 prompt 全文（已內嵌本檔，直接複製）貼入 CronCreate 即可，**無需 db 考古**。② 的考古已由掃尾 session 完成（來源記錄見 ② 節）。
+> 【09-14 掃尾後狀態】三條全數重建完成（①②③ 各節記新 automationId；② 的考古來源記錄見 ② 節；③ 無需 db 考古——prompt 內嵌本檔）。
