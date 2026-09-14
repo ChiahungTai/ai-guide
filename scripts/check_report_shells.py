@@ -7,7 +7,11 @@ kanban-board 結案兩步 `--ref` 換 done/ 路徑）——本 lint 把三類已
 1. 同殼宣告多個互斥 projection SHA（一殼只能有一個 current identity）；
 2. projection SHA 與同目錄 ep.md 的 content SHA 不符（stale projection）；
 3. 回源連結失效：`file:///Users/` 絕對路徑（跨 worktree/clone 必斷）、
-   `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔未補 done/）。
+   `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔未補 done/）；
+4. 連結合約（09-14 裁決：ai-guide 退出 :6421 report server）：殼內 .md 連結
+   採 repo 相對路徑（VSCode 直接開檔）——viewer URL 形態（127.0.0.1:6421、
+   /viewer/_md-viewer.html）在活躍殼即 violation；歷史位置（_tasks/done/、
+   reports/、blueprint/）殼留歷史態豁免，不回改。
 
 掃描範圍：git-tracked `ai-analysis/**/index.html`（渲染產物 diagram-*.html
 不進 git，自然排除）；存在性檢查限 .md/.json（svg 等渲染產物可重建，不查）。
@@ -29,12 +33,26 @@ _SHA_MENTION = re.compile(r"\b([0-9a-f]{7,64})（EP content SHA")
 _FILE_URL = re.compile(r'(?:href|src)="(file:///Users/[^"]+)"')
 _ROUTE = re.compile(r"""/(?:ai-rules|ai-guide)/((?:_tasks|_projects)/[^"'<>\s#]+)""")
 _RAW_MD_ROUTE = re.compile(r'href="([^"]*/(?:ai-rules|ai-guide)/[^"]*\.md)"')
+# viewer URL 形態（09-14 退役）：活躍殼即 violation，歷史位置殼豁免
+_VIEWER_URL = re.compile(r"""(?:127\.0\.0\.1:6421|/viewer/_md-viewer\.html)""")
+_HISTORICAL_PREFIXES = (
+    "ai-analysis/_tasks/done/",
+    "ai-analysis/reports/",
+    "ai-analysis/blueprint/",
+)
+
+
+def _is_historical(shell: Path, repo_root: Path) -> bool:
+    """殼位於歷史位置（done/＋reports/＋blueprint/）→ 留歷史態，豁免 viewer 檢查。"""
+    rel = shell.relative_to(repo_root).as_posix()
+    return rel.startswith(_HISTORICAL_PREFIXES)
 
 
 def lint_shell(shell: Path, repo_root: Path) -> list[str]:
-    """對單一殼跑三類檢查，回傳 violation 敘述清單（空＝通過）。"""
+    """對單一殼跑各類檢查，回傳 violation 敘述清單（空＝通過）。"""
     text = shell.read_text(encoding="utf-8")
     issues: list[str] = []
+    historical = _is_historical(shell, repo_root)
     shas = set(_SHA_MENTION.findall(text))
     if len(shas) > 1:
         issues.append(
@@ -50,11 +68,21 @@ def lint_shell(shell: Path, repo_root: Path) -> list[str]:
             )
     for url in _FILE_URL.findall(text):
         issues.append(f"file:// 絕對路徑連結（跨 worktree/clone 必斷）: {url}")
-    for url in sorted(set(_RAW_MD_ROUTE.findall(text))):
-        if url.startswith("file://") or "_md-viewer.html" in url:
-            continue  # file:// 另有專屬規則；viewer 形態＝合約合法
+    viewer_hits = sorted(set(_VIEWER_URL.findall(text)))
+    if viewer_hits and not historical:
         issues.append(
-            f"raw .md route 連結（viewer-only 合約——.md 一律 viewer 形態）: {url}"
+            "viewer URL 形態已退役（09-14 ai-guide 退出 :6421——改 repo 相對路徑，"
+            f"歷史位置豁免）: {viewer_hits}"
+        )
+    for url in sorted(set(_RAW_MD_ROUTE.findall(text))):
+        if url.startswith("file://"):
+            continue  # file:// 另有專屬規則
+        if "_md-viewer.html" in url:
+            # viewer 形態：歷史殼豁免；活躍殼由上方 _VIEWER_URL 檢查統一承接——
+            # 此處一律跳過，避免同一 viewer 連結被重複計數
+            continue
+        issues.append(
+            f"raw .md http 連結（合約＝repo 相對路徑，VSCode 直接開檔）: {url}"
         )
     for rel in sorted(set(_ROUTE.findall(text))):
         target = repo_root / "ai-analysis" / urllib.parse.unquote(rel)
