@@ -1,0 +1,87 @@
+# 軸B 架構面審查：測試變更七標本
+
+範圍聲明：僅套用軸B 六項 checklist；test↔TC 逐條對帳（軸A）不判，TC 文字僅作來源脈絡。所有信心水準以「標本文字可見」為界——標本外資訊（impl 綁定方式、suite 其他測試）一律標 unverified，不當事實陳述。各 finding 皆可被下層推翻（推翻條件隨附）。
+
+---
+
+## 標本 1 — `test_ex_div_reference_price`
+
+**命中：項目 4（evidence fidelity）｜🟡 Important｜confirmed**
+
+- 問題：名稱宣稱驗證除權息參考價計算，實際機制只有 `assert result is not None`——判別力趨近零。公式錯、捨入錯、單位錯（500.0 回成 5.0）全部綠燈。唯一捕獲的迴歸類別是「回傳 None」（guard 路徑壞掉），價值極窄。
+- 修正建議：oracle 改為獨立期望值（依實際除權息公式手算，如 `500.0 - 12.0 = 488.0`），並補邊界（dividend=0、大額股息）。
+- 信心：confirmed（標本全文可見）。可推翻條件：無——斷言強度是程式碼本身的事實。
+
+## 標本 2 — `test_reference_price_matches`
+
+**命中：項目 4｜🟡 Important｜confirmed**
+
+- 問題：`reference_price(500.0, 12.0) == reference_price(500.0, 12.0)` 是 x == x tautology。對同一純函數兩次同參呼叫，唯一能讓它失敗的是 non-determinism 或呼叫間 side-effect——對「計算正確」零判別力。錯誤實作必綠，是典型的 false green（綠燈只證明自洽）。
+- 修正建議：改獨立 oracle：`assert reference_price(500.0, 12.0) == 488.0`（或實際公式期望值）。
+- 信心：confirmed。
+
+## 標本 3 — `test_adjusted_series_uses_factor`
+
+**判定：clean（無 🟡/🔴 finding）**
+
+逐項檢查結果：名稱宣稱「uses factor」與機制（mock factor → 驗證輸出套用該 factor）相符，無 overclaim；unit+mock 層級與單函數測試性質匹配（項目 2）；有真實獨立 oracle `[93.1]`（非自比）。浮點等式疑慮已機械排除：`98.0 * 0.95 == 93.1` 在 IEEE754 double 下為 `True`（實跑驗證，見自證清單），不構成脆弱斷言。
+
+附一條 🟢 Suggestion（⚠️ 未實證，inferred）：項目 6——`mocker.patch("pricing.factor_api", ...)` 以 string-path 綁定，使測試耦合到 impl 的 symbol lookup topology；若 `adjusted_series` 端改為 from-import 值綁定，patch 會靜默失效、測試改打真實 `factor_api`（silent fallback）。impl 端綁定方式不可見，僅列為機制通則觀察，不列缺陷。
+
+## 標本 4 — `_portfolio` 共享狀態兩測試
+
+**命中兩項：**
+
+**Finding A — 項目 5（shared dependency）｜🟡 Important｜confirmed**
+- 問題：module-level `_portfolio = {}` 跨測試共享可變狀態，無 fixture 隔離、無 teardown。`test_add_board_increases` 寫入 `"tsmc": 3` 後殘留。本兩測試恰好在任一執行順序下都過（clear 是自清理），但每個測試的語境已依賴執行順序／`-k` 選擇／pytest-xdist 分片；任何依賴「初始為空」的後續測試或對 `test_sell_all_clears` 的小改都會炸出 order-dependent flake。
+- 修正建議：改 pytest fixture，每測試注入全新 dict。
+- 可推翻條件：無——共享結構是程式碼本身的事實。
+
+**Finding B — 項目 4（evidence fidelity）｜🟡 Important｜confirmed**
+- 問題：`test_sell_all_clears` 從未呼叫任何 sell 路徑——機制是 `_portfolio.clear()`（手動清 dict）後對空 dict 斷言 `shares({}) == 0`。名稱宣稱的「賣出清倉」行為完全未被驅動；sell 邏輯整個壞掉此測試照樣綠。
+- 修正建議：改為驅動真實 sell 路徑（先建立部位、呼叫 sell_all/sell、再斷言 shares == 0）。
+- 信心：confirmed（標本內可見的呼叫清單中無任何 sell 符號）。
+
+（附註：`test_add_board_increases` 直接以 dict literal 操作 `shares()` 的參數型別，屬 unit test 合理 white-box setup，且 oracle `3000` 是真實獨立期望值——不列 finding。）
+
+## 標本 5 — `from pricing.internal import _convert`
+
+**命中：項目 3（主）＋項目 4（副）｜🟡 Important｜confirmed**
+
+- 問題（項目 3）：測試以私有符號 `_convert` 為入口，未經消費端公開路徑驅動。結構性後果是雙向假號：內部轉換重構→測試碎（假紅，公開行為沒壞）；pipeline 接線壞→測試照綠（假綠，`_convert` 對但 pipeline 組裝不對）。
+- 問題（項目 4）：名稱 `test_pipeline_output` 宣稱 pipeline 層級證據，機制是 unit 級私有函數直呼——宣稱與機制不符。
+- 修正建議：pipeline output 走公開入口驅動；若 `_convert` 的 unit 行為值得單測，名稱與層級如實標 unit（`test_convert_*`）。
+- 信心：confirmed（import 與直呼可見；`_convert` 是否有公開 wrapper 未查，unverified——若公開入口就是它的薄封裝，項目 4 部分可被推翻，項目 3 仍成立）。
+
+## 標本 6 — `PositionAggregator` 兩測試
+
+**命中：項目 1＋項目 2｜🟡 Important（附明確升級條件）｜confirmed（對稱性缺口本身）**
+
+- 問題（項目 1，拓撲 vs blast radius）：變更是跨 pricing＋ledger 整合器的**聚合邏輯 diff**——高 ripple（兩模組消費端、會計/風控總量的上游）；測試拓撲僅兩條 trivial-input unit（`[] → 0`、單元素 `→ 1`）。聚合邏輯實際分歧處——多元素合計、重複標的、零 qty、捨入/單位——**零輸入觸及**。測試對 diff 的行為面幾乎不設防：聚合邏輯任何回歸皆綠燈通過。
+- 問題（項目 2，層級平衡）：integration 形狀的變更（跨模組整合器）配 unit-only trivial 測試；pricing 資料 × ledger 資料的組合 seam 完全沒有 integration 級測試，層級分佈與變點性質不匹配。
+- 升級條件（unverified，標本外）：若 suite 其他處亦無多頭聚合 unit 或 integration 測試，本 finding 升 🔴（變更實質未驗證即合併）。「其他測試存在與否」我無法從標本判斷，故不預設 🔴。
+- 修正建議：補 ≥3 元素多 Position 聚合 unit（含重複標的、零 qty 邊界）＋ 一條 pricing×ledger 資料組成的 integration 測試驅動真實組裝路徑。
+- 信心：缺口 confirmed（blast radius 由 prompt 背景給定、測試拓撲可見）；升級與否 unverified，已明列。
+
+## 標本 7 — `test_adjusted_price_correct`
+
+**命中：項目 4｜🟡 Important｜confirmed**
+
+- 問題：與標本 2 同構的 x == x tautology——`adjusted_price(95.0, 0.95) == adjusted_price(95.0, 0.95)`。且本標本全鏈無任何獨立期望值：來源 TC 的 oracle 欄把「正確」定義為「與實作回傳一致」，測試忠實落實了這個循環 oracle。對錯誤計算必綠，僅對 non-determinism 敏感；名稱宣稱「計算正確」，機制驗證不了任何正確性。（TC oracle 欄本身的修訂歸軸A；此處 finding 錨定在 code 本身：測試體內不存在獨立判準，是結構事實。）
+- 修正建議：oracle 改獨立期望值（`95.0 × 0.95 = 90.25`，浮點等值性可比照標本 3 方式機械驗證）或黃金值。
+- 信心：confirmed。
+
+---
+
+## 審查者自證清單
+
+**實際跑過的驗證**
+- `uv run python -c "print(98.0*0.95 == 93.1, ...)"` → `True 93.1 93.1`——標本 3 浮點等式機械確認，據此不列脆弱斷言 finding。
+
+**明確未查證項（不當事實陳述）**
+- 本任務明定唯讀、材料全在 prompt：未讀任何 repo 檔案、未跑 cr 圖譜查詢。因此：標本 3 的 patch 是否實際生效（impl 綁定方式）、標本 6 的 suite 級其他測試存在性、標本 5 的 `_convert` 是否有公開薄封裝、標本 4 的 `shares()` 實作語義——全部 unverified，已逐條標注。
+- 推理類觀察（標本 3 的 🟢）已標「⚠️ 未實證」；無任何 inferred finding 被標 🔴/🟡。
+
+**邊界聲明**
+- test↔TC 逐條對帳未做（軸A）；標本 7 對 TC oracle 欄僅引用為來源脈絡，finding 錨定 code。
+- 各 finding 均附可推翻條件；severity 摘要：🟡 ×7（標本 1、2、4×2、5、6、7），clean ×1（標本 3，附 🟢 ×1），🔴 ×0（標本 6 為條件性升級候選）。

@@ -41,6 +41,19 @@ Six-axis review with quality gates. Every change gets reviewed before merge — 
 - Clean module boundaries, dependencies flowing in right direction?
 - Appropriate abstraction level (not over-engineered, not too coupled)?
 
+**測試架構六項（diff 含 test files 時啟用——軸B；v3.1 測試契約）**：審這次 diff 的整體測試邏輯作為系統守不守得住（架構面）。本節是六項的**定義源**；啟用 wiring（dual-context 兩側注入／axis 3 觸發）見 [code-review](../code-review/SKILL.md)。
+
+| # | 項 | 判準 |
+|---|---|---|
+| 1 | 拓撲 vs blast radius | 測試拓撲與變更 blast radius 對稱——高 ripple 低覆蓋→finding |
+| 2 | 層級平衡 | unit/integration 分佈與變更性質匹配（整合器型變更 unit-only→finding） |
+| 3 | 符號≠路徑 | 掛引用 [audit-test 角度 4](../audit-test/SKILL.md)（消費端路徑覆蓋），不重複定義 |
+| 4 | evidence fidelity | 測試宣稱的證據等級與實際機制相符——標 E2E 實為 mock 鏈→finding。**機械觸發問句：mock 回傳值是否參與期望值推導鏈？**（是→evidence 降級 finding——MVP 實證 lite tier 對此形態漏檢，問句強制觸發不靠語意判斷） |
+| 5 | shared dependency | 測試間共享狀態/fixture 污染面（跨測試殘留、order-dependent flake） |
+| 6 | 耦合面 | test 與 impl 耦合深度（斷言綁實作細節非行為面） |
+
+**排除面（防越權回流）**：翻譯忠實度（test↔TC 逐條對帳）不歸軸B——歸 [audit-test](../audit-test/SKILL.md) 角度 8（軸A 機械對帳）。與 ### 1 Correctness「Tests cover the change and actually test the right things?」的分工：**結構面充分性**（測試架構守不守得住）由本六項判；**逐條 TC 對帳**由 audit-test 軸A 判——本檔審測試架構時不做逐條對帳。
+
 ### 4. Security
 
 - User input validated and sanitized?

@@ -1,0 +1,22 @@
+{
+  "finalText": "1. 最終 verdict 表（8 份各一行）\n\n- TC-A1／clean／與盲推一致\n- TC-A2／clean／與盲推一致\n- TC-A3／clean／與盲推一致\n- TC-A4／clean／與盲推一致\n- TC-A5／defective（oracle mutant：公式錯側）／與盲推一致\n- TC-A6／defective（oracle mutant：係數錯）／與盲推一致\n- TC-A7／defective（oracle mutant：邊界 off-by-one）／與盲推一致\n- TC-A8／defective（oracle mutant：oracle_source 循環依賴）／與盲推一致\n\n2. Mutant falsifiable 探針\n\n- 探針 A5-SIGN／輸入：前收 500.0、D=12.0／正確預期：除息參考價 488.0（`500−12`）／mutant 會錯成：512.0（`500+12`），在真實程式上 `assert ref==488.0` 通過、`assert ref==512.0` 失敗。\n- 探針 A6-UNIT／輸入：3 張 → 部位換算／正確預期：3000 股（`3×1000`）／mutant 會錯成：300 股（`3×100`），真實系統回 3000 即證偽 mutant。\n- 探針 A7-MIDNIGHT／輸入：`2026-09-15T00:00:00+08:00`（Taipei）／正確預期：歸屬 `2026-09-15`（半開區間 `[當日00:00, 次日00:00)`）／mutant（`≤午夜屬當日`）會錯成：歸屬 `2026-09-14` 或整點被兩日同時主張；另加對照輸入 `2026-09-14T23:59:59+08:00 → 2026-09-14`，兩者必須分屬不同日。\n- 探針 A8-CIRCULAR／輸入：前收 100.0、參考價 95.0、前日原始值 98.0（獨立手算期望 93.1）；再將 `adjusted_price()` 樁成回傳 98.0（未調整的錯值）／正確預期：獨立檢查 `output==93.1` 失敗、抓到 bug／mutant 會錯成：`output==adjusted_price()` 仍為真（98.0==98.0）而綠燈，證明該 oracle 無檢測力。\n",
+  "job": {
+    "callerHarness": null,
+    "callerPid": 90222,
+    "callerSession": null,
+    "effort": "high",
+    "exitCode": 0,
+    "family": "muse",
+    "id": "job-mu2vstsr-6yg3xb",
+    "jsonlPath": ".delegate-bridge/jobs/job-mu2vstsr-6yg3xb.jsonl",
+    "model": "muse-spark-1.3",
+    "promptPreview": "Reveal：你的盲推全部正確。官方答案面如下——\n\n| TC | verdict | 缺陷機制 |\n|---|---|---|\n| A1 | clean | —（1 張＝1000 股） |\n| A2 | clean | —（參考價 488.0） |\n| A3 | clean | —（日界＝台北午夜） |\n| A4 | clean | —（93.1＝98.0×0.95） |\n| A5 | orac",
+    "sessionId": "01a0a5de-b578-7c63-b3c0-9a48f6a12bd2",
+    "skippedUnknown": 10,
+    "skippedUnparsable": 0,
+    "status": "completed",
+    "steps": 200,
+    "summary": "1. 最終 verdict 表（8 份各一行） - TC-A1／clean／與盲推一致 - TC-A2／clean／與盲推一致 - TC-A3／clean／與盲推一致 - TC-A4／clean／與盲推一致 - TC-A5／defective（oracle mutant：公式錯側）／與盲推一致 - TC-A6／defective（oracle mutant：係數錯）／與盲推一致 - TC-A7／",
+    "timestamp": "2026-09-15T16:24:16.266Z"
+  }
+}

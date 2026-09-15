@@ -1,0 +1,22 @@
+{
+  "finalText": "## TC-A3：午夜切日歸屬 — clean\n\n推導：切日規則為 `trading_day = date(taipei_local_time)`，以 `Asia/Taipei 00:00` 為界。前者 `2026-09-14T23:59+08:00 → 2026-09-14`，後者 `2026-09-15T00:01+08:00 → 2026-09-15`。\n\n結論：**clean**。oracle：兩筆分別歸屬 `2026-09-14`、`2026-09-15`；predicate 為本地日期相等。\n\n## TC-A6：張×100 — defective\n\n推導：台股 1 張 = 1000 股是領域事實。3 張正確持股數 = `3 × 1000 = 3000` 股。\n\n結論：**defective——係數錯（10 倍低估）**。claim 的 `×100` 得 300 股是錯的；與 TC-A1 互斥，必有一錯，此為錯者。\n\n## TC-A1：張×1000 — clean\n\n推導：同上，`3 × 1000 = 3000` 股。\n\n結論：**clean**。oracle：3000 股。\n\n## TC-A8：與 `adjusted_price()` 一致即正確 — defective\n\n推導：正確 oracle 必須是獨立計算值（例如手算 `factor × price`），不能是被測實作自身的回傳值。\n\n結論：**defective——循環依賴／同義反覆 oracle（tautological oracle）**。`output == impl()` 恆成立，實作算錯也會通過；零檢測力。\n\n## TC-A5：除息參考價 = 前收 + D — defective\n\n推導：現金股利除息是價值移出，參考價 = `前收 − D`。`500.0 − 12.0 = 488.0`。\n\n結論：**defective——公式方向錯（符號相反）**。claim 得 `512.0`，多配股利反而變貴；與 TC-A2 互斥，錯的是此方。\n\n## TC-A4：除權息調整消跳空 — clean\n\n推導：調整係數 `f = 參考價 / 前收 = 95.0 / 100.0 = 0.95`。無套利連續性要求除權息日前所有歷史值同乘 `f`：`98.0 × 0.95 = 93.1`。\n\n結論：**clean**。oracle：前日調整值 `93.1`；predicate：`adjusted_prev == raw_prev × f`（容差內）。\n\n## TC-A7：`≤ 午夜屬當日` — defective\n\n推導：正確切日是半開區間 `[D 00:00:00, D+1 00:00:00)`，`2026-09-15T00:00:00` 歸屬 `2026-09-15`。`≤` 是閉邊界：午夜整點會被前後兩日同時主張，或依解讀方向歸入前一日（`2026-09-14`）造成差一錯誤。\n\n結論：**defective——邊界條件錯（含端點／off-by-one）**。正確 predicate 是 `< 次日午夜`，不是 `≤ 午夜`；若此 TC 預期 `2026-09-14` 則日期本身亦錯。\n\n## TC-A2：除息參考價 = 前收 − D — clean\n\n推導：同 TC-A5，`500.0 − 12.0 = 488.0`。\n\n結論：**clean**。oracle：`488.0`。\n\n## completeness：同題材被漏掉的場景\n\n1. **除權（配股）與 combined 除權息公式**：`參考價 = (前收 − D) / (1 + 配股率)`，只測現金股利漏掉除權分支與混合 case。\n2. **零股／非整張與單位混淆**：零股以「股」輸入（如 50 股）、1 張 ± 1 股邊界；系統須區分股／張輸入單位，否則 A1/A6 的換算在零股處靜默錯 1000 倍。\n3. **時區感知 vs. naive timestamp**：UTC 輸入轉換（`2026-09-14T16:00Z = 09-15T00:00+08:00`）、naive 時間預設時區、午夜 ±1 秒／毫秒邊界對（`23:59:59` vs `00:00:00` vs `00:00:01`）。\n4. **多次公司行動的因子連乘**：連續兩次除權息時歷史調整因子應連乘不斷裂；單次 A4 通過不保證鏈式正確。\n5. **非法／退化輸入**：`D > 前收`（參考價為負應拒絕而非輸出負價）、`D = 0`、除權息日落在非交易日／假日的歸屬。\n",
+  "job": {
+    "callerHarness": null,
+    "callerPid": 90222,
+    "callerSession": null,
+    "effort": "high",
+    "exitCode": 0,
+    "family": "muse",
+    "id": "job-mu2vonr8-gh52ev",
+    "jsonlPath": ".delegate-bridge/jobs/job-mu2vonr8-gh52ev.jsonl",
+    "model": "muse-spark-1.3",
+    "promptPreview": "你是測試契約的獨立挑戰者（challenge role；advisory 唯讀任務——不寫任何檔案，答案直接輸出在回覆中）。\n\n以下 8 份迷你測試用例（TC）來自會計／單位邊界題材。你的任務是盲推（blind derive）——在不知道哪些 TC 乾淨、哪些有缺陷的前提下：\n\n對每份 TC：\n1. 獨立推導該 TC 應該有的正確 oracle——具體數值＋predicate（用你的領域知識推導，",
+    "sessionId": "01a0a5de-b578-7c63-b3c0-9a48f6a12bd2",
+    "skippedUnknown": 10,
+    "skippedUnparsable": 0,
+    "status": "completed",
+    "steps": 200,
+    "summary": "## TC-A3：午夜切日歸屬 — clean 推導：切日規則為 `trading_day = date(taipei_local_time)`，以 `Asia/Taipei 00:00` 為界。前者 `2026-09-14T23:59+08:00 → 2026-09-14`，後者 `2026-09-15T00:01+08:00 → 2026-09-15`。 結論：**clean**。orac",
+    "timestamp": "2026-09-15T16:21:14.095Z"
+  }
+}

@@ -1,0 +1,86 @@
+# 角度 8：測試契約對帳 — 七標本機械審查
+
+**材料範圍聲明**：僅 prompt 內七段標本文本。TC ledger、RED receipt、sha256 digest、baseline 記錄、程式碼庫與呼叫圖均不在場——相應檢查項據實標「無法驗證／需查證」，不虛構。
+
+唯一標本外機械檢查（純算術，未觸 repo）：
+```
+uv run python -c "print(repr(98.0*0.95), 98.0*0.95 == 93.1, repr(93.1))"
+→ 93.1 True 93.1
+```
+
+---
+
+## 標本 1 `test_ex_div_reference_price` — 判定：finding
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 1 predicate 對帳 | **finding** | 測試名與 body 均無 TC-ID（無 `TC-` 標記）→ 無法建立 predicate 映射。且斷言僅 `result is not None`——即使有 TC-ID，此斷言不含任何價格語義內容，無法承載映射 |
+| 3 oracle 圓形 | clean | `is not None` 無期望值比對，不構成值 oracle |
+| 6 fixture provenance | 不觸發 | 500.0/12.0 為無源構造值，但斷言非 oracle 級（無期望值），檢查項觸發條件「無源 fixture 用於 oracle 級斷言」不成立 |
+
+## 標本 2 `test_reference_price_matches` — 判定：**Critical（escalate challenge 轉介）**
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 3 oracle 圓形依賴 | **Critical** | `reference_price(500.0,12.0) == reference_price(500.0,12.0)` 同參自比：deterministic 函數下恆真、零證偽力；oracle 即待測實作回傳值（test 硬編碼 impl 值的變體）。**escalate challenge（轉介）** |
+| 1 predicate 對帳 | finding | 無 TC-ID |
+| 6 fixture provenance | finding（minor，被 C3 吸收） | 500.0/12.0 無源標注且用於值等值斷言；主缺陷在 oracle 端（C3），非輸入端 |
+
+## 標本 3 `test_adjusted_series_uses_factor` — 判定：finding＋需查證
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 1 predicate 對帳 | finding | 無 TC-ID |
+| 2 mock↔evidence class | **需查證**（兩處） | (a) TC evidence class（L4-L6）標記不在場——無法機械判定是否 evidence 降級；(b) mock 回傳值 0.95 的來源 vs oracle_source——oracle_source 不在場。機械觀察：期望值 93.1 = 98.0×0.95（已實跑確認 CPython double 下 `98.0*0.95 == 93.1` 為 True，無精度陷阱），即 oracle 由「乘以 factor」語義＋mock 值推導，**非獨立來源**——fidelity 裁決需查證 |
+| 6 fixture provenance | finding | 輸入 fixture `[98.0]` 無源標注（歷史數據/構造未聲明），且用於值等值（oracle 級形式）斷言——機械觸發 |
+
+## 標本 4 `test_add_board_increases` / `test_sell_all_clears` — 判定：finding
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 1 predicate 對帳 | finding | 兩測試均無 TC-ID。另：`test_sell_all_clears` 名稱隱含 predicate「sell-all 清空」，但機制是 raw `dict.clear()` 而非任何領域入口——predicate 與機制錯位（是否存在領域 sell API 需查證） |
+| 3 oracle 圓形 | clean | 3000 與 0 均為獨立硬編碼期望值，非 impl 推導 |
+| 6 fixture provenance | **finding** | 模組級可變共享 fixture `_portfolio`：`test_sell_all_clears` 無自身 arrange，消費前一測試寫入的 mutation。單獨執行（`pytest -k`）時 clear 的是空 dict，`== 0` 恆過——名義情境（清空已持倉 portfolio）從未被執行。fixture 來源＝跨測試狀態洩漏，非宣告式構造 |
+| 7 路徑覆蓋 | 轉介 angle 4＋需查證 | sell 路徑未經領域入口驅動（直接 dict 操作）；消費端路徑確認需程式碼庫材料 |
+
+## 標本 5 `test_pipeline_output` — 判定：finding＋轉介
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 1 predicate 對帳 | finding | 無 TC-ID |
+| 3 oracle 圓形 | clean | 3000 為獨立硬編碼（3×1000 lot 換算可獨立推導），非 impl 回傳值 |
+| 6 fixture provenance | finding（minor） | 3→3000 的 1000 股 lot 換算慣例未標注來源；期望值本身獨立，風險低於標本 4 的狀態洩漏 |
+| 7 路徑覆蓋 | **轉介 angle 4**＋需查證 | 測試名 `pipeline_output`，實體是 `from pricing.internal import _convert` 直接驅動 `_` 前綴私有符號——符號≠消費端路徑（機械事實：`_` 前綴＋internal 模組）。`_convert` 是否為核准入口、pipeline 消費端路徑為何，需 index/程式碼庫（超出本任務材料） |
+
+## 標本 6 `test_aggregator_*` — 判定：finding＋轉介
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 1 predicate 對帳 | finding | 兩測試均無 TC-ID |
+| 3 oracle 圓形 | clean | 0 與 1 為獨立硬編碼 |
+| 6 fixture provenance | 不計 finding | 退化常數（空集合、identity 單元素），provenance 自明，風險可忽略 |
+| 7 路徑覆蓋 | **轉介 angle 4**＋需查證 | 依變更背景：diff 命中面＝跨 pricing＋ledger 整合器的聚合邏輯；標本僅覆蓋退化純數學案例——**標本內未見**驅動跨模組整合路徑的測試，變更命中面與測試覆蓋不對稱。標本外是否有其他測試覆蓋，需查證（不斷言不存在） |
+
+## 標本 7 `test_adjusted_price_correct`（TC-E1）— 判定：**Critical（escalate challenge 轉介）**
+
+| 對帳項 | 判定 | 證據 |
+|---|---|---|
+| 3 oracle 圓形依賴 | **Critical** | 記錄層自證圓形：TC-E1 的 oracle_source 欄自記「**實作 adjusted_price() 的回傳值**」——oracle 即待測實作；test 層 `adjusted_price(95.0,0.95) == adjusted_price(95.0,0.95)` 同參自比恆真，claim「調整價計算正確」零證偽力。**escalate challenge（轉介）** |
+| 1 predicate 對帳 | 映射存在但 fail（被 C3 吸收） | TC-E1 ↔ test 名稱映射在場（presence PASS）；但斷言為 tautology，不含任何 predicate 內容，claim 無法經此測試被檢驗 |
+| 6 fixture provenance | finding（minor，被 C3 吸收） | 95.0/0.95 無源標注；TC 稱「任意輸入」未固定取值依據 |
+
+---
+
+## 本次無適用材料的對帳項
+
+| 對帳項 | 狀態 | 理由 |
+|---|---|---|
+| 4 RED receipt＋digest | **無法驗證（全組）** | 七標本均無 receipt 檔、TC-ID 收容清單、sha256 與 frozen test 對照材料。不能排除 GREEN 期靜默改，亦不能斷言已發生——缺 receipt 即無從對帳 |
+| 5 基線跑法（BEFORE_GREEN） | **無法驗證（全組）** | 無 baseline failing-predicate 記錄、無 baseline 實跑痕跡、無 STRUCT_OK/SEM_OK gate 證據 |
+| 1（TC ledger 面） | 部分無法驗證 | 「測試端無 TC-ID」是機械可觀察事實（finding 照列）；但 arc 是否本來就無 TC（漏映射 vs 無 TC 可映射）需 TC ledger 裁決——歸因交 judge-review |
+| 2（全域面） | 僅標本 3 可局部檢查 | 所有標本均無 TC evidence class（L4-L6）標記材料；mock 在場者僅標本 3 |
+| 7（全域面） | 僅文本觀察＋轉介 | prompt-only 範圍無程式碼庫/呼叫圖/index；消費端路徑的機械驅動確認需 angle 4 接手 |
+
+## 總計
+
+**[FAIL] lite-verify: 0/7 標本通過契約對帳** —— 2 個 Critical escalate（標本 2、7：oracle 圓形依賴，轉介 judge-review）；5 個 finding（標本 1、3、4、5、6，共通缺陷＝全組無 TC-ID 映射）；C4/C5 全組無材料無法驗證。無任何標本判定 clean。

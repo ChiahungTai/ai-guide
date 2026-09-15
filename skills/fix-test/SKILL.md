@@ -136,6 +136,18 @@ TRIAGE: sentinel N, record <各ID理由一句>, arbitration M: <node IDs or "non
 - 為什麼這個意圖在新系統不再適用？（行為如何合理改變）
 - 刪除是否遺漏仍有價值的斷言？（若有 → 拆出保留，其餘刪除）
 
+#### Mutation authority gate（v3.1 測試契約——測試對應凍結 TC 時）
+
+> 掛點：階段 2 分類後、階段 3 確認前。Type B/C/E 的行動（重寫/刪除）都是**改測試側 truth**——凍結 TC 在場時，改 truth 需 authority，非分類完成即可動手。本 gate 是後掛檢查，不改道決策樹（分類仍照上方樹走）；escalation 是 signal，最終裁決在人類確認（階段 3）。
+
+測試對應 EP 凍結 TC（TC-ID 可對上）時，Type B/C/E 判定後強制過本 gate：
+
+1. **查 authority**：變更理由屬 amendment authority 四分哪類？（四分定義見 [execution-plan](../execution-plan/SKILL.md) 測試規劃段 amendment 附錄——本處引用，不重列映射）
+2. **「實作現況」作為重寫/刪除理由 → 擋下**：「實作現況」永遠不是證據——指向 amendment（走 execution-plan amendment 附錄：old/new oracle＋reason＋independent evidence＋authority），非就地改測試迎合
+3. **無凍結 TC**（舊 EP/存量測試）→ gate 跳過，沿用現行必要性審查（Type B/C 重寫強制要求不變）
+
+互掛：[implement](../implement/SKILL.md) 撞牆（GREEN 期想改 frozen test）的出口指向本 gate；本 gate 的 amendment 出口指向 execution-plan 附錄。
+
 ### 階段 3：Present + Confirm
 
 **所有類型（A/B/C/D/E）都須用戶確認後才動手。**
@@ -147,11 +159,13 @@ TRIAGE: sentinel N, record <各ID理由一句>, arbitration M: <node IDs or "non
 
 ### 摘要
 
-| 測試 | 類型 | 行動 | 說明 |
-|------|------|------|------|
-| test_xxx | A（實作缺陷） | 修程式碼 | ... |
-| test_yyy | B（契約變更） | 重寫測試 | 舊：... → 新：... |
-| test_zzz | C（測試腐化） | 重寫測試 | 耦合了 ... |
+| 測試 | 類型 | 行動 | TC escalation | 說明 |
+|------|------|------|------|------|
+| test_xxx | A（實作缺陷） | 修程式碼 | — | ... |
+| test_yyy | B（契約變更） | 重寫測試 | TC-7／gate 過（authority 已判定，類別見四分） | 舊：... → 新：... |
+| test_zzz | C（測試腐化） | 重寫測試 | TC-7／gate 擋下→amendment | 耦合了 ... |
+
+**TC escalation 欄**（v3.1；Type B/C/E 且測試對應凍結 TC 時填）：對應 TC-ID＋mutation authority gate 判定結果（authority 類別／擋下轉 amendment）；Type A/D 或無凍結 TC 填「—」。**escalation 是 signal 不是自動判決**——人類確認時一併裁決。
 
 ### 建議執行順序
 1. [先修哪個，為什麼]
