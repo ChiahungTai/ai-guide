@@ -31,3 +31,10 @@
 
 - 上方 `4cd321…` 是增補 closure 當下的驗證快照（已封存，不改寫；對應 `56397e5` 版 EP）。其後 /consistency 修復改動 ep.md（錨點訂正 6 處：:130→:141×2、:79→:76–80×3、:85→:56、:25→:28；簡體回正 6 處；無計畫語義變更），EP 現版 SHA256：`5b8f9300a5de3ce605a2fe60576e3c1f6fe235b10149b4d9f83b7a7ef8268001`。
 - HTML 兩處 projection 欄已換為現版 hash；HTML 內文不含被改字串，無需重產文字。接手核對以現版 hash 為準。
+
+## 主 session findings 外部審查與回寫（最新）
+
+- 外部審查 job `job-mu2kr2hs-6k82uh`（muse-spark-1.3／xhigh）completed／exit 0，唯讀；原始輸出 `references/external-review-muse.json`，工單 `references/external-review-work-order.md`。N1–N8＋S1 逐條 verdict：全 agree（N1/N4 agree-with-modification），無新增 Important；並訂正工單檔案歸屬（8 檔屬 AIR-96、guide＋plugin 屬 AIR-97）。
+- 主 session 裁定全採納並回寫 EP：N1 反映 AIR-96 已結案（`b68b7d0`）現況、不新增已結案弧協調條款、開工 prerequisite 補重取 HEAD／size gate；N4 改「承接清單（file→segment）」；N2/N3/N6/N7/N8/S1 按 staged 建議；N5 EP 免修。Review 帳本新增「主 session findings 外部審查與裁定」節。
+- 機械驗證實跑：`rg` dirty 殘留僅通用 guard（HEAD/dirty 核對、本弧 dirty、另一弧 dirty、既有 dirty 排除）；`由 S2 接完` 零命中；autonomous 指令句、Verify-only 行、N6/N7/N8 附加句均在位；寫入集已無 debrief/illustrate/state-md-write/commit。全部 PASS。
+- 回寫後 EP SHA256：`ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73`；HTML 兩處 projection 欄＋當前狀態段已同步。仍限計畫修訂；S1–S4 實作、behavior、pilot、成本量測、部署均未執行，新預設待 user 接受。

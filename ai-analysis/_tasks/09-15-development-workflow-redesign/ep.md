@@ -11,16 +11,17 @@
 ## 進度與接續入口
 
 - [x] 讀取當日五份報告及前日兩份 Marshal 報告；核對現行 review／compact／metadata 接線。
-- [x] 已完成 AIR-91 與在途 AIR-96 分界；找到 AIR-60 恢復鏈既有承諾。
+- [x] 已完成 AIR-91 與 AIR-96 分界（規劃期 AIR-96 在途，其後已結案）；找到 AIR-60 恢復鏈既有承諾。
 - [x] 目標流程、UC、Scenario Matrix、四個自足段落、遷移與驗證策略落盤。
 - [x] 獨立 reviewer 的 F1–F5 維度 findings 回收、Arbiter 裁決與必要修訂（六項）。
 - [x] 修訂後 reviewer followup：六項 resolved，無新增 Important。
 - [x] Marshal overhead 增補：契約相容性調查→骨架→具體 work-unit 編排／情境→增補審查及三項漏洞修訂複核。
 - HTML 互動／視覺驗證本輪延後（user 明示）；不阻擋計畫交付，不宣稱已驗。
+- [x] 主 session ep-review（N1–N8＋S1）staged → 外部 Muse 審查收回（`references/external-review-muse.json`，job `job-mu2kr2hs-6k82uh`）→ 裁定全採納並回寫（N1/N4 依外部審查修正版；無新增 Important）。
 - [ ] user 接受新預設，明示進入 implement；此前不得把下方提案當成現行規則。
 - [ ] S1–S4 實作及驗收。
 
-下一個動作：所有 review 工作已收回，沒有待回收 job。實作接手者在 user 指示 implement 後讀本 EP Review 區段及 checkpoint 最末狀態，先對齊 AIR-60 owner／AC，再核對 HEAD／dirty 與治理檔，從 S1 起。本 EP 不修改 AIR-96 擁有的 model-routing/catalog/generator。
+下一個動作：所有 review 工作已收回，沒有待回收 job。實作接手者在 user 指示 implement 後讀本 EP Review 區段及 checkpoint 最末狀態，先對齊 AIR-60 owner／AC，再核對 HEAD／dirty 與治理檔，從 S1 起。本 EP 不修改 AIR-96 定稿的 model-routing/catalog/generator。
 
 ## 實作總覽
 
@@ -39,7 +40,7 @@
 
 ### 範圍與不做項目
 
-產品僅既有 `.md` workflow/rule/common-template 的修改，加一份共用恢復協定文件。無新 Marshal agent、workflow engine、router、CLI、hook、資料庫或自動 compact。AIR-91 的 ModelCatalog／DispatchBinding／ExecutionPreset／WorkUnitContract 契約保持既有 ownership；AIR-96 的 dirty 實作由原弧持有。
+產品僅既有 `.md` workflow/rule/common-template 的修改，加一份共用恢復協定文件。無新 Marshal agent、workflow engine、router、CLI、hook、資料庫或自動 compact。AIR-91 的 ModelCatalog／DispatchBinding／ExecutionPreset／WorkUnitContract 契約保持既有 ownership；AIR-96 已結案（五項全落地，含 muse bundle 瘦身至 30,088B／81.6%），無遺留 dirty 待協調——本弧消費其定稿、不重開。
 
 不改 commit/deploy 授權、memory pool 寫入治理、board id/branch 協定、排程、WT 基建、CR 本體、tour generator。恢復協定記錄授權的來源與範圍，引用目前 governing consent；不吸收 AIR-60「歷史授權全部失效」的 blanket 句，也不新增 blanket 延期。該項需在其 owner 弧依現行上位規範另行處理。
 
@@ -53,7 +54,7 @@
 
 ### 相對複雜度與排序
 
-整體高風險控制面變更，實作複雜度中高。S1 review 規則最先；S2 把規則接到入口；S3 恢復協定可在 S1 定稿後並行設計，但寫同檔時串行；S4 統一交付與跨入口驗收。四段屬同一流程改造、共享已定 ownership，不另拆 blueprint 或新命令體系。
+整體高風險控制面變更，實作複雜度中高。S1 review 規則最先；S2 把規則接到入口；S3 恢復協定可在 S1 定稿後並行設計（設計可並行；S3 實作待 S2「段落結果寫 EP 進度」欄位定稿），但寫同檔時串行；S4 統一交付與跨入口驗收。四段屬同一流程改造、共享已定 ownership，不另拆 blueprint 或新命令體系。
 
 ## 段落 0：全域研究
 
@@ -102,7 +103,7 @@
 ### Backlog 與相關弧
 
 - AIR-91：既有完成能力，本 EP 消費，無重開需求。
-- AIR-96：在途 generator／effort／inherit／bundle／bridge 問題，本弧排除。
+- AIR-96：已結案（Done）——generator／effort／inherit／bundle／bridge 五項已落地；本弧不重開、消費其定稿。
 - AIR-60：To Do，承諾 rehydration 單一源、review closure、segment receipt；S2/S3 對應內容須在實作開工前把其 Plan/AC 與本 EP 對齊，不能雙 writer 並做。
 - DRAFT-6：family×任務 fit 的研究，僅相關，不以本 EP 取代家族評估。
 - AIR-72／AIR-73：WT、board control 與殼 codegen 的既有規劃，均不承接。
@@ -201,7 +202,7 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 
 ### 驗證與完成條件
 
-對 SM-01/03/05/06/12/13 建 control/treatment behavior 情境，觀察實際派工選擇／拒絕跳審，而非複述詞表。微測 identity 缺欄、untracked 改動、profile 變更、證據失聯；任何一項假命中阻擋 S2。以 rg 列出 `max-agents`、`3-perspective`、`dual-context`、`header identity` 的所有 current consumers，由 S2 接完；歷史 reports/done 不改。成功＝共通源可推導一致輸出，且沒有新增 model/tier 真值副本。
+對 SM-01/03/05/06/12/13 建 control/treatment behavior 情境，觀察實際派工選擇／拒絕跳審，而非複述詞表。微測 identity 缺欄、untracked 改動、profile 變更、證據失聯；任何一項假命中阻擋 S2。以 rg 列出 `max-agents`、`3-perspective`、`dual-context`、`header identity` 的所有 current consumers，按 manifest 分段承接（S2 接主鏈檔；`skills/CLAUDE.md`、`skills/deep-work/SKILL.md` 等 S4 檔由 S4 接；pointer-only 命中記免改），不得有無主 consumer；S2 結段前出承接清單（file→segment），S4 開工核對；歷史 reports/done 不改。成功＝共通源可推導一致輸出，且沒有新增 model/tier 真值副本。
 
 ## S2：主鏈接線與段級／弧級 review 收斂
 
@@ -219,7 +220,7 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 - 段落結果寫 EP 進度，不新增每段 report：產物路徑／內容身份、實跑命令及結果指針、未驗與下一步、review 尚需/已覆蓋。原始長輸出留 evidence 檔，不灌回 prompt。
 - code-review/agent-review-cycle 消費 S1 風險結果；Correctness lens 不消失。audit-test 保留 test 特有 mandate；profile 覆蓋已包含相同 test 審核時引用相同證據，scope 新增則補，不另固定全量重跑。
 - post-build 首先核對前段 identity，保留已存在 fallback 全審與跨段整合要求；任何修正產生新 scope 則重分級。需確認項影響 scope/AC/gate 時阻擋 accepted/Verified，純建議可保留顯性未決但不偽裝全清。
-- agents/AGENTS、agent-workflow 的 lifecycle 表只留指向 owning workflow 的掛點；skills/CLAUDE 索引同步。judge 的 disposition authority 與 status 值域維持；followup 依下節消除雙寫者措辭，並同步 identity 讀取指針。
+- agents/AGENTS、agent-workflow 的 lifecycle 表只留指向 owning workflow 的掛點；skills/CLAUDE 索引同步。judge 的 disposition authority 與 status 值域維持；judge/followup 均同步 identity 讀取指針（judge 裁決前核對 `coverage` 未驗項，見 SM-12）；followup 依下節消除雙寫者措辭。
 - 明確修改 `skills/post-build/SKILL.md:88` 零 findings 快道：先核對 terminal=completed、輸出完整且包含明確 review 結果／scope coverage，再判 findings 為空。timeout／非零失敗／輸出空白／截斷／缺 coverage 一律留 pending，不能直進成功結算。只靠 exit 0 不足；無 job 的合法執行面需等價完成及輸出證據，不臆造 job。
 - 每次 dispatch 延用 WorkUnitContract/resolver，已確認 definition 未變時引用已載材料；availability 在 dispatch 當下查，不能用省讀為由沿用 stale quota。
 
@@ -262,6 +263,8 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 
 補充交接：[compact 建議方向](../../reports/2026-09-15-compact-direction-handoff.md)。user 在 usage 5% 時要求完整保存；其新增救援優先序／案例／研究候選未獨立審查，不擴張本段已審契約。接手若採入新的行為／AC，先做 scoped review。
 
+背景報告的 compact 機制改善選項（codex-compact-architecture §10：代際鏈、摘要本體存檔、pre/post 標定、換模型紀律；memory-mechanism-analysis §8：verification 輕量版、semantic 指引、ZCode tail 補償、transcript 錨、memory 半自動化）未納入本 EP——本弧止於 checkpoint-first＋恢復驗證；機制改善留待 compact 專弧另立範圍，非遺漏。
+
 ### Context
 
 更新 UC-C，承接 AIR-60 恢復順序部分；不改其 consent、WT 或其他未承接工作。依賴 S2 的段落證據與 S1 identity。無另附 spec；compact 操作／時機由 user，AI 可依已授權任務持續 checkpoint。未定案推論可存 checkpoint，不能寫作 memory fact。
@@ -276,6 +279,7 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 - 欄位：目標與成功條件、現行階段、scope/cwd/baseline＋本弧 dirty、已決策理由及排除方案、已驗/未驗證據、open findings、背景 jobId/owner/收法、授權來源與範圍指針、下一個可執行 action、read-set 與未恢復範圍。已有欄位不重抄。
 - 落盤成功後才做可選 memory 候選整理；無授權／無寫權／usage 不足就記交接。memory gate 故障不能阻止保存工程狀態，亦不能被跳過後報已蒸餾。
 - 恢復順序：定位指定任務→當前 git/EP/card 和 active job→active findings＋最新證據→checkpoint 的理由及未決→按需 STATE/memory→所需新鮮 guidance→確認下一動作前置。不用「最新 session」猜身份；缺 transcript 時只聲明可見範圍，不要求無限考古。
+- autonomous-execution 的 Session Recovery 改為引用 `task-recovery.md` 恢復順序；intent 維持 EP 段落定義（crash-only reconciliation 不依賴進度檔的語義不變），另加讀 S2「段落結果寫 EP 進度」欄位作已驗/未驗輸入；deep-work 無 EP 弧沿用 journal，不新造進度檔。
 - 機械核對檔案／hash／job 狀態；語義核對下一動是否符合仍有效的目標與決策。只重述摘要不算恢復驗證。漂移只擋受影響行動，能獨立做的工作仍可進行。
 - at 先結算再排程；handoff 使用同一 read-set，仍保留接手方自足 prompt。不把 checkpoint 的舊 hash 當作當前 HEAD 必須回到的 target；它只是比對依據。
 - 不以模型切換自動 compact、不設不可取得的 token threshold、不依賴 SessionEnd。背景 job timeout 先辨識 running/unknown/terminal，保留所有未收回工作，照既有 bridge 收法。
@@ -300,6 +304,7 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 
 - 方向 brief：問題／使用者看得到的結果／重要取捨／不做範圍／驗收。成果 brief：before/after 具體例／實跑證據／未驗／重要偏離／回源。保留來源 revision/content SHA 與 Built/Verified 區分。
 - 不新增另一份日常 debrief；深挖仍由既有 debrief/illustrate 按需。殼同位置更新一次，不能每個 reviewer 都生成一份。
+- deep-work 的完整開發流程 pipeline 與 Agent Review／judge 流改引用 S1/S2 新語義：review-engine「review 執行預設」段消費 S1 profile（不再引用 max-agents 填滿）、Agent Review 改邊界觸發、judge 傳入含 `coverage` 的 findings；其對 review-engine 的 pointer 行免改。
 - 圖觸發：文字／表格無法清楚表達的跨邊界關係、複雜狀態轉移、user 明示。簡單流程可用 HTML 表格；無圖則標「本次以文字/表格呈現」，不留永久 degraded 假待辦。首次部署新預設前以 user 讀稿 pilot 驗方向。
 - 持久 tour 延用現有 ask-once／預設略過；不重造政策。既有 tour corpus 指到本次改動而失效仍必修；不能以不產新 tour 逃掉舊鏈維護。
 - metadata-sync 保留 build/收斂/standalone 分工與冪等重跑；本弧不新增結算 receipt/cache。只有既有 EP 進度能指向相同輸入內容及仍在場的結算產物時，才引用已完成項；無法核對就由 metadata-sync 對適用項冪等重跑。review identity 只授權復用 review 證據，不代表 metadata 已完成；commit 仍做最後 scope／finalization 對帳。
@@ -316,7 +321,7 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 3. Oracle：預置 untracked stale、漏 caller/invariant、未裁決 finding、背景 writer、錯 task 身份、零 review fallback、整合器及注入點 extras 等反例，正確選擇在跑之前凍結；reviewer 不讀作者預期解法，只消費其 mandate 所需材料。至少覆蓋一般 feature、控制面、跨邊界、整合器四類；rep 要求引用 instruction-testing，不另複寫一組門檻。
 4. 成本：每 case 記實際 agent dispatch 數、所讀材料量、重複檢查數、可取得 usage 的 input/output/cache 口徑、人需要補充的次數。缺 usage 欄標 unknown；並行縮短等待不等於省 token；自動排程亦有成本。本弧不調排程頻率。
 5. 驗收：hard invariant 場景不得有 FAIL；普通場景重複派工／重複讀取確實下降；seeded bug 檢出若較舊流程下降，保留舊配置並縮小新預設適用範圍。樣本不足不得宣稱統計等價。
-6. 真實 pilot：挑下一個已授權一般變更與控制面變更觀察完整鏈；user 能由 brief 說明改動與缺口。未做 pilot 可標 Built，不能標新流程 production accepted。如有 HTML interactive artifact，跑瀏覽器導航/折疊/hash restore，再做視覺驗收；static parse 不冒充 runtime。
+6. 真實 pilot：挑下一個已授權一般變更與控制面變更觀察完整鏈；若 deep-work 有改，pilot 加一 autonomous 小弧或顯式記未 pilot 維持舊語義；user 能由 brief 說明改動與缺口。未做 pilot 可標 Built，不能標新流程 production accepted。如有 HTML interactive artifact，跑瀏覽器導航/折疊/hash restore，再做視覺驗收；static parse 不冒充 runtime。
 
 成功＝consumer 行為試驗＋跨入口整合＋人讀材料對齊；不能只以 markdown/rg 全綠完成。
 
@@ -328,8 +333,10 @@ baseline: 0bbddb1ca69b8d574b6f5ef20cecaba14050a691
 |---|---|
 | S1 | skills/review-engine/SKILL.md；skills/_common/workflow-review-pattern.md |
 | S2 | skills/execution-plan/SKILL.md；skills/ep-review/SKILL.md；skills/implement/SKILL.md；skills/code-review/SKILL.md；skills/_common/agent-review-cycle.md；skills/_common/work-order.md（批次 envelope）；skills/audit-test/SKILL.md；skills/judge-review/SKILL.md；skills/followup-review/SKILL.md；skills/post-build/SKILL.md；skills/agent-workflow/SKILL.md；agents/AGENTS.md |
-| S3 | skills/_common/task-recovery.md（新）；skills/compact-prep/SKILL.md；skills/at/SKILL.md；skills/handoff/SKILL.md；skills/autonomous-execution/SKILL.md；rules/context-management.md；skills/_common/state-md-write.md；skills/_common/work-order.md（恢復指針，不改 consent） |
-| S4 | skills/_common/illustrate-html-mode.md；skills/metadata-sync/SKILL.md；skills/debrief/SKILL.md；skills/illustrate/SKILL.md；skills/deep-work/SKILL.md；skills/commit/SKILL.md（只對帳引用）；skills/CLAUDE.md；ai-development-guide.md；ai-analysis/blueprint/workflow.md；S2 的 EP/implement/post-build 掛點修訂 |
+| S3 | skills/_common/task-recovery.md（新）；skills/compact-prep/SKILL.md；skills/at/SKILL.md；skills/handoff/SKILL.md；skills/autonomous-execution/SKILL.md；rules/context-management.md；skills/_common/work-order.md（恢復指針，不改 consent） |
+| S4 | skills/_common/illustrate-html-mode.md；skills/metadata-sync/SKILL.md；skills/deep-work/SKILL.md；skills/CLAUDE.md；ai-development-guide.md；ai-analysis/blueprint/workflow.md；S2 的 EP/implement/post-build 掛點修訂 |
+
+Verify-only（核對與新語義一致即可，不預期改寫；矛盾時回對應段落修訂而非實作現場改方針）：S3＝`skills/_common/state-md-write.md`；S4＝`skills/debrief/SKILL.md`、`skills/illustrate/SKILL.md`、`skills/commit/SKILL.md`（只對帳引用）。
 
 manifest 是初始閉合集，不是禁止發現真 consumer。rg 搜尋 `3-perspective`、`max-agents`、`dual-context`、`產圖一次`、`header identity`、`compact 後恢復`、`memory 新鮮度`、`共用規範`、`與.*共用` 逐個單 pattern，命中相關 current source 才追加（記理由、owner、段落）；歷史材料排除。未掃到不作零消費者證明。
 
@@ -349,7 +356,7 @@ read-set：本 EP 進度／Review 帳本 → reports checkpoint 最末節 → �
 
 已決策理由：不新增 engine/router，是因 AIR-91 已提供解析契約；不另造狀態庫，是因接續要核對既有實物；減量先去重與批次化，是為避免便宜 worker 反而增加主 session 搬運成本。不能因這些理由刪掉未覆蓋的獨立性／runtime 驗證；效果不成立就縮小新預設適用面。
 
-開工前 prerequisite：user 交付實作指令、最新治理資料可讀、owner/scope 已對齊、增補審查無未解 Important。部署與 commit 依屆時 user 授權個別處理。HTML 本輪規劃免驗，不授權未來修改互動行為也免驗。最終交付需分列 Built、behavior 驗證、pilot、部署；未做不補成完成。
+開工前 prerequisite：user 交付實作指令、最新治理資料可讀、owner/scope 已對齊、增補審查無未解 Important、重取當下 HEAD／source hash 與 bundle size gate 現值（規劃基準後 repo 已前進：AIR-96 結案落地、AIR-97 開收）。部署與 commit 依屆時 user 授權個別處理。HTML 本輪規劃免驗，不授權未來修改互動行為也免驗。最終交付需分列 Built、behavior 驗證、pilot、部署；未做不補成完成。
 
 1. 已接受 finding 回寫段落，followup 驗證完成；新增未決高風險不得用 open=0 假收斂。
 2. metadata 依元專案模式：更新受影響 commands/rules 與 skills 索引，不硬造 library Capabilities；SYSTEM-MAP 無對應略過，blueprint 導航同步。
@@ -392,3 +399,7 @@ review 対象＝本 EP 及列明 current sources；Reviewer authority=findings�
 增補 followup `references/marshal-followup-review.json`（job `job-mu2fn09e-d6vjf8`）確認 M3 resolved，M1/M2/M4 各留一個 Important：M1-B1 跨 review unit 錨污染、M2-B1 status/disposition 雙寫歧義、M4-B1 快道未指名落點。三項採納並已修訂：批次只限機械查證／實作成果；followup 約 :43–51/:61 的寫入措辭與 pattern/implement/post-build 同步，主鏈編排者寫 status、Arbiter 只裁 disposition；post-build:88 加 completed＋完整輸出＋coverage 閘。這些是 source 修改計畫，非已實作行為。
 
 **增補終態（取代上表中間狀態）**：`references/marshal-closure-review.json`，job `job-mu2fstmq-gouh8l` completed/exit 0，M1-B1/M2-B1/M4-B1 全 resolved、無新增 Important；主 session 核對 EP 錨點後，M1–M4 全標 verified（限計畫修訂）。closure 僅核 EP 文字，未重跑 current source 或 runtime；實作段仍須依 manifest 查當時最新版。原 F1–F6 及增補均無 open Important；新預設的效果不因文件審查而視為已證明。
+
+### 主 session findings 外部審查與裁定（N1–N8＋S1）
+
+Findings 來源 `references/review-main-session.md`（staged；獨立 subagent F1–F5＋主 session 合成，user 明示外部審查＋裁定後才回寫）；外部審查 `references/external-review-muse.json`，job `job-mu2kr2hs-6k82uh` completed／exit 0，唯讀、對當時 HEAD `2d1c432` 逐條實驗。裁定：N1–N4、N6–N8、S1 全採納——N1 依外部審查修正版落地（staged 建議句在 AIR-96 結案 `b68b7d0` 後自身過時；改為反映「已結案、無遺留 dirty、不重開」，不為已結案弧新增協調條款，開工 prerequisite 補重取 HEAD／size gate 現值）；N4 以「承接清單（file→segment）」取代原「disposition 清單」措辭，避免與 Arbiter 裁決權混淆；N2/N3/N6/N7/N8/S1 按 staged 原建議落地；N5 資訊項 EP 免修（「實作前 rg 重定位」條款覆蓋，references JSON 行號回查以 rg 為準）。外部審查訂正工單檔案歸屬：`skills/CLAUDE.md`、`skills/model-routing/*` 等 8 檔屬 AIR-96（`f68e77b`／`09e08ab`）；AIR-97（`5852e55`）僅動 `ai-development-guide.md`＋`muse-plugins/tool-governance/*`。無新增 Important；此輪仍限計畫修訂，未修改 production source，新預設仍待 user 接受。

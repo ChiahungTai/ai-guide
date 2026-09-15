@@ -117,3 +117,10 @@ user 授權規劃與 reports checkpoint；未開始新流程實作、未變更�
 - 獨立審查（subagent＋主 session 合成）：N1–N8＋S1，無 🔴，結論有條件執行；完整報告 `2026-09-15-development-workflow-ep-review.md`。
 - Findings 已 stage 至 `../_tasks/09-15-development-workflow-redesign/references/review-main-session.md`（pending-external-review），尚未回寫 EP（user 明示：外部審查＋裁定後才回寫）。
 - EP 未動，projection 維持現版 `c497…`。下一步：外部 review→judge→回寫 EP＋hash 同步。
+
+## 外部審查與裁定完成，findings 已回寫 EP（最終）
+
+- user 指派 ZCode session 研究 EP 與當日報告，並授權與 Muse 討論。該 session 核對現況後派外部審查工單（`../_tasks/09-15-development-workflow-redesign/references/external-review-work-order.md`）；job `job-mu2kr2hs-6k82uh` completed／exit 0（原始輸出同目錄 `external-review-muse.json`）。
+- 外部審查結果：N1–N8＋S1 逐條 agree（N1/N4 agree-with-modification）、無新增 Important；並訂正兩點——AIR-96 已於 findings 定稿後結案（staged N1 建議句自身過時，改為「已結案、無遺留 dirty、不重開、開工重取 HEAD/size gate」）；N4 的「disposition 清單」與 Arbiter 裁決詞彙衝突，改「承接清單（file→segment）」。
+- 主 session 裁定全採納並回寫 EP（N2 autonomous 指令句、N3 manifest 拆 verify-only＋deep-work 處置、N4 分段承接、N1 現況化、N6/N7/N8/S1 附加句；N5 EP 免修）。機械驗證全 PASS；回寫後 EP SHA256 `ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73`，HTML projection 兩欄＋當前狀態段已同步，planning-validation 已記換版。
+- 現況基準：HEAD `2d1c432`（AIR-96、AIR-97 均已結案；working tree 僅本輪回寫產物）。AIR-60 仍 To Do——開工前 owner/AC 對帳義務不變。EP 開工三門不變：user implement 指令、AIR-60 對帳、HEAD/dirty＋治理檔核對（含重取 bundle size gate 現值）。無 commit；S1–S4 實作與行為驗收仍未執行。

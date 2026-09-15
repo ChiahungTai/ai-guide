@@ -1,8 +1,8 @@
-# 主 session EP 獨立審查 findings（staged，待外部審查＋裁定）
+# 主 session EP 獨立審查 findings（已裁定並回寫）
 
 > 來源：獨立 subagent read-only 審查（F1–F5）＋主 session 合成裁決；完整報告見 `../../reports/2026-09-15-development-workflow-ep-review.md`
 > 審查對象：`../ep.md` @`01eca3d`（EP sha `5b8f93…`；現版經 codex compact 指針後為 `c497…`，語義錨未變）
-> 狀態：**pending-external-review**——user 明示先經其他 LLM 審查＋裁定才回寫 EP；本檔即裁定輸入，逐條可採納／拒絕／改寫
+> 狀態：**adjudicated＋回寫完成**——外部審查 `external-review-muse.json`（job `job-mu2kr2hs-6k82uh`，全 agree、無新 Important）＋主 session 裁定：N1–N4、N6–N8、S1 採納（N1 依外部審查修正版反映 AIR-96 結案現況；N4 措辭改「承接清單」）、N5 EP 免修；已落地 EP（回寫後 sha `ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73`），裁定全文見 EP Review 帳本「主 session findings 外部審查與裁定」節
 > 先前輪次：F1–F6／M1–M4 抽驗仍 resolved，不重開
 
 ## N1｜🟡（F4/F3）｜「AIR-96 dirty」過時＋缺 #3 協調

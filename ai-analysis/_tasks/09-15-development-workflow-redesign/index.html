@@ -87,7 +87,7 @@
     
     <h1>開發流程重設計：少做重複工，保留必要判斷</h1>
     
-    <div class="meta">Marshal：b4a3019<br>本弧：0bbddb1<br>projection SHA：c497b6e2994956a5f0f3ece9eac0f133e7c703c4f10f612244cc91445e1fb5b4</div>
+    <div class="meta">Marshal：b4a3019<br>本弧：0bbddb1<br>projection SHA：ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73</div>
   </div>
   
   <ul>
@@ -138,12 +138,12 @@
   <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
   
   <h3>主要風險</h3><ul class="dots"><li>合併 reviewer 會失去部分 context 多樣性：高風險保持分離，若 pilot 漏錯則縮小新預設適用面。</li><li>身份核對不完整會錯跳審查：未提交檔案內容、profile 定義與證據可讀性皆需核對。</li><li>文件變短不等於你更理解：保留具體前後行為、理由、未驗項，實際讀稿驗收。</li></ul>
-  <h3>當前狀態</h3><p>四段 EP 與 Marshal overhead 增補均已完成 review、裁決及修訂複核；可交其他 LLM 實作。新流程尚未實作、量測或部署。AIR-96 的既有改動保持原狀。</p>
+  <h3>當前狀態</h3><p>四段 EP、Marshal overhead 增補、主 session findings（N1–N8＋S1）均已完成 review、外部審查、裁定及回寫；可交其他 LLM 實作。新流程尚未實作、量測或部署。AIR-96 已結案（bundle 瘦身落地），本弧消費其定稿。</p>
   <p>新增設計：同權限的機械查證／實作成果可批次；多 review units 保持 context 分離。逐成果回收，空白／失敗不當零 findings；followup 回證據，主鏈單寫狀態。EP 共 24 個驗收情境。</p>
   <p>本頁互動／視覺驗證依 user 指示本輪延後；靜態檢查不代表實際渲染通過。</p>
   <p class="src">
     EP：<a href="ep.md">ai-analysis/_tasks/09-15-development-workflow-redesign/ep.md</a><br>
-    task baseline：0bbddb1ca69b8d574b6f5ef20cecaba14050a691 · projection source：c497b6e2994956a5f0f3ece9eac0f133e7c703c4f10f612244cc91445e1fb5b4 · 卡：尚未新建；AIR-60 部分重疊，開工前對齊 owner
+    task baseline：0bbddb1ca69b8d574b6f5ef20cecaba14050a691 · projection source：ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73 · 卡：尚未新建；AIR-60 部分重疊，開工前對齊 owner
   </p>
 </section>
 
