@@ -4,7 +4,7 @@ title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存�
 status: To Do
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-15 14:34'
+updated_date: '2026-09-15 15:20'
 labels:
   - governance
   - memory
@@ -52,4 +52,6 @@ P5 memory-audit:147 訂正＋（若觸 rules）部署照 rules/AGENTS.md。
 
 <!-- SECTION:NOTES:BEGIN -->
 Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」→ 載體稽核三主題群抽樣（rules 分層 ✓/卡面 ✓/memory 抽樣抓誤置）→ 發現 41 條未收編（reconciler FAIL）→ auto-memory 機制調查（user 假說「其他 session 觸發 skill/rule」被三證據否證：格式無 repo 出處、他專案無 skills 照寫、本 session 反證）→ 治理三選一 → user 拍板導流納管＋整併開卡。併卡：AIR-90（P3＋P2 對帳）、AIR-83（P4）。調查過程在本 session 對話＋reports/2026-09-15-workflow-carriers-crud-principles.md。
+
+09-15 user 質問「改連 memory-auto 後 ZCode 怎用到維護池」——P1 增設計項【開場注入保護】：事實＝ZCode 對池的消費有兩面——push（開場注入 MEMORY.md 常駐 12 條，經 zcode memory dir 雙跳）與 pull（AGENTS.md 觀察池路由：主體路徑＋rg _inventory → Read body，always-on）。改指後 pull 不受影響（路由行與 symlink 無關）；push 會失去。緩解＝在 memory-auto/ 手寫 MEMORY.md 當 routing 指針（本目錄＝未審 staging；curated 池在 .agents/memory/，rg _inventory）→ 開場注入變成池的指針。待驗證＝ZCode 背景寫入者會否覆寫/重生成其目錄的 MEMORY.md（P1 實測；若會，fallback＝強化 AGENTS.md 路由行）。誠實成本＝常駐 12 條的被動提醒（~2.3KB）改為指針；CC 端不受影響（readlink 實證：CC 腳獨立直連池，zcode 腳改指不動它）。
 <!-- SECTION:NOTES:END -->
