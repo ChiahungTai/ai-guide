@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-91 — 依工作階段能力自動選擇合適模型</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── 可折疊 sidebar：nav width→0、main flex 吃滿（禁 display:none 於 nav／iframe／section 承載——見檔頭 rationale ②）── */
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  /* ── main ── */
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  /* ── 折疊鈕：展開態貼 sidebar 右緣垂直居中；折疊態浮出鈕固定左上 ── */
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge plan">📋 計畫</span>
+    <h1>AIR-91 — 依工作階段能力自動選擇合適模型</h1>
+    <div class="meta">baseline df3741b81e90<br>EP sha256 5fff75cc2549</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼要改</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>新的責任邊界</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>使用者工作流程</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>四段推進</a></li>
+    <li><a href="#s5" onclick="return go('s5',this)"><span class="num">05</span>風險與驗收</a></li>
+    <li><a href="#s6" onclick="return go('s6',this)"><span class="num">06</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board（VSCode Backlog Cards）</span><br>
+    <a href="ep.md">EP 全文</a><br>
+    <a href="references/research.md">研究底稿</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>為什麼要改</h2>
+  <div class="sub">同一條 coding workflow 內，其實包含不同能力與權限的工作</div>
+  <ul class="dots">
+    <li><b>判斷密集：</b>EP synthesis、judge、重大架構裁決，需要已實驗合格的 decision-grade model。</li>
+    <li><b>執行密集：</b>有 accepted EP 後的 implement、查詢與機械驗證，可交給 execution-grade model。</li>
+    <li><b>能力正交：</b>原生影像能力不是一般推理強弱的別名；GLM Flash 可在 visual observation 上優於 GLM 5.3。</li>
+    <li><b>狀態會變：</b>provider、carrier、quota 與 Coding Plan 會改變，不能寫死在穩定 model doctrine。</li>
+  </ul>
+  <div class="note">目標是讓使用者只啟動既有 workflow；每個 phase 自動產生需求，再選符合需求的 model binding。</div>
+</section>
+
+<section id="s2">
+  <h2>新的責任邊界 <span class="tag-plan">S1–S3 計畫中</span></h2>
+  <div class="sub">把供給、需求、部署與即時狀態分開，避免不同變更原因互相污染</div>
+  <div class="cardrow">
+    <div class="card"><div class="t c">Workflow owns demand</div><p>每個 phase 產生 WorkUnitContract：Role、authority、qualification、judgment、capabilities、surface、independence、escalation。</p></div>
+    <div class="card"><div class="t v">Catalog owns supply</div><p>ModelIdentity、DispatchBinding、effective effort、qualification status 與 evidence source；不放 Role、quota 或 preset。</p></div>
+    <div class="card"><div class="t g">Preset owns deployment</div><p>Registry slug 的 tools、sandbox、background 與 default binding；subagent 是執行 instance，不是 Role。</p></div>
+    <div class="card"><div class="t a">Snapshot owns availability</div><p>個人方案、quota、reset、available／unavailable／unknown 在 dispatch 當下形成，來源在 memory／runtime probe。</p></div>
+  </div>
+  <table>
+    <thead><tr><th>概念</th><th>回答的問題</th><th>禁止吸收</th></tr></thead>
+    <tbody>
+      <tr><td>Role</td><td>這個工作負什麼責任、能做什麼裁決？</td><td>model、provider、carrier</td></tr>
+      <tr><td>Candidate</td><td>哪個 model identity＋binding＋effective effort 真正合格？</td><td>workflow phase、即時 quota</td></tr>
+      <tr><td>Resolver protocol</td><td>如何 hard-filter、檢查相容性、處理 override 並形成 DispatchPlan？</td><td>workflow ownership、部署 projection</td></tr>
+      <tr><td>Marshal responsibility</td><td>何時推進、重試、升級、停止？</td><td>model 選擇、findings 裁決</td></tr>
+    </tbody>
+  </table>
+  <div class="frame-wrap degraded">
+    <div class="bar"><span>架構圖待 hook 2 裝入</span></div>
+    <div class="degraded-body"><b>本階段刻意不產渲染管線圖。</b>實作與 post-build 收斂後，才依終態產生正式視圖，避免計畫圖在架構修正後失真。</div>
+  </div>
+</section>
+
+<section id="s3">
+  <h2>使用者工作流程</h2>
+  <div class="sub">原本的命令入口保持不變；系統在每個 consequential dispatch 前解析一次</div>
+  <table>
+    <thead><tr><th>工作</th><th>預設能力要求</th><th>升級／停止條件</th></tr></thead>
+    <tbody>
+      <tr><td>execution-plan</td><td>evidence 可 execution；全域 synthesis 與 finding 裁決為 decision</td><td>無 decision-qualified candidate 時 fail loud</td></tr>
+      <tr><td>implement</td><td>accepted EP 後可 execution＋apply</td><td>EP 衝突、新 invariant、公開邊界、反覆失敗時停止本腿並升 decision</td></tr>
+      <tr><td>judge-review</td><td>Arbiter＋adjudication＋decision＋final disposition</td><td>弱 seat 必須外派；不得自行降級裁決</td></tr>
+      <tr><td>post-build</td><td>Reviewer、Arbiter、fix、verification 各自解析</td><td>權限固定；更強 model 不會讓 Reviewer 取得 apply／final disposition</td></tr>
+    </tbody>
+  </table>
+  <h3>高推理＋影像的兩段式 fallback</h3>
+  <div class="cardrow">
+    <div class="card"><div class="t g">1. Visual observer</div><p>visual-qualified model 取得原圖，輸出 source identity、區域、facts／interpretations、不確定項與 delivery receipt。</p></div>
+    <div class="card"><div class="t v">2. Decision Arbiter</div><p>decision-grade model 只裁決 observation artifact；必標 <code>arbiter_viewed_source=false</code> 與 decomposed-not-equivalent。</p></div>
+  </div>
+  <div class="note">模型有 <code>native_vision</code> 還不夠；所選 DispatchBinding 也必須能把 image 傳入。只有 dispatcher receipt 能證明 Arbiter 真的看過原圖。</div>
+</section>
+
+<section id="s4">
+  <h2>四段推進</h2>
+  <div class="sub">每段有獨立 owner、產物與 gate，按依賴順序收斂</div>
+  <div class="kpi">
+    <div class="card"><div class="lab">S1</div><div class="num-big">供給</div><p>catalog、binding、resolver protocol</p></div>
+    <div class="card"><div class="lab">S2</div><div class="num-big">投影</div><p>presets、registry、legacy equivalence</p></div>
+    <div class="card"><div class="lab">S3</div><div class="num-big">工作流</div><p>work units、authority、fallback、visual evidence</p></div>
+    <div class="card"><div class="lab">S4</div><div class="num-big">合流</div><p>consumer manifest、reviews、deployment、fresh-session acceptance</p></div>
+  </div>
+  <ul class="dots">
+    <li>S1／S2 在同一 card branch 完成；legacy/new parity 未綠前，不刪舊表、不部署、不合 main。</li>
+    <li>S3 以 fresh-context behavior experiment 驗 instruction，而不是把 parser test 當成模型行為證據。</li>
+    <li>S4 先跑 code review chain，再跑 instruction docs review chain；兩邊都收斂才進 finalization。</li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2>風險與驗收</h2>
+  <div class="sub">最危險的不是選到次佳模型，而是把不合格或未送達的執行偽裝成成功</div>
+  <table>
+    <thead><tr><th>風險</th><th>驗收 gate</th></tr></thead>
+    <tbody>
+      <tr><td>裸 model 名稱掩蓋 carrier／effort 差異</td><td>candidate 必含 identity、binding、requested/effective effort</td></tr>
+      <tr><td>override 繞過能力契約</td><td>hard filter 與 runtime compatibility 先行；不相容指定為零 dispatch</td></tr>
+      <tr><td>quota failure 造成 retry loop</td><td>DispatchTrace 記 attempts／failure family／retryable-at，重試有界</td></tr>
+      <tr><td>視覺模型或 Arbiter 自報看過原圖</td><td>source-delivery receipt 是唯一證據；decomposition 明標非等價</td></tr>
+      <tr><td>多個 user-level targets 部署一半</td><td>先展示全部 diff/hash 並另取 deploy 授權；保存舊 bytes，失敗 repair-all 或 rollback-all</td></tr>
+    </tbody>
+  </table>
+  <div class="note">本 EP 只授權規劃；目前沒有開始實作、部署或 commit。AIR-91 維持 To Do。</div>
+</section>
+
+<section id="s6">
+  <h2>回源</h2>
+  <div class="sub">本殼是人類 viewport；EP 與研究底稿才是實作者的 source of record</div>
+  <p class="src">
+    EP：<a href="ep.md">ai-analysis/_tasks/09-15-model-capability-routing/ep.md</a><br>
+    研究：<a href="references/research.md">ai-analysis/_tasks/09-15-model-capability-routing/references/research.md</a><br>
+    task baseline：df3741b81e90dad01ed30fb383750ad55630998d<br>
+    projection source：sha256:5fff75cc2549a2d0d11fc5e69d829d1936148d9f076aa2c02afda0b750e2265f<br>
+    卡：AIR-91
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

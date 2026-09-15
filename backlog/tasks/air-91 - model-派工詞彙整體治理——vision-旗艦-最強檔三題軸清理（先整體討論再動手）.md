@@ -1,49 +1,132 @@
 ---
 id: AIR-91
-title: model 派工詞彙整體治理——vision／旗艦／最強檔三題軸清理（先整體討論再動手）
+title: 依工作階段能力自動選擇合適模型
 status: To Do
 assignee: []
 created_date: '2026-09-14 08:36'
+updated_date: '2026-09-15 01:10'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/09-15-model-capability-routing/ep.md
+  - ai-analysis/_tasks/09-15-model-capability-routing/index.html
 ordinal: 77000
 ---
 
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-〔human-summary〕model 派工的詞彙表有三個彆扭點：vision 其實是「能力」不是強度檔位、「旗艦」一詞在文檔裡兩個意思混用、還有比現役旗艦更強但表格沒位置的新 model（astra／fabel）。這卡先把整體做法討論清楚再動手——不預設定稿。
-
-## baseline
-main @ `14da94c`。源起＝2026-09-14 user×AI 詞彙治理討論（側聊三連：flagship 上層→vision 軸性→旗艦雙義掃描）；機械掃描證據已備（見下），勿重掃。
-
-## 三題材料（掃描證據在案）
-
-1. **vision 是能力軸非強度軸，卻放在 tier 枚舉裡**——doctrine 自己承認（model-routing skill L12「能力軸非強度軸，旗艦／一般都可能具備或不具備」），AIR-24 以詞彙經濟學併入；症狀：vision row 結構上是 filter（哪些 model 有影像）非強度 profile、L44 需 footnote 自衛（「非所有 lite 款都具影像能力」）、全庫唯一消費者＝vision-review。方向素材：兩軸重構（tier: full/lite＋capability flags: vision；解析序＝capability 先過濾、tier 在過濾集內選）；今天派工結果零變化（vision-review 仍落 glm-5.3-flash，user 拍板「影像都用 flash」與 tier 無關）。
-2. **「旗艦」一詞雙義**——A 義＝full tier 中文 gloss（rules/model-routing.md:9、skill L12/L16/L22-32、agent-workflow L57/L233、agents/AGENTS.md:110、self-contained-prompt L50、skills/CLAUDE.md:132、sync_agents.py:44）；B 義＝家族在籍最強 model 屬性（skill L119「gpt-5.6-sol（原生旗艦）」、L120）。A 義的「最強」語感是假的（見題 3），兩義會打架；drift 命中清單已掃齊（上列即全清單）。
-3. **最強檔天花板沒有詞彙位置**——gpt-6-astra（最強檔；ChatGPT 帳號路徑 server 拒、需 credits 載具）與 fabel（禁派、訂閱面）強於在籍旗艦（sol／GLM-5.3）；不開新 tier（tier＝requirement 檔非 capability 排行榜）；現有落點＝family inventory＋spine `model-runtime-entitlements` 帳號面 gate，解鎖日才進 tier 表換首選——此現狀是否足夠屬討論項。
-4. **Marshal 控場框架（Role≠Model——user 09-13 宣告正式框架，ai-rules 全庫零固化）**：角色定義 What（要做什麼）、Policy 定 Who（哪個 model／harness 做）、Marshal 定 When（控場推進，不選 model 不改裁決）；六角色＝Marshal／Planner／Implementer／Reviewer／Verifier／Arbiter（Reviewer≠Arbiter：意見權 vs 裁決權）；現行映射＝Marshal 主 session、Implementer flash、Reviewer codex＋flash、Verifier 機械證據腿、Arbiter 5.3 judge-review。語義先落本卡收斂，成熟後載體＝agents/AGENTS.md（角色模型節）或獨立 skill。素材源＝sub＋model 考古報告 P11（`.agent-tmp/sub-model-usage-audit.md`）。
-
-## 已決策（勿重辯）
-- **整體討論、不預設定稿、作法要再討論**（user 2026-09-14 側聊裁定）——本卡是討論載體＋治理承諾，開工前須先收斂做法
-- 三題同根：model-domain 詞彙未做過一次性軸清理；討論起點原則＝「一詞一義、一軸一表」（非結論）
-- 機器契約層現狀統一：`sync_agents.py` `_TIER_TOKENS = {full, vision, lite}` 硬編碼、agents/roles/*.md frontmatter 全用正式 token——本卡純散文/詞彙層治理，**派工行為零變化是驗收硬約束**
-- 旗艦 gloss 漂移面與 vision 重構捆綁處理（一次討論、一份遷移），不兩頭改
-
-## 開放問題（討論議程）
-① vision 兩軸分離的具體形態：capability flag 語法（frontmatter？解析表欄位？）、解析序、vision-review 重釘哪個 tier＋vision flag
-② 旗艦去雙義方向：保留哪一義（family 屬性義 vs tier gloss 義）、另一義換什麼詞
-③ 最強檔的詞彙位置：family inventory＋spine gate 現狀是否足夠，還是要顯式詞彙（如「最強檔」入表註記）
-④ 遷移形態：獨立弧一次清理 vs 隨觸及漸進（AIR-89 剛動過 model-routing——時點考量）
-⑤ Marshal 框架語義收斂：六角色定義＋Role≠Model 原則＋與 tier 表關係（Marshal 不選 model、Reviewer≠Arbiter）＋落地載體（agents/AGENTS.md vs 獨立 skill）
-
-## 漣漪清單（實作時 rg drift 全掃，命中清單現成）
-rules/model-routing.md、skills/model-routing/SKILL.md、skills/agent-workflow/SKILL.md、skills/self-contained-prompt/SKILL.md、skills/CLAUDE.md、agents/AGENTS.md、scripts/sync_agents.py（含 pin dict 生成物 registry）、agents/roles/vision-review.md（若重釘）
+讓 execution-plan、implement、judge-review、post-build 等工作流依每個階段真正需要的能力自動選模型，使用者只需啟動原本的工作流。影像能力、判斷能力、provider 特性與個人方案分開管理，避免用單一強弱檔位誤判模型。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## 工單身份
+
+- baseline：`ai-guide@df3741b81e90dad01ed30fb383750ad55630998d`
+- EP：`ai-analysis/_tasks/09-15-model-capability-routing/ep.md`
+- 背景材料：`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult.md`、`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult-圖解說明.md`
+
+## 目標
+
+把現行 `role → full/lite/vision → model` 改造成下列解析鏈，並維持使用者的一命令入口：
+
+`workflow phase → WorkUnitContract → model identity × dispatch binding × effective effort → runtime compatibility → availability → override / policy → DispatchPlan → carrier`
+
+工作流負責何時推進，Role 定義責任與裁決權，model resolver 選擇誰執行，agent／main session／bridge 只代表執行載體。
+
+## Use Cases
+
+1. 使用者只呼叫 execution-plan、implement、judge-review、post-build，工作流按 phase 自動派工。
+2. EP synthesis、judge、重大架構裁決等判斷密集工作只由已 qualification 的 decision-grade model 執行，禁止因額度不足靜默降級。
+3. 已有自足 EP 的實作可交 execution-grade model；遇規格衝突、invariant、跨邊界決策或反覆失敗時升級。
+4. 小型查詢、證據蒐集與機械驗證可平行派工，但只產 evidence，不取得最終裁決權。
+5. 重要審查可要求不同 provider family 提供獨立意見，最終仍由 decision-grade Arbiter 裁決。
+6. 原生影像是獨立 capability；模型可同時是 execution-grade 且 visual-qualified。
+7. quota、帳號、provider 或 runtime 不可用時，只能換成仍滿足硬性能力要求的候選者，所有降級須可見。
+8. 使用者顯式指定 model／provider／family 時優先；不可用時回報，不得暗換。
+
+## 已決策勿重辯
+
+- 不新增「最強檔」tier；ModelCatalog 只記錄 model supply、binding 與各 workload 的 qualification，不建立單一綜合智力排行榜，也不吸收 Role、workflow demand 或 registry preset。
+- reasoning requirement 與 capability flags 拆軸；`native_vision` 不再與 `decision/execution` 放在同一枚舉。
+- GLM Flash 的原生影像能力以 user-observed、visual-qualified 記錄；此資格與其一般判斷檔位無關。
+- GLM 5.3、ChatGPT Web High、Sol medium-high、Astra、Opus、Fabel 列為 EP synthesis／judge 的 user-qualified 候選；Muse Spark 1.3 暫列 conditional，須保留 evidence status。
+- 高推理＋影像沒有單一合格模型時，接受兩段式 fallback：visual-qualified model 觀察原圖並輸出 grounded observations，再由 decision-grade model 裁決；結果必標示 Arbiter 未直接看原圖，不宣稱與單模型原生視覺裁決等價。
+- Composite workflow skill 承擔 Marshal 責任；不新增 Marshal skill 或 Marshal agent。Marshal 只決定何時推進與升級，不直接選 model、不取代 Arbiter。
+- Reviewer 只有 findings／意見權；Arbiter 才有採納、拒絕、需確認的裁決權。
+- Subagent 不等於 Role。Role 只由 WorkUnitContract 指派；ExecutionPreset 只描述 tools、權限、sandbox、background 與 default binding。第一階段允許保留既有 registry slug 作 compatibility adapter，避免為詞彙重構製造不必要的 runtime 破壞。
+- ModelIdentity、DispatchBinding 與 effective effort 合起來才是一個可評估候選者；provider-native ID、harness alias 與 carrier slug 分欄保存，不得混作單一 model ID。
+- qualification 的 `status` 與 `evidence_source` 分欄；`conditional` 是資格狀態，`user_observed` 是證據來源，availability 不屬於任一欄。
+- resolver 是 `model-routing` skill 的 instruction protocol；`sync_agents.py` 只做 catalog／preset 的機械驗證與 registry projection，不讀個人 memory、不執行即時 fallback。
+- ai-guide 保存穩定能力契約、qualification、provider/runtime 機制與 fallback policy；個人訂閱、帳號、quota、reset 與當弧偏好留在 memory／spine。
+- 遷移採行為等價優先：既有常用 routing 結果與 generated registry pins 不因拆軸意外改變；新增的兩段式 visual fallback 與顯性 dispatch evidence 除外。
+
+## 能力契約
+
+每個 WorkUnitContract 至少聲明：
+
+- `qualification`：如 `ep_synthesis`、`adjudication`、`implement_from_accepted_ep`、`evidence_retrieval`、`review_findings`、`visual_observation`
+- `judgment_floor`：`decision` 或 `execution`
+- `capabilities`：硬性能力 flags，首個正式 flag 為 `native_vision`
+- `authority`：evidence、findings、apply、final disposition
+- `surface`：read/write、tool、workspace、context／payload 限制
+- `independence`：`kind`、`relative_to`、`required` 與缺場 fallback
+- `escalation`：遇到哪類新判斷時停止本腿並升級
+
+availability、latency、quota、成本與偏好只在滿足硬性要求的候選者之間排序，不得降低 capability contract。
+
+視覺 direct path 同時要求 ModelIdentity 的 `native_vision` 與 DispatchBinding 的 `image_transport`；只有 dispatcher 的 source-delivery receipt 能證明 Arbiter 真的取得原圖。
+
+## 路由順序
+
+1. Workflow phase 產生 WorkUnitContract，包括 Role、authority、qualification、judgment floor、capabilities、surface、independence 與 escalation。
+2. 依 qualification、judgment floor、capabilities 與 authority hard-filter ModelCatalog；不合格者不可由高 effort 補成合格。
+3. 展開 DispatchBinding 並檢查 carrier／surface／image transport／effective effort 的 runtime compatibility。
+4. 套用 `available/unavailable/unknown` snapshot；unknown 必須 probe 或顯性 no-candidate。
+5. 使用者覆寫只約束或提高仍相容候選者的排序；指定不合格或不可用候選者時零 dispatch 並回報，不暗換。
+6. RoutingPolicy 在剩餘集合排序，形成 main session、registry preset 或 bridge 的 DispatchPlan。
+7. 每個 work unit 輸出 DispatchTrace；候選耗盡時 fail loud，或只採 WorkUnitContract 已允許的 decomposition。
+
+## 範圍
+
+### In scope
+
+- `rules/model-routing.md` 的 always-on 路由骨架與硬性 invariant。
+- `skills/model-routing/SKILL.md` 的 requirement schema、model capability／qualification catalog、provider/runtime traits、availability pointer、resolver 與 fallback。
+- execution-plan、implement、judge-review、post-build 的 phase capability declaration 與 escalation 條件。
+- agent-workflow、agents/AGENTS.md、agents authoring／projection 語義，以及 `scripts/sync_agents.py` 的 requirement/capability 解析與 parity。
+- generated ZCode／Claude registries、`skills/CLAUDE.md`、root／rules／agents 導航與 single-source checks。
+- 既有 `cr-research` full/lite 文件 drift 一併收斂。
+
+### Out of scope
+
+- 改動 provider 帳號、訂閱或 quota。
+- 建立跨 provider 公開 benchmark 或聲稱未實測的模型優劣。
+- 修改 delegate-bridge transport protocol。
+- 新增 Marshal agent、Marshal skill 或另一套 workflow engine。
+- 因詞彙重構任意更換目前已驗證的預設 model pin。
+
+## 驗收邊界
+
+- supply catalog、workflow demand、ExecutionPreset 與 generated projection 各自只有一個 owner；未知 requirement、capability、binding、qualification 或缺失 pin fail loud。
+- vision-review 能表達 `judgment_floor=execution + native_vision`，解析結果仍為目前 visual-qualified model。
+- decision-grade work unit 不因 quota、provider failure 或高 effort 配置降成 execution-grade model。
+- 兩段式 visual fallback 保留 observation provenance、不確定項與 Arbiter 未直接看圖標記。
+- workflow dispatch preview 至少能回答 work unit、Role/authority、能力需求、model identity/binding、requested/effective effort、carrier、override、attempts 與是否 fallback。
+- agent authoring source 不直接寫 provider model ID；generated registry 的 model pin 由 resolver/projection policy 產生。
+- repo instruction、parser、generator、測試與部署 bundle 無 `full/lite/vision` 舊單軸語義殘留；合法歷史報告不改，只排除出 current-doctrine gate。
+<!-- SECTION:PLAN:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 討論材料齊：四題現況＋選項方向＋漣漪清單落卡（本卡 desc 即初版，討論中增補）
-- [ ] #2 作法經整體討論收斂：軸模型與遷移形態 user 拍板，落卡 notes（勿重辯段更新）
-- [ ] #3 落地後 rg drift 掃描零殘留＋派工行為零變化驗證（機器 token 與實際 model 解析結果不變）
+- [ ] #1 WorkUnitContract 已拆分 qualification、judgment floor、capabilities、authority、surface、independence 與 escalation；candidate 明確包含 model identity、binding 與 effective effort
+- [ ] #2 execution-plan、implement、judge-review、post-build 已按 phase 聲明需求與升級條件，使用者入口仍是一個 workflow 命令
+- [ ] #3 ModelCatalog 只記 supply/binding/qualification，status 與 evidence source 分欄；個人方案和即時 availability 仍只住 memory／spine
+- [ ] #4 Marshal／Role／Arbiter／execution profile／model／provider／carrier 邊界已在單一來源定義，未新增 Marshal agent 或 skill
+- [ ] #5 高推理＋影像無單一合格模型時，兩段式 fallback 保留 grounded observation provenance 與非等價標記
+- [ ] #6 ExecutionPreset 不含 Role／demand，sync_agents projection、generated registries、single-source guards 與相關 tests 已支援拆軸且未知值 fail loud
+- [ ] #7 既有 routing 行為與 pins 經 golden/parity probe 證明無意外改變，cr-research drift 與 current-doctrine 舊語義殘留已清除
+- [ ] #8 instruction behavior experiments、consumer smoke、targeted tests、sync_agents --check/--map 與 consistency 全部通過；deploy 前已展示所有 target diff/hash 並另取明確授權
 <!-- AC:END -->
