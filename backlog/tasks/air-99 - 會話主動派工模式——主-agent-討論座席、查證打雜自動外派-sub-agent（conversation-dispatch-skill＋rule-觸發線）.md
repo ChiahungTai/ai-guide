@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-15 14:09'
-updated_date: '2026-09-15 14:10'
+updated_date: '2026-09-15 14:16'
 labels:
   - governance
   - skills
@@ -53,4 +53,6 @@ P4 activation 行為測試（該派/不該派各 ≥2 例）＋端到端一例�
 
 <!-- SECTION:NOTES:BEGIN -->
 Provenance：09-15 user 提問（主 agent 討論座席＋主動派 sub agent 打雜＝進入一種模式，名稱不重要），arch-thinking 分析後雙腿討論。muse job-mu2qulll-hc6rze（verdict=adjust 後 go：推 A+D 窄版；貢獻 heuristic 聲明/負空間/同意邊界/per-turn 粒度糾正）；codex job-mu2qv8sv（verdict=adjust：推 B+D+引用 A、evidence pack 契約、收集判讀分離）。裁定＝B+D 形態＋muse 三補強（理由見 Plan ②③）。原始輸出 .delegate-bridge/jobs/ 兩 jobId jsonl。
+
+Bundle 量測基線（09-15，deploy_agents.py --dry-run＋實體 wc）：muse gate=36,864B（MUSE_USER_BUDGET），現行 30,231B=82.05%（AIR-97 bundled 句後較 AIR-96 收案 81.6% 再+143B）；WARN=0.85（31,334B）。P2 rule 升級句實測：完整版 +110B→82.31%、精簡版 +83B→82.23%，均未觸 WARN；距 WARN 餘 ~0.99KB、距硬 gate 餘 ~6.4KB。風險註記：workflow redesign EP S3 亦將增補 context-management.md（同 bundle）——兩案疊加後逼近 WARN，屆時先 reference 分層瘦身（AIR-96 #3 既有模式）再疊加，勿硬塞。skill 本體（conversation-dispatch SKILL.md）on-demand 不進 bundle，零 bundle 成本。
 <!-- SECTION:NOTES:END -->
