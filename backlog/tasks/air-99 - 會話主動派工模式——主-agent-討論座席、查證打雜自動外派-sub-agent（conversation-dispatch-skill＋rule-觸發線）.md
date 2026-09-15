@@ -3,10 +3,10 @@ id: AIR-99
 title: >-
   會話主動派工模式——主 agent 討論座席、查證打雜自動外派 sub agent（conversation-dispatch skill＋rule
   觸發線）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-15 14:09'
-updated_date: '2026-09-15 22:06'
+updated_date: '2026-09-15 22:23'
 labels:
   - governance
   - skills

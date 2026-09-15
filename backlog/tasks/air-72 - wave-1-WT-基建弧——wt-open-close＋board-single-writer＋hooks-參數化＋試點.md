@@ -1,14 +1,16 @@
 ---
 id: AIR-72
 title: wave-1 WT 基建弧——wt-open/close＋board single-writer＋hooks 參數化＋試點
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-10 01:50'
-updated_date: '2026-09-15 22:06'
+updated_date: '2026-09-15 22:23'
 labels:
   - governance
   - wt
 dependencies: []
+references:
+  - scripts/wt-open.sh
 ordinal: 58000
 ---
 
