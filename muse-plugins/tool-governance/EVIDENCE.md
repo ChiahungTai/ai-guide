@@ -34,3 +34,12 @@
 | install→approve→inspect | `trusted_enabled`（checkpoint 已向 user 出示） |
 | 更新生命週期走查 | 改源→cache 照跑舊版（無警訊）；`update`→`modified` 停火；`approve`→恢復 `trusted_enabled`——README 鐵律據此修正為「改源→update→approve 三步」 |
 | 判斷契約同源實證 | 測試過程中 ZCode 端移植源 hook（block-python-file-write.py）攔下測試指令本身——同契約跨 harness 活體對照 |
+
+## Live 端到端驗收（job-mu2k6djj-uch0sp，2026-09-15）
+
+| 路徑 | 結果 |
+|---|---|
+| deny（活體）：真實 muse session 嘗試 heredoc 寫入 `.agent-tmp/mos105-live-test/x.txt` | **被擋**——模型逐字回報：`tool blocked by hook: bash-write-guard: python heredoc 內含檔案寫入呼叫——…`；未寫入、未嘗試替代寫法 |
+| allow（活體）：同 session `echo control-ok` | 正常執行 exit 0 |
+
+→ SM-1（擋 heredoc 繞道）與 SM-2（非目標不誤攔）在 live 端到端成立；EP 驗證策略全數收斂。

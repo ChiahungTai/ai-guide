@@ -4,7 +4,7 @@ title: MOS-105 實作：Muse 控制缺口補強——防護 hook 移植＋bundle
 status: In Progress
 assignee: []
 created_date: '2026-09-15 10:40'
-updated_date: '2026-09-15 10:41'
+updated_date: '2026-09-15 10:59'
 labels: []
 dependencies: []
 ordinal: 82000
@@ -37,3 +37,9 @@ ordinal: 82000
 ⑨ 驗證載體＝EP 定義 fixture／rg／validate 命令（無 pytest 產物；／audit-test 不適用——EP 收尾載明）
 ⑩ mosaic EP commit 仍 pending——本卡以本地複本（sha256 前 16 碼 8f16bcd1c8fb09ca，274 行）為實作源，結案前 mosaic 側須落 commit 對帳〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S0→S3→S1→S2 全段完成（順序依 user 拍板 v3）。S3：tool_name="bash" 收斂、exit-非零=fail-open、timeout 無截斷、updatedInput decision 層接受（EVIDENCE.md）。S1：bash-write-guard 五 fixture 綠＋13–465ms＋install trusted_enabled＋更新三步生命週期（改源→update→approve）實證。S2：優先句入 guide 開場導引（commit 6f0後補 hash）＋deploy 3/3＋rg muse=1/zcode=1＋registry.md（bundled 五對當日 ls 實測）。N2：四 .bak mv 隔離 .agent-tmp/mos105-cleanup/（兩大檔 diff 實證互為副本、同名合併無損）＋config dirs 斷言歸零。Live E2E：deny/allow 雙路徑活體通過（job-mu2k6djj-uch0sp）。待辦：EVIDENCE live 段落 commit（待 user OK）；MOS-105 卡結案在 mosaic 側（EP commit 仍未落）。
+<!-- SECTION:NOTES:END -->
