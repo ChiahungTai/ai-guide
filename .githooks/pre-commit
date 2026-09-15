@@ -2,6 +2,14 @@
 # 治理工具鏈測試閘門（T1-2）——確定性 git hook，非 /commit skill 內的 prompt 提示。
 # 啟用：git config core.hooksPath .githooks（一次性，per-clone）
 cd "$(dirname "$0")/.." || exit 1
+# 環境隔離：hook 由 git 執行時繼承 GIT_DIR/GIT_WORK_TREE 等 git 注入變數，
+# 會把測試內的 git init 臨時 repo 導向錯誤位置——兩次 core.bare=true 污染
+# 外層 repo 實證＋codex 弧 29 failed "must be run in a work tree"。
+# 逐一 unset --local-env-vars 列出的變數（僅 git 注入的 GIT_* 類，
+# 不含 PATH/HOME 等 hook 自身所需，清理安全）。
+while IFS= read -r v; do
+  unset "$v"
+done < <(git rev-parse --local-env-vars)
 uv run pytest tests/ -q || exit 1
 # hook runtime 是系統 python3（3.9）——機械擋 3.10+ 語法於 generator/hooks 部署面
 python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py || exit 1
