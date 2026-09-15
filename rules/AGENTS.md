@@ -62,12 +62,12 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 | `llm-output-convention` | 🟢 neutral | print/Logger 雙通道核心——state transition 定義＋Namespace（tag 表/細則在 llm-output-convention skill）|
 | `symbol-query-routing` | 🟢 neutral | cr-first 符號/型別查詢路由＋任務啟動 gate（LSP operation 速查表、反例群、Agent prompt 模板、載體對照、staleness 處置在 symbol-query-routing skill）|
 | `modern-cli-preference` | 🟢 neutral | fd/rg 核心分工（陷阱目錄在 modern-cli-preference skill；Claude 權限段括號註隔離）|
-| `tool-discipline` | 🟢 neutral | 通用工具紀律（uv run / pipe-exit / 禁 sed / pytest 背景跑 / zsh 動態 flags 陣列 / Edit 失敗處置階梯 / 視覺判讀 agent 路由——禁主 session 讀圖）|
+| `tool-discipline` | 🟢 neutral | 通用工具紀律（uv run / pipe-exit / 禁 sed / pytest 背景跑 / 視覺判讀 agent 路由——禁主 session 讀圖；Edit 失敗階梯、zsh flags 邊界、Read 紀律案例在 tool-discipline skill）|
 | `edit-discipline` | 🟢 neutral | 通用編輯紀律（SRP/DIP/變更紀律/禁混合寫法）|
 | `bash-hard-rules` | 🔴 claude-specific | Claude 權限偵測（`#` 換行註解 / `$` 展開 / 陣列靜態攔截）|
 | `code-edit-constraints` | 🔴 claude-specific | Claude Edit/Write 工具 API（old_string 精確匹配 / 多位元組備註；失敗處置指針 tool-discipline）|
 | `model-routing` | 🟢 neutral | 跨 harness subagent 派工路由骨架（WorkUnitContract→candidate→DispatchPlan precedence＋hard invariants——no-silent-downgrade／token provenance／effective effort／model fact single source；glossary／resolver 協議／解析表在 model-routing skill、供給事實在 `skills/model-routing/catalog.toml`） |
-| `bridge-dispatch` | 🟢 neutral | delegate-bridge 委派路徑紀律（registry pin 唯一源／caller surface 合法入口對照／禁第二 pin／webgpt 大內容派檔案路徑／dispatch⇄collection 配對——派工必配回收、waiter exit 即通知；事故脈絡在 delegate-bridge repo AGENTS.md「Caller dispatch discipline」節） |
+| `bridge-dispatch` | 🟢 neutral | delegate-bridge 委派路徑紀律（registry pin 唯一源／caller surface 合法入口對照／禁第二 pin；webgpt 大內容與 dispatch⇄collection 完整模式在 bridge-dispatch skill，事故脈絡在 delegate-bridge repo AGENTS.md「Caller dispatch discipline」節） |
 
 **default = neutral**：通用知識預設跨 harness — 新 rule 不標 scope 即進 bundle。Claude 專屬 rule 需顯式標 `harness-scope: claude-specific` 才被排除。`deploy_agents.py` 的斷 ref 檢測會阻塞任何 neutral rule 引用 claude-specific rule 的 deploy（強制修 ref 或重劃 scope）。已下沉 skill 的 rule（self-consistency 五維檢查、context7 MCP 查詢——內容在 instruction-writing skill／context7 skill；design-thinking 輸出格式、model-routing 解析表、llm-output-convention 細則、modern-cli 陷阱目錄等同模式分層）。
 

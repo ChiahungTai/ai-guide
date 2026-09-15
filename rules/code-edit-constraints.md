@@ -50,7 +50,7 @@ harness-scope: claude-specific
 
 ### 連續 Edit 失敗處理
 
-Edit 失敗的完整處置階梯（re-Read → 停止盲試 → repr 唯讀診斷 → 縮小 old_string → Write 覆寫）見 [tool-discipline.md](tool-discipline.md)「Edit 失敗處置階梯」（neutral canonical）。Claude API 行為備註：跨行匹配含多位元組字元（中文等）可能失敗，即使 `old_string` 精確——縮小 old_string 只匹配目標周圍的 ASCII 部分可避開。
+Edit 失敗的完整處置階梯（re-Read → 停止盲試 → repr 唯讀診斷 → 縮小 old_string → Write 覆寫）在 tool-discipline skill「Edit 失敗處置階梯」（neutral canonical；rule 端 [tool-discipline.md](tool-discipline.md) 留 pointer）。Claude API 行為備註：跨行匹配含多位元組字元（中文等）可能失敗，即使 `old_string` 精確——縮小 old_string 只匹配目標周圍的 ASCII 部分可避開。
 
 ### 連續同類錯誤處理
 
