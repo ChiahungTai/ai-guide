@@ -33,7 +33,7 @@
 
 1. 補讀被截斷部分並核對主題卡／draft、AIR-91 final 與 AIR-96 排除範圍。
 2. 精讀當前 review-engine、post-build、implement review cycle、compact-prep、metadata-sync 與殼契約的相關段，建立文件依賴與修改清單。
-3. 形成目標流程／UC／Scenario Matrix／每項保留、條件化、合併的理由及替代防線；記錄仍需 user 裁決之处。
+3. 形成目標流程／UC／Scenario Matrix／每項保留、條件化、合併的理由及替代防線；記錄仍需 user 裁決之處。
 4. 在標準任務家建立 docs-mode implementation EP（若超過五個獨立中型子工程才改 blueprint）；附遷移、驗證、失敗回復、baseline、進度與 review 帳本。
 5. 依現行規範安排獨立 EP review → judge → 回寫；缺額度／合格路由時標 review pending，不能用自審冒充。完成 task brief。每階段更新本 checkpoint 指向最新 EP。
 

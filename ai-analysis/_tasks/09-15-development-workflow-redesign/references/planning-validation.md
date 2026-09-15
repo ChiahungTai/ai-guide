@@ -2,7 +2,7 @@
 
 ## 文件與審查
 
-- 完整 EP 已逐段檢查自洽、責任邊界、引用與情境對應；六项外部 findings 經 current sources 核對、修訂、原 reviewer followup，全部 resolved。
+- 完整 EP 已逐段檢查自洽、責任邊界、引用與情境對應；六項外部 findings 經 current sources 核對、修訂、原 reviewer followup，全部 resolved。
 - 初審 `job-mu2dzpyw-geyy61`、followup `job-mu2e7wgx-ffgcbp` 均 completed／exit 0，原始輸出在同目錄 JSON。沒有仍待收回的工作。
 - 靜態檢查實跑 `uv run python`：Markdown／HTML 本地連結存在、HTML id 唯一、導航 fragment 指向有效 section、無未替換 placeholders、兩份 review JSON 可解析且有 finalText，全部 PASS。
 - EP projection SHA256：`f4a7c8f920cf6e72d20106de0f7456b0aed684f85b2c1a573a3d23d17df905a2`；HTML 兩個來源欄位同步。

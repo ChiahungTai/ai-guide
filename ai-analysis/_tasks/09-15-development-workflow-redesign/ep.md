@@ -65,16 +65,16 @@
 |---|---|---|
 | `ai-analysis/reports/2026-09-15-dev-flow-current-practices-inventory.md:3` | 以 AIR-91 Done 為基線，目標含人追上實作 | 不重做 routing；保留人類 viewport |
 | `ai-analysis/reports/2026-09-15-dev-flow-overhead-inventory.md:8` | observed/protection/candidate 分類，未給刪除結論 | 每項減量附替代防線與改判條件 |
-| `skills/review-engine/SKILL.md:130` | 共通 review 預設、固定 max 與多視角 | 改此源，消費端只取結果 |
+| `skills/review-engine/SKILL.md:141` | 共通 review 預設、固定 max 與多視角 | 改此源，消費端只取結果 |
 | `skills/implement/SKILL.md:192` | Agent Review 固定多 perspective | S2 改成邊界觸發，保留 lens 覆蓋 |
-| `skills/post-build/SKILL.md:79` | 已有身份去重＋缺鍵全審 | 補 identity producer，不再建第二去重機制 |
+| `skills/post-build/SKILL.md:76–80` | 已有身份去重＋缺鍵全審 | 補 identity producer，不再建第二去重機制 |
 | `skills/_common/workflow-review-pattern.md:121` | identity 只有 baseline/reviewed/uncommitted/writer | 補 scope/profile／coverage 關聯，服務既有去重 |
 | `skills/compact-prep/SKILL.md:15` | 全 session preserve-list、memory 檢查、恢復 | 重用現有載體，先落盤再可選整理 |
 | `skills/metadata-sync/SKILL.md:12` | build／收斂／standalone 分工已存在 | 保留 Built/Verified，減少同 revision 重算 |
 | `skills/_common/illustrate-html-mode.md:76` | 同一殼生命週期；持久 tour 已 ask-once | 不重提 tour 去強制化；僅調整強制產圖 |
 | `ai-analysis/blueprint/workflow.md:28` | 人類八站導引權威，不取代 skills | 修改掛點時同步導引，保留兩受眾 |
 
-補充來源：兩份前日 Marshal 報告、controlled-compact-strategy、memory-mechanism-analysis、codex-compact-architecture；全部按歷史證據使用。AIR-91 done EP 進度節記錄測試、behavior experiment 與部署，本次沒有重跑其驗收。STATE 是舊觀察，不能推翻 done 位置或当前卡面。
+補充來源：兩份前日 Marshal 報告、controlled-compact-strategy、memory-mechanism-analysis、codex-compact-architecture；全部按歷史證據使用。AIR-91 done EP 進度節記錄測試、behavior experiment 與部署，本次沒有重跑其驗收。STATE 是舊觀察，不能推翻 done 位置或當前卡面。
 
 ### 可重用機制與 ownership
 
@@ -153,7 +153,7 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 | SM-02 | 一般跨檔 feature、有既有保護測試 | 計畫獨立 review；段落實跑；弧末獨立 review | EP 段結果／review identity | R,E |
 | SM-03 | 小 diff 改 money/public boundary/MUST→SHOULD | 升邊界配置；invariant／架構／控制面 behavior 依觸發驗 | 風險理由與相應證據 | R |
 | SM-04 | 前輪相同 scope/content/profile 已審 | 引用已審證據，只補 delta 與跨段整合；不抄全量 findings | identity／coverage | E |
-| SM-05 | HEAD 未變但 untracked 内容變 | identity 不匹配，針對新內容補 review；不可跳審 | content hashes | E |
+| SM-05 | HEAD 未變但 untracked 內容變 | identity 不匹配，針對新內容補 review；不可跳審 | content hashes | E |
 | SM-06 | 缺 profile/scope／舊證據檔失聯 | 顯性失效，對所需範圍完整 review | 失效理由 | E |
 | SM-07 | 審後修正波及新 consumer／新 invariant | 重新分級＋delta review，未閉合不得 Verified | 新 finding／delta | R,E |
 | SM-08 | quota 將盡，正在 debug 半程 | 先保存已知／未知、失敗原文、未完成修改，無 completed 宣稱 | 現有 EP/checkpoint | C |
@@ -180,7 +180,7 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 
 實作 UC-R/UC-E 的共通契約。使用者要省重複工，不降低正確性與獨立性；無另附 spec，Always＝authority/consent/invariant，Ask First＝新預設接受與 deploy，Never＝同寫同審冒充獨立。依賴 AIR-91 doctrine 已在場；不改模型 catalog。共用假設：S2/4 消費同一風險結果與 identity。
 
-錨點：定義 `skills/review-engine/SKILL.md:130` → 消費 `skills/implement/SKILL.md:195`、`skills/ep-review/SKILL.md:25`；identity 定義 `skills/_common/workflow-review-pattern.md:121` → 消費 `skills/post-build/SKILL.md:79`。實作前 rg 重定位，行號只作起點。
+錨點：定義 `skills/review-engine/SKILL.md:141` → 消費 `skills/implement/SKILL.md:195`、`skills/ep-review/SKILL.md:28`；identity 定義 `skills/_common/workflow-review-pattern.md:121` → 消費 `skills/post-build/SKILL.md:76–80`。實作前 rg 重定位，行號只作起點。
 
 ### 修改要點
 
@@ -197,7 +197,7 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 
 ### Invariant Impact
 
-控制面核心 invariant：Reviewer≠Arbiter、缺證據≠PASS、revision/profile 改變不能復用舊結論。非交易 domain 計算，無 money path 實作；其觸发案例仍列風險測試。
+控制面核心 invariant：Reviewer≠Arbiter、缺證據≠PASS、revision/profile 改變不能復用舊結論。非交易 domain 計算，無 money path 實作；其觸發案例仍列風險測試。
 
 ### 驗證與完成條件
 
@@ -209,19 +209,19 @@ review 正常路徑從一個獨立 reviewer 開始，必讀要求、正確性、
 
 更新 UC-R/UC-E；依賴 S1 定稿。需求邊界同本段自足陳述：只在 scope 已可判且 accepted EP 成立後 apply；任何新決策轉 Planner/Arbiter，不以 execution 腿補設計。S1/S2 共享 scope/profile identity；S3 恢復會讀本段產物。
 
-複用：`skills/implement/SKILL.md:85` accepted-EP predicate、`:192` review cycle；`skills/post-build/SKILL.md:79` reuse；`skills/_common/agent-review-cycle.md` perspectives；`skills/execution-plan/SKILL.md` EP Review Cycle；`skills/ep-review/SKILL.md` F1–F5；`skills/code-review/SKILL.md` mode B；`agents/AGENTS.md` execution contract。
+複用：`skills/implement/SKILL.md:56` accepted-EP predicate、`:192` review cycle；`skills/post-build/SKILL.md:76–80` reuse；`skills/_common/agent-review-cycle.md` perspectives；`skills/execution-plan/SKILL.md` EP Review Cycle；`skills/ep-review/SKILL.md` F1–F5；`skills/code-review/SKILL.md` mode B；`agents/AGENTS.md` execution contract。
 
 ### 修改要點
 
 - execution-plan/ep-review 保留所有 F1–F5 維度，引用 S1 的配置；刪除自行以主模型/effort 重建 agent 數量的重複判準。EP Review 完成才產 accepted eligibility；不刪獨立計畫 review。
-- implement 普通中間段做 scoped 實跑、invariant assertions、必要 test audit、寫段落結果；當公開邊界／跨 context／高保護面／獨立交接／user 要求時啟動段級 review。全弧仍需独立 review；最後段已覆蓋全弧者可依身份復用。
+- implement 普通中間段做 scoped 實跑、invariant assertions、必要 test audit、寫段落結果；當公開邊界／跨 context／高保護面／獨立交接／user 要求時啟動段級 review。全弧仍需獨立 review；最後段已覆蓋全弧者可依身份復用。
 - S1 的整合器／新簽名／注入點 extras 與 UC-split 映射一併接入，不能只接 base。implement 階段 6 fallback 必先核對弧級 review coverage；缺席則補獨立 review＋裁決＋修正驗證再結案。若 user 要求停止審查，尊重停工但只交 Built／🟡，列 pending，不發 ✅、不移 Done、不歸檔 EP；缺帳本不能以 git／卡狀態推導為已驗。
 - 段落結果寫 EP 進度，不新增每段 report：產物路徑／內容身份、實跑命令及結果指針、未驗與下一步、review 尚需/已覆蓋。原始長輸出留 evidence 檔，不灌回 prompt。
 - code-review/agent-review-cycle 消費 S1 風險結果；Correctness lens 不消失。audit-test 保留 test 特有 mandate；profile 覆蓋已包含相同 test 審核時引用相同證據，scope 新增則補，不另固定全量重跑。
 - post-build 首先核對前段 identity，保留已存在 fallback 全審與跨段整合要求；任何修正產生新 scope 則重分級。需確認項影響 scope/AC/gate 時阻擋 accepted/Verified，純建議可保留顯性未決但不偽裝全清。
 - agents/AGENTS、agent-workflow 的 lifecycle 表只留指向 owning workflow 的掛點；skills/CLAUDE 索引同步。judge 的 disposition authority 與 status 值域維持；followup 依下節消除雙寫者措辭，並同步 identity 讀取指針。
 - 明確修改 `skills/post-build/SKILL.md:88` 零 findings 快道：先核對 terminal=completed、輸出完整且包含明確 review 結果／scope coverage，再判 findings 為空。timeout／非零失敗／輸出空白／截斷／缺 coverage 一律留 pending，不能直進成功結算。只靠 exit 0 不足；無 job 的合法執行面需等價完成及輸出證據，不臆造 job。
-- 每次 dispatch 延用 WorkUnitContract/resolver，已確認 definition 未变時引用已載材料；availability 在 dispatch 當下查，不能用省讀為由沿用 stale quota。
+- 每次 dispatch 延用 WorkUnitContract/resolver，已確認 definition 未變時引用已載材料；availability 在 dispatch 當下查，不能用省讀為由沿用 stale quota。
 
 ### Marshal 工單粒度與派工契約
 
@@ -381,7 +381,7 @@ review 対象＝本 EP 及列明 current sources；Reviewer authority=findings�
 | ID | 裁決／理由 | 計畫修訂 | 狀態 |
 |---|---|---|---|
 | M1 | 部分採納：相容判準不能只看 Role。拒絕「普通三視角永不可改」——那是本 EP 明示要驗證的政策變更，不是不可改的底層 invariant；原 Reviewer 自己亦同意去掉 cap 填滿 | S1 profile 先於 batching；S2 本弧僅同 authority 批次，禁止 writer/reviewer、reviewer/arbiter 和必要獨立 lens 合併 | implemented，待增補 followup |
-| M2 | 採納：followup 的 responsibility 要明示。现行 followup:43–62 有驗收／帳本措辭與主 session 更新說明，不能只添 row 而不消歧 | S2 補 Reviewer/findings row，Arbiter 做最終閉合；不充當新的弧級獨立證據 | implemented，待增補 followup |
+| M2 | 採納：followup 的 responsibility 要明示。現行 followup:43–62 有驗收／帳本措辭與主 session 更新說明，不能只添 row 而不消歧 | S2 補 Reviewer/findings row，Arbiter 做最終閉合；不充當新的弧級獨立證據 | implemented，待增補 followup |
 | M3 | 採納：adapter 引用既有 rows 最小；不新增 union schema、engine 或模板檔 | 既有 work-order 多成果 envelope，S2 manifest 同步；逐 unit 資格與結果、部分失敗及依賴失效驗證 | implemented，待增補 followup |
 | M4 | 採納 stale/unknown 與 retry 守衛；不採「retryable-at 是唯一可沿用時間值」這種無充分依據的全域宣稱；它是重試下限，不是 available 證據 | 每 dispatch snapshot、新 worker read-set、空輸出不當零 findings；SM-22/23 | implemented，待增補 followup |
 

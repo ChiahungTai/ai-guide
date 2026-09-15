@@ -33,7 +33,7 @@
 | Claude Code | `~/.claude/projects/-Users-ctai-Github-ai-guide/memory` | **目錄 symlink 直指主體**（一跳） | `ls -la` 確認 → `.../ai-guide/.agents/memory` |
 | ZCode | `~/.zcode/cli/memories/projects/ai-guide-*/memory` | **雙跳**：zcode → CC 路徑 → 主體 | `ls -la` 確認 → `~/.claude/projects/.../memory` |
 | Muse | project scope 原生讀主體 | 直連（`read_memory`；開場注入 MEMORY.md） | AGENTS＋inbox receipt 實證 |
-| Codex | `~/.codex/memories/`（自家：MEMORY.md＋memory_summary.md＋raw＋rollout_summaries＋sqlite） | **不連主體**；讀 ai-guide 池走 `rg _inventory.md`＋Read（唯讀） | `ls ~/.codex/memories` 在場 |
+| Codex | `~/.codex/memories/`（自家：MEMORY.md＋memory_summary.md＋raw_memories.md＋rollout_summaries/（另有 extensions/、skills/；未見 sqlite）） | **不連主體**；讀 ai-guide 池走 `rg _inventory.md`＋Read（唯讀） | `ls ~/.codex/memories` 在場 |
 
 含義：CC/ZCode/muse 三家**共享同一主體**（單一真相）；codex 自家另有一套（任務導向的 rollout summaries），對本池只有讀權——寫入拓撲是「三寫一讀」。
 

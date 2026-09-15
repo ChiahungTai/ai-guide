@@ -308,8 +308,8 @@ resolver 是 model-routing skill 的 instruction protocol（不是 Python runtim
 ### 6.2 索引形態（B 形態：常駐定額＋全量 inventory）
 
 - MEMORY.md＝機械投影禁手寫（PreToolUse gate）；常駐集合＝`_resident-set.md` 顯式清單（user 凍結；rank 只排集合內順序不決定資格）；全量條目在 `_inventory.md`（rg 可達，不進開場；同禁手寫）。
-- 現況實例（09-15 晨間波）：resident 12 條 2,302/6,000 chars；inventory 267→288 條（`_inventory.md` 315 行／70,662 bytes；MEMORY.md 26 行／3,470）；條目檔 308 個 md（含 `_` 前綴非條目）。
-- type 分布實例：feedback 152／project 65／reference 86（`rg -l "type: <t>"`；每檔 frontmatter 雙 type 行：node_type=memory＋type=<t>）。
+- 現況實例：resident 12 條 2,302/6,000 chars（09-15 晨間波）；inventory 晨間 267→288 條→撰寫當下 303 條（`_inventory.md` 315 行／70,662 bytes）；MEMORY.md 26 行／3,470；條目檔 308 個 md（含 `_` 前綴非條目）。
+- type 分布實例（現值，合 303）：feedback 152／project 65／reference 86（`rg -l "type: <t>"`；每檔 frontmatter 雙 type 行：node_type=memory＋type=<t>）。
 - 常駐 12 條（resident-set）：commit-consent-in-autonomous-mode、feedback_verify-wt-before-commit、feedback_consistency-gate-not-optional、feedback_backup-unversioned-live-configs、cross-workspace-actions-user-handles、feedback_read-current-file-before-reviewing、feedback_relay-claims-verify-current-state、feedback_evidence-over-claims、feedback_dispatch-reread-governing-docs、feedback_full-read-base-not-context-copy、feedback_cjk-char-corruption-rg-verify、project_session-topology-single-writer。
 - 截斷線（兩端同語義）：200 行或 25,000 字元（UTF-16，CJK 一字計 1）先到為準，超限截斷附 WARNING 尾端不載；B 形態 gate＝常駐面 6,000 chars；bytes ≥22,800（95%）／>24,000（info 縱深預警，不擋寫入）。
 - 投影排序＝type 四組×rank 三層（hot/core/cold，缺省 core）×組內 mtime 新在前；mtime 重置源（備份還原/遷機/無 -p 複製）會退化排序，備份用 rsync -a／cp -p。

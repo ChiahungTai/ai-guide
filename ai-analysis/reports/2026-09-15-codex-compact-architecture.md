@@ -18,7 +18,7 @@
 | 歷史替換＋新 window | `codex-rs/core/src/session/mod.rs` §replace_compacted_history（L3980-4058）、§start_new_context_window（L4445-4496） | 精讀兩函式 |
 | turn 層觸發點 | `codex-rs/core/src/session/turn.rs`（rg 命中行） | 觸發位點 |
 | hook payload | `codex-rs/hooks/src/events/compact.rs`（rg 命中行） | 欄位列舉 |
-| prompt 模板 | `codex-rs/prompts/templates/compact/{prompt.md,summary_prefix.md}` | 全讀（各 <10 行） |
+| prompt 模板 | `codex-rs/prompts/templates/compact/{prompt.md,summary_prefix.md}` | 全讀（prompt.md 9 行、summary_prefix.md 空檔） |
 | TUI 入口 | `codex-rs/tui/src/slash_command.rs`（rg 命中行） | 一行描述 |
 | rollout trace | `codex-rs/rollout-trace/src/compaction.rs` 前 100 行 | checkpoint 語義 |
 | config schema | `codex-rs/core/config.schema.json` §compact_prompt 等 | 欄位描述 |
@@ -164,8 +164,7 @@ prefill baseline、兩個 once-per-window claims（reminder、fallback）。
   定義任務為 CONTEXT CHECKPOINT COMPACTION，產物是給下一個 LLM 的 handoff summary；
   四要項：進度＋決策／context-約束-偏好／剩餘下一步／繼續所需的關鍵資料-範例-引用；
   風格：concise、structured、seamless continue。注意：**沒有 verbatim 要求、沒有 preserve-list 結構**。
-- `SUMMARY_PREFIX`（`summary_prefix.md`，1 段）：下一個 model 看到的導語——
-  「另一個模型已做一部分，用摘要接著做、別重做」。同時是 `is_summary_message` 的機械識別錨。
+- `SUMMARY_PREFIX`（`summary_prefix.md`——本 checkout 為空檔；`prompts/src/compact.rs:2` 以 `include_str!` 載入即空字串）：本 checkout 無導語文本。`is_summary_message` 的 prefix 匹配呼叫仍在（`compact.rs` 內 `starts_with` 用法），但匹配對象為空前綴＋換行，識別力存疑——重驗時以當下檔內容為準。
 - 可配點：`config.compact_prompt`（整段換掉）、`experimental_compact_prompt_file`（檔案載入）。
   兩者都是「換整段 prompt」，沒有段落級開關。
 
@@ -223,7 +222,7 @@ tests（含 slash dispatch），表示這是受測的第一等命令。
 以下按「改動成本由小到大」排；每條標它對應我們哪個現有物。
 
 1. **Warning 文案**：codex 在每次 compact 成功後固定提醒「長 thread＋多次 compact 降準，開新 thread」。
-   我們可在 `compact-prep` 步驟 4 的交付確認裡加一句同義提醒（或记入 STATE 起手點）。成本最小。
+   我們可在 `compact-prep` 步驟 4 的交付確認裡加一句同義提醒（或記入 STATE 起手點）。成本最小。
 2. **摘要 prompt 四要項**：進度＋決策／約束偏好／下一步／關鍵資料引用。我們的 preserve-list 比它細
    （已讀改路徑、測試 verbatim、懸掛動作、計數），**不需要降級對齊**；但可借「handoff summary 給下一個 LLM」
    的 framing，檢查 compact-prep 產物是否每段都回答「下一個 session 怎麼用」。
@@ -233,7 +232,7 @@ tests（含 slash dispatch），表示這是受測的第一等命令。
    建議把 skill 內步驟按 pre／post 標好，屆時整段搬。
 4. **Window 編號＋三代 ids**：我們的 compact-context 檔只有 date 後綴，無代際鏈。
    可借：檔頭加 `window_number`（本 session 第幾次 compact）＋ `previous_file` 指針，形成可追溯鏈；
-   compact-audit 的三色比對也可按 window 归档。這是純約定，零依賴。
+   compact-audit 的三色比對也可按 window 歸檔。這是純約定，零依賴。
 5. **Retained budget 概念**：local 20k user-tokens、remote 64k。對應我們的實測「/compact 壓掉 verbatim」：
    codex 的答案是「user 原話保留＋tool 證據全丟」，而我們的答案是「落檔保 verbatim」。
    兩者互補不衝突；但值得在 compact-prep 明寫一句：**harness 側保留的主要是 user 原話，tool 輸出靠我們的落檔**，
@@ -242,7 +241,7 @@ tests（含 slash dispatch），表示這是受測的第一等命令。
    我們無用量計可 hook，但有等價物：`/at` 的 usage-reset 接續＋STATE 觀察層。
    可借的是「once-per-window claim」語義：同一次 compact 週期內，同一提醒只發一次（防洗版）。
    若將來做自動化 compact 提醒，記得帶 claim。
-7. **计费口徑 BodyAfterPrefix**：把 prefix（system＋initial context）排除在觸發標尺外，只看 body 增長。
+7. **計費口徑 BodyAfterPrefix**：把 prefix（system＋initial context）排除在觸發標尺外，只看 body 增長。
    對我們的意義是方法論：評估「session 有多肥」時，user 任務增量與 harness prefix 要分開看；
    compact-audit 抽樣時同理（別把 prefix 當任務訊號）。
 8. **Checkpoint 持久化**：codex 每趟落 replacement 全份＋window ids＋token before／after。

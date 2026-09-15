@@ -15,7 +15,7 @@
 
 | 項目 | 現行依據 | 判斷與處置 | 必須保留的能力 |
 |---|---|---|---|
-| agent 數量填滿 cap | `skills/review-engine/SKILL.md:141` 寫 agent 數量=max-agents | 刪除作為預設數量的用法；cap 只限制並發，數量由未覆蓋問題決定 | profile 各維度與必要独立視角 |
+| agent 數量填滿 cap | `skills/review-engine/SKILL.md:141` 寫 agent 數量=max-agents | 刪除作為預設數量的用法；cap 只限制並發，數量由未覆蓋問題決定 | profile 各維度與必要獨立視角 |
 | 依主模型／effort 選審查形態 | review-engine:103–109；execution-plan:327–346 仍偵測主模型與 max-agents | 從 consumer 移除重複 routing；WorkUnitContract 決定工作，resolver 決定誰做 | qualification、effective effort、availability、authority |
 | 普通中間段固定多視角，弧末再全審 | implement 的 Agent Review＋post-build 審查鏈 | 已審 EP 的 S2：普通段做實跑與證據，邊界段審，最後補完整弧級 review | 跨段互動、整合器／注入點 extras、缺 coverage 不結案 |
 | 同內容再跑同一 profile | post-build:76–80 已有 identity reuse | 接好 identity producer；不是新增去重服務 | scope、內容、profile、證據可讀性；新 delta 另驗 |
@@ -34,7 +34,7 @@
 `skills/model-routing/SKILL.md:17–36` 定義 Role／workload／authority；`skills/post-build/SKILL.md:36` 已把主 session 編排列為不派工的責任。應將這個原則貫穿流程。
 
 - Marshal 持有計畫、範圍與狀態，避免再派一個「Marshal 管理員」只重述這些資料。
-- 同一 candidate 若滿足對應資格與 authority，可在同一 context 依序承担相容 work units；每單位仍有清楚輸入／輸出／权限，不因共處而擴權。
+- 同一 candidate 若滿足對應資格與 authority，可在同一 context 依序承担相容 work units；每單位仍有清楚輸入／輸出／權限，不因共處而擴權。
 - Writer 與獨立 Reviewer 不合併；Reviewer 改寫自己剛審的成果後，不能再把同一視角當獨立驗收。
 - Reviewer 跑錨點命令驗自己的 finding，可同輪附證據；只有需要獨立來源、不同能力或不同權限時再開 Verifier。不能以「已驗」自述替代可重現證據。
 - 有資格的主 session 已能做 Arbiter 時，不為完成角色清單再開一個 Arbiter；資格不符仍須外派，不能以省 usage 降級。
@@ -49,7 +49,7 @@
 
 合併也不是無限加大工單：受 transport payload、context 與失敗重做範圍約束；共享資料多但錯誤連帶面大時仍拆。採 path＋局部 read-set，讓 worker 自讀必要段落；不要每腿塞整段歷史。
 
-此項不自行推翻現有 lite 派工政策，也不偷加「小工全部主模型親做」例外；優先批次化既有合法派工。若要新增直接執行捷徑，需另查所有 consumer／资格及實測，不在本報告當作已定政策。
+此項不自行推翻現有 lite 派工政策，也不偷加「小工全部主模型親做」例外；優先批次化既有合法派工。若要新增直接執行捷徑，需另查所有 consumer／資格及實測，不在本報告當作已定政策。
 
 ### 3. 省重讀，不能省新鮮度判定
 
@@ -61,7 +61,7 @@
 
 保留 accepted EP、任務／WT 身份、唯一 writer、獨立 review、必要 invariant／runtime 驗證、finding 裁決及修正複驗、job 回收、commit/deploy 授權、逐端載入驗證。多模型會增加交接錯誤機會，這些機制不能因便宜或模型多而刪。
 
-backlog id 防撞、branch／rebase、memory 寫入治理及排程成本值得個別量測，但本轮未查到足夠證據支持刪改；不能藉流程精簡把所有治理一併重寫。instruction-testing 已有 AIR-91 實驗記錄，舊 overhead 報告「仍是 draft、pilot 沒跑」不是現況依據。
+backlog id 防撞、branch／rebase、memory 寫入治理及排程成本值得個別量測，但本輪未查到足夠證據支持刪改；不能藉流程精簡把所有治理一併重寫。instruction-testing 已有 AIR-91 實驗記錄，舊 overhead 報告「仍是 draft、pilot 沒跑」不是現況依據。
 
 ## 最小主鏈（目標態，非立即替換現行規則）
 

@@ -1,12 +1,14 @@
 # Controlled Compact Strategy UC
 
+> 性質：策略備忘（非現行規範）。現行對應（repo-root 相對路徑）：人工 checkpoint＋恢復驗證見 `skills/compact-prep/SKILL.md`；compact 本體黑盒＋三層接續見 `2026-09-15-memory-mechanism-analysis.md` §6；記憶寫入分工見 `skills/memory-audit/SKILL.md`。
+
 ## 任務一句話
 
 研究在長時間 AI coding session 中，以可控方式取代或補強 harness 自動 compact，保存推論狀態與工程決策品質，而不是只追求 token 壓縮。
 
 ---
 
-# 背景
+## 背景
 
 目前 ZCode / Muse 類 coding agent 可能在長 session 中遇到 context 壓力：
 
@@ -32,9 +34,9 @@ continue
 
 ---
 
-# 核心原則
+## 核心原則
 
-## Compact 不是 Memory
+### Compact 不是 Memory
 
 兩者目的不同：
 
@@ -54,9 +56,9 @@ Compact 保存同一 session 中斷後繼續推理所需狀態。
 
 ---
 
-# 現況判斷
+## 現況判斷
 
-## 不依賴不存在的 compact hook
+### 不依賴不存在的 compact hook
 
 目前不假設 harness 提供：
 
@@ -76,9 +78,9 @@ resume
 
 ---
 
-# 建議流程
+## 建議流程
 
-## Controlled Compact Protocol
+### Controlled Compact Protocol
 
 ```
 context budget threshold
@@ -102,7 +104,7 @@ resume validation
 
 ---
 
-# Compact 前狀態抽取
+## Compact 前狀態抽取
 
 Compact 前應產生 checkpoint：
 
@@ -130,7 +132,7 @@ next_actions:
 
 ---
 
-# Resume Validation
+## Resume Validation
 
 Compact 後不只恢復文字，而應驗證：
 
@@ -141,7 +143,7 @@ Compact 後不只恢復文字，而應驗證：
 
 ---
 
-# Skill 演進方向
+## Skill 演進方向
 
 未來可抽象成：
 
@@ -160,7 +162,7 @@ context-preservation skill
 
 ---
 
-# 與 Review System 關係
+## 與 Review System 關係
 
 Review 解決：
 
@@ -178,7 +180,7 @@ AI context degradation
 
 ---
 
-# 後續研究
+## 後續研究
 
 1. ZCode / Muse 是否存在可用 compact event API
 2. manual command 的最佳 interface

@@ -7,6 +7,16 @@
 
 ## 0A. 項目狀態分類（避免把盤點誤讀為保留決策）
 
+本文件只描述現有流程與成本，不代表所有項目都應永久保留。項目分三類：
+
+| 類別 | 定義 | 判讀方式 |
+| --- | --- | --- |
+| A. Observed overhead | 已存在的流程成本 | 先量測實際使用頻率與事故避免價值 |
+| B. Protection mechanism | 為避免已發生或高成本事故而存在 | 砍前需確認替代防線 |
+| C. Optimization candidate | 已知成本較高、價值尚需驗證 | 優先做 A/B 實驗或降頻，而非直接刪除 |
+
+目前建議優先重新評估：**9 Report Shell hook、27 EP Review legs、28 Agent Review 3-perspective、30 doc-health/instruction-testing**。這些不是判定應刪除，而是成本／收益最需要重新校準的候選。
+
 ## 0B. Review / Compact 相關邊界（補充 UC：Review System Skill Design）
 
 新增 UC 顯示：review 流程本身也有一個容易膨脹的邊界問題。
@@ -55,16 +65,6 @@ security / high risk
 ```
 
 因此原本 27/28 的 review overhead 應視為 routing 問題，而不是單純砍 reviewer 數量問題。
-
-本文件只描述現有流程與成本，不代表所有項目都應永久保留。項目分三類：
-
-| 類別 | 定義 | 判讀方式 |
-| --- | --- | --- |
-| A. Observed overhead | 已存在的流程成本 | 先量測實際使用頻率與事故避免價值 |
-| B. Protection mechanism | 為避免已發生或高成本事故而存在 | 砍前需確認替代防線 |
-| C. Optimization candidate | 已知成本較高、價值尚需驗證 | 優先做 A/B 實驗或降頻，而非直接刪除 |
-
-目前建議優先重新評估：**9 Report Shell hook、27 EP Review legs、28 Agent Review 3-perspective、30 doc-health/instruction-testing**。這些不是判定應刪除，而是成本／收益最需要重新校準的候選。
 
 ## 0. 結構圖
 
@@ -181,11 +181,11 @@ flowchart TD
 - 觸發：定期。成本：低。為什麼：To Do 只留可開工承諾，否則承諾池變許願池
 - 砍了：池越來越長，開工前多一道「這卡還做嗎」
 
+## 四、commit 閘門群（/commit 內）
+
 **33. PENDING 拍板池結算**（commit 前搬已結案段，不含 hash；禁 post-commit 回寫）
 - 觸發：有 PENDING 條目的 commit。成本：低。為什麼：雞生蛋懸掛（記錄 commit 的文字進不了那個 commit）
 - 砍了：拍板池殘留已決條目，下次誤以為還沒決
-
-## 四、commit 閘門群（/commit 內）
 
 **16. Lint 閘門**（ruff check＋format＋mypy，全過才 commit）
 - 成本：低（失敗才有手修成本）。為什麼：最後一道機械門
