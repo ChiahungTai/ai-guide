@@ -4,7 +4,7 @@ title: 多工調度中心：一次開多張卡、各自 worktree、AI agents 並
 status: To Do
 assignee: []
 created_date: '2026-09-10 01:50'
-updated_date: '2026-09-11 02:17'
+updated_date: '2026-09-15 21:57'
 labels:
   - governance
   - agents
@@ -27,4 +27,6 @@ User 09-10 願景：一個 command center session 一次控制多卡（各卡對
 〔架構師輪擴充 09-10——三方終裁吸收（.agent-tmp/architect-os-notes.md 三方終裁節）〕B 段 fleet 規範擴充四項：①can_run(work_order) preflight——dispatch 前硬 capability 查詢（harness×provider×model×snapshot×tools/MCP×sandbox×quota）選 executor＋記 routing reason；②execution process table/lease——agent/job 掛 execution identity（card/revision tuple/parent/status 含 orphaned）＋fault class retry/backpressure/reap orphan；③fault domain 分類×五欄（detection/retryability/state residue/self-heal owner/escalation）——含『規則被忽略』fault 類（registry 缺 type/MCP 快照缺工具實證歸類）；④observability 掛 execution identity——desired/actual/terminal/health-cost 四問＋token/duration 彙整（metadata 已有從未彙整）。A 題兩原語（enforcement level 分級＋lifecycle reconciliation 六 gate）為組件級結構債——本卡範圍判定：reconciliation 的 dispatch/wt-open 兩 gate 屬本卡；全六 gate+enforcement 分級另議（blueprint 待落定案）。
 
 〔09-11 補〕stuck detection＝架構師輪「execution identity 觀測（desired/actual/terminal/health-cost 四問）」的 runtime 腿：delegated agents 卡住偵測（liveness 訊號＝目標目錄寫入停滯＋spool 凍結組合，禁單看 CPU——model-bound 低 CPU 正常）。素材＝delegate-bridge 2026-09-11 實證（muse sandbox×測試孤兒行程 wedge 40min；memory muse-build-round-ops）；過渡治理＝model-routing skill「完成回報收法」liveness ticker 條（caller 端，背景 Bash 自動喚醒）；工具層根治（jobs.json heartbeat／wait --stuck-alert）＝delegate-bridge roadmap。
+
+〔09-16 三 WT 實戰——A 段落地素材（marshal 形態已跑通，待本卡產品化）〕任務單黃金模板（user 開 marshal session 的 prompt 格式）：①role宣告（你是調度層，不寫 code：開/收 WT、派 worker、收 verdict、跨卡對帳）②baseline（main hash＋clean 聲明）③三線規格表（每線＝WT 路徑＋branch＋卡＋第一動）④已決策勿重辯（檔案正交性、不做項、S1/S2 同政策切換不 deploy、worker 進 WT 機制＝subshell cd＋路徑契約三閘、黑板落盤只收 verdict、commit 特赦①-④、序列化合併序）⑤驗收（各卡 AC＋跨卡零互踩＋無半新半舊）⑥執行 tier（marshal＝decision 主 session 直做、worker 機械段 lite/決策段 full）。實證教訓：①9 worker 全 PASS 零重派——派工前 [Dispatch] preview＋派工後獨立機械驗證（重跑 pytest＋rg 抽查）是关键 ②池 gitignored 拓撲→涉及池的交付拆『資產源隨 branch＋池副本 marshal 合併後套』兩段 ③webgpt 工單材料必須內聯（≤8KB，帶路徑讀不到）④muse review 子命令無 prompt 面——scoped 文件審查走 task＋read-only 紅線 ⑤共享檔跨弧改動以 (idA,idB) 合併歸因，禁 hunk 拆分 ⑥worker 禁 commit——verdict 收齊＋外審＋judge 修復後一次展示 commit 計畫等 user OK，序列化合併。已回寫 model-routing（webgpt 內聯/muse review 無 prompt）。
 <!-- SECTION:NOTES:END -->
