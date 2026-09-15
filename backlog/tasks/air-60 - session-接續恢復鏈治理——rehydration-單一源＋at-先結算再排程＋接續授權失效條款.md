@@ -1,7 +1,7 @@
 ---
 id: AIR-60
 title: session 接續恢復鏈治理——rehydration 單一源＋at 先結算再排程＋接續授權失效條款
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-09 13:20'
 updated_date: '2026-09-15 22:06'
