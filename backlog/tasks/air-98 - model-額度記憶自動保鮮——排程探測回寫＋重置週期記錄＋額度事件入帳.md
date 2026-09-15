@@ -4,7 +4,7 @@ title: model 額度記憶自動保鮮——排程探測回寫＋重置週期記�
 status: To Do
 assignee: []
 created_date: '2026-09-15 13:03'
-updated_date: '2026-09-15 15:04'
+updated_date: '2026-09-15 15:19'
 labels:
   - governance
   - memory
@@ -55,4 +55,6 @@ Provenance：09-15 user 授權『整理建議→codex+muse 討論→OK 開卡』
 09-15 user 開卡後補指示：開工第一件事＝問 user 目前買的額度狀況（已入 Plan「開工第一步」段）。
 
 開工第一步對帳完成（09-15 user 提供，已同步 spine model-runtime-entitlements as-of 09-15）：①GLM 訂閱至 2027-02-04；窗口＝5h/week（非 5h rolling——P2 週期正典以此為準，修正原 Plan 假設）②Models＋Vision MCP 共用額度池；premium 尖峰 3×（週一~五 14:00–18:00 UTC+8）離峰 1×③GLM-5.3-Flash 消耗≈5.3 的 0.4×——機械腿首選④活動 09-03~09-20 每日 23:00–09:00 SGT：Flash 經 ZCode 零額度無限、經其他 agents 額度×2；僅 Flash；達 5h/week 上限暫停參與；需 ZCode 3.10+（版本符合性待驗——實作時確認）⑤SouthChariot（~/Github/SouthChariot）有既有 usage＋reset time 實作（src/chat/reset.ts＋test/quota.test.ts）——P1 probe 候選源，實作時評估復用 vs bridge usage。路由含義：活動期間夜間窗口（23:00–09:00）Flash 經 ZCode 免費——夜波/排程/機械腿排夜間＝零額度。
+
+09-15 user 對帳補充（已同步 spine）：①GLM＝legacy v1：5h 上限、無 weekly（修正前註 5h/week——活動條款的 weekly 字樣不適用本方案）；窗口觸發語義＝滿額後再呼叫一次才起算五小時②ZCode v3.11.2+ 已確認，活動生效中③muse＝Power、5h 窗口、request 計費非 token、無公開上限、定位偏 review；TUI /usage 存在——P4 探測項：驗證程式化查詢路徑（CLI flag 或 TUI pipe）④codex 主力＝Web High（≤5 tabs、過快暫停、launcher 1-2 天自動 logout、額度充裕——137 job 實證）⑤webgpt 健康監控三訊號（user Flash 勘查報告）：(1) curl http://127.0.0.1:17841/healthz——accepting_turns===true＋last_successful_model_catalog_request_at 距今不久（唯一證明 ChatGPT 端有回應；全綠只證 process 活）(2) ls -t ~/.codex-chatgpt-web/diagnostics/browser-turns/ 最新 *.json——turn-completed 健康 vs turn-failed+rate limit 節流（僅留 10 trace、lazy prune；無目錄≠不健康）(3) codex-chatgpt-web doctor --json（含 2s live 探測；connector 綁定只能 warning）。明確不存在：reconnect counter 不落盤、rate-limit 無 marker 檔、accepting_turns 與帳號有效性脫鉤。CLI另有 service status/cancel-turns、browser check、dev status；drain=/admin/drain|resume。P1 probe 設計：webgpt 用三訊號組合（catalog 時間戳＋最新 turn 狀態）取代不存在的 usage 面。
 <!-- SECTION:NOTES:END -->
