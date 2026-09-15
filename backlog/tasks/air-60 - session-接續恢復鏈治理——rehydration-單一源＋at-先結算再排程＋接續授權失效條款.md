@@ -4,7 +4,7 @@ title: session 接續恢復鏈治理——rehydration 單一源＋at 先結算�
 status: To Do
 assignee: []
 created_date: '2026-09-09 13:20'
-updated_date: '2026-09-15 15:49'
+updated_date: '2026-09-15 22:06'
 labels:
   - governance
   - skills
@@ -29,4 +29,6 @@ ordinal: 49000
 〔triage 併弧 09-10——升級為 session 接續×review closure 治理弧〕併入 AIR-61（雙 lens review closure 標準化：primed finding closure＋fresh 跨家族腿＋codex followup 接線——原卡搬 completed/ 可查全 desc）＋AIR-62（segment receipt：EP 段落收斂狀態盤上化——機械欄生成＋freshness 鏈）。三段連續做：①rehydration 單一源＋at 先結算＋接續授權失效條款②雙 lens closure③segment receipt。
 
 〔09-15 對帳——AIR-101 owner 卡開工（workflow redesign EP）〕本卡三段與 EP（ai-analysis/_tasks/09-15-development-workflow-redesign/ep.md）對帳：EP S3（_common/task-recovery.md 恢復順序單一源）承接段①的 rehydration 單一源骨幹（含 at 先結算再排程＋handoff 同 read-set）；EP S2（段落結果寫 EP 進度＋followup status 單一寫入者）部分觸及段③ segment receipt 方向但非全量。本卡保留自算：①內授權失效條款（at resume prompt＋work-order＋model-routing 三處在場——EP S3 不覆蓋此三處）②雙 lens closure（AIR-61 併入段）③segment receipt 機械欄生成＋freshness 鏈（AIR-62 併入段）。AIR-101 結算時本卡 Plan/AC 依實際交付修訂（已交付部分劃出、剩餘重述），不雙 writer 並做。
+
+〔09-16 wave 決策〕排 Wave-1 並行線第二位（AIR-98 P2–P4 之後）——本卡段①動 model-routing『session 定向接續』節＋work-order，與 AIR-98 P2 窗口正典節同檔錯開。S3 骨幹已由 AIR-101 交付（_common/task-recovery.md＋at Phase 0 先結算）；本卡結算時 Plan/AC 按已交付部分劃出（09-15 對帳 notes 承諾的修訂）。
 <!-- SECTION:NOTES:END -->

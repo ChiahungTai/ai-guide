@@ -4,7 +4,7 @@ title: 開發流程重設計實作——依風險安排審查、checkpoint 恢�
 status: In Progress
 assignee: []
 created_date: '2026-09-15 15:49'
-updated_date: '2026-09-15 21:25'
+updated_date: '2026-09-15 22:06'
 labels:
   - governance
   - skills
@@ -38,4 +38,6 @@ ordinal: 86000
 〔09-16 marshal checkpoint 2〕EP S1 PASS（review-engine profile 驅動重寫＋workflow-review-pattern identity 三欄＋去重復用判準＋no-candidate ledger 點 8；承接清單 S2 十項/S4 四檔/pointer-only 六檔落 .agent-tmp/air-101/s1-consumer-manifest.md；偏差：3-perspective/dual-context 字面 token 保留——check_single_source.py 機械契約＋boundary 別名錨，語義已重錨）。S2 已拆 S2a（execution-plan/ep-review/implement/code-review/audit-test）＋S2b（post-build/agent-workflow/agent-review-cycle/work-order/judge-review/followup-review/agents AGENTS）兩 worker 並行在飛。後續：S3（task-recovery 等）＋S4（殼/metadata-sync/deep-work/索引）→ review 鏈。
 
 〔09-16 deploy 完成（user 授權「可以Deploy了」）〕deploy_agents 三端 OK（~/.zcode、~/.codex、~/.config/muse 各 AGENTS.md；dry-run 30,335B 全 gate 綠；舊 bundle 備份 *.bak-20260916-052452）；逐端 rg 驗 task-recovery 單一源行在場（:191）。注意：本 session 載入的是舊規則——新預設（review profile 化等）自下一個 fresh session 生效；fresh context 驗收＋SM 行為抽樣＋真實 pilot 仍待跑（驗收腿）。
+
+〔09-16 wave 決策——驗收腿騎 Wave-1 觀察〕不獨立成弧：Wave-1 新 session（新規則已部署生效）跑真實弧時掛觀察 overlay——一般變更 pilot＝AIR-99、控制面變更 pilot＝AIR-72；觀察點＝資源規劃簡報有無出現／review 是否自動依風險配置／checkpoint-first 中斷接續／post-build 三閘行為。觀察綠＋SM 抽樣過＝本卡可結案。
 <!-- SECTION:NOTES:END -->
