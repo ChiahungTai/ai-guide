@@ -26,3 +26,8 @@
 - 實跑 `uv run python` 靜態核對：所有規劃 Markdown 本地連結、SM-01–24 連續且唯一、UTF-8 無 replacement 字元、三份增補 review JSON completed 且有結果、HTML hash 同源，全部 PASS。
 - user 明示 HTML 互動／視覺驗證先不用做；本輪只同步文字，不再列為規劃未完成。runtime/behavior/pilot/成本效果交實作 LLM 驗收，沒有報作本輪 PASS。
 - 複核最後一輪只核 EP 文字閉合，沒有重讀 current source；source 核對來自前兩輪及主 session，實作前仍須按最新現況重定位。
+
+## /consistency 修復後的 hash 更新
+
+- 上方 `4cd321…` 是增補 closure 當下的驗證快照（已封存，不改寫；對應 `56397e5` 版 EP）。其後 /consistency 修復改動 ep.md（錨點訂正 6 處：:130→:141×2、:79→:76–80×3、:85→:56、:25→:28；簡體回正 6 處；無計畫語義變更），EP 現版 SHA256：`5b8f9300a5de3ce605a2fe60576e3c1f6fe235b10149b4d9f83b7a7ef8268001`。
+- HTML 兩處 projection 欄已換為現版 hash；HTML 內文不含被改字串，無需重產文字。接手核對以現版 hash 為準。
