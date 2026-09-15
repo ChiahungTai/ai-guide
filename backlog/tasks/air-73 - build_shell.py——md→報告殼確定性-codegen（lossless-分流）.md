@@ -1,7 +1,7 @@
 ---
 id: AIR-73
 title: build_shell.py——md→報告殼確定性 codegen（lossless 分流）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-10 03:35'
 updated_date: '2026-09-15 22:06'
