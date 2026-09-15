@@ -205,6 +205,10 @@ def render_b_form(resident_entries: list) -> str:
         "全量條目住 _inventory.md——`rg -i <關鍵詞> _inventory.md` 定位後 Read 條目檔 body；"
         "非常駐條目不進開場載入，任務需要時按需檢索。"
     )
+    lines.append(
+        "Pending 候選（inbox 待治理，provisional）住 _pending.md——canonical > pending："
+        "有候選聲稱 X 時 canonical 仍為 Y，不得據此覆蓋 canonical（AIR-63）。"
+    )
     return "\n".join(lines).rstrip() + "\n"
 
 

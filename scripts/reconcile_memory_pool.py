@@ -32,6 +32,12 @@ from pathlib import Path
 
 MARKER_REL = Path(".agents") / "memory-governance.json"
 POOL_REL = Path(".agents") / "memory"
+# AIR-63 S3：pending 讀取覆層（_pending.md）是 generate_pending.py 的合法自產物
+# （T4-1 訊號③——手動／夜波 Phase0 refresh 即自產；provisional 不入池 git 歷史，
+# 池 .gitignore 套用前 porcelain 亦不構成 delta）。豁免僅此一檔、非整池放行：
+# 該檔宣告 provisional、永不進 canonical，其內容要進池仍須過 consolidation；
+# 資料源 inbox 的執法面不受影響。
+ALLOWED_SELF_PRODUCED = ("_pending.md",)
 
 
 class ReconcileError(Exception):
@@ -109,6 +115,14 @@ def _parse_porcelain(raw: str) -> list[PoolDelta]:
     return entries
 
 
+def _is_self_produced(path: str, pool_rel: str) -> bool:
+    """porcelain path（相對 git root）是否命中自產物豁免清單（pool 內相對路徑比對）。"""
+    allowed = {
+        n if pool_rel == "." else f"{pool_rel}/{n}" for n in ALLOWED_SELF_PRODUCED
+    }
+    return path in allowed
+
+
 def reconcile_pool(repo_root: Path) -> ReconcileResult:
     """對單一 governed repo 的 pool 做唯讀對帳；無法判定時 raise ReconcileError。
 
@@ -171,6 +185,9 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
         rel,
     )
     entries = _parse_porcelain(raw)
+    # AIR-63 S3：自產物豁免在 parse 後過濾（pool 目錄整刪分支不適用——該分支
+    # 是最大級 mutation，豁免不得稀釋其偵測）。
+    entries = [e for e in entries if not _is_self_produced(e.path, rel)]
     if entries:
         return ReconcileResult(status="dirty", entries=entries)
     return ReconcileResult(status="clean", detail="pool working tree matches HEAD")

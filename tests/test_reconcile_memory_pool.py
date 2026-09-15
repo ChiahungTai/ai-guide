@@ -343,3 +343,26 @@ def test_nested_pool_directory_deleted_fails_loud(tmp_path: Path) -> None:
     shutil.rmtree(repo / ".agents" / "memory")
     with pytest.raises(ReconcileError):
         reconcile_pool(repo)
+
+
+# ---- AIR-63 S3：_pending.md 豁免（pending 生成器合法自產物，T4-1 訊號③）----
+
+
+def test_pending_view_self_produced_not_flagged(tmp_path: Path) -> None:
+    # _pending.md refresh（手動／夜波 Phase0）是合法自產——porcelain 不得告警
+    repo = _seed_pool(tmp_path / "repo", "nested")
+    pool = repo / ".agents" / "memory"
+    (pool / "_pending.md").write_text("pending view\n", encoding="utf-8")
+    assert reconcile_pool(repo).status == "clean"
+
+
+def test_pending_view_exempt_but_sibling_dirty_still_flagged(tmp_path: Path) -> None:
+    # 豁免只涵蓋 _pending.md 本身——同批其他繞閘 delta 照樣 flag（豁免非整池放行）
+    repo = _seed_pool(tmp_path / "repo", "nested")
+    pool = repo / ".agents" / "memory"
+    (pool / "_pending.md").write_text("pending view\n", encoding="utf-8")
+    (pool / "stray.md").write_text("x\n", encoding="utf-8")
+    r = reconcile_pool(repo)
+    assert r.status == "dirty"
+    assert any("stray.md" in e.path for e in r.entries)
+    assert not any("_pending.md" in e.path for e in r.entries)
