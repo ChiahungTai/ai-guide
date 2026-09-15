@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 額度探測排程（每小時；源卡 AIR-98 P1，版控於 deploy/）。
+     安裝（user 機器操作，非 agent 執行）：
+       cp deploy/entitlements-probe.plist ~/Library/LaunchAgents/com.ai-guide.entitlements-probe.plist
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.ai-guide.entitlements-probe.plist
+     紅線：本 probe 只落地 ~/.agents/probe-entitlements/，永不直寫 memory spine；
+     spine 寫手＝ai-guide session（讀 latest-*.json 校驗後寫 as-of＋per-family 現值）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.entitlements-probe</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/ctai/.local/bin/uv</string>
+        <string>run</string>
+        <string>python</string>
+        <string>scripts/probe_entitlements.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/ctai/Github/ai-guide</string>
+
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-entitlements-probe.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-entitlements-probe-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/ctai</string>
+        <key>PATH</key>
+        <string>/Users/ctai/.npm-global/bin:/Users/ctai/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>600</integer>
+</dict>
+</plist>
