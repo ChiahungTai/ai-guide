@@ -23,6 +23,9 @@
     <key>WorkingDirectory</key>
     <string>/Users/ctai/Github/ai-guide</string>
 
+    <key>RunAtLoad</key>
+    <true/>
+
     <key>StartInterval</key>
     <integer>3600</integer>
 
