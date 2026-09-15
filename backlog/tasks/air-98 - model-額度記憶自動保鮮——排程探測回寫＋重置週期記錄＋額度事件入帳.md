@@ -4,7 +4,7 @@ title: model 額度記憶自動保鮮——排程探測回寫＋重置週期記�
 status: To Do
 assignee: []
 created_date: '2026-09-15 13:03'
-updated_date: '2026-09-15 13:03'
+updated_date: '2026-09-15 15:04'
 labels:
   - governance
   - memory
@@ -53,4 +53,6 @@ P4 Unsupported probe capability——capability matrix（codex=supported/glm=sup
 <!-- SECTION:NOTES:BEGIN -->
 Provenance：09-15 user 授權『整理建議→codex+muse 討論→OK 開卡』。muse job-mu2oi7ui-oj6kz6（verdict=adjust：寫入者形態/AC 操作化/per-family 新鮮 三處已吸收）；codex job-mu2oij5l-kvbdpk（verdict=GO：卡目標句與 P3 改名 event capture 已吸收）。衝突點 P2 歸屬裁定＝muse 版（正典 model-routing＋spine 指針），理由見 Plan ③。原始輸出 .delegate-bridge/jobs/ 兩 jobId jsonl。
 09-15 user 開卡後補指示：開工第一件事＝問 user 目前買的額度狀況（已入 Plan「開工第一步」段）。
+
+開工第一步對帳完成（09-15 user 提供，已同步 spine model-runtime-entitlements as-of 09-15）：①GLM 訂閱至 2027-02-04；窗口＝5h/week（非 5h rolling——P2 週期正典以此為準，修正原 Plan 假設）②Models＋Vision MCP 共用額度池；premium 尖峰 3×（週一~五 14:00–18:00 UTC+8）離峰 1×③GLM-5.3-Flash 消耗≈5.3 的 0.4×——機械腿首選④活動 09-03~09-20 每日 23:00–09:00 SGT：Flash 經 ZCode 零額度無限、經其他 agents 額度×2；僅 Flash；達 5h/week 上限暫停參與；需 ZCode 3.10+（版本符合性待驗——實作時確認）⑤SouthChariot（~/Github/SouthChariot）有既有 usage＋reset time 實作（src/chat/reset.ts＋test/quota.test.ts）——P1 probe 候選源，實作時評估復用 vs bridge usage。路由含義：活動期間夜間窗口（23:00–09:00）Flash 經 ZCode 免費——夜波/排程/機械腿排夜間＝零額度。
 <!-- SECTION:NOTES:END -->
