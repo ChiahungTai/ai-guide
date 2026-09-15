@@ -99,3 +99,9 @@ user 授權規劃與 reports checkpoint；未開始新流程實作、未變更�
 - 終態選擇：不合併跨 authority／多 review contexts；同權限機械查證與實作成果可批次。保留 reviewer→Arbiter 的權限分離；status（verified/closed）由主鏈編排者單寫，不混成 disposition。失敗／截斷／空白不走零 findings 快道。
 - 文字與簡報已同步；HTML 互動／視覺驗證依 user 本輪免做，不阻擋計畫交付。實作／behavior／pilot／成本量測尚未執行，交其他 LLM；無 commit、deploy、memory 寫入或新排程。
 - 接手不需重調查：讀 EP 進度→增補終態→接手入口；user 指示實作後對齊 AIR-60 owner/AC 及最新 HEAD/dirty/治理檔，從 S1 起。若 current source 已改，針對差異重定位，勿照舊行號盲改。
+
+## Usage 5%：compact 方向完整落盤
+
+- user 要求優先保存 compact 建議，已寫 [compact-direction-handoff](2026-09-15-compact-direction-handoff.md)：推薦方向、usage/context/品質三分、實作順序、最小欄位、恢復七步、多模型 job 接續、極低額度寫入順序、十個失敗案例、未定研究與接手指令。
+- 核心：durable checkpoint 優先；compact 時機 user 決定；memory 非救援前置；恢復驗實物與下一動前置；不新造 summarizer/skill/狀態庫/threshold/hook 假設。
+- 本補充是新分析，未另派 review；若改變 S3 行為或 AC，接手者先做 scoped review，不能冒用已審 EP 的 verified。沒有新背景 job；不做 HTML／實作／commit/deploy。

@@ -260,6 +260,8 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 
 ## S3：checkpoint-first 與恢復驗證
 
+補充交接：[compact 建議方向](../../reports/2026-09-15-compact-direction-handoff.md)。user 在 usage 5% 時要求完整保存；其新增救援優先序／案例／研究候選未獨立審查，不擴張本段已審契約。接手若採入新的行為／AC，先做 scoped review。
+
 ### Context
 
 更新 UC-C，承接 AIR-60 恢復順序部分；不改其 consent、WT 或其他未承接工作。依賴 S2 的段落證據與 S1 identity。無另附 spec；compact 操作／時機由 user，AI 可依已授權任務持續 checkpoint。未定案推論可存 checkpoint，不能寫作 memory fact。
