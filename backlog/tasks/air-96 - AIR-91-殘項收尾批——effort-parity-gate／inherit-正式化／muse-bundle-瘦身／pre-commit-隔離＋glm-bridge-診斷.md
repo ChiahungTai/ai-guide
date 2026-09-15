@@ -1,14 +1,22 @@
 ---
 id: AIR-96
 title: AIR-91 殘項收尾批——effort parity gate／inherit 正式化／muse bundle 瘦身／pre-commit 環境隔離＋glm bridge 診斷
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-15 15:10'
+updated_date: '2026-09-15 18:35'
 labels: []
 dependencies: [AIR-91]
-references: []
+references:
+  - ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md
 ordinal: 78000
 ---
+
+## Final Summary
+
+使用者行為：派工時 effort 詞彙三處不再靜默漂移（loader fail-loud）；CC 未點名 spawn 有正式 inherit 語義；muse bundle 89% WARN→81.6%；git hook 污染環境不再破壞 repo；glm bridge 四缺陷有 file:line 級修復規格。
+
+五項全落地：①②＝f68e77b；③＝09e08ab＋deploy 3/3（hash 4f4577b1d197、機械驗證、AC 80% 偏差 1.6pp user 接受）；⑤＝b9eaab6；④＝診斷完成（截斷根因在 carrier 非 bridge、slot workspace-scoped 翻案、--wait-slot/--idle-timeout/A-1 規格齊）——Rust 實作歸 delegate-bridge 弧。插曲：1308 陣亡後產物由平行 session 收編 commit（dirty checkout 帶走良性實例）。
 
 ## Description
 
