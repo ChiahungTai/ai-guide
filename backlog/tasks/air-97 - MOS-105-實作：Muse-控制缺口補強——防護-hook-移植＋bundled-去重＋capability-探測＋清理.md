@@ -1,10 +1,10 @@
 ---
 id: AIR-97
 title: MOS-105 實作：Muse 控制缺口補強——防護 hook 移植＋bundled 去重＋capability 探測＋清理
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-15 10:40'
-updated_date: '2026-09-15 10:40'
+updated_date: '2026-09-15 10:41'
 labels: []
 dependencies: []
 ordinal: 82000
