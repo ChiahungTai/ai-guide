@@ -41,7 +41,7 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 解析＝DispatchPlan（WorkUnitContract → model-routing resolver 七步 → candidate 四元組，[model-routing](../model-routing/SKILL.md)——catalog/presets 供給事實，不在此材料化值）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝旗艦燒機械段；唯讀探察／EP Review 形態用內建 Explore 承接（繼承主 session 旗艦＝正確）
 3. **failure fallback 照表走**：重試 ≤2（classifier unavailable／1302）→ 顯式降級記錄（見下「spawn 失敗階梯」）；commit consent 行的 fallback 恆為「等用戶」，不可降級繞過
 4. **模型歸因抽查**（tier 欄落地驗證）：registry pin 是否真達 wire 用 per-message modelID 對帳（ZCode db.sqlite），不信 session 自述（[model-routing](../model-routing/SKILL.md) 歸因紀律）
-5. **DispatchPlan→carrier 三路**（換載體規則，語義單一源＝[model-routing](../model-routing/SKILL.md) DispatchPlan 條）：selected binding 等於 named preset default → registry spawn；harness 支援 spawn override → 同 WorkUnitContract／ExecutionPreset 只換 binding（動態升級不被固定 pin 吞掉）；否則 main-or-bridge 換載體，並把 Role／authority／surface 與**禁止再委派**完整裝入 work order（[work-order.md](../_common/work-order.md)）
+5. **DispatchPlan→carrier 三路**（換載體規則，語義單一源＝[model-routing](../model-routing/SKILL.md) DispatchPlan 條）：selected binding 等於 named preset default → registry spawn；harness 支援 spawn override → 同 WorkUnitContract／ExecutionPreset 只換 binding（動態升級不被固定 pin 吞掉）；否則 main-or-bridge 換載體，並把 Role／authority／surface 與**禁止再委派**完整裝入 work order（[work-order.md](../_common/work-order.md)；批次工單——單次 dispatch 承載多 unit 引用——照同檔「批次 envelope」：review units 不共 worker context、跨 authority／required 獨立 lens 不合併、逐 unit PASS/FAIL/未做收回）
 6. **dispatch preview（consequential dispatch 前列印）**：`[Dispatch] unit=<work unit> role=<Role>/<authority> qual=<qualifications> judgment=<judgment_floor> caps=<capabilities> candidate=<model identity×binding> effort=<requested→effective> carrier=<registry|override|bridge> override=<echo|none> indep=<kind/relative_to/required> fallback=<decomposition|none> job/attempts=<jobId＋attempt 史>`——欄位至少涵蓋 work unit／Role-authority／qualification／judgment-capabilities／candidate model-binding／requested-effective effort／carrier／override／independence／fallback-decomposition／jobId-attempts（AIR-91 S3 契約；與既有 `[Agent] model=…` spawn 確認並存——後者是 carrier 執行面回報，前者是派工前 preview）
 7. **failure handback（quota／runtime fallback）**：carrier failure 記入 work-unit-local **DispatchTrace**（欄位＝contract hash／candidate-binding／failure family／retryable-at／attempt disposition——[model-routing](../model-routing/SKILL.md) AvailabilitySnapshot 段）；**1308 candidate 在 retryable-at 前排除**（窗口制，重派無效）；**429 走既有 bounded backoff／降並發**（下方 spawn 失敗階梯）；候選耗盡＝**no-candidate report 停止**（列缺失條件），禁 loop、禁降 hard requirement
 
@@ -181,7 +181,7 @@ Scope Fence（上）擋機械任務 agent「順手重構」scope 外區塊，但
 
 ### `/implement` 整合
 
-`/implement --max-agents N` 的 N 由用戶指定，預設 3（受並發上限 cap；[model-routing](../model-routing/SKILL.md) 並發表）。
+`/implement --max-agents N` 的 N 是**並發上限 cap**（非 review 配額；上限值單一源＝[model-routing](../model-routing/SKILL.md) 並發表）——review agent 配置由風險 profile 推導（單一源＝[review-engine](../review-engine/SKILL.md)「審查模式判定規則」：ordinary 單獨立 context、boundary fresh＋intent 分離），不按 N 預設派滿（舊「預設 3 agent」固定語義已廢除）。
 
 ---
 

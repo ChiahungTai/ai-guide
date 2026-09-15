@@ -34,6 +34,8 @@ build 後的「文檔狀態結算」方法論（commit 不再內嵌 finalization
 
 > deep-work `/implement` 委派 build 全流程,繼承情境 A–D;deep-work 純 fix/debug(不走 build)= 情境 C 跳過。**code-review 後改 code**(UC 已結算過,入口可能變)= standalone mode 更新(冪等重跑);**事後發現漏結算** = standalone mode 補漏。
 
+> **review identity 復用邊界（S4 對帳條款）**：review 證據身份吻合（[workflow-review-pattern](../_common/workflow-review-pattern.md) 帳本 header identity 三欄——scope／review_profile／coverage）**只授權復用 review 結論，不代表 metadata 結算已完成**——結算項仍逐項核對。**引用已完成結算項的前提**＝既有 EP 進度指向相同輸入內容、且結算產物仍在場（Capabilities 行／歸檔目錄／SYSTEM-MAP 狀態可實際核對）；無法核對 → 由本 skill 對適用項**冪等重跑**，不以「review 過了」推導「結算過了」。
+
 ## finalization 項目(build mode 依情境執行子集)
 
 | 項目 | 情境 | 做什麼 |

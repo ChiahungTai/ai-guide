@@ -86,7 +86,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
   ├─ ARG = 任務描述（開發任務：feature/fix/refactor）→ **預設＝完整開發流程**：
   │   /execution-plan（UC 盤點＋EP；流程規模分級在此裁定——simple 邊界不寫 EP 直接 build、
   │   大型自動建 backlog 卡）→（可選 /ep-validate、/ep-review）→ /implement → /post-build
-  │   （收尾鏈：code-review→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
+  │   （收尾鏈：code-review〔風險 profile 派發〕→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
   │   → 收尾報告；變更留 working tree，commit 等 user 確認（自主紅線不 override）
   │   例外＝非開發流程任務（純研究/調查、環境修復、一次性維護操作）→ 自身階段 1-5（complex；
   │   可自癒接 /fix-test、/lint-fix；完成後自主品質閘門 → /audit-test、/code-review）
@@ -152,11 +152,11 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
 #### Agent Review Cycle
 
-**Writer/Reviewer 分離**：用戶不在場，Agent Review 是唯一的品質閘門。review 執行預設（force 獨立 / max-agents / model 預設 / 3-perspective）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」；3-perspective（① clean + ② UC-anchored + ③ Correctness）完整流程見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
+**Writer/Reviewer 分離**：用戶不在場，Agent Review 是唯一的品質閘門。review 執行預設（force 獨立 / 風險 profile 配置 / model 預設 / 三 lens）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」——**context 配置由風險 profile 推導，不按 max-agents 填滿**（並發容量＝上限非配額）；開發流程任務（委派 `/implement`）的 review 接線＝**邊界觸發**段級 review＋全弧獨立 review（普通中間段不觸發段級——語義單一源＝[implement](../implement/SKILL.md)「段落收斂」）；三 lens（① fresh/clean + ② intent/UC-anchored + ③ correctness）完整流程見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
 
 #### 主 LLM — /judge-review
 
-用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
+用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併；**含 coverage**——各軸完成／未驗＋evidence ref，欄位語義見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「帳本 header identity」的 scope／review_profile／coverage 三欄）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
 
 #### 主 LLM — Apply Changes
 

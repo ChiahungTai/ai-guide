@@ -1,57 +1,42 @@
-# Agent Review Cycle — Agent Tool 審查範本（3-perspective）
+# Agent Review Cycle — Agent Tool 審查範本（3-perspective lens）
 
-> **載入時機**：非 ultracode/xhigh 路徑（effort < xhigh 或 max-agents = 1）。ultracode/xhigh 路徑用 Workflow，見 [workflow-review-pattern.md](./workflow-review-pattern.md)。
+> **載入時機**：審查命令的 adapter 選用 Agent Tool 載體時讀取（載體選擇屬 adapter 執行細節，**不再是 effort／max-agents 門檻**）。**context 配置由風險 profile 驅動**——判定源＝[review-engine](../review-engine/SKILL.md)「審查模式判定規則」；Workflow 載體見 [workflow-review-pattern.md](./workflow-review-pattern.md)。
 
 Writer/Reviewer 分離的品質閘門 — 用獨立 Agent context 審查，避免主 LLM 審自己的 code。agent 類型一律 `Explore`（read-only by design）。
 
 ---
 
-## 核心設計：3-perspective review（固定三 agent）
+## 核心設計：3-perspective lens（三正交視角，配置由風險 profile 決定）
 
-**觀察**：同樣讀 diff、同樣方法論的多個 agent **共享 writer 的 blind spot** — 都被同一份 context（diff / EP / 維度 checklist）錨定。**三個異質 perspective 的 agent，覆蓋比多個同錨定的 agent 更廣**（多樣性 > 數量）。
+**三 lens 定義單一源＝[review-engine](../review-engine/SKILL.md)「review 執行預設」點 4**（正交性與錨定差異論證在彼，此處不重複）——本範本只放 Agent Tool 執行形態：
 
-| Agent | context | 審什麼 | 補的 blind spot |
-|-------|---------|--------|----------------|
-| **① clean（Fresh）** | **只有 impl diff，無 UC / 無 EP / 無意圖提示** | 「這 code 自身看哪裡怪 / 冗餘 / 缺 / 可疑 / 過度設計？」 | 作者 rationalize（bias） |
-| **② UC-anchored（Intent）** | UC / EP Scenario Matrix + impl diff | 逐 UC 檢驗「impl 滿足嗎？漏了什麼意圖？偏離 EP 嗎？」 | 漏覆蓋 / 偏意圖（coverage） |
-| **③ Correctness（邊界正確性）** | impl diff（不錨定意圖，主動質疑邊界） | 「跨日 / 空值 / 溢出 / 空資料 / 邊界案例？邏輯對嗎？測試充分？」 | 邏輯 bugs / 邊界案例 / 測試不足（correctness） |
+> 下表為執行形態展開；lens 與 profile 的定義單一源＝review-engine（點 4／『審查模式判定規則』），衝突時以 review-engine 為準。
 
-> **① clean agent 刻意不給任何提示** — 它讀 code 的自身 merits，不被「這應該是做 X」的框架綁住，能挖出 UC-anchored agent 會 rationalize 掉的問題（「UC 說 X，所以這段一定是為 X」）。**新鮮 context 的價值就在無錨定 → 正交發現**。
+| lens | context 錨定 | 審什麼 | 補的 blind spot |
+|------|---------|--------|----------------|
+| **① fresh（clean）** | **只有 impl diff，無 UC / 無 EP / 無意圖提示** | 「這 code 自身看哪裡怪 / 冗餘 / 缺 / 可疑 / 過度設計？」 | 作者 rationalize（bias） |
+| **② intent（UC-anchored）** | UC / EP Scenario Matrix + impl diff | 逐 UC 檢驗「impl 滿足嗎？漏了什麼意圖？偏離 EP 嗎？」 | 漏覆蓋 / 偏意圖（coverage） |
+| **③ correctness（邊界正確性）** | impl diff（不錨定意圖，主動質疑邊界） | 「跨日 / 空值 / 溢出 / 空資料 / 邊界案例？邏輯對嗎？測試充分？」 | 邏輯 bugs / 邊界案例 / 測試不足（correctness） |
 
-### 為何同時三個（bias ↔ coverage ↔ correctness 正交）
+> **① fresh 腿刻意不給任何提示** — 它讀 code 的自身 merits，不被「這應該是做 X」的框架綁住。**新鮮 context 的價值就在無錨定 → 正交發現**。機械軸（測試路徑覆蓋）不靠 review agent——`/implement` 硬閘門＋`/audit-test` 承載；**正確性由 ③ lens 顯式覆蓋**（clean 的 smell 視角不主動質疑邊界——詳 review-engine 點 4 ③）。
 
-三 lens 抓的盲點**正交**（錨定方式不同），單跑任一有盲點，同時跑才互補：
+### 配置表：風險 profile 驅動（ordinary 單 reviewer 是新預設；固定三 agent／max-agents 降級表已廢除）
 
-- **① clean 抓 bias**（作者 rationalize）—— writer 寫的 code、讀 diff 的 agent 都被「意圖」框住，clean 無 anchor 才能看到合理化掉的問題；但 clean 會**漏「該查的 UC」**（沒給意圖，不知哪些功能該覆蓋）。
-- **② UC-anchored 抓 coverage**（漏覆蓋 / 偏意圖）—— 逐 UC 檢驗確保意圖被滿足；但被錨定，**看不到 clean 能挖的合理化**。
-- **③ Correctness 抓 correctness**（邏輯 bugs / 邊界案例）—— 主動質疑邊界事實，不靠 code smell；但**漏語意覆蓋 + code smell**（不查 UC、不讀 smell）。
+> 下表為執行形態展開；lens 與 profile 的定義單一源＝review-engine（點 4／『審查模式判定規則』），衝突時以 review-engine 為準。
 
-單跑任一有盲點（clean 漏 UC + 邊界；UC 漏合理化 + 邊界；Correctness 漏語意覆蓋 + smell）。三者盲點不重疊（正交），同時跑覆蓋最廣 —— 這是「固定 3 個」的根據（多樣性 > 數量；Correctness 與 clean/UC 錨定方式不同，不適用「共享錨定遞減」，詳 review-engine 點 4 ③）。
+| 風險 profile | context 配置 | 本範本執行形態 |
+|------|----------|--------------|
+| **ordinary**（無邊界觸發的一般變更——**新預設**） | **單一獨立 context**：同一 reviewer 依序覆蓋三 lens——fresh-first：①無錨讀 source/diff → ③正確性與驗證 → ②需求對照；**省略任一軸＝scope 未覆蓋** | 單 agent prompt 明示三段依序執行＋逐軸輸出 findings（下方「Agent Prompt」） |
+| **boundary**（public API／跨 context invariant／money/risk/security／控制面 authority-gate） | **分離 fresh＋intent**（各自獨立 context：①fresh 腿不餵意圖、②intent 腿餵 EP/UC——餵料差異見下方 prompt）＋③correctness 或 extras 專項按觸發附加 | 多 agent 各腿依餵料差異分別組 prompt |
+| 條件不明／無法判定 | 取更保護分支（boundary） | 同上 |
 
-### 為什麼固定 3 個（不再 adaptive 多維度 agent）
+**extras（特徵觸發，不得被 ordinary 單 context 吞掉）**：整合器／外部整合 → adversarial **且觸發段級 review**；新簽名／注入點 → architecture＋consumer-perspective **且觸發段級 review**；跨模組 → architecture；UC 數 >6 → UC-split。映射框架單一源＝[review-engine](../review-engine/SKILL.md)「review 執行預設」點 5；adapter 接線（消費命令機械信號 → 通用特徵）見各消費命令（如 [implement](../implement/SKILL.md) Agent Review 的觸發映射）。執行範本據此組 prompt。
 
-- **多樣性 > 數量**：舊設計的 4 個 dimension agent（正確性 / 架構 / 測試覆蓋 / EP 合規）共享錨定，邊際覆蓋遞減。3 個異質 perspective（clean + UC-anchored + Correctness）正交覆蓋更廣。
-- **機械軸不靠 agent**：測試路徑覆蓋（新參數 `rg "<param>=" tests/`）是 `/implement` 階段 2 硬閘門 + 階段 5c `/audit-test`，不靠 review agent 重複。**正確性由 ③ Correctness lens 顯式覆蓋**（F1 證明 clean 的 smell 視角不主動質疑邊界，漏 `max(fill_dates)` 跨日 bug —— 不再宣稱「clean 自然覆蓋正確性」；詳 review-engine 點 4 ③）；架構由 clean agent 讀 code 自然覆蓋；EP 合規由 UC-anchored agent 覆蓋。
+**明示**：ordinary 單 context 順序覆蓋**不是 fresh/primed 雙 context 的等價品**——只保證 Writer/Reviewer 分離，不宣稱等同多 context 獨立查證。並發容量（[model-routing 並發表](../model-routing/SKILL.md)）是**上限，不是必須派滿的配額**——不得以「cap 有剩」回填 agent；**不以 quota 臨場降級 profile**（恢復時恢復原 profile）。
 
----
-
-## 自適應：max-agents
-
-偵測 effort level 和 max-agents（見 [model-routing 並發表](../model-routing/SKILL.md)）。
-
-| 條件 | 模式 |
-|------|------|
-| max-agents ≥ 3 | **① clean + ② UC-anchored + ③ Correctness** 三 agent（預設） |
-| max-agents = 2 | 兩 agent：保留 **③ Correctness + ① clean**（降級序 Correctness > clean > UC；UC-anchored 降級為 clean-eye 兼查） |
-| max-agents = 1 | 單一 agent：**③ Correctness 優先** + 明示「同時 clean-eye + UC-eye」（降級 3-in-1） |
-
-印出確認：`[Review Agent] max=N, mode=3-perspective | 2-agent | single`
+印出確認：`[Review Agent] profile=<ordinary|boundary>, mode=<single-context | fresh+intent 分離>, extras=<N/A | 列表>`
 
 > review agent candidate＝Reviewer work unit 解析（qualification=`review_findings`／authority=findings——無 disposition/apply；judgment_floor 預設 execution，高保護面／跨邊界語義面升 decision）——binding 照 model-routing resolver（registry default pin 不隨主 session 漂移，AIR-43；CC＝inherit）；見 [review-engine](../review-engine/SKILL.md)「review 執行預設」點 3 與 [model-routing](../model-routing/SKILL.md)。spawn `model` param 填選定 candidate 的 literal。
-
-### >3 配置（機械特徵觸發，非語義 opt-in）
-
-extra agent 由**消費命令提供的段落風險特徵**機械觸發（非 LLM 語義判「高風險」）。映射框架（通用風險特徵 → extra agent）定義在 [review-engine](../review-engine/SKILL.md)「review 執行預設」點 5（單一源，此處不重複以免 drift）；base 恆 ① clean + ② UC-anchored + ③ Correctness。build 的 adapter 接線（build 機械信號 → 通用特徵）見 [build.md](../implement/SKILL.md) 階段 4「adaptive 觸發映射」。執行範本據此組 prompt。
 
 ---
 
@@ -59,16 +44,18 @@ extra agent 由**消費命令提供的段落風險特徵**機械觸發（非 LLM
 
 > subagent prompt 遵循 [self-contained-prompt](../self-contained-prompt/SKILL.md) 原則（本場景 = **同環境・審查型**：subagent 讀得到 repo，給路徑不嵌內容）。
 
-**三 agent 共含**：
+**各 reviewer 腿共含**（boundary 分離腿與 ordinary 單 context 皆適用）：
 - `git diff` 範圍（所有產出的變更）
 - 相關檔案路徑（必讀）
 - [review-engine](../review-engine/SKILL.md) 通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/模式判定）+ [code-review-and-quality](../code-review-and-quality/SKILL.md) 六軸方法論
 - rules-reminder 規則摘要（Agent 看不到 auto-loaded rules）
 - **CR 接線查證段（硬性）**：照 [review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」CR 段逐字貼入（Explore＝CLI 形態；trigger-based）——diff 含 callable 新增/修改且命中觸發面（public API/介面、rename/delete、跨模組、negative claim）才必跑 callers；callers 為空 → 互補 rg；engine 缺場 `[WARN]`＋rg fallback；未命中觸發面 → findings summary 註明 N/A
 
-**① clean 額外**：明示「**不給任何 intent 提示，純讀 code 自身評估** — 哪裡怪、冗餘、缺、可疑、過度設計」
+**ordinary 單 context 額外**：明示「同一 context 依序覆蓋三 lens——先無錨讀 source/diff（①），再正確性與驗證（③），最後需求對照（②）；逐軸輸出 findings，省略任一軸＝scope 未覆蓋」
 
-**② UC-anchored 額外**：UC / EP 場景清單 + 「逐 UC 檢驗 impl 滿足度，標漏掉的意圖與 EP 偏離」
+**① fresh 腿額外**：明示「**不給任何 intent 提示，純讀 code 自身評估** — 哪裡怪、冗餘、缺、可疑、過度設計」
+
+**② intent 腿額外**：UC / EP 場景清單 + 「逐 UC 檢驗 impl 滿足度，標漏掉的意圖與 EP 偏離」
 
 ---
 
@@ -84,7 +71,7 @@ extra agent 由**消費命令提供的段落風險特徵**機械觸發（非 LLM
 
 ## 結果交接
 
-三 agent findings 合併 → 主 LLM invoke `/judge-review`（✅ / ❌ / ⚠️）→ apply ✅ 採納清單 → `ruff check --fix && ruff format`。
+各腿 findings 合併（boundary 多腿按 profile 合併規則——單一源＝[workflow-review-pattern](./workflow-review-pattern.md)「findings 去重與復用判準」；ordinary 單 context 即單份三軸 findings）→ 主 LLM invoke `/judge-review`（✅ / ❌ / ⚠️）→ apply ✅ 採納清單 → `ruff check --fix && ruff format`。
 
 findings 若需持久化（跨 session / `.review/` / EP 回寫），用 [workflow-review-pattern.md](./workflow-review-pattern.md) 的 Finding Record 格式（跨命令追蹤標準）。
 
@@ -92,9 +79,9 @@ findings 若需持久化（跨 session / `.review/` / EP 回寫），用 [workfl
 
 ## 與 Workflow 路徑的關係
 
-Workflow（ultracode）和 Agent Tool（本檔）**共存**，分支點在 effort level 偵測（判定規則真相源見 [review-engine](../review-engine/SKILL.md)）：
+Workflow（多 agent 協調腳本）和 Agent Tool（本檔）**共存**——載體選擇屬 adapter 執行細節，**不再是 effort level 偵測或 max-agents 門檻**（判定規則真相源見 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」；載體使用時機速查見 [workflow-review-pattern](./workflow-review-pattern.md)「何時使用 Workflow」）：
 
-- effort = ultracode/xhigh 且 max-agents > 1 → [Workflow](./workflow-review-pattern.md)（schema + adversarial verify）
-- 其餘 → 本檔（3-perspective）
+- 多 context／多軸 profile 協調（boundary 分離 fresh＋intent、多維度並行、adversarial verify）→ [Workflow](./workflow-review-pattern.md)（schema + adversarial verify）
+- 單一 reviewer context（ordinary profile）或輕量單 agent → 本檔（3-perspective lens）
 
 兩路徑 findings 交接一致（同交主 LLM `/judge-review`）。

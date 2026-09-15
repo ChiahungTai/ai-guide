@@ -14,6 +14,23 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 
+## Work unit（followup 腿——Reviewer findings 續接）
+
+| Role | authority | judgment_floor | qualifications |
+|---|---|---|---|
+| Reviewer（原 review 腿續接） | findings（無 apply／final disposition） | 繼承原 review 腿保護面（原 execution 即 execution；原 decision 面即 decision） | review_findings |
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（WorkUnitContract schema／Role→authority allow-list）；本檔不材料化 model 值。
+
+### status 寫入責任（主鏈編排者為 status 唯一寫入者）
+
+> 工具面 fence：禁以 Write/Edit 觸碰 `.review/**` 的 status／decision 欄——帳本 status 唯一寫入者＝主鏈編排者；本 skill 產出僅 findings／證據檔。
+
+- followup 只回**驗收 findings／證據**（逐項通過／未通過＋驗證式重跑結果＋新發現）；**不直接改寫帳本 status**——`verified`/`closed`/`open` 由主鏈編排者（post-build 階段 3、implement 修正迴圈）核對驗收證據後寫入
+- `verified`/`closed` 是**進度 status**，不是採納／拒絕 disposition（disposition authority 在 judge-review Arbiter）——僅有**可核對驗證結果**且原採納／拒絕決策未受挑戰時更新
+- followup 帶回**新增／矛盾 findings** → 交 judge（Arbiter）重新裁決後再更新；主鏈不得自推「修好了」
+- followup 驗收**不計新弧級 coverage**——是原 finding 的修正與反例核對，不新增獨立弧級審查覆蓋
+
 ## 核心目標
 
 **「對照原始審查 → 查證實際變更 → 判斷合理性 → 輸出驗收報告」**
@@ -44,11 +61,12 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]
 
 ### 逐項驗收
 
-- **採納的建議**：讀取修改後程式碼 → 對照原始問題 → 檢查是否引入新問題 → 通過標 `verified`
-- **拒絕的建議**：讀取相關程式碼 → 對照拒絕理由 → 重新評估原始問題 → 拒絕合理標 `closed`
+- **採納的建議**：讀取修改後程式碼 → 對照原始問題 → 檢查是否引入新問題 → 通過**建議** `verified`
+- **拒絕的建議**：讀取相關程式碼 → 對照拒絕理由 → 重新評估原始問題 → 拒絕合理**建議** `closed`
+  ——僅回報建議值與驗證證據，不寫帳本；status 寫入見本檔「status 寫入責任」節（主鏈編排者唯一寫入者）。
 - **整體品質檢查**：新引入問題掃描 + 一致性 + 完整性
 
-驗收後更新 caller 指定帳本（鏈上預設 `.review/<branch>.md`；規劃期＝EP review 區段）finding 的 `status`(格式見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)):`verified`(採納且通過)/ `closed`(拒絕合理)/ 維持 `open`(未通過需再修)。新引入的 Critical / Important 問題,新增 finding(狀態 `open`)。驗收基準優先用 finding 自帶**驗證式**重跑（可機械複驗）——驗證式缺席時退 LLM 對照判讀。
+驗收結論逐項回報 caller（通過／未通過／拒絕合理與否＋建議 status）；**status 由主鏈編排者核對驗收證據後唯一寫入**（值域不變：`verified`(採納且通過)/ `closed`(拒絕合理)/ `open`(未通過需再修)；寫入責任見上「status 寫入責任」；格式見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md))。新引入的 Critical / Important 問題,新增 finding(狀態 `open`，交 judge 重裁)。驗收基準優先用 finding 自帶**驗證式**重跑（可機械複驗）——驗證式缺席時退 LLM 對照判讀。
 
 ### muse reviewer 續接驗收（已驗證形態；MOS-74：review→judge 全採納→修正→同 session `--session-id` resume followup pass 全 verified＋2 新 issue——驗證式逐條回收零摩擦）
 
@@ -58,8 +76,8 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Write", "Edit"]
 
 - 語義＝**mutating 續寫**（append 進原 transcript）——多輪 followup 疊同一卷，reviewer 記得前輪驗收
 - prompt 必帶 fix commit range＋明示**重讀當前檔案**（卷內檔案狀態是修前的 stale）
-- caller 指定帳本（鏈上預設 `.review/<branch>.md`）仍是法定 findings 帳本（verified/closed/open 由主 session 更新）——session 記憶是保真度升級，非替代
-- 簡單 findings 走 fresh session 讀檔較省（續接帶整包 review context，成本高——判準見 handoff skill 邊界表）
+- caller 指定帳本（鏈上預設 `.review/<branch>.md`）仍是法定 findings 帳本（verified/closed/open 由主鏈編排者唯一寫入——續接腿同樣只回 findings／證據，見「status 寫入責任」）——session 記憶是保真度升級，非替代
+- 簡單 findings 走 fresh session 讀檔較省（續接帶整包 review context，成本高——判準見 handoff skill 邊界表）；carrier resume 僅在工具已證實且有成本收益時使用——無支援走 fresh context＋原 findings／修訂 read-set，不假設 resume 更便宜
 
 ---
 

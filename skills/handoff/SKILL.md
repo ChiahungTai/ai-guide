@@ -56,6 +56,8 @@ git rev-parse HEAD            # baseline commit hash
 
 其中「建議執行 tier」是 user 開新 session 的路由輸入（條件式，條款見 model-routing skill），「workspace／卡歸屬」為強制欄。
 
+> 欄位盤點對齊 [task-recovery](../_common/task-recovery.md) checkpoint 欄位（目標／已決策理由／已驗未驗證據／open findings／背景 job 收法／授權範圍／下一步＋read-set）；接手端恢復順序亦以 task-recovery 為單一源。接手方自足 prompt 形態不變——三層嵌入照 skill。
+
 有 EP → 引用段落 + 補這次對話剛定的決策；無 EP → 現擠 brief（完整 schema）。
 
 ### Phase 2：按接手方調嵌入程度

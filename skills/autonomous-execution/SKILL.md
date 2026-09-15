@@ -112,7 +112,8 @@ Error Self-Healing（上）是 per-error（單一錯誤重試 ceiling）。**缺
 - **solo 真相源** = git state（事實：working-tree diff vs session 前基準）+ EP 段落定義（意圖：每段 scope + 成功標準，靜態文檔）對照
 - **觸發點**：跨 session resume（`/at` resume 主要；手動開新 session 次之；handoff 交他人另議）
 - **機制**：resume 時 re-derive（git diff 推斷已做事實 vs EP 段落 scope 定義對照 → 推斷哪些段落 done）；**不 restore in-memory**（session 記憶不可信）；**不依賴顯式 done 標記**（deep-work 不 commit，無持久進度追蹤檔）；不符 → 結算差異報告（做了未涵蓋 / 涵蓋未做）
-- **intent 來源**：EP 段落定義本身（靜態文檔：scope + 成功標準），**非動態「進度檔」**——reconciliation = 事實（git diff）vs 意圖（EP scope）對照推斷完成度，不需先讀進度追蹤檔
+- **intent 來源**：EP 段落定義本身（靜態文檔：scope + 成功標準），**非動態「進度檔」**——reconciliation = 事實（git diff）vs 意圖（EP scope）對照推斷完成度，不需先讀進度追蹤檔；已驗/未驗輸入另讀 EP 進度節「段落結果」欄位（產物路徑／實跑指針／未驗與下一步）——作輸入不作完成度真相；deep-work 無 EP 弧沿用既有 journal，不新造進度檔
+- **恢復順序**：跨入口單一源＝[task-recovery](../_common/task-recovery.md)（「恢復順序」節）；本段 crash-only reconciliation 是其機械核對＋語義核對的落地——只重述摘要不算恢復驗證
 
 ### 與既有機制的分工（避免重疊）
 

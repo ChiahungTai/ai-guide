@@ -1,17 +1,19 @@
 # Workflow Review Pattern — 多 Agent 審查協調範本
 
-> **載入時機**: 僅在 effort = ultracode/xhigh 且審查命令偵測到 max-agents > 1 時讀取。
+> **載入時機**: 僅在審查命令的 adapter 選用 Workflow 載體（多 agent 協調）時讀取。載體選擇屬 adapter 執行細節，**不再是 effort／max-agents 門檻**——風險 profile 與 context 配置判定源見 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」（可觀察變更語義 → ordinary／boundary profile）。
 
 ---
 
 ## 何時使用 Workflow
 
-> 判定規則真相源見 [review-engine](../review-engine/SKILL.md)；下表為 Workflow 範本的使用時機速查。
+> 判定規則真相源見 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」；下表為 Workflow 範本的使用時機速查。
 
 | 條件 | 路徑 | 說明 |
 |------|------|------|
-| effort = ultracode/xhigh 且 max-agents > 1 | ✅ Workflow tool | 確定性協調、schema 輸出、內建進度追蹤 |
-| effort < ultracode 或 max-agents = 1 | ❌ Agent tool | 現有邏輯不變（Fallback） |
+| 多 context／多軸 profile 協調（boundary 配置分離 fresh＋intent、多維度並行審查、adversarial verify） | ✅ Workflow tool | 確定性協調、schema 輸出、內建進度追蹤 |
+| 單一 reviewer context（ordinary profile）或輕量單 agent | ❌ Agent tool / session | 單 context 無需協調層 |
+
+載體選擇不構成獨立性——context 獨立性由風險 profile 配置決定（review-engine），不由工具承載。
 
 Workflow tool 的優勢：
 - **確定性協調**：腳本控制流程，非 LLM 逐輪決定
@@ -39,7 +41,7 @@ Workflow tool 的優勢：
 
 - **第一級：錨點批次驗證（Important+ 全 findings，浮出前）**：合併各維度 findings 後，**單一 lite agent 批次**驗證錨點屬實性（file:line 存在、符號存在、引用原文屬實）——非 per-issue spawn（成本爆炸）。錨點不實的 finding 退回不浮出。**驗證≠裁決**：屬實性（機械/lite）與成立性（judge-review 層）分離
 - **第二級：Critical 對抗 quorum**：對錨點屬實的 Critical findings spawn 驗證 agent 嘗試**推翻（refute）**——**3 verifier + ≥2/3 確認** → finding 保留；非 Critical 不跑對抗 verifier（Important 仍須先過第一級錨點閘，通過後直接保留；Suggestion 不進錨點閘；終判交 Main LLM judge-review）
-- **compliance vs judgment 分流**：compliance 類維度（機械規則對照，如 instruction 檔合規）是 recall 問題——冗餘 agent 有益；judgment 類維度是 bias 問題——需 context 差異（dual-context 變體，見 review-engine 執行預設點 6），quorum 對共同盲點無效（[acceptance-evidence](../../rules/acceptance-evidence.md) A/B 軸）。兩者不互斥，按維度性質配
+- **compliance vs judgment 分流**：compliance 類維度（機械規則對照，如 instruction 檔合規）是 recall 問題——冗餘 agent 有益；judgment 類維度是 bias 問題——需 context 差異（fresh＋intent 分離配置，dual-context 語義，見 review-engine 執行預設點 6），quorum 對共同盲點無效（[acceptance-evidence](../../rules/acceptance-evidence.md) A/B 軸）。兩者不互斥，按維度性質配
 
 ---
 
@@ -125,7 +127,24 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 - **task baseline**：本弧任務 baseline hash（卡 Plan 或 EP 整合策略所記）
 - **reviewed**：審查當下 HEAD hash
 - **uncommitted identity**：本弧 tracked diff hash＋untracked 路徑清單＋content hash（與 [work-order](work-order.md) §3 dirty identity 契約同詞）——只有 rev 會讓「untracked-only WIP 改變」場景（HEAD 未變、新檔內容變）假吻合跳審
+- **scope**：本弧 review 範圍——包含／排除檔案與 UC/invariant 清單（復用判準第 3 條的比對鍵）
+- **review_profile**：風險 profile identifier＋定義內容 identity（定義源＝[review-engine](../review-engine/SKILL.md)「審查模式判定規則」；identifier＋該 profile 定義內容的 hash／版次標記——復用判準第 4 條的比對鍵）。正典寫法＝`review-engine@<sha>`，sha 取 `git hash-object -- skills/review-engine/SKILL.md` 輸出前 12 碼（content-bound，非 HEAD）；帳本身份行照寫此值。
+- **coverage**：各軸（profile 必需視角／extras）完成／未驗狀態＋evidence ref（指向 findings／驗證證據所在；**缺證據≠PASS**——未驗軸不得標完成）
 - **writer**：產生本清單的命令/session
+
+### findings 去重與復用判準（complete coverage 宣稱的必要條件）
+
+**去重規則**：同位置（file:line）**且同一 claim** 才合併；矛盾 findings **並列**（標 `conflict`，兩方觀點並列）交 Arbiter 裁決層（Workflow 鏈＝judge-review；EP 鏈＝主 session Arbiter），**不以投票或「先回者」裁決**。
+
+**可復用判準（五條，缺一即不得宣稱 complete coverage／不得據以跳審）**：
+
+1. **同任務基線**：task baseline 與目前任務相同
+2. **相同實物內容**：tracked diff hash＋untracked 路徑與 content hash 與當前一致（untracked-only 變更也算內容變更）
+3. **scope 覆蓋目前要求**：header `scope` 包含目前所需的檔案與 UC/invariant
+4. **profile 相容**：header `review_profile` 與目前所需 profile identifier 相同、定義內容 identity 未變，且該 profile 的獨立性配置滿足目前要求
+5. **證據可讀且未失效**：`coverage` 所指 evidence ref 可達、內容可核對
+
+**不變項**：revision 或 profile 變更**不能復用舊結論**——對 delta 重審；複用 findings **不等於**複用測試——環境／config／input 改變時驗證證據另行失效。Reviewer≠Arbiter（disposition 僅 Arbiter artifact，見上方 artifact recipe）；缺證據≠PASS。
 
 **status 生命週期**:
 
@@ -152,7 +171,7 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 ```
 ## <命令> Findings — <branch 或 EP 段落>
 
-> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash> · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none）· writer=<命令/session>
+> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash> · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none）· scope=<包含檔案/UC/invariant；排除項> · review_profile=<identifier＋definition identity> · coverage=<各軸完成/未驗＋evidence ref> · writer=<命令/session>
 
 | ID | 嚴重度 | 檔案:行 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |
 |----|--------|---------|------|------|--------|------|------|
@@ -297,5 +316,5 @@ Workflow 路徑和 Agent tool 路徑**共存不互斥**：
 
 - 命令文件中 Agent tool 指令標記為「Agent Tool 模式（Fallback）」
 - Workflow 指令標記為「Workflow 模式（Ultracode）」
-- 分支點在 effort level 偵測
+- 分支點在風險 profile（判定源＝review-engine『審查模式判定規則』）；載體選擇（Workflow／Agent Tool）屬 adapter 執行細節，非判定門檻。
 - Agent Tool Fallback 的完整邏輯（3-perspective review）見 [agent-review-cycle.md](./agent-review-cycle.md)

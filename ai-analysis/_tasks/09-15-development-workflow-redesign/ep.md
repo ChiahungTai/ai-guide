@@ -18,8 +18,12 @@
 - [x] Marshal overhead 增補：契約相容性調查→骨架→具體 work-unit 編排／情境→增補審查及三項漏洞修訂複核。
 - HTML 互動／視覺驗證本輪延後（user 明示）；不阻擋計畫交付，不宣稱已驗。
 - [x] 主 session ep-review（N1–N8＋S1）staged → 外部 Muse 審查收回（`references/external-review-muse.json`，job `job-mu2kr2hs-6k82uh`）→ 裁定全採納並回寫（N1/N4 依外部審查修正版；無新增 Important）。
-- [ ] user 接受新預設，明示進入 implement；此前不得把下方提案當成現行規則。
-- [ ] S1–S4 實作及驗收。
+- [x] user 接受新預設，明示進入 implement（09-15 深夜 marshal 任務單；owner 卡 AIR-101、branch air-101、baseline 4fc5caa）。
+- [x] S1 落地（09-16）：review-engine profile 驅動重寫＋workflow-review-pattern identity 三欄＋no-candidate ledger 點 8；承接清單 `.agent-tmp/air-101/s1-consumer-manifest.md`（S2 十項/S4 四檔/pointer-only 六檔）。
+- [x] S2 落地（09-16）：S2a 五檔（execution-plan/ep-review/implement/code-review/audit-test 接線）＋S2b 七檔（post-build 三閘快道/agent-review-cycle profile 表/work-order 批次 envelope/judge coverage 核對/followup status 單一寫入者/agent-workflow cap 語義/agents AGENTS 掛點）。
+- [x] S3 落地（09-16）：`_common/task-recovery.md` 新檔＋compact-prep/at（Phase 0 先結算）/handoff/autonomous-execution/rules context-management 接線（bundle +104B）；AIR-60 段① rehydration 單一源骨幹隨此交付。
+- [x] S4 落地（09-16）：illustrate-html-mode 圖觸發 task 型態預設＋deep-work S1/S2 接線＋metadata-sync review identity 復用邊界＋skills/CLAUDE 對帳＋blueprint workflow 導航＋post-build 模式 B 舊錨歸零。
+- [ ] S1–S4 驗收：static 全綠（各段 rg 閘）；外部 review 鏈（codex+muse→judge）進行中；behavior 情境（SM-01..24 抽樣）與真實 pilot 未跑——按 EP「未做不補成完成」將分列 Built／行為驗證／pilot／部署，部署另取 user 授權。
 
 下一個動作：所有 review 工作已收回，沒有待回收 job。實作接手者在 user 指示 implement 後讀本 EP Review 區段及 checkpoint 最末狀態，先對齊 AIR-60 owner／AC，再核對 HEAD／dirty 與治理檔，從 S1 起。本 EP 不修改 AIR-96 定稿的 model-routing/catalog/generator。
 

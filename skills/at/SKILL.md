@@ -21,6 +21,16 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 
 ## 執行流程
 
+### Phase 0：先結算再排程（checkpoint-first）
+
+排程前把工程狀態落進既有 durable 載體，讓 resume 從檔案接續、不依賴將死的 context：
+
+1. 有 EP → EP 進度節 append（現行階段、已驗/未驗、下一個可執行動作）
+2. 有追蹤卡 → `backlog task edit <id> --append-notes` 掛進度
+3. 寫 STATE.md 觀察（卡在哪/為何轉向/下次起手點；步驟見 [state-md-write](../_common/state-md-write.md)）
+
+checkpoint 欄位清單見 [task-recovery](../_common/task-recovery.md)「寫入端」。結算完成才進 Phase 1——at-context 仍只記任務目標（ephemeral；「不捕獲 git snapshot」語義不變，結算住 durable 載體、不住 at-context）。
+
 ### Phase 1：解析時間 + 捕獲 Context
 
 1. **解析用戶輸入**：
@@ -64,7 +74,7 @@ project_path: "{當前專案路徑}"
 3. 完成後刪除此檔案
 ```
 
-**寫 STATE.md**（session 結束）：若本 session 有轉向 / 卡點觀察，寫 repo root `STATE.md` 補「為什麼」（覆寫非累積；步驟見 [state-md-write](../_common/state-md-write.md)）。`.at-contexts` 維持一次性 ephemeral lifecycle（排程時建立 → resume 後刪、gitignore），STATE.md 是持久觀察層——**兩者不取代**（不同 lifecycle，不可混溶）。
+**寫 STATE.md**：已併入 Phase 0 結算——排程後 session 若繼續產生新轉向/卡點觀察，離開前更新 repo root `STATE.md`（覆寫非累積；步驟見 [state-md-write](../_common/state-md-write.md)）。`.at-contexts` 維持一次性 ephemeral lifecycle（排程時建立 → resume 後刪、gitignore），STATE.md 是持久觀察層——**兩者不取代**（不同 lifecycle，不可混溶）。
 
 > **本區現況**：`.at-contexts/` 只剩 `at-context-*`（`handoff --save` 寫檔已退場，交接改 `backlog task edit --append-notes` 掛卡）；`at-context-*` resume 後刪維持，夜間掃 7 天兜底（見 rule 協作約束）。
 
@@ -80,7 +90,7 @@ prompt: |
 
   立即執行：
   1. 讀取 context 檔案：{context_file_path}（任務目標）
-  2. 執行 `git log --oneline -10` + `git status` 看**當前進度**（不比對排程時 snapshot — quota 期間進度可能已變）
+  2. 執行 `git log --oneline -10` + `git status` 看**當前進度**（不比對排程時 snapshot — quota 期間進度可能已變）；排程前已結算 EP 進度/卡 notes/STATE（恢復順序見 `skills/_common/task-recovery.md`），一併讀取
   3. 根據任務目標 + 當前進度，接續未完成的工作
   4. 完成後刪除 context 檔案 {context_file_path}
 
@@ -115,7 +125,7 @@ prompt: |
 
 ## Resume 後的行為
 
-Resume 觸發時，LLM 應：
+Resume 觸發時，LLM 應（**恢復順序單一源＝[task-recovery](../_common/task-recovery.md)**，下列為 /at 場景落點）：
 
 1. **讀 context 檔案** → 了解**任務目標**（`.at-contexts/` 非 protected path，讀取零摩擦）
 2. **讀 STATE.md**（repo root，若存在）→ 補 **Last session 觀察**（卡在哪、為何轉向、下次起手點）——「為什麼」參考；**完成度走 recovery 事實層**（git + EP re-derive，見 [autonomous-execution](../autonomous-execution/SKILL.md)「Session 級 Recovery」），STATE 不覆蓋完成度

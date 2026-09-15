@@ -25,20 +25,27 @@ Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 ## 審查模式選擇
 
-review 執行預設（force 獨立 / max-agents / model 預設）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」—— 本命令僅定義 EP 特有 profile（F1-F5）+ 產出（回寫 EP）。模式判定規則（effort/max-agents → Workflow/Agent Tool）見 [review-engine](../review-engine/SKILL.md)；啟用 F1-F5 五維度（下表），Workflow 執行細節（schema/腳本）見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)。
+配置單一源＝[review-engine](../review-engine/SKILL.md)「審查模式判定規則」（可觀察變更語義 → ordinary／boundary）＋「review 執行預設」—— 本命令**消費 S1 profile 配置，不自建派工數量判準**（不按 effort/max-agents 決定 agent 數量；並發容量＝上限非配額，數值歸 [model-routing](../model-routing/SKILL.md)）；僅定義 EP 特有審查 profile（F1-F5）+ 產出（回寫 EP）。Workflow 載體是執行細節非 effort 門檻；schema/腳本見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)。
 
-**Workflow 模式**（判定條件見 [review-engine](../review-engine/SKILL.md)）：
+| 風險 profile | context 配置（必需獨立性與視角） | 本命令消費 |
+|--------------|------------|-----------|
+| **ordinary**（一般 EP） | **單一獨立 context** 順序覆蓋 F1-F5 全維度（top-down：先 F3 結構一致性後 F1/F4/F5 細部——結構錯了正確性審白費）；同一 reviewer 必覆蓋各軸，省略任一軸＝scope 未覆蓋。**單 context 順序覆蓋不是 fresh/primed 雙 context 等價品**（明示語義見 review-engine 執行預設點 4） | 單一 registry `code-reviewer` agent 做所有 5 維度 |
+| **boundary**（EP 觸及控制面 authority/gate、public API 契約、跨 context invariant、money/risk/security——按 EP 變更語義判定） | **分離 fresh＋intent**＋必要專項：fresh 腿無錨讀 EP 自身 merits（不餵意圖側材料）；intent 腿餵 UC 盤點／卡 Plan／受影響模組 instruction 檔 | 多腿協調可用 Workflow 載體（見下）；資格升級（judgment_floor→decision）由 WorkUnitContract 承接 |
+| 條件不明 | 取更保護分支（boundary） | 同上 |
 
-使用 Workflow tool，參照 [workflow-review-pattern.md](../_common/workflow-review-pattern.md) 腳本骨架。
+Reviewer work unit（兩 profile 共用）：qualification=`review_findings`、authority=findings（無 disposition/apply）、judgment_floor 預設 execution／高保護面·跨邊界語義面升 decision（user 09-09 審查層預設）；registry 載體 `code-reviewer`（read-only 契約＋審查 mandate 相容〔lite-verify 禁設計判斷，與 EP review 5 維度矛盾〕；binding 解析照 [model-routing](../model-routing/SKILL.md) resolver＋presets，本檔不材料化 model 值；禁內建 `Explore`——無 pin 繼承主模型，execution 預設落空）。
+印出確認：`[EP Review Mode] profile=<ordinary|boundary>, agent=single|fresh+intent`
+
+**boundary 多腿時的 Workflow 載體**（可選——協調需求決定，非門檻）：使用 Workflow tool，參照 [workflow-review-pattern.md](../_common/workflow-review-pattern.md) 腳本骨架。
 
 | Workflow Phase | 說明 | Agent 數量 |
 |----------------|------|-----------|
-| Review | 平行 spawn 維度 agents（registry 載體 `code-reviewer`——Reviewer work unit：qualification=`review_findings`、authority=findings（無 disposition/apply）、judgment_floor 預設 execution／高保護面·跨邊界語義面升 decision（user 09-09 審查層預設）；read-only 契約＋審查 mandate 相容〔lite-verify 禁設計判斷，與 EP review 5 維度矛盾〕；binding 解析照 [model-routing](../model-routing/SKILL.md) resolver＋presets，本檔不材料化 model 值。禁內建 `Explore`——無 pin 繼承主模型，execution 預設落空） | ≤ max-agents |
+| Review | 平行 spawn profile 分離腿（fresh／intent／專項） | 由 profile 配置決定（並發容量為上限） |
 | Verify | must-fix findings → 1 verifier/finding | findings 數 |
 
-**啟用維度**：
+**啟用維度（F1-F5 全維度——兩 profile 皆須覆蓋，不丟棄）**：
 
-| 維度 Agent | 審查項目 | 優先級 |
+| 維度 | 審查項目 | 優先級 |
 |-----------|---------|--------|
 | F1 完整性 | 驗收標準、檔案清單、依賴項、邊界情況 | P0 |
 | F2 合規 | 命名、code-edit-constraints、instruction 檔 | P0 |
@@ -46,10 +53,10 @@ review 執行預設（force 獨立 / max-agents / model 預設）見 [review-eng
 | F4 遺漏 | Demo、測試、__all__、配置、受影響模組 | P2 |
 | F5 場景覆蓋 | Scenario Matrix 是否涵蓋 happy path、錯誤操作、邊界、效能期待差異 | P2 |
 
-啟用維度數 > max-agents → 從低優先級（P2 起）合併至前一個 agent（不丟棄任何維度）。
+維度合併＝多腿間的分工手段（不丟棄任何維度），依 profile 配置與並發容量上限推導，非固定派滿。
 
 每個 Review agent prompt 包含：
-- EP 完整內容
+- EP 完整內容（boundary fresh 腿例外——無錨配置不餵意圖側材料，見上表）
 - 該維度的檢查項目清單（F1-F5 各自定義）
 - 計畫書提到的檔案路徑（必讀）
 - 方法論引用（code-review-and-quality）
@@ -57,12 +64,6 @@ review 執行預設（force 獨立 / max-agents / model 預設）見 [review-eng
 - schema: DimensionVerdict（定義在 workflow-review-pattern.md）
 
 Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 5 個 DimensionVerdict → 執行回寫（回寫原則見下方）。
-
-印出確認：`[EP Review Mode] effort=ultracode, workflow=true, max=N`
-
-**Agent Tool 模式**（**預設 force 獨立**；判定條件見 [review-engine](../review-engine/SKILL.md)）：
-
-主 session spawn 單一 registry `code-reviewer` agent 做所有 5 維度（ep-review 特有配置，非 code-review 的 3-perspective；Reviewer work unit 同上表——qualification=`review_findings`／authority=findings，lite-verify 禁設計判斷與 5 維度 mandate 矛盾故不選；禁內建 `Explore`，無 pin 會繼承主模型）。印出確認：`[EP Review Mode] effort=<ultracode|standard>, workflow=false, agent=true`
 
 ---
 
