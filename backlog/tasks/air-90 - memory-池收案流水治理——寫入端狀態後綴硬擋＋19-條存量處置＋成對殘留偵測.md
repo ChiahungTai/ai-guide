@@ -1,9 +1,10 @@
 ---
 id: AIR-90
 title: memory 池收案流水治理——寫入端狀態後綴硬擋＋19 條存量處置＋成對殘留偵測
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-13 22:44'
+updated_date: '2026-09-15 14:34'
 labels: []
 dependencies: []
 ordinal: 76000
@@ -21,3 +22,9 @@ ordinal: 76000
 
 範圍：hooks/block-memory-index-write.py＋tests／memory 池 19 條處置（池 git commits，非 ai-rules repo）／host 側夜波 cron prompt（CronUpdate，repo 侧無檔）／skills/kanban-board/SKILL.md 清單項／stderr probe（一次性實測，結論入 EP）。錨點：ai-analysis/nightly-convergence.log 09-13 段（100% 實證＋錯誤的 34 條累積說）；fabf4e7 處置鏈先例（刪 5/重寫 1/併 1 淨瘦 18.8K）；AIR-83＝偵測側姊妹卡（夜波初篩 script——本卡是其決策②切出的寫入端單案）。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+併入 AIR-100（P3 寫入防護＋P2 存量對帳）——memory 域整併單一治理弧防 wave/治理檔互踩；原 AC 由 AIR-100 A3/A2 承接，未動工即併、無遺留工作。
+<!-- SECTION:FINAL_SUMMARY:END -->

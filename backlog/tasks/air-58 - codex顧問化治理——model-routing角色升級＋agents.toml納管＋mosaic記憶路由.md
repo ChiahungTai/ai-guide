@@ -1,10 +1,10 @@
 ---
 id: AIR-58
 title: codex顧問化治理——model-routing角色升級＋agents.toml納管＋mosaic記憶路由
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-09 21:45'
-updated_date: '2026-09-14 20:56'
+updated_date: '2026-09-15 14:34'
 labels:
   - codex
   - model-routing
@@ -19,6 +19,14 @@ ordinal: 50000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 codex 從「額度稀缺、只能救火」升級為常備顧問（規劃/審查弧的跨家族第二意見）。舊 agents 設定檔已刪（09-09 執行完畢）；剩下的 mosaic 記憶路由修復排在 AIR-54 記憶移植落地之後。目前不需要 user 裁決任何事——等依賴到位再開工。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 model-routing skill codex 段 sweet spot 備註擴為規劃/審查弧候選（webgpt 觀察期語意）；dispatch 預設不變
+- [x] #2 agents/*.toml 決策落地（09-09）：ai-rules 二 toml 已刪除（零 dispatch 消費者＋方法論經 skills 層送達＋手動複本違單一源——詳 S2 裁決）；CBM 三 toml 保留非治理面
+- [ ] #3 mosaic 側 AGENTS.md 觀察池路由段落地（AIR-54 mosaic 移植後形態；handoff brief 已開給 center），codex session 實測讀得到池
+- [ ] #4 S4 決策與 knob 記錄歸檔（卡或 model-routing/memory-audit 引用面擇一）
+<!-- AC:END -->
 
 ## Implementation Plan
 
@@ -37,14 +45,6 @@ S3 mosaic 記憶路由修復（user 09-09 拍板「這要修」）：mosaic_alph
 S4 決策記錄（無改動）：bridge 工單饋入 codex memory 生成＝保留。評估：符合 memory 原則——codex 官方 pipeline 自帶寫入端紀律等價物（extract/consolidation 雙模型、max_unused_days decay、secrets redact、rate-limit gate、idle-wait），memory_summary 實證品質良好（AIR-50/MOS 知識可用）；退場 knob 供日後翻案：thread 級 /memories、memories.disable_on_external_context=true（bridge 工單有用 MCP 面）。附帶已完成（09-09 本弧）：~/.codex/config.toml 過時註解 79KB→40KB 修正（backup config.toml.bak-advisor-0909）。
 <!-- SECTION:PLAN:END -->
 
-## Acceptance Criteria
-<!-- AC:BEGIN -->
-- [ ] #1 model-routing skill codex 段 sweet spot 備註擴為規劃/審查弧候選（webgpt 觀察期語意）；dispatch 預設不變
-- [x] #2 agents/*.toml 決策落地（09-09）：ai-rules 二 toml 已刪除（零 dispatch 消費者＋方法論經 skills 層送達＋手動複本違單一源——詳 S2 裁決）；CBM 三 toml 保留非治理面
-- [ ] #3 mosaic 側 AGENTS.md 觀察池路由段落地（AIR-54 mosaic 移植後形態；handoff brief 已開給 center），codex session 實測讀得到池
-- [ ] #4 S4 決策與 knob 記錄歸檔（卡或 model-routing/memory-audit 引用面擇一）
-<!-- AC:END -->
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -54,4 +54,5 @@ S4 決策記錄（無改動）：bridge 工單饋入 codex memory 生成＝保�
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
+撤回獨立承諾：前段（codex 舊 agents 設定檔刪除）09-09 已執行完畢；唯一殘項 mosaic 記憶路由修復已由 AIR-54 S6 落地（mos-88 分工吸收、8e33163fe inbox hooks＋AGENTS 觸發器——final summary 可考）＋DRAFT-4 後續審視承接，無獨立遺留。
 <!-- SECTION:FINAL_SUMMARY:END -->

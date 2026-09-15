@@ -1,10 +1,10 @@
 ---
 id: AIR-83
 title: memory 夜波抽檢半機械化——初篩 script＋指針銷帳檢查＋條文 B 形態校準
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-12 21:58'
-updated_date: '2026-09-13 22:45'
+updated_date: '2026-09-15 14:34'
 labels: []
 dependencies: []
 ordinal: 69000
@@ -28,3 +28,9 @@ ordinal: 69000
 <!-- SECTION:NOTES:BEGIN -->
 寫入端單案已建卡：AIR-90（狀態後綴硬擋＋19 條存量處置＋twin 偵測＋結案清池項；codex 討論共識已凍結在卡 desc）——本卡與其互補：AIR-83 偵測側（夜波初篩）、AIR-90 攔截＋處置側。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+併入 AIR-100（P4 夜波半機械化：初篩 script＋指針銷帳＋條文校準＋cron 接線）——同域整併；原 AC 由 AIR-100 A4 承接，未動工即併、無遺留工作。
+<!-- SECTION:FINAL_SUMMARY:END -->
