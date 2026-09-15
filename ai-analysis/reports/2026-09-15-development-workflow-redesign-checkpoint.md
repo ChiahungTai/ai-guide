@@ -105,3 +105,15 @@ user 授權規劃與 reports checkpoint；未開始新流程實作、未變更�
 - user 要求優先保存 compact 建議，已寫 [compact-direction-handoff](2026-09-15-compact-direction-handoff.md)：推薦方向、usage/context/品質三分、實作順序、最小欄位、恢復七步、多模型 job 接續、極低額度寫入順序、十個失敗案例、未定研究與接手指令。
 - 核心：durable checkpoint 優先；compact 時機 user 決定；memory 非救援前置；恢復驗實物與下一動前置；不新造 summarizer/skill/狀態庫/threshold/hook 假設。
 - 本補充是新分析，未另派 review；若改變 S3 行為或 AC，接手者先做 scoped review，不能冒用已審 EP 的 verified。沒有新背景 job；不做 HTML／實作／commit/deploy。
+
+## 載體 CRUD 分工補充
+
+- user 要求能重判 memory/skills/rules(bundle)/Cards 分類，已寫 [CRUD 原則](2026-09-15-workflow-carriers-crud-principles.md)：責任與 scope/residency 分軸、CRUD 表、Card 欄位、八問分類、誤置案例、機械/LLM 分工、token 成本與遷移驗收模板。
+- 分類仍以 memory-audit「載體統一定義表」為源；report 非新 instruction。不改 memory 池、skills/rules/Cards、不批次搬移、不部署。新補充未獨立 review。
+- 記錄 stale 候選：memory-audit 表內 AIR-85 projection 尚未落地註記與現行部署描述不同；後續需查源，不把歷史敘述當 runtime。
+
+## 主 session ep-review 已出，待外部審查裁定
+
+- 獨立審查（subagent＋主 session 合成）：N1–N8＋S1，無 🔴，結論有條件執行；完整報告 `2026-09-15-development-workflow-ep-review.md`。
+- Findings 已 stage 至 `../_tasks/09-15-development-workflow-redesign/references/review-main-session.md`（pending-external-review），尚未回寫 EP（user 明示：外部審查＋裁定後才回寫）。
+- EP 未動，projection 維持現版 `c497…`。下一步：外部 review→judge→回寫 EP＋hash 同步。
