@@ -27,7 +27,7 @@ Six-axis review with quality gates. Every change gets reviewed before merge — 
   - 通則：silent failure 不可接受、fallback 必須顯式且 justified、catch 必須具體。與上方 loud→silent 檢查互補——該項抓「把大聲改小聲」的 diff 語義，本枚舉抓「每個錯誤處理點的處理品質」
 - Tests cover the change and actually test the right things?
 - Off-by-one errors, race conditions, state inconsistencies?
-  - 多 writer / state mutation invariant 破壞的判定（ownership vs write-site 粒度）見 [arch-thinking](../arch-thinking/SKILL.md)「變更路徑計數（mutation-path counting）」step —— 條件必填（觸及 mutable state 時）
+  - 多 writer / state mutation invariant 破壞的判定（ownership vs write-site 粒度）見 [arch-thinking 的 state 配方](../arch-thinking/state-and-compensation.md)「變更路徑計數（mutation-path counting）」—— 條件必填（觸及 mutable state 時）
 
 ### 2. Readability & Simplicity
 - Names descriptive and consistent with project conventions?

@@ -13,6 +13,8 @@ NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 
 沒完成根因調查（重現 + 定位 + 證據），不能提 fix。症狀修補 = 靜默債務。
 
+修復前依 [arch-thinking 觸發表](../arch-thinking/SKILL.md) 查補償關係；共用契約／多層同量計算需核對消費者，mutable state／ownership 變更需加查寫入路徑。只載命中的配方，檢查範圍沿已定位的故障與消費路徑展開。
+
 ## Stop-the-Line Rule
 
 When anything unexpected happens:

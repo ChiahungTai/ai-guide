@@ -1,7 +1,7 @@
 # 結構 viewport — drill 與機械分工
 
 > **載體**：[illustrate.md](../illustrate/SKILL.md) 的結構 viewport 模式（人類 viewport，B 軸）支撐檔。
-> **能力來源**：[arch-thinking](../arch-thinking/SKILL.md) skill —— City Map 資料 / dep weight / Pattern Radar / domain grounding / LSP 查證 / call graph（函數級）/ type structure（contract slice）/ data-flow（靜態骨架）/ product-type 雙軌都在 skill（視角 §一、機械 §二）。本檔定義**人 viewport 的互動式 drill 與機械分工** —— 渲染結構心智模型讓人判讀（不產機器 finding，那是 `/code-review` axis 3）。
+> **能力來源**：[arch-thinking](../arch-thinking/SKILL.md) 的設計判準與觸發表，按需讀重用、state／補償、結構證據配方。本檔定義人類 viewport 的 drill、呈現與人類閱讀深度；finding 形式由 code-review 定義。
 
 ## drill 指令（whole-picture → 嫌疑）
 
@@ -11,8 +11,8 @@ whole-picture 渲染完（city map / flows / boundaries / 重用枚舉，資料�
 artifact <type> <target>  — mid-session 切 active menu artifact（如 `artifact sequence <use-case>`、`artifact class-slice <module>`、`artifact data-flow <field>`、`artifact call-graph <symbol>`）；type 見 [illustrate-artifact-menu](./illustrate-artifact-menu.md) 詞彙表
 city <module>      — 放大某模組的依賴細節（= boundary artifact）
 flow <use-case>    — 畫另一個 use case 的 flow（= sequence artifact）
-reuse <RC-XXX>     — 深入某重用嫌疑（含 LOW confidence；Pattern Radar，mode A）
-verify <symbol>    — 鎖定嫌疑，用 LSP findReferences / call chain 驗證（見 rules/symbol-query-routing.md；反應式驗證，非 holistic 判讀）
+reuse <候選>       — 以符號或檔案定位候選，依 reuse.md 判語義相容性；呈現端可自行附候選 ID
+verify <symbol>    — 鎖定嫌疑，依 symbol-query-routing 查證引用／呼叫關係與契約
 boundary <module>  — 細看某模組邊界（= boundary artifact）
 
 > menu artifact selection replaces 舊鬆散 運作流程/資料流/概念圖 labels；drill switches artifact，verify stays reactive。
@@ -26,19 +26,19 @@ boundary <module>  — 細看某模組邊界（= boundary artifact）
 
 | Type | 人類說什麼 | LLM 調查 |
 |------|------------|----------|
-| 🔗 重用嫌疑 | 「這感覺跟那個重複」 | Pattern Radar 枚舉 + 信心度 + LSP findReferences 驗證（見 rules/symbol-query-routing.md） |
-| 🗺️ 結構可疑 | 「這依賴怪怪的」 | LSP `incomingCalls`/`outgoingCalls` 追蹤 + import graph |
-| 📐 邊界 | 「這不該在這模組」 | LSP `findReferences` 看跨域存取 + Read 邊界 |
+| 🔗 重用嫌疑 | 「這感覺跟那個重複」 | 依 [reuse.md](../arch-thinking/reuse.md) 找候選並判語義／invariant／ownership／依賴成本 |
+| 🗺️ 結構可疑 | 「這依賴怪怪的」 | 依結構證據配方取得呼叫／依賴關係，工具依 symbol-query-routing |
+| 📐 邊界 | 「這不該在這模組」 | 查跨域存取與實際契約，對照 authority／修改責任 |
 | 💬 Free-form | 任意 | 自動分類或直接回答 |
 
 ## 機械分工（何時用哪個工具）
 
-> **核心**：枚舉（撈全 + 相似）用 scan-project / Pattern Radar；驗證（特定 claim）用 LSP（見 [symbol-query-routing](../../rules/symbol-query-routing.md)）。**人鎖定嫌疑後才上驗證**。
+> **核心**：依 arch-thinking 觸發表取得候選與結構證據，工具選擇遵循 [symbol-query-routing](../../rules/symbol-query-routing.md)。初始結論已有來源與限制；人鎖定嫌疑後進一步查證，不將第一次驗證延後到人開口。
 
 | 子任務 | 工具 | 角色 |
 |--------|------|------|
-| 撈全既有 symbol、找重用候選 | scan-project / Pattern Radar（枚舉） | **primary** —— 餵人的 whole-picture |
-| 人鎖定「這 enum 跟那 enum 可能重疊」後驗證 | LSP（`findReferences` / call chain，見 rules/symbol-query-routing.md） | **secondary** —— 確認嫌疑 |
+| 取得結構與重用候選 | arch-thinking 觸發表及對應配方 | 提供已查範圍、來源與限制；工具路由依 symbol-query-routing |
+| 人鎖定「這 enum 跟那 enum 可能重疊」後驗證 | reuse 配方＋symbol-query-routing | 核對語義及消費者，不以相似度定共用 |
 | City Map / Flows 渲染 | /illustrate | 渲染引擎（人 viewport） |
 
 > LSP 是**反應式驗證**（驗證特定 claim → ✅/❌），不是 holistic 架構判讀 —— 判讀是人的 whole-picture 工作。它是查證 helper，不是結構判讀本身。
@@ -67,7 +67,7 @@ drift detection 細節（5 signal class / baseline degradation ladder / no-sever
 
 ## Selective Review Matrix（既有 core 審查 artifact）
 
-**既有 core 骨幹審查（無 change，純審穩固度）的 P1 產物** —— core vs leaf 判定 + 審查深度建議，讓人決定「先審哪、審多深」（Anthropic selective-review：core heavy human review、leaf 放過）。**判定 / 資料來自 [arch-thinking](../arch-thinking/SKILL.md)「core identification」lens**（消費 `dep_graph.modules.imported_by` / `hotspots` + per-repo ripple 語義表（`dependency-graph.md`（若有）））—— 本檔只 spec **渲染格式**，不做判定（分層）。
+**既有 core 骨幹審查（無 change，純審穩固度）的 P1 產物**：core/leaf 證據來自 [arch-thinking 的結構證據配方](../arch-thinking/structure-evidence.md)。本消費端將證據映射成人類審查方式：core → 逐行閱讀關鍵政策與消費路徑；中間層 → structure viewport＋spot-read；已確認影響局部、非 critical path 的 leaf → behavior-only。證據不足先補查，不以零 caller 或檔案類型放行。分類依據由 arch-thinking 提供，人類閱讀深度由本段定義。
 
 **欄位**：`| 模組 | dep weight | 消費者數 | ripple/hotspot tier | domain core overlay? | core/leaf | 建議審查深度 | 位置 |`
 

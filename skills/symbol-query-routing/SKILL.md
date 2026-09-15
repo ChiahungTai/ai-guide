@@ -137,4 +137,4 @@ CC 原生 LSP plugin **無 `reloadWorkspace`** —— workspace stale（冷啟�
 3. **Report the finding with precise file:line** — 每個 finding 附 `file_path:line_number`（禁「looks correct」，必須引用實際位置）
 4. **Give a clear ✅/❌ conclusion** — 結論明確（通過/不通過），不留模糊
 
-> 此格式跨 audit-test / judge-review / illustrate verify drill / arch-thinking 驗證段通用。LSP 是反應式驗證工具（驗證特定 claim → ✅/❌），不是 holistic 架構判讀——判讀是人類 viewport 的工作（見 arch-thinking skill）。
+> 此格式跨 audit-test / judge-review / illustrate verify drill / arch-thinking 驗證段通用。工具驗證特定結構 claim；整體架構判斷結合 use case、契約與證據，由消費命令決定交付機器 finding 或人類 viewport。

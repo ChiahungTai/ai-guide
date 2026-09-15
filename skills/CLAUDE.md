@@ -37,7 +37,7 @@
 **review-pipeline recipe**（變更類型 → review 序列）：
 - **討論/規劃期**：`/illustrate`（結構，人 viewport，pre-EP 軟 gate 提醒，可多次）
 - **review 期**：post-build 可選 `/illustrate`（漂移/重造檢查，B 軸）→ `/code-review`（六軸含 axis 3 結構 = arch 吸收，top-down，A 軸機器）→ `/judge-review`（**一次**）
-- **既有 core 審查（無 change，純審穩固度）**：P1 識別 → selective review matrix（[arch-thinking](arch-thinking/SKILL.md)「core identification」lens）→ 依風險排序逐個 core 跑 `/illustrate` mode B（artifact menu：call graph / sequence / class slice / data-flow / boundary，B 軸人 viewport）+ **人讀 code**（VS Code Cmd+Click 跳轉）→（可選）P2 邊界驗證。B 軸；不排 `/code-review`（正確性靠人讀，非機器 finding）；Console / MD 模式（html opt-in 另見 illustrate html 模式）。Anthropic selective-review：core = heavy human review、leaf = 放過。
+- **既有 core 審查（無 change，純審穩固度）**：依 [arch-thinking](arch-thinking/SKILL.md) 觸發表取得 core/leaf 證據 → 用 [Selective Review Matrix](_common/illustrate-structure-viewport.md) 決定人類審查深度 → 逐個 core 跑 `/illustrate` mode B 與人讀 code，必要時補邊界驗證。B 軸人類 viewport；機器狀態審查另走 `/state-review`。
 - **全 repo 狀態審查（無 change，A 軸機器——state-rot 盤點）**：`/state-review`——external family 單發深審＋in-family judge，read-only 產報告與 gate 候選；抓 diff-review 結構盲區（跨弧累積漂移）。
 
 ### 工作流 skills — 核心開發流程
@@ -105,8 +105,8 @@
 
 ### 開發流程（spec → 交付）
 - `test-driven-development` — TDD 驅動實作（RED → GREEN → 重構；AI 失敗模式反制：反 rationalization、mock 階層、xfail strict）
-- `arch-thinking` — Clean Architecture + DDD 設計視角 + 結構機械（分層依賴/bounded context/use case 驅動[含共用層外溢]；city map / dep weight / Pattern Radar / domain grounding / LSP 查證 / 補償邏輯盤點 / call graph（函數級）/ type structure（contract slice）/ data-flow（靜態骨架）；視角非模板；受眾／載體中性——方法論綁角色不綁家族，跨家族互換零改動；與 api-and-interface-design 分工）
-- `deep-thinking` — 深層思考框架深層載體（reference skill：輸出格式模板「深層思考分析」、思維框架圖、關鍵問題清單 0-7 共 8 問、程式碼查證細則、執行自檢清單；rule 端＝design-thinking 兩層思考/決策分級/三視角 always-on 核心——rule+skill 分層控制 bundle 尺寸）
+- `arch-thinking` — use case、依賴與 bounded context 判準；依觸發表按需讀重用、state／補償、結構證據配方；工具路由引用查詢單一源，受眾與呈現由消費命令決定。
+- `deep-thinking` — 可查證的決策方法：使用者行為與產出消費者、事實／假設、現況與選項、直接／間接後果、回復與改判條件；交付摘要融入消費命令格式。
 - `debugging-and-error-recovery` — 系統性根因除錯（非猜測；no-guessing 熔斷、用戶糾正訊號表）
 - `autonomous-execution` — 無人介入自主執行的決策 / 錯誤恢復 / 完成回報 / workspace safety / path invariants / session recovery（false-done 偵測）
 

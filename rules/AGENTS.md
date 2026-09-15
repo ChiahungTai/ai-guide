@@ -49,7 +49,7 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 
 | rule | scope | 說明 |
 |---|---|---|
-| `design-thinking` | 🟢 neutral | 決策＋架構設計思考核心（兩層思考＋三視角；輸出格式在 deep-thinking skill）|
+| `design-thinking` | 🟢 neutral | 決策與架構核心（行為、證據、直接／間接後果；決策方法見 deep-thinking，結構觸發表見 arch-thinking）|
 | `quality-constraints` | 🟢 neutral | crash-only / fail-loud / 消費端驗證＋漸進式驗證（DEPTH-MIN→FULL） |
 | `acceptance-evidence` | 🟢 neutral | L1-L6 證據階層 / A/B 軸 / Claim→Evidence→Trust（深層理論：Runtime Invariant、Intent Drift、filter trap 在 acceptance-evidence skill）|
 | `must-execute-before-complete` | 🟢 neutral | 改了要跑、非靜態檢查 |

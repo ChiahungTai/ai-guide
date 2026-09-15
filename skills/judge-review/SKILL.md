@@ -9,14 +9,14 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 
 # /judge-review — AI 審查建議評估
 
-實作工程師，評估其他 AI 的代碼審查建議，基於深層思考框架（第一性原理 + 第二層後果追蹤）和實際程式碼查證決定是否採納。
+實作工程師，評估其他 AI 的代碼審查建議，以實際來源查證並依 [deep-thinking](../deep-thinking/SKILL.md) 比較選項與後果，決定是否採納。第一性原理與第二層思考的操作定義沿用該 skill，不另造固定層數或推理過程模板。
 
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 
 ## 核心目標
 
-**「查證 → 第一性原理分析 → 第二層後果追蹤 → 決策 → 寫持久化」**
+**「查證事實／假設 → 比較選項與直接／間接後果 → 決策與改判條件 → 寫持久化」**
 
 ---
 
@@ -51,7 +51,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 
 1. **解析建議**：識別 AI 來源、提取要點、識別相關程式碼
 2. **查證實際程式碼**：讀取相關檔案，確認問題是否真實
-3. **第一性原理分析**：本質問題是什麼？問題真的存在嗎？解決方案合理嗎？權衡是什麼？
+3. **評估選項與後果**：依 deep-thinking 確認問題、約束、事實／假設；比較維持現況與修正的收益、成本、直接／間接影響。只摘要足以支持裁決的依據，列會改變裁決的證據；查無間接影響時說明範圍，不湊層數。
 4. **輸出評估報告**（格式如下）
 5. **寫入持久化**：決策更新到 finding 的 `decision`(✅/❌/⚠️)與 `status` 欄 —— ✅→`adopted`、❌→`rejected`、⚠️→`needs-confirmation`。帳本＝**更新呼叫端指定帳本（鏈上預設 `.review/<branch>.md`＝工作帳本；EP review 區段＝規劃期帳本，僅服務 EP Review Cycle）**。`.review` 是 local-only（gitignore；同 worktree 跨 session 保留——post-build Resume 依賴此、跨 branch/worktree 不保留；隨 commit 清除——晚到 findings 的 durable 落點由收尾殘留清單承載）。格式見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)。**judge-review 不實作** —— 實作由呼叫端決定(`/implement` Phase 4 直接 apply ✅;獨立使用由用戶判讀決策清單)
 
@@ -66,7 +66,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 | 來源 | 建議摘要 | 決策 | 理由 |
 
 ### ✅ 採納建議
-[原文 + 相關程式碼 + 第一性原理分析 + 修改計畫]
+[原文 + 相關來源與證據 + 決策摘要及改判條件 + 修改與驗證計畫]
 
 ### ❌ 不採納建議
 [原文 + 相關程式碼 + 不採納理由]
@@ -83,7 +83,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 ## 執行約束
 
 - **必須查證實際程式碼**
-- **必須第一性原理分析**
+- **必須交付有依據的決策摘要與改判條件**，沿用 deep-thinking；不要求展示內部逐步推理
 - **不實作** —— 只評估產出決策清單(✅/❌/⚠️)+ 寫持久化。實作由呼叫端控制
 
 禁止：盲從建議 / 不查證就接受 / 基於假設評估 / 自動開始實作

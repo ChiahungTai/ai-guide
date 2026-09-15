@@ -55,6 +55,16 @@ Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 review 執行預設（force 獨立 / max-agents / model 預設）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」—— code-review **預設 spawn 獨立 agent**（與其他 review 命令一致，force 獨立；取消 Main LLM 自審 — 實證：獨立 agent 抓自審盲點）。模式判定規則（effort/max-agents → A/B）見 [review-engine](../review-engine/SKILL.md)；max-agents 查 [model-routing 並發上限](../model-routing/SKILL.md)（agent-workflow defer 到此、不自帶數字）。下方 A/B 為本命令的六軸啟用配置（C 已廢除，見下方 C 段）：
 
+**派發前觸發檢查（A/B 模式共用）**：主審先讀 [arch-thinking §二觸發表](../arch-thinking/SKILL.md)，按 diff 判定命中項，將命中配方與檢查責任放入下列 reviewer 的必讀／檢查清單。不因未達檔數門檻丟棄檢查；沒有命中才按一般啟用軸門檻。
+
+| 已選派發形態 | 命中檢查的承接者 |
+|---|---|
+| Agent Tool：single | 單一 fresh-eyes reviewer |
+| Agent Tool：dual | fresh-eyes 與 primed 的 prompt 都含命中配方；意圖材料仍依 B 段分開餵 |
+| Workflow | Architecture 軸；超出並發上限時合併至既有 agent，保留檢查責任 |
+
+A/B 模式依 review-engine 的 effort／max-agents 判定；Agent Tool 內 single／dual 依既有 dual-context 規則與本檔 B 段的無 EP 降級。觸發表只增加檢查責任，不另改派發模式。
+
 **A. Workflow 模式**（判定條件見 [review-engine](../review-engine/SKILL.md)）：
 
 使用 Workflow tool，參照 [workflow-review-pattern.md](../_common/workflow-review-pattern.md) 腳本骨架。
@@ -70,7 +80,7 @@ review 執行預設（force 獨立 / max-agents / model 預設）見 [review-eng
 |----------|---------|---------|--------|
 | Correctness | 邏輯 bugs、邊界案例、測試充分性 | **always** | P0 |
 | Readability & Simplicity | 命名、控制流、避免過早抽象 | **always** | P0 |
-| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight | 變更 ≥ 3 files | P1 |
+| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight | 變更 ≥ 3 files 或 arch-thinking 觸發表命中 | P1 |
 | Security | 輸入驗證、權限檢查 | diff 含 HTTP/auth/credential | P1 |
 | Performance | N+1、無界操作 | 變更 ≥ 5 files | P2 |
 | Capability Coverage | Capabilities 行為覆蓋 | 大型/中型變更 | P2 |
@@ -129,21 +139,21 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 ### axis 3：Architecture — 調用 [arch-thinking](../arch-thinking/SKILL.md) skill
 - **機器產 finding（A 軸）**：city map / dep weight / 重用枚舉 / LSP 查證 / call graph（函數級）/ type structure（contract slice）/ data-flow（靜態骨架），調用 skill 取結構資料 → 產 finding（變更融入既有結構？在重造？）
   - **code-reality（若在場）**：axis 3 的 impact radius / 跨檔 callers / affected flows 用 `impact_radius` / `callers` / `affected_flows` 機械產（取代手動 LSP 逐層追蹤）；change scoping 用 `detect_changes` + `get_minimal_context`（只讀 impacted nodes）。**CR 查詢分層**：主 session 與 spawned registry agents（code-reviewer 族——CR MCP 白名單已掛）**MCP 優先**（MCP `callers`／`impact_radius`／`affected_flows`／`detect_changes`／`get_minimal_context`）；spawn generic agent（無白名單）的 CLI 形態與硬性必含規則＝[review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」CR 段（單一源）。分工 + GATE 見 [cr-query](../cr-query/SKILL.md)。
-- **條件機制 activation（刪除/refactor 必觸發）**：diff 含刪除整檔/整 class、或 refactor 遷移 logic 時，**必須**調用 arch-thinking 的「補償邏輯盤點」+「變更路徑計數」——兩者預設條件觸發（修缺陷 / 觸及 mutable state），但刪除/refactor 同樣該觸發：刪除可能拆掉補償 pair 另一側（double-count / zero-out），refactor 可能改變 mutation-path ownership。未觸發 = axis 3 漏抓 over-deletion 與補償迴歸（清理日實證：這些機制沒被刪除 diff 觸發 → over-deletion 漏到事後審計才抓）。
+- **條件機制 activation**：先依 [arch-thinking §二](../arch-thinking/SKILL.md) 觸發表選配方；刪除整檔／class／method、修缺陷或 refactor 遷移邏輯要查補償關係；涉及 mutable state／invariant 或 ownership 變更再加寫入路徑盤點。此義務不受變更檔數門檻豁免；沒有 state 的變更不硬造 writer。
 - **受眾明文**：axis 3 與 `/illustrate` 用同一 skill，但 axis 3 產**機器 finding**（A 軸）、illustrate **渲染給人判讀**（B 軸）
 
 ### Capability Coverage — 滿足 Capabilities 描述嗎？
 
 **checklist 單一真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 6**（涵蓋行為、diff 對應、入口指向 library 非 scripts/、小型變更跳過）。本命令僅定義執行時機：大型/中型變更時審查，小型變更（bug fix）跳過；審查題材為模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格 + EP 段落引用 + 「消費場景」情境（happy path、錯誤操作、邊界、效能期待差異）。
 
-### 深層思考（第一性原理 + 第二層思考）
+### 深層思考（決策證據與後果）
 - **讀相關程式碼**：不只看 diff，讀取被修改檔案引用的其他模組
 - **確認實作合理性**：為什麼這樣寫？有沒有更簡單的方式？
 - **驗證假設**：修改是否基於對現有程式碼的正確理解？
 - **追蹤後果**：這個修改的下游影響是什麼？依賴模組是否受影響？
 - **審查者自證**：提出問題前必須查證宣稱（LSP 查證方法 + 自我否證義務：找不到 ≠ 不存在）— 完整方法見 [review-engine](../review-engine/SKILL.md)
 
-深層思考框架見 `~/Github/ai-guide/skills/deep-thinking/SKILL.md`
+決策方法見 [deep-thinking](../deep-thinking/SKILL.md)；摘要內容併入 findings／證據欄位，不另加固定分析模板。
 
 ---
 
