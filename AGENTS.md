@@ -37,7 +37,7 @@
 - **收尾**：/commit 確認通過後——`git checkout main && git merge --ff-only air-XX && git branch -d air-XX`（WT 回 main）；`--ff-only` 被拒＝main 已前進→先 `/rebase main` 再吸（mosaic：`/rebase <owning線>`，禁默認 main）；clean 紀律由 /commit gate 守（dirty checkout 不衝突會帶走，不是護欄）；trunk 永不被 rebase、永不 force（[rebase skill](skills/rebase/SKILL.md) 鐵律）
 - **`/rebase all` 護欄**：all 之前 `git branch --list 'air-*'` 非空 → 先收卡，不跑 all（`*` 不可省）；user 紀律：all 只在所有卡收尾後下
 - **軟條款**：忘記 checkout 直落 main＝軟失敗不回頭搬（message 已帶卡 id）；夜間 automation commits 落卡 branch 無害；拋棄（`branch -D`）需 user 明確確認；跨 session 遺留屬正常（接手者續用或判死吸收）
-- **mosaic 變體**：多線形態（前綴＝WT toplevel basename 縮寫、owning 線記卡 desc、線判定路徑查表、收尾 rebase base＝owning 線）定義源＝[09-08 卡 branch EP](ai-analysis/_tasks/done/09-08-card-branch-lifecycle/ep.md)——落地由 mosaic 側 MOS 卡承接
+- **mosaic 變體**：多線形態（前綴＝WT toplevel basename 縮寫、owning 線由卡 labels 線 tag 判（v2→v2 線、warrants→warrant 線、其餘含無線 tag＝main）、線判定路徑查表、收尾 rebase base＝owning 線）定義源＝[09-08 卡 branch EP](ai-analysis/_tasks/done/09-08-card-branch-lifecycle/ep.md)——落地由 mosaic 側 MOS 卡承接
 
 ## 命令的受眾視角
 
