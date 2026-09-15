@@ -305,7 +305,7 @@ accepted EP 才 apply；未被 review 的 ordinary 段不能把 Built 當 Verifi
 - 方向 brief：問題／使用者看得到的結果／重要取捨／不做範圍／驗收。成果 brief：before/after 具體例／實跑證據／未驗／重要偏離／回源。保留來源 revision/content SHA 與 Built/Verified 區分。
 - 不新增另一份日常 debrief；深挖仍由既有 debrief/illustrate 按需。殼同位置更新一次，不能每個 reviewer 都生成一份。
 - deep-work 的完整開發流程 pipeline 與 Agent Review／judge 流改引用 S1/S2 新語義：review-engine「review 執行預設」段消費 S1 profile（不再引用 max-agents 填滿）、Agent Review 改邊界觸發、judge 傳入含 `coverage` 的 findings；其對 review-engine 的 pointer 行免改。
-- 圖觸發：文字／表格無法清楚表達的跨邊界關係、複雜狀態轉移、user 明示。簡單流程可用 HTML 表格；無圖則標「本次以文字/表格呈現」，不留永久 degraded 假待辦。首次部署新預設前以 user 讀稿 pilot 驗方向。
+- 圖觸發：文字／表格無法清楚表達的跨邊界關係、複雜狀態轉移、user 明示，外加 task 型態預設（user 09-15 反饋）：UI 相關→mockup 圖、流程相關→流程圖、演算法類→步驟／資料流圖解、架構變更→架構圖講解——殼的核心價值＝system analysis/design 的圖，畫不出來或沒有的殼意義不大。品質判準＝人一眼看到重點（sidebar 跳章看大方向＋每章先給結論再給圖）；不達準的圖不如表格。簡單流程可用 HTML 表格；無圖則標「本次以文字/表格呈現」，不留永久 degraded 假待辦。首次部署新預設前以 user 讀稿 pilot 驗方向。
 - 持久 tour 延用現有 ask-once／預設略過；不重造政策。既有 tour corpus 指到本次改動而失效仍必修；不能以不產新 tour 逃掉舊鏈維護。
 - metadata-sync 保留 build/收斂/standalone 分工與冪等重跑；本弧不新增結算 receipt/cache。只有既有 EP 進度能指向相同輸入內容及仍在場的結算產物時，才引用已完成項；無法核對就由 metadata-sync 對適用項冪等重跑。review identity 只授權復用 review 證據，不代表 metadata 已完成；commit 仍做最後 scope／finalization 對帳。
 - 同步 root/guide 導航與 skills/CLAUDE、blueprint workflow 掛點；root AGENTS 若為生成物，改其來源再部署，禁止直接編輯生成投影。rules 政策改動須遵守 freshness／fresh-session 驗收。
@@ -399,6 +399,10 @@ review 対象＝本 EP 及列明 current sources；Reviewer authority=findings�
 增補 followup `references/marshal-followup-review.json`（job `job-mu2fn09e-d6vjf8`）確認 M3 resolved，M1/M2/M4 各留一個 Important：M1-B1 跨 review unit 錨污染、M2-B1 status/disposition 雙寫歧義、M4-B1 快道未指名落點。三項採納並已修訂：批次只限機械查證／實作成果；followup 約 :43–51/:61 的寫入措辭與 pattern/implement/post-build 同步，主鏈編排者寫 status、Arbiter 只裁 disposition；post-build:88 加 completed＋完整輸出＋coverage 閘。這些是 source 修改計畫，非已實作行為。
 
 **增補終態（取代上表中間狀態）**：`references/marshal-closure-review.json`，job `job-mu2fstmq-gouh8l` completed/exit 0，M1-B1/M2-B1/M4-B1 全 resolved、無新增 Important；主 session 核對 EP 錨點後，M1–M4 全標 verified（限計畫修訂）。closure 僅核 EP 文字，未重跑 current source 或 runtime；實作段仍須依 manifest 查當時最新版。原 F1–F6 及增補均無 open Important；新預設的效果不因文件審查而視為已證明。
+
+### User pre-implement 方向修訂（S4）
+
+09-15 user 對殼/圖政策回饋，於 implement gate 前併入 S4（方向權威＝user，不另派外部審查）：①delta tour 維持 ask-once＋預設略過、收尾最後問一句——確認現行設計即目標形態，不另改②圖觸增加 task 型態預設（UI→mockup、流程→流程圖、演算法→圖解、架構→架構圖講解）＋品質判準「人一眼看到重點」；殼核心價值＝system analysis/design 的圖，無圖或畫不出者意義低③成果 brief 的前後對比維持既有 before/after 具體例，機制講解（演算法步驟/架構圖）依 task 型態由圖觸發條款承載④同回饋同步 AIR-73（build_shell codegen 的內容需求輸入）。
 
 ### 主 session findings 外部審查與裁定（N1–N8＋S1）
 

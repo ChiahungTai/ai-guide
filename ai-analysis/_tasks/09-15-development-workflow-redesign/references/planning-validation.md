@@ -38,3 +38,8 @@
 - 主 session 裁定全採納並回寫 EP：N1 反映 AIR-96 已結案（`b68b7d0`）現況、不新增已結案弧協調條款、開工 prerequisite 補重取 HEAD／size gate；N4 改「承接清單（file→segment）」；N2/N3/N6/N7/N8/S1 按 staged 建議；N5 EP 免修。Review 帳本新增「主 session findings 外部審查與裁定」節。
 - 機械驗證實跑：`rg` dirty 殘留僅通用 guard（HEAD/dirty 核對、本弧 dirty、另一弧 dirty、既有 dirty 排除）；`由 S2 接完` 零命中；autonomous 指令句、Verify-only 行、N6/N7/N8 附加句均在位；寫入集已無 debrief/illustrate/state-md-write/commit。全部 PASS。
 - 回寫後 EP SHA256：`ac5c8bd9689660c12147e32b8f27fda68c7de454e43f8e21990acd9bb7ec4e73`；HTML 兩處 projection 欄＋當前狀態段已同步。仍限計畫修訂；S1–S4 實作、behavior、pilot、成本量測、部署均未執行，新預設待 user 接受。
+
+## User pre-implement 方向修訂換版（09-15 晚）
+
+- user 對殼/圖政策回饋併入 S4（task 型態圖預設＋一眼重點判準＋delta tour ask-once 確認）；EP ledger 增「User pre-implement 方向修訂」節——方向權威＝user，不另派外部審查。
+- EP SHA256 更新：e995268ad7cfb95067d97b23e72c018f28b535ef49daef6abc479cd4684b859e；HTML projection 兩欄已同步。
