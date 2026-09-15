@@ -1,7 +1,7 @@
 ---
 id: AIR-91
 title: 依工作階段能力自動選擇合適模型
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-14 08:36'
 updated_date: '2026-09-15 01:10'
