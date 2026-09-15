@@ -1,15 +1,17 @@
 ---
 id: AIR-98
 title: model 額度記憶自動保鮮——排程探測回寫＋重置週期記錄＋額度事件入帳
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-15 13:03'
-updated_date: '2026-09-15 15:19'
+updated_date: '2026-09-15 15:49'
 labels:
   - governance
   - memory
   - model-routing
 dependencies: []
+references:
+  - skills/model-routing/SKILL.md
 ordinal: 83000
 ---
 

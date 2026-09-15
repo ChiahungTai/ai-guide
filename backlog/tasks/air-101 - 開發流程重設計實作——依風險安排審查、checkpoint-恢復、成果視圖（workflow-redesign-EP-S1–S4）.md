@@ -1,7 +1,7 @@
 ---
 id: AIR-101
 title: 開發流程重設計實作——依風險安排審查、checkpoint 恢復、成果視圖（workflow redesign EP S1–S4）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-15 15:49'
 updated_date: '2026-09-15 15:49'
@@ -9,6 +9,9 @@ labels:
   - governance
   - skills
 dependencies: []
+references:
+  - ai-analysis/_tasks/09-15-development-workflow-redesign/ep.md
+  - ai-analysis/_tasks/09-15-development-workflow-redesign/index.html
 ordinal: 86000
 ---
 
