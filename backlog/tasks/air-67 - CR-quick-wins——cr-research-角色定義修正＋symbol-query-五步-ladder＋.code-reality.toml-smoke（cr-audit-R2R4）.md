@@ -3,10 +3,10 @@ id: AIR-67
 title: >-
   CR quick-wins——cr-research 角色定義修正＋symbol query 五步 ladder＋.code-reality.toml
   smoke（cr-audit R2+R4）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-09 21:43'
-updated_date: '2026-09-14 05:37'
+updated_date: '2026-09-15 15:47'
 labels:
   - cr
   - governance
@@ -41,3 +41,9 @@ cr-audit（reports/2026-09-09-cr-role-audit.md）即刻項半小時級。R2：ag
 
 [09-14 R1 剩餘＋R3 落地 ✅] R1＝execution-plan 段落 0 negative 宣稱結構化（claim 四欄＋negative verdict 禁 rg 單腿，引用 review-engine:169 單一源）＋judge-review「negative-claim findings 裁決驗證」節（採納前 CR callers 實測複核）。R3＝execution-plan 段落 0 研究材料載體行（超摘要粒度→EP 同層 references/research.md，fd＋rg 機械可驗收；首用驗證＝下次帶研究材料的弧）。觸發面設計：R3 靠 execution-plan 流程本身（每次建 EP 必經判斷），非掛記憶。drift 掃描：negative verdict 措辭三檔一致指向 review-engine 單一源、research.md 無撞名、desc FAIL=0。卡剩：弧A 行為面抽驗（掛下次 in-harness review dispatch 事件——抽 [SRC]／未 index 驗證／CR 呼叫）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+cr-audit 全段落落地：R2 五步 ladder（5dc56cd）＋弧A policy closure available-face 階梯（96ffff4）＋弧B telemetry 三源三證據類（882c9b5）＋R4 .code-reality.toml smoke 四項全過＋R1 negative-claim 結構化＋R3 research.md 載體（09-14 兩波）。殘項弧A 行為面抽驗屬事件驅動（掛下次 in-harness review dispatch，抽 [SRC]／未 index 驗證／CR 呼叫）非 AC 阻擋，已記 notes 供接手抽查。
+<!-- SECTION:FINAL_SUMMARY:END -->
