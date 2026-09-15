@@ -38,9 +38,12 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 > 表主體單一源：[agents/AGENTS.md](../../agents/AGENTS.md)「全生命週期 execution contract」（每段一行，欄位 schema 以該表為準）。本節是**怎麼查表 dispatch** 的消費規範；各生命週期命令（deep-work／execution-plan／implement／post-build／commit）的一行形態註記指向本節，不重抄表。
 
 1. **開段先查表**：當前 stage 的執行主體＝「主 session 直做」→ 不 spawn（判斷密集段——EP 規劃／judge 裁決／post-build 編排／commit consent，AIR-24 分工律）；spawn 類 → 取 registry name＋tier 欄
-2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 的選擇查 [model-routing](../model-routing/SKILL.md) tier×provider 權威表（requirement→provider 格）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝旗艦燒機械段（rule 角色→tier 表內建型別列）；唯讀探察／EP Review 形態用內建 Explore 承接＝rule research/explore 列（繼承主 session 旗艦＝正確）
+2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 解析＝DispatchPlan（WorkUnitContract → model-routing resolver 七步 → candidate 四元組，[model-routing](../model-routing/SKILL.md)——catalog/presets 供給事實，不在此材料化值）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝旗艦燒機械段；唯讀探察／EP Review 形態用內建 Explore 承接（繼承主 session 旗艦＝正確）
 3. **failure fallback 照表走**：重試 ≤2（classifier unavailable／1302）→ 顯式降級記錄（見下「spawn 失敗階梯」）；commit consent 行的 fallback 恆為「等用戶」，不可降級繞過
 4. **模型歸因抽查**（tier 欄落地驗證）：registry pin 是否真達 wire 用 per-message modelID 對帳（ZCode db.sqlite），不信 session 自述（[model-routing](../model-routing/SKILL.md) 歸因紀律）
+5. **DispatchPlan→carrier 三路**（換載體規則，語義單一源＝[model-routing](../model-routing/SKILL.md) DispatchPlan 條）：selected binding 等於 named preset default → registry spawn；harness 支援 spawn override → 同 WorkUnitContract／ExecutionPreset 只換 binding（動態升級不被固定 pin 吞掉）；否則 main-or-bridge 換載體，並把 Role／authority／surface 與**禁止再委派**完整裝入 work order（[work-order.md](../_common/work-order.md)）
+6. **dispatch preview（consequential dispatch 前列印）**：`[Dispatch] unit=<work unit> role=<Role>/<authority> qual=<qualifications> judgment=<judgment_floor> caps=<capabilities> candidate=<model identity×binding> effort=<requested→effective> carrier=<registry|override|bridge> override=<echo|none> indep=<kind/relative_to/required> fallback=<decomposition|none> job/attempts=<jobId＋attempt 史>`——欄位至少涵蓋 work unit／Role-authority／qualification／judgment-capabilities／candidate model-binding／requested-effective effort／carrier／override／independence／fallback-decomposition／jobId-attempts（AIR-91 S3 契約；與既有 `[Agent] model=…` spawn 確認並存——後者是 carrier 執行面回報，前者是派工前 preview）
+7. **failure handback（quota／runtime fallback）**：carrier failure 記入 work-unit-local **DispatchTrace**（欄位＝contract hash／candidate-binding／failure family／retryable-at／attempt disposition——[model-routing](../model-routing/SKILL.md) AvailabilitySnapshot 段）；**1308 candidate 在 retryable-at 前排除**（窗口制，重派無效）；**429 走既有 bounded backoff／降並發**（下方 spawn 失敗階梯）；候選耗盡＝**no-candidate report 停止**（列缺失條件），禁 loop、禁降 hard requirement
 
 ---
 
@@ -214,7 +217,7 @@ spawn 失敗處理依失敗類型分階梯 —— classifier unavailable retry �
 全失敗（serialization 仍 429，少見）→ 降級主 LLM 自審 + 顯式標記 fallback（警示獨立 review 丟失，非靜默）
 ```
 
-**usage limit（1308）不是降並發信號**（user 09-05 裁定）：1308 是窗口制——能用＝窗口已重置，並發數量與之無關；處置只有「等 reset 再派原並發」（窗口時間戳在錯誤訊息內，見 model-routing spawn 失敗態表）。**只有 429 持續才降並發**，且降並發時 dual-context（fresh＋primed）不砍成單側——複雜任務的審查結構用序列化保（一次跑一個但兩側都跑），不用降低 lens 數換速度。
+**usage limit（1308）不是降並發信號**（user 09-05 裁定）：1308 是窗口制——能用＝窗口已重置，並發數量與之無關；處置只有「等 reset 再派原並發」（窗口時間戳在錯誤訊息內，見 model-routing spawn 失敗態表）；AIR-91 S3 起該 candidate 記入 DispatchTrace 並在 retryable-at 前排除（見上方消費側點 7——重選即 loop 違規）。**只有 429 持續才降並發**，且降並發時 dual-context（fresh＋primed）不砍成單側——複雜任務的審查結構用序列化保（一次跑一個但兩側都跑），不用降低 lens 數換速度。
 
 **關鍵區分**：serialization 是**降並發的一步，不是降級**。降級（丟獨立性）只在 concurrency=1 還持續 429 才發生。deep-work（無人、無時間壓力）甚至可**預設低並發** —— 不急，何必冒 429 平行；用時間換獨立性，保所有 lens。
 
@@ -237,6 +240,7 @@ Rules 檔在 session 啟動時載入，但**更新不會傳播到已 spawn 的 a
 - [ ] 已查「並發上限」表確認——以將 spawn 的 agent 所在 tier 為準（[model-routing](../model-routing/SKILL.md) 並發表）；Agent **model 依角色 tier**
 - [ ] **lite／機械角色任務 spawn 型別＝registry 角色**（內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型——lite 任務用內建型別＝旗艦跑機械段；唯讀探察／review 形態用內建 Explore 承接＝rule research/explore 列）
 - [ ] 已印出 `[Agent] model=X, max=N, current=M`
+- [ ] consequential dispatch 前已印出 `[Dispatch] unit=…` 完整 preview 行（派工前契約揭露；`[Agent]`/`[Bridge]` 是執行面回報，不可替代）
 - [ ] 當前 Agent 數量未超過上限
 - [ ] spawn 帶 `run_in_background: true`（前台僅限 <30s 短 probe **且 prompt 帶 `[fg]`**——見上「Spawn 預設背景」；省略參數已被 gate 自動轉背景）
 - [ ] Prompt 包含足夠 context + 相對路徑 + rules-reminder 規則摘要（Agent 看不到 auto-loaded rules，必須在 prompt 開頭明確寫入：多行 `python -c` 禁 `#` 註解、`rg`/`fd` 取代 `grep`/`find`、`uv run` 前綴 Python、禁止 `sed` 修改 `.py/.md`、禁止 `$` shell 展開、輸出繁體中文、獨立工具呼叫同 block 批次發、改檔前先 Read）

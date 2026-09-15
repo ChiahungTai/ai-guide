@@ -1,6 +1,6 @@
 ---
 name: mem-distill
-description: "〔tier: lite〕當你要把肥大 memory 條目檔收斂重寫時，memory 條目蒸餾代理（刪日期流水/可從 git log 推導內容，留決策教訓/merged_from/終態結論）。規則明確的語義壓縮任務用；每檔獨立 Read→Write 全覆寫，禁碰清單外檔案。"
+description: "當你要把肥大 memory 條目檔收斂重寫時，memory 條目蒸餾代理（刪日期流水/可從 git log 推導內容，留決策教訓/merged_from/終態結論）。規則明確的語義壓縮任務用；每檔獨立 Read→Write 全覆寫，禁碰清單外檔案。"
 tools: Read, Write, Bash
 model: glm-5.3-flash
 thoughtLevel: high

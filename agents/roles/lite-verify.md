@@ -1,6 +1,6 @@
 ---
 name: lite-verify
-description: "〔tier: lite〕當你要派機械驗證／consistency gate／followup 對帳任務時，清單驅動、逐項附證據（rg 命中、exit code、file:line）的查證代理——非對抗性審查（深層正確性判斷是 code-reviewer 的職責）；不憑印象回答，每項結論必有機械證據。read-only。"
+description: "當你要派機械驗證／consistency gate／followup 對帳任務時，清單驅動、逐項附證據（rg 命中、exit code、file:line）的查證代理——非對抗性審查（深層正確性判斷是 code-reviewer 的職責）；不憑印象回答，每項結論必有機械證據。read-only。"
 tools: Read, Bash, WebFetch, mcp__plugin_code-reality_code-reality__refs, mcp__plugin_code-reality_code-reality__callers, mcp__plugin_code-reality_code-reality__closure, mcp__plugin_code-reality_code-reality__impact_radius
 ---
 

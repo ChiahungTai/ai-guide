@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: "〔tier: lite〕獨立程式碼審查者（fresh eyes，Writer/Reviewer 分離）。code review、diff 審查、變更驗證、findings 產出時主動使用。自帶審查方法論（嚴重度分級、信心水準、自證義務、否證義務），委派時只需給審查範圍與關注軸。"
+description: "獨立程式碼審查者（fresh eyes，Writer/Reviewer 分離）。code review、diff 審查、變更驗證、findings 產出時主動使用。自帶審查方法論（嚴重度分級、信心水準、自證義務、否證義務），委派時只需給審查範圍與關注軸。"
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, mcp__context7__resolve-library-id, mcp__context7__query-docs, mcp__zread__read_file, mcp__zread__get_repo_structure, mcp__zread__search_doc, mcp__plugin_code-reality_code-reality__refs, mcp__plugin_code-reality_code-reality__callers, mcp__plugin_code-reality_code-reality__closure, mcp__plugin_code-reality_code-reality__impact_radius
 background: true
 ---

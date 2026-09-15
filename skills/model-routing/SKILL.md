@@ -1,25 +1,83 @@
 ---
 name: model-routing
-description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。tier×provider 權威表（full/vision/lite×五公司，model 值唯一源，sync_agents pin dict 以此為 parity 對象）＋role→requirement 分配＋dispatch 預設（GLM 主力；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm-bridge）→(model, effort, 容量) 解析＋額度 failover＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與五類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、收法、三態判定、定向接續、session-id、fork、1301、1308、1302。"
+description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。AIR-91 doctrine（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步／AvailabilitySnapshot tri-state／ArcOverride／RoutingPolicy／DispatchPlan/Trace schema——model 供給事實單一源＝catalog.toml、registry 部署預設＝agents/presets.toml，本檔不重抄值）＋dispatch 預設與額度 failover（policy 面；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm-bridge）→(model, effort, 容量) 解析＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與五類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、收法、三態判定、定向接續、session-id、fork、1301、1308、1302、work unit、WorkUnitContract、resolver、DispatchPlan、qualification、judgment floor、catalog、presets。"
 ---
 
 # Model Routing — 解析表與 provider 事實
 
-> 本 skill 是 `rules/model-routing.md` 的 on-demand 深層載體：rule 端保留 always-on 骨架（角色→tier 表、兩跳解析原則、tier 詞彙句、external-runtime routing 段頭＋pointer——內容在本檔）；本檔承載 tier→(model, effort) 解析表、external-runtime family→(model, effort, 容量) 解析表、eligibility gate、reviewer 交接契約、套用三路徑、rate limit 與並發上限表、thoughtLevel 但書與 classifier 處置。model id 與容量數字單一源在此（rule／registry／模板僅 family／profile 詞彙）。
+> 本 skill 是 `rules/model-routing.md` 的 on-demand 深層載體：rule 端保留 always-on 骨架（precedence 七步、hard invariants、external-runtime routing 段頭＋pointer——內容在本檔）；本檔承載 glossary／WorkUnitContract schema／resolver protocol、dispatch 預設與額度 failover policy、external-runtime family→(model, effort, 容量) 解析表、eligibility gate、reviewer 交接契約、套用三路徑、rate limit 與並發上限表、thoughtLevel 但書與 classifier 處置。model wire token／effort encoding／transport 供給事實單一源＝同目錄 [catalog.toml](catalog.toml)；registry 部署預設（pins）單一源＝[agents/presets.toml](../../agents/presets.toml)（default binding FK→catalog，`sync_agents.py --map` 機械對帳）——本檔不重抄 wire token／effort encoding／transport 供給事實（dispatch 政策敘述中的 model 具名除外）。
 
-## tier → (model, effort) 解析表（requirement × provider 權威表——model 值單一源）
+## AIR-91 doctrine：vocabulary／WorkUnitContract／resolver protocol（派工權威）
 
-> **tier 詞＝requirement 正式 token**（AIR-24 同源，一個詞彙兩個語義面，不另造第三套）：full＝旗艦需求（judge／EP 規劃／批判）、vision＝影像需求（需「支援影像的 model」——能力軸非強度軸，旗艦／一般都可能具備或不具備）、lite＝一般需求（實作／驗證／挖掘／渲染——標準款省成本）。本表是 model/effort 值的**唯一源**（`sync_agents.py` pin dict 與生成物以本表為 parity 對象）；role 的 requirement 分配見下方 role→requirement 表；dispatch 兩跳＝role→requirement(tier)→本表列。
+> 本節是 instruction resolver 的唯一源（glossary／schema／precedence／輸出契約）；機械可驗證的供給事實（ModelIdentity／DispatchBinding／qualification records／allow-list metadata）單一源＝同目錄 [catalog.toml](catalog.toml)——`sync_agents.py` loader 驗 schema（token 分欄／enum／FK／唯一性／volatile 欄位拒斥），本檔不重抄 wire token／effort encoding／transport 供給事實（dispatch 政策敘述中的 model 具名除外）。resolver 是 LLM instruction protocol，不是 Python runtime router；TOML 與 sync_agents 只承擔可機械驗證的 supply 與（S2 起）deployment projection。
 
-| tier（requirement） | zai | Anthropic | OpenAI | xai | meta |
-|---|---|---|---|---|---|
-| **full**（旗艦） | `glm-5.3`（旗艦釘選，AIR-43——inherit 洞修補）〔repo-observed；wire 首例已實證——AIR-43 S3 遙測 model_id='glm-5.3'〕 | opus〔CC 詞彙面；背後接線 machine-local 不進 doctrine——user 訂閱變更自換〕 | sol high／max〔**預設不派**——額度最少〕；`chatgpt-web/high`〔旗艦，user 拍板——ChatGPT web 訊息額度（webgpt bridge 獨立 pool，語義見 family 表）；顯式指定才派；repo-observed〕 | fabel〔禁派——訂閱面 as-of 查 spine `model-runtime-entitlements`〕 | muse-spark-1.3（effort xhigh 起） |
-| **vision**（影像） | glm-5.3-flash（多模✓ 已實戰）〔repo-observed〕 | 〔影像需求 CC 端暫不派〕 | 〔預設不派〕 | 〔禁派——訂閱/安裝面 as-of 查 spine〕 | muse-spark-1.3 `--image`✓〔repo-observed〕 |
-| **lite**（一般） | glm-5.3-flash〔repo-observed〕 | sonnet（預設）／haiku〔CC 詞彙面；接線 machine-local 同 full 行〕 | terra high+（**luna 排除，基本不用**）〔**預設不派**〕；`chatgpt-web/medium`〔web pool——同 full 行 chatgpt-web/high 條款〕 | 〔禁派——訂閱面 as-of 查 spine〕 | —（與旗艦同體；額度貴，非省成本預設） |
+### glossary（vocabulary）
 
-> 證據狀態標註：repo-observed（本機實測）＞official-doc（官方文檔，非本機 L4）＞first-real-usage-pending（首例實戰待補）。
+| 詞 | 定義 |
+|---|---|
+| Role | work unit 可持有的責任與 authority（首期 Planner／Implementer／Reviewer／Verifier／Arbiter）；只由 WorkUnitContract 指派——catalog／preset／registry slug 不擁有 Role（role-like slug＝compatibility adapter） |
+| judgment_floor | 判斷需求軸，首期 {decision, execution}；decision 滿足 execution、反向不可；effort 不能把未 qualification 的 candidate 補成 decision-qualified |
+| capabilities | 與判斷正交的能力軸：native_vision（ModelIdentity 的模型能力）× image_transport（DispatchBinding 的運輸能力）；direct visual eligibility＝兩者交集 |
+| qualification | model 對 workload 的資格，catalog 兩正交欄：status{qualified, conditional, unqualified} × evidence_source{user_observed, repo_observed, official_documentation, pending_first_use}；conditional 是資格狀態非證據來源；availability 禁入任一欄 |
+| workload | 首期六值：ep_synthesis／adjudication／implement_from_accepted_ep／evidence_retrieval／review_findings／visual_observation（allow-list 在 catalog） |
+| candidate | 四元組 (model_identity, dispatch_binding, requested_effort, effective_effort)——不是裸 model 名 |
+| Arbiter／Marshal | Arbiter＝Role 值（judge-review 是執行 Role=Arbiter 的 workflow adapter）；Marshal＝composite workflow 的 orchestration responsibility，非 Role／agent／skill |
+| family／profile | family＝external runtime 家族（muse／codex／glm——**運輸身分軸**，非 model 強度軸）；profile＝external runtime 的 transport mode（implement／review／advisory）。詞彙定義單一源＝本 glossary；rule 端僅留 pointer |
 
-### 旗艦資格條款（五項）
+### WorkUnitContract schema（owning workflow 持有；欄位語義本節單一源）
+
+| 欄位 | 語義 |
+|---|---|
+| role | Planner／Implementer／Reviewer／Verifier／Arbiter |
+| authority | 輸出權限上限（見 Role→authority allow-list） |
+| judgment_floor | decision／execution |
+| qualifications | 需求的 workload tokens（對 catalog qualification records 硬過濾） |
+| capabilities | 需求能力軸（如 native_vision＋direct visual） |
+| independence | kind=different_provider_family＋relative_to＋required＋fallback（預設 soft-visible；user 明示為 hard） |
+| surface／escalation | 派工面與升級停止條件（pending finding／EP conflict／invariant／public boundary／反覆失敗→decision escalation） |
+
+### Role→authority allow-list（越權輸出＝artifact schema 層阻擋）
+
+| Role | 允許 authority |
+|---|---|
+| Planner | plan／EP synthesis（無 apply） |
+| Implementer | apply（accepted EP 後）／evidence |
+| Reviewer | findings（無 disposition／apply） |
+| Verifier | evidence artifact（無 disposition／apply） |
+| Arbiter | final disposition／adjudication |
+
+authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findings artifact 不含 apply/final disposition；Arbiter artifact 才有 disposition。
+
+### resolver precedence（七步，順序不可換）
+
+1. workflow phase 建立 WorkUnitContract
+2. qualification／judgment／capability hard filter——status=qualified 且（如記錄帶 minimum）effective effort 可確認且達標；conditional 不過 decision hard gate；capability 需求取交集；無記錄＝fail-closed 不通過
+3. binding／carrier compatibility——token kind／effort encoding／transport 可否承載 contract 的 surface
+4. availability tri-state——見下；stale／unknown 不得當 available（probe 或顯性 no-candidate）
+5. ArcOverride constraint——user 當弧指示只約束合格候選的排序／優先，不能降低 contract；要降級須 user 明說接受該 work unit 的 degraded contract
+6. RoutingPolicy soft ranking——合格且可用集合內的穩定偏好（本檔 dispatch 預設段）
+7. 產出 DispatchPlan；高推理＋影像無單一合格 candidate 時＝declared decomposition（兩段式 visual fallback：visual-qualified observer 看原圖、decision-grade Arbiter 只消費 observation artifact，輸出帶 source identity、不確定項、`arbiter_viewed_source=false` 與 `decomposed-not-equivalent`，不得宣稱等價單模型原生視覺裁決）；皆無＝no-candidate report（列缺失條件，禁降 hard requirement）
+
+> judge 裁決 Q2 doctrine：qualification 記錄 `minimum_effective_effort` 缺席＝記錄未要求 effort 軸（非 effort 已確認）；對 `effort_encoding=unsupported` 的 binding 新增 qualified 記錄時，effort 軸永久不可確認——事後無法以任何 requested effort 補認。
+
+### AvailabilitySnapshot（tri-state，volatile——不進 catalog）
+
+`state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。
+
+### ArcOverride／RoutingPolicy／DispatchPlan／DispatchTrace
+
+- **ArcOverride**：user 當弧 candidate constraint／排序指示（本次對話／work order）；selected override 需 echo；指向不合格或不可用 candidate＝零 dispatch＋顯性 failure report（禁靜默換人）。
+- **RoutingPolicy**：合格且可用集合內的穩定排序與 failover policy（現值＝本檔 dispatch 預設段；不擁有 capability truth／availability 觀測）。
+- **DispatchPlan**：selected candidate 四元組＋carrier adapter 路由（selected binding 等於 named preset default＝registry；harness 支援 spawn override＝同 WorkUnitContract／ExecutionPreset 只換 binding；否則 main-or-bridge 並完整裝載 Role／authority／surface 與禁止再委派）＋ExecutionPreset reference（S2 起 `agents/presets.toml`）。
+- **DispatchTrace**：欄位清單見 AvailabilitySnapshot 段（work-unit-local attempt 史）。
+
+<!-- AIR-91 S2：legacy tier × provider 權威表已移除（等價 gate 通過）——wire token／
+     effort encoding／transport 供給事實改由 catalog.toml dispatch_binding 承載；
+     registry pins 改由 agents/presets.toml default binding 承載；dispatch 政策
+     （預設不派／禁派／顯式指定）保留在下方 dispatch 預設段與 external-runtime
+     family 表。 -->
+
+## 旗艦資格條款（五項）
 
 > 定義「有資格被解析為旗艦（full）」的模型能力條款——資格線穩定（大綱層）；同 tier 內強弱排行不進條款（另見下行坐位註記）。候選模型須全部滿足：
 
@@ -29,45 +87,35 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 4. **長弧查證紀律**：查證密度不隨 session 長度衰減；證據指針＝同尺比較後段淺驗反例。
 5. **寫入邊界首改的邊界意識**：首次改動寫入契約／human truth 層時主動設唯一入口與 crash-only 防線；證據指針＝同尺比較唯一刪改入口案。
 
-> **坐位註記**（換代只改此行；現值坐位見上表 full 行，不重複記載）：候選觀察：無；升坐位法：既有比較尺（四軸＋旗艦不可讓五項任務）跑一弧實測。
+> **坐位註記**（換代只改此行；現值坐位＝ZCode 主軸 GLM 5.3，見下方 dispatch 預設段；registry pin 值查 catalog binding）：候選觀察：無；升坐位法：既有比較尺（四軸＋旗艦不可讓五項任務）跑一弧實測。
 
-### dispatch 預設（user 裁定；訂閱現值查 spine `model-runtime-entitlements`——變更改 spine 條目，政策變更改本段）
+## dispatch 預設（user 裁定；訂閱現值查 spine `model-runtime-entitlements`——變更改 spine 條目，政策變更改本段）
 
 **額度現值（V）不住本檔**——派工前「這家現在能不能派」查 memory spine `model-runtime-entitlements`（`~/.agents/memory-spine/`，as-of rolling state；查不到＝探測後派，禁從歷史 instruction 推定）。政策（路由/failover/顯式指定優先權）與機制（計費模型/分帳/窗口形態）仍在本檔；耗盡處置政策見 memory `quota-failover-policy`。
 
 **harness 主軸（user 的開發入口決定主力 model——與下方 external-runtime「角色 → family → profile 映射」同源）：**
 
 - **ZCode 開發（日常主力）**：主 session＝**GLM 5.3**（判斷/規劃/EP/judge；full-tier agent＝registry 釘 glm-5.3〔AIR-43——不隨主 session 漂移〕）；lite subagent 執行檔＝glm-5.3-flash（省成本層）；**內建 `general-purpose`／`Explore` 非 registry——無 pin、繼承主 session 旗艦**（官方設計行為，鏡像 `ref-docs/harness/zcode/cn/docs/qa.md`；例外：ZCode 設定頁可為內建型別單獨釘模型，清空恢復繼承）——lite 角色任務誤派內建型別＝旗艦燒機械段（真實案例：AIR-50 弧考察任務兩次誤派 general-purpose 被 user 抓——「registry lite agent＝flash」不可外推到內建型別）
-- **muse code 開發（user 直用時＝該弧主力 harness）**：muse-spark-1.3 全棧——實作/審查都在該 harness 內；repo 層 AGENTS.md muse 會載入（bridge log 實證；全域 guide 的 muse 部署點未查證）
-- **審查類（ep-review／code-review 等 review agent 層）→ lite 預設（user 裁定；ZCode/GLM 主軸＝glm-5.3-flash、CC 端＝sonnet 詞彙——依 harness 查 tier 表）**：findings 生產層跨家族/跨層品質已實證，判斷價值集中 judge 裁決層；跨家族第二意見仍 muse 優先（非 GLM 視角）；升 full 條件＝高保護面／跨邊界語義面（保護面厚度反轉為升級觸發）；**judge 裁決層不變：固定主 session 旗艦（ZCode 主軸＝GLM 5.3，AIR-24 三防線）（seat 非 full 時依 rules/model-routing.md 角色表升級外派，禁 in-session 降級自判）**；dual-family 鏈 judge 全採納（零否決）時顯性自查三防線#2（sycophancy 下傳——AIR-46 實證零否決×2 未觸發）；外部 runtime 委派承載者＝主 session 背景 Bash（禁 subagent wrapper——見 reviewer 交接契約「承載者」）；registry 釘選＝base 非強制——顯式升級＝換 full-tier 載體（高保護面／跨邊界語義面）；跨家族第二意見換 muse（ZCode 無 spawn-time model 參數）
+- **muse code 開發（user 直用時＝該弧主力 harness）**：muse-spark-1.3 全棧——實作/審查都在該 harness 內（額度貴，非省成本預設——省成本層走 GLM flash）；repo 層 AGENTS.md muse 會載入（bridge log 實證；全域 guide 的 muse 部署點未查證）
+- **審查類（ep-review／code-review 等 review agent 層）→ lite 預設（user 裁定；ZCode/GLM 主軸＝glm-5.3-flash、CC 端＝sonnet 詞彙——wire 值查 catalog.toml binding）**：findings 生產層跨家族/跨層品質已實證，判斷價值集中 judge 裁決層；跨家族第二意見仍 muse 優先（非 GLM 視角）；升 full 條件＝高保護面／跨邊界語義面（保護面厚度反轉為升級觸發）；**judge 裁決層不變：固定主 session 旗艦（ZCode 主軸＝GLM 5.3，AIR-24 三防線）（seat 非 full 時依 rules/model-routing.md 升級外派，禁 in-session 降級自判）**；dual-family 鏈 judge 全採納（零否決）時顯性自查三防線#2（sycophancy 下傳——AIR-46 實證零否決×2 未觸發）；外部 runtime 委派承載者＝主 session 背景 Bash（禁 subagent wrapper——見 reviewer 交接契約「承載者」）；registry 釘選＝base 非強制——顯式升級＝換 full-tier 載體（高保護面／跨邊界語義面；GLM 無 spawn-time model 參數，升級走 carrier adapter 換 binding／載體）；跨家族第二意見換 muse
 - **實作（implement profile bridge 委派）＝預設 muse**（user 修訂拍板）：重實作段 muse、lite 機械段 glm-5.3-flash；**CR 工具鏈 registry agent cr-research 已裁升 full（v3.1——AIR-76 定案，脫離 muse＋glm-5.3-flash 收斂）**；全域研究 fallback＝內建 Explore（繼承主模型，釘 lite 可選非必要）——與「user 直在 muse code 開發」仍是兩種形態（委派 vs harness 切換）
-- **影像需求（vision tier）＝需「支援影像的 model」，現值＝glm-5.3-flash**（user 拍板「影像目前都用 flash」——選它因 5.3 flash 原生多模，非因 lite tier；非所有 lite 款都具影像能力）——muse `--image` 是能力備註（上表），非現值路由
+- **影像需求＝需「支援影像的 model」（native_vision ∩ binding image_transport），現值＝glm-5.3-flash**（user 拍板「影像目前都用 flash」——選它因 5.3 flash 原生多模，非因成本檔；非所有一般款都具影像能力）；CC 端影像需求暫不派（無影像 binding 釘選，inherit 鏈無多模保證）——muse `--image` 是能力備註（external-runtime family 表），非現值路由
 - **codex（OpenAI）→ 預設不派**（額度面 as-of 查 spine——不派屬 ad-hoc 政策非額度因素）——僅 user 顯式指定（例：「codex sol max」；顯式指定多一種形態：`chatgpt-web/*` 走 web 訊息額度 pool，例「codex web high」→ `chatgpt-web/high` 旗艦）。**webgpt 形態專責 review／規劃、禁大型實作**（三條使用約束與失敗態處置見 External-runtime 段 webgpt 專節）。定性甜蜜點實證：control-plane／docs 形態 repo 的全 repo 狀態對抗深審（[/state-review](../state-review/SKILL.md) 的候選家族之一）——產出與 in-family 盲點正交（權威模型／事務完整性／provenance 類問題）；本行是能力備註，不構成取消顯式指定授權；顧問形態（user 說「跟 codex 討論」）見「顧問觸發兩層語義」節（點名即顯式指定已滿足）
-- **CC（Anthropic 詞彙面）→ sonnet／haiku／opus 可派**（user 拍板）；背後接線＝machine-local（user 維護，訂閱變更自換），規範層不記載；未訂閱家禁派（現值 as-of 查 spine `model-runtime-entitlements`）
+- **CC（Anthropic 詞彙面）→ sonnet／haiku／opus 可派**（user 拍板；**預設 sonnet、haiku 基本不用**——user 裁定）；背後接線＝machine-local（user 維護，訂閱變更自換），規範層不記載；未訂閱家禁派（現值 as-of 查 spine `model-runtime-entitlements`）
 
 **額度 failover（僅撞牆時）**：GLM 撞 1308（錯誤訊息含重置時間戳）→ muse 承接執行段；muse 亦乾 → 等 reset（`/at`）或 user 裁定硬跑；任何降級必顯式記錄（AIR-13）
 
 **arc 內改判（user 最新一句為準）**：同弧內 user 改派（例「subagent 改用 5.3 flash」）→ 後段路由以最新指派為準，前一指示不鎖死；改判只影響該弧，不改本檔預設
 
-### harness 部署填法（pins＝部署預設；值抄上表）
+<!-- AIR-91 S2：legacy pins 填法表與 role→requirement 分配表已移除（等價 gate
+     通過）——registry 部署預設（zcode pins／claude 別名釘選／requirement 相容
+     token）單一源＝agents/presets.toml（default binding FK→catalog，
+     sync_agents.py 生成與 --map 對帳；改 pin＝改 presets＋catalog 後重跑
+     sync）。cr-research 於 v3.1 裁升 full（AIR-76 定案，原 lite）——決策記錄
+     保留；新 role 須在 presets.toml 登記 preset，缺登記＝sync fail loud
+     （防靜默 unpinned 上線）。 -->
 
-| tier | harness 填法 |
-|---|---|
-| lite／vision | ZCode：`model: glm-5.3-flash`＋`thoughtLevel: high※`（pins 由 sync_agents 生成，非 authoring）；CC：**用 CC 自己的模型詞彙**——預設 inherit（主 session）、lite 點名 `sonnet`——dispatch 不綁實體 backend id（背後接線 machine-local，不進 doctrine）；**預設＝sonnet／terra 級（haiku／luna 基本不用，user 裁定；inherit 鏈下 parent 低於此級時顯式點名 sonnet）** |
-| full | ZCode：`model: glm-5.3`＋`thoughtLevel: high`（AIR-43 釘選）；CC：`model: opus` 別名釘選（AIR-44——**別名可攜**：背後接線變更時 alias 直接可用、免重釘；lite/vision 維持省略 inherit） |
-| ccr 模式（未啟用） | `Fusion/<tier>`；啟用時 pins 只換值、角色/tier 不動 |
-
-## role → requirement（tier）分配表
-
-| requirement | roles |
-|---|---|
-| full | cr-research |
-| vision | vision-review |
-| lite | code-reviewer, code-reviewer-primed, cross-verify-investigator, impl-lite, lite-verify, mem-distill, spec-miner |
-
-> cr-research 於 v3.1 裁升 full（AIR-76 定案，原 lite）。判斷密集位（judge 裁決／EP 規劃／post-build 編排）不是 role——**主 session 直做**（AIR-24 分工律）；「非 full＋max effort 補償＝未驗證路徑」。本表＝registry roles（`agents/roles/` 同步對象）；rules/model-routing.md 角色→tier 表是廣義面（另含 workflow 功能角色與 harness 內建）——兩表成員集不同屬設計。新 role 須在此表登記 requirement——缺登記＝`sync_agents.py` fail loud（防靜默 unpinned 上線）。
-
-> ZCode 注意：`thoughtLevel` 綁具體 model（inherit 時不生效）；欄位名**不是** `reasoningEffort`——未知欄位靜默忽略。**※ thoughtLevel 但書**：sticky user reasoningLevel 在場時（user-scope `local_setting`），定義的 thoughtLevel **不達 wire**——telemetry `variant` 記 user 層級而非定義值（兩數據點：lite-verify＋vision-review 定義 `high` 皆記 `max`，sticky `max` 在場、主 session rows 同 max）。**model pin 不受影響**（frontmatter model 字串逐字到 wire——vision-review 首筆遙測實證）。full 釘選後（AIR-43）定義 thoughtLevel 進入本但書管轄（sticky 在場記 user 值）——model 軸同樣不受影響。**flip 實驗已跑（AIR-44）**：直寫 `local_setting` DB 改 user level→`low` 後同 session spawn 釘選 agent（定義 `high`）——variant 仍＝`max`（舊快取值，非新 user 值亦非定義值）：①定義值 silent no-op 確認；②spawn 不逐次重讀 local_setting（app 層快取 session 起始值）；「UI 層動態改是否傳播」DB 實驗無法回答（UI 可能同寫記憶體＋DB），user UI 級實驗殘餘——對應**已知 open bug 家族**（zai-org/feedback #339「thought-level changes silently discarded after first selection」＋#306 reasoning effort injection 缺陷；EN/cn 文檔一致、用法無誤）。CC 注意：enum 別名（sonnet/haiku/opus）＝CC 詞彙面 token；背後解析 machine-local，不進 doctrine。
+> ZCode 注意：`thoughtLevel` 綁具體 model（inherit 時不生效）；欄位名**不是** `reasoningEffort`——未知欄位靜默忽略。**thoughtLevel 但書**：sticky user reasoningLevel 在場時（user-scope `local_setting`），定義的 thoughtLevel **不達 wire**——telemetry `variant` 記 user 層級而非定義值（兩數據點：lite-verify＋vision-review 定義 `high` 皆記 `max`，sticky `max` 在場、主 session rows 同 max）。**model pin 不受影響**（frontmatter model 字串逐字到 wire——vision-review 首筆遙測實證）。full 釘選後（AIR-43）定義 thoughtLevel 進入本但書管轄（sticky 在場記 user 值）——model 軸同樣不受影響。**flip 實驗已跑（AIR-44）**：直寫 `local_setting` DB 改 user level→`low` 後同 session spawn 釘選 agent（定義 `high`）——variant 仍＝`max`（舊快取值，非新 user 值亦非定義值）：①定義值 silent no-op 確認；②spawn 不逐次重讀 local_setting（app 層快取 session 起始值）；「UI 層動態改是否傳播」DB 實驗無法回答（UI 可能同寫記憶體＋DB），user UI 級實驗殘餘——對應**已知 open bug 家族**（zai-org/feedback #339「thought-level changes silently discarded after first selection」＋#306 reasoning effort injection 缺陷；EN/cn 文檔一致、用法無誤）。CC 注意：enum 別名（sonnet/haiku/opus）＝CC 詞彙面 token；背後解析 machine-local，不進 doctrine。
 
 ## effort 家族對譯表（跨 runtime 詞彙對照）
 
@@ -96,7 +144,7 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 
 ## External-runtime（family 軸）解析表
 
-> 維護原則：model／effort／容量現值演進只改此段（rule／registry／模板不寫數字與型號——分層：骨架＋詞彙在 `rules/model-routing.md`、現值與映射在本檔）。family／profile 詞彙定義以 rule 為單一源，本段只給權威值。
+> 維護原則：model／effort／容量現值演進只改此段（rule／registry／模板不寫數字與型號——分層：骨架在 `rules/model-routing.md`、現值與映射在本檔）。family／profile 詞彙定義見本檔 glossary，本段只給權威值。
 
 ### 角色 → family → profile 映射（family 表）
 
@@ -119,8 +167,8 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 |--------|-------|--------|----------|------|
 | muse | `muse-spark-1.3` | `xhigh`（user 定；純機械掃描 advisory 可降 `low`/`medium` 省 quota）；深推理可升 `ultra`（CLI alias → provider 最高級＝API `max`，限 1.3 Standard tier；reasoning tokens 佔 output 比例更大，留意輸出上限截斷） | 長 context（以 provider dashboard 為準） | 具視覺輸入 `--image`，跨家族備選；advisory／implement／review 共用此 family；bridge 端預設 pin 與本表對齊（delegate-bridge 弧維護），`--model`／`--effort` passthrough 僅供臨時 override |
 | codex | `gpt-6-astra`（最強檔；Plus 帳號不可用——帳號面 as-of 查 spine）／`gpt-5.6-sol`（原生旗艦）／`gpt-5.6-terra`（日常）／`gpt-5.6-luna`（基本不用）；**5.6 以下不派**（spark 舊代已汰）／**`chatgpt-web/high`（旗艦，user 拍板）**、`chatgpt-web/medium`（web 形態） | 原生 `high`；**web slug 自帶固定 effort**——slug 即檔位，`--effort` 不換 browser model | 原生 ~258K 級、web 256K（以 provider 為準；user 實值 as-of 查 spine `model-runtime-entitlements`）——原生 pool 額度最少故預設不派（見 dispatch 預設段，web 形態同政策）；大 context 任務仍優先 muse；web 池單則訊息上限遠小於窗口——大 payload 單發 turn-0 即死，webgpt 專責 review／規劃（見下方 webgpt 專節） | ad-hoc 選項（僅 user 顯式指定）；**bridge ≥1.0.0 承載（`task --family codex`，AIR-47 吸收）**——`--model`／`--effort` bridge flag 直達；**帳號路徑分界機制（2026-09-12 實證；現行帳號面 as-of 查 spine `model-runtime-entitlements`）**：ChatGPT 帳號登入下 native slug 全不可派（server 拒：`The 'spark' model is not supported when using Codex with a ChatGPT account`）——僅 `chatgpt-web/*` 可用，切回 credits 載具才恢復 native 面；raw 形態＝`-m <id>`＋`-c model_reasoning_effort=<v>`（raw `codex exec` 不收 `--effort`——unexpected argument 實證；codex 無 `ultra`）。**web 形態（webgpt bridge）**：`chatgpt-web/*` 底層 gpt-5.6-sol、吃 ChatGPT web 訊息額度（零 API 費、與原生 slug 的訂閱 Codex 額度分帳）；原生 slug 經 bridge passthrough 額度照舊；**bridge（`127.0.0.1:17841`）＝全 model 單點——launcher 死＝全 fail-closed**。**不帶旗標分兩形態：raw CLI＝落 config 預設（值隨本機 config 漂移，查驗以當下 config 為準）——要 family 表值必須顯式帶旗標，禁信 config 預設；bridge＝不適用——bridge 一律顯式 `-m`，無 `--model` 時自填 adapter 預設 `chatgpt-web/high`（user 定案，delegate-bridge v1.0.2+），config 預設在 bridge 路徑不存在，要換池必須顯式 `--model`**。raw CLI 事實集（事件流／resume／fork／sandbox／spawn stdin 陷阱）見 memory `reference_codex-cli-exec-facts`——官方 companion 已退役（AIR-47），委派一律經 bridge；webgpt 額度池分帳、usage 查詢盲點與五類失敗態處置見下方 webgpt 專節 |
-| glm（bridge） | **native ID only**（case-insensitive canonicalize）：`GLM-5.3`（旗艦，顯式）／`GLM-5.3-Flash`（**bridge 預設——裸委派落 flash**）；舊 alias `sonnet`/`opus` **fail-closed**（terminal failure、exit 1、永不 completed） | —（不收 `--effort`） | 同 tier 表 GLM 欄（高） | `task --family glm`；**呼叫端擁 tier→native 映射**（tier 表 CC 詞彙欄↔ZCode native 欄即映射表——派發前正規化，bridge 不再代解 habit 詞）；寫入委派＝`--write-mode edit`（詳見下方 glm 專節）；實現細節（alias 歷史、VR-1 裁決）＝delegate-bridge repo docs |
-| GLM（in-harness） | 見 tier 表 | 見 tier 表 | 高（遠高於 200K 級，見 provider dashboard） | 沿用 tier→lite／vision 路由，不經 external-runtime 派發；in-harness acceptance reviewer 屬此 |
+| glm（bridge） | **native ID only**（case-insensitive canonicalize）：`GLM-5.3`（旗艦，顯式）／`GLM-5.3-Flash`（**bridge 預設——裸委派落 flash**）；舊 alias `sonnet`/`opus` **fail-closed**（terminal failure、exit 1、永不 completed） | —（不收 `--effort`） | 同 GLM（in-harness）行（高） | `task --family glm`；**呼叫端擁檔位→native 映射**（口語檔位↔native ID——flash→`GLM-5.3-Flash`、旗艦→`GLM-5.3`；映射值查 catalog.toml binding，派發前正規化，bridge 不再代解 habit 詞）；寫入委派＝`--write-mode edit`（詳見下方 glm 專節）；實現細節（alias 歷史、VR-1 裁決）＝delegate-bridge repo docs |
+| GLM（in-harness） | 見 dispatch 預設段＋catalog binding | 見 named preset（presets.toml） | 高（遠高於 200K 級，見 provider dashboard） | 沿用 named preset 路由（lite／vision default binding），不經 external-runtime 派發；in-harness acceptance reviewer 屬此 |
 
 > 容量為「需現況查證」性質，隨 model 世代更新只改本表。
 
@@ -171,7 +219,7 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 
 > **review／advisory 形態條款**（read-only 委派——external second-opinion review、[state-review](../state-review/SKILL.md) 深審腿、advisory 掃描）：以 ①②⑤＋三條專屬判定——**read-only transport**（flag 或工單紅線承載，產出＝findings/報告）、**跨家族成立**（委派對象與 caller 相異家族——external 視角是派發理由本身）、**可重現輸出**（findings 附錨點＋驗收設計，in-family judge 可機械重現）。條件③④（單一 writer／implementation loop 主價值）是 **implement 形態專屬**，不得用以擋 review 形態——否則跨家族審查腿結構性不可達（真實案例：state-review 深審腿依原條文④被擋）。
 >
-> **跨家族解析表**（未指定 family 時；顯式指定與 caller 同 family → fail-loud）：GLM／ZCode caller → muse；codex caller → muse；glm caller → muse；**muse caller → fail-loud**——相異家族僅剩 codex／glm 可選，而兩者皆 explicit-only 不因解析繞過：**停下要求 user 選擇**——顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review（caller-harness full dual-context 承接＋記錄）；禁解析層自選降級。
+> **跨家族解析表**（未指定 family 時；顯式指定與 caller 同 family → fail-loud）：GLM／ZCode caller → muse；codex caller → muse；glm caller → muse；**muse caller → fail-loud**——相異家族僅剩 codex／glm 可選，而兩者皆 explicit-only 不因解析繞過：**停下要求 user 選擇**——顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review（caller-harness decision-grade dual-context 承接＋記錄）；禁解析層自選降級。
 
 > sandbox-error 禁以 `--yolo` 賭重試（父層沙箱不可越權重試）；分類走 auth-failed／environment，修因後重派。
 
@@ -254,12 +302,13 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 | transport 在跑、caller 已收（jobId 在手、wait 掛載中） | jobs.json 狀態 running、ps 進程在 | 背景 Bash 掛阻塞 `wait` 收，禁重派（雙跑） |
 | transport 死中途、wait 空轉（背景 Bash 活、job 無進展） | 進程已亡、jobs.json 停滯、無新輸出 | 機械驗收（working tree＋jobs.json 終局）＋停背景 Bash job（bridge `stop <jobId>`／kill，恢復主體＝caller process） |
 
-### 套用（三路徑都從解析表取值，不寫死絕對 model）
+### 套用（三路徑都從 catalog／presets 取值，不寫死絕對 model）
 
 - **external-runtime 派發前重讀本檔「完成回報收法」節**——收法演進快，禁用 session 記憶／memory desc 派發（真實案例：過期派發事故——看到改版 commit 標題 ≠ 重讀條文，舊詞 resume-to-poll 被 wrapper 契約拒絕）
-- **CC Workflow path**（ultracode；CC 端；ZCode 端＝registry 釘選）：script `agent({model})` 填 literal —— review command agent = inherit（lite 預設；高保護面／跨邊界語義面升 full）；lite 類填 lite tier 對應值（查本檔解析表）
+- **CC Workflow path**（ultracode；CC 端；ZCode 端＝registry 釘選）：script `agent({model})` 填 literal —— review command agent = inherit（lite 預設；高保護面／跨邊界語義面升 full）；lite 類＝named preset 生成檔 inherit（spawn-time 需點名時用 CC 詞彙 `sonnet`——**sonnet／haiku 的 catalog binding＝pending_binding**，補 binding 前由 harness 詞彙面解析）
+- **inherit＝contract-preserving carrier bypass**：spawn 未點名 model 時（CC 8/9 preset 的實際路徑），Role／authority／surface 隨 WorkUnitContract 傳遞、binding 身份記 inherit——不等於降級 contract（正式化為 inherit pseudo-binding＝後續卡）
 - **CC Agent Tool path**（fallback）：spawn `model` param 同上
-- **ZCode path**：pins 釘在 `agents/zcode/` 定義檔 frontmatter（治理見 agents/AGENTS.md registry 段）
+- **ZCode path**：pins 釘在 `agents/zcode/` 定義檔 frontmatter（由 presets.toml default binding 生成，治理見 agents/AGENTS.md registry 段）
 
 spawn 前印出確認：`[Agent] model=<依角色 tier>, max=N, current=M`（max 查本檔並發表——lite 層較寬）。
 

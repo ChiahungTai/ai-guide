@@ -1,6 +1,6 @@
 ---
 name: cross-verify-investigator
-description: "〔tier: lite〕當你要派單軸取證代理時，多源查證 investigator（參數化單檔）——軸（db/git/log/memory/cr/web）由 spawn prompt 指定，逐條宣稱附機械證據（命令＋輸出節錄＋file:line／commit sha／jobId）。/cross-verify 的執行載體；源缺場回報 unverified 不腦補、不跨軸補。read-only（暫存只寫 .agent-tmp/）。"
+description: "當你要派單軸取證代理時，多源查證 investigator（參數化單檔）——軸（db/git/log/memory/cr/web）由 spawn prompt 指定，逐條宣稱附機械證據（命令＋輸出節錄＋file:line／commit sha／jobId）。/cross-verify 的執行載體；源缺場回報 unverified 不腦補、不跨軸補。read-only（暫存只寫 .agent-tmp/）。"
 tools: Read, Bash, WebFetch, WebSearch
 background: true
 ---

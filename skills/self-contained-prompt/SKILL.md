@@ -50,6 +50,19 @@ description: "把工作交給另一個 LLM/session/repo 時，打包成對方讀
 | 建議執行 tier | 條件式路由建議（非斷言、無模型名）：一般（lite）需三條件全滿（保護面厚＋EP 條款機械可判＋審查鏈全開）；旗艦 only 五項不可讓（全文見 model-routing skill「旗艦資格條款」） |
 | workspace／卡歸屬 | 強制欄：repo／WT 路徑＋卡 id 歸屬（runtime workspace 不自管卡歸屬） |
 
+## Dispatch work-order envelope（派工工單追加欄位——AIR-91 S3）
+
+> 派工形態的交接（workflow 產 WorkUnitContract 經 carrier adapter 派 registry agent／bridge／外部 runtime）在標準 schema 之外必帶，缺項＝派工未就緒：
+
+- **WorkUnitContract**：role／authority／judgment_floor／qualifications／capabilities／independence——欄位語義單一源 [model-routing](../model-routing/SKILL.md)，demand 值來自 owning workflow 的 rows
+- **ExecutionPreset reference**：registry slug（`agents/presets.toml`）——帶 reference 不複製內容
+- **binding token**：選定 candidate 的 wire token＋token kind＋requested/effective effort
+- **authority 上限聲明**：輸出契約隨單同行——evidence 無 disposition/apply、findings 無 apply/final disposition、Arbiter 才有 disposition
+- **input envelope**：視覺腿＝source identity/hash＋transport binding＋delivery receipt，由 dispatcher（派工方）產生；`arbiter_viewed_source` 只能由 receipt 推導
+- **禁止再委派**：work order 收方不得再 spawn／再派子任務（委派單向；跨 runtime 亦同）
+
+**不複製 catalog values**（model 值／effort 詞彙表）作新 source——帶指針，值以 catalog／presets 為準（與「drift 防護」同族：工單是快照，內嵌值與單一源脫鉤）。foreign runtime 工單的十節硬欄位模板見 [work-order.md](../_common/work-order.md)。
+
 ## 決策脈絡原則
 
 > **核心：已交代就附上，重點在 self-contained**（不搞「自動摘 vs 明指」二分）。

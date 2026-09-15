@@ -648,3 +648,195 @@ def test_vocab_dead_scan_entry_important(tmp_path, monkeypatch):
     findings = css.check_forbidden_pattern(_vocab_inv())
     dead = [f for f in findings if "scan entry 不存在" in f[2]]
     assert dead, "死 entry 應各發一條 important"
+
+
+# ---------------------- model_routing_current_doctrine（AIR-91 S4A）
+
+
+def _doctrine_inv():
+    return next(
+        i for i in css.INVARIANTS if i["id"] == "model_routing_current_doctrine"
+    )
+
+
+def _write_doctrine_source(tmp_path):
+    d = tmp_path / "skills" / "model-routing"
+    d.mkdir(parents=True)
+    (d / "SKILL.md").write_text(
+        "AIR-91 doctrine：WorkUnitContract schema；供給事實＝catalog.toml；"
+        "部署預設＝presets.toml",
+        encoding="utf-8",
+    )
+
+
+def _write_doctrine_skeleton(tmp_path):
+    """建齊 invariant 的 scan entries——避免 dead-entry findings 污染計數斷言。"""
+    _write_doctrine_source(tmp_path)
+    for entry in ("ai-development-guide.md", "AGENTS.md"):
+        (tmp_path / entry).write_text("ok\n", encoding="utf-8")
+    for d in ("rules", "agents", "hooks"):
+        (tmp_path / d).mkdir(exist_ok=True)
+
+
+def test_doctrine_tier_table_header_detected(tmp_path, monkeypatch):
+    """AIR-91 S4：舊 tier 權威表 header（tier → (model,effort)／tier × provider）
+    重現於任何 active .md＝current-doctrine drift（S2 已移除的權威形）。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "skills" / "guide.md").write_text(
+        "## tier → (model, effort)\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f
+        for f in css.check_forbidden_pattern(_doctrine_inv())
+        if "guide.md" in f[2]
+    ]
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+
+
+def test_doctrine_tier_provider_header_detected(tmp_path, monkeypatch):
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "rules" / "x.md").write_text(
+        "### tier × provider 權威表\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "x.md" in f[2]
+    ]
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+
+
+def test_doctrine_role_requirement_header_detected(tmp_path, monkeypatch):
+    """role → requirement（tier）分配表 header＝舊 role→tier 兩跳權威形。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "skills" / "guide.md").write_text(
+        "## role → requirement（tier）分配表\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f
+        for f in css.check_forbidden_pattern(_doctrine_inv())
+        if "guide.md" in f[2]
+    ]
+    assert len(findings) == 1
+
+
+def test_doctrine_removal_marker_comment_not_flagged(tmp_path, monkeypatch):
+    """S2 移除標記註解（<!-- ... legacy tier × provider 權威表已移除 -->）
+    合法在場——header 錨定不誤中歷史標記（historical-exclusion）。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "skills" / "model-routing" / "SKILL.md").write_text(
+        "WorkUnitContract；catalog.toml；presets.toml\n"
+        "<!-- AIR-91 S2：legacy tier × provider 權威表已移除（等價 gate 通過）"
+        "——legacy pins 填法表與 role→requirement 分配表已移除 -->\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    assert css.check_forbidden_pattern(_doctrine_inv()) == []
+
+
+def test_doctrine_workflow_equals_tier_matrix(tmp_path, monkeypatch):
+    """workflow 整體綁單一 tier（post-build=full 形）＝誤導整鏈單模型的舊寫法。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "skills" / "guide.md").write_text(
+        "舊寫法：post-build=full\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f
+        for f in css.check_forbidden_pattern(_doctrine_inv())
+        if "guide.md" in f[2]
+    ]
+    assert len(findings) == 1
+
+    (tmp_path / "skills" / "guide.md").write_text(
+        "舊寫法：judge-review＝lite\n", encoding="utf-8"
+    )
+    findings = [
+        f
+        for f in css.check_forbidden_pattern(_doctrine_inv())
+        if "guide.md" in f[2]
+    ]
+    assert len(findings) == 1
+
+
+def test_doctrine_vision_tier_detected(tmp_path, monkeypatch):
+    """vision tier＝把 capability filter 與強度列並排的舊單軸語義。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "agents" / "x.md").write_text(
+        "vision tier 掛 CR 白名單\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "x.md" in f[2]
+    ]
+    assert len(findings) == 1
+
+
+def test_doctrine_role_frontmatter_tier_tag_detected(tmp_path, monkeypatch):
+    """S2 移除的 description tier tag 回歸（frontmatter `tier:` 形）被抓。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "agents" / "roles").mkdir(parents=True)
+    (tmp_path / "agents" / "roles" / "r.md").write_text(
+        "---\nname: r\ntier: full\n---\nbody\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = [
+        f
+        for f in css.check_forbidden_pattern(_doctrine_inv())
+        if "roles" in f[2]
+    ]
+    assert len(findings) == 1
+
+
+def test_doctrine_legal_compat_forms_not_flagged(tmp_path, monkeypatch):
+    """相容形不誤報：presets requirement token 語義、lite-verify slug、
+    handoff「建議執行 tier」欄、EP 規模 full、非 header 的 tier 詞彙 prose。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "agents" / "AGENTS.md").write_text(
+        "requirement 相容 token（full/vision/lite）定義在 presets.toml allow_lists\n"
+        "| lite-verify | lite | ✅ |\n"
+        "| vision-review | vision | ✅ |\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "skills" / "handoff.md").write_text(
+        "| 建議執行 tier | 條件式路由建議（非斷言、無模型名） |\n"
+        "規模分級：standard/full\n"
+        "spawn 並發以將 spawn 的 agent 所在 tier 為準（表在 model-routing）\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    assert css.check_forbidden_pattern(_doctrine_inv()) == []
+
+
+def test_doctrine_anchor_missing_critical(tmp_path, monkeypatch):
+    """定義源 drift 自檢：新 doctrine 錨點（must_contain_all）缺席＝critical。"""
+    _write_doctrine_skeleton(tmp_path)
+    (tmp_path / "skills" / "model-routing" / "SKILL.md").write_text(
+        "（契約被洗掉的 drifted 內容）", encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_forbidden_pattern(_doctrine_inv())
+    assert findings
+    assert all(f[1] == "critical" for f in findings)
+    assert any("WorkUnitContract" in f[2] for f in findings)
+
+
+def test_doctrine_source_absent_important(tmp_path, monkeypatch):
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_forbidden_pattern(_doctrine_inv())
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+    assert "source 檔不存在" in findings[0][2]
+
+
+def test_doctrine_dead_scan_entry_important(tmp_path, monkeypatch):
+    """scan entry 死掉＝guard 面縮小，不得靜默（同 bridge_model_vocab F6 語義）。"""
+    _write_doctrine_source(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_forbidden_pattern(_doctrine_inv())
+    dead = [f for f in findings if "scan entry 不存在" in f[2]]
+    assert dead
+    assert all(f[1] == "important" for f in dead)

@@ -140,7 +140,7 @@ review finding 可經多層驗證，**各層都可能錯**：
 
 2. **agent 數量 = max-agents**（預設 **3**，與 [build](../implement/SKILL.md) 一致；受並發上限 cap，[model-routing](../model-routing/SKILL.md) 並發表）。
 
-3. **agent model 預設 = 主 session（inherit）**（ZCode 端按角色 tier 釘選——review command 系 lite 釘 flash，AIR-43 不隨主 session 漂移；CC＝inherit）——review **command** agent＝[model-routing](../../rules/model-routing.md) 角色 tier 表的 **lite tier**（lite 預設，user 09-09；升 full 條件＝高保護面／跨邊界語義面）；非 review command 的輕量 agent（verify / research / explore）走 lite tier（同表）。
+3. **agent candidate＝Reviewer work unit 解析（非裸 model 名）**：qualification=`review_findings`＋authority=findings（無 disposition/apply——輸出契約見 [model-routing](../model-routing/SKILL.md) Role→authority allow-list）；judgment_floor 預設 **execution**（user 09-09 審查層預設——findings 生產層跨家族/跨層品質已實證），高保護面／跨邊界語義面升 **decision**（同一 Reviewer Role 保持 findings authority，只有 binding 換——SM-6）。binding/candidate 照 model-routing resolver（catalog qualification 硬過濾→presets/registry default→availability→override→policy）；registry default pin 不隨主 session 漂移（AIR-43）、CC 端 inherit。非 review command 的輕量 agent（verify／anchor 批次／research／explore）＝execution 腿（qualifications 依 workload，值查 catalog）。
 
 4. **預設 3 agent = ① clean（Fresh，無 anchor）+ ② UC-anchored（Intent）+ ③ Correctness（邊界正確性 lens）**：三 lens 正交（**錨定方式不同**）、同時跑。
    - **① clean（Fresh）** 抓作者 rationalize〔bias〕—— 無 anchor 讀 code 自身 merits（**code smell 視角**），不被「該做 X」綁住

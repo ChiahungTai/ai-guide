@@ -1,17 +1,23 @@
 ---
 id: AIR-91
 title: 依工作階段能力自動選擇合適模型
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-14 08:36'
-updated_date: '2026-09-15 01:10'
+updated_date: '2026-09-15 14:30'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/09-15-model-capability-routing/ep.md
-  - ai-analysis/_tasks/09-15-model-capability-routing/index.html
+  - ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md
+  - ai-analysis/_tasks/done/09-15-model-capability-routing/index.html
 ordinal: 77000
 ---
+
+## Final Summary
+
+使用者行為：呼叫 execution-plan／implement／judge-review／post-build 時，系統依每階段 WorkUnitContract（Role／authority／judgment floor／qualification／capabilities）自動解析候選（catalog 供給×presets 部署×availability snapshot），判斷密集位不再被座位或額度靜默降級、機械位不浪費 decision 檔——全程一命令入口。
+
+落地：S1 catalog.toml＋resolver protocol；S2 presets.toml＋projection 等價切換（9-agent pins 逐 byte 不變）；S3 十二檔 work-unit doctrine＋accepted-EP 硬閘門＋視覺證據 envelope；S4 manifest＋doctrine gate＋導航收斂。驗證：每段 scoped judge（修補全落地）＋全套 510 tests＋行為實驗 30/30 PASS 零 regression＋外部 review 三腿（codex×2 零 finding、muse 5 findings 全 ✅ apply）＋三 harness deploy 完成＋fresh-load 驗證。殘項（後續卡候選）：effort-domain 機械 parity gate、inherit pseudo-binding 正式化、muse bundle 89% 瘦身。
 
 ## Description
 
@@ -25,7 +31,7 @@ ordinal: 77000
 ## 工單身份
 
 - baseline：`ai-guide@df3741b81e90dad01ed30fb383750ad55630998d`
-- EP：`ai-analysis/_tasks/09-15-model-capability-routing/ep.md`
+- EP：`ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md`
 - 背景材料：`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult.md`、`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult-圖解說明.md`
 
 ## 目標

@@ -80,7 +80,7 @@
 <button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
 <nav id="sidebar" aria-label="章節導覽">
   <div class="brand">
-    <span class="badge plan">📋 計畫</span>
+    <span class="badge done">✅ Done</span>
     <h1>AIR-91 — 依工作階段能力自動選擇合適模型</h1>
     <div class="meta">baseline df3741b81e90<br>EP sha256 5fff75cc2549</div>
   </div>
@@ -114,7 +114,7 @@
 </section>
 
 <section id="s2">
-  <h2>新的責任邊界 <span class="tag-plan">S1–S3 計畫中</span></h2>
+  <h2>新的責任邊界 <span class="tag-plan">S1–S4 已實作</span></h2>
   <div class="sub">把供給、需求、部署與即時狀態分開，避免不同變更原因互相污染</div>
   <div class="cardrow">
     <div class="card"><div class="t c">Workflow owns demand</div><p>每個 phase 產生 WorkUnitContract：Role、authority、qualification、judgment、capabilities、surface、independence、escalation。</p></div>
@@ -132,7 +132,7 @@
     </tbody>
   </table>
   <div class="frame-wrap degraded">
-    <div class="bar"><span>架構圖待 hook 2 裝入</span></div>
+    <div class="bar"><span>架構圖待結案弧裝入</span></div>
     <div class="degraded-body"><b>本階段刻意不產渲染管線圖。</b>實作與 post-build 收斂後，才依終態產生正式視圖，避免計畫圖在架構修正後失真。</div>
   </div>
 </section>
@@ -171,6 +171,16 @@
     <li>S3 以 fresh-context behavior experiment 驗 instruction，而不是把 parser test 當成模型行為證據。</li>
     <li>S4 先跑 code review chain，再跑 instruction docs review chain；兩邊都收斂才進 finalization。</li>
   </ul>
+  <h3>實作落點（hook 2 快照——S1–S4 完成）</h3>
+  <table>
+    <thead><tr><th>段</th><th>落點</th><th>狀態</th></tr></thead>
+    <tbody>
+      <tr><td>S1 供給</td><td>model catalog（identity／binding／qualification）與 resolver protocol（hard-filter→compatibility→override→DispatchPlan）以 TDD 落地</td><td>✅ scoped judge 全過</td></tr>
+      <tr><td>S2 投影</td><td>ExecutionPreset schema＋sync_agents projection 上線；legacy/new 等價 gate 綠後切換、刪舊表</td><td>✅ scoped judge 全過（judge 最小補註已落地）</td></tr>
+      <tr><td>S3 工作流</td><td>十二個 workflow／governance 檔改寫為 work-unit doctrine（authority、fallback、視覺證據）</td><td>✅ scoped judge 全過（三處單行修補落地）</td></tr>
+      <tr><td>S4 合流</td><td>current-consumer manifest 對帳＋單一源 gate 擴充＋導航文件收斂</td><td>✅ 殘留掃 CLEAN；deploy 已完成（3/3 targets、fresh-load 驗證過）</td></tr>
+    </tbody>
+  </table>
 </section>
 
 <section id="s5">
@@ -186,15 +196,28 @@
       <tr><td>多個 user-level targets 部署一半</td><td>先展示全部 diff/hash 並另取 deploy 授權；保存舊 bytes，失敗 repair-all 或 rollback-all</td></tr>
     </tbody>
   </table>
-  <div class="note">本 EP 只授權規劃；目前沒有開始實作、部署或 commit。AIR-91 維持 To Do。</div>
+  <h3>驗證證據（hook 2 快照）</h3>
+  <table>
+    <thead><tr><th>項目</th><th>結果</th><th>receipt／manifest</th></tr></thead>
+    <tbody>
+      <tr><td>四段 scoped judge（外派 GLM-5.3）</td><td>全過——各段 gate 陳述放行至下一段（S2 兩處、S3 三處最小修補已落地複驗）</td><td><code>.agent-tmp/air91-s1/judge-s1-glm.out</code>、<code>air91-s2/judge-s2-glm.out</code>、<code>air91-s3/judge-s3-glm.out</code>；S4 收斂 receipts <code>air91-s4*/</code></td></tr>
+      <tr><td>S2 等價 gate</td><td>legacy/new 切換點 98 passed；S4 收斂後全套 155 passed（基線 78）</td><td><code>.agent-tmp/air91-s2/final-pytest.txt</code>、<code>air91-s4a/verify-pytest.txt</code></td></tr>
+      <tr><td>behavior experiment（S3）</td><td>30/30 PASS、0 FAIL——IT-01/02/04/07/08 × control/treatment × 3 reps；<b>B 方案縮減</b>：IT-03/05/06/09 未執行（user 09-15 拍板）</td><td><a href="references/instruction-testing.md">references/instruction-testing.md</a></td></tr>
+      <tr><td>current-source 殘留掃</td><td>CLEAN——舊 tier 詞彙命中皆有 disposition，封閉集合收斂</td><td><a href="references/current-consumers.md">references/current-consumers.md</a>；掃描 receipts <code>.agent-tmp/air91-s4a/scan-*.txt</code></td></tr>
+      <tr><td>deploy</td><td><b>pending AUTH</b>——dryrun 已備、舊 bytes 已存；未取得當次授權不部署</td><td><code>.agent-tmp/air91-s4/deploy-dryrun.out</code>、<code>air91-s4/deploy-backup/</code></td></tr>
+    </tbody>
+  </table>
+  <div class="note">S1–S4 收斂＋外部 review（codex×2 零 finding／muse 5 全✅）＋judge apply＋memory 蒸餾完成；deploy 已完成並驗證；卡 Done。</div>
 </section>
 
 <section id="s6">
   <h2>回源</h2>
   <div class="sub">本殼是人類 viewport；EP 與研究底稿才是實作者的 source of record</div>
   <p class="src">
-    EP：<a href="ep.md">ai-analysis/_tasks/09-15-model-capability-routing/ep.md</a><br>
-    研究：<a href="references/research.md">ai-analysis/_tasks/09-15-model-capability-routing/references/research.md</a><br>
+    EP：<a href="ep.md">ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md</a><br>
+    研究：<a href="references/research.md">ai-analysis/_tasks/done/09-15-model-capability-routing/references/research.md</a><br>
+    實驗 manifest：<a href="references/instruction-testing.md">ai-analysis/_tasks/done/09-15-model-capability-routing/references/instruction-testing.md</a><br>
+    consumer manifest：<a href="references/current-consumers.md">ai-analysis/_tasks/done/09-15-model-capability-routing/references/current-consumers.md</a><br>
     task baseline：df3741b81e90dad01ed30fb383750ad55630998d<br>
     projection source：sha256:5fff75cc2549a2d0d11fc5e69d829d1936148d9f076aa2c02afda0b750e2265f<br>
     卡：AIR-91

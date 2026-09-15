@@ -17,7 +17,7 @@ when_to_use: "Illustrate technical concepts, architecture, or processes. Also st
 |------|------|------|------|
 | **Console**（預設） | ASCII | 精簡（3-5 章，每章 3-5 點） | 即時討論、快速查詢 |
 | **MD** | Mermaid（`skill: "mermaid"`） | 詳盡（多級標題、完整展開） | 深度分析、知識沉澱 |
-| **HTML**（opt-in） | 報告殼＋mermaid（委派 [illustrate-html-mode.md](../_common/illustrate-html-mode.md)；殼生成分工二 tier〔full 篩選敘事→vision 驗收〕＋機械底稿規則見該檔「殼生成分工」） | 展示級（報告殼＝sidebar 順序敘事；圖可 zoom/主題跟隨） | 分享 / demo / re-onboard / drift 審查／**報告殼**——AI 文檔產物（EP 計畫、實作完成報告、module 現況、目錄導覽、決策 viewport）的人類 viewport（`@ep`／實作報告／`@module`／`@dir` + html）。殼內圖**按圖選載體**（mermaid／HTML 塊——判準見 [diagram-selection](../diagram-selection/SKILL.md)） |
+| **HTML**（opt-in） | 報告殼＋mermaid（委派 [illustrate-html-mode.md](../_common/illustrate-html-mode.md)；殼生成分工〔decision 篩選敘事→vision 驗收〕＋機械底稿規則見該檔「殼生成分工」） | 展示級（報告殼＝sidebar 順序敘事；圖可 zoom/主題跟隨） | 分享 / demo / re-onboard / drift 審查／**報告殼**——AI 文檔產物（EP 計畫、實作完成報告、module 現況、目錄導覽、決策 viewport）的人類 viewport（`@ep`／實作報告／`@module`／`@dir` + html）。殼內圖**按圖選載體**（mermaid／HTML 塊——判準見 [diagram-selection](../diagram-selection/SKILL.md)） |
 
 **執行鐵律**：Console 禁止 Mermaid 語法。MD 禁止 ASCII 圖表。HTML 是**寫檔模式**——僅明示 `html` 或增益判斷時觸發；Console 語境明示 html = 切換輸出模式（檔案交付＋路徑回報），永不 inline 渲染；渲染工具缺場 → 降級 MD Mermaid 並回報（細節見 illustrate-html-mode.md）。違反 = 指令執行失敗。
 
@@ -75,7 +75,7 @@ use cases + 情境矩陣分析（服務 mode A/C 的**步驟**）見 [illustrate
 
 ## 智能並行處理
 
-檔案 ≥ 5 時，Agent tool 並行處理（model 依 [model-routing](../../rules/model-routing.md) 角色 tier——平行分組＝lite）：按關聯性分組 → 每組 spawn Agent → 整合結果。
+檔案 ≥ 5 時，Agent tool 並行處理（model 依 [model-routing](../../rules/model-routing.md) WorkUnitContract——平行分組＝execution floor 的 registry agents）：按關聯性分組 → 每組 spawn Agent → 整合結果。
 
 平行處理架構：[illustrate-parallel-architecture.md](../_common/illustrate-parallel-architecture.md)
 

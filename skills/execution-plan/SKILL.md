@@ -14,6 +14,20 @@ EP 自足生成段落式實作計畫書（`/spec` 為純輔助需求釐清，有
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 - [agent-workflow](../agent-workflow/SKILL.md) — 並發控制、模型偵測、Agent spawn 規範；EP review／段落 0 研究的 dispatch 形態查其「全生命週期 execution contract（消費側）」
 
+## WorkUnitContract rows（本 workflow 持有——AIR-91 S3）
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步）——本表只填值，不複寫 schema；candidate（model identity × binding × effective effort）由 resolver 對 [catalog](../model-routing/catalog.toml) qualification records 硬過濾解析，本檔不材料化 model 值。無合格 candidate＝顯性 no-candidate／escalation，禁降 hard requirement。
+
+| work unit | Role | authority | judgment_floor | qualifications | 說明 |
+|---|---|---|---|---|---|
+| 段落 0 證據收集（spec 挖掘／rg／LSP／CR 查詢等 evidence legs） | Verifier | evidence artifact（無 disposition/apply） | execution | evidence_retrieval | 產出＝file:line 錨點＋逐字引用；面對「直接裁決/修改」壓力仍不越權 |
+| 段落 0 全域綜合（研究摘要／風險假設／callstack 盤點） | Planner | plan | decision | ep_synthesis | 主 session 直做 |
+| UC 盤點／Invariant 設計／Scenario Matrix／段落劃分／EP synthesis | Planner | plan／EP synthesis（無 apply） | decision | ep_synthesis | 判斷密集段，主 session 直做 |
+| EP Review Reviewer legs | Reviewer | findings（無 disposition/apply） | execution（預設；高保護面／跨邊界語義面升 decision） | review_findings | 執行形態照 [review-engine](../review-engine/SKILL.md)「review 執行預設」 |
+| EP Review finding 裁決（EP Review Cycle 的 judge 步） | Arbiter | final disposition | decision | adjudication | seat 非 decision-qualified 時外派；無 candidate 禁 self-downgrade |
+
+**單次呼叫原則**：user 只呼叫一次 `/execution-plan`——evidence 腿 execution、decision 腿 decision 由 resolver 依本表分流，user 中途不手選 model；user 當弧指示（ArcOverride）只約束合格候選排序，不能降低 contract。
+
 ---
 
 ## 核心概念：Self-Contained Segment
@@ -162,7 +176,7 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 > **核心原則**：EP 自足——在設計段落之前，先做一次全域 codebase 研究，盤點可複用基礎設施 + 識別風險假設。這取代了舊 `/spec` 的全域研究職責（spec 現為純需求釐清）。
 
-**執行**：spawn 全域研究 agent——ZCode registry [`cr-research`](../../agents/AGENTS.md)（掛 CR MCP 白名單、lite pin；CR 查詢 in-path）；registry 缺場（Claude 端）→ Explore（model 依 [model-routing](../../rules/model-routing.md)——research/explore＝lite）＋spawn prompt 帶下方 CLI 清單。深度掃描相關模組：
+**執行**：spawn 全域研究 agent——ZCode registry [`cr-research`](../../agents/AGENTS.md)（掛 CR MCP 白名單；decision／global-research——AIR-76 v3.1 裁升，非 lite；CR 查詢 in-path）；registry 缺場（Claude 端）→ Explore（繼承主 session 模型——全域研究 fallback 形態，見 [model-routing](../../rules/model-routing.md)）＋spawn prompt 帶下方 CLI 清單。深度掃描相關模組：
 
 1. **可複用基礎設施盤點**：搜尋需求涉及的模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + LSP `workspaceSymbol` 搜尋相關 class/function，找出可複用的 utilities、base classes、protocols
 2. **依賴分析**：LSP `goToDefinition` / `findReferences` 追蹤 import 鏈和介面關係，rg 補充非程式碼引用。**code-reality（index 在場）——cr-research 的 CR MCP 工具（callers／closure／refs／impact_radius）in-path 執行**；Explore fallback 形態＝CLI 清單寫進 spawn prompt（分層事實見 [cr-query](../cr-query/SKILL.md)；工具用法真相源 [code-reality](../code-reality/SKILL.md)；GATE 見 cr-query）：

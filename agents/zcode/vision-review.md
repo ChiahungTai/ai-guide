@@ -1,6 +1,6 @@
 ---
 name: vision-review
-description: "〔tier: vision〕當你要驗收非文件類視覺產物（mermaid 渲染 PNG、UI screenshot、圖表）時，視覺驗收代理——讀本地圖檔逐張描述所見、對照預期回報差異；遠端 URL 圖先 curl 落地再讀。文件類（pptx/docx/xlsx/pdf/poster/chart）驗收由已安裝的 document-skills 插件 judge agent 承接，非此角色。read-only。"
+description: "當你要驗收非文件類視覺產物（mermaid 渲染 PNG、UI screenshot、圖表）時，視覺驗收代理——讀本地圖檔逐張描述所見、對照預期回報差異；遠端 URL 圖先 curl 落地再讀。文件類（pptx/docx/xlsx/pdf/poster/chart）驗收由已安裝的 document-skills 插件 judge agent 承接，非此角色。read-only。"
 tools: Read, Bash, mcp__plugin_code-reality_code-reality__refs, mcp__plugin_code-reality_code-reality__callers, mcp__plugin_code-reality_code-reality__closure, mcp__plugin_code-reality_code-reality__impact_radius
 background: true
 model: glm-5.3-flash

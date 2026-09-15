@@ -1,0 +1,335 @@
+# model supply catalog——AIR-91 S1
+#
+# 單一源：穩定供給事實（ModelIdentity／DispatchBinding／qualification records／
+# allow-list metadata）。SKILL.md doctrine 與 workflow demand 只引用、禁重抄值。
+#
+# effort 值域三處並存（本檔 effort_values／SKILL.md effort 家族對譯表／
+# sync_agents.py _EFFORT_ORDINAL）——今日一致；改任一處須同步另兩處
+# （機械 parity gate＝後續卡承接）。
+#
+# 所有權邊界（loader fail-loud 拒絕下列欄位）：
+# - Role／work_unit／authority／registry slug／preset＝demand（workflow）／
+#   deployment（presets.toml，S2）所有，不住本檔
+# - quota／reset／account／available-now 等 volatile state＝AvailabilitySnapshot
+#   輸入（memory spine／runtime probe），禁入 qualification 兩欄
+#
+# 詞彙：qualification 兩正交欄 status × evidence_source；conditional 是資格狀態
+# 非證據來源。availability 不出現在任一欄。
+# candidate＝(model_identity, dispatch_binding, requested_effort, effective_effort)
+# ——每個 wire token 住 binding，token_kind 分欄禁混型。
+
+schema_version = 1
+
+[allow_lists]
+# workload 詞彙（qualification records 引用；擴充＝資料層編輯）
+workloads = [
+  "ep_synthesis",
+  "adjudication",
+  "implement_from_accepted_ep",
+  "evidence_retrieval",
+  "review_findings",
+  "visual_observation",
+]
+# harness alias 詞彙（token_kind=harness_alias 的 token 限本表——CC 詞彙面，
+# user 裁定；背後接線 machine-local 不進本檔）
+harness_alias_tokens = ["sonnet", "haiku", "opus"]
+
+# ---- ModelIdentity（穩定概念 key；wire token 一律住 dispatch_binding）----
+
+[[model_identity]]
+id = "glm-5.3"
+label = "GLM 5.3"
+
+[[model_identity]]
+id = "glm-5.3-flash"
+label = "GLM 5.3 Flash"
+[[model_identity.capability]]
+name = "native_vision"
+evidence = "repo_observed"
+
+[[model_identity]]
+id = "claude-opus"
+label = "Claude Opus"
+
+[[model_identity]]
+id = "chatgpt-web-high"
+label = "ChatGPT Web High"
+
+[[model_identity]]
+id = "gpt-5.6-sol"
+label = "Sol"
+
+[[model_identity]]
+id = "gpt-6-astra"
+label = "Astra"
+
+# fabel：xai 家——wire token / dispatch 路徑未定（tier 表僅列家族欄），
+# 先登記 identity＋qualification，binding 待路徑定案後補（無 binding＝零 candidate，
+# fail-closed）
+[[model_identity]]
+id = "fabel"
+label = "Fabel"
+
+[[model_identity]]
+id = "muse-spark-1.3"
+label = "Muse Spark 1.3"
+[[model_identity.capability]]
+name = "native_vision"
+evidence = "repo_observed"
+
+# ---- DispatchBinding（carrier/surface 可用 wire token；native／alias／slug 分欄）----
+
+[[dispatch_binding]]
+id = "zcode-registry-glm-5.3"
+model_identity = "glm-5.3"
+carrier = "zcode"
+surface = "agent-definition"
+token = "glm-5.3"
+token_kind = "provider_native"
+effort_encoding = "field" # thoughtLevel（定義檔欄位）
+effort_values = ["low", "high", "max"]
+
+[[dispatch_binding]]
+id = "zcode-registry-glm-5.3-flash"
+model_identity = "glm-5.3-flash"
+carrier = "zcode"
+surface = "agent-definition"
+token = "glm-5.3-flash"
+token_kind = "provider_native"
+effort_encoding = "field"
+effort_values = ["low", "high", "max"]
+transport = ["image_transport"] # Read 圖檔呈現（vision-review 實戰 repo-observed）
+
+[[dispatch_binding]]
+id = "cc-registry-opus"
+model_identity = "claude-opus"
+carrier = "claude-code"
+surface = "agent-definition"
+token = "opus"
+token_kind = "harness_alias"
+effort_encoding = "param" # CC effort＝spawn-time enum（非定義檔欄位）
+effort_values = ["low", "high"]
+
+[[dispatch_binding]]
+id = "bridge-glm-5.3"
+model_identity = "glm-5.3"
+carrier = "bridge"
+surface = "glm-family"
+token = "GLM-5.3"
+token_kind = "provider_native" # native ID only（case-insensitive canonicalize）
+effort_encoding = "unsupported" # bridge 拒收 --effort
+
+[[dispatch_binding]]
+id = "bridge-glm-5.3-flash"
+model_identity = "glm-5.3-flash"
+carrier = "bridge"
+surface = "glm-family"
+token = "GLM-5.3-Flash"
+token_kind = "provider_native"
+effort_encoding = "unsupported"
+
+[[dispatch_binding]]
+id = "bridge-codex-web-high"
+model_identity = "chatgpt-web-high"
+carrier = "bridge"
+surface = "codex-family"
+token = "chatgpt-web/high"
+token_kind = "carrier_slug"
+effort_encoding = "slug_fixed" # slug 自帶固定 effort——旗標不換 browser model
+fixed_effort = "high"
+
+[[dispatch_binding]]
+id = "bridge-codex-sol"
+model_identity = "gpt-5.6-sol"
+carrier = "bridge"
+surface = "codex-family"
+token = "gpt-5.6-sol"
+token_kind = "provider_native"
+effort_encoding = "param"
+effort_values = ["minimal", "low", "medium", "high", "xhigh"]
+
+[[dispatch_binding]]
+id = "bridge-codex-astra"
+model_identity = "gpt-6-astra"
+carrier = "bridge"
+surface = "codex-family"
+token = "gpt-6-astra"
+token_kind = "provider_native"
+effort_encoding = "param"
+effort_values = ["minimal", "low", "medium", "high", "xhigh"]
+
+[[dispatch_binding]]
+id = "bridge-muse-spark-1.3"
+model_identity = "muse-spark-1.3"
+carrier = "bridge"
+surface = "muse-family"
+token = "muse-spark-1.3"
+token_kind = "provider_native"
+effort_encoding = "param"
+effort_values = ["low", "medium", "high", "xhigh", "ultra"]
+transport = ["image_transport"] # --image 輸入（repo-observed）
+
+# ---- qualification records（workload × model_identity）----
+# 初始記錄（EP「已定設計」#6）：GLM 5.3／ChatGPT Web High／Sol／Astra／Opus／
+# Fabel 對 ep_synthesis/adjudication＝qualified＋user_observed；Muse Spark 1.3＝
+# conditional＋user_observed（綁 binding＋最低 effective effort）；GLM Flash 對
+# visual_observation＝qualified＋user_observed。
+# Sol 記 minimum=high：user 觀察檔位「medium-high」保守取高緣（fail-closed）。
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "glm-5.3"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "glm-5.3"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "chatgpt-web-high"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+minimum_effective_effort = "high" # slug 固定＝high，effective 可確認
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "chatgpt-web-high"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+minimum_effective_effort = "high"
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "gpt-5.6-sol"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+minimum_effective_effort = "high"
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "gpt-5.6-sol"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+minimum_effective_effort = "high"
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "gpt-6-astra"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "gpt-6-astra"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "claude-opus"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "claude-opus"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "fabel"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "fabel"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "muse-spark-1.3"
+status = "conditional"
+evidence_source = "user_observed"
+binding_scope = ["bridge-muse-spark-1.3"]
+minimum_effective_effort = "xhigh"
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "muse-spark-1.3"
+status = "conditional"
+evidence_source = "user_observed"
+binding_scope = ["bridge-muse-spark-1.3"]
+minimum_effective_effort = "xhigh"
+
+[[qualification]]
+workload = "visual_observation"
+model_identity = "glm-5.3-flash"
+status = "qualified"
+evidence_source = "user_observed"
+binding_scope = ["zcode-registry-glm-5.3-flash"]
+
+# ---- F-04 播種（AIR-91 結案 judge 裁決 ✅）：三個 execution workload 的初始記錄 ----
+# 證據＝2026-09-15 AIR-91 dogfood 實跑 receipts（.agent-tmp/air91-s1..s4/、
+# instruction-testing manifest、L2 review）——impl-lite 執行 implement_from_accepted_ep、
+# lite-verify 執行 evidence_retrieval、reviewer agents／muse L2 執行 review_findings。
+
+[[qualification]]
+workload = "implement_from_accepted_ep"
+model_identity = "glm-5.3-flash"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["zcode-registry-glm-5.3-flash"]
+
+[[qualification]]
+workload = "implement_from_accepted_ep"
+model_identity = "muse-spark-1.3"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["bridge-muse-spark-1.3"]
+
+[[qualification]]
+workload = "evidence_retrieval"
+model_identity = "glm-5.3-flash"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["zcode-registry-glm-5.3-flash"]
+
+[[qualification]]
+workload = "evidence_retrieval"
+model_identity = "muse-spark-1.3"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["bridge-muse-spark-1.3"]
+
+[[qualification]]
+workload = "review_findings"
+model_identity = "glm-5.3-flash"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["zcode-registry-glm-5.3-flash"]
+
+[[qualification]]
+workload = "review_findings"
+model_identity = "muse-spark-1.3"
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["bridge-muse-spark-1.3"]

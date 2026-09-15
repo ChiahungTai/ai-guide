@@ -1,6 +1,6 @@
 ---
 name: cr-research
-description: "〔tier: full〕當你要做 EP 段落 0 全域研究時（可複用基礎設施盤點、依賴分析、類似實作搜尋、風險假設識別），全域研究代理——CR callers/closure/impact_radius in-path。掛 code-reality MCP 白名單。read-only。"
+description: "當你要做 EP 段落 0 全域研究時（可複用基礎設施盤點、依賴分析、類似實作搜尋、風險假設識別），全域研究代理——CR callers/closure/impact_radius in-path。掛 code-reality MCP 白名單。read-only。"
 tools: Read, Bash, WebFetch, mcp__plugin_code-reality_code-reality__refs, mcp__plugin_code-reality_code-reality__callers, mcp__plugin_code-reality_code-reality__closure, mcp__plugin_code-reality_code-reality__impact_radius
 background: true
 ---

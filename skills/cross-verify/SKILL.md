@@ -27,7 +27,7 @@ argument-hint: "<問題> [軸:db,git,log,memory,cr,web]"
 
 1. **源可用性預檢**：逐軸機械檢查上表缺場判定 → 缺場軸記 `[WARN] degraded：<軸> unverified（源缺場）`，**不派發該軸、不阻斷後續**
 2. **平行取證**：每可用軸 spawn 一個 `cross-verify-investigator`（單一參數化 agent 檔，軸＝prompt 參數；背景群，spawn 規範見 [agent-workflow](../agent-workflow/SKILL.md)）。prompt 含：問題、軸、源路徑（db 檔／log 檔／memory 池／repo_root）、產出落點 `.agent-tmp/cross-verify/<run-id>/<axis>.md`。**落檔制**：findings 先落檔——session 中斷後新 session 從檔案接手，不靠對話記憶
-   - CC 端：同方法論；`cross-verify-investigator` 全 registry 生成在場（roles/ 單一源雙投影）——CC `--agent` 可直接引用，或以 Agent tool spawn-time model（model-routing skill 權威表 lite 列）派發同內容 prompt
+   - CC 端：同方法論；`cross-verify-investigator` 全 registry 生成在場（roles/ 單一源雙投影）——CC `--agent` 可直接引用，或以 Agent tool spawn-time model 派發同內容 prompt（model 供給＝model-routing catalog，registry 部署預設＝agents/presets.toml）
 3. **交叉對帳**：收各軸報告（直接讀落檔），逐條宣稱 vs 機械證據對照：跨軸一致 → `corroborated`；衝突 → 標 `conflict`（兩方證據並列，**不自行裁決**——同 dual-context 紀律，裁決交 judge）；僅單軸支持 → `single-source`
 4. **合成**：verdict（問題的直接回答）＋逐條信心標記（corroborated / single-source / conflict / unverified）＋機械錨點（file:line／commit sha／jobId）＋unverified 軸清單。**unverified 不阻斷合成**——結論明確標「哪些部分缺源支撐」
 5. **下游**：產出餵 `/judge-review`；findings 錨點的批次屬實性驗證（若需）歸 lite-verify（口徑統一：investigator 產證據、lite-verify 驗錨、judge 裁決——三方職責不互踩）

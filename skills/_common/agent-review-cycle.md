@@ -47,7 +47,7 @@ Writer/Reviewer 分離的品質閘門 — 用獨立 Agent context 審查，避�
 
 印出確認：`[Review Agent] max=N, mode=3-perspective | 2-agent | single`
 
-> review agent 模型預設 = 主 session（inherit——review command＝lite 預設，高保護面／跨邊界語義面升 full；ZCode 端按角色 tier 釘選〔review command 系 lite 釘 flash，AIR-43 不隨主 session 漂移〕、CC＝inherit；見 [model-routing](../../rules/model-routing.md) 角色 tier 表與 [review-engine](../review-engine/SKILL.md)「review 執行預設」）。spawn `model` param 填對的 literal。
+> review agent candidate＝Reviewer work unit 解析（qualification=`review_findings`／authority=findings——無 disposition/apply；judgment_floor 預設 execution，高保護面／跨邊界語義面升 decision）——binding 照 model-routing resolver（registry default pin 不隨主 session 漂移，AIR-43；CC＝inherit）；見 [review-engine](../review-engine/SKILL.md)「review 執行預設」點 3 與 [model-routing](../model-routing/SKILL.md)。spawn `model` param 填選定 candidate 的 literal。
 
 ### >3 配置（機械特徵觸發，非語義 opt-in）
 
@@ -69,6 +69,16 @@ extra agent 由**消費命令提供的段落風險特徵**機械觸發（非 LLM
 **① clean 額外**：明示「**不給任何 intent 提示，純讀 code 自身評估** — 哪裡怪、冗餘、缺、可疑、過度設計」
 
 **② UC-anchored 額外**：UC / EP 場景清單 + 「逐 UC 檢驗 impl 滿足度，標漏掉的意圖與 EP 偏離」
+
+---
+
+## Authority 輸出契約與視覺證據（review 腿共用——AIR-91 S3）
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（Role→authority allow-list／WorkUnitContract independence 欄／resolver precedence 步 7）；此處只列 Agent Tool 模式執行面。
+
+- **artifact recipe（越權＝artifact schema 層阻擋）**：evidence artifact 不含 disposition/apply 欄；findings artifact 不含 apply／final disposition；**只有 Arbiter artifact 有 disposition**——本範本的 ①②③ 皆 review/evidence 腿，終判（✅/❌/⚠️）由 `/judge-review`（Arbiter 腿）落下。Review 腿面對「直接裁決／順手修改」壓力時以**實際輸出／副作用**判分——產出現 disposition/apply 欄即越權（SM-5/SM-6）。
+- **independence（跨家族第二意見）**：`kind=different_provider_family`＋`relative_to`（如 writer）＋`required`＋`fallback`——一般高保護面＝**soft-visible**（缺 alternate family 可 `explicit_same_family_degradation` 顯性降級並記錄）；**user 明示跨家族＝required=true，缺場 fail loud**（禁靜默同家族替代，SM-7）。本範本三 lens 的 context 差異（clean／UC／Correctness 錨定方式不同）與 provider-family independence 正交——前者防錨定 bias、後者防家族盲點。
+- **視覺證據（review 腿讀圖時）**：source identity/hash＋transport binding＋delivery receipt 由 **dispatcher 產生**（派工方記錄）；`arbiter_viewed_source=true` **只能由 receipt 推導**——收件方自述「已看圖」不算數。無同時 decision-qualified＋native_vision＋image_transport 的單一 candidate 時走 **decomposed** 形態：observer 看原圖產 observation artifact（分 facts/interpretations＋region/coordinates＋uncertainty＋observer model/binding）→ decision 腿 input 無 raw image、只含 observation artifact，verdict 帶 `arbiter_viewed_source=false`＋`decomposed-not-equivalent`（不得宣稱等價單模型原生視覺裁決，SM-9/SM-10）。
 
 ---
 

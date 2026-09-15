@@ -8,6 +8,7 @@
 
 - 禁 `git add`／`git commit`／`git push`／改任何 backlog 卡狀態——止步於 working tree 編輯（「止步 commit 前」不夠，AIR-18 自行 staged 多檔教訓）
 - read-only 任務禁任何寫入（advisory profile 尤甚）
+- **禁再委派**：work order 收方不得再 spawn／再派子任務（委派單向——子智能體不能再派發子智能體，跨 runtime 亦同；AIR-91 S3 起為紅線）
 - 禁把產物寫到 `/tmp` 或 repo 外；中間筆記不留檔
 - 紅線違反＝失敗，非風格問題；審查未過不得結卡
 - 外部 runtime flag 未暴露時，以本紅線承載 read-only 約束（bridge 暴露 `--disable-write` 後改 flag；roadmap 記 delegate-bridge 側）
@@ -22,9 +23,11 @@
 
 > 派發對象是 ai-guide registry role 時（muse/codex/grok 皆同），role 紀律核心**引用不重寫**——單一源在 `agents/roles/<name>.md`：
 
-- **role name**＋**requirement**（tier token：full/vision/lite——分配表見 `skills/model-routing/SKILL.md` role→requirement 表）
+- **role name**＋**WorkUnitContract**（role／authority／judgment_floor／qualifications／capabilities／independence——欄位語義單一源 `skills/model-routing/SKILL.md`；demand 值來自 owning workflow 的 rows）
 - **role body 交接**：貼入 `agents/roles/<name>.md` 全文（附 body hash）或給絕對路徑令 runtime 自讀；與 §4 必讀的分工——§4 列 repo 材料路徑，本段承載 role 選擇依據
-- **model/effort**：按 requirement 查 `skills/model-routing/SKILL.md` tier×provider 權威表（本 harness 綁定哪家 provider 見 `agents/AGENTS.md` harness 軸表）；vision 不得降非影像款、lite 禁 luna
+- **binding token**：選定 candidate 的 wire token＋token kind＋requested/effective effort（解析照 `skills/model-routing/SKILL.md` resolver——catalog 供給、presets 部署預設，本工單不複製 values 作新 source）；`native_vision` 需求不得降非影像款
+- **ExecutionPreset reference**：registry slug（`agents/presets.toml`）——帶 reference 不帶內容
+- **authority 上限＋input envelope**：隨單聲明輸出契約（evidence 無 disposition/apply、findings 無 apply/final disposition、Arbiter 才有 disposition）；視覺任務另帶 source identity/hash＋transport binding＋delivery receipt（由 dispatcher＝派工方產生，`arbiter_viewed_source` 只由 receipt 推導）
 - 非 role 派發（ad-hoc 任務）本子段留空
 
 ## 3. Baseline identity
@@ -114,4 +117,4 @@
 
 ---
 
-> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法單一源見 model-routing skill「完成回報收法」決策樹。`rules/model-routing.md` tier 詞彙句與 `skills/model-routing/SKILL.md` 解析表為 family／profile 詞彙與映射單一源，本模板不自帶定義。
+> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法單一源見 model-routing skill「完成回報收法」決策樹。`rules/model-routing.md`（family／profile 詞彙）與 `skills/model-routing/SKILL.md`（resolver／WorkUnitContract schema）為詞彙與映射單一源，本模板不自帶定義。

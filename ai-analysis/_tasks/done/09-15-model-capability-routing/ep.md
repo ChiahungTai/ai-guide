@@ -4,7 +4,7 @@
 > **baseline**: `df3741b81e90dad01ed30fb383750ad55630998d`  
 > **任務卡**: AIR-91  
 > **需求來源**: `backlog/tasks/air-91 - model-派工詞彙整體治理——vision-旗艦-最強檔三題軸清理（先整體討論再動手）.md`  
-> **研究底稿**: `ai-analysis/_tasks/09-15-model-capability-routing/references/research.md`
+> **研究底稿**: `ai-analysis/_tasks/done/09-15-model-capability-routing/references/research.md`
 
 ## 進度節
 
@@ -14,7 +14,9 @@
 - [x] 三個 native reviewers、Muse 與 GLM 5.3 外部 reviewers 已完成
 - [x] 主 session 已裁決 findings 並回寫計畫
 - [x] Report Shell hook 1 已以本版 EP content SHA 建立
-- [ ] 實作尚未開始
+- [x] S1–S4 實作完成（2026-09-15）：S1 catalog/resolver protocol＋S2 presets/projection 等價切換＋S3 work-unit doctrine 十二檔＋S4 manifest/gate/導航收斂——S1–S3 各過 scoped judge（修補已落地）；S4＝機械 gate＋coordinator 裁定（外部 review 腿覆蓋）
+- [x] Behavior experiment（B 方案縮減）：IT-01/02/04/07/08 × 雙 arm × 3 reps＝30/30 PASS、0 FAIL（manifest=`references/instruction-testing.md`）
+- [x] Deploy：三 harness user-level bundle 已部署＋fresh-context 載入驗證（user AUTH 2026-09-15）；收斂鏈（codex/muse review→5.3 judge→commit）進行中
 
 ## 實作總覽
 
@@ -377,7 +379,7 @@ expected = render_all(role_prompts, presets, catalog)
 - `skills/ep-review/SKILL.md`、`skills/review-engine/SKILL.md`：review qualification／authority pointer。
 - `skills/agent-workflow/SKILL.md`、`skills/self-contained-prompt/SKILL.md`：DispatchPlan→carrier、work-order envelope 與 failure handback。
 - `skills/_common/agent-review-cycle.md`、`skills/_common/workflow-review-pattern.md`、`skills/_common/work-order.md`：共用 authority、independence 與 artifact schema。
-- `ai-analysis/_tasks/09-15-model-capability-routing/references/instruction-testing.md`（新增）：tracked trial manifest、scoring、結果摘要與 receipt 路徑。
+- `ai-analysis/_tasks/done/09-15-model-capability-routing/references/instruction-testing.md`（新增）：tracked trial manifest、scoring、結果摘要與 receipt 路徑。
 
 ### 核心實作要點
 
@@ -437,8 +439,8 @@ on carrier_failure(candidate, family):
 - `skills/CLAUDE.md`、root `AGENTS.md`、`rules/AGENTS.md` 與其他由 current-consumer manifest 指定的 navigation/pointer files。
 - `skills/scan-project/scripts/check_single_source.py`、`tests/test_check_single_source.py`：projection 與 current-doctrine convergence gates。
 - `tests/test_sync_agents.py`：整弧 schema/projection/equivalence acceptance。
-- `ai-analysis/_tasks/09-15-model-capability-routing/references/current-consumers.md`（新增）：每個 active hit 的 disposition 與 historical exclusion。
-- `ai-analysis/_tasks/09-15-model-capability-routing/index.html`：Report Shell hook 2 最終狀態。
+- `ai-analysis/_tasks/done/09-15-model-capability-routing/references/current-consumers.md`（新增）：每個 active hit 的 disposition 與 historical exclusion。
+- `ai-analysis/_tasks/done/09-15-model-capability-routing/index.html`：Report Shell hook 2 最終狀態。
 - AIR-91 卡片與 actor-aware memory handoff artifact：只在終態收斂時更新。
 
 ### 核心實作要點

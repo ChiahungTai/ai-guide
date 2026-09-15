@@ -1,6 +1,6 @@
 ---
 name: code-reviewer-primed
-description: "〔tier: lite〕Context-primed 方向審查者（dual-context 審查的 primed 側）。與 code-reviewer（fresh eyes）配對平行審查時使用；需要意圖對齊、架構契合、測試精簡度、完整度光譜（YAGNI↔過度工程）判斷時主動使用。context 由呼叫端餵：diff + EP + delta_tour 對照（EP 宣稱模組 vs 實際變動對照，若有）+ 模組 AGENTS.md Capabilities + dependency-graph.md（若有）。"
+description: "Context-primed 方向審查者（dual-context 審查的 primed 側）。與 code-reviewer（fresh eyes）配對平行審查時使用；需要意圖對齊、架構契合、測試精簡度、完整度光譜（YAGNI↔過度工程）判斷時主動使用。context 由呼叫端餵：diff + EP + delta_tour 對照（EP 宣稱模組 vs 實際變動對照，若有）+ 模組 AGENTS.md Capabilities + dependency-graph.md（若有）。"
 tools: Read, Grep, Glob, Bash, WebFetch, WebSearch, mcp__context7__resolve-library-id, mcp__context7__query-docs, mcp__zread__read_file, mcp__zread__get_repo_structure, mcp__zread__search_doc
 background: true
 ---

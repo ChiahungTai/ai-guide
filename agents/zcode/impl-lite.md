@@ -1,6 +1,6 @@
 ---
 name: impl-lite
-description: "〔tier: lite〕當你要派 EP 段落實作代理時（機械可規格化段），lite 執行檔——照定稿 EP 逐段 TDD（RED→GREEN→機械驗證）。lite 模型寫的測試僅規格陳述非驗收證據——review/judge 由主 session 另補（分工律：lite 執行＋強模型 judge）。"
+description: "當你要派 EP 段落實作代理時（機械可規格化段），lite 執行檔——照定稿 EP 逐段 TDD（RED→GREEN→機械驗證）。lite 模型寫的測試僅規格陳述非驗收證據——review/judge 由主 session 另補（分工律：lite 執行＋強模型 judge）。"
 tools: Read, Write, Edit, Bash, Grep, Glob, WebFetch, WebSearch
 model: glm-5.3-flash
 thoughtLevel: high

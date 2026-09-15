@@ -25,6 +25,26 @@ allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "Workf
 
 Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（Ultracode 下 Phase 4 使用）
 
+## WorkUnitContract rows（本 workflow 持有——AIR-91 S3）
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步）；candidate 由 resolver 對 [catalog](../model-routing/catalog.toml) qualification records 硬過濾，本檔不材料化 model 值；無合格 candidate＝顯性 no-candidate，禁降 hard requirement。
+
+| work unit | Role | authority | judgment_floor | qualifications | 說明 |
+|---|---|---|---|---|---|
+| 實作主腿（各段落執行） | Implementer | apply（accepted EP 後）／evidence | execution | implement_from_accepted_ep | `implement_from_accepted_ep + execution + apply`——進場受 accepted-EP predicate 約束（階段 0） |
+| 機械驗證腿（ruff/mypy/pytest／rg 殘留對帳） | Verifier | evidence artifact（無 disposition/apply） | execution | evidence_retrieval | 組合命令形態；lite 測試＝規格陳述，驗收證據由 full 複驗 |
+| Agent Review Reviewer legs（階段 4） | Reviewer | findings（無 disposition/apply） | execution（預設；高保護面／跨邊界語義面升 decision） | review_findings | 執行形態照 [review-engine](../review-engine/SKILL.md)「review 執行預設」 |
+| finding 裁決（invoke /judge-review） | Arbiter | final disposition | decision | adjudication | seat 非 decision-qualified 時外派 decision-qualified candidate；無 candidate 禁 self-downgrade |
+| decision escalation 腿（觸發時才派） | Arbiter | adjudication | decision | adjudication | 原腿停止＋產 escalation record 後派（見下） |
+
+**escalation 觸發**（命中即停止該腿 → 產 escalation record〔記觸發條件＋已停點〕→ 派 decision work unit 裁決，非靜默降級續行）：
+
+- EP conflict——實作發現與 EP「已決策（勿重辯）」段或 Pseudo Code 具體衝突
+- 新 invariant——浮現 EP 未列的 domain invariant／silent-corruption path
+- public boundary——對外 API／數據流邊界的契約選擇
+- 跨 context 架構選擇——≥2 context 消費的共用層設計決策
+- 反覆失敗——連續 3 次失敗（見「EP 專屬約束」錯誤自癒）
+
 ---
 
 ## 執行流程
@@ -32,6 +52,15 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 ### 階段 0：EP 快檢
 
 快速確認 EP 品質，**僅嚴重矛盾才停下**，其餘自行判斷並記錄。
+
+**accepted-EP predicate（進場硬閘門——AIR-91 S3）**：實作腿（execution/apply）進場前四條全要，任一不成立＝**禁止 execution/apply**：
+
+1. EP review ledger（`## EP Review Findings` 表格）每列 status 皆 terminal——`implemented`／`rejected`／`verified`（EP flow 的收斂態；`open`／`adopted` 未回寫／`needs-confirmation` 皆非 terminal）
+2. 所有 adopted（✅）修正已回寫 EP 本文
+3. 無 `needs-confirmation`／`pending`（⚠️ 未裁決項在場即未 accepted）
+4. user 顯式呼叫 implement（本次對話原話）
+
+任一不成立 → 停在決策層：pending findings 交 user／judge 裁決回寫 terminal 後重新檢查，或轉 decision escalation——**不得以「快檢僅嚴重矛盾才停下」繞過**（快檢是品質寬容，predicate 是進場資格）。阻擋時印 `## EP 進場：⛔ 未 accepted（<不成立條件>）`（acceptance predicate receipt，SM-3 checkpoint）。
 
 **強制輸出**：快檢完成後必須印出 `## EP 快檢：✅ 可實作` 或 `## EP 快檢：⚠️ N 項自行補充`。不得靜默跳過。
 
@@ -129,7 +158,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 - **EP 為收斂方向，實作層有裁量權**：照 EP 為主軸，但實作時發現 EP 預見極限外的真相（邊界、副作用、組件互動、需求落差）可調整 — 這是「發現真相的責任」而非「偷懶不照 EP」
 - 記錄偏差：與 Pseudo Code 有出入時記錄原因（偏差是發現認知誤差的線索，不是違規）
 - 記錄疑慮不中斷：先選最合理方案繼續，最後統一讓用戶確認
-- 錯誤自癒：連續 3 次失敗 → 標記 ⚠️ 繼續下一段
+- 錯誤自癒：連續 3 次失敗 → 該腿停止＋escalation record＋轉 decision work unit（AIR-91 S3 起—— escalation 觸發清單見 WorkUnitContract rows；完成報告同段標 ⚠️ 揭露殘留）
 - **batch ceiling**：累積多段未經人類判讀 → 建議暫停跑 session-boundary review（防 context 累積漂移;session-boundary review 原則見 [acceptance-evidence](../../rules/acceptance-evidence.md) B 軸人類驗收層）—— 單段重試上限（連續 3 次）vs batch ceiling（累積段落上限），雙 ceiling
 - **依賴錨點 drift check**：實作每段前驗證錨點，drift 時先更新 EP
 

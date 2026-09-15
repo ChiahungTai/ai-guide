@@ -181,6 +181,61 @@ INVARIANTS = [
         "gate 限定在 bridge 語境；compound-slug 無 gate（任何複合皆錯）；歸檔面"
         "（ai-analysis、ref-docs）不掃。錨點＝must_contain_all（逐一缺席各 critical）。",
     },
+    {
+        "id": "model_routing_current_doctrine",
+        "type": "forbidden_pattern",
+        "source": "skills/model-routing/SKILL.md",
+        "must_contain_all": ["WorkUnitContract", "catalog.toml", "presets.toml"],
+        "scan": [
+            "ai-development-guide.md",
+            "AGENTS.md",
+            "rules/",
+            "skills/",
+            "agents/",
+            "hooks/",
+        ],
+        "forbid": [
+            {
+                "pattern": r"(?i)^#{2,6}\s.*\btier\b.*[→×]",
+                "why": "舊 tier 權威表 header（tier → (model,effort)／tier × provider）"
+                "＝AIR-91 S2 已移除的單軸強度檔權威形，重現於任何 active 檔＝"
+                "current-doctrine drift",
+            },
+            {
+                "pattern": r"(?i)^#{2,6}\s.*\brole\b.*(?:→|->).*"
+                r"(?:requirement|tier)\b",
+                "why": "role → requirement（tier）分配表 header＝舊 role→tier 兩跳權威形"
+                "（S2 移除）——Role 指派只來自 WorkUnitContract",
+            },
+            {
+                "pattern": r"(?i)\b(?:execution-plan|implement|judge-review|post-build"
+                r"|ep-review|code-review)\s*[=＝]\s*(?:full|lite|vision)\b",
+                "why": "workflow 整體綁單一 tier（如 post-build=full）＝誤導整鏈單模型的"
+                "舊寫法（EP 問題 #4）——workflow 擁有的是 per-phase work-unit rows",
+            },
+            {
+                "pattern": r"(?i)\bvision[\s-]?tier\b|\btier\s*[=＝:：]\s*vision\b",
+                "why": "vision tier＝把 capability filter 與強度列並排的舊單軸語義"
+                "（EP 問題 #2）——native_vision 是 ModelIdentity capability",
+            },
+            {
+                "pattern": r"(?i)^tier\s*:",
+                "why": "roles frontmatter tier tag＝AIR-91 S2 已移除項（description 不帶 "
+                "tier 標記）——projection gate 不攔未知 frontmatter 鍵，回歸由此抓",
+            },
+        ],
+        "note": "AIR-91 S4 current-doctrine guard（S4A 腿）：agents_projection_sync 只守 "
+        "registry bytes parity，守不住 Markdown 面重現的舊 tier 權威形。掃描面同 "
+        "bridge_model_vocab（僅 .md；tests/ 排除——guard fixtures 合法引用禁用形；"
+        "catalog.toml／presets.toml 非 .md 不在面內）。header 錨定避開 S2 移除標記"
+        "註解與決策記錄（historical-exclusion）；清單＝S4A broad rg 掃描反推的最小集合"
+        "（ai-analysis/_tasks/done/09-15-model-capability-routing/references/"
+        "current-consumers.md）——lite/full 作為 presets 相容 requirement token、"
+        "slug 名（lite-verify）、handoff「建議執行 tier」欄（管轄對照已裁定非 drift）、"
+        "memory-audit full/lite 級別、EP 規模 full 皆合法不在禁止列。錨點＝"
+        "must_contain_all（新 doctrine 三源：contract schema／供給 catalog／部署 "
+        "presets——逐一缺席各 critical）。",
+    },
 ]
 
 

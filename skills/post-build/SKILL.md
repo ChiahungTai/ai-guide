@@ -10,7 +10,7 @@ description: "build 後收尾鏈編排 — code-review → judge-review → 修�
 
 把「build 完手動跑 code-review → judge-review → consistency（→ metadata-sync → tour corpus 修復閉環）」的固定收尾序列編排成一次觸發。本 skill **只做編排與 triage**，各步驟的方法論真相源在被編排命令本身，不重抄（防 single-source drift）。
 
-> dispatch 形態：編排者（本命令）＝主 session full（判斷密集，不 agent 化）；鏈上機械驗證／視覺驗收段 spawn 哪個 agent，查 [agent-workflow](../agent-workflow/SKILL.md)「全生命週期 execution contract（消費側）」（表主體在 agents/AGENTS.md）。
+> dispatch 形態：本鏈各腿的 work units 定義於下方「WorkUnitContract rows」（AIR-91 S3）——orchestration＝decision（主 session 直做，判斷密集，不 agent 化）；spawn 腿（機械驗證／視覺驗收）照 [model-routing](../model-routing/SKILL.md) resolver 解析 candidate，消費側形態查 [agent-workflow](../agent-workflow/SKILL.md)「全生命週期 execution contract（消費側）」（表主體在 agents/AGENTS.md）。
 
 **受眾**：軌道 ①（LLM 執行鏈）——機器自讀自判自修；終點輸出收尾報告給人類判讀是否 commit。
 
@@ -26,6 +26,31 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 - 構件真相源各歸其主（implement／code-review／judge-review／commit consent），本節只鎖序與 gate
 - commit gate 恆在 user（自主模式不豁免）；收尾段只做機械（commit 前整理），不重做判斷
+
+## WorkUnitContract rows（本 workflow 持有——AIR-91 S3）
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步）；candidate 由 resolver 對 [catalog](../model-routing/catalog.toml) qualification records 硬過濾，本檔不材料化 model 值；無合格 candidate＝顯性 no-candidate，禁降 hard requirement。
+
+| work unit | Role | authority | judgment_floor | qualifications | 說明 |
+|---|---|---|---|---|---|
+| 編排（diff triage／鏈編排／收斂判定／去重比對） | Planner（主 session 直做——Marshal 是 orchestration responsibility 非 Role；Role 值供 schema 對齊，本列不派工） | — | decision | — | 判斷密集段不 agent 化 |
+| Reviewer legs（code 鏈／docs-mode 鏈的 code-review） | Reviewer | findings（無 apply／final disposition） | execution（預設；高保護面／跨邊界語義面升 decision） | review_findings | **authority 恆＝findings**——binding 隨保護面升級不改 authority（findings 腿不越權裁決，SM-6） |
+| 裁決（judge-review） | Arbiter | final disposition | decision | adjudication | seat 非 decision-qualified 時外派；無 candidate 禁 self-downgrade |
+| 已裁決修正（階段 3 apply） | Implementer | apply | execution | implement_from_accepted_ep | ✅ 清單＝execution/apply 腿——決策已由 Arbiter 落帳，apply 腿不做裁決 |
+| 機械 finalization（consistency／metadata-sync／rename 反掃／tour corpus gate／lite-verify 對帳） | Verifier | evidence artifact（無 disposition/apply） | execution | evidence_retrieval | 組合命令＋agent 機械對帳 |
+| 視覺驗收（visual observation） | Reviewer（observer 腿） | observation artifact／findings（無 final disposition） | execution | visual_observation | 需 `native_vision` ∩ binding `image_transport`——envelope 見下節 |
+
+**escalation**：鏈中任何 execution 腿命中 [implement](../implement/SKILL.md) 同款觸發（EP conflict／新 invariant／public boundary／跨 context 架構選擇／反覆失敗）→ 停止該腿＋escalation record＋轉 decision work unit 或等 user；不得由 execution 腿自行裁決續行。
+
+### Visual input envelope（視覺證據腿——AIR-91 S3）
+
+> 語義單一源＝[model-routing](../model-routing/SKILL.md) resolver precedence 步 7（direct／decomposed 判定）；此處列編排面要求。
+
+- **dispatcher 產生**：source identity（圖檔路徑＋content hash）／transport binding／delivery receipt 由派工方（主 session）記錄——非收件方自報
+- **`arbiter_viewed_source=true` 只能由 receipt 推導**（raw image 送達 Arbiter 的回執）；模型／agent 自述「已看圖」不算數
+- **direct path**：存在同時 decision-qualified＋`native_vision`＋`image_transport` 的單一 candidate → raw image 送達 Arbiter，verdict 引用同 source identity
+- **decomposed path**（無上述交集 candidate＝resolver declared decomposition）：visual-qualified observer 看原圖產 observation artifact → Arbiter input **無 raw image**、只含 observation artifact；verdict 帶 `arbiter_viewed_source=false`＋`decomposed-not-equivalent`（不得宣稱等價於單模型原生視覺裁決）；source identity 端到端一致（observer artifact 與 Arbiter verdict 引用同一 source id）
+- **observer artifact 欄位**：facts／interpretations 分列＋region/coordinates＋uncertainty＋observer model/binding（歸因用）
 
 ---
 

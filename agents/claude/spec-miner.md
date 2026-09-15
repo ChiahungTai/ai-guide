@@ -1,6 +1,6 @@
 ---
 name: spec-miner
-description: "〔tier: lite〕當你要查「某能力在哪定義／官方怎麼說／契約原文」時，規格挖掘代理——從凍結源碼、官方文檔鏡像、既有規範中挖掘事實並回傳 file:line 錨點＋逐字引用。逐字引用不意譯，anti-幻覺由協議保證。read-only。"
+description: "當你要查「某能力在哪定義／官方怎麼說／契約原文」時，規格挖掘代理——從凍結源碼、官方文檔鏡像、既有規範中挖掘事實並回傳 file:line 錨點＋逐字引用。逐字引用不意譯，anti-幻覺由協議保證。read-only。"
 tools: Read, Bash, WebFetch
 background: true
 ---

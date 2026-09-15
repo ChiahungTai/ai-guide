@@ -18,7 +18,7 @@ allowed-tools: ["Read", "Bash", "Glob", "Grep", "Agent"]
 
 1. **環境凍結**（spawn 前自產）：**clean tree 預設**——`git status` 非空 → 先收斂，或顯式改 dirty 模式（記錄 tracked diff hash＋untracked 清單與 content hash）。凍結：HEAD sha、worktree 拓撲（`git worktree list`）、index/graph 新鮮度聲明、（dirty 模式）diff＋untracked 指紋。深審結束前**前後比對**（HEAD＋status／指紋）——不一致＝報告標 `stale` fail-loud，不得自稱凍結基線
 2. **scope manifest**：審查範圍逐 path 分類——**core**（逐檔讀 source 與 failure branch）／**leaf**（機械全量掃＋異常深讀）／**generated**（驗投影與 hash parity，不當源）／**mirror**（驗 manifest 帳與回源）。每個 target path 恰屬一 bucket、exclusions 明列——沒進 manifest 的 path＝未審，不得自稱 full-repo
-3. **深審派發**：external family、[work-order review variant](../_common/work-order.md)。family 解析＝[model-routing 跨家族解析表](../model-routing/SKILL.md)（**與 caller 相異**是派發理由本身）：未指定 → GLM/ZCode 與 codex/glm caller→muse；**muse caller→fail-loud**（無合法相異家族可自動選——**停下要求 user 選擇**：顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review〔caller-harness full dual-context 承接＋記錄〕，禁解析層自選降級）；顯式指定與 caller 同 family → fail-loud。派發內容＝凍結資料＋scope manifest＋輸出格式要求（見下）。**派發形態現況**：muse 腿經 bridge 自動化已實戰；codex 腿本弧為 user-relay——自動派發未驗證〔first-real-usage-pending〕（唯一一次派發被 user 中止：dispatch prompt 是薄清單而非 work-order、context 不自足，user 判斷後改 relay 直跑——非 run 失敗）；自動派發前必須逐節填滿 review variant 工單，首跑實測後回報
+3. **深審派發**：external family、[work-order review variant](../_common/work-order.md)。family 解析＝[model-routing 跨家族解析表](../model-routing/SKILL.md)（**與 caller 相異**是派發理由本身）：未指定 → GLM/ZCode 與 codex/glm caller→muse；**muse caller→fail-loud**（無合法相異家族可自動選——**停下要求 user 選擇**：顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review〔caller-harness decision-grade dual-context 承接＋記錄〕，禁解析層自選降級）；顯式指定與 caller 同 family → fail-loud。派發內容＝凍結資料＋scope manifest＋輸出格式要求（見下）。**派發形態現況**：muse 腿經 bridge 自動化已實戰；codex 腿本弧為 user-relay——自動派發未驗證〔first-real-usage-pending〕（唯一一次派發被 user 中止：dispatch prompt 是薄清單而非 work-order、context 不自足，user 判斷後改 relay 直跑——非 run 失敗）；自動派發前必須逐節填滿 review variant 工單，首跑實測後回報
 4. **in-family 裁決**（[/judge-review](../judge-review/SKILL.md)）：每項機械重現（不沿用宣稱）、防全採否證至少一項
 5. **gate 候選提案**：每個採納項標注「同類 finding 是否第二次出現？」——是 → 列入報告的 **gate 候選清單**（proposal——建卡/做閘門由 user 拍板後續弧執行；有進有出：findings 是流入、gates 是流出）
 6. **修復**走 /implement；驗收走 /followup-review
@@ -34,4 +34,4 @@ schema 單一源在 [work-order review variant](../_common/work-order.md)（reme
 
 - **read-only 全程**：深審、裁決、報告皆不動 main working tree——不寫檔、不建卡、不 commit；產出＝對話內報告＋gate 候選清單
 - 報告落 `ai-analysis/reports/`、殘項建卡＝**顯式 `--persist` 或 user 拍板後**的後續動作，非本 skill 預設路徑（backlog 建卡即 commit——outward action 授權在 user，skill invocation 不構成授權）
-- 派發前查 model-routing 額度與 eligibility（review/advisory 形態條款——read-only 委派不以 implementation-loop 條件判定）；額度不足顯式降級（in-harness full 承接＋記錄），禁靜默略過
+- 派發前查 model-routing 額度與 eligibility（review/advisory 形態條款——read-only 委派不以 implementation-loop 條件判定）；額度不足顯式降級（in-harness decision-grade 承接＋記錄），禁靜默略過

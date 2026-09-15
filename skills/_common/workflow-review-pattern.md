@@ -92,6 +92,16 @@ Workflow tool 的優勢：
 
 ---
 
+## Authority／independence／artifact schema（review 腿共用——AIR-91 S3）
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（Role→authority allow-list／WorkUnitContract independence 欄）；此處只列 Workflow 消費面。
+
+- **artifact recipe（越權＝artifact schema 層阻擋）**：evidence artifact（Verifier 腿）無 disposition/apply 欄；findings artifact（Review 腿，含 DimensionVerdict→Finding Record）無 apply／final disposition；**Arbiter artifact 才有 disposition**——Workflow 的 Review/Verify phase 產出皆屬前兩類，終判（✅/❌/⚠️）由 Main LLM judge-review（Arbiter 腿）落下。Review/Verify agent 面對「直接裁決」壓力時以實際輸出判分。
+- **independence 欄（dual-context／跨家族腿）**：`kind=different_provider_family`＋`relative_to`＋`required`＋`fallback`——soft-visible 缺場可 `explicit_same_family_degradation` 顯性降級並記錄；user 明示跨家族 required=true 缺場 **fail loud**。Verify phase 的 3-verifier quorum 是同家族 context 差異（對共同盲點無效，見 [acceptance-evidence](../../rules/acceptance-evidence.md) A/B 軸），與 provider-family independence 正交。
+- **dispatch 掛鉤**：Workflow `agent()` 呼叫即 DispatchPlan 消費點——selected candidate 走 carrier adapter 三路（[model-routing](../model-routing/SKILL.md) DispatchPlan 條）；quota/runtime 失敗記 work-unit-local DispatchTrace（1308 於 retryable-at 前排除、429 bounded backoff），候選耗盡＝no-candidate report 停止，禁 loop。
+
+---
+
 ## Finding Record（跨命令持久化標準）
 
 > **核心原則**：審查發現(finding)的對話對象主要是另一個 LLM(`/implement` 內串接、`/copy` 給外部 LLM)。**跨命令自動化場景**（接 `/judge-review`/`/followup-review`）finding 須持久化、結構化、跨命令可追蹤；**人主導工作流**（review session 對話 + `/copy` 搬運）finding 留對話由人對照 diff 判讀，不強制持久化（見下方「持久化位置（optional）」）。
@@ -170,8 +180,8 @@ export const meta = {
 
 const REVIEW_SCHEMA = { /* DimensionVerdict schema */ }
 const VERIFY_SCHEMA = { /* VerifyVerdict schema */ }
-// review command agent = lite 預設（user 09-09 拍板：findings 生產層已實證；高保護面/跨邊界語義面才升 full）——CC 端 sonnet 別名、ZCode 端 registry pin（lite＝glm-5.3-flash）；judge 層恆為主 session full（AIR-24）。見 rules/model-routing.md 角色 tier 表 + review-engine「review 執行預設」）
-// author 時依當前 session 填對的 literal（下為 sonnet session 範例 → inherit = sonnet）
+// review command agent = Reviewer work unit（qualification=review_findings、authority=findings 無 disposition/apply；judgment_floor 預設 execution——user 09-09 拍板 findings 生產層已實證，高保護面/跨邊界語義面升 decision）；binding 經 model-routing resolver（catalog/presets 供給，此處不材料化 model 值）；judge 層恆為 decision work unit（AIR-24）。見 model-routing skill + review-engine「review 執行預設」點 3
+// author 時依當前 session 填選定 candidate 的 literal（下為 CC 詞彙面範例 → inherit）
 const REVIEW_MODEL = 'sonnet'
 
 // --- 各命令定義自己的 dimensions ---

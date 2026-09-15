@@ -43,9 +43,9 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
 
 **內容篩選通則（user 勘正：「缺漏要看是不是人類真的需要知道」）**：殼裝**判斷材料**（意圖/為什麼動機鏈、風險與降級、取捨決策、驗收判準、當前狀態、實物樣本、回源路徑），**不裝執行細節**（治理規則、AI 流程產物如 UC 盤點表、機械完整性逐項覆蓋）——後者留本體層，殼至多一句指路。**實物樣本要進殼**（人類沒看過實物，機制敘述等於空談）。
 
-**殼生成分工（二 tier；registry 對號查 agents/AGENTS.md execution contract 表）**：
+**殼生成分工（decision 敘事腿＋vision 驗收腿；registry 對號查 agents/AGENTS.md execution contract 表）**：
 
-1. **篩選敘事（full 主 session）**：殼的章節篩選與敘事＝判斷密集（「缺漏是不是人類真的需要知道」是判斷題）——不派 lite；mermaid（mmdc 機械 CLI）與 HTML 塊由主 session/lite 直接產
+1. **篩選敘事（decision——主 session）**：殼的章節篩選與敘事＝判斷密集（「缺漏是不是人類真的需要知道」是判斷題）——不派 execution 腿；mermaid（mmdc 機械 CLI）與 HTML 塊由主 session／execution 腿直接產
 2. **vision-review（vision 驗收）**：渲染 PNG 逐張 verdict（圖互 clip／CJK 誤讀／美感底線）——驗收收法見該 agent 定義；契約（三段式/分批上限/全樣本錨定）見 [diagram-selection](../diagram-selection/SKILL.md) 共性段
 
 **機械底稿（數據宣稱唯一來源）**：殼中一切**數據宣稱**（數字、狀態、覆蓋率、時間）只從機械底稿帶入、禁止敘事層自填——底稿＝**delta_tour 輸出／命令輸出原文**（防文檔宣稱漂移——lite 分工律，model-routing skill）。

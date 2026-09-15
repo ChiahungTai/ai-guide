@@ -33,7 +33,7 @@ review 執行預設（force 獨立 / max-agents / model 預設）見 [review-eng
 
 | Workflow Phase | 說明 | Agent 數量 |
 |----------------|------|-----------|
-| Review | 平行 spawn 維度 agents（registry 載體 `code-reviewer`——read-only 契約＋flash pin（S10 後 pins＝glm-5.3-flash）＋審查 mandate 相容〔lite-verify 禁設計判斷，與 EP review 5 維度矛盾〕；user 09-09 審查層 lite 預設。禁內建 `Explore`——無 pin 繼承主模型，lite 預設落空） | ≤ max-agents |
+| Review | 平行 spawn 維度 agents（registry 載體 `code-reviewer`——Reviewer work unit：qualification=`review_findings`、authority=findings（無 disposition/apply）、judgment_floor 預設 execution／高保護面·跨邊界語義面升 decision（user 09-09 審查層預設）；read-only 契約＋審查 mandate 相容〔lite-verify 禁設計判斷，與 EP review 5 維度矛盾〕；binding 解析照 [model-routing](../model-routing/SKILL.md) resolver＋presets，本檔不材料化 model 值。禁內建 `Explore`——無 pin 繼承主模型，execution 預設落空） | ≤ max-agents |
 | Verify | must-fix findings → 1 verifier/finding | findings 數 |
 
 **啟用維度**：
@@ -62,7 +62,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 5 個 Dimensio
 
 **Agent Tool 模式**（**預設 force 獨立**；判定條件見 [review-engine](../review-engine/SKILL.md)）：
 
-主 session spawn 單一 registry `code-reviewer` agent 做所有 5 維度（ep-review 特有配置，非 code-review 的 3-perspective；read-only 契約＋flash pin——lite-verify 禁設計判斷與 5 維度 mandate 矛盾故不選；禁內建 `Explore`，無 pin 會繼承主模型）。印出確認：`[EP Review Mode] effort=<ultracode|standard>, workflow=false, agent=true`
+主 session spawn 單一 registry `code-reviewer` agent 做所有 5 維度（ep-review 特有配置，非 code-review 的 3-perspective；Reviewer work unit 同上表——qualification=`review_findings`／authority=findings，lite-verify 禁設計判斷與 5 維度 mandate 矛盾故不選；禁內建 `Explore`，無 pin 會繼承主模型）。印出確認：`[EP Review Mode] effort=<ultracode|standard>, workflow=false, agent=true`
 
 ---
 

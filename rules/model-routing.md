@@ -2,32 +2,20 @@
 harness-scope: neutral
 ---
 
-# Model Routing（角色 → tier → model 解析）
+# Model Routing（work unit → candidate → dispatch）
 
-subagent 的 model/effort 由角色需求決定，不依主 session 模型。兩跳：本檔 role→tier，再查 **model-routing skill** 的 harness×provider 權威表；model 值只在 skill，ZCode pins 由 sync_agents 材料化。
+subagent 的 model/effort 由 work unit 的能力需求決定，不依主 session 模型。正式 resolver＝**model-routing skill 的 instruction protocol**（glossary／WorkUnitContract schema／precedence 七步／輸出契約——派工前必載）；穩定供給事實單一源＝`skills/model-routing/catalog.toml`（ModelIdentity／DispatchBinding／qualification；`sync_agents.py` loader 驗 schema）——**rule 端不材料化 model 值**。
 
-tier 是 requirement 能力檔：full＝旗艦、vision＝影像、lite＝一般；旗艦資格、升降級、坐位與歸因見 skill。
+## precedence（always-on 骨架；全協議在 skill）
 
-model 詞彙（user 裁定）：prose/doctrine 與 bridge 委派一律 provider native ID；CC 詞彙（sonnet/opus）僅限 CC harness 自身接線；**禁 native＋alias 複合表達**（alias fail-closed）。詞彙表與 guard 見 model-routing skill（`bridge_model_vocab` invariant）。
+WorkUnitContract → qualification/judgment/capability hard filter → binding/carrier compatibility → availability tri-state → ArcOverride constraint → RoutingPolicy soft ranking → DispatchPlan（無單一合格 candidate＝declared decomposition 或 no-candidate）。
 
-## 角色 → tier
+## hard invariants（違反＝路由錯誤，load 與處置 fail loud）
 
-| 角色 | tier 與約束 |
-|---|---|
-| code-reviewer / primed / review command agent | lite 預設（user 拍板）；僅高保護面/跨邊界語義升 full，禁順手升級 |
-| impl-lite | lite——規格化機械段執行；lite test 只算規格陳述，驗收/判斷密集位由主 session 補 |
-| judge-review / execution-plan / post-build 編排 | full，不可條件降級（sycophancy 非 effort 可補）；seat 非 full（如 flash 主模型 session）→ 升級外派 bridge full-tier model（現值查 model-routing skill tier 表），禁 in-session 降級自判——tier 約束跟角色走、不跟座位走 |
-| spec-miner / lite-verify / cross-verify-investigator / render / cron 機械段 | lite；read-only 查證，缺源標 unverified |
-| mem-distill | lite 寫入型；prompt 清單守範圍 |
-| vision-review | vision；remote 先落地、CR per-session 可掛 |
-| research / explore | 全域研究 full（v3.1 裁決，AIR-76）＋CR 白名單；內建 Explore fallback 繼承主模型 |
-| harness 內建 general-purpose / Explore | 無 pin 繼承主模型；機械/lite 工作派 registry，禁假設內建預設便宜 |
+- **no-silent-downgrade**：judgment floor／capability hard requirement 無合格 candidate 時顯性 no-candidate／escalation；中途靜默換 model／降 effort／棄審禁用；任何降級必顯式記錄。
+- **token provenance**：每個 wire token 帶 kind（provider native ID／harness alias／carrier slug），native／alias／slug 分欄禁混型、禁複合表達；prose／bridge 委派一律 provider native ID；token 值只在 catalog。
+- **effective effort**：candidate＝(model identity, binding, requested effort, effective effort) 四元組；effective effort 無法確認時只能 conditional，不滿足 decision hard gate；effort 不能把未 qualification 的 candidate 補成 decision-qualified。
+- **model fact single source**：model identity／binding／capability／qualification 只住 catalog（loader 驗證）；rule／workflow／模板禁雙寫（parity gate＝`sync_agents.py --check`）。
+- volatile state（訂閱／quota／reset／帳號／即時 availability）不住 catalog／rule——每次 dispatch 前由 memory spine（`model-runtime-entitlements`）／probe 形成 AvailabilitySnapshot；stale／unknown 不得當 available。
 
-## dispatch 預設（fleet 層）
-
-- **fleet 預設 lite**：未點名＝lite 檔；旗艦腿（full-tier agent／5.3）須 user 明示點名（user 裁定「只有我說要用 5.3 才用」）
-- **主 session 不親自跑機械／實作段**：打包派 lite（impl-lite 等）；判斷密集位主 session 直做（上表 impl-lite 行對偶）
-
-## external-runtime routing（family 軸）
-
-family＝GLM/muse/codex；profile＝implement/review/advisory——tier/family/profile 詞彙由本檔定義，其他載體只引用。**委派、收法、定向接續/fork 前必載 model-routing skill**（解析表、webgpt 約束、eligibility、bridge 契約、rate limit 全在 skill）。external-runtime policy 不擴充 tier/pin；工單禁再委派時載 skill 不等於自行 spawn。
+external-runtime（family 軸）委派、收法、定向接續前必載 model-routing skill；external-runtime policy 不擴充本檔詞彙；工單禁再委派時載 skill 不等於自行 spawn。

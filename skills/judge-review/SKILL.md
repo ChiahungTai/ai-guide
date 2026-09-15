@@ -14,6 +14,18 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 
+## Work unit（固定——AIR-91 S3）
+
+| Role | authority | judgment_floor | qualifications |
+|---|---|---|---|
+| Arbiter | adjudication＋final_disposition | decision | adjudication |
+
+> 欄位語義單一源＝[model-routing](../model-routing/SKILL.md)（WorkUnitContract schema／Role→authority allow-list）；candidate 由 resolver 對 [catalog](../model-routing/catalog.toml) qualification records 硬過濾，本檔不材料化 model 值。
+
+- **Arbiter artifact 才有 disposition**（authority 輸出契約）——本命令的 ✅/❌/⚠️ 決策清單即 disposition 落帳；evidence／findings 類 artifact 無 disposition/apply 欄（越權＝artifact schema 層阻擋）。
+- **seat 規則**：judge 裁決層 seat 非 decision-qualified 時**外派** decision-qualified candidate（carrier adapter——spawn override 換 binding 或 main/bridge 換載體，解析照 model-routing DispatchPlan 條）；**無合格 candidate＝fail loud no-candidate，禁 in-session 降級自判**（no-silent-downgrade hard invariant）。
+- **decision ≠ apply**：judge 交付可執行決策＋驗證依據；apply 由呼叫端（見「反拖延原則」actor 邊界）——升級外派時 carrier 換的是 decision 腿的載體，不是把 apply 權限交給 Arbiter。
+
 ## 核心目標
 
 **「查證事實／假設 → 比較選項與直接／間接後果 → 決策與改判條件 → 寫持久化」**

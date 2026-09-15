@@ -1,0 +1,139 @@
+# deployment presets——AIR-91 S2
+#
+# 單一源：registry slug 的 harness 部署設定（membership／read-write／sandbox／
+# background／default binding reference）。model 供給事實（binding 本體——
+# wire token／token kind／effort encoding／transport）單一源＝
+# skills/model-routing/catalog.toml；本檔只持 FK 引用，禁重抄 model 值。
+#
+# 所有权邊界（loader fail-loud 拒絕下列欄位）：
+# - Role／authority／qualification／workload／judgment floor＝WorkUnitContract
+#   （workflow，S3）所有，不住本檔——preset 是 deployment adapter 非 demand 源
+# - quota／reset／account／available-now 等 volatile state 禁入
+# - requirement 欄＝legacy --map 四欄相容 token（full/vision/lite），非路由
+#   依據；正式能力需求表達＝WorkUnitContract qualifications（S3）
+#
+# 等價承諾：default binding 解析結果與 AIR-91 前的 tier→pin dict 逐 byte 等價
+# （tests/test_sync_agents.py 等價矩陣以 LEGACY_* golden 釘住）。改 pin＝改
+# 這裡的 ref／effort＋catalog binding，重跑 sync_agents.py。
+#
+# background＝deployment 鏡像（parity gate：與 roles/ frontmatter 宣告需一致，
+# drift 即 sync fail loud）；render 仍以 roles frontmatter 為準（authoring 面）。
+# tools 投影（claude 剝 CR MCP 白名單行）由生成器承載（agents/AGENTS.md 已知
+# 刻意分歧），不在本檔重複宣告。
+
+schema_version = 1
+
+[allow_lists]
+harnesses = ["zcode", "claude"]
+requirements = ["full", "vision", "lite"]
+
+[[preset]]
+slug = "code-reviewer"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "code-reviewer-primed"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "cr-research"
+requirement = "full"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3"
+effort = "high"
+
+[preset.default_binding.claude]
+ref = "cc-registry-opus"
+
+[[preset]]
+slug = "cross-verify-investigator"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "impl-lite"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-write"
+sandbox = "default"
+background = false
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "lite-verify"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = false
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "mem-distill"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-write"
+sandbox = "default"
+background = false
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "spec-miner"
+requirement = "lite"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
+
+[[preset]]
+slug = "vision-review"
+requirement = "vision"
+harness = ["zcode", "claude"]
+read_write = "read-only"
+sandbox = "default"
+background = true
+
+[preset.default_binding.zcode]
+ref = "zcode-registry-glm-5.3-flash"
+effort = "high"
