@@ -18,7 +18,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
    uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/mine_corrections.py --days 7
    ```
 
-   輸出：候選清單（時間／session 短 id／摘錄）＋計數。腳本已排除 subagent sessions、task-notification 注入、compact 摘要。
+   輸出：候選清單（時間／session 短 id／摘錄）＋計數。腳本已排除 subagent sessions、task-notification 注入、compact 摘要、排程/harness 機器注入（🔴/【】開頭 prompt、TodoWrite 提醒、續讀摘要頭、Read replay、subagent-message 轉投）。
 
 2. **跑 CR 使用量腳本**（機械面）：
 
