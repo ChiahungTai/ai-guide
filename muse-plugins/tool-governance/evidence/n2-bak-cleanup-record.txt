@@ -1,0 +1,11 @@
+-rw-r--r--@ 1 ctai  staff     60 Sep  7 19:31 /Users/ctai/.config/muse/AGENTS.md.bak
+-rw-r--r--@ 1 ctai  staff  31923 Sep 12 07:45 /Users/ctai/.config/muse/AGENTS.md.bak-spawn-rule
+-rw-r--r--@ 1 ctai  staff    133 Sep  2 19:56 /Users/ctai/.config/muse/settings.json.bak-pre-cr
+-rw-r--r--@ 1 ctai  staff  31923 Sep 12 07:45 /Users/ctai/.zcode/AGENTS.md.bak-spawn-rule
+--- head 摘要:
+# probe
+
+MARKER-CONFIGMUSE-5a1f: cite this line if visible.
+{
+  "schema_version": 1,
+  "provider": "meta",

@@ -1,0 +1,33 @@
+{
+  "error": {
+    "code": "unsupported-field",
+    "message": "hook capability field `matcher` is a Claude/Codex hook field; TBH plugin hooks key on `event`; matcher aliasing is tracked separately",
+    "details": {
+      "valid": false,
+      "source_path": "fix-matcher",
+      "plugin": null,
+      "capabilities": {
+        "skills": [],
+        "hooks": [],
+        "mcp_servers": [],
+        "commands": [],
+        "reminders": []
+      },
+      "diagnostics": [
+        {
+          "code": "unsupported-field",
+          "severity": "error",
+          "message": "hook capability field `matcher` is a Claude/Codex hook field; TBH plugin hooks key on `event`; matcher aliasing is tracked separately",
+          "path": "fix-matcher/.muse-plugin/plugin.json"
+        },
+        {
+          "code": "missing-capability-path",
+          "severity": "error",
+          "message": "plugin file is not readable: No such file or directory (os error 2)",
+          "path": "fix-matcher/hooks/noop.sh"
+        }
+      ]
+    }
+  }
+}
+hook capability field `matcher` is a Claude/Codex hook field; TBH plugin hooks key on `event`; matcher aliasing is tracked separately

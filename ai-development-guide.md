@@ -8,6 +8,7 @@
 
 - **先定位現在在哪**：有 STATE.md 先讀最近 session 觀察，再以 active card／board 狀態與 card notes／EP 進度節核對目前工作、已完成處與 resume point；觀察層不能取代現況來源。
 - **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；需求釐清、審查、修復等分支及各步方法論查 skills/CLAUDE.md 索引與對應 skill。
+- **skill 優先序**：skill 方法論衝突時，ai-guide 部署的 skills 優先於 harness 內建／marketplace bundled 同功能 skill。
 - **需要跨 context 接續時先結算**：context 將耗盡先把進度與待辦寫回 EP／card；同一工作稍後續跑用 /at，交給另一個 session／repo／provider 用 /handoff。
 
 ## 演化性思維

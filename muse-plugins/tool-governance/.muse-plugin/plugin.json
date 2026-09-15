@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "name": "muse-tool-governance",
+  "version": "0.1.0",
+  "description": "PreToolUse gate blocking python-heredoc file-write bypass in bash commands (AIR-97; policy source rules/tool-discipline.md 檔案修改禁令)",
+  "compat": {"manifestDir": ".muse-plugin"},
+  "capabilities": {
+    "hooks": [
+      {
+        "id": "bash-write-guard",
+        "event": "PreToolUse",
+        "command": ["hooks/bash_write_guard.sh"]
+      }
+    ]
+  }
+}
