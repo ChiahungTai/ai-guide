@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<title>開發流程重設計：少做重複工，保留必要判斷</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── 可折疊 sidebar：nav width→0、main flex 吃滿（禁 display:none 於 nav／iframe／section 承載——見檔頭 rationale ②）── */
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  /* ── main ── */
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  /* ── 折疊鈕：展開態貼 sidebar 右緣垂直居中；折疊態浮出鈕固定左上 ── */
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    
+    <span class="badge plan">📋 計畫完成・待採用</span>
+    
+    <h1>開發流程重設計：少做重複工，保留必要判斷</h1>
+    
+    <div class="meta">Marshal：b4a3019<br>本弧：0bbddb1<br>projection SHA：4cd321a32d8bc4bb4d95951ea97e5f803f4f37f933fae5f12960f9e9c42a701e</div>
+  </div>
+  
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼改</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>新流程與驗收</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>風險與回源</a></li>
+  </ul>
+  
+  <div class="backlinks">
+    <span>← backlog board（VSCode Backlog Cards）</span><br>
+    <a href="ep.md">EP 全文</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>讓你跟得上重要設計</h2>
+  <div class="sub">承接已完成的 Marshal；這一弧設計流程如何使用它。</div>
+  
+  <ul class="dots">
+    <li>目前的主要成本是同一份工作在不同入口重複判定、審查、讀料與結算。新提案保留既有命令，讓它們使用一致的風險判準與證據身份。<br><br>方向 brief 先說你將得到什麼；成果 brief 再說真的改了什麼、如何驗證、哪些仍不確定。你仍決定 compact 時機及 commit/deploy 授權。</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2>四段改造，沿用既有命令</h2>
+  <div class="sub">以下均為計畫中，尚未修改現行規則。</div>
+  
+  <ul class="dots">
+    <li>S1 統一 review 風險與證據身份 → S2 接回規劃、實作與收斂入口 → S3 先落盤、恢復後核對 → S4 精簡視圖與結算，完成 behavior pilot。</li>
+  </ul>
+  
+  <div class="frame-wrap degraded"><div class="bar">流程示意・計畫中</div><div class="degraded-body"><b>規劃 → 獨立 review → accepted EP → 實作與驗證 → 補未覆蓋 review → 裁決及修正 → 成果 brief → user commit</b><br>中斷時先 checkpoint；恢復先查實物、背景工作與 active findings，再做下一步。圖形渲染待後續 hook 2 評估。</div></div>
+  <table><thead><tr><th>情境</th><th>新提案</th><th>保留的防線</th></tr></thead><tbody>
+  <tr><td>一般變更</td><td>一個獨立 reviewer；普通中間段以實跑與證據為主</td><td>需求、正確性、驗證 profile 與弧末 review</td></tr>
+  <tr><td>公開邊界、風控、安全、控制面 gate</td><td>分離 fresh／intent，補必要專項與段級 review</td><td>不能因 diff 小或 quota 少降級</td></tr>
+  <tr><td>整合器、新簽名或注入點</td><td>保留 adversarial／architecture／consumer 專項</td><td>原有 extra 不因 base 減量消失；UC-split 亦保留</td></tr>
+  <tr><td>不跑 post-build</td><td>fallback 仍先核對弧級 review；缺失先補</td><td>若明示停審，僅交 Built／🟡，不報完成</td></tr>
+  <tr><td>已審內容再次收斂</td><td>核對 scope／content／profile 後復用，只補 delta</td><td>缺身份就全審；跨段整合仍驗</td></tr>
+  <tr><td>usage 中斷</td><td>先保存下一步與未決證據，memory 整理可另交接</td><td>不自動 compact；不把 Built 當 Verified</td></tr>
+  </tbody></table>
+  <div class="note">驗收先看 seeded 反例能否守住，再看重複派工與讀料是否下降。沒有量測，不宣稱節省比例。</div>
+</section>
+
+<section id="s3">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  
+  <h3>主要風險</h3><ul class="dots"><li>合併 reviewer 會失去部分 context 多樣性：高風險保持分離，若 pilot 漏錯則縮小新預設適用面。</li><li>身份核對不完整會錯跳審查：未提交檔案內容、profile 定義與證據可讀性皆需核對。</li><li>文件變短不等於你更理解：保留具體前後行為、理由、未驗項，實際讀稿驗收。</li></ul>
+  <h3>當前狀態</h3><p>四段 EP 與 Marshal overhead 增補均已完成 review、裁決及修訂複核；可交其他 LLM 實作。新流程尚未實作、量測或部署。AIR-96 的既有改動保持原狀。</p>
+  <p>新增設計：同權限的機械查證／實作成果可批次；多 review units 保持 context 分離。逐成果回收，空白／失敗不當零 findings；followup 回證據，主鏈單寫狀態。EP 共 24 個驗收情境。</p>
+  <p>本頁互動／視覺驗證依 user 指示本輪延後；靜態檢查不代表實際渲染通過。</p>
+  <p class="src">
+    EP：<a href="ep.md">ai-analysis/_tasks/09-15-development-workflow-redesign/ep.md</a><br>
+    task baseline：0bbddb1ca69b8d574b6f5ef20cecaba14050a691 · projection source：4cd321a32d8bc4bb4d95951ea97e5f803f4f37f933fae5f12960f9e9c42a701e · 卡：尚未新建；AIR-60 部分重疊，開工前對齊 owner
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "finalText": "EP 計畫文字層級複核（findings only，無 apply/disposition）：\n\n① resolved\n錨點：`ep.md:233`、`ep.md:243`\n理由：233 明示機械查證/實作批次「不含多個 review units」；243 明示多 review units 禁共 worker context（即使同 authority），每 unit 獨立 context/read-set，並明示禁改名規避＋A 讀 A 意圖後審 B 仍派 fresh context 的驗收反例。M1-B1 已閉合。無新增 Important。\n\n② resolved\n錨點：`ep.md:175`（SM-24）、`ep.md:237`、`ep.md:247`、`ep.md:222`\n理由：247 點名改 `:43–51`/`:61`，統一為 followup 只回 findings/證據、主鏈編排者為 status 唯一寫入者；明示 verified/closed 是 status 非 disposition，新增/矛盾 findings 交 Arbiter 重裁後再更新；並列 `workflow-review-pattern`、implement/post-build 同步引用寫入責任。222 保留 disposition authority/值域。M2-B1 雙寫者與 status/disposition 混淆已澄清。無新增 Important。\n\n③ resolved\n錨點：`ep.md:223`、`ep.md:174`（SM-23）、`ep.md:128`\n理由：223 點名改 `post-build:88`，先核 terminal=completed＋輸出完整＋明確 review 結果/scope coverage，timeout/非零/空白/截斷/缺 coverage 一律留 pending；SM-23 與 128 同步「不當零 findings」。M4-B1 快道落點已補。無新增 Important。\n\n限制：本次未做 current source 複核（`:88`、`:43–51`/`:61` 現行文字未重讀），僅核 EP 計畫文字閉合；source 落點待 implement 逐檔驗收。未擴及 F1–F6、HTML、背景報告、runtime，未跑測試。\n",
+  "job": {
+    "callerHarness": "codex",
+    "callerPid": 44662,
+    "callerSession": null,
+    "effort": "xhigh",
+    "exitCode": 0,
+    "family": "muse",
+    "id": "job-mu2fstmq-gouh8l",
+    "jsonlPath": ".delegate-bridge/jobs/job-mu2fstmq-gouh8l.jsonl",
+    "model": "muse-spark-1.3",
+    "promptPreview": "# 三個增補漏洞的最終複核（唯讀、有界）\n\nrepo `/Users/ctai/Github/ai-guide`，task `ai-analysis/_tasks/09-15-development-workflow-redesign/`。Reviewer/findings，decision floor，review_findings qualification，無 apply/dispositi",
+    "sessionId": "01a0a447-9c69-7e33-9dab-258e8ba4a6aa",
+    "skippedUnknown": 17,
+    "skippedUnparsable": 0,
+    "status": "completed",
+    "steps": 200,
+    "summary": "EP 計畫文字層級複核（findings only，無 apply/disposition）： ① resolved 錨點：`ep.md:233`、`ep.md:243` 理由：233 明示機械查證/實作批次「不含多個 review units」；243 明示多 review units 禁共 worker context（即使同 authority），每 unit 獨立 context/rea",
+    "timestamp": "2026-09-15T08:56:53.984Z"
+  }
+}

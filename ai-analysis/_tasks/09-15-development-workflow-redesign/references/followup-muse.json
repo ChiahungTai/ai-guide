@@ -1,0 +1,22 @@
+{
+  "finalText": "Followup 核查完成（findings authority；不批准實作、不改 accepted 狀態）。機械驗證式已逐條重跑（rg，只讀）。\n\n| Finding | 判定 | EP 錨點 | 理由 |\n|---|---|---|---|\n| F1 | resolved | SM-16（EP:160）、S2 修改要點（EP:205）、S2 驗證（EP:218） | 原問題（零獨立 review 經 fallback 直達 ✅＋結案）已堵死：fallback 缺弧級 coverage 必須先補獨立 review＋裁決＋修正驗證；user 明示停審則只交 Built／🟡，禁 ✅／Done／歸檔；且明寫「缺帳本不能以 git／卡狀態推導為已驗」，正好否定原反例路徑。驗證案例已加入 SM-16 零 review fallback。 |\n| F2 | resolved | S1 修改要點（EP:179）、S2 修改要點（EP:205）、SM-19（EP:163）、S4 Oracle（EP:273） | 採建議第二選項：三組 extras（整合器→adversarial、新簽名／注入點→architecture＋consumer-perspective、UC 數 >6→UC-split）全部保留映射，前兩者觸發段級 review；S2 驗證與 S4 oracle 各加整合器案例。`rg 整合器\\|adversarial` 四處命中，原零命中缺口已補。 |\n| F3 | resolved | 部署段（EP:295）、S4 Context（EP:263） | 部署鏈已完整：`deploy_agents.py` 預覽＋重建、size gate、逐端 rg、`/sync-sources` freshness byte 比對、symlink 核對、fresh context 載入與合併尺寸查驗、pre/post-deploy stale 分列。位置說明：鏈放在 manifest 部署段（治理 S3 的 rules 改動）而非 S3/S4 驗收條文內，實質覆蓋原要求；S4:263 另有 freshness／fresh-session 承接。 |\n| F4 | resolved | S1 修改要點（EP:180）、SM-13（EP:157）、S2 驗證（EP:218） | pending 已有落點與 owner：既有帳本記 open 阻擋項（含 scope/profile、原因、owner、DispatchTrace、重查 availability 條件），完成報告與 post-build triage 必列；re-arm 僅在已授權排程下排，否則保留明確接續動作；再次 dispatch 前先查活 job，不與 worker timeout 混同。 |\n| F5 | resolved | S4 修改要點（EP:262） | 採建議 (a) 方向：本弧不新增結算 receipt/cache，改用既有 EP 進度指針＋metadata-sync 冪等重跑；分工明寫（review identity 只授權復用 review 證據，不代表 metadata 已完成；commit 仍做最終對帳）。註：EP:105 的 \"segment receipt\" 指 AIR-60 既有承諾用語，非本 EP 新機制，不屬本 finding 標的。 |\n| F6 | resolved | H3（EP:93）、S3 修改要點（EP:232） | pointer 落點已寫死：既有 EP 進度節（無 EP 則 journal／指定 report），禁新檔／registry／跨任務索引；驗收用含 ignored 路徑的 scoped 清單盤點新增狀態庫（比原建議的 `git status` 更嚴，補上 ignored 盲區）。 |\n\n新直接矛盾：無新增 Important。抽查修訂前後一致性（SM-16↔EP:205 停審語義、EP:262↔S1:182 復用邊界、EP:232 例外「manifest 共用定義」↔EP:230 task-recovery.md 新增、EP:205 缺帳本禁推導↔EP:86 恢復輸入）均無直接矛盾；F3 的鏈位置與驗證式字面（S3/S4 段內命中）有出入，但實質已覆蓋，已在理由列明。\n\n本結論僅為 findings followup；EP 帳本維持「implemented，待 followup」，verified／accepted 狀態變更權不在此。",
+  "job": {
+    "callerHarness": "codex",
+    "callerPid": 91190,
+    "callerSession": null,
+    "effort": "xhigh",
+    "exitCode": 0,
+    "family": "muse",
+    "id": "job-mu2e7wgx-ffgcbp",
+    "jsonlPath": ".delegate-bridge/jobs/job-mu2e7wgx-ffgcbp.jsonl",
+    "model": "muse-spark-1.3",
+    "promptPreview": "# EP 修訂 followup（唯讀、禁止再委派）\n\n任務目錄 `/Users/ctai/Github/ai-guide/ai-analysis/_tasks/09-15-development-workflow-redesign/`。\n讀 `ep.md` 與 `references/review-muse.json`。僅核 F1–F6 修訂是否解決原問題及有無新直接矛盾；需要時精讀先前 fin",
+    "sessionId": "01a0a41f-16a1-7b80-b98e-684b8516b533",
+    "skippedUnknown": 43,
+    "skippedUnparsable": 0,
+    "status": "completed",
+    "steps": 200,
+    "summary": "Followup 核查完成（findings authority；不批准實作、不改 accepted 狀態）。機械驗證式已逐條重跑（rg，只讀）。 | Finding | 判定 | EP 錨點 | 理由 | |---|---|---|---| | F1 | resolved | SM-16（EP:160）、S2 修改要點（EP:205）、S2 驗證（EP:218） | 原問題（零獨立 revie",
+    "timestamp": "2026-09-15T08:13:17.543Z"
+  }
+}
