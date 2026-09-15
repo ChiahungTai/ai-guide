@@ -341,8 +341,8 @@ def parse_catalog(text: str) -> ModelCatalog:
         for value in (*values, fixed):
             if value is not None:
                 assert value in _EFFORT_ORDINAL, (
-                    f"catalog: effort token {value!r} 不在跨家族詞彙"
-                    f"（{sorted(_EFFORT_ORDINAL)}）"
+                    f"catalog: binding {bid!r}: effort token {value!r} 不在"
+                    f" _EFFORT_ORDINAL 跨家族詞彙（{sorted(_EFFORT_ORDINAL)}）"
                 )
         transport = tuple(row.get("transport", []))
         assert set(transport) <= _TRANSPORT_CAPS, (

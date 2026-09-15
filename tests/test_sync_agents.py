@@ -979,6 +979,25 @@ def test_catalog_rejects_unknown_effort_token():
         sync.parse_catalog(text)
 
 
+def test_catalog_effort_parity_error_names_binding_and_value():
+    """AIR-96 殘項①：catalog effort 值域 ⊆ _EFFORT_ORDINAL 機械對帳。
+
+    未知值須 fail loud 且訊息帶 binding id 與非法值（可定位修復）；
+    effort_values 與 slug_fixed 的 fixed_effort 兩路徑都要擋。
+    """
+    # effort_values 帶未知值 → 訊息含 binding id＋非法值
+    text = mutated_catalog(
+        'effort_values = ["minimal", "low", "medium", "high", "xhigh"]',
+        'effort_values = ["minimal", "low", "medium", "high", "xhigh", "turbo"]',
+    )
+    with pytest.raises(AssertionError, match=r"bridge-codex-sol.*turbo"):
+        sync.parse_catalog(text)
+    # fixed_effort（slug_fixed）帶未知值 → 同樣帶 binding id＋非法值
+    text = mutated_catalog('fixed_effort = "high"', 'fixed_effort = "turbo"')
+    with pytest.raises(AssertionError, match=r"bridge-codex-web-high.*turbo"):
+        sync.parse_catalog(text)
+
+
 def test_catalog_rejects_unknown_workload():
     text = mutated_catalog(
         'workload = "visual_observation"', 'workload = "vision_review"'

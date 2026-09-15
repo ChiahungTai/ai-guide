@@ -4,8 +4,9 @@
 # allow-list metadata）。SKILL.md doctrine 與 workflow demand 只引用、禁重抄值。
 #
 # effort 值域三處並存（本檔 effort_values／SKILL.md effort 家族對譯表／
-# sync_agents.py _EFFORT_ORDINAL）——今日一致；改任一處須同步另兩處
-# （機械 parity gate＝後續卡承接）。
+# sync_agents.py _EFFORT_ORDINAL）——catalog↔ordinal 已機械對帳（loader
+# 載入即驗未知值，fail loud 帶 binding id）；SKILL 對譯表為 prose 政策
+# 敘述，改值時人工同步。
 #
 # 所有權邊界（loader fail-loud 拒絕下列欄位）：
 # - Role／work_unit／authority／registry slug／preset＝demand（workflow）／

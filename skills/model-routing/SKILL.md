@@ -71,6 +71,16 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 - **DispatchPlan**：selected candidate 四元組＋carrier adapter 路由（selected binding 等於 named preset default＝registry；harness 支援 spawn override＝同 WorkUnitContract／ExecutionPreset 只換 binding；否則 main-or-bridge 並完整裝載 Role／authority／surface 與禁止再委派）＋ExecutionPreset reference（S2 起 `agents/presets.toml`）。
 - **DispatchTrace**：欄位清單見 AvailabilitySnapshot 段（work-unit-local attempt 史）。
 
+### inherit（pseudo-binding）
+
+> spawn 未點名 model 時的 carrier adapter 第四形態（前三形態見 DispatchPlan 條：named preset default＝registry／spawn override／main-or-bridge）；語義五條，本節單一源（套用段僅 pointer）。
+
+1. **identity**：inherit＝harness 預設模型解析（spawn 未點名 model 時），**非 catalog binding**——不佔 candidate 四元組 `dispatch_binding` 欄位真值；DispatchPlan 記 `binding=inherit`
+2. **contract-preserving**：Role／authority／surface／escalation 隨 WorkUnitContract 完整攜帶——inherit 不降 contract
+3. **升級路徑**：work unit 需 decision floor 或特定 qualification 而 inherit 解析結果不滿足→換實 binding（registry named preset／spawn override／bridge），不是留在 inherit 硬跑
+4. **與 pending_binding 關係**：CC `sonnet/haiku` 詞彙在 catalog binding 補上前，inherit 鏈上的 wire 值不可宣稱——標 pending_binding
+5. **追蹤**：inherit 解析結果記錄在 DispatchTrace；實際 wire model 由 carrier 回報行 `[Agent] model=…` 承載
+
 <!-- AIR-91 S2：legacy tier × provider 權威表已移除（等價 gate 通過）——wire token／
      effort encoding／transport 供給事實改由 catalog.toml dispatch_binding 承載；
      registry pins 改由 agents/presets.toml default binding 承載；dispatch 政策
@@ -306,7 +316,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 - **external-runtime 派發前重讀本檔「完成回報收法」節**——收法演進快，禁用 session 記憶／memory desc 派發（真實案例：過期派發事故——看到改版 commit 標題 ≠ 重讀條文，舊詞 resume-to-poll 被 wrapper 契約拒絕）
 - **CC Workflow path**（ultracode；CC 端；ZCode 端＝registry 釘選）：script `agent({model})` 填 literal —— review command agent = inherit（lite 預設；高保護面／跨邊界語義面升 full）；lite 類＝named preset 生成檔 inherit（spawn-time 需點名時用 CC 詞彙 `sonnet`——**sonnet／haiku 的 catalog binding＝pending_binding**，補 binding 前由 harness 詞彙面解析）
-- **inherit＝contract-preserving carrier bypass**：spawn 未點名 model 時（CC 8/9 preset 的實際路徑），Role／authority／surface 隨 WorkUnitContract 傳遞、binding 身份記 inherit——不等於降級 contract（正式化為 inherit pseudo-binding＝後續卡）
+- **inherit＝contract-preserving carrier bypass**：spawn 未點名 model 時（CC 8/9 preset 的實際路徑）——正式語義五條（identity／contract-preserving／升級路徑／pending_binding／追蹤）見上方「inherit（pseudo-binding）」節
 - **CC Agent Tool path**（fallback）：spawn `model` param 同上
 - **ZCode path**：pins 釘在 `agents/zcode/` 定義檔 frontmatter（由 presets.toml default binding 生成，治理見 agents/AGENTS.md registry 段）
 
