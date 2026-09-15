@@ -13,7 +13,9 @@ allowed-tools: ["Read", "Bash"]
 
 方法論定義見 [test-driven-development](../test-driven-development/SKILL.md)（反模式定義）；覆蓋對稱性（source↔test 對應）的判定流程定義在本檔角度 2。通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/多層驗證）見 [review-engine](../review-engine/SKILL.md)。
 
-> **audit-test 是 review 執行預設的例外**：review 執行預設（force 獨立 / max-agents / 3-perspective / mode 判定，見 [review-engine](../review-engine/SKILL.md)「review 執行預設」）適用 ep-review/code-review/execution-plan/implement；**audit-test 是 read-only 偵測器**（不做平行 3-perspective、不 mode 判定；Daily Scan 分段落盤的 `{agent}` 命名見「長任務 findings 落盤策略」段），僅共用通用審查邏輯（spawn 失敗處理仍走 [agent-workflow](../agent-workflow/SKILL.md) general 階梯）。
+> **audit-test 是 review 執行預設的例外**：review 執行預設（force 獨立／風險 profile context 配置／mode 判定，見 [review-engine](../review-engine/SKILL.md)「review 執行預設」）適用 ep-review/code-review/execution-plan/implement；**audit-test 是 read-only 偵測器**（不做平行多腿配置、不 mode 判定；Daily Scan 分段落盤的 `{agent}` 命名見「長任務 findings 落盤策略」段），僅共用通用審查邏輯（spawn 失敗處理仍走 [agent-workflow](../agent-workflow/SKILL.md) general 階梯）。
+>
+> **與 review profile 覆蓋的關係（S1 證據復用——不固定全量重跑）**：既有 review（弧級／段級，帳本 header 帶 identity）的 `coverage` 已含**相同 test 的相同審核軸**時，本命令引用該證據不重跑——復用判準五條（同基線／同實物內容／scope 覆蓋／profile 相容／證據可讀）見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」；scope 新增的 test 檔補審。test 特有 mandate（反模式／mock 健康度／mutation 抽查等角度）保留，不因 profile 覆蓋而省——profile 覆蓋只吸收**相同軸**；**複用 findings 不等於複用測試**——環境／config／input 改變時驗證證據另行失效（同 workflow-review-pattern 不變項）。
 
 ---
 
@@ -67,6 +69,7 @@ allowed-tools: ["Read", "Bash"]
 | 5 | 漸進驗證合規 | quality-constraints 漸進式驗證（DEPTH-MIN 集合） | Suggestion |
 | 6 | 測試必要性 | acceptance-evidence 證據時效性 | Important / Suggestion |
 | 7 | 變異測試抽查（mutation-testing-lite） | acceptance-evidence L2 獨立性塌縮（機械量測面） | Critical（survived 真實缺口） |
+| 8 | 測試契約對帳（EP 含凍結 TC 時，條件觸發） | 本檔角度 8（TC 格式定義源＝execution-plan 測試規劃段） | Critical（receipt/digest 不一致、圓形依賴）／Important |
 
 ---
 
@@ -232,6 +235,24 @@ allowed-tools: ["Read", "Bash"]
 
 **成本實證**（供報價）：288 行 critical path＋68 tests＝8.2s wall、103 mutants、87.4% kill rate、13 survived 抽讀約 10 分鐘 LLM 判讀——抓到 10 個真實缺口（含 price<1 會計＋風控雙處無保護）；補強後重跑同模組＝100:3（97.1%）、殘留 3 皆 (b)(c) 類——**輪抽查基準用補強後數字，勿把已修缺口重報**（mosaic memory `project-mutation-testing-spike-t32` 有收案記錄，承接先查勿重做）。
 
+### 角度 8：測試契約對帳（EP 含凍結 TC 時）
+
+**核心原則**：凍結 TC 是契約，測試是契約的消費——本角度機械對帳「測試忠實消費契約且 provenance 完整」。TC 格式（claim／Given-When／oracle／oracle_source／evidence class／uncovered）定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）；三 gate 語彙（STRUCT_OK／SEM_OK／BEFORE_GREEN）與 [implement](../implement/SKILL.md) RED provenance 精確同名——對帳鍵單一套。
+
+**觸發輸入（operationalize）**：任務家 `ep.md` 探測（arc/獨立跑形態——讀 EP 整合策略有無凍結 TC 段）或 session context EP（in-context 形態）；兩者皆缺 → 本角度跳過（standalone 無 EP 的存量測試不適用）。
+
+| # | 對帳項 | 機械操作 |
+|---|---|---|
+| 1 | predicate 對帳 | TC predicate-ID ↔ test 斷言逐一映射（`rg <TC-ID> tests/`；缺漏列 finding） |
+| 2 | mock↔evidence class | TC 標 L4-L6 的項若以 mock 驅動→finding（evidence 降級）；mock 回傳值來源比對 oracle_source |
+| 3 | oracle 圓形依賴 | oracle_source 指向待測實作（或 test 硬編碼 impl 值）→Critical（此類屬 oracle 級：標記 escalate challenge，非 audit 自斷） |
+| 4 | RED receipt＋digest | receipt 檔（任務家 `red-receipts.md`）存在、TC-ID 齊、sha256 與 frozen test 現值一致（不一致＝GREEN 期靜默改——Critical） |
+| 5 | 基線跑法（BEFORE_GREEN） | receipt 記 failing predicate；抽查測試在 baseline（`git stash` 形態）確實紅；STRUCT_OK／SEM_OK gate 痕跡核對 |
+| 6 | fixture provenance | fixture 值來源標注（歷史數據/構造）；無源 fixture 用於 oracle 級斷言→finding |
+| 7 | 路徑覆蓋反查 | 掛引用：既有角度 4（符號≠路徑）——TC 對應消費端路徑驅動確認，本項不重複定義 |
+
+判斷密集項（如「mock 回傳值是否即 oracle」的 fidelity 裁決）標「需查證」交下游（judge-review／實作查證）——與「Audit 誠信約束」一致。
+
 ---
 
 ## 輸出格式
@@ -299,7 +320,7 @@ allowed-tools: ["Read", "Bash"]
 ```
 
 每個 test function 的觸發檢查項全通過 = 1 個通過。任一 Critical/Important = 不通過。
-Diff/Commit Audit 檢查 5 角度（反模式 + 覆蓋對稱性 + mock 健康度 + 消費端驗證覆蓋 + 測試必要性），Daily Scan 檢查全部 6 角度。
+Diff/Commit Audit 檢查預設 5 角度（反模式 + 覆蓋對稱性 + mock 健康度 + 消費端驗證覆蓋 + 測試必要性）＋角度 8（EP 含凍結 TC 時條件觸發，進分母；無 EP/無凍結 TC 跳過）；Daily Scan 檢查全部 8 角度（角度 5 daily 限定；角度 7 變異抽查按自身雙 trigger 輪選執行、未觸發不進分母；角度 8 同條件觸發）。
 
 | 評分 | 意義 |
 |------|------|
@@ -322,7 +343,8 @@ Diff/Commit Audit 檢查 5 角度（反模式 + 覆蓋對稱性 + mock 健康度
 | 7 | 消費端驗證覆蓋（角度 4） | 預設 |
 | 8 | 漸進驗證合規（角度 5） | `--daily` |
 | 9 | 測試必要性（角度 6） | 預設 |
-| 10 | 產出報告 | 預設 |
+| 10 | 測試契約對帳（角度 8） | 條件觸發（EP 含凍結 TC——觸發輸入見角度 8） |
+| 11 | 產出報告 | 預設 |
 
 ### 步驟 1：定位掃描範圍
 
@@ -358,7 +380,11 @@ fd -e py . tests/
 
 對每個 test function，按角度 1-3 的標準檢查（步驟 4-6）。步驟 7-9（角度 4/5/6）按各自角度定義段落執行。記錄發現。
 
-### 步驟 10：產出報告
+### 步驟 10：測試契約對帳（角度 8，條件觸發）
+
+EP 含凍結 TC 時（觸發輸入見角度 8），按七項對帳表逐一執行；receipt/digest 比對與 baseline 抽查按對帳項 4/5 操作。無凍結 TC → 跳過本步驟並在報告標記理由。
+
+### 步驟 11：產出報告
 
 按輸出格式模板產出報告。Daily Scan 時由排程載體（週期條件段）直接 append `### 🔍 audit-test` section 進 daily-report（test-quality 在報告裡有自己的 section）；手動跑的 claude-sync log 落點慣例隨 claude -p 載體退役一併停用。
 

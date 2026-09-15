@@ -23,7 +23,7 @@ allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "Workf
 - [python-type-gap](../python-type-gap/SKILL.md) — 第三方套件 type gap（mypy 失敗時）
 - [agent-workflow](../agent-workflow/SKILL.md) — 並發控制、模型偵測、Agent spawn 規範；**各段 dispatch 查表**見其「全生命週期 execution contract（消費側）」（表主體在 agents/AGENTS.md）
 
-Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（Ultracode 下 Phase 4 使用）
+Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（review 載體之一——多腿協調時用，載體選擇由風險 profile 與協調需求決定〔單一源 [review-engine](../review-engine/SKILL.md)〕，非 effort 門檻）
 
 ## WorkUnitContract rows（本 workflow 持有——AIR-91 S3）
 
@@ -82,7 +82,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 **平行可行性分析**：
 1. 建構段落依賴圖，識別可平行段落
-2. 套用 max-agents 限制（預設 3，可透過 `--max-agents N` 或 `-a N` 覆蓋）
+2. 套用平行段落上限（`--max-agents N` 或 `-a N`，預設 3）——**容量上限非配額**：此 cap 只約束實作腿並行度，不是 review 派工數量（review 配置由風險 profile 推導，見階段 4）
 3. **有語義約束的段落強制序列**
 
 **整合器段落識別**（驅動階段 2 硬閘門、階段 3 真實邊界的觸發）：掃描 EP 段落，標記同時滿足以下者為整合器型（見 [validation-strategy](../validation-strategy/SKILL.md)「整合器型變更判定」）：
@@ -105,13 +105,15 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 **前置：EP baseline 記錄**：EP 整合策略缺 `baseline: <hash>` 時補記當下 `git rev-parse HEAD`（通常＝build 首個 code commit 的 parent；resume 或 EP 後另有 commits 時＝補記當下現狀，git 弧邊界仍以該值為準——快照身份與 baseline 分開記，見下段）——`/post-build`/`/code-review` 任務弧審查的範圍邊界由 EP 攜帶，跨 session 不重新推導（見 [code-review](../code-review/SKILL.md)「任務弧模式」）。
 
-**code_reality baseline snapshot（若 repo 可跑 code_reality——偵測單一真相源見 [code-reality](../code-reality/SKILL.md)）**：有 code diff 就跑（cr-audit R8，不綁「補記 baseline」條件；docs mode EP 免——code edges 不變）：`code-reality snapshot --repo <repo> --label <ep>`——錨定 build 起點 code 結構（HEAD 通常 = EP baseline；resume 或 EP 後另有 commits 時錨 build 起點現狀，git 弧邊界仍由 EP baseline hash 管轄，**snapshot 身份（label/時點）與 EP baseline 分開記**——消費端〔code-review 模式 B〕對照實際存在者，snapshot 晚於 baseline 時明示覆蓋區間），是 delta_tour（EP 宣稱模組 vs 實際變動對照）的 before 基準，階段 6 EP 對照歸納、`/code-review` 模式 B primed（含 `/post-build` 編排；弧模式才產出 delta_tour 對照——時點條件見模式 B）與 `/debrief` 前後差異段消費。docs mode EP 跳過（code edges 不變）；未裝跳過，不阻擋。工具用法真相源：[code-reality](../code-reality/SKILL.md) skill。
+**code_reality baseline snapshot（若 repo 可跑 code_reality——偵測單一真相源見 [code-reality](../code-reality/SKILL.md)）**：有 code diff 就跑（cr-audit R8，不綁「補記 baseline」條件；docs mode EP 免——code edges 不變）：`code-reality snapshot --repo <repo> --label <ep>`——錨定 build 起點 code 結構（HEAD 通常 = EP baseline；resume 或 EP 後另有 commits 時錨 build 起點現狀，git 弧邊界仍由 EP baseline hash 管轄，**snapshot 身份（label/時點）與 EP baseline 分開記**——消費端〔code-review B 段〕對照實際存在者，snapshot 晚於 baseline 時明示覆蓋區間），是 delta_tour（EP 宣稱模組 vs 實際變動對照）的 before 基準，階段 6 EP 對照歸納、`/code-review` B 段 primed（含 `/post-build` 編排；弧模式才產出 delta_tour 對照——時點條件見 B 段）與 `/debrief` 前後差異段消費。docs mode EP 跳過（code edges 不變）；未裝跳過，不阻擋。工具用法真相源：[code-reality](../code-reality/SKILL.md) skill。
 
 1. 讀取 Execution Plan（慣例路徑＝任務家 `<task>/ep.md`——探測：`ai-analysis/_tasks/`／`ai-analysis/_projects/<線>/tasks/`／否則 repo-root `00-tasks/`，單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；與 Report Shell 同 task 目錄——一弧全生命檔案同處；舊 `ai-analysis/execution-plans/` 慣例退役），識別段落結構、依賴關係
 2. **backlog 卡狀態更新**（repo 有 `backlog/` 時）：EP 對應卡翻進行中——`backlog task edit <id> -s "In Progress"`（＋開工雙 ref，合約見 [kanban-board](../kanban-board/SKILL.md)）；無 `backlog/` → 容錯跳過（進行中由任務目錄存在性表達；結算在階段 5a）
 3. **深度查證現有程式碼**（不同於階段 0 的 drift 快掃，此處是理解程式碼上下文與設計意圖）。LSP `goToDefinition` 驗證 dependency anchors 的定義端，`findReferences` 驗證消費端，`hover` 確認關鍵參數型別——三者對不同 anchor 獨立，同 block 併發（[tool-discipline](../../rules/tool-discipline.md) 批次化）
 4. **POC + demo 盤點**：掃描 `poc/**/*.py`、`demo_*.py`、`scripts/demo_*.py`、`notebooks/*.ipynb`，建立 `{module} → [poc/demo paths]` 映射表
 5. 檢查清單：Kanban InProgress ✓ | POC/demo 映射表 ✓ | 測試檔案 ✓ | instruction 檔同步 ✓ | 依賴完整 ✓
+
+**same-family dispatch gate（v3.1 測試契約——consumer 側）**：EP 整合策略讀 `author_family` 欄位（producer 端記錄，定義見 [execution-plan](../execution-plan/SKILL.md) 測試規劃段）對照本弧 resolved implement family——相同時，RED 前必須滿足其一：`challenge completed`（pre-RED challenge findings 已 absorbed）或 `degraded: <明示記錄>`（EP 欄位）。兩者皆缺 → **不得進入 RED**，印 `[Same-Family Gate] blocked——需 challenge 或 degraded 標記`（fail-loud，非靜默放行）。
 
 ### 階段 2：逐段實作
 
@@ -121,11 +123,19 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 |---------|---------|------|
 | Context | 開始前讀取 | 理解背景 |
 | §1b Invariant Impact（條件 — 段有此元素時） | RED 強化 | §1b「驗證對齊」映射的 invariant test 須在 RED 寫入、GREEN 後通過——producer 在 EP 宣告「動到哪些 invariant + 用哪個 test 守」，builder 機械確認該 test 存在且通過（producer 自證 → builder 驗收，非留 reviewer 推） |
-| 驗證策略 | RED | 讀 EP 測試類型 → 分類情境 → 寫對應測試（測試類型選擇紀律見 [validation-strategy](../validation-strategy/SKILL.md)：e2e 優先 / 交易 replay >>> live / 放 scripts/ / 不重驗 pkg；詳 TDD skill EP Integration）；**每情境二擇一顯式結算**——入庫測試或記錄跳過理由（EP 段記錄），段落收斂時逐情境核對：「寫了測試」≠「每情境有去處」（post-build 側 lite-verify 終端對帳） |
+| 驗證策略 | RED | 讀 EP 測試類型 → 分類情境 → 寫對應測試（測試類型選擇紀律見 [validation-strategy](../validation-strategy/SKILL.md)：e2e 優先 / 交易 replay >>> live / 放 scripts/ / 不重驗 pkg；詳 TDD skill EP Integration）；**每情境二擇一顯式結算**——入庫測試或記錄跳過理由（EP 段記錄），段落收斂時逐情境核對：「寫了測試」≠「每情境有去處」（post-build 側 lite-verify 終端對帳）；EP 含凍結 TC 時**三 gate 當場驗＋RED receipt 落檔**（見下方「RED provenance 三栓」） |
 | Pseudo Code | GREEN | 照設計實作 |
 | 核心要點 | REFACTOR | 對 EP 完成檢查逐項驗證 |
 
 **POC → RED 測試銜接**：若本段有對應的 POC（檔頭 `EP 段落:` 標注本段），優先將其「提煉改寫」成該段 RED 測試，非另起爐灶 —— POC 先於 impl、獨立產生（時間獨立性），改寫保留其驗證意圖。「提煉改寫」= 提煉 POC 的驗證意圖（斷言什麼行為）→ 寫成 pytest test function，assert 的對象（被測函數）尚未實作 → 確保 RED 狀態；**非把 POC 整段貼進 test file**（POC 已跑通非 fail）。
+
+**RED provenance 三栓（v3.1 測試契約——EP 含凍結 TC 時）**：
+
+1. **三 gate 當場驗**（RED 完成時逐項確認，非事後補驗）：**STRUCT_OK**（測試結構可判 RED——非 skip/xfail 偽裝）／**SEM_OK**（斷言語義對應 TC predicate——凍結 TC 存在時逐 TC-ID 核對）／**BEFORE_GREEN**（基線跑法：新測試在 pre-change baseline 必須紅——baseline 綠＝vacuous/test-after 劇場化，直接退回）
+2. **RED receipt 落檔**：RED 完成即寫任務家 `red-receipts.md`——TC-ID＋baseline 身份＋test 檔 sha256 digest＋failing predicate 清單（非中途 commit，隨弧結案進版控）；digest 算式凍結＝sha256 of test 檔 bytes，receipt 落檔時記
+3. **digest 凍結**：GREEN 前記 contract-test digest；GREEN 期 frozen test 唯讀——重算不一致＝靜默改（[audit-test](../audit-test/SKILL.md) 角度 8 抓）
+
+無凍結 TC 的 EP（舊 EP/存量）→ 三栓跳過，照現行驗證策略執行。TC 格式與 amendment 語彙定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）。
 
 #### 平行模式
 
@@ -158,6 +168,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 - **EP 為收斂方向，實作層有裁量權**：照 EP 為主軸，但實作時發現 EP 預見極限外的真相（邊界、副作用、組件互動、需求落差）可調整 — 這是「發現真相的責任」而非「偷懶不照 EP」
 - 記錄偏差：與 Pseudo Code 有出入時記錄原因（偏差是發現認知誤差的線索，不是違規）
 - 記錄疑慮不中斷：先選最合理方案繼續，最後統一讓用戶確認
+- **frozen TC carve out（v3.1）**：EP 一般為收斂方向、前線有裁量權——**但 frozen TC／oracle／contract-test digest 與其 authority/amendment 狀態不屬實作者自由裁量面**；遇此類衝突不套「記錄疑慮不中斷」：停 GREEN → mutation authority gate（[fix-test](../fix-test/SKILL.md)）→ amendment（execution-plan amendment 附錄）或 reject change；偏差走 deviation log（execution-plan 測試規劃段定義）
 - 錯誤自癒：連續 3 次失敗 → 該腿停止＋escalation record＋轉 decision work unit（AIR-91 S3 起—— escalation 觸發清單見 WorkUnitContract rows；完成報告同段標 ⚠️ 揭露殘留）
 - **batch ceiling**：累積多段未經人類判讀 → 建議暫停跑 session-boundary review（防 context 累積漂移;session-boundary review 原則見 [acceptance-evidence](../../rules/acceptance-evidence.md) B 軸人類驗收層）—— 單段重試上限（連續 3 次）vs batch ceiling（累積段落上限），雙 ceiling
 - **依賴錨點 drift check**：實作每段前驗證錨點，drift 時先更新 EP
@@ -179,6 +190,26 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 > 受影響測試集列舉走機械反查、禁目錄直覺（配方見 cr-query skill）。
 
+#### 段落收斂：段落結果寫 EP 進度＋段級 review 觸發
+
+**段落結果（每段收斂時寫進 EP 進度區，不新增每段 report 檔）**——四欄：
+
+1. **產物路徑／內容身份**：本段產出檔案＋內容 hash（tracked diff hash／untracked 路徑＋content hash，與 [workflow-review-pattern](../_common/workflow-review-pattern.md) header identity 同詞）
+2. **實跑命令及結果指針**：驗證命令＋exit code／通過計數；原始長輸出落 `.agent-tmp/`（或 evidence 檔）只留指針，不灌回 prompt
+3. **未驗與下一步**：本段未驗證面＋待後段／post-build 補的項
+4. **review 尚需／已覆蓋**：本段已由哪些 review 覆蓋（指針）、尚缺哪些軸——供弧級 review 與 post-build identity 比對消費
+
+invariant assertions：§1b 觸發段的 invariant test 隨段落 RED/GREEN 落地（見上表），段落結果欄引用其 test 名。
+
+**段級 review 觸發（普通中間段不觸發；弧級獨立 review 仍必跑——見階段 4）**：段落收斂時命中任一 → 該段 spawn 獨立 context 段級 review（context 配置照 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」風險 profile；findings 併入 `.review/<branch>.md` 帳本走既有 judge 鏈）：
+
+- **公開邊界**／**跨 context** invariant／**高保護面**（會計總量／風控 sizing／控制面 authority）變更
+- **獨立交接**：本段之後接獨立 session／handoff 消費
+- **user 要求**（明示對本段審查）
+- **S1 extras 前兩者命中**（整合器／外部整合段、新簽名／注入點段——映射見階段 4「S1 extras 觸發映射」；此兩者**必觸發段級 review**，不得被 ordinary base 吞掉）
+
+**最後段已覆蓋全弧者可依身份復用**：最後段的段級 review 若 scope 覆蓋全弧變更，階段 4 依 [workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」五條（同基線／同實物內容／scope 覆蓋／profile 相容／證據可讀——header identity 三欄比對）引用其證據，不重跑；缺一即重跑弧級 review。
+
 ### 階段 3：整合驗證
 
 > **scope 邊界（階段 2 vs 階段 3）**：階段 2 抓「新參數/注入點的接線路徑」（機械 rg 初篩）；階段 3 抓「既有接線的行為正確性」（需真實邊界跑）。**鐵律：階段 2 rg 有 hits ≠ 階段 3 真實邊界已滿足** — 符號出現在 tests（如被測單元自己的單元測試）≠ 消費端驅動該符號的路徑被覆蓋。例（真實歷史案例）：`rg "<符號>=" tests/` 有 hits 但全在被測單元自己的測試，消費端 integration 路徑不存在 — 符號有測 ≠ 消費路徑有測，bug 漏到補 integration test 才抓到。
@@ -189,31 +220,32 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 **整合器型段落必須有真實邊界整合測試**（見 [validation-strategy](../validation-strategy/SKILL.md)「整合器型變更判定」＋「兩層整合測試」）：主要價值是接 ≥2 個真實外部組件的段落，完成定義必須含接線 guard（`unit_tests/`）+ 真實邊界（`integration_tests/`），不能只靠 mock — mock 循環論證會讓 mock 假設即 bug 來源。
 
-### 階段 4：Agent Review Cycle
+### 階段 4：Agent Review Cycle（弧級獨立 review）
 
-**Writer/Reviewer 分離**：用獨立 Agent context 做品質閘門，避免主 LLM 審查自己的 code。
-review 執行預設（force 獨立 / max-agents 預設 3 / model 預設 / 3-perspective）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」—— 本段僅定義 build 特有流程。**3-perspective**（① clean + ② UC-anchored + ③ Correctness，多樣性 > 數量）完整設計見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
+**Writer/Reviewer 分離**：用獨立 Agent context 做品質閘門，避免主 LLM 審查自己的 code。**全弧仍需獨立 review**——段級 review（階段 2）只覆蓋觸發段，不取代弧級。配置單一源＝[review-engine](../review-engine/SKILL.md)「review 執行預設」＋「審查模式判定規則」——**context 配置由風險 profile 推導，不固定填滿、不以 max-agents 派滿**（並發容量＝上限非配額，數值歸 [model-routing](../model-routing/SKILL.md)）；lens 詞彙（① fresh + ② intent + ③ correctness）定義見 review-engine 執行預設點 4，執行範本見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
 
 > **code-reality（若在場）**：Agent Review 的 wiring 驗證（新/改 symbol 的消費端接對沒）用 callers 查詢；段 impact 驗證用 `impact_radius`；「沒影響 X」的 claim 機械反證用 code-reality（graph 是 L1 機械證據，補強 Claim→Evidence→Trust，見階段 3 整合路徑檢查）。**review agent spawn prompt 必含 CR 接線查證段（硬性——單一源 [review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」；build review agents＝`Explore` 無 CR MCP 白名單 → CLI 形態）**；主 session 自行查詢 **MCP 優先**（MCP `callers`／`impact_radius`；資料面 `build`／`snapshot`／`delta_tour`／`project` MCP face 同在）。分工 + GATE 見 [cr-query](../cr-query/SKILL.md)。
 
-#### Step 1: 確認 max-agents
+#### Step 1: 風險 profile → context 配置
 
-`--max-agents N` 或 `-a N` 參數控制平行 Agent 數量（預設 3，見 review-engine review 執行預設）。用戶可手動調整。
-印出確認：`[Review Agent] max=N`
+依 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」對**全弧 diff**（EP baseline 起＋uncommitted）判定 profile（條件不明採更保護分支）：
+
+- **ordinary** → **單一獨立 context**：fresh-first 順序覆蓋三 lens（① 無錨讀 diff/source〔smell〕→ ③ 正確性與驗證 → ② 需求對照〔EP/UC〕）；同一 reviewer 必覆蓋各軸，省略任一軸＝scope 未覆蓋。**單 context 順序覆蓋不是 fresh/primed 雙 context 等價品**（明示語義見 review-engine 執行預設點 4）
+- **boundary**（public API／跨 context invariant／money/risk/security／控制面 authority 變更）→ **分離 fresh＋intent**（fresh 腿只餵 diff/source；intent 腿加 EP＋Capabilities＋dependency-graph）＋必要專項按觸發附加；資格升級（judgment_floor→decision）由 WorkUnitContract rows 承接
+
+印出確認：`[Review Mode] profile=<ordinary|boundary>, context=<single|fresh+intent>`
+
+**dispatch 紀律（每次 dispatch 適用，含階段 2 段級 review）**：延用 WorkUnitContract／resolver——契約與已載材料**已確認 definition 未變時引用已載內容，不重載**；availability 在 dispatch 當下查（當次 AvailabilitySnapshot），**不以省讀為由沿用 stale quota**；無合格 candidate＝顯性 pending 入帳本（review-engine 執行預設點 8），不以主模型裸自審取代。
 
 > **classifier unavailable**（spawn 收 note、無 findings）→ **重試 spawn ≤ 2 次**（間歇常成功），非直接降級主 LLM 自審（會丟失獨立 review）；仍失敗才降級 + 顯式標記 fallback。完整處置見 [agent-workflow](../agent-workflow/SKILL.md)「Auto Mode」+「spawn 失敗階梯」（429 / continuous）。
 
-#### Step 2: 選擇審查模式
+#### Step 2: 載體選擇（執行細節非門檻）
 
-審查模式判定規則（effort/max-agents → Workflow/Agent Tool）見 [review-engine](../review-engine/SKILL.md)。偵測 effort level，印出確認：`[Review Mode] effort=ultracode, workflow=true, max=N` 或 `[Review Mode] effort=standard, workflow=false, max=N`
-
-**A. Workflow 模式**（判定條件見 [review-engine](../review-engine/SKILL.md)）：
-
-用 Workflow tool 協調 3-perspective（① clean + ② UC-anchored + ③ Correctness；perspective 定義 + prompt 見 [agent-review-cycle.md](../_common/agent-review-cycle.md)）；腳本骨架、DimensionVerdict schema、adversarial verify 見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)。
+boundary 多腿（fresh＋intent＋專項）需確定性協調/schema 輸出時用 Workflow tool（腳本骨架、DimensionVerdict schema、adversarial verify 見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)）；ordinary 單 context 直接 spawn（lens 順序覆蓋流程見 [agent-review-cycle.md](../_common/agent-review-cycle.md)）。
 
 | Workflow Phase | 說明 | Agent 數量 |
 |----------------|------|-----------|
-| Review | 平行 spawn 3 perspective agents（max-agents<3 時依 [agent-review-cycle](../_common/agent-review-cycle.md) 降級序：Correctness > clean > UC） | ≤ max-agents |
+| Review | 平行 spawn profile 配置腿（boundary 分離腿；ordinary 不入此載體） | 由 profile 配置決定（並發容量為上限） |
 | Verify | 分級 verify node：Important+ 錨點批次（單一 lite agent）→ Critical 3 verifier + ≥2/3 quorum（配置單一源見 [workflow-review-pattern](../_common/workflow-review-pattern.md)） | 1 批 + 3 × critical findings |
 
 Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 進入「/judge-review」步驟（現有流程不變）。
@@ -224,29 +256,29 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 進入「/judge-revie
 - **監控**：review workflow 背景跑時用 `/workflows` 看階段 / agent 計數 / 令牌。under `/deep-work` 雙視角：`claude agents`（session 層）+ `/workflows`（workflow 層）。
 - **acceptEdits-always**：workflow 生成的 subagent **始終在 acceptEdits 執行，無視 session mode**（[官方 workflows 文檔](https://code.claude.com/docs/zh-TW/workflows)）。目前 review agent 全 `Explore`（read-only）無風險；若未來 build 經 workflow spawn impl agent，**edit 會繞過 session 權限自動准** —— 自主路徑（`/deep-work` + auto-mode）下，classifier + acceptEdits 是唯一防線，須知會。
 
-**B. Agent Tool 模式**（Fallback，非 Workflow 條件 = max-agents=1 或非 ultracode）：build 的 Agent Review force 獨立 agent、不走 Main LLM（review 執行預設 + 刻意覆蓋通用判定，見 [review-engine](../review-engine/SKILL.md)）。3-perspective（① clean + ② UC-anchored + ③ Correctness）完整流程見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
+**Agent tool 單 context 路徑**（ordinary profile）：build 的 Agent Review force 獨立 agent、不走 Main LLM（review 執行預設，見 [review-engine](../review-engine/SKILL.md)）。三 lens 順序覆蓋流程見 [agent-review-cycle.md](../_common/agent-review-cycle.md)。
 
-#### adaptive 觸發映射（extra agent 機械觸發）
+#### S1 extras 觸發映射（機械特徵觸發——不能只接 base）
 
-base ① clean + ② UC-anchored + ③ Correctness 之外，extra agent 由**段落風險特徵機械觸發**（非 LLM 語義判「高風險」）。映射框架定義見 [review-engine](../review-engine/SKILL.md)「review 執行預設」點 5；build 提供 adapter 信號翻譯成通用特徵：
+弧級 review 的 base lens 覆蓋（① fresh + ② intent + ③ correctness，配置由 profile 決定）之外，**extras 由風險特徵機械觸發**（非 LLM 語義判「高風險」）。映射框架定義見 [review-engine](../review-engine/SKILL.md)「review 執行預設」點 5；build 提供 adapter 信號翻譯成通用特徵：
 
-| build 既有信號 | review-engine 通用特徵 | 觸發 extra agent |
+| build 既有信號 | review-engine 通用特徵 | 觸發（S1 語義） |
 |------------------|----------------------|-----------------|
-| 階段 0 整合器標記（機械 IO 觸發） | `外部整合` | adversarial |
-| 階段 2 路徑覆蓋觸發（新簽名/注入點） | `公開簽名變更` | architecture + consumer-perspective |
-| EP UC 盤點計數 >6（半機械：LLM 數 EP UC 清單，非純 diff） | `UC 數 >6` | UC-split |
+| 階段 0 整合器標記（機械 IO 觸發） | `外部整合` | adversarial 腿＋**觸發段級 review**（該段收斂時——見階段 2「段落收斂」） |
+| 階段 2 路徑覆蓋觸發（新簽名/注入點） | `公開簽名變更` | architecture + consumer-perspective 腿＋**觸發段級 review**（該段收斂時——見階段 2「段落收斂」） |
+| EP UC 盤點計數 >6（半機械：LLM 數 EP UC 清單，非純 diff） | `UC 數 >6` | UC-split——弧級 review 內拿 UC 子集做分拆深度審查（唯一給 intent 開專項的情境；不觸發段級 review） |
 
-**範圍（只接線既有信號，不新造偵測）**：build adapter 只翻譯上表兩個既有機械信號（IO + 簽名）+ EP UC 計數。**無特徵命中 → 僅 base ①+②，不開 extra**（機械避免浪費，非 LLM 判）。**跨模組特徵在 build 無 adapter**（無既有偵測，不新造；跨模組 ripple 交階段 6 layer 旗標導向 layer 2，不在 build 段落自檢 — 同 session 看不全跨模組 ripple）。
+**範圍（只接線既有信號，不新造偵測）**：build adapter 只翻譯上表兩個既有機械信號（IO + 簽名）+ EP UC 計數。**無特徵命中 → 僅 profile base 配置，不開 extra**（機械避免浪費，非 LLM 判）。**跨模組特徵在 build 無 adapter**（無既有偵測，不新造；跨模組 ripple 交階段 6 layer 旗標導向 layer 2，不在 build 段落自檢 — 同 session 看不全跨模組 ripple）。
 
-**依賴方向（DIP）**：build 是 adapter（提供特徵偵測 + 翻譯成通用特徵名）；review-engine 是 domain（定義特徵→agent 映射）。build 引用 review-engine 通用特徵名，review-engine 不列 build 特有名詞。
+**依賴方向（DIP）**：build 是 adapter（提供特徵偵測 + 翻譯成通用特徵名）；review-engine 是 domain（定義特徵→視角映射與觸發後果）。build 引用 review-engine 通用特徵名，review-engine 不列 build 特有名詞。
 
-**cap + 優先序**：extra 受 max-agents cap + 優先序（見 review-engine 點 5：architecture > adversarial/edge > consumer-perspective）；多特徵命中 + cap 不足時依序取最高，截斷其餘並輸出截斷提示：
+**容量 + 優先序**：extras 受並發容量上限（[model-routing](../model-routing/SKILL.md) 並發表——上限非配額）+ 優先序（見 review-engine 點 5：architecture > adversarial/edge > consumer-perspective）約束；容量不足時依序取最高，截斷其餘並輸出截斷提示——**被截斷的 extras 視為 review 尚需**（記入段落結果／帳本 `coverage`，由 `/code-review` 或 post-build 補）：
 
-> ⚠️ cap 截斷：max-agents=N，base 佔 3，僅 (N-3) extra 額度。命中 [特徵清單]，取 [最高優先 agent]，其餘 [被截斷 agent] 截斷 — 建議提高 `--max-agents` 或跑 `/code-review` 補截斷軸。
+> ⚠️ 容量截斷：並發上限=N，profile base 佔 B 腿，僅 (N-B) extra 額度。命中 [特徵清單]，取 [最高優先視角]，其餘 [被截斷視角] 截斷 — 建議跑 `/code-review` 或由 post-build 收尾鏈補截斷軸。
 
 #### 主 LLM — /judge-review
 
-用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併；**指定帳本＝`.review/<branch>.md` 工作帳本**——findings 與 judge 決策落盤〔含 header identity〕，供 post-build 證據身份比對與跨 session resume 消費；findings 只走 context 不落盤＝比對鍵缺席，post-build 將 fallback 全審）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
+用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併；**指定帳本＝`.review/<branch>.md` 工作帳本**——findings 與 judge 決策落盤〔header identity 含 scope／review_profile／coverage 三欄，欄位定義見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「帳本 header identity」〕，供 post-build 證據身份比對、弧級 review coverage 核對與跨 session resume 消費；findings 只走 context 不落盤＝比對鍵缺席，post-build 將 fallback 全審）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
 
 #### 主 LLM — Apply Changes
 
@@ -256,14 +288,14 @@ base ① clean + ② UC-anchored + ③ Correctness 之外，extra agent 由**段
 
 apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）：apply 修正可能引入新問題或舊 finding 未修對 → re-review 確認。
 
-1. **re-review**（同 base 3-perspective）審 apply 後的 diff
+1. **re-review**（同 profile base 配置）審 apply 後的 diff
 2. **pass 判定**：re-review findings **再 invoke /judge-review**（非主 LLM 自判，保 Writer/Reviewer 分離）
 3. judge-review 有新 ✅ 採納 → 再 apply → re-review（迭代）
-4. **收斂條件**：judge-review 無新 ✅ 採納（pass）或**達迭代上限 3 輪**（純防無限 loop，**與 base 3-perspective 的「3」無關**——兩個獨立的 3）
+4. **收斂條件**：judge-review 無新 ✅ 採納（pass）或**達迭代上限 3 輪**（純防無限 loop，**與 base lens 配置無關**——兩個獨立的上限）
 
 **達上限硬性處置**（loop 未收斂）：標 ⚠️「loop 未收斂（達 3 輪上限，仍有未修 finding）」+ **阻止 Capabilities/Kanban 升級**（階段 5a 結算條件加「loop 須收斂」）+ **layer 旗標導向 layer 2**（階段 6 layer 旗標條件加「loop 未收斂」）。
 
-> **Loop engineering 邊界**：build 內 loop（base 3-perspective 補 Correctness lens 後）收斂「視角覆蓋內」的錯（邏輯邊界、語意、結構）；**同 session 盲點類**（設計假設、系統性偏誤）loop 結構性抓不到 → 階段 6 layer 旗標導向 layer 2（loop 外部收斂）。不假裝 build loop 全閉環。
+> **Loop engineering 邊界**：build 內 loop（profile base 覆蓋含 correctness lens）收斂「視角覆蓋內」的錯（邏輯邊界、語意、結構）；**同 session 盲點類**（設計假設、系統性偏誤）loop 結構性抓不到 → 階段 6 layer 旗標導向 layer 2（loop 外部收斂）。不假裝 build loop 全閉環。
 
 ### 階段 5：收尾步驟（EP 強制）
 
@@ -315,9 +347,9 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 輸出：實作結果（新增/修改檔案）+ 架構決策記錄 + 待確認清單 + 未解決問題 + Agent 統計（平行模式）+ Agent Review 結果摘要 + **EP 對照（宣稱 vs 實際差異歸納，見下段）** + 能力狀態變更摘要 + SYSTEM-MAP 功能狀態變更 + architecture.md 設計變更（若有）+ /consistency 導航文檔結果 + /audit-test 稽核結果 + **全量測試結果（命令 + exit code + 通過計數；階段 3 完成閘門，必填）**
 
-**EP 對照（宣稱 vs 實際差異歸納——主歸納點在此，post-build 只再提醒）**：build 現場是差異最清楚的時點（post-build/debrief 只能事後推導），兩個來源缺一不可——① **偏差記錄歸納（why）**：階段 2「EP 專屬約束」逐段累積的偏差（與 Pseudo Code 出入、疑慮、自癒 ⚠️）統一歸納，差異原因只在 build session 記得；② **機械對照（what）**：弧條件成立（HEAD 越過 EP baseline）時跑 `code-reality delta_tour`（呼叫形態與時點條件真相源見 [code-review](../code-review/SKILL.md) 模式 B；未裝/條件不符 → 標明降級）——session 歸納是 self-report，機械對照反證之（Claim→Evidence→Trust，見 [acceptance-evidence](../../rules/acceptance-evidence.md)）。**rename gate 觸發源（cr-audit R8）**：delta_tour 機械改名清單（renamed symbols）非零 → 該弧 rename 須附 CR callers 證據（被 diff 逼問而非自覺）。歸納供 `/post-build` 收尾報告帶入與人類直接判讀；深度渲染（邊集差異+行為 delta）屬 `/debrief`。
+**EP 對照（宣稱 vs 實際差異歸納——主歸納點在此，post-build 只再提醒）**：build 現場是差異最清楚的時點（post-build/debrief 只能事後推導），兩個來源缺一不可——① **偏差記錄歸納（why）**：階段 2「EP 專屬約束」逐段累積的偏差（與 Pseudo Code 出入、疑慮、自癒 ⚠️）統一歸納，差異原因只在 build session 記得；② **機械對照（what）**：弧條件成立（HEAD 越過 EP baseline）時跑 `code-reality delta_tour`（呼叫形態與時點條件真相源見 [code-review](../code-review/SKILL.md) B 段；未裝/條件不符 → 標明降級）——session 歸納是 self-report，機械對照反證之（Claim→Evidence→Trust，見 [acceptance-evidence](../../rules/acceptance-evidence.md)）。**rename gate 觸發源（cr-audit R8）**：delta_tour 機械改名清單（renamed symbols）非零 → 該弧 rename 須附 CR callers 證據（被 diff 逼問而非自覺）。歸納供 `/post-build` 收尾報告帶入與人類直接判讀；深度渲染（邊集差異+行為 delta）屬 `/debrief`。
 
-**Report Shell 實作章節 fallback（hook 2 由本階段承接——僅無 post-build 弧時）**：本弧不會跑 `/post-build`（user 直接 `/commit`、或弧在此終止）→ 實作章節＋**產圖一次**（依 [diagram-selection](../diagram-selection/SKILL.md) 選型補 degraded 槽）＋badge ✅＋**持久版 delta tour＝ask-once**（完成報告「⚠️ 待確認」列「delta tour：產生／略過」、預設略過＋inputs 保留——語義單一源＝[post-build](../post-build/SKILL.md) hook 2 點 4）在本階段套用，內容與掛點規格見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」；會跑 post-build → 跳過（hook 2 掛 post-build 完成點——實作章節須反映修正迴圈後**最終態**，本階段早於修正迴圈）。**觸發條件（收緊）**：僅 user 明示不跑 post-build 或弧在此終止才走——session 不得自行預測「本弧不跑 post-build」提前發布（預測即 PB3 換位復活）。**收斂檢查**：發布結案前按帳本完整狀態生命週期處置——`open`／`adopted` 未實作／`implemented` 未 verified 皆屬未收斂（**不得以 `open=0` 宣稱收斂**）；`needs-confirmation` 彙整報告不阻塞。**發布去重**：核對任務身份與實際結案狀態（卡已 Done／hook 2 已執行 → 跳過不重做）。**缺帳本**（`.review` 不存在）→ fail-loud 標示＋以 git／卡狀態推導，不以空集合冒充驗收通過。**並列主路徑**：fallback 與 post-build hook 2 同為結案主路徑（ZCode 弧常不跑 post-build——非降級）。**結案 gate 一律是 skill 流程步驟，禁掛 SessionEnd hook**（SessionEnd 不在 ZCode hooks 事件子集——contracts.md 定案，靜默 no-op；子集實測見 04 報告 §207）。**結案內容**（呼應 hook 2）：invoke [metadata-sync](../metadata-sync/SKILL.md) 結案段（backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔）＋badge ✅。
+**Report Shell 實作章節 fallback（hook 2 由本階段承接——僅無 post-build 弧時）**：本弧不會跑 `/post-build`（user 直接 `/commit`、或弧在此終止）→ 實作章節＋**產圖一次**（依 [diagram-selection](../diagram-selection/SKILL.md) 選型補 degraded 槽）＋badge ✅＋**持久版 delta tour＝ask-once**（完成報告「⚠️ 待確認」列「delta tour：產生／略過」、預設略過＋inputs 保留——語義單一源＝[post-build](../post-build/SKILL.md) hook 2 點 4）在本階段套用，內容與掛點規格見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」；會跑 post-build → 跳過（hook 2 掛 post-build 完成點——實作章節須反映修正迴圈後**最終態**，本階段早於修正迴圈）。**觸發條件（收緊）**：僅 user 明示不跑 post-build 或弧在此終止才走——session 不得自行預測「本弧不跑 post-build」提前發布（預測即 PB3 換位復活）。**弧級 review coverage gate（發布結案前必核對，先於帳本生命週期處置）**：核對本弧**弧級獨立 review 已完成且 coverage 覆蓋全弧 scope**（帳本 header `coverage` 欄——各軸完成／未驗＋evidence ref，定義見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「帳本 header identity」）——缺席（未跑、輸出無效、被截斷）→ **補獨立 review＋judge 裁決＋修正驗證後才可結案**；「user 明示不跑 post-build」不構成跳過弧級審查本身。**user 明示停審**（要求停止審查流程）→ 尊重停工，但只交 Built／🟡 並列 pending 明細，**不發 ✅、不移 Done、不歸檔 EP**。**缺帳本**（`.review` 不存在）→ fail-loud 標示；**不能以 git／卡狀態推導為已驗**，不以空集合冒充驗收通過。**收斂檢查（帳本在場時）**：按帳本完整狀態生命週期處置——`open`／`adopted` 未實作／`implemented` 未 verified 皆屬未收斂（**不得以 `open=0` 宣稱收斂**）；`needs-confirmation` 彙整報告不阻塞。**發布去重**：核對任務身份與實際結案狀態（卡已 Done／hook 2 已執行 → 跳過不重做）。**並列主路徑**：fallback 與 post-build hook 2 同為結案主路徑（ZCode 弧常不跑 post-build——非降級）。**結案 gate 一律是 skill 流程步驟，禁掛 SessionEnd hook**（SessionEnd 不在 ZCode hooks 事件子集——contracts.md 定案，靜默 no-op；子集實測見 04 報告 §207）。**結案內容**（呼應 hook 2）：invoke [metadata-sync](../metadata-sync/SKILL.md) 結案段（backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔）＋badge ✅。
 
 **layer 旗標（硬性 — commit 前方向提示）**：偵測本 EP 變更是否觸及**跨模組**（`git diff --name-only` top-level 模組目錄計數 ≥2；模組目錄 = 專案 bounded context 根目錄，各專案自訂）、**公開簽名變更**（階段 2 路徑覆蓋觸發）、**整合器段落**（階段 0 標記）、或 **build loop 未收斂**（階段 4 達 3 輪上限）。命中 → 完成報告必含：
 

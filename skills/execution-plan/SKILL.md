@@ -172,6 +172,35 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 ---
 
+## 測試規劃段（中型以上且 EP 含可執行碼必填——top-level，實作段落之前）
+
+> **核心原則（v3.1 測試契約）**：契約層先——TC（測試契約）在任何人寫實作碼前凍結（文件順序＝時間順序，本段放 Scenario Matrix 之後、段落 0 之前）。oracle 獨立性由「EP 作者↔實作者本來就跨家族」兌現；same-family 時此前提裂縫——見下方 same-family precondition（本處是 producer 側記錄，consumer 側 gate 在 [implement](../implement/SKILL.md)）。
+
+**何時需要**：中型以上且 EP 含可執行碼；純文檔 EP 跳過（標記理由）。
+
+**TC 格式**（每條 TC 的欄位）：
+
+| 欄位 | 內容 | 約束 |
+|------|------|------|
+| claim | 驗證什麼行為主張 | 一句可否證的主張 |
+| Given-When | 前置狀態與觸發 | 具體輸入/事件 |
+| oracle | 期望值與判準 | **predicate-ID 拆分**——每個可獨立斷言的 predicate 一個 ID，禁複合斷言 |
+| oracle_source | oracle 值的獨立來源 | 規格、領域恆等式、歷史數據；**禁指向待測實作**（圓形依賴） |
+| evidence class | 證據等級 | L1-L6 對應（[acceptance-evidence](../../rules/acceptance-evidence.md)） |
+| uncovered | 明示不覆蓋面 | 無則寫「無」 |
+
+**凍結語義**：TC 在實作段落設計前凍結；凍結後 EP 其他段落可改、TC baseline 不動；改 TC 走 amendment。
+
+**amendment 附錄**（EP 內記錄 TC 變更判決的附錄區）：每筆記 old/new oracle＋reason＋independent evidence＋authority。**authority 四分**：invariant／reference truth 可證偽→judge；新 integration evidence→judge；user intent／product policy→人類；來源矛盾→人類。「實作現況」永遠不是證據。deviation log（前線提案，段落內記錄）與 amendment（判決，附錄記錄）兩份分離。
+
+**pre-RED challenge**（高風險/P0 觸發）：跨家族 advisory、fresh context、blind derive→reveal（先自行推 oracle 再比對，防錨定）＋completeness（抓漏場景）；必產 falsifiable 探針。觸發判準＝流程規模分級 **full** 檔＋§1b silent-corruption path 命中。challenge findings→absorb 回 TC 或走 amendment，完畢才放行 RED。
+
+**same-family precondition（producer 側）**：EP 整合策略記 `author_family: <family>` **metadata 欄位**（非 prose）——消費端 dispatch gate 在 [implement](../implement/SKILL.md)（相同家族時 RED 前須 challenge completed 或 degraded 明示記錄）。
+
+**下游對帳（引用不重複定義）**：本段 TC 格式是 [audit-test 角度 8](../audit-test/SKILL.md)（軸A 機械對帳）、[code-review 軸B 六項](../code-review/SKILL.md)（架構面，定義源 code-review-and-quality）、[fix-test mutation authority gate](../fix-test/SKILL.md) 的共同引用源。
+
+---
+
 ## 段落 0：全域研究（所有段落的研究前提）
 
 > **核心原則**：EP 自足——在設計段落之前，先做一次全域 codebase 研究，盤點可複用基礎設施 + 識別風險假設。這取代了舊 `/spec` 的全域研究職責（spec 現為純需求釐清）。
@@ -252,6 +281,8 @@ POC/demo 設計 + 測試計畫 + 完成檢查 + 整合測試。**測試類型選
 - **關鍵情境覆蓋**：happy path、邊界案例、error handling、冪等性
 - **已知未覆蓋的風險**：哪些路徑沒測到、為什麼
 
+**TC 引用（含凍結 TC 的 EP——退化自足）**：各實作段落的驗證策略須引用 TC-ID（＋必要時抄關鍵 predicate）——session 退化 handoff 後新 session 不需回讀 top-level 測試規劃段即可執行 RED（段落自足原則的 TC 延伸）。
+
 ---
 
 ## 段落劃分原則
@@ -269,6 +300,7 @@ EP 專屬約束：
 - [ ] UC 盤點已完成（大型/中型變更：掃描 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + backlog 卡、列出新增/更新 UC、卡關聯）
 - [ ] Backlog 自動建卡已完成（新增 UC 已有對應卡 + EP 整體追蹤卡；建卡已 commit——`chore(backlog)` 顆粒）
 - [ ] Scenario Matrix 已填寫（大型/中型變更；涵蓋 happy path、錯誤操作、邊界、效能期待差異）
+- [ ] 測試規劃段已完成（適用時——中型以上且含可執行碼：TC 凍結＋amendment 附錄＋author_family 欄位；純文檔 EP 標記跳過理由）
 - [ ] 標題明確且獨立
 - [ ] Context 包含所有必要背景
 - [ ] UC 引用已標記（引用 UC 盤點區段的能力描述；大型必須，中型可選）
@@ -298,6 +330,7 @@ EP 產物全為 instruction/documentation 檔，或其 static HTML Report Shell�
 | kanban / SYSTEM-MAP | 強制 | 元專案 / 無對應時跳過（正當跳過，標記理由）|
 | Context 錨點 | file:line 符號（LSP）| file:line 文檔行號錨點（rg 驗證行號指向預期內容）|
 | Scenario Matrix | 大型/中型必填 | 影響命令行為時仍填，但「觸發/預期行為」改文檔語境（rg 命中/0 殘留），非程式執行結果 |
+| 測試規劃段 | TC 凍結＋amendment 附錄＋author_family 欄位 | **跳過**（純文檔 EP 無可執行碼面——標記理由）|
 | Pseudo Code | 類別 + Call Stack | **裁剪**（文檔無類別）；以「修改要點」替代 |
 | 驗證策略 | POC/demo + 測試 + 整合測試 | 改為文檔驗證（rg 殘留、跨檔一致性、`/consistency`、導航有效性）|
 | TDD / mypy / ruff / pytest | 強制 | **跳過**（`/implement` 階段 2 僅「修改 → rg 殘留 → 跨檔一致性 → `/consistency`」）|
@@ -323,27 +356,24 @@ docs mode 的 `/implement` 執行分支見 [implement skill](../implement/SKILL.
 
 ## EP Review Cycle
 
-**Writer/Reviewer 分離**：用獨立 Agent context 審查 EP，避免主 LLM 審查自己的計畫。
-review 執行預設（force 獨立 / max-agents / model 預設）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」。**適應式多 Agent Review**：依模型並發上限和 EP 複雜度決定 spawn 幾個 review agent。
+**Writer/Reviewer 分離**：用獨立 Agent context 審查 EP，避免主 LLM 審查自己的計畫——**獨立計畫 review 不刪**（EP 定稿前的強制品質閘門）。配置單一源＝[review-engine](../review-engine/SKILL.md)「review 執行預設」＋「審查模式判定規則」——**context 配置由風險 profile 推導，本 Cycle 不以主模型/effort 重建 agent 數量判準**（並發容量＝上限非配額，數值歸 [model-routing](../model-routing/SKILL.md)；不因容量有剩回填 agent）。
 
-### Step 1: 偵測模型 → 查表
+### Step 1: 風險 profile 判定
 
-從系統提示詞偵測當前模型（雙詞彙面——CC＝sonnet/haiku/opus、ZCode/GLM＝`glm-5.3`／`glm-5.3-flash` 原生名；偵測法見 [agent-workflow](../agent-workflow/SKILL.md)「並發控制」Step 1；CC 背後接線 machine-local），查 [model-routing 並發表](../model-routing/SKILL.md) 決定 max-agents。
-印出確認：`[Review Agent] model=X, max=N`
+依 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」按 EP 觸及的變更語義判定（條件不明採更保護分支）：
 
-### Step 2: Adaptive Agent 數量
+- **ordinary**（一般 feature EP）→ **單一獨立 context** 順序覆蓋全部維度（見 Step 2）
+- **boundary**（EP 規劃觸及控制面 authority/gate、public API 契約、跨 context invariant、money/risk/security）→ **分離 fresh＋intent**：fresh 腿無錨讀 EP 自身 merits；intent 腿餵 UC 盤點／卡 Plan／受影響模組 instruction 檔；必要專項（架構/兜底）按觸發附加。資格升級（judgment_floor→decision）由上方 WorkUnitContract rows 承接
 
-> EP Review force 獨立 agent、不走 Main LLM（review 執行預設 + 刻意覆蓋，見 [review-engine](../review-engine/SKILL.md)「review 執行預設」）。差別僅在單一 vs 平行：
+印出確認：`[EP Review] profile=<ordinary|boundary>, context=<single|fresh+intent>`
 
-**max-agents = 1**（查 [model-routing](../model-routing/SKILL.md) 並發表得 1 時）→ 跳至下方「單一 Agent Prompt（Fallback）」，行為等同原 single-agent。
+### Step 2: 維度覆蓋（F1–F5 全維度，不丟棄）
 
-**max-agents > 1**（並發上限查 [model-routing](../model-routing/SKILL.md)——以將 spawn 的 agent 所在 tier 為準）→ 根據 EP 特徵啟用維度。**top-down 審查順序**：先結構（分層依賴/bounded context）後細部正確性（use case 覆蓋/兜底）— 結構錯了正確性審白費（視角見 [arch-thinking](../arch-thinking/SKILL.md)）。
+審查維度（「審 EP profile」：分層依賴 / bounded context / use case 覆蓋 / 場景 / 完整性 / 合規 / 遺漏 / 兜底拆解）定義見 [/ep-review](../ep-review/SKILL.md) 五維度 + 維度映射表 — 本 Cycle 不自帶維度定義，與獨立 `/ep-review` 共用同一 profile（根治內建 vs 獨立 drift）。啟用：所有維度 always——**ordinary 由同一 reviewer 按 top-down 順序覆蓋**（先結構後細部正確性——結構錯了正確性審白費，視角見 [arch-thinking](../arch-thinking/SKILL.md)），省略任一維度＝scope 未覆蓋；**boundary 由分離腿分工覆蓋**，維度合併（多腿間分工手段，不丟棄維度）依並發容量上限推導。
 
-審查維度（「審 EP profile」：分層依賴 / bounded context / use case 覆蓋 / 場景 / 完整性 / 合規 / 遺漏 / 兜底拆解）定義見 [/ep-review](../ep-review/SKILL.md) 五維度 + 維度映射表 — 本 Cycle 不自帶維度定義，與獨立 `/ep-review` 共用同一 profile（根治內建 vs 獨立 drift）。啟用：所有維度 always；啟用維度數 > max-agents → 從低優先級（場景/遺漏起）合併至前一個 agent（不丟棄任何維度）。
+### Step 3: Spawn
 
-### Step 3: 平行 Spawn
-
-同時 spawn 所有啟用的 review agents（subagent_type: "Explore"，read-only by design）。
+依 Step 1 配置 spawn review agent(s)（subagent_type: "Explore"，read-only by design）；boundary 多腿需確定性協調/schema 輸出時用 Workflow 載體（[workflow-review-pattern](../_common/workflow-review-pattern.md)，載體是執行細節非 effort 門檻）。
 
 每個 agent prompt 包含：
 - EP 完整內容
@@ -354,7 +384,7 @@ review 執行預設（force 獨立 / max-agents / model 預設）見 [review-eng
 
 > **agents→skills 統一**（#B12 探討）：agent 審查知識（通用審查邏輯、Clean Arch 視角、結構機械能力、方法論）沉 skill 統一引用，agent prompt 只組裝 — 非各命令內嵌審查邏輯。EP review agent 引用 review-engine（通用）+ arch-thinking（視角+機械維度）+ code-review-and-quality（方法論），與 `/code-review`、`/illustrate` 共用同一組 skill（整脊「能力下沉」一致性）。
 
-### 單一 Agent Prompt（Fallback，max-agents = 1）
+### 單一 Agent Prompt（ordinary profile）
 
 Spawn Agent（subagent_type: "Explore"），prompt 包含：
 - EP 完整內容
@@ -377,6 +407,8 @@ Spawn Agent（subagent_type: "Explore"），prompt 包含：
 ### 主 LLM — Apply Changes
 
 根據 judge-review 的 ✅ 採納清單修正 EP。**修正必須寫入 EP 段落本身**（加入 EP review 區段表格，格式見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md) Finding Record），不是只記在審查報告裡。build 可能由不同 LLM session 執行，看不到審查報告。**F-1 型 findings（scope／驗收校準）屬決策層變更 → 同步回寫追蹤卡 Plan／AC（見 [kanban-board](../kanban-board/SKILL.md)「卡即 handoff」）。**
+
+**EP Review 完成才產 accepted eligibility**：review ledger 全 terminal（implemented／rejected／verified）＋✅ 修正回寫完成後，EP 才具備 `/implement` accepted-EP predicate 的進場資格——本 Cycle 是該資格的產出點（predicate 消費端見 [implement](../implement/SKILL.md) 階段 0）；ledger 有 open／needs-confirmation ＝ 未 accepted，不得進實作。
 
 ### 定稿交付：生成 task brief（人類 viewport）
 
@@ -428,7 +460,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 
 - **位置**：任務家 `MM-DD-<task-name>/ep.md`（相對於專案根目錄；**任務家探測**：`ai-analysis/_tasks/` 在場→雜項家、session 從線 context 來→`ai-analysis/_projects/<線>/tasks/`、否則 repo-root `00-tasks/`——單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；與 Report Shell 同 task 目錄——一弧全生命檔案同處；`ai-analysis/execution-plans/` 慣例退役）
 - **檔名**：固定 `ep.md`（task 名已在目錄名，檔名不重複）
-- **結構**：實作總覽 → **UC 盤點** → Scenario Matrix → 段落劃分原則 → 各段落（Context → 要點 → Pseudo Code → 驗證）→ 整合策略 → 收尾步驟
+- **結構**：實作總覽 → **UC 盤點** → Scenario Matrix → **測試規劃段**（適用時）→ 段落劃分原則 → 各段落（Context → 要點 → Pseudo Code → 驗證）→ 整合策略 → 收尾步驟
 - **整合策略必含 baseline 記錄**：一行 `baseline: <hash>`（`git rev-parse HEAD`，EP 建立當下）——下游 `/post-build`/`/code-review` 任務弧審查的範圍邊界，由 EP 攜帶跨 session 不重新推導（缺漏由 implement 階段 1 補記；模式見 [code-review](../code-review/SKILL.md)「任務弧模式」）
 
 > **🔴 路徑警告**：Claude Code plan mode 的硬編碼路徑是 `~/.claude/plans/`，**那不是 EP 的存放位置**。EP 必須寫到專案目錄下的任務家 `<task>/ep.md`（探測規則見上方輸出段）。若已寫入 `~/.claude/plans/`，完成後必須複製到正確位置。

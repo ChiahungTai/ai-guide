@@ -45,9 +45,9 @@ agents/
 | EP 規劃 | 主 session 直做（判斷密集） | —（decision work unit） | 需求→ep.md（含 EP review 迴圈） | — |
 | EP review（雙家族） | 主 session 編排：GLM 側 spawn code-reviewer×2；muse 側**`task` 形態＝`--background` fire-and-forget 提交＋`wait`／`show` 晚收（不佔 agent 並發、不佔 caller session，可跨 session 認領）；`review` 形態仍背景 Bash 阻塞（`review` 無 `--background`）** | code-reviewer（fresh）＋code-reviewer-primed（primed）——preset default＝execution binding（`glm-5.3-flash`）；高保護面／跨邊界語義面＝spawn override 換 decision binding（同 WorkUnitContract 只換 binding／載體——carrier adapter 三路，見 model-routing skill）；muse review（bridge 工單） | diff＋EP→findings→judge 處置表 | classifier／1302 重試≤2→顯式降級記錄；muse 額度不足→in-harness 雙 context（顯式記錄） |
 | build 實作段 | 主 session 編排；機械可規格化段 spawn | impl-lite（zcode→`glm-5.3-flash`——execution） | EP 段→code＋測試＋驗證證據 | 失敗家系處置（註 a）→主 session 直做該段；lite 測試＝規格陳述→驗收證據 full 複驗 |
-| build 內 Agent Review | spawn（3-perspective） | code-reviewer（fresh）＋code-reviewer-primed（primed）——同 EP review 行（高保護面換 decision binding）；錨點驗證＝lite-verify（execution） | diff→findings（錨點驗證後浮出） | 失敗家系處置（註 a）→主 session 自審＋fallback 標記 |
+| build 內 Agent Review | spawn（審查配置由風險 profile 推導——單一源＝[review-engine](../skills/review-engine/SKILL.md)「review 執行預設」，掛點＝[implement](../skills/implement/SKILL.md) Agent Review） | 腿組合依 profile（ordinary 單 reviewer／boundary fresh＋intent 分離——見 implement Agent Review rows；可用 preset＝code-reviewer／code-reviewer-primed，高保護面換 decision binding）；錨點驗證＝lite-verify（execution） | diff→findings（錨點驗證後浮出） | 失敗家系處置（註 a）→主 session 自審＋fallback 標記 |
 | judge 裁決 | 主 session 直做（判斷密集；不派 agent） | —（decision work unit；seat 非 full 時升級外派 bridge，禁 in-session 降級自判） | findings→✅/❌/⚠️ 處置表 | — |
-| post-build 編排 | 主 session 直做（判斷密集） | —（decision work unit；Reviewer legs 依保護面選 execution／decision binding——authority 固定 findings） | 收尾鏈：code-review（dual-context）→judge-review→修正→consistency→metadata-sync→殼 refresh | — |
+| post-build 編排 | 主 session 直做（判斷密集） | —（decision work unit；Reviewer legs 依保護面選 execution／decision binding——authority 固定 findings） | 收尾鏈：code-review（審查配置由風險 profile 推導——掛點＝[post-build](../skills/post-build/SKILL.md)）→judge-review→修正→consistency→metadata-sync→殼 refresh | — |
 | 機械驗證／consistency gate | spawn | lite-verify（zcode→`glm-5.3-flash`——execution） | 查證清單→逐項機械證據（rg 命中／exit code／file:line） | 失敗家系處置（註 a）→主 session 跑組合命令 |
 | 視覺驗收 | spawn | vision-review（zcode→`glm-5.3-flash`——native_vision ∩ binding image_transport；pin 禁降非影像款，生成期防線） | 圖檔→逐張 verdict | 失敗家系處置（註 a）→標「未驗證」（禁主 session 直讀圖） |
 | 多源查證 | spawn | cross-verify-investigator（zcode→`glm-5.3-flash`——execution） | 問題＋軸清單→交叉對帳 verdict＋unverified | 軸源缺場→該軸 unverified 不阻斷（skills/cross-verify） |
@@ -57,6 +57,7 @@ agents/
 
 - **commit 拆兩半**：preparation（finalization 對帳、訊息草擬——agent 可做）＋consent gate（主 session 互動——永遠，contract 表其他行不覆蓋此行）
 - **註 a（spawn 失敗態家系——重試語義單一源）**：見 model-routing skill「spawn 失敗態辨識」——1302／classifier unavailable 重試≤2；1301 禁同 prompt 重試；1308 等窗口重置（重置前重派無效）；429 走 backoff／降並發。**禁把「重試≤2」泛化到全失敗類**（實例：1308 重派只會再敗）
+- **test-gen（第三家族測試寫手——非常設，P0 最後手段）**：不生成 registry 定義檔、不佔上表 stage 行；啟用條件預寫死＝MVP 實證 pre-RED challenge＋軸B review 擋不住 fixture fidelity 級穿透才啟用（v3.1 測試契約定案——AIR-70 幽靈角色答案反轉）；條件未滿足前，測試寫手委派→拒
 - **CC dispatch**：本表 preset 名的全名在兩 registry 皆生成在場——CC `--agent <name>` 全 9 名可用；未知名稱仍立即退出（反向守衛）
 
 ### registry projection map

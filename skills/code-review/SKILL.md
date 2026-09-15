@@ -16,7 +16,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Workflow"]
 - [review-engine](../review-engine/SKILL.md) — 通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定規則/多層驗證）
 - [code-review-and-quality](../code-review-and-quality/SKILL.md) — code 六軸審查方法論（what to check；Security/Performance 軸的 checklist 亦在該檔，細節判斷屬 LLM 原生能力）
 
-Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（模式判定見 review-engine；Ultracode 下平行六軸審查）
+Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（模式判定見 review-engine；多軸並行時的協調載體——載體由風險 profile 與協調需求決定，非 effort 門檻）
 
 ---
 
@@ -53,25 +53,25 @@ Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 ## 審查模式選擇
 
-review 執行預設（force 獨立 / max-agents / model 預設）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」—— code-review **預設 spawn 獨立 agent**（與其他 review 命令一致，force 獨立；取消 Main LLM 自審 — 實證：獨立 agent 抓自審盲點）。模式判定規則（effort/max-agents → A/B）見 [review-engine](../review-engine/SKILL.md)；max-agents 查 [model-routing 並發上限](../model-routing/SKILL.md)（agent-workflow defer 到此、不自帶數字）。下方 A/B 為本命令的六軸啟用配置（C 已廢除，見下方 C 段）：
+review 執行預設（force 獨立 / model 預設）見 [review-engine](../review-engine/SKILL.md)「review 執行預設」—— code-review **預設 spawn 獨立 agent**（與其他 review 命令一致，force 獨立；取消 Main LLM 自審 — 實證：獨立 agent 抓自審盲點）。**派發形態由風險 profile 決定**（[review-engine](../review-engine/SKILL.md)「審查模式判定規則」——本命令消費 S1 配置，不重建派工數量判準；並發容量〔[model-routing](../model-routing/SKILL.md) 並發表〕是上限非配額）。下方為本命令的六軸啟用配置（C 已廢除，見下方 C 段）：
 
-**派發前觸發檢查（A/B 模式共用）**：主審先讀 [arch-thinking §二觸發表](../arch-thinking/SKILL.md)，按 diff 判定命中項，將命中配方與檢查責任放入下列 reviewer 的必讀／檢查清單。不因未達檔數門檻丟棄檢查；沒有命中才按一般啟用軸門檻。
+**派發前觸發檢查（各形態共用）**：主審先讀 [arch-thinking §二觸發表](../arch-thinking/SKILL.md)，按 diff 判定命中項，將命中配方與檢查責任放入下列 reviewer 的必讀／檢查清單。不因未達檔數門檻丟棄檢查；沒有命中才按一般啟用軸門檻。
 
 | 已選派發形態 | 命中檢查的承接者 |
 |---|---|
-| Agent Tool：single | 單一 fresh-eyes reviewer |
-| Agent Tool：dual | fresh-eyes 與 primed 的 prompt 都含命中配方；意圖材料仍依 B 段分開餵 |
+| 單一 fresh-eyes（ordinary） | 該 fresh-eyes reviewer |
+| fresh＋intent（boundary） | fresh-eyes 與 primed 的 prompt 都含命中配方；意圖材料仍依 B 段分開餵 |
 | Workflow | Architecture 軸；超出並發上限時合併至既有 agent，保留檢查責任 |
 
-A/B 模式依 review-engine 的 effort／max-agents 判定；Agent Tool 內 single／dual 依既有 dual-context 規則與本檔 B 段的無 EP 降級。觸發表只增加檢查責任，不另改派發模式。
+派發形態依 review-engine 風險 profile 判定（ordinary→單一 fresh-eyes context；boundary→分離 fresh＋intent，見 B 段配置表）；觸發表只增加檢查責任，不另改派發模式。
 
-**A. Workflow 模式**（判定條件見 [review-engine](../review-engine/SKILL.md)）：
+**A. Workflow 載體**（boundary 多軸並行的協調選項，非 effort 門檻）：
 
 使用 Workflow tool，參照 [workflow-review-pattern.md](../_common/workflow-review-pattern.md) 腳本骨架。
 
 | Workflow Phase | 說明 | Agent 數量 |
 |----------------|------|-----------|
-| Review | 平行 spawn 軸 agents（最多 6） | ≤ max-agents |
+| Review | 平行 spawn 軸 agents（啟用軸見下表） | 由 profile 配置與並發容量決定（上限非配額） |
 | Verify | 分級 verify node：Important+ 錨點批次（單一 lite agent）→ Critical 3 verifier + ≥2/3 quorum（配置單一源見 [workflow-review-pattern](../_common/workflow-review-pattern.md)） | 1 批 + 3 × critical |
 
 **啟用軸**：
@@ -80,12 +80,12 @@ A/B 模式依 review-engine 的 effort／max-agents 判定；Agent Tool 內 sing
 |----------|---------|---------|--------|
 | Correctness | 邏輯 bugs、邊界案例、測試充分性 | **always** | P0 |
 | Readability & Simplicity | 命名、控制流、避免過早抽象 | **always** | P0 |
-| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight | 變更 ≥ 3 files 或 arch-thinking 觸發表命中 | P1 |
+| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight；**diff 含 test files 時加掛測試架構六項**（定義源 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 3「測試架構六項」） | 變更 ≥ 3 files 或 arch-thinking 觸發表命中；**diff 含 test files** | P1 |
 | Security | 輸入驗證、權限檢查 | diff 含 HTTP/auth/credential | P1 |
 | Performance | N+1、無界操作 | 變更 ≥ 5 files | P2 |
 | Capability Coverage | Capabilities 行為覆蓋 | 大型/中型變更 | P2 |
 
-啟用軸數 > max-agents → 從低優先級（P2 起）合併至前一個 agent（不丟棄任何軸）。
+啟用軸數超過並發容量 → 從低優先級（P2 起）合併至前一個 agent（不丟棄任何軸——合併是容量約束下的分工手段，非固定派滿）。
 
 **docs mode（純文檔變更）**：Security / Performance 軸 N/A（文檔不涉及 HTTP/auth/credential、無 N+1/無界操作），跳過此二軸避免噪音；Correctness / Readability & Simplicity / Architecture / Capability Coverage 仍適用（文檔正確性、可讀、結構、行為覆蓋）。docs mode 觸發判準見 [execution-plan.md](../execution-plan/SKILL.md) docs mode 段。
 
@@ -102,11 +102,16 @@ A/B 模式依 review-engine 的 effort／max-agents 判定；Agent Tool 內 sing
 
 Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → 分三級（Critical/Important/Suggestion）→ 消費端影響檢查 → label-vs-diff 驗證 → commit message 產生。
 
-印出確認：`[Code Review Mode] effort=ultracode, workflow=true, max=N`
+印出確認：`[Code Review Mode] profile=<ordinary|boundary>, carrier=workflow, legs=N`
 
-**B. Agent Tool 模式**（**預設 force 獨立**；判定條件見 [review-engine](../review-engine/SKILL.md)）：
+**B. Agent 載體**（**預設 force 獨立**；判定條件見 [review-engine](../review-engine/SKILL.md)）：
 
-**Dual-context 雙審查者**（變更 ≥ 3 files，中型以上）：平行 spawn 兩個**信念環境不同**的 agent（互補盲點，非 quorum 印證——quorum 對共同盲點無效，刻意讓兩 agent 前提不同）：
+**context 配置由風險 profile 決定（舊「變更 ≥ 3 files」檔數門檻廢除——可觀察變更語義決定，單一源 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」）**：
+
+| 風險 profile | 配置 |
+|--------------|------|
+| **ordinary**（無邊界觸發的一般變更，含小型 diff） | **單一 fresh-eyes agent**——fresh-first 順序覆蓋：diff/source 自身 merits（smell）→ 正確性與驗證 → 需求對照；**單 context 順序覆蓋不是 fresh/primed 雙 context 等價品**（明示語義見 review-engine 執行預設點 4） |
+| **boundary**（public API、跨 context invariant、money/risk/security、控制面 authority/gate 變更；條件不明同此） | **Dual-context 雙審查者**：平行 spawn 兩個**信念環境不同**的 agent（互補盲點，非 quorum 印證——quorum 對共同盲點無效，刻意讓兩 agent 前提不同）： |
 
 | Agent | 定義 | context（spawn prompt 餵） | 抓什麼 |
 |-------|------|---------------------------|--------|
@@ -115,16 +120,16 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 - **context 差異在 spawn prompt，非 agent 定義**（ZCode subagent 自動注入 AGENTS.md，「空 context」不可能全空；可控制的是不餵 EP/架構文檔）
 - **spawn prompt 必含 CR 接線查證段（硬性）**：fresh-eyes 與 primed 皆含（registry agents＝MCP 形態；逐字照 [review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」CR 段）
+- **測試架構六項注入（v3.1——diff 含 test files 時）**：fresh-eyes 與 primed 兩側 spawn prompt 均注入六項（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面——定義源 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 3「測試架構六項」，本處只 wiring 不重複定義）；primed 額外拿 EP 凍結 TC（測試規劃段）作 context。**排除面**：翻譯忠實度（test↔TC 逐條對帳）不歸軸B——歸 [audit-test](../audit-test/SKILL.md) 角度 8（軸A 機械對帳）
 - **delta_tour 對照（若 repo 可跑 code_reality——偵測單一真相源見 [code-reality](../code-reality/SKILL.md)）**：**僅弧模式（code 已 commit、HEAD 越過 EP baseline）產出**——spawn primed 前對當下 HEAD 跑 `code-reality snapshot --repo <repo>`（呼叫形態：`code-reality <tool> --repo <repo>`），與 EP baseline snapshot（implement 階段 1 落下；定位＝EP baseline hash8 → `<repo>-<sha8>.json`，`--label` 僅入 `_meta`；**snapshot 身份與 EP baseline 分開記**——消費實際存在者，snapshot 晚於 baseline〔resume 形態〕時明示對照只覆蓋該區間）對跑 `code-reality delta_tour <a> <b> --ep <ep.md> --repo <repo> --out-dir .agent-tmp/`（**臨時自產不持久**——不寫 `.tours/delta/`：持久版產點＝post-build hook 2 ask-once〔demand-driven，user 確認才產〕、無 post-build 弧＝implement 階段 6 fallback 同語義；`.tours/delta/` 進 git），其 `.tour` description（宣稱對照三態＋實際變動模組＋退化/跨面 pair 自動警示；json 中間產物不落盤）併入 primed 餵料——intent drift（Type A）從 LLM 推導升級為機械底稿（宣稱抽取只認特定模組路徑前綴，宣稱欄 NONE ≠ EP 無宣稱——範圍見真相源）。**HEAD == baseline（uncommitted 審查）→ 不跑**：同 sha 對跑＝零差異假陰性，且此時對 baseline sha 跑 graph 刷新＋snapshot 會以 working-tree 修改覆寫 baseline sidecar；印 `[WARN]` 退回純 LLM 對照。snapshot 報 stale WARN → 視同缺報告跳過（stale snapshot 照寫、基於舊原料）。缺 baseline snapshot 或未裝 → 跳過不阻擋。工具用法真相源：[code-reality](../code-reality/SKILL.md) skill
 - **無 EP 時降級規則**（dual 情境）：EP 是 primed 側的意圖合約核心；無 EP（跨 session resume、非 build 場景）→ 降級單 fresh-eyes agent 並印 `[WARN] no EP for primed context`（primed 缺 EP 仍跑 = 架構契合/完整度光譜可審、意圖對齊空轉，findings 噪音可能多於信號）
-- **findings 合併**：同 file:line 去重；**矛盾不裁決**——標 `conflict` 欄（兩方意點並列）交 `/judge-review` 裁決層；合併/衝突規則真相源見 [review-engine](../review-engine/SKILL.md)「dual-context 編排」
-- **Important+ 錨點驗證（浮出前）**：合併後的 Important+ findings 先交 lite-verify **批次**錨點驗證（file:line 存在、符號存在、引用原文屬實——清單式一次 spawn，非 per-issue）；錨點不實的 finding 退回不浮出。**驗證≠裁決**：屬實性（機械/lite）與成立性裁決（judge-review/full）分離——本模式 B 不 spawn per-issue 對抗 verifier（成本爆炸；Workflow 模式的 Critical quorum 走 [workflow-review-pattern](../_common/workflow-review-pattern.md) 分級 verify node）
+- **findings 合併**：同 file:line 去重；**矛盾不裁決**——標 `conflict` 欄（兩方意點並列）交 `/judge-review` 裁決層；合併/衝突規則真相源見 [review-engine](../review-engine/SKILL.md)「fresh＋intent 分離編排」（單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」）
+- **Important+ 錨點驗證（浮出前）**：合併後的 Important+ findings 先交 lite-verify **批次**錨點驗證（file:line 存在、符號存在、引用原文屬實——清單式一次 spawn，非 per-issue）；錨點不實的 finding 退回不浮出。**驗證≠裁決**：屬實性（機械/lite）與成立性裁決（judge-review/full）分離——本載體（B 段）不 spawn per-issue 對抗 verifier（成本爆炸；Workflow 載體的 Critical quorum 走 [workflow-review-pattern](../_common/workflow-review-pattern.md) 分級 verify node）
 - **primed instruction 檔適用範圍**：primed 側審 instruction 檔合規時，某檔只適用**同路徑或祖先路徑**的 instruction 檔（AGENTS.md 為主）；**最近者優先、子層覆寫上層**（本弧新決策——源方法論無此語義，與既有 per-layer instruction 階層慣例對齊）——防拿上層泛用規則審下層已覆寫慣例的系統性誤報
-- 小型變更（< 3 files）單 agent（fresh-eyes 即可——方向審查對小 diff 報酬低）
 
-印出確認：`[Code Review Mode] effort=<ultracode|standard>, workflow=false, agent=dual|single`
+印出確認：`[Code Review Mode] profile=<ordinary|boundary>, carrier=agent, legs=single|dual`
 
-**C. Main LLM 模式 — 已廢除**：取消（force 獨立 — 與其他 review 命令一致）。effort < ultracode 走 B（Agent Tool）。理由：[acceptance-evidence](../../rules/acceptance-evidence.md)「同 LLM 審自己 = 零獨立性」；實證獨立 agent 抓 changeset 作者漏的 drift（本 session dogfood：fresh-eyes agent 抓 3 reference 層錯、code-review agent 抓 5 跨檔 drift — changeset 作者自審漏的，獨立 agent 抓到）。
+**C. Main LLM 模式 — 已廢除**：取消（force 獨立 — 與其他 review 命令一致）。理由：[acceptance-evidence](../../rules/acceptance-evidence.md)「同 LLM 審自己 = 零獨立性」；實證獨立 agent 抓 changeset 作者漏的 drift（本 session dogfood：fresh-eyes agent 抓 3 reference 層錯、code-review agent 抓 5 跨檔 drift — changeset 作者自審漏的，獨立 agent 抓到）。
 
 ---
 
@@ -185,7 +190,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 ## Finding 呈現
 
-finding 預設留在審查報告/對話，供用戶 `/copy` 搬到實作 LLM（**人主導工作流**，不靠持久化追蹤）。**跨命令自動化場景**（接 `/judge-review`/`/followup-review`）才寫 `.review/<branch>.md`（Finding Record 表格，欄位見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)，含 header identity 區塊）—— code-review 立場 optional（接 `/judge-review`→`/followup-review` 鏈才寫）；一旦進入該鏈，judge-review/followup-review 預設讀寫持久化（它們即此「跨命令自動化場景」，故二者步驟內固定讀寫、非再條件判斷）。寫入時 **Important+ 每條附驗證式**（可機械複驗的 rg 命令／pytest case——judge 裁決與 followup 驗收共用同一驗證基準）。`/commit` 階段 6 成功後清除。
+finding 預設留在審查報告/對話，供用戶 `/copy` 搬到實作 LLM（**人主導工作流**，不靠持久化追蹤）。**跨命令自動化場景**（接 `/judge-review`/`/followup-review`）才寫 `.review/<branch>.md`（Finding Record 表格，欄位見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)，header identity 含 scope／review_profile／coverage 三欄）—— code-review 立場 optional（接 `/judge-review`→`/followup-review` 鏈才寫）；一旦進入該鏈，judge-review/followup-review 預設讀寫持久化（它們即此「跨命令自動化場景」，故二者步驟內固定讀寫、非再條件判斷）。寫入時 **Important+ 每條附驗證式**（可機械複驗的 rg 命令／pytest case——judge 裁決與 followup 驗收共用同一驗證基準）。`/commit` 階段 6 成功後清除。
 
 ```
 ## Code Review Findings — <branch>

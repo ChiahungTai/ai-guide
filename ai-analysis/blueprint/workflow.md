@@ -13,10 +13,10 @@
 | 站 | 一句職責 | 關鍵載體 |
 | --- | --- | --- |
 | ① 想法 | 把未承諾想法留在 draft／pending 區；一旦承諾工作才由 board control plane 建立 card 與配置 id | Backlog.md draft/task、pending decisions、建卡預掃 |
-| ② 規劃 | 把 card intent 轉成可跨 session 接手的 self-contained research／spec／EP，固定 baseline、scope、已決策與驗收；task-home 報告殼的 source＝shell-ready md＋meta（殼是 deterministic viewport 非手寫產物——codegen 契約見 [illustrate-html-mode](../../skills/_common/illustrate-html-mode.md)，AIR-73）；**top-level 測試規劃段在實作段落前凍結 TC（v3.1 定案，落檔隨測試契約卡）** | card `desc`、task home、`research.md`、`spec.md`、`ep.md`、shell-ready md、測試規劃段 |
+| ② 規劃 | 把 card intent 轉成可跨 session 接手的 self-contained research／spec／EP，固定 baseline、scope、已決策與驗收；task-home 報告殼的 source＝shell-ready md＋meta（殼是 deterministic viewport 非手寫產物——codegen 契約見 [illustrate-html-mode](../../skills/_common/illustrate-html-mode.md)，AIR-73）；**top-level 測試規劃段在實作段落前凍結 TC＋高風險/P0 pre-RED challenge（跨家族 blind-derive；v3.1 已落檔——execution-plan 測試規劃段）** | card `desc`、task home、`research.md`、`spec.md`、`ep.md`、shell-ready md、測試規劃段 |
 | ③ 開工 | 為已存在 card 建立「由哪個 branch/WT 執行、起點是哪個 baseline、session cwd 在哪」的機械身份 | `wt-open`、card `In Progress`/refs、persistent card WT、freshness check |
 | ④ 實作 | 讓 code/rules/skills/docs/EP 寫入在該工作 execution plane 內完成，避免共享 checkout 的 branch/cwd 被其他 session 改變 | card WT；免卡小修走 ephemeral WT fast-path；implement/TDD |
-| ⑤ 驗證 | 讓 claim 對上足夠獨立的 evidence；negative claim 不以單次文字搜尋冒充行為證明；**測試驗證分工＝契約消費（frozen TC）＋provenance 三栓＋軸A 機械審計／軸B 架構審查（v3.1 定案，落檔隨測試契約卡）**；**外部實作委派帶 `--yolo`（user 09-11 拍板 implement 一律）＋liveness ticker 防卡住（model-routing skill）** | tests、integration/demo/POC、code-review、acceptance evidence、TC＋audit/review 雙軸、yolo＋ticker；⚠️ [instruction-testing](../../skills/instruction-testing/SKILL.md) 承載 instruction artifact 行為驗證方法，pilot 尚未實跑 |
+| ⑤ 驗證 | 讓 claim 對上足夠獨立的 evidence；negative claim 不以單次文字搜尋冒充行為證明；**測試驗證分工＝契約消費（frozen TC）＋provenance 三栓＋mutation authority gate＋軸A 機械審計／軸B 架構審查（v3.1 已落檔——implement／audit-test 角度 8／code-review 軸B／fix-test gate）**；**外部實作委派帶 `--yolo`（user 09-11 拍板 implement 一律）＋liveness ticker 防卡住（model-routing skill）** | tests、integration/demo/POC、code-review、acceptance evidence、TC＋audit/review 雙軸、yolo＋ticker；⚠️ [instruction-testing](../../skills/instruction-testing/SKILL.md) 承載 instruction artifact 行為驗證方法，pilot 尚未實跑 |
 | ⑥ 收斂 | 把工作 review、修正並依既有 rebase→ff-only 規則吸回 owning line，再完成 session/card 收尾；Report Shell refresh＝更新 shell-ready md→`build_shell.py` 投影→gate 自驗（AIR-73 落地前為 LLM 手填殼 legacy）；**政策翻轉 consumer-propagation gate（AIR-75）——retire／政策句改寫弧的殘留偵測與傳播收口（post-build skill）** | post-build、working branch、`wt-close`、finalization、`build_shell.py`、policy-reversal gate |
 | ⑦ 沉澱 | 將完成能力、設計理由與真正值得跨 session 留存的事實放回正確 carrier；memory 不成為規範副本 | AGENTS/Capabilities、architecture/blueprint、memory pointer/facts |
 | ⑧ 運維 | 讓 hooks、排程、備份、清理與 fresh-machine recovery 可重建，避免 machine-local state 只存在某台機器或某次 session | hooks、schedule registry、launchd、memory bundle、onboarding runbook、code-reality |
@@ -33,7 +33,7 @@
 | ② 規劃 | **入口**：需求仍需釐清可先 `/spec`；正式規劃走 [`/execution-plan`](../../skills/execution-plan/SKILL.md)，需要獨立覆核時用 [`/ep-review`](../../skills/ep-review/SKILL.md)，高技術風險假設可加 [`/ep-validate`](../../skills/ep-validate/SKILL.md)。pre-EP whole-picture 可用 [`/illustrate`](../../skills/illustrate/SKILL.md) 作人類 viewport。**詳讀**：[spec](../../skills/spec/SKILL.md)／[execution-plan](../../skills/execution-plan/SKILL.md)。 |
 | ③ 開工 | **目標入口**：`wt-open <card>` 建立 card branch／persistent WT／baseline／cwd identity——**❌ target 尚未落地，不得當可執行介面**；現行依 [repo AGENTS.md「git 慣例」](../../AGENTS.md) 建 card branch，並依 [kanban-board](../../skills/kanban-board/SKILL.md) 完成 In Progress／refs 起手式。**詳讀**：本檔「Worktree 形態定案／過渡條款」。 |
 | ④ 實作 | **入口**：標準 EP 工作走 [`/implement`](../../skills/implement/SKILL.md)；程式邏輯變更依 [test-driven-development](../../skills/test-driven-development/SKILL.md) 的 TDD 方法。**execution plane**：target 為 persistent card WT／免卡小修 ephemeral WT；目前仍依 repo AGENTS.md 現行 card-branch 慣例執行，不得假定 WT helper 已存在。 |
-| ⑤ 驗證 | **入口**：實作流程內依 `/implement` 執行測試與 [`/audit-test`](../../skills/audit-test/SKILL.md)；instruction artifact 另依 [instruction-testing](../../skills/instruction-testing/SKILL.md) 做行為驗證。**詳讀**：[acceptance-evidence rule](../../rules/acceptance-evidence.md)＋[acceptance-evidence skill](../../skills/acceptance-evidence/SKILL.md)。（變更級獨立 review 在⑥收斂站由 `/post-build` 編排，非本站日常入口） |
+| ⑤ 驗證 | **入口**：實作流程內依 `/implement` 執行測試與 [`/audit-test`](../../skills/audit-test/SKILL.md)；instruction artifact 另依 [instruction-testing](../../skills/instruction-testing/SKILL.md) 做行為驗證。**詳讀**：[acceptance-evidence rule](../../rules/acceptance-evidence.md)＋[acceptance-evidence skill](../../skills/acceptance-evidence/SKILL.md)。（變更級獨立 review：邊界觸發的段級 review 在④由 `/implement` 啟動，全弧獨立 review 在⑥收斂站由 `/post-build` 編排——皆非本站日常入口） |
 | ⑥ 收斂 | **入口**：[`/post-build`](../../skills/post-build/SKILL.md) 編排 `/code-review` → `/judge-review` → 修正 → consistency／metadata finalization；人類方向／結構 checkpoint 按需用 [`/illustrate`](../../skills/illustrate/SKILL.md) 或 [`/debrief`](../../skills/debrief/SKILL.md)；最後走 [`/commit`](../../skills/commit/SKILL.md)。**git 收斂**：target 為 `wt-close`；尚未落地前依 [repo AGENTS.md「git 慣例」](../../AGENTS.md) 的 rebase→ff-only 規則。 |
 | ⑦ 沉澱 | **入口**：通常由 `/implement`／`/post-build` 內的 [metadata-sync](../../skills/metadata-sync/SKILL.md) 把 Capabilities、SYSTEM-MAP、architecture／相關 metadata 收回正確載體；跨 session 事實再依 [memory-audit](../../skills/memory-audit/SKILL.md) 判斷，規範正文不得複製進 memory。**詳讀**：repo `AGENTS.md` 的載體治理＋memory-audit 載體統一定義表。 |
 | ⑧ 運維 | **入口**：例行維護走 [`/daily-maintain`](../../skills/daily-maintain/SKILL.md)；fresh-machine／重建路徑從 [onboarding.md](onboarding.md) 進入。**詳讀**：[maintain](../../skills/maintain/SKILL.md)；排程現況看 [schedule-registry](../schedule-registry.md)，code-reality 接線看 [code-reality skill](../../skills/code-reality/SKILL.md)。 |
@@ -422,9 +422,9 @@ WT 基建落地後，可以移除「因共享單一 checkout，所以同 repo ca
 - **③ commit 粒度互補規則**（codex 版）：「不同 root cause 若可獨立 revert 且各自保持 repository invariant，應拆 commit；同 root cause 的 source＋consumer synchronization 必須同 commit」——現行 commit skill「同根因同 commit」的互補面，防多主題一顆。落點＝commit skill。
 - **④ bundle warning-zone ratchet**（codex 版）：muse 36KiB gate 的 85% warning zone 已在場（deploy_agents.py），但缺防「每次小增直到撞牆」的機械防線——**壓力區（≥warning threshold）時 working-tree bundle 若比 baseline/HEAD 淨增長即 fail**，輸出 per-rule byte delta；縮小或持平放行。落點＝deploy_agents.py＋tests。
 
-## 測試契約與驗證分工 — ⚠️ 架構定案（三方裁決 v3.1），六檔落檔待建卡
+## 測試契約與驗證分工 — ✅ 已落檔（三方裁決 v3.1）
 
-> 真相源：[測試契約×驗證分工裁決](../reports/2026-09-11-test-contract-design.md)（user 三輪挑戰＋muse/codex 三輪 session-resume 複驗全記錄；人類 viewport＝ai-analysis/test-contract）。本節是規範投影；**設計已定案≠已落地**——六檔 skill 未改前，runtime 仍走現行流程。
+> 真相源：[測試契約×驗證分工裁決](../reports/2026-09-11-test-contract-design.md)（user 三輪挑戰＋muse/codex 三輪 session-resume 複驗全記錄；人類 viewport＝ai-analysis/test-contract）。本節是規範投影；**六檔已落檔**（execution-plan 測試規劃段／implement same-family gate＋RED 三栓＋frozen TC carve out／audit-test 角度 8／code-review 軸B 六項／fix-test mutation authority gate），runtime 走 v3.1 流程。
 
 **設計原則**：family separation 放在 **judgment boundary**，不放在 every authorship boundary——獨立性買在「審規格」（challenge）與「審結構」（review），不買在「把 oracle 抄成 pytest」（oracle 凍結後翻譯者近乎不重要）。
 
@@ -434,7 +434,7 @@ WT 基建落地後，可以移除「因共享單一 checkout，所以同 repo ca
 - **挑戰層（高風險＋P0 強制）**：pre-RED challenge＝跨家族 advisory、fresh context、**blind derive→reveal**（先自行推 oracle 再比對，防錨定）＋completeness（抓漏場景）；必產 falsifiable 探針。oracle 錯→EP amendment（authority 四分：user intent→人類）。
 - **實作層（same-writer）**：實作家族（單一 model、context 連續）照凍結 TC 寫 RED→GREEN→REFACTOR；**provenance 三栓**——RED receipt 落檔存證（非中途 commit）／gate 過後 contract-test digest 凍結／基線跑法（baseline 上必須紅）。撞牆走 **mutation authority gate**（想改哪側 truth→有沒有 authority；改 TC oracle 必經 amendment，「實作現況」永遠不是證據）。
 - **審計層（軸A 機械）**：audit-test——TC↔test predicate 對帳／mock↔evidence class／oracle 圓形依賴／receipt＋digest 驗證／基線跑法／fixture provenance／路徑覆蓋反查。
-- **審查層（軸B 架構面）**：/code-review 跨 session dual-context 加一軸——整體測試邏輯 vs diff 結構（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面）；翻譯忠實度明寫不歸它。
+- **審查層（軸B 架構面）**：/code-review 跨 session dual-context（boundary profile 的 fresh＋primed 雙腿——派發由風險 profile 決定）加一軸——整體測試邏輯 vs diff 結構（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面）；翻譯忠實度明寫不歸它。
 - **routing**：`test-gen`＝**P0 最後手段**（啟用條件預寫死：MVP 證明防線擋不住 fixture fidelity 級穿透才啟用）——AIR-70 幽靈角色答案反轉。
 
 **agent 分工原則（判斷密集 vs 機械可驗）**：探索／研究不派 lite——EP 段落 0 全域研究（可複用盤點＋**風險假設識別**）是判斷密集位，`cr-research` 升 **full**；淺研究「自信但薄」→EP 重造既有／漏致命假設，研究省的 token 遠小於錯 EP 的重工。機械子腿（逐字引用、CR 查詢執行）仍可 flash 承接——作為 full 研究者的下游查詢，不獨立出研究結論。

@@ -31,7 +31,7 @@
 /spec（純輔助·需求釐清，可選）→ /execution-plan（自足：段落0全域研究 + UC盤點 + EP Review, LLM 自判；引用 UC ID + SYSTEM-MAP；定稿生 Report Shell〔hook 1〕＋EP 落任務家 <task>/ep.md〔探測：ai-analysis/_tasks | _projects/<線>/tasks | 00-tasks〕）→ [/ep-validate（可選）]
           ↓ post-EP checkpoint: 方向確認 = 人讀 Report Shell（任務家殼，定稿已建）+ /ep-review
   → /implement（含 Agent Review + /audit-test + 階段 5a metadata-sync Built 結算 [Capabilities＋消費場景＋SYSTEM-MAP 預覽＋殼 badge 🟡]；收斂後 final 結案掛 post-build hook 2，LLM 鏈）
-          ↓ post-build checkpoint（看狀況呼叫，不硬定先後）: /illustrate（layer 3 結構 viewport，漂移/重造檢查）/ /debrief（深度選配：模組/檔案級深挖——日常判斷材料由殼實作章節吸收）→ /post-build（收尾鏈編排：/code-review [dual-context] → /judge-review → 修正迴圈 → /consistency → /metadata-sync → tour corpus 修復閉環 → 殼 refresh [hook 2：實作章節＋產圖一次（diagram-selection 選型補 degraded 槽）＋badge ✅＋持久 delta tour]）→ /commit（純 git 提交；post-build 可拆開手動單跑各命令）
+          ↓ post-build checkpoint（看狀況呼叫，不硬定先後）: /illustrate（layer 3 結構 viewport，漂移/重造檢查）/ /debrief（深度選配：模組/檔案級深挖——日常判斷材料由殼實作章節吸收）→ /post-build（收尾鏈編排：/code-review [風險 profile 派發] → /judge-review → 修正迴圈 → /consistency → /metadata-sync → tour corpus 修復閉環 → 殼 refresh [hook 2：實作章節＋產圖一次（diagram-selection 選型補 degraded 槽）＋badge ✅＋持久 delta tour]）→ /commit（純 git 提交；post-build 可拆開手動單跑各命令）
 ```
 
 **review-pipeline recipe**（變更類型 → review 序列）：
@@ -43,13 +43,13 @@
 ### 工作流 skills — 核心開發流程
 
 - `/spec` — 需求釐清（User Story + UC 定位 + Scenario Matrix + 邊界，純輔助；`--write` 落任務家 `<task>/spec.md`〔探測見 html-mode 放置學〕）
-- `/execution-plan` — 段落式實作計畫書，自足生成 Self-Contained Segments（含段落0全域研究 + UC盤點 + Scenario Matrix + EP Review Cycle；ep_type blueprint/implementation 支援大型任務綱要+子 EP 結構），掃描 SYSTEM-MAP.md 取得功能上下文
+- `/execution-plan` — 段落式實作計畫書，自足生成 Self-Contained Segments（含段落0全域研究 + UC盤點 + Scenario Matrix + EP Review Cycle；ep_type blueprint/implementation 支援大型任務綱要+子 EP 結構），掃描 SYSTEM-MAP.md 取得功能上下文；測試規劃段（top-level 凍結 TC＋predicate-ID 拆分＋amendment authority 四分＋author_family 欄位）
 - `/ep-review` — 深層思考審查 Execution Plan 合理性（已內建於 `/execution-plan`，可獨立使用）
 - `/ep-validate` — POC 驅動的 EP 技術假設驗證（高技術風險 EP 的動態驗證）
 - `/judge-review` — 評估其他 AI 的審查建議，基於深層思考框架決定是否採納
-- `/implement` — 基於 Execution Plan 逐段實作（TDD + 階段 5a metadata-sync Built 結算：Capabilities＋消費場景＋SYSTEM-MAP 預覽＋殼 badge 🟡；收斂後 final 結案：結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔＋badge ✅；階段 6＝無 post-build 弧的殼 fallback＋結案承接）（原 `/build`，ZCode 保留名改名；文內「build 階段」即本 skill 階段）
-- `/post-build` — build 後收尾鏈編排（diff triage → code 鏈 [dual-context code-review → judge-review → 修正迴圈] → docs 鏈 [consistency → metadata-sync → tour corpus 修復閉環] → 殼 refresh [hook 2：實作章節＋產圖一次＋badge ✅＋持久 delta tour] → 收尾報告；止步於 /commit 前）
-- `/code-review` — 深層思考六軸代碼審查（含 axis 3 結構 = arch 吸收，top-down；UC 覆蓋度；中型以上 dual-context 雙審查者：fresh-eyes + primed）
+- `/implement` — 基於 Execution Plan 逐段實作（TDD + 階段 5a metadata-sync Built 結算：Capabilities＋消費場景＋SYSTEM-MAP 預覽＋殼 badge 🟡；收斂後 final 結案：結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔＋badge ✅；階段 6＝無 post-build 弧的殼 fallback＋結案承接）（原 `/build`，ZCode 保留名改名；文內「build 階段」即本 skill 階段）；v3.1：same-family gate＋RED 三栓（receipt 落檔／digest 凍結／基線跑法）＋frozen TC carve out
+- `/post-build` — build 後收尾鏈編排（diff triage → code 鏈 [code-review（風險 profile 派發）→ judge-review → 修正迴圈] → docs 鏈 [consistency → metadata-sync → tour corpus 修復閉環] → 殼 refresh [hook 2：實作章節＋產圖一次＋badge ✅＋持久 delta tour] → 收尾報告；止步於 /commit 前）
+- `/code-review` — 深層思考六軸代碼審查（含 axis 3 結構 = arch 吸收，top-down；UC 覆蓋度；派發由風險 profile 決定——boundary 時 fresh＋intent 雙審查者：fresh-eyes + primed、ordinary 單一 fresh-eyes context）；v3.1：diff 含 test files 時 dual-context 兩側注入測試架構六項（軸B）
 - `/debrief` — AI 改動理解簡報（layer 3，行動後，**深度選配**——日常判斷材料由任務家殼實作章節吸收〔post-build hook 2〕，本命令＝模組/檔案級深挖）：七段倒金字塔——意圖／行為黑盒子（行為 vs 純結構判定；docs 變更渲染 behavior delta）／前後差異／分組檔案地圖／波及缺口／驗證證據（demo-checklist，NONE 逼問+清單完整性）／認知誤差點；無參數＝任務弧優先（有 baseline→弧模式；無 baseline→uncommitted；皆空→HEAD~1 兜底）；`--ep` 方向確認已移除（改人讀 Report Shell + /ep-review）
 - `/illustrate` — 結構 viewport + 技術圖解（SA/SD artifact menu：call graph / sequence / class slice / data-flow / boundary；city map / drill / drift detection；console / md / html〔報告殼，opt-in〕）+ **4 mode 導向**（設計決策 / 理解既有 / 審查驗證 / 溝通傳達）；核心流程三 checkpoint（pre-EP 軟 gate / post-EP / post-build drift detection，見上圖），結構能力調 arch-thinking skill
 - `/followup-review` — 審查者回頭驗收實作結果
@@ -67,8 +67,8 @@
 ### 工作流 skills — 品質工具
 
 - `/lint-fix` — ruff + mypy 自動修正
-- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep
-- `/audit-test` — 測試品質稽核（反模式偵測、覆蓋對稱性、mock 健康度，只讀不寫）
+- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）
+- `/audit-test` — 測試品質稽核（反模式偵測、覆蓋對稱性、mock 健康度，只讀不寫）；v3.1 角度 8 測試契約七項對帳（EP 含凍結 TC 時）
 - `/smell-detector` — 壞味道偵測（layer 3，行動前/審既有）：架構審查＋重構前期研究＋測試優化盤點；兩 mode——`<dir|files>` zoom 變焦批判（質疑存在：6 判準+查證誠信+Domain 層判準 4/5）/ `--baseline <dir>` 廣角盤點（per-directory 4 檔+invariants+--status/--stale/--arch）；測試 smell 三類（資源/怪獸/結構，與 /audit-test 正交）；read-only 偵測器，修復走 /implement、/fix-test
 - `/consistency` — 文檔品質檢查（自洽性、矛盾性、順序、自包含、精準度、Signal/Noise）
 - `/sync-sources` — 跨檔 single-source invariant 機械檢查（含非 Claude 部署 bundle 新鮮度）
@@ -113,7 +113,7 @@
 > 通用方法論（發散收斂、任務分解/垂直切片、增量交付、spec-first、官方文檔 grounding）屬 LLM 原生能力，不設 skill——相關委託點已改為就地摘要。
 
 ### 品質與審查
-- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / max-agents / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用
+- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用
 - `code-review-and-quality` — code 六軸審查 profile（what to check，含 Security/Performance 軸 checklist 與 Capability Coverage 單源）；通用邏輯見 review-engine
 - `python-type-gap` — 第三方套件型別缺口的四層策略
 - `validation-strategy` — 驗證策略紀律（e2e 優先/交易 replay>live/放 scripts//不重驗 package；與 TDD 流程分工）
