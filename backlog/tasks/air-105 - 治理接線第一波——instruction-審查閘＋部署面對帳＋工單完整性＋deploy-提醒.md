@@ -4,7 +4,7 @@ title: 治理接線第一波——instruction 審查閘＋部署面對帳＋工�
 status: In Progress
 assignee: []
 created_date: '2026-09-16 02:16'
-updated_date: '2026-09-16 02:48'
+updated_date: '2026-09-16 02:55'
 labels: []
 dependencies: []
 ordinal: 90000
@@ -37,4 +37,6 @@ ordinal: 90000
 
 <!-- SECTION:NOTES:BEGIN -->
 〔0916 審查腿回收〕bi panel＋fresh 腿三張全回收：muse conditional pass（F1-F4）、codex needs-fix（C1-C6）、fresh needs-fix（F1-F12，含 committed 版 in-memory 實測）。裁決：F1/F2/F4/F5前半/F9 未 commit 前已由前兩輪修復覆蓋（fresh 實測確認）；新增修復＝F3 零容量 no-candidate 出口、F6 總驗卡登記接線、F7 binary 偵測子具體化、F8/F10 落地定義（merge canonical 或 deploy 任一先到）、F11 中性 fallback、F12 用語統一、model-routing bi 塌縮句。F8 自我適用缺口如實記錄：本卡 commit 先於審查腿回收（learning——activation-before-review 項目第二波處理），卡保持 In Progress 至回執補齊。
+
+〔落地回執（AIR-105 新閘首次自適用）〕classification=boundary（review-engine 判定表：控制面 authority/gate 面）；review=muse job-mu3hb5yu（conditional pass→F1-F4 修）＋codex job-mu3hb615（needs-fix→C1-C6 修）＋fresh code-reviewer flash（needs-fix 8 條→F3/F6/F7/F8/F10/F11/F12 修，F1/F2/F4/F5/F9 前輪已覆蓋經其實測確認）；session-freshness=applied（deploy ACTION 雙跑實證：實寫印變更名單、identical 靜默）；deployment-surfaces=healthy（探針 freshness 零發現＋skills symlink 活視圖）。學習記錄：F8——本卡 commit 先於審查腿回收（activation-before-review 洞，第二波處理：card WT 隔離 authoring）。
 <!-- SECTION:NOTES:END -->
