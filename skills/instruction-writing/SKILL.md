@@ -35,9 +35,9 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 
 ## 檔案命名（instruction file 雙檔模式）
 
-> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 四家都讀、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。**每層雙檔確保四家 harness 都讀得到該層 instruction**——只有 root 雙檔時，其他 harness（ZCode/Codex/Muse）讀不到模組層。
+> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 內容四家皆可達（經各家 discovery／wrapper 機制，詳見下「dir 層四家可達性差異」表）、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。
 
-- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——四家 harness（Claude/ZCode/Codex/Muse）開本專案時都讀。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
+- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——root 層內容對四家 harness（Claude/ZCode/Codex/Muse）皆**可達**（經各家 root discovery／wrapper 機制導入——非四家 native 直讀同一檔；受各家 trust、size、discovery gate 約束，見下「dir 層四家可達性差異」表）。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
 
 > **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-guide 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.config/muse/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
 - **`CLAUDE.md`**（thin wrapper, Claude 專屬）：開頭 `@AGENTS.md`（把中立規則拉進 Claude session）+ Claude 專屬段（Claude 端 hook 註冊細節、slash command workflow、repo 結構導航）。只 Claude 讀
@@ -48,10 +48,61 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 
 > **`@` transclusion 是 Claude Code 專用**：CLAUDE.md 啟動時自動展開 `@path`；AGENTS.md（與 ZCode/Codex/Muse）**不展開 `@`**。所以 AGENTS.md 內**不可用 `@`** 拉內容——中立內容直接寫在 AGENTS.md，Claude 專屬才放 CLAUDE.md 用 `@`。
 
+### dir 層四家可達性差異（舊全稱句已證偽，不再承諾四家必達）
+
+| dir 層（root↔cwd 間） | 行為 | 官方錨點（`ref-docs/harness/` 相對路徑） |
+|---|---|---|
+| CC | lazy——上層目錄 launch 載入；子目錄層首次讀該 subtree 內檔案時才帶入（開場即須的規則不可只放子目錄層） | `claude-code/docs/en/memory.md:63` |
+| Codex | root→cwd path-only——自 project root 走至 cwd 逐層串接，每目錄至多一檔；鏈合計 32KiB 停加（root 過肥先吃預算） | `codex/agent-configuration/agents-md.md:12,15` |
+| Muse | 向上-only——workspace root 向上走至 `.git` 邊界，同層四檔首命中、深勝淺替換；root 之下子目錄不可達；project 層另有 trust 閘 | `meta/muse-code/configuration.md:41,43-44,46` |
+| ZCode | 斷——只讀全域＋workspace 兩檔，不掃子目錄（官方明文） | `zcode/cn/docs/agents.md:78` |
+
+跨家必達的內容放 root 層（全域指南＋project root AGENTS.md）；模組層細節靠 root 導航種子指引（見下「跨 harness 撰寫層」節）。
+
 ### 命令命名（Claude 端 slash commands）
 - 格式: `/{category}:{action}` 或 `/{action}`
 - 範例: `/instruction-clean`, `/commit-message`, `/illustrate`
 - 使用小寫和連字線，不用底線
+
+## 跨 harness 撰寫層（可達性＋尺寸＋缺口）
+
+> 素材＝`ai-analysis/reports/2026-09-12-cross-harness-md-writing-research/synthesis-draft.md`（§2.2／2.3／3c／3d／3e）；下文錨點為 `ref-docs/harness/` 鏡像相對路徑。negative claim 措辭紀律：「鏡像未提及」一律指**本次檢索的官方鏡像頁面／錨點未見記載**（對證據語料的觀察陳述，非產品行為事實）；禁由未提及推導「不存在／不支援／不會發生」。
+
+### 層級語義三分（concatenate-merge／first-wins／trust-gate——三個不同問題，不互斥）
+
+| 維度 | 語義 | 各家行為 |
+|---|---|---|
+| concatenate-merge（跨層檔案如何共存） | 串接 | CC 全串接＋root-down 排序（`claude-code/docs/en/memory.md:157`）；Codex root-down 串接，衝突時較深層／較 specific 指令實質優先度較高（內容仍為串接，`codex/agent-configuration/agents-md.md:13`）；ZCode 全域→workspace 兩檔串接（`zcode/cn/docs/agents.md:71`） |
+| first-wins（同層多候選誰勝） | 首命中 | Codex 同層 `AGENTS.override.md`＞`AGENTS.md`＞fallback 首個非空、每目錄至多一檔（`codex/agent-configuration/agents-md.md:11-12`）；Muse 同層四檔首命中＋跨層替換非合併（`meta/muse-code/configuration.md:41,43-44`） |
+| trust-gate（project 層載入門檻） | 信任閘 | Muse project 層需 trust（`meta/muse-code/configuration.md:46`）；Codex `.codex/` layer 需信任、AGENTS.md 本身無閘（`codex/config-file/config-basic.md:37`）；ZCode 專案層 hooks 直接忽略、團隊共享走 plugin（`zcode/cn/docs/hooks.md:58`） |
+
+### 尺寸預算三形態（同一內容失敗模式不同，寫法分別設計）
+
+| 形態 | 語義 | 實例 |
+|---|---|---|
+| 軟目標 | 超限不截斷，只降 adherence | CC CLAUDE.md 200 行／檔（`claude-code/docs/en/memory.md:81`）、SKILL.md 500 行（`claude-code/docs/en/skills.md:472`） |
+| 硬截斷 | 超限切尾，載體仍在 | Codex 鏈合計 32KiB 停加（`codex/agent-configuration/agents-md.md:15`）；skill 清單預算 CC 1% ctx（`claude-code/docs/en/skills.md:1052`）／Codex 2% 或 8,000 字元（`codex/build-skills.md:38`）／ZCode 共享預算降級只留名（`zcode/cn/docs/skill.md:62`）；memory 索引 CC 200 行或 25KB（顯示值口徑——synthesis 訂正計量＝UTF-16 字元非 bytes，`claude-code/docs/en/memory.md:401`） |
+| 整檔丟棄 | 整個載體不載 | CC CLAUDE.md＞4MiB 整檔跳過（`claude-code/docs/en/memory.md:405`）；ZCode description＞1,024 字元整支丟棄、name/description 缺失整支忽略（`zcode/cn/docs/skill.md:58-60`） |
+
+實測補（官方零記載，ai-rules 反組譯）：ZCode 100KiB／檔、Muse 64KiB 共享截斷——部署器設 size gate 擋超限，不依賴截斷。
+
+### per-harness 撰寫要點與陷阱
+
+- **Codex 鏈尾排除**：停加語義下 root 檔過肥先吃預算——root AGENTS.md 精簡，深層 override 放精華（`codex/agent-configuration/agents-md.md:15`；排除順序為合成推導，鏡像未細述）。
+- **ZCode 尾部截斷＋錯欄位靜默**：尾部內容靜默消失——最重要 rule 放檔前段；未知 frontmatter 欄位靜默忽略（`thoughtLevel` 誤寫 `reasoningEffort` 即不生效，`zcode/cn/docs/subagents.md:78`）。
+- **CC**：CLAUDE.md 以 user message 送達（`claude-code/docs/en/memory.md:433`）、矛盾指令被任意取捨（`claude-code/docs/en/memory.md:91`）——強調只標單行（`claude-code/docs/en/best-practices.md:188`）；跨 compact 存活只靠 project-root 層重注入（`claude-code/docs/en/memory.md:462`）。
+- **Muse**：`muse init` 只寫 AGENTS.md、`--force` 整檔覆蓋先備份（`meta/muse-code/configuration.md:32,39`）；skill 文字禁隱藏終端控制字元（`meta/muse-code/changelog.md:61`）。
+- **skill frontmatter 跨家安全核心＝name＋description**：CC 全 optional 僅 description recommended（`claude-code/docs/en/skills.md:328`）＋standard/extension 分層（`claude-code/docs/en/skills.md:359-374`）；Codex 必填 name＋description（`codex/build-skills.md:45`）；ZCode 必填＋白名單（`zcode/cn/docs/plugin.md:176-182`）；description 寫觸發不寫說明、front-load 觸發詞（Codex `codex/build-skills.md:98`、ZCode `zcode/cn/docs/skill.md:66`）。
+- **agent 定義不可攜**：CC/ZCode＝md＋YAML frontmatter（body＝system prompt）；Codex＝standalone TOML（`codex/agent-configuration/subagents.md:336`）；Muse 格式鏡像未提及——跨家 agent 走單一源生成，不手寫兩份。
+- **委派 session 讀不到主對話 memory**：ZCode 子代理不讀不寫 memory（`zcode/cn/docs/agents.md:91`）；CC 主對話 memory 不進 subagent（`claude-code/docs/en/memory.md:409`）——工單必須自含。
+
+### 官方缺口（四家文檔共同盲區，ai-rules 經驗補）
+
+- 「規範存在≠規範載入」：部署後驗證讀到（per-target 抽查＋新鮮度閘），官方只給截斷語義、無驗證方法論。
+- 中性化寫作（一份檔案給多家讀：括號註隔離、載體對照表、機械檢查清單）——各家文檔皆假設單家消費。
+- reference 分層（rule 留核心＋pointer、深層下沉 skill）——官方只有 CC 的 skill/CLAUDE.md 二分。
+- 元資訊禁止、導航 Decoder Test、概念→符號種子——官方最接近 CC Include/Exclude 表（`claude-code/docs/en/best-practices.md:176-184`），無系統化紀律。
+- instruction 進 prompt 等同可公開：禁敏感資訊（CC `claude-code/blog/using-claude-md-files.md:185`）；fork checkout 上是攻擊者可控面（Muse `meta/muse-code/permissions.md:107`）。
 
 ## 結構規範
 
