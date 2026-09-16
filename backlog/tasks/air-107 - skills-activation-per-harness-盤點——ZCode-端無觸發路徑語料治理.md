@@ -1,12 +1,14 @@
 ---
 id: AIR-107
 title: skills activation per-harness 盤點——ZCode 端無觸發路徑語料治理
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 03:16'
-updated_date: '2026-09-16 03:17'
+updated_date: '2026-09-16 04:16'
 labels: []
 dependencies: []
+references:
+  - skills/instruction-testing/SKILL.md
 ordinal: 92000
 ---
 
