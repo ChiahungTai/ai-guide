@@ -4,7 +4,7 @@ title: skills activation per-harness 盤點——ZCode 端無觸發路徑語料�
 status: In Progress
 assignee: []
 created_date: '2026-09-16 03:16'
-updated_date: '2026-09-16 04:16'
+updated_date: '2026-09-16 04:37'
 labels: []
 dependencies: []
 references:
@@ -32,3 +32,9 @@ AIR-99 A5 實證：ZCode available-skills 只注入 name＋path、desc 不進模
 〔已決策勿重辯：①主觸發路徑＝rule 錨＋明示 invoke（AIR-99 judge 裁決，不更名）②AIR-87 舊四 PASS 重解讀＝名字字面命中非 desc 觸發③ZCode available-skills 注入僅 name＋path（activation-results.md 取證）〕
 範圍：盤點矩陣（skill×harness 觸發路徑）→逐 skill 處置（補 rule 錨／接受明示 invoke）→instruction-testing 補 per-harness activation 判讀基準。盤點機械段可派 flash。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔0916 實作完成〕AC#1 矩陣（flash 掃描 82 支＋主 session 抽驗吻合＋三噪音錨修正——spec/consistency/implement 字面誤中降級）；AC#2 處置（無觸發路徑六支全數接受明示 invoke——事件驅動工具補錨違反寫入門檻；弱名字 21 支＝5 支 AGENTS.md 錨在場＋16 支 fail-driven 接受現狀）；AC#3 instruction-testing per-harness activation 判讀基準（AIR-87 舊 PASS 重解讀進正典）——commit 於 air-107 branch，等 tri panel 終審。
+<!-- SECTION:NOTES:END -->
