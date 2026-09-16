@@ -1,6 +1,6 @@
 ---
 name: model-routing
-description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。AIR-91 doctrine（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步／AvailabilitySnapshot tri-state／ArcOverride／RoutingPolicy／DispatchPlan/Trace schema——model 供給事實單一源＝catalog.toml、registry 部署預設＝agents/presets.toml，本檔不重抄值）＋dispatch 預設與額度 failover（policy 面；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm-bridge）→(model, effort, 容量) 解析＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與五類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、收法、三態判定、定向接續、session-id、fork、1301、1308、1302、work unit、WorkUnitContract、resolver、DispatchPlan、qualification、judgment floor、catalog、presets。"
+description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。AIR-91 doctrine（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步／AvailabilitySnapshot tri-state／ArcOverride／RoutingPolicy／DispatchPlan/Trace schema——model 供給事實單一源＝catalog.toml、registry 部署預設＝agents/presets.toml，本檔不重抄值）＋dispatch 預設與額度 failover（policy 面；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm-bridge）→(model, effort, 容量) 解析＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與六類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、收法、三態判定、定向接續、session-id、fork、1301、1308、1302、work unit、WorkUnitContract、resolver、DispatchPlan、qualification、judgment floor、catalog、presets。"
 ---
 
 # Model Routing — 解析表與 provider 事實
@@ -186,13 +186,14 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 > 三條 user 裁定；約束對象＝web 形態（`chatgpt-web/*`），原生 slug 派發政策不變（見 dispatch 預設段）。
 
-1. **審查／規劃專責，禁大型實作**：窗口雖大（現值見上表），**單則訊息上限遠小於窗口**——review 大 diff 單發必死（真實案例：delegate-bridge ledger 4 筆 `ran out of room in the model's context window`，全數 turn-0 死亡）。派發前提（裁定原文「僅段落級評估確認可完成**才派**」）：範圍段落級＋派發前評估確認單則 payload 可完成，不滿足不派——是前提不是例外條款，不從「限 review／規劃」開出實作授權。**材料必須內聯**：webgpt agent 讀不到 caller 機本地檔——工單只帶 repo 檔案路徑＝agent 無從審起（09-16 實證：唯讀審查工單下 Read 被擋，agent 誠實回報未驗而非編造）；可行形態＝待審材料直接內聯 prompt（≤8KB 為實測安全線），同一工作改形態重派屬修因重派非盲目重試。
+1. **審查／規劃專責，禁大型實作**：窗口雖大（現值見上表），**單則訊息上限遠小於窗口**——review 大 diff 單發必死（真實案例：delegate-bridge ledger 4 筆 `ran out of room in the model's context window`，全數 turn-0 死亡）。**第二死亡形態（09-16 實證）**：大型 prompt 經 daemon multipart ack-chain 拆送後仍可在**回應段**死（`ChatGPT displayed an error for this response`——20KB 與 134KB diff 同死、同窗 tiny prompt 成功；分頁端錯誤 UI 渲染成 1×1 隱形空殼＝user 看不到任何錯誤；codex CLI 對 retryable 502 自動重試 5 次放大成無聲重送迴圈）——**bridge 端已裁定保守閥值防護（user 09-16）**，閾值取 daemon 實測最嚴邊界（`~/Github/codex-chatgpt-web` `chatgpt-web-models.ts`/`input-tokens.ts`）。派發前提（裁定原文「僅段落級評估確認可完成**才派**」）：範圍段落級＋派發前評估確認單則 payload 可完成，不滿足不派——是前提不是例外條款，不從「限 review／規劃」開出實作授權。**材料必須內聯**：webgpt agent 讀不到 caller 機本地檔——工單只帶 repo 檔案路徑＝agent 無從審起（09-16 實證：唯讀審查工單下 Read 被擋，agent 誠實回報未驗而非編造）；可行形態＝待審材料直接內聯 prompt（≤8KB 為實測安全線），同一工作改形態重派屬修因重派非盲目重試。
 2. **額度池意識（usage 查詢盲點）**：原生 `gpt-5.6-sol` 走 Codex credits 池（＝上表「原生 pool」／訂閱 Codex 額度；會耗盡、有 reset 日）——ChatGPT 帳號路徑下 native slug 全不可派（帳號路徑分界機制見 family 表；現行帳號面 as-of 查 spine `model-runtime-entitlements`）；`chatgpt-web/*` 走 ChatGPT web 訊息額度（web 池）、不吃 credits；**`wham/usage` 只回報原生訂閱池、看不見 web 池**——額度判斷禁依賴 usage 查詢（對 web 池等於沒查）。
-3. **失敗態辨識（五類固定失敗態）**：處置分流如下，禁盲目重試。
+3. **失敗態辨識（六類固定失敗態）**：處置分流如下，禁盲目重試。
 
 | 錯誤簽名 | 機制 | 處置 |
 |---------|------|------|
 | `ran out of room in the model's context window` | 單則訊息超 web 池上限（同約束 1） | 切 chunk／降 payload 再派；**禁同 payload 重試**（必再撞） |
+| `ChatGPT displayed an error for this response` | **multipart 大 payload 回應段 server-error**（09-16 新形態；分頁端錯誤 UI 隱形、user 看不到錯誤；CLI 重試 5 次放大） | **查分頁無效**；薄切 payload／換 carrier（native／in-harness）；禁同 payload 重派（deterministic 必死）；恢復訊號＝大 payload 成功一次 |
 | `stopped responding after the task started` | launcher 側 ChatGPT 分頁失聯，非任務本身失敗 | 先查 launcher 分頁健康再判；盲目重派＝雙跑風險 |
 | `connector menu ... no row named "Codex Native2"` | connector 環境缺損 | 環境修復（建 connector）後再派；重派無效 |
 | `personalization preflight exceeded its readiness deadline` | ChatGPT UI／登入狀態未就緒 | 查 UI／登入狀態，修因後重派 |
