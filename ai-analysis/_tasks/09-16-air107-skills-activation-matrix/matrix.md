@@ -22,7 +22,7 @@
 | code-review-and-quality | 無 | 無 | 語義自明 | 名字字面 |
 | commit | rules/AGENTS.md、rules/bridge-dispatch.md、rules/collaboration-constraints.md、rules/must-execute-before-complete.md、rules/outward-action-consent.md、rules/python-standards.md | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md | 語義自明 | rule 錨 |
 | compact-prep | 無 | 無 | 半語義 | 名字字面（弱） |
-| consistency | rules/AGENTS.md | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md | 半語義 | rule 錨 |
+| consistency | 〔噪音——見處置節〕rules/AGENTS.md 原列 | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md | 半語義 | rule 錨 |
 | context7 | rules/AGENTS.md | ./agents/AGENTS.md、./rules/AGENTS.md | 非語義 | rule 錨 |
 | conversation-dispatch | rules/context-management.md | 無 | 半語義 | rule 錨 |
 | corrections-weekly | 無 | 無 | 半語義 | 名字字面（弱） |
@@ -45,7 +45,7 @@
 | frontend-ui-engineering | 無 | 無 | 語義自明 | 名字字面 |
 | handoff | 無 | ./AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 語義自明 | 名字字面 |
 | illustrate | 無 | ./AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 半語義 | 名字字面（弱） |
-| implement | rules/AGENTS.md、rules/collaboration-constraints.md | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md〔子串口徑另有1檔〕 | 半語義 | rule 錨 |
+| implement | 〔噪音——見處置節〕rules/AGENTS.md、rules/collaboration-constraints.md 原列 | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md〔子串口徑另有1檔〕 | 半語義 | rule 錨 |
 | instruction-clean | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-init | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-sync | 無 | 無 | 半語義 | 名字字面（弱） |
@@ -72,7 +72,7 @@
 | scan-project | 無 | 無 | 半語義 | 名字字面（弱） |
 | self-contained-prompt | 無 | 無 | 語義自明 | 名字字面 |
 | smell-detector | 無 | ./AGENTS.md | 語義自明 | 名字字面 |
-| spec | rules/bridge-dispatch.md〔子串口徑另有5檔〕 | ./AGENTS.md、./agents/AGENTS.md〔子串口徑另有3檔〕 | 半語義 | rule 錨 |
+| spec | 〔噪音——見處置節〕rules/bridge-dispatch.md 原列〔子串口徑另有5檔〕 | ./AGENTS.md、./agents/AGENTS.md〔子串口徑另有3檔〕 | 半語義 | rule 錨 |
 | standup | rules/collaboration-constraints.md | 無 | 半語義 | rule 錨 |
 | state-review | 無 | 無 | 半語義 | 名字字面（弱） |
 | swing-analysis | 無 | 無 | 非語義 | （無——僅明示 invoke） |
