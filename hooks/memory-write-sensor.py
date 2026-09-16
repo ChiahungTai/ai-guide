@@ -27,6 +27,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from memory_hook_common import emit, is_pool_entry, utc_now
 
 
+def cli_source(argv):
+    """--source <name> from the registering harness; absent = legacy 'claude'.
+
+    AIR-100 S1: ZCode events were mislabeled 'claude' (hardcoded); registrations
+    now pass --source explicitly. Manual argv scan (not argparse) keeps the
+    always-exit-0 contract — argparse would exit 2 on malformed args.
+    """
+    for i, arg in enumerate(argv):
+        if arg == "--source" and i + 1 < len(argv):
+            return argv[i + 1]
+    return "claude"
+
+
 def main():
     try:
         raw = sys.stdin.read()
@@ -45,7 +58,7 @@ def main():
         emit(
             {
                 "kind": "post_tool_use",
-                "source": "claude",
+                "source": cli_source(sys.argv),
                 "ts": utc_now(),
                 "session_id": data.get("session_id"),
                 "tool": data.get("tool_name"),

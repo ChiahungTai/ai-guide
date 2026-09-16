@@ -56,7 +56,11 @@
           {
             "type": "process",
             "command": "python3",
-            "args": ["/Users/ctai/Github/ai-guide/hooks/memory-write-sensor.py"],
+            "args": [
+              "/Users/ctai/Github/ai-guide/hooks/memory-write-sensor.py",
+              "--source",
+              "zcode"
+            ],
             "timeoutMs": 10000
           }
         ]
