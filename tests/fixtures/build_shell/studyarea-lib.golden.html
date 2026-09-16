@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyArea LLM 判定管線 lib 化——disposition→分K/日K 共用</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .flow{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.9;color:var(--fg);background:#161b22;border:1px solid var(--border);border-radius:10px;padding:14px 18px;overflow-x:auto;white-space:pre;margin:10px 0}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:12px 0}
+  summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge plan">📋 計畫</span>
+    <h1>StudyArea LLM 判定管線 lib 化——disposition→分K/日K 共用</h1>
+    <div class="meta">卡 MOS-22.2 · baseline 10de6050<br>study-notes</div>
+  </div>
+  <ul>
+    <li><a href="#snapshot" onclick="return go('snapshot',this)"><span class="num">01</span>0｜一句話＋快照</a></li>
+    <li><a href="#why" onclick="return go('why',this)"><span class="num">02</span>1｜為什麼要做分類（交易思想——user 原話）</a></li>
+    <li><a href="#pipeline" onclick="return go('pipeline',this)"><span class="num">03</span>2｜管線全景（七組件——每件都是本週某個決策生的）</a></li>
+    <li><a href="#evolution" onclick="return go('evolution',this)"><span class="num">04</span>3｜演化年表——這條管線怎麼被 user 一週塑出來的</a></li>
+    <li><a href="#principles" onclick="return go('principles',this)"><span class="num">05</span>4｜四原則（B2 refit 的機器輸入——本 EP 的語義地基）</a></li>
+    <li><a href="#plan" onclick="return go('plan',this)"><span class="num">06</span>6｜EP 三段與驗收設計</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board（VSCode Backlog Cards）</span><br>
+    <a href="ai-analysis/_tasks/09-03-studyarea-llm-lib/ep.md">EP 全文</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+<section id="snapshot">
+<h2>0｜一句話＋快照</h2>
+<div class="sub">interval-agnostic core lib，薄 adapter 還原兩域語義——零漂移</div>
+<p>「StudyArea→圖/數值混合證據包→雙軌盲判→tags」已在 TWSE 208 全清實戰中打磨定型；本 EP 把它從 disposition 專用抽成 core lib。</p>
+<p>208 可判讀全清・proposed 199＋9 held-out・四原則定案・雙軌共識 76%</p>
+</section>
+<section id="why">
+<h2>1｜為什麼要做分類（交易思想——user 原話）</h2>
+<div class="sub">處置分類的產品是可推廣的自動判型器</div>
+<div class="note">user（8/13，goal-and-constraints）：收斂/多頭拉回會持續許多K棒，然後會有個攻擊…根據分類看要套哪種分K策略。</div>
+<p>處置分類天然要餵分K策略——這就是 lib 化的需求源頭。research-loop 的 ANNOTATE 瓶頸被解開後，整條 FOLD→策略鏈才通。</p>
+</section>
+<section id="pipeline">
+<h2>2｜管線全景（七組件——每件都是本週某個決策生的）</h2>
+<div class="sub">位置與來源對照</div>
+<table>
+<tr><th>#</th><th>組件</th><th>位置</th></tr>
+<tr><td>1</td><td>StudyArea model（時空錨統一）</td><td>research/study_set.py（lean 純值）</td></tr>
+<tr><td>2</td><td>特徵窗（窗口聚合單源）</td><td>classification_features.py:331</td></tr>
+<tr><td>5</td><td>雙軌判讀（跨家族盲判）</td><td>kbar-form-analysis dispatch＋verdicts-{vision,muse}</td></tr>
+<tr><td>7</td><td>Custody（proposed→overlay）</td><td>golden_writer/loader</td></tr>
+</table>
+</section>
+<section id="evolution">
+<h2>3｜演化年表——這條管線怎麼被 user 一週塑出來的</h2>
+<div class="sub">user 原話逐字＋後果</div>
+<table>
+<tr><th>時刻</th><th>user 原話（逐字）</th><th>後果</th></tr>
+<tr><td>09-01 23:06</td><td>「這不是要做一個分類器，這是要標記」</td><td>定調 tagging 而非分類器——今天的 lib 化正是這句的兌現</td></tr>
+<tr><td>09-02 22:40</td><td>「同樣的圖片你也丟給 muse 判斷看看」</td><td>quorum 雙軌誕生</td></tr>
+<tr><td>09-03 13:13</td><td>「3669根本沒有拉回…抓1.5% buffer」</td><td>機械破線尺誕生→B2 S1</td></tr>
+</table>
+<details open>
+<summary>證據</summary>
+<p>完整時間軸 30 條帶 session 證據——含並行上限史（3+3）、額度天花板（1308）、muse 被採納/推翻案例全錄。</p>
+</details>
+</section>
+<section id="principles">
+<h2>4｜四原則（B2 refit 的機器輸入——本 EP 的語義地基）</h2>
+<div class="sub">四原則定案</div>
+<ul class="dots">
+<li>① 日線自足——週K 只作修飾不推翻主類（8429/6573 各被自己 focus-only 推翻）</li>
+<li>② 拉回＝趨勢前提 AND 破 10MA（1.5% buffer）</li>
+<li>③ 收斂三條件——糾結＋中長收口＋量縮放量；不足→其他</li>
+<li>④ 乖離時態——主類記窗極值、修飾記「已回 10MA」</li>
+</ul>
+</section>
+<section id="plan">
+<h2>6｜EP 三段與驗收設計</h2>
+<div class="sub">S1 core lib → S2 disposition adapter → S3 strategy adapter</div>
+<p>SM-1 零漂移：舊路徑 vs adapter→core 逐案 final_tags 等值——非 0 即 blocker。</p>
+<p>最大風險＝區間語義：日K MA25＝25 日；分K MA25＝25 棒≈125 分鐘——不是月線。防線：圖題＋prompt header 雙重宣告 K線週期：5m。</p>
+</section>
+<!-- built-by: build_shell.py@1.0.0 | mode=lossless | card_id=MOS-22.2 | task_baseline=10de6050 | report_type=study-notes | source=studyarea-lib.report.md | diagrams= -->
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

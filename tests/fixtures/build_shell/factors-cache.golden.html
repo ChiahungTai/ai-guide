@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>factors cache 回歸 OHLCV 派生模型 — EP 導讀</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .flow{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.9;color:var(--fg);background:#161b22;border:1px solid var(--border);border-radius:10px;padding:14px 18px;overflow-x:auto;white-space:pre;margin:10px 0}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  details{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:12px 0}
+  summary{cursor:pointer;color:var(--accent);font-size:13.5px}
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>factors cache 回歸 OHLCV 派生模型 — EP 導讀</h1>
+    <div class="meta">卡 MOS-23 · baseline 31b3084b<br>delta-report</div>
+  </div>
+  <ul>
+    <li><a href="#why" onclick="return go('why',this)"><span class="num">01</span>① 為什麼——三五天消失的 266GB</a></li>
+    <li><a href="#assets" onclick="return go('assets',this)"><span class="num">02</span>② 資產與命運</a></li>
+    <li><a href="#target" onclick="return go('target',this)"><span class="num">03</span>③ 目標形態——canonical prefix 單一心智模型</a></li>
+    <li><a href="#plan" onclick="return go('plan',this)"><span class="num">04</span>④ 推進與驗收 S0–S5</a></li>
+    <li><a href="#daily" onclick="return go('daily',this)"><span class="num">05</span>⑤ 穩態日路徑——daily workflow 的正確形態</a></li>
+    <li><a href="#risk" onclick="return go('risk',this)"><span class="num">06</span>⑥ 風險與降級</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board（VSCode Backlog Cards）</span><br>
+    <a href="ai-analysis/_tasks/done/09-04-factors-cache-incremental/ep.md">EP 全文</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+<section id="why">
+<h2>① 為什麼——三五天消失的 266GB</h2>
+<div class="sub">本 EP 修的是讓它不再發生的架構</div>
+<p>事件：9/1～9/4 磁碟可用空間 ~400G → 134G。主凶 ~/.mosaic/data/cache/factors/（清理前 161G）。</p>
+<p>根因＝四因子相乘（GLM + muse 兩家獨立調查對照一致）：specs sprint 四代 key 連翻、set 級全量 key、全量重算＋全史覆寫、零清理。</p>
+<details open>
+<summary>前後對比</summary>
+<p>現況病灶：一個 specs key 統治 hive＋trees＋pivots 三種儲存——specs 動一欄，三種全作廢。目標：hive 用 specs key（年段覆寫、零殘留）；sidecar 用自己的 structure_key（與 feature specs 無關）。</p>
+</details>
+</section>
+<section id="assets">
+<h2>② 資產與命運</h2>
+<div class="sub">保留／退役／修正三分</div>
+<table>
+<tr><th>資產</th><th>命運</th><th>說明</th></tr>
+<tr><td>_extend_from_frozen（service.py:980）</td><td>✅ 保留——設計本體</td><td>hit → frozen 全史＋extension 尾窗（EXTEND_RIGHT 本體）</td></tr>
+<tr><td>tree snapshot sidecar</td><td>🗑️ S1 退役持久化</td><td>dense 重建 0.12s vs 載入 2.52s（bit-equal）——退役的是 persistence</td></tr>
+<tr><td>pivot event sidecar</td><td>🔧 S2 保留並修正</td><td>固定檔名＋structure input hash 進 manifest＋atomic</td></tr>
+<tr><td>夜間掃描清殘留</td><td>❌ 否決</td><td>零殘留架構內建，不是事後清掃</td></tr>
+</table>
+</section>
+<section id="target">
+<h2>③ 目標形態——canonical prefix 單一心智模型</h2>
+<div class="sub">catalog OHLCV＝唯一真相源；cache＝可丟棄派生物</div>
+<p>三個 cache action：HIT／EXTEND_RIGHT（prefix 保留、只補 tail——跨年非特殊分支）／REBUILD_PREFIX（頭缺、中洞、identity 壞、correction 自癒）。</p>
+<div class="frame-wrap">
+<div class="bar"><span>key 分層架構圖（archify）</span><a href="diagram-architecture.html" target="_blank">↗ 全屏</a></div>
+<iframe src="diagram-architecture.html?embed=1" title="key 分層架構圖（archify）" style="height:640px;min-height:0"></iframe>
+</div>
+</section>
+<section id="plan">
+<h2>④ 推進與驗收 S0–S5</h2>
+<div class="sub">核心驗收：非跨年日磁碟淨增 ≈ 0</div>
+<ul class="dots">
+<li>S0 Tree Replay POC——2330 dense 重建前 8,072 bars bit-equal、重建 0.12s vs 載入 2.52s</li>
+<li>S1 退役 TreeSnapshotStorage 持久化鏈——runtime trees 由 dense 記憶體重建</li>
+<li>S3a PIT payload gate——position 欄 frozen offset rebase；correctness gate 高於 routing gate</li>
+<li>S3b prefix state machine——CacheDecision（HIT｜EXTEND_RIGHT｜REBUILD_PREFIX）集中在 FeatureService</li>
+</ul>
+</section>
+<section id="daily">
+<h2>⑤ 穩態日路徑——daily workflow 的正確形態</h2>
+<div class="sub">gate → extension 尾窗 → append-only</div>
+<p>目標行為：15:30 daily → catalog 載入 → cache 判定（三 action）→ hit：零寫入、只 slice；miss → REBUILD_PREFIX。</p>
+<div class="frame-wrap">
+<div class="bar"><span>穩態日增量路徑流程圖（archify）</span><a href="diagram-workflow.html" target="_blank">↗ 全屏</a></div>
+<iframe src="diagram-workflow.html?embed=1" title="穩態日增量路徑流程圖（archify）" style="height:720px;min-height:0"></iframe>
+</div>
+</section>
+<section id="risk">
+<h2>⑥ 風險與降級</h2>
+<div class="sub">資料正確性高於效能數字</div>
+<table>
+<tr><th>風險</th><th>等級</th><th>處置</th></tr>
+<tr><td>S0 多檔／多 interval 等價外推</td><td>致命</td><td>3-5 檔 × 1d/1w/1mo 確認外推——不過即停 S1 重新裁決</td></tr>
+<tr><td>extension payload 43-68 欄 exact mismatch</td><td>高</td><td>S3a 修復目標；等價測試全綠前 fallback REBUILD_PREFIX</td></tr>
+<tr><td>並發三寫入者（daily／盤中／research）</td><td>高</td><td>S4 physical-path lock＋same-dir pending＋fsync＋manifest-last</td></tr>
+</table>
+</section>
+<!-- built-by: build_shell.py@1.0.0 | mode=lossless | card_id=MOS-23 | task_baseline=31b3084b | report_type=delta-report | source=factors-cache.report.md | diagrams=arch,daily-flow -->
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>
