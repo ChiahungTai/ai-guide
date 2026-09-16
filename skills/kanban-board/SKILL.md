@@ -87,7 +87,7 @@ backlog task edit <id> --ref "<done/ EP 相對路徑>[,<shell 相對路徑>]"   
 ```bash
 bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skills 根：ZCode ~/.zcode/skills、Claude ~/.claude/skills（symlink 同源）；無參=掃全部 To Do 卡；exit 1 = 停手
 ```
-腳本檢查：①`status=In Progress` 卡永不可清；②跨線訊號 `git log --all --not HEAD --grep <卡id>`——「有 commit 提及此卡、但當前 branch 不包含」＝真平行線訊號（裸 `--all --grep` 會命中本線建卡 commit，永遠誤報）；③反向檢查（AIR-108）——To Do 卡本線已有實作 commit（過濾 `chore(backlog)` bookkeeping）＝「做完未收卡」→ 擋＋強制裁決（收 Done 或記阻擋理由）。**結案序列＝先翻 Done 再 precheck**——反向檢查只對 To Do 生效，翻卡即裁決完成（Done 卡自動跳過，結案兩步不被自己擋）。②③的 grep 皆 `-i`（卡 id 大寫、實作 commit subject 小寫 scope——區分大小寫整組漏抓）。exit 1 → 停手先協調，不就地清（真實案例：分岔 branch commit 標題含卡 id、平行 session 對同卡各自結案，此檢查可攔下）。
+腳本檢查：①`status=In Progress` 卡永不可清；②跨線訊號 `git log --all --not HEAD --grep <卡id>`——「有 commit 提及此卡、但當前 branch 不包含」＝真平行線訊號（裸 `--all --grep` 會命中本線建卡 commit，永遠誤報）；③反向檢查（AIR-108）——To Do 卡本線已有實作 commit（過濾 `chore(backlog)` bookkeeping）＝「做完未收卡」→ 擋＋強制裁決（收 Done 或記阻擋理由）。**結案序列＝先翻 Done 再 precheck（此序列限 ③ 特赦／清理場運行時——結案兩步本身不需 precheck 的原則不變）**——反向檢查只對 To Do 生效，翻卡即裁決完成（Done 卡自動跳過，結案兩步不被自己擋）。②③的 grep 皆 `-i`（卡 id 大寫、實作 commit subject 小寫 scope——區分大小寫整組漏抓）。exit 1 → 停手先協調，不就地清（真實案例：分岔 branch commit 標題含卡 id、平行 session 對同卡各自結案，此檢查可攔下）。
 
 **掃描**：
 - AI 消費：`backlog task list --plain`（非互動 canonical 輸出）

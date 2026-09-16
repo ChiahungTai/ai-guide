@@ -38,8 +38,9 @@ for id in "${ids[@]}"; do
   # --all --not HEAD = 有 commit 提及此卡、但當前 branch 不包含 = 真平行線訊號
   # （裸 --all --grep 會命中本線建卡 commit，永遠誤報；比對為子串匹配，多擋不少放——安全側）
   # -i：卡 id 大寫（AIR-46）、實作 commit subject 小寫 scope（(air-46)）——區分大小寫會整組漏抓
+  # -E＋邊界：id 尾接數字會前綴互撞（AIR-108 命中 AIR-1080）——id 後須非數字或行尾
   # fail-closed：git log operational 失敗（repo/object/permission）禁吞成空 hits 假「可清」——exit 2 交 caller F2 分流
-  if ! hits=$(git log --all --not HEAD -i --grep "$id" --oneline 2>&1); then
+  if ! hits=$(git log --all --not HEAD -i -E --grep "${id}([^0-9]|$)" --oneline 2>&1); then
     echo "[ERROR] $id — git log 失敗（runtime，非 policy）：$hits" >&2; exit 2
   fi
   if [ -n "$hits" ]; then
@@ -50,7 +51,7 @@ for id in "${ids[@]}"; do
   # 過濾 bookkeeping（chore(backlog) 建卡/開工/結案 metadata），其餘 subject 命中即訊號。
   impl_hit=""
   if [ "$s" = "To Do" ]; then
-    if ! own=$(git log HEAD -i --grep "$id" --oneline 2>&1); then
+    if ! own=$(git log HEAD -i -E --grep "${id}([^0-9]|$)" --oneline 2>&1); then
       echo "[ERROR] $id — git log 失敗（runtime，非 policy）：$own" >&2; exit 2
     fi
     impl=$(printf '%s\n' "$own" | grep -v 'chore(backlog)' || true)

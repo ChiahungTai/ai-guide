@@ -4,7 +4,7 @@ name: judge-review
 description: "評估其他 AI 的審查建議，基於深層思考框架決定是否採納。/judge-review <ai1: 建議 [ai2: 建議]"
 when_to_use: "Evaluate AI review suggestions using deep thinking (first principles + second-level consequence tracing) against actual code. Decide adopt/reject/needs-confirmation before making changes."
 argument-hint: "貼上其他 AI 的審查建議，格式：ai1: ... 或 ai1: ... ai2: ..."
-allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit"]
+allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 ---
 
 # /judge-review — AI 審查建議評估
