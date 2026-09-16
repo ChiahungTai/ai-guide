@@ -144,7 +144,11 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 **memory 池對帳腿**（git 掃不到的出口保證——memory 池在 repo 外）：`rg` 本專案 memory 池（掃描面＝`_inventory.md` 全量 desc 投影＋常駐 MEMORY.md＋條目檔——B 形態下 MEMORY.md 只含常駐定額、全量條目只在 `_inventory.md`，漏掃即漏對帳；池形態例 repo `.agents/memory/` 主體或 `~/.zcode/cli/memories/projects/<id>/memory/`〔多為 symlink 指主體〕；載體細節見 [memory-audit](../memory-audit/SKILL.md)「適用載體」）。掃描鍵聯集＝本次弧建卡 id ∪ staged diff／branch 名內卡 id（2.8 時點 commit message 尚未生成、非掃描源）∪ 本 EP「UC 盤點」登記的「結案蒸餾範圍」條目路徑 ∪ 弧主題詞；池不存在 → 報告標「無 memory 池，跳過」。**結案態前置**（三分歸屬前）：`backlog task view <id> --plain` 取卡狀態（無 backlog CLI → 保守視為未結案）——卡未 Done／結案兩步未執行 → 命中條目標「活躍弧 in-flight——不動」（進行中弧線收案前禁加段、等一次性蒸餾）。命中三分歸屬（LLM/user 判）：**活知識錨**（教訓索引式引用）→ 保留；**弧流水**（狀態快照、進度、git 可推導內容、過期詞）→ 結案蒸餾當場做；**已是終態 facts** → 過。歸屬他弧且 owner 線未結案 → 保守不動、列清單標註。報告附命中清單＋歸屬判定（零命中亦標）。蒸餾方法論單一源＝[kanban-board](../kanban-board/SKILL.md)「弧結案蒸餾（第三動）」＋[memory-audit](../memory-audit/SKILL.md)「寫入端紀律」，此處不重述。
 
-報告附 `git status --porcelain` 原始輸出（機械事實不可靜默跳過）。歸屬判斷是語義的（本任務 vs 並行遺留），故為 skill 步驟而非 hook——機械掃描列命中、LLM/user 判歸屬（同 2.7「機械掃描＋逐項處置」模式）。
+報告附 `git -c core.quotePath=false status --porcelain` 原始輸出（機械事實不可靜默跳過；quotePath 關閉與 guard 同口徑——非 ASCII 路徑不轉義）。歸屬判斷是語義的（本任務 vs 並行遺留），故為 skill 步驟而非 hook——機械掃描列命中、LLM/user 判歸屬（同 2.7「機械掃描＋逐項處置」模式）。
+
+### 階段 2.9：控制面回執彙集（AIR-106）
+
+staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern——無 guard 檔的 repo 以 instruction-writing 同節的家族描述為判定）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
 
 ### 階段 4：生成 Commit Message
 
@@ -203,4 +207,4 @@ commit 位於主鏈末端（主鏈定義＝ai-development-guide「Session 開場
 
 前置：`/lint-fix`（lint 不通過時）、`/code-review`
 
-**捷徑模式**：當 `/code-review` 已產生 commit message 時，跳過階段 2（Git 狀態分析，含 2.5 引用同步掃描），直接進入階段 1（Lint）→ **階段 2.7（POC/Demo 處置閘門）** → **階段 2.8（Finalization 對帳閘門）** → 階段 5（確認）→ 階段 6（提交）。2.7/2.8 屬 commit 前檢查閘門（非被跳過的階段 2），捷徑保留；2.6 為 optional 提醒，捷徑不強制。
+**捷徑模式**：當 `/code-review` 已產生 commit message 時，跳過階段 2（Git 狀態分析，含 2.5 引用同步掃描），直接進入階段 1（Lint）→ **階段 2.7（POC/Demo 處置閘門）** → **階段 2.8（Finalization 對帳閘門）** → **階段 2.9（控制面回執彙集）** → 階段 5（確認）→ 階段 6（提交）。2.7/2.8/2.9 屬 commit 前檢查閘門（非被跳過的階段 2），捷徑保留；2.6 為 optional 提醒，捷徑不強制。
