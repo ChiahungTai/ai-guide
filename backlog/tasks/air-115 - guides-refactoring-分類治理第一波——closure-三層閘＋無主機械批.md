@@ -1,12 +1,14 @@
 ---
 id: AIR-115
 title: guides-refactoring 分類治理第一波——closure 三層閘＋無主機械批
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 16:17'
-updated_date: '2026-09-16 16:18'
+updated_date: '2026-09-16 16:19'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/0917-guides-refactoring/ep.md
 ordinal: 100000
 ---
 
