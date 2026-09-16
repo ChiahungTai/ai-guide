@@ -11,8 +11,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/done/09-05-memory-system-recalibration/ep.md
-  - ai-analysis/_tasks/done/09-05-memory-system-recalibration/ep.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/_archived/09-05-memory-system-recalibration/ep.md
+  - ai-analysis/_tasks/_archived/09-05-memory-system-recalibration/ep.md
 ordinal: 17000
 ---
 

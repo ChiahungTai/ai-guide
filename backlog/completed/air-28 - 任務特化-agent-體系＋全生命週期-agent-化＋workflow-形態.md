@@ -11,7 +11,7 @@ labels:
   - review
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-05-agent-specialization-lifecycle/index.html
+  - ai-analysis/_tasks/_archived/09-05-agent-specialization-lifecycle/index.html
 ordinal: 19000
 ---
 

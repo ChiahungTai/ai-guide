@@ -30,7 +30,7 @@ Schema 定義：[unified-snapshot-schema.md](reference/unified-snapshot-schema.m
 產出：
 1. **dep_graph** — Python import 關係（LLM 無法自行可靠計算）。`source` 標示來源：`builtin`（內建 AST 掃描，模組 = package root 第一層目錄）/ `none`（無 package root）
 2. **rust_workspace** — Cargo workspace members、crate 間內部依賴、`has_python_bindings`（PyO3 綁定層標記——truth/shell 分離 repo 的關鍵訊號）；無 Rust workspace 時為 `null`
-3. **dir_inventory** — 機械目錄盤點（深度 ≤3；檔名僅在 ≤60 時列出）——**結構性列舉的 ground truth**，LLM prose 摘要不可取代
+3. **dir_inventory** — 機械目錄盤點（深度 ≤4，覆蓋 `_tasks/YYYY-MM/` 月份層；檔名僅在 ≤60 時列出）——**結構性列舉的 ground truth**，LLM prose 摘要不可取代
 4. **instruction_files** — 各目錄 instruction 檔位置 + 邊界/能力表有無
 5. **findings** — 機械性交叉驗證問題（路徑、tag、重複等）
 6. **fingerprint** — 輕量變化偵測（counts + hashes）
@@ -78,7 +78,7 @@ uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/sc
 | `dep_graph.edges` | 內建掃描 | 模組間 import edges |
 | `dep_graph.hotspots` | 內建掃描 | 高 fan-out imports |
 | `rust_workspace` | Cargo.toml 解析 | workspace 成員 + crate 內部依賴 + `has_python_bindings` |
-| `dir_inventory` | 檔案系統盤點 | 深度 ≤3 目錄清單（subdirs、檔名/副檔統計）——列舉 ground truth |
+| `dir_inventory` | 檔案系統盤點 | 深度 ≤4 目錄清單（subdirs、檔名/副檔統計）——列舉 ground truth |
 | `instruction_files` | instruction 檔掃描 | 各目錄 AGENTS.md/CLAUDE.md 位置 + 邊界/能力表有無 |
 | `findings` | 機械性交叉檢查 | X-cap-path / X-ep-ready / X6 |
 | `fingerprint` | 計數 + 雜湊 | capabilities_total, kanban_total, kanban_by_lane, hashes |

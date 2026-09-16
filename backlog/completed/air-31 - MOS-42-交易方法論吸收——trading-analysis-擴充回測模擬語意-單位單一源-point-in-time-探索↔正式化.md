@@ -12,8 +12,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/done/09-06-trading-analysis-absorption/ep.md
-  - ai-analysis/_tasks/done/09-06-trading-analysis-absorption/ep.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-06-trading-analysis-absorption/ep.md
+  - ai-analysis/_tasks/_archived/09-06-trading-analysis-absorption/ep.md
 ordinal: 22000
 ---
 

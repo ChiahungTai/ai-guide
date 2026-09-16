@@ -12,7 +12,7 @@ dependencies:
   - AIR-40
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/done/09-07-memory-governance/read-observation/ep.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/_archived/09-07-memory-governance/read-observation/ep.md
 parent_task_id: AIR-42
 ordinal: 32000
 ---

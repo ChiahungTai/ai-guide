@@ -31,5 +31,5 @@ NT `Instrument.lot_size` 是純 metadata（引擎零消費），對齊的是概�
 審查逐條：展開忠實度（設計決策未走樣）、錨點（path:line 全數核對）、遺漏（venv 邊界的第十三定義點補入）、可實作性（S 段切分可單獨驗收）。
 
 <!-- section-group: {"id": "s4", "title": "回源", "sub": "殼是展示層——本體（source of record）與證據鏈全在 repo"} -->
-本體 `ai-analysis/_tasks/done/09-09-mos80-volume-lot-single-source/ep.md` @ baseline e37412f849。
+本體 `ai-analysis/_tasks/_archived/09-09-mos80-volume-lot-single-source/ep.md` @ baseline e37412f849。
 <!-- diagram-assign: {"id": "lot-map", "title": "lot 常數收斂地圖"} -->

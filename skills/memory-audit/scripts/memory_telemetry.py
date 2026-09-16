@@ -3,7 +3,7 @@
 Drives normalized write/read events out of ZCode db.sqlite part rows and
 Claude transcript JSONL without touching sources. Scope is S1 only:
 event/identity/coverage JSON. Ranking projection is S2 and consumes this
-output. See ai-analysis/_tasks/09-07-memory-governance/write-attribution/ep.md.
+output. See ai-analysis/_tasks/_archived/09-07-memory-governance/write-attribution/ep.md.
 """
 
 import argparse

@@ -8,7 +8,7 @@ updated_date: '2026-09-14 01:34'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-14-skills-corpus-contract-governance/ep.md
+  - ai-analysis/_tasks/_archived/09-14-skills-corpus-contract-governance/ep.md
 ordinal: 73000
 ---
 

@@ -6,7 +6,7 @@
 > 範圍：ai-guide 本 repo 的開發流程 skills、角色與 model 體系、追蹤理解工具鏈、記憶體系（含原則與實例）。
 
 材料來源：`skills/CLAUDE.md` 工作流拓撲、`AGENTS.md` 受眾模型與消費端 context、
-AIR-91 卡與 `ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md`、
+AIR-91 卡與 `ai-analysis/_tasks/_archived/09-15-model-capability-routing/ep.md`、
 `skills/model-routing/{SKILL.md,catalog.toml}`、`agents/{AGENTS.md,presets.toml,roles/}`、
 各 workflow skill 頭段、`skills/memory-audit/SKILL.md`、`rules/context-management.md`、
 `.agents/memory/{MEMORY.md,_inventory.md,_resident-set.md,_audit-state.md}`、

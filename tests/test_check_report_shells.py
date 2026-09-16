@@ -12,7 +12,7 @@ def _shell(
 ) -> tuple:
     """建 fixture 任務家殼；body 中 {SHA} 會代換為 ep.md 實際 content SHA 前綴。
 
-    sub 控制殼在 repo 內的相對位置——歷史位置（如 `_tasks/done/…`）走 lint 豁免。
+    sub 控制殼在 repo 內的相對位置——歷史位置（如 `_tasks/_archived/…`）走 lint 豁免。
     """
     d = tmp_path / "ai-analysis" / sub
     d.mkdir(parents=True)
@@ -79,14 +79,26 @@ def test_viewer_url_active_shell_flagged(tmp_path):
 
 
 def test_viewer_url_historical_shell_exempt(tmp_path):
-    """viewer URL 在歷史位置（done/）豁免——歷史殼留歷史態不動。"""
+    """viewer URL 在歷史位置（_archived/）豁免——歷史殼留歷史態不動。"""
     shell, root = _shell(
         tmp_path,
         "meta projection {SHA}（EP content SHA）\n"
-        '<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-guide/_tasks/done/9999-test/ep.md">EP</a>',
-        sub="_tasks/done/9999-test",
+        '<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-guide/_tasks/_archived/9999-test/ep.md">EP</a>',
+        sub="_tasks/_archived/9999-test",
     )
     assert lint.lint_shell(shell, root) == []
+
+
+def test_viewer_url_month_layer_shell_not_exempt(tmp_path):
+    """viewer URL 在月份層（_tasks/YYYY-MM/）不豁免——月份層是活躍位置。"""
+    shell, root = _shell(
+        tmp_path,
+        "meta projection {SHA}（EP content SHA）\n"
+        '<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-guide/_tasks/2026-09/9999-test/ep.md">EP</a>',
+        sub="_tasks/2026-09/9999-test",
+    )
+    issues = lint.lint_shell(shell, root)
+    assert sum("viewer URL 形態已退役" in i for i in issues) == 1
 
 
 def test_viewer_url_historical_reports_exempt(tmp_path):

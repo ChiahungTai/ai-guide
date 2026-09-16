@@ -10,9 +10,9 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/done/09-03-post-air13-batch/work-orders/wo5-rule-surgery-batch.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/_archived/09-03-post-air13-batch/work-orders/wo5-rule-surgery-batch.md
   - >-
-    ai-analysis/_tasks/done/09-03-post-air13-batch/work-orders/wo5-rule-surgery-batch.md
+    ai-analysis/_tasks/_archived/09-03-post-air13-batch/work-orders/wo5-rule-surgery-batch.md
 ordinal: 11000
 ---
 

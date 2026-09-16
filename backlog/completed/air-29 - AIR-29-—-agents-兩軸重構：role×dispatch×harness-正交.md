@@ -11,7 +11,7 @@ labels:
   - ep-ready
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-05-agents-two-axis-refactor/index.html
+  - ai-analysis/_tasks/_archived/09-05-agents-two-axis-refactor/index.html
 ordinal: 20000
 ---
 

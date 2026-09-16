@@ -10,8 +10,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/ai-analysis/_tasks/done/09-07-muse-bridge-fire-forget/index.html
-  - ai-analysis/_tasks/done/09-07-muse-bridge-fire-forget/
+    http://127.0.0.1:6421/ai-rules/ai-analysis/_tasks/_archived/09-07-muse-bridge-fire-forget/index.html
+  - ai-analysis/_tasks/_archived/09-07-muse-bridge-fire-forget/
 ordinal: 27000
 ---
 

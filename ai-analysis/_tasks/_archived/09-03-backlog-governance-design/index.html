@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-14 Backlog.md 治理設計（卡即 handoff）— Task Brief</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d1117; --panel: #161b22; --border: #30363d; --border-soft: #21262d;
+    --fg: #e6edf3; --fg-dim: #9aa3b2; --fg-mute: #6f7683;
+    --accent: #8ab4f8; --ok: #7dd487; --warn: #e8c468; --rose: #e8798a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--fg); }
+  header { position: fixed; top: 0; left: 0; right: 0; height: 64px; display: flex; align-items: center; gap: 14px; padding: 0 22px; background: rgba(13,17,23,.92); border-bottom: 1px solid var(--border); z-index: 10; backdrop-filter: blur(6px); }
+  header h1 { font-size: 1.02rem; font-weight: 650; white-space: nowrap; }
+  .badge { background: #2d3a5f; color: var(--accent); border-radius: 4px; padding: .12rem .6rem; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+  header .meta { font-size: .74rem; color: var(--fg-mute); line-height: 1.45; }
+  header a { color: var(--accent); text-decoration: none; font-size: .76rem; white-space: nowrap; }
+  header a:hover { text-decoration: underline; }
+  .layout { display: flex; padding-top: 64px; min-height: calc(100vh - 64px); }
+  nav { width: 208px; flex: none; border-right: 1px solid var(--border-soft); padding: 18px 0; position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; }
+  nav button { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 3px solid transparent; color: var(--fg-dim); font-size: .84rem; padding: 10px 16px; cursor: pointer; font-family: inherit; line-height: 1.4; }
+  nav button:hover { color: var(--fg); background: rgba(139,180,248,.06); }
+  nav button.active { color: var(--accent); border-left-color: var(--accent); background: rgba(139,180,248,.08); font-weight: 600; }
+  nav .n { color: var(--fg-mute); font-size: .72rem; margin-right: 6px; }
+  main { flex: 1; max-width: 1480px; padding: 26px 30px 40px; }
+  section { display: none; }
+  section.active { display: block; }
+  section h2 { font-size: 1.22rem; color: var(--fg); margin-bottom: 4px; }
+  section .lead { color: var(--fg-dim); font-size: .9rem; margin-bottom: 18px; }
+  section h3 { font-size: .98rem; color: var(--accent); margin: 20px 0 8px; }
+  p, li { font-size: .9rem; color: var(--fg-dim); line-height: 1.75; }
+  ul { padding-left: 1.35rem; margin: .3rem 0 .9rem; }
+  strong { color: var(--fg); }
+  em { color: var(--warn); font-style: normal; }
+  code { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 4px; padding: .06rem .38rem; font-size: .82em; color: #c9d1d9; }
+  table { width: 100%; border-collapse: collapse; margin: .5rem 0 1.1rem; font-size: .84rem; }
+  th { text-align: left; color: var(--fg-mute); font-weight: 600; border-bottom: 1px solid var(--border); padding: .42rem .6rem; white-space: nowrap; }
+  td { border-bottom: 1px solid var(--border-soft); padding: .5rem .6rem; vertical-align: top; color: var(--fg-dim); }
+  td:first-child { color: var(--fg); white-space: nowrap; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .rose { color: var(--rose); }
+  .diagram { margin: 14px 0 6px; }
+  .diagram iframe { width: 100%; height: calc(100vh - 190px); min-height: 640px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+  .diagram .cap { font-size: .74rem; color: var(--fg-mute); margin-top: 6px; }
+  .quote { background: var(--panel); border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; padding: 10px 14px; margin: .6rem 0 1rem; font-size: .8rem; color: var(--fg-dim); line-height: 1.7; }
+  .quote b { color: var(--fg); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: .6rem 0 1rem; }
+  .cell { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px 16px; }
+  .cell h4 { font-size: .88rem; color: var(--fg); margin-bottom: 6px; }
+  .cell p { font-size: .82rem; margin: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge">✅ 已完成</span>
+  <h1>Backlog.md 治理設計——卡即 handoff</h1>
+  <div class="meta">AIR-14 ｜ EP：ai-analysis/_tasks/_archived/09-03-backlog-governance-design/ep.md ｜ baseline d121837（2026-09-03）｜ <span style="color:var(--ok)">Done</span></div>
+  <span>Board（VSCode Backlog Cards）</span>
+</header>
+
+<div class="layout">
+<nav id="nav">
+  <button data-s="s1"><span class="n">01</span>為什麼——三個張力</button>
+  <button data-s="s2"><span class="n">02</span>統一框架——兩族×四問</button>
+  <button data-s="s3" class="active"><span class="n">03</span>卡即 handoff（圖）</button>
+  <button data-s="s4"><span class="n">04</span>檔案型三區＋夜間掃腿（圖）</button>
+  <button data-s="s5"><span class="n">05</span>排程單一真相源</button>
+  <button data-s="s6"><span class="n">06</span>推進與驗收（S1-S4）</button>
+  <button data-s="s7"><span class="n">07</span>決策記錄與回源</button>
+  <button data-s="s8"><span class="n">08</span>實作結果 —— 已完成 ✅</button>
+</nav>
+
+<main>
+
+<section id="s1">
+  <h2>為什麼做這個設計</h2>
+  <p class="lead">治理原則只有一條：<strong>有進有出才是對的</strong>——任何持續流入的面，必須有對應的流出機制。以下三個實證都是「只進不出」或「進出口沒人知道」的症狀。</p>
+  <div class="grid2">
+    <div class="cell"><h4>張力一：desc 裝不下 handoff</h4><p>交接 prompt 有標準八欄（任務/baseline/來源 EP/已完成/<em>已決策</em>/下一步/驗收/承接不重做）。卡的 desc 單欄裝不下——AIR-14 開卡時實測，只能拆成「desc 收不變決策＋notes 收接手交代」。這個拼裝模式需要定案成契約。<br><span style="color:var(--fg-mute);font-size:.76rem;">draft 未承諾池 vs task 承諾池，區分線＝有沒有開 <code>/execution-plan</code>：未開先丟 draft（SM-13），已開 UC 盤點才進 backlog。</span></p></div>
+    <div class="cell"><h4>張力二：檔案淤積</h4><p><code>.agent-tmp/</code> 三天累積 <strong>37 個檔案</strong>（09-03 實測）——「session 結束列清單」的慣例存在但沒有出口執行率。<code>.at-contexts/</code> 的 handoff 檔（09-01）消費後無人清。</p></div>
+    <div class="cell"><h4>張力三：排程認知過時</h4><p>cron 職責散在各 automation prompt 裡，沒有總覽——同一週內兩次實證：以為週日治理在 23:30（實已改 23:00）、以為 usage-ping 還在跑（實為殘留記錄）。</p></div>
+    <div class="cell"><h4>本卡交付物</h4><p>設計文件（design.md）＋排程 registry 初版＋回歸驗證＋<strong>文檔化落地清單 L1-L9</strong>。手術本身屬後續卡——本 EP 不動 skills/rules 本體。</p></div>
+  </div>
+  <div style="margin:18px 0 8px; padding:14px 16px; background:var(--panel); border:1px solid var(--accent); border-radius:8px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <span style="font-size:.88rem; color:var(--accent); font-weight:650;">⚡ 雙圖直達</span>
+    <span style="font-size:.82rem; color:var(--fg-dim);">兩張 archify 流程圖已交付（亮暗雙主題、9/9 檢查過）——點左側 <b style="color:var(--fg)">03 / 04</b> 切換 iframe，或直接新分頁開啟：</span>
+    <a href="diagram-workflow-card.html" target="_blank" style="font-size:.82rem; background:var(--accent); color:#0d1117; padding:5px 12px; border-radius:5px; text-decoration:none; font-weight:600;">圖 A：卡生命週期 ↗</a>
+    <a href="diagram-workflow-relay.html" target="_blank" style="font-size:.82rem; background:var(--panel); color:var(--accent); border:1px solid var(--accent); padding:5px 12px; border-radius:5px; text-decoration:none; font-weight:600;">圖 B：三區＋夜間掃腿 ↗</a>
+    <span style="font-size:.74rem; color:var(--fg-mute);">若 iframe 為空，請點上方新分頁連結（board 未跑時 file:// 直開亦可）。</span>
+  </div>
+</section>
+
+<section id="s2">
+  <h2>統一框架——兩族 × 四問</h2>
+  <p class="lead">任務型與檔案型是同一套治理的兩個實例：「工作意圖」與「工作產物」各自的中繼站。</p>
+  <table>
+    <tr><th>族</th><th>是什麼</th><th>進口</th><th>出口</th></tr>
+    <tr><td>任務型</td><td>backlog board——工作意圖的進出口</td><td><strong>未開 <code>/execution-plan</code> → draft 未承諾池</strong>（想法捕獲/觸發型/session 斷）；<strong>已開 UC 盤點 → backlog 承諾池</strong>（拍板建卡 ↔ 跨 repo 指針去重；<code>handoff/review</code> 走 <code>--comment</code>）</td><td>Done 欄 → completed/ 清場；archive/ 可復活</td></tr>
+    <tr><td>檔案型</td><td>repo dot-area——工作產物的暫存區</td><td>.agent-tmp（agent 暫存）/.at-contexts（一次性 context，handoff 已改 <code>--comment</code>）/.review（local finding，<code>/arch-thinking</code> 評可退場）</td><td><code>post-build</code> 列清單預設刪 + 夜間掃腿 mtime 刪（7/7/30 天緩衝）；有價值先升格</td></tr>
+  </table>
+  <h3>共同四問（每區必答）</h3>
+  <ul>
+    <li><strong>誰進來</strong>——進口形態明確（哪些來源、什麼形態）</li>
+    <li><strong>停多久</strong>——時限是緩衝不是保存承諾（被續用會 touch 刷新 mtime）</li>
+    <li><strong>誰清</strong>——session 自清為第一腿，夜間掃腿為保底</li>
+    <li><strong>清去哪</strong>——刪除前判「值得保存嗎」：有價值升格進 EP/reports/memory，不是搬移</li>
+  </ul>
+  <p>新 dot-area 門檻四條（全過才開）：語義最近的既有區裝得下嗎 → 四問有答案 → 規則承載（collaboration-constraints＋.gitignore）→ 掃腿覆蓋（進場即有出口）。</p>
+</section>
+
+<section id="s3" class="active">
+  <h2>卡即 handoff——任務型治理核心</h2>
+  <p class="lead">一句話：<strong>卡的 desc＋notes＋references＋EP 四件拼裝，承接 handoff 八欄</strong>。「做 AIR-N」說出口，新 session 憑卡就能接手，不重辯已定的事。</p>
+  <div class="diagram">
+    <iframe src="diagram-workflow-card.html?embed=1" title="任務型卡生命週期流程圖"></iframe>
+    <div class="cap">圖：卡生命週期（archify workflow——可 pan/zoom/搜尋、亮暗切換）｜<a href="diagram-workflow-card.html" target="_blank" style="color:var(--accent)">新分頁開圖 ↗</a>｜<a href="diagram-workflow-card.visual-check.1440x900.light.png" target="_blank" style="color:var(--fg-mute)">截圖證據（light）</a></div>
+  </div>
+  <h3>核心主張（EP Review 全數通過查證）</h3>
+  <table>
+    <tr><th>主張</th><th>內容</th><th>樣本</th></tr>
+    <tr><td>desc gate 三必有</td><td>跨 session To Do 卡必含 baseline／已決策勿重辯／驗收；session 內即辦卡豁免（AIR-15）；內容 gate 非 hook——語義判斷歸 LLM 流程</td><td class="ok">MOS-14 ✓ / AIR-15 ✓</td></tr>
+    <tr><td>兩層判定</td><td><strong>承諾時定形態</strong>（升卡跑 /execution-plan 分級）：simple＝不建 EP、卡即 handoff；standard+＝寫 EP、卡當追蹤錨＋EP 當 handoff 主體——執行端不分岔（讀卡知形態；scope 漲→升 EP 是逃逸非分岔）</td><td class="ok">AIR-13 ✓</td></tr>
+    <tr><td>notes 結案不蒸餾</td><td>durable lesson 走正規歸宿（memory/skill/rule）；notes 隨卡歸檔為考古材料。機械信號：notes 開始像 EP → 該升 EP</td><td class="ok">三層分工自洽</td></tr>
+    <tr><td>desc 同步義務</td><td>EP 修訂只有<em>決策層變更</em>（scope/驗收校準）才回寫 desc；規劃層調整不動</td><td class="warn">MOS-14 F-1 反證（未回寫）</td></tr>
+  </table>
+  <h3>實物樣本——過 gate 的 desc 長這樣（AIR-14 卡開頭）</h3>
+  <div class="quote">〔<b>baseline</b>：ai-rules d121837〕〔<b>已決策勿重辯</b>：①兩族合一框架 user 09-03 裁定 ②討論題即時不建卡…③drafts＝未承諾/觸發型進口…〕…〔<b>驗收</b>：設計文件覆蓋上述全部＋以 MOS-14 卡/EP 與本卡群為回歸樣本；文檔化落地清單含 sync-sources 檢查〕</div>
+  <p>接手時的起手式五步：標 In Progress（第一動，平行 session 可見）→ 讀卡三層 → <strong>讀卡知形態</strong>（references 有無 EP——形態承諾時已定，不重判）→ <strong>新鮮度核對</strong>（desc baseline vs <code>git log</code>；relay 宣稱先機械驗證）→ 雙 ref。</p>
+</section>
+
+<section id="s4">
+  <h2>檔案型三區＋夜間掃腿</h2>
+  <p class="lead">三區覆蓋「暫存」的語義空間；夜間掃腿是保底出口——掛在每晚 23:40 收斂 cron（寫手角色），不掛週日審計（advisory 不動手，角色不混）。</p>
+  <div class="diagram">
+    <iframe src="diagram-workflow-relay.html?embed=1" title="檔案型三區與夜間掃腿流程圖"></iframe>
+    <div class="cap">圖：三區四問與夜間掃腿（archify workflow）｜<a href="diagram-workflow-relay.html" target="_blank" style="color:var(--accent)">新分頁開圖 ↗</a>｜<a href="diagram-workflow-relay.visual-check.1440x900.light.png" target="_blank" style="color:var(--fg-mute)">截圖證據（light）</a></div>
+  </div>
+  <h3>三區治理表（摘要，09-03 討論更新）</h3>
+  <table>
+    <tr><th>區</th><th>誰進來</th><th>停多久</th><th>健康形態</th></tr>
+    <tr><td><code>.agent-tmp/</code></td><td>agent 暫時產物（中間分析/草稿/POC）</td><td><code>post-build</code> 列清單預設刪（LLM 判後續還用則保留）+ 7 天緩衝</td><td>當前弧線檔案少數；<code>post-build</code> 後應空</td></tr>
+    <tr><td><code>.at-contexts/</code></td><td>at 一次性 context（<code>handoff --save</code> 已退場，改 <code>backlog --comment</code>）</td><td>一次性（at：resume 後刪）；7 天緩衝兜底</td><td>空或 pending 中（僅 <code>at-context-*</code>）</td></tr>
+    <tr><td><code>.review/</code></td><td>judge/followup 的 local-only finding</td><td>branch 活躍期；30 天緩衝（決策落點首選 EP review 區段）</td><td>空（決策都在 EP）；<code>/arch-thinking</code> 評：solo 可退場，保多 WT 並行暫存</td></tr>
+  </table>
+  <p>誤刪防護：mtime 門檻（被續用會刷新）＋報告列明細（可復原判斷）＋首跑比照 AIR-17 隔日產物驗證。<br>本次更新：<code>.agent-tmp</code> 出口由「僅夜掃」改為「<code>post-build</code> 預設清 + 夜掃兜底」；<code>handoff --save</code> 退場（見 SM-12）。</p>
+</section>
+
+<section id="s5">
+  <h2>排程單一真相源——schedule-registry</h2>
+  <p class="lead">設計：<code>ai-analysis/schedule-registry.md</code>。定位——<strong>人/AI 可讀的職責總覽；機械操作仍走 CronList</strong>（registry 漂移的後果限縮為認知過時，不是行為錯誤）。</p>
+  <table>
+    <tr><th>排程（09-03 現值）</th><th>職責</th><th>角色</th></tr>
+    <tr><td>每晚 23:40 <code>automation-751ecce2</code></td><td>ai-rules memory 池收斂（desc 修剪/cluster merge/regen）——檔案型清淤腿將掛此</td><td>寫手</td></tr>
+    <tr><td>週日 23:00 <code>automation-fed036ff</code></td><td>bundle 組成看照＋memory lite 稽核（比對 registry 條目 drift 的腿屬落地 L8）</td><td>審計（advisory）</td></tr>
+    <tr><td>週六 23:10 <code>automation-370fafc5</code></td><td>糾正模式週報＋CR 使用健檢</td><td>報告</td></tr>
+  </table>
+  <ul>
+    <li><strong>同步義務</strong>：動排程的 session（CronCreate/Update/Delete）順手同步 registry——慣例層，比對腿兜底</li>
+    <li><strong>scope</strong>：ai-rules workspace（ZCode cron＋本 repo plist）；mosaic 側指針 → memory <code>reference_periodic-task-landscape</code></li>
+  </ul>
+</section>
+
+<section id="s6">
+  <h2>推進與驗收</h2>
+  <p class="lead">docs mode、4 段全是文檔寫作，單 session 可完。手術（L1-L9）屬後續卡；09-03 討論補 5 個 SM（含想法捕獲）。</p>
+  <table>
+    <tr><th>段</th><th>內容</th><th>驗收</th></tr>
+    <tr><td>S1</td><td>design.md §0-§2：統一框架＋任務型治理（八欄映射/gate/兩層判定/drafts 三形/升卡/notes/起手式/desc 同步/出口）+ SM-9~13 並行/WT/跨 repo/handoff/想法捕獲</td><td>卡 desc 七個設計問題逐項命中；八欄映射八行齊；SM-9~13 五新行齊</td></tr>
+    <tr><td>S2</td><td>§3-§4：檔案型治理＋排程真相源＋<strong>registry 初版建檔</strong>（§3 出口改 <code>post-build</code> 預設清 + 夜掃兜底）</td><td>automationId 與 CronList 逐字比對；三區×四問 12 格齊</td></tr>
+    <tr><td>S3</td><td>§5：回歸驗證——MOS-14＋AIR-13~17 七樣本對照 + SM-9~13 跨 repo 實證納入</td><td>七行齊、每行有命中＋反饋兩欄；新增 SM 命中可回放</td></tr>
+    <tr><td>S4</td><td>§6：落地清單 L1-L9＋sync-sources 三類掃描規格（含 <code>.review</code> 退場評估）</td><td>L1-L9 行齊（含四點名檔案）、每行有驗證命令</td></tr>
+  </table>
+  <h3>新增 SM（09-03 討論，補多 session/多 WT/跨 repo + 想法捕獲）</h3>
+  <table>
+    <tr><th>#</th><th>場景</th><th>預期行為</th></tr>
+    <tr><td>SM-9</td><td>多 session 並搶同卡</td><td>第一動 <code>In Progress</code> 可見 + <code>backlog_precheck.sh</code> 擋併發清板</td></tr>
+    <tr><td>SM-10</td><td>多 WT 同 repo</td><td><code>backlog → 執行家</code> 單向 + <code>owning-WT</code> 約束，不在 <code>_tasks</code> 另建承諾</td></tr>
+    <tr><td>SM-11</td><td>跨 repo 指針重複</td><td><code>backlog search</code> + 查 <code>pending-decisions/open-items.md</code> 命中復用</td></tr>
+    <tr><td>SM-12</td><td>review/handoff 落點</td><td>不寫 <code>.at-contexts/handoff-*.md</code>，改 <code>--comment</code> 掛卡 <code>comments</code> 段</td></tr>
+    <tr><td>SM-13</td><td>想法未細拆先丟 draft</td><td><code>backlog draft create</code> 不經 <code>/execution-plan</code>，僅一句話+範圍草案</td></tr>
+  </table>
+  <h3>落地清單（後續卡的規格輸入，含討論增補）</h3>
+  <table>
+    <tr><th>#</th><th>載體</th><th>手術</th></tr>
+    <tr><td>L1</td><td>kanban-board skill</td><td>開工段＝起手式五步；建卡段＋desc gate＋<strong>建卡前去重</strong>；「卡即 handoff」小節＋<strong>遠期卡治理（draft vs archive）</strong></td></tr>
+    <tr><td>L2</td><td>handoff skill</td><td>邊界注記：有卡任務優先卡即 handoff；<code>--save</code> 改 <code>--comment</code>（<code>.at-contexts/handoff-*.md</code> 退場）</td></tr>
+    <tr><td>L3</td><td>execution-plan skill</td><td>建卡時 desc 過 gate＋<strong>去重前置</strong>；F-1 型 findings 觸發 desc 同步</td></tr>
+    <tr><td>L4</td><td>collaboration-constraints rule</td><td>dot-area 治理（三區＋時限＋門檻＋掃腿注記：<code>.agent-tmp</code> 補 <code>post-build</code> 預設清）；動 rule → deploy 重跑</td></tr>
+    <tr><td>L5-L8</td><td>cron prompt / at skill / registry / 週日 cron</td><td>清淤腿進 23:40 prompt；<code>.at-contexts</code> 出口注記改 <code>--comment</code>；memory 壓指針；registry 比對腿</td></tr>
+  </table>
+  <p style="font-size:.82rem; color:var(--fg-mute); margin-top:8px;">EP 已更新至 SM-13（<code>ep.md:72-88</code>），本殼同步；<code>.review</code> <code>/arch-thinking</code> 評為 solo 可退場，三區改「<code>post-build</code> 預設清 + 夜掃兜底」；draft 新增「想法捕獲」第一形（見 S1 2.4）。</p>
+</section>
+
+<section id="s7">
+  <h2>決策記錄與回源</h2>
+  <p class="lead">六條 user 裁定（勿重辯）＋ EP Review 狀態。</p>
+  <ul>
+    <li>①兩族合一框架（任務型＋檔案型）②討論題即時不建卡——對話即載體，session 斷才落 draft ③drafts＝未承諾/觸發型進口 ④退場走 archive 非 delete（可復活）⑤<code>_inbox</code> 不採——drafts 即進口（本卡定案收口）⑥卡三層分工 desc＝決策層／EP＝規劃層／notes＝留言層</li>
+  </ul>
+  <h3>EP Review（獨立 Explore agent）</h3>
+  <p><span class="ok">無 🔴 阻斷項</span>——14 個設計問題逐項全覆蓋、機制引用逐項抽驗命中；8 findings（5🟡＋3ℹ️）judge-review <span class="ok">全數採納</span>並寫回 EP（引用層修正：連結深度/慣例虛指/URL 記載/樣本證據源/memory 條目名/cron 全名嵌入）。</p>
+  <h3>回源</h3>
+  <ul>
+    <li>本體：<code>ai-analysis/_tasks/_archived/09-03-backlog-governance-design/ep.md</code>（EP，done/ 已歸檔）——設計文件 <code>design.md</code> 同目錄；Report Shell 本殼 <code>index.html</code> 同目錄已同步為 done/ 新路徑</li>
+    <li>圖 IR（進 git 可再生）：<code>card-lifecycle.workflow.json</code>、<code>relay-stations.workflow.json</code>；渲染產物 <code>diagram-*.html</code> 不進 git（.gitignore <code>ai-analysis/_tasks/**/diagram-*.html</code> 涵蓋 done/ 子路徑）</li>
+    <li>baseline：<code>d121837</code>（2026-09-03）——下游審查弧以此為範圍邊界；卡已 <code>Done</code>（AIR-14 final-summary 已寫入）</li>
+    <li>新 URL：<code>http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-03-backlog-governance-design/index.html</code>（board 可點）＋ <code>ai-analysis/_tasks/_archived/09-03-backlog-governance-design/ep.md</code></li>
+  </ul>
+</section>
+
+<section id="s8">
+  <h2>實作結果 —— 已完成 ✅</h2>
+  <p class="lead">AIR-14 實作完成報告（post-build hook 2 生長；反映修正迴圈後最終態）。本弧為 <strong>docs-only</strong>（全變更為 <code>.md/.json/.html</code>，無 <code>.py</code>）—— code 鏈跳過，僅 docs 鏈與任務家歸檔。</p>
+
+  <h3>做了什麼（S1-S4 交付＋接管修正四項＋兩圖重構）</h3>
+  <table>
+    <tr><th>段/項</th><th>交付內容</th><th>落點</th></tr>
+    <tr><td>S1</td><td>統一框架＋任務型治理：兩族×四問、三層分工、卡即 handoff 八欄映射、desc gate 三必有、兩層判定、drafts 三形、升卡流程、notes 邊界、起手式五步、desc 同步義務、出口</td><td><code>design.md §0-§2</code>／<code>ep.md S1</code></td></tr>
+    <tr><td>S2</td><td>檔案型三區治理＋排程真相源＋registry 初版（3 條 cron 全名＋plist＋跨 repo 指針）</td><td><code>design.md §3-§4</code>／<code>ai-analysis/schedule-registry.md</code></td></tr>
+    <tr><td>S3</td><td>回歸驗證：MOS-14＋AIR-13~17 七樣本對照（每行有命中＋反饋；含 SM-9~13 跨 repo 實證納入）</td><td><code>design.md §5</code></td></tr>
+    <tr><td>S4</td><td>落地清單 L1-L9＋sync-sources 三類掃描規格（互引/部署/術語；L1-L9 含四點名檔案每行驗證命令齊）</td><td><code>design.md §6</code></td></tr>
+    <tr><td>接管修正①</td><td>兩層判定時點前移到「承諾時」（升卡跑 <code>/execution-plan</code> 分級）；起手式改「讀卡知形態」不重判；scope 漲→升 EP 為逃逸口</td><td><code>ep S1 2.3/2.5/2.7</code>、<code>design §2.3/2.4/2.6</code>、殼 s3、<code>card-lifecycle.workflow.json</code> 重構</td></tr>
+    <tr><td>接管修正②</td><td>design §3 出口改兩腿：<code>post-build 預設清</code>第一腿＋夜掃兜底（muse 只寫進 ep SM-5 與殼、design 本體漏）</td><td><code>design §3.1/3.2/3.3</code>、<code>ep S2</code></td></tr>
+    <tr><td>接管修正③</td><td><code>handoff --save</code> 退場（SM-12 改 <code>--comment</code>）＋<code>.review</code> arch 評可退場（solo 可空）</td><td><code>design §3.1/3.2/3.3</code>、<code>ep S2</code>、<code>relay-stations.workflow.json</code>（tag 為 fine-detail 層初始視角不顯示，語義由註解卡承載）</td></tr>
+    <tr><td>接管修正④</td><td>落地清單 L2/L4/L5/L6 改寫＋新增 L9（post-build 段）；全文 L1-L9</td><td><code>design §6</code>、<code>ep S4</code></td></tr>
+    <tr><td>兩圖重構</td><td>卡生命週期圖重構：規模判定門 → EP 分支 → 建卡（原「規模判定在起手式」移至承諾前）；檔案型三區圖補 <code>handoff --save</code> 退場與兩腿出口</td><td><code>card-lifecycle.workflow.json</code>、<code>relay-stations.workflow.json</code></td></tr>
+  </table>
+
+  <h3>驗證證據（命令＋結果）</h3>
+  <table>
+    <tr><th>驗證項</th><th>命令/方法</th><th>結果</th></tr>
+    <tr><td>archify 流程圖 validate</td><td><code>archify showcase validate</code>（兩圖並行）</td><td class="ok">9/9 檢查過 ×2（亮暗雙主題、pan/zoom/search）—— deliver 時驗</td></tr>
+    <tr><td>visual-check containment</td><td><code>diagram-*.visual-check.json</code>（8 視口×2 圖＋dark/light）</td><td class="ok">PASS ×2（overflow 無、readabilityOk、labels 全可讀）</td></tr>
+    <tr><td>vision-review CJK 判讀</td><td>獨立 vision agent 對兩圖截圖判讀</td><td class="ok">4/4 PASS（CJK 無亂碼、邊標籤齊）—— 含 relay tag 存活 grep 實證（fine-detail 層初始視角不顯示屬預期，語義由卡承載）</td></tr>
+    <tr><td>連結深度導航</td><td><code>../../../</code> 3 層相對連結手工核對</td><td class="ok">可解析（R-1 已修；registry/design/ep 互相可達）</td></tr>
+    <tr><td>URL 形態實測</td><td><code>http://127.0.0.1:6421/ai-rules/&lt;相對於 ai-analysis/ 的路徑&gt;</code></td><td class="ok">實測 200（R-3）；保留 <code>ai-analysis/</code> 前綴形態實測 404 已在 design 註明</td></tr>
+    <tr><td>automationId 逐字比對</td><td><code>CronList</code> 輸出 vs <code>schedule-registry.md</code></td><td class="ok">3 條全名逐字一致（R-8）</td></tr>
+    <tr><td>consistency（本 post-build）</td><td>對 <code>ep.md</code>、<code>design.md</code>、AIR-14 卡 全文六維檢查</td><td class="ok">3 檔 pass（設計文件 §3.1 重複標籤 <code>.agent-tmp/</code> 一處已 fix → 重驗 pass）</td></tr>
+    <tr><td>git check-ignore</td><td><code>git check-ignore -v diagram-*.html</code>（done/ 新路徑抽驗）</td><td class="ok">仍命中 <code>.gitignore:53 ai-analysis/_tasks/**/diagram-*.html</code>（遷移後驗）</td></tr>
+  </table>
+  <ul>
+    <li><strong>docs-only 降級說明</strong>：本弧無 <code>.py</code> 變更，<code>post-build</code> 階段 1-3 code 鏈（code-review / judge-review / 修正迴圈）按 triage 規則跳過；delta tour（archify compare）需跨越 baseline 的 code 差異且需 snapshot——條件不符，不阻擋（本殼標明降級）。</li>
+  </ul>
+
+  <h3>認知誤差點</h3>
+  <ul>
+    <li><strong>排程真相源痛點未附 CronList 材料</strong>——原 AIR-14 notes 只述「港覺過時」，接手 session 需自行 <code>CronList</code> 自查；設計 §4 補上「機械真相源仍是 CronList，registry drift 後果僅認知過時」用語收口。</li>
+    <li><strong>mosaic 原稿七問不可自足取得</strong>——desc 蒸餾版（共同四問）夠用，設計標註原稿指針留白（接手指針③），不阻擋。</li>
+    <li><strong>relay 圖 fine-detail tag 初始視角不顯示</strong>——為 archify 視覺分層預期行為，語義由註解卡承載；vision-review 已 grep 實證字串在場，判 PASS。</li>
+    <li><strong>卡 desc 的 “_inbox 傾向不採” 快照語</strong>——為開卡時過渡語，決策 ⑤ 後已在 design §2.4 定案為「不採（本卡定案收口）」；卡 desc 屬歷史快照，不改語義（結案由 final-summary 覆蓋）。</li>
+  </ul>
+
+  <h3>回源連結</h3>
+  <ul>
+    <li>EP（AI 消費）：<code>ai-analysis/_tasks/_archived/09-03-backlog-governance-design/ep.md</code>｜ Shell（人類 viewport）：<code>http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-03-backlog-governance-design/index.html</code></li>
+    <li>設計文件：<code>ai-analysis/_tasks/_archived/09-03-backlog-governance-design/design.md</code>｜ registry：<code>ai-analysis/schedule-registry.md</code></li>
+    <li>圖 IR：<code>card-lifecycle.workflow.json</code>、<code>relay-stations.workflow.json</code>（渲染產物 <code>diagram-*.html</code> 不進 git）</li>
+    <li>卡：AIR-14（Backlog.md 治理設計）— <code>backlog/tasks/air-14 - Backlog.md-治理設計（卡即-handoff）.md</code>（狀態 ✅ Done，final-summary 已寫入）</li>
+    <li>baseline：<code>d121837</code>（2026-09-03）——本任務家已遷 <code>done/</code> 永久保存；舊路徑不存在</li>
+  </ul>
+</section>
+
+</main>
+</div>
+
+<script>
+const btns = document.querySelectorAll('#nav button');
+btns.forEach(b => b.addEventListener('click', () => {
+  btns.forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.querySelectorAll('main section').forEach(s => s.classList.remove('active'));
+  document.getElementById(b.dataset.s).classList.add('active');
+  history.replaceState(null, '', '#' + b.dataset.s);
+}));
+const h = location.hash.slice(1);
+if (h && document.getElementById(h)) document.querySelector(`#nav button[data-s="${h}"]`).click();
+</script>
+</body>
+</html>

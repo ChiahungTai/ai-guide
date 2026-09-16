@@ -104,9 +104,9 @@ README 把 `uv run python ref-docs/harness/crawl.py --source zcode --limit 3` �
 
 Report Shell 是人類 B 軸 viewport，不只是裝飾；`skills/_common/illustrate-html-mode.md:93-106` 要求 shell 隨 source 更新 projection SHA，任務移入 `done/` 時同步回源 URL，且 shell 是 source projection 而非平行作品。現有 tracked artifacts 有三種違約：
 
-1. `ai-analysis/_tasks/done/09-06-diagram-selection-absorption/index.html:85` 的 projection `20c0600969721b07` 與當前 `ep.md` 相符，但 `:177` 又聲稱 `64e1b4449ff1a134`；同一 shell 同時宣告兩個互斥 source SHA。
-2. 同檔 `:96,175` 與 `ai-analysis/_tasks/done/09-03-air13-unified-subagent-arch/index.html:79,182` 仍指向不含 `done/` 的 active task route；tracked source 只存在 done path。`kanban-board/SKILL.md:52-55` 明定結案後要替換為 done URL。
-3. `ai-analysis/_tasks/done/09-05-external-runtime-push-collection/index.html:92,172` hard-code `file:///Users/ctai/Github/ai-rules/...`。在 worktree／clone 中點擊會跳到另一 checkout；當兩者版本不同時，連結仍可成功但內容錯版，這比 404 更難察覺。
+1. `ai-analysis/_tasks/_archived/09-06-diagram-selection-absorption/index.html:85` 的 projection `20c0600969721b07` 與當前 `ep.md` 相符，但 `:177` 又聲稱 `64e1b4449ff1a134`；同一 shell 同時宣告兩個互斥 source SHA。
+2. 同檔 `:96,175` 與 `ai-analysis/_tasks/_archived/09-03-air13-unified-subagent-arch/index.html:79,182` 仍指向不含 `done/` 的 active task route；tracked source 只存在 done path。`kanban-board/SKILL.md:52-55` 明定結案後要替換為 done URL。
+3. `ai-analysis/_tasks/_archived/09-05-external-runtime-push-collection/index.html:92,172` hard-code `file:///Users/ctai/Github/ai-rules/...`。在 worktree／clone 中點擊會跳到另一 checkout；當兩者版本不同時，連結仍可成功但內容錯版，這比 404 更難察覺。
 
 建議建立 tracked shell lint：同一 shell 只能有一個 current projection identity；SHA 必須與同目錄 source 相符；tracked HTML 禁止 `file:///Users/...`；server route 必須反解成存在的 repo-relative path；task move 到 `done/` 時以整組 ref 驗證。歷史 artifact 可以 immutable，但不能同時被當作 current source projection；若刻意凍結，應標明 frozen revision 並連到可解析的 revision-specific source。
 
@@ -114,7 +114,7 @@ Report Shell 是人類 B 軸 viewport，不只是裝飾；`skills/_common/illust
 
 ### S-1 [Suggestion · confirmed] Active governance pointers 未隨 task 歸檔更新
 
-`skills/kanban-board/SKILL.md:72` 指向 `ai-analysis/_tasks/09-03-backlog-governance-design/design.md`，`ai-analysis/schedule-registry.md:4` 也指同一 active path；實際檔案已在 `ai-analysis/_tasks/done/09-03-backlog-governance-design/design.md`。這會讓 current skill 與 registry 的「決策見」落到 phantom path。修正現存 link 即可；更長期應避免 core skill 依賴易搬移的 task-home path，或把必要 rationale 蒸餾回 owner skill。
+`skills/kanban-board/SKILL.md:72` 指向 `ai-analysis/_tasks/09-03-backlog-governance-design/design.md`，`ai-analysis/schedule-registry.md:4` 也指同一 active path；實際檔案已在 `ai-analysis/_tasks/_archived/09-03-backlog-governance-design/design.md`。這會讓 current skill 與 registry 的「決策見」落到 phantom path。修正現存 link 即可；更長期應避免 core skill 依賴易搬移的 task-home path，或把必要 rationale 蒸餾回 owner skill。
 
 ### S-2 [Suggestion · evidence-based] Mirror producer 沒有收斂 manifest 外 orphan files，也缺 discovery-input 證據
 

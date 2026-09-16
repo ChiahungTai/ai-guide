@@ -12,8 +12,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-03-backlog-governance-design/index.html
-  - ai-analysis/_tasks/done/09-03-backlog-governance-design/ep.md
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-03-backlog-governance-design/index.html
+  - ai-analysis/_tasks/_archived/09-03-backlog-governance-design/ep.md
 ordinal: 6000
 ---
 

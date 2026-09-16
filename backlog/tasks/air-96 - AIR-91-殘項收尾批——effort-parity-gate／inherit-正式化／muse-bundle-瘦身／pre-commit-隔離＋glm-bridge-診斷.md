@@ -8,7 +8,7 @@ updated_date: '2026-09-15 18:35'
 labels: []
 dependencies: [AIR-91]
 references:
-  - ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md
+  - ai-analysis/_tasks/_archived/09-15-model-capability-routing/ep.md
 ordinal: 78000
 ---
 

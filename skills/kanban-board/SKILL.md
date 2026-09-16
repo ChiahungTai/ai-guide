@@ -71,10 +71,10 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 - 既有卡 http 值由批次遷移清除（pilot MOS-93）；過渡期殘留視為待遷，不視為錯誤
 - 已知取捨：browser（on-demand 後備）上相對路徑不可點（`TaskDetailsModal.tsx:1362-1375` 只 linkify http(s)）；主力 UI＝ext 直接開檔不受影響
 
-**結案兩步**（收斂後——post-build hook 2／無 post-build 弧走 implement 階段 6 fallback；ref 路徑生命週期隨任務目錄遷 `done/` 變更）：
+**結案兩步**（收斂後——post-build hook 2／無 post-build 弧走 implement 階段 6 fallback；AIR-77 起任務目錄永不搬——refs 開工出生即寫，結案補寫退化為可選）：
 ```bash
 backlog task edit <id> -s Done --final-summary "<一句>"
-backlog task edit <id> --ref "<done/ EP 相對路徑>[,<shell 相對路徑>]"   # --ref 整組替換
+backlog task edit <id> --ref "<開工既有 EP 相對路徑>[,<shell 相對路徑>]"   # --ref 整組替換；路徑不變時可略過第二步
 ```
 **收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
 **結案 metadata commit 特赦（user 09-11，條件授權鏈；autonomous 適用性 09-13 user 裁定收回）**：結案兩步＋其 commit（僅 `backlog/`＋結算搬移檔、**同 commit**）在 **precheck 綠（跨線掃描 exit 0）** 時免逐次確認——機械守門替代人確認（例外條款③，**限互動 session**；autonomous session 所有 commit 一律待用戶確認）；條件不滿足 → 走確認 gate。註：precheck 在此是特赦的守門條件，非結案兩步本身的新要求（「結案兩步不需 precheck」現狀不變）。
@@ -96,7 +96,7 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 
 **backbone triage（user 拍板）**：優先序 backbone 由 project blueprint 決定（target 形態＋收斂序列，見 `ai-analysis/blueprint/`）；未被 backbone 支撐的 To Do 卡須定期 triage——升主線候選／demote → draft／archive，To Do 池只留近期可開工承諾。
 
-**遠期卡治理（draft vs archive vs Icebox）**（實證 2026-09-03，例：mosaic `MOS-2/3/7 → DRAFT-1/2/3` 後 `To Do: MOS-10/16 + Done 7`；決策見 [Backlog.md 治理設計](../../ai-analysis/_tasks/done/09-03-backlog-governance-design/design.md)）：
+**遠期卡治理（draft vs archive vs Icebox）**（實證 2026-09-03，例：mosaic `MOS-2/3/7 → DRAFT-1/2/3` 後 `To Do: MOS-10/16 + Done 7`；決策見 [Backlog.md 治理設計](../../ai-analysis/_tasks/_archived/09-03-backlog-governance-design/design.md)）：
 | 情境 | 動作 | 命令 | 版面效果 |
 |------|------|------|----------|
 | 遠期研究/暫緩（`To Do` 噪音） | **demote → draft**（官方停車場） | `backlog task demote <id>` → `backlog/drafts/draft-*.md` | board 完全隱形；`backlog draft list --plain`/`view DRAFT-x --plain`/`browser /drafts` 可見；`search`/`board` 不撈 |

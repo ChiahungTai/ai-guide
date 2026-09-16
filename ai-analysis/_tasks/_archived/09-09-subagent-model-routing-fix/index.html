@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-51 sub-agent 派發模型路由寫法修補 — EP 導讀殼</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── 可折疊 sidebar：nav width→0、main flex 吃滿（禁 display:none 於 nav／iframe／section 承載——見 template rationale）── */
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  /* ── main ── */
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  /* ── 折疊鈕：展開態貼 sidebar 右緣垂直居中；折疊態浮出鈕固定左上 ── */
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>AIR-51 sub-agent 派發模型路由寫法修補 — 內建型別繼承語義補洞</h1>
+    <div class="meta">baseline 083ffff · projection b803886eb4103cb8 · 2026-09-09 · AIR-51</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼改</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>修法與取捨</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>驗收與現況</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <a href="http://127.0.0.1:6422">← backlog board</a><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-09-subagent-model-routing-fix/ep.md">EP 全文（viewer）</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>為什麼改</h2>
+  <div class="sub">同一個坑踩兩次——不是工具壞，是派發當下「模型」這個維度全程不可見</div>
+  <ul class="dots">
+    <li><b>兩次抓包</b>（AIR-50 弧，09-09）：session 派「考察 agents」跑 lite 機械查證（多源對帳性質），user 問「為何都不是 flash agent?」——實際燒的是旗艦 GLM-5.3，不是 flash。</li>
+    <li><b>官方事實</b>：內建 <code>general-purpose</code>／<code>Explore</code> 不在 registry、無 model pin——不指定時<b>繼承父會話主模型，這是設計行為</b>（ZCode 官方 qa 文檔；設定頁可為內建單獨釘模型，清空恢復繼承）。</li>
+    <li><b>根因＝寫法缺口</b>：這個事實只住在 skill「歸因紀律」段（事後歸因框架）與官方文檔鏡像——派發當下的兩個決策點（always-on rule、spawn 選單 description）完全看不到。</li>
+    <li><b>錯覺補位</b>：文件常說「lite subagent 執行檔＝flash 省成本層」，被外推成「subagent 預設都便宜」——沒有任何文字反駁這個外推，錯誤信念填了真空。</li>
+    <li>附帶還原：改派正確型別（cross-verify-investigator，flash 釘選）後兩顆死於 <b>1308 額度窗口耗盡</b>——與寫法無關，muse 承接走的正是既有 failover 條文。</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2>修法與取捨</h2>
+  <div class="sub">一個事實、五個承載面——派發決策點上讓模型層看得見</div>
+  <table>
+    <tr><th>層</th><th>檔案</th><th>內容</th></tr>
+    <tr><td>always-on rule</td><td><code>rules/model-routing.md:29</code></td><td>角色→tier 表新增內建型別列：「無 pin——繼承主 session 模型」＋反模式句（「subagent 預設便宜層」是錯覺）</td></tr>
+    <tr><td>on-demand skill</td><td><code>skills/model-routing/SKILL.md:40</code></td><td>dispatch 預設補內建語義＋AIR-50 真實案例；觸發詞＋general-purpose／內建型別／繼承主模型</td></tr>
+    <tr><td>消費側</td><td><code>skills/agent-workflow/SKILL.md:41,:229</code></td><td>dispatch 程序＋spawn 前自檢新項：lite／機械任務 spawn 型別＝registry 角色</td></tr>
+    <tr><td>registry 治理</td><td><code>agents/AGENTS.md:112</code></td><td>ZCode 限制節補內建繼承語義＋反模式</td></tr>
+    <tr><td>spawn 選單面</td><td><code>agents/roles/</code>×10</td><td>description 前綴 <code>〔tier: lite|full|vision〕</code>——Agent tool 選單選型別當下就看得到模型層（經 sync_agents 投影雙 registry）</td></tr>
+  </table>
+  <ul class="dots">
+    <li><b>否決替代案</b>：不把 general-purpose 釘死成 flash——它是無能力上界的 fallback，釘死會把需要旗艦的一般委派<b>靜默降級</b>；省成本路由歸 registry 角色承載。</li>
+    <li><b>tier 詞 vs model 名</b>：roles description 只用 tier 詞（provider 換代不用改），model 值單一源在 skill 解析表——harness-neutral 紀律不破。</li>
+    <li><b>EP Review F1 修正</b>：初版「spawn 型別必須 registry 角色」寫成無條件——與既存 Explore 模板（EP Review／research 承接）字面衝突；限縮為 lite／機械場景，唯讀探察＝內建 Explore 承接。</li>
+  </ul>
+</section>
+
+<section id="s3">
+  <h2>驗收與現況</h2>
+  <div class="sub">docs mode——產品全為 .md，驗證＝rg 命中／gate exit code／hash 對帳</div>
+  <div class="kpi">
+    <div class="card"><div class="num-big">35</div><div class="lab">檔案變更（未 commit）</div></div>
+    <div class="card"><div class="num-big">10</div><div class="lab">roles tier 標籤（三目錄 10/10/10）</div></div>
+    <div class="card"><div class="num-big">4</div><div class="lab">EP Review findings——全採納</div></div>
+    <div class="card"><div class="num-big">74.7KB</div><div class="lab">bundle（81% of 90KiB gate）</div></div>
+  </div>
+  <table>
+    <tr><th>驗證項</th><th>結果</th></tr>
+    <tr><td>tier 標籤投影（roles／zcode／claude 三目錄）</td><td>10/10/10——字形完整（CJK 無損壞）</td></tr>
+    <tr><td>內建型別 rule 列部署在場</td><td>zcode bundle :599＋codex bundle＋Claude rules symlink 三處各 1 hit（muse 變體 by-design 不含 model-routing）</td></tr>
+    <tr><td>部署 hash 一致／生成物 gate</td><td>zcode＝codex 同 hash；<code>sync_agents --check</code> exit 0</td></tr>
+    <tr><td>neutral 格式檢查（裸 slash／@／跨域路徑）</td><td>零命中</td></tr>
+  </table>
+  <ul class="dots">
+    <li><b>當前狀態</b>：S1（四層修補＋regen＋部署）＋S2（工作流索引同步）完成——<b>commit 待 user 確認</b>（outward-action-consent gate）。</li>
+    <li><b>生效時機</b>：registry 與 bundle 皆快照制——<b>新 session 才載入</b>；觸發本弧的 mosaic session 重啟前看不到。</li>
+    <li><b>已知未覆蓋</b>：L6 dogfood（「下一個 session 不再誤派」無法本弧自證）——非本弧 gate，卡 desc 記錄。</li>
+  </ul>
+  <div class="note">收尾待辦：弧 commit（user gate）→ 結案兩步 → memory 蒸餾——<code>feedback_dispatch-model-tier-glm53</code> 條目內兩處「harness 預設 flash」錯誤機制表述<b>必改</b>（EP Review F3：錯誤信念源，rule 落地後殘留雙源 drift）。</div>
+</section>
+
+<section id="s4">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  <div class="frame-wrap degraded">
+    <div class="bar"><span>圖槽位（降級）：hook 2（post-build）補位</span></div>
+    <div class="degraded-body"><b>圖尚未產生</b>——hook 1 骨架階段不產渲染管線圖（mermaid/archify 於 post-build hook 2 依 diagram-selection 選型一次補上）。安裝指路：<code>git clone https://github.com/tt-a1i/archify ~/Github/archify</code>，偵測與降級規則見同目錄 html-mode 檔「存在性偵測與降級」段。</div>
+  </div>
+  <p class="src">
+    EP：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-09-subagent-model-routing-fix/ep.md">ai-analysis/_tasks/09-09-subagent-model-routing-fix/ep.md</a><br>
+    task baseline：083ffff105d0c0c5b1872e974942402ef226d5c9 · projection source：b803886eb4103cb85eb59f4f90b31026d7c4cbf396bccf3e6c05491503ceb1d3（EP content SHA，未 commit 形態）· 卡：AIR-51
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

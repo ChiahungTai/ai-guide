@@ -8,7 +8,7 @@ updated_date: '2026-09-14 05:15'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-14-air93-muse-session-end-bypass/dossier.md
+  - ai-analysis/_tasks/_archived/09-14-air93-muse-session-end-bypass/dossier.md
 ordinal: 79000
 ---
 

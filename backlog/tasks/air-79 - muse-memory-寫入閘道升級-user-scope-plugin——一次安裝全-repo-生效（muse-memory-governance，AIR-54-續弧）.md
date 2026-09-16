@@ -13,7 +13,7 @@ labels:
   - hooks
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-12-muse-memory-governance-plugin/ep.md
+  - ai-analysis/_tasks/_archived/09-12-muse-memory-governance-plugin/ep.md
 ordinal: 65000
 ---
 

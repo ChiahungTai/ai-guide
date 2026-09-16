@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-46 卡 branch 生命週期 — 任務簡報</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>AIR-46 卡 branch 生命週期</h1>
+    <div class="meta">task baseline d4c98ab<br>projection ep@82b1dd84（未 commit content SHA）</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼改</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>規則形態</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>審查與落地</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>實作與驗收</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board</span><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-08-card-branch-lifecycle/ep.md">EP 全文（viewer）</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>為什麼改</h2>
+  <div class="sub">痛點→決策：branch 是唯一被 harness／VSCode 恆顯的 git 狀態＝免費 ambient UI</div>
+  <ul class="dots">
+    <li><b>痛點（mosaic 主場）</b>：三個 VSCode 視窗＝三個 worktree（main/v2/warrant），branch 顯示的是線名——看得到線，看不到「這條線現在做到哪張卡」。</li>
+    <li><b>決策</b>：卡開工時 checkout 以「線縮寫＋卡號」命名的 branch（如 <code>lab-77</code>）——三視窗一眼讀出線＋卡。建卡不開 branch（建卡是承諾，開工才是動工）。</li>
+    <li><b>附帶收益</b>：<code>git diff warrant..lab-77</code>＝整卡機械邊界（跨 session review 用）；探索失敗刪 branch 即整卡丟棄，線零污染。</li>
+    <li><b>為什麼不是每卡 rebase／merge</b>：收尾走既有 <code>/rebase</code> 兩步（rebase onto 線 → 線 <code>merge --ff-only</code> 吸收）——純直線歷史、無 merge 氣泡，trunk-based 正統。</li>
+    <li><b>業界對照</b>：ticket-ID branch naming（Atlassian/Graphite 標準）＋ AI-era branch-per-task 共識（Anthropic <code>--worktree</code>、Kempé、Osmani）。</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2>規則形態</h2>
+  <div class="sub">branch 名＝線縮寫-卡號；生命＝開工出生、結案吸收</div>
+  <table>
+    <tr><th>repo</th><th>worktree（線）</th><th>卡 branch 名</th><th>例</th></tr>
+    <tr><td>ai-rules</td><td>repo 根（main 線，唯一 WT）</td><td><code>air-&lt;N&gt;</code></td><td>AIR-46 ↔ <code>air-46</code></td></tr>
+    <tr><td>mosaic</td><td><code>mosaic_alpha_trading_lab</code>（warrant 線）</td><td><code>lab-&lt;N&gt;</code></td><td>MOS-77 ↔ <code>lab-77</code></td></tr>
+    <tr><td>mosaic</td><td><code>mosaic_alpha_offline_backtesting</code>（v2 線）</td><td><code>bt-&lt;N&gt;</code></td><td>MOS-77 ↔ <code>bt-77</code></td></tr>
+    <tr><td>mosaic</td><td><code>mosaic_alpha</code>（main 線）</td><td><code>mos-&lt;N&gt;</code></td><td>MOS-77 ↔ <code>mos-77</code></td></tr>
+  </table>
+  <ul class="dots">
+    <li><b>生命</b>：開工（起手式 ⑤ 後的 ⑥）從 owning 線 <code>checkout -b</code> → 工作 commits 落其上（message 帶卡 id）→ /commit 確認、clean 後回線 <code>merge --ff-only</code> 吸收 → 刪 branch、WT 回線。</li>
+    <li><b>開錯線防護</b>：卡 desc 記 owning 線；開工驗證 checkout 起點＝owning 線 branch。收尾 rebase 的 base 恆為 owning 線（mosaic 禁默認 main——錯 base＝跨線污染）。</li>
+    <li><b>護欄</b>：<code>/rebase all</code> 前檢查無進行中卡 branch（all 目標集合會把卡 branch 當 feature 提前吸收）；拋棄（<code>-D</code>）需 user 明確確認；忘記 checkout 直落線＝軟失敗不回頭搬。</li>
+  </ul>
+  <div class="frame-wrap">
+    <div class="bar"><span>卡 branch 生命週期（air-46 狗糧實錄）</span><span>mermaid · CDN lazy</span></div>
+    <pre class="mermaid" style="margin:0;padding:16px">
+flowchart LR
+  A["📋 建卡 AIR-46 · 建卡即 commit 進 main"] --> B["🟡 開工 · 起手式⑥ checkout -b air-46"]
+  B --> C["🔨 build · commits 落卡 branch · message 帶卡 id"]
+  C --> D{"🚦 /commit gate · user 確認"}
+  D --> E["✅ 吸收三連 · checkout main → merge --ff-only → branch -d"]
+  E --> F["／ main 純直線前進 · branch 消失"]
+  C -. "探索失敗 · user 確認" .-> G["🗑 拋棄 branch -D · main 零痕"]
+  style A fill:#1f6f3c33,stroke:#2ea043,color:#e6edf3
+  style D fill:#2d220066,stroke:#d29922,color:#e6edf3
+  style G fill:#4a1c1c66,stroke:#f85149,color:#e6edf3
+    </pre>
+  </div>
+</section>
+
+<section id="s3">
+  <h2>審查與落地</h2>
+  <div class="sub">muse 跨家族 ep-review（F1-F5）→ judge 全數採納 18 項 → 寫回 EP 定稿</div>
+  <ul class="dots">
+    <li><b>verdict</b>：需修正後實作 → 已修正。2 must-fix：kanban「不掝 per-task branch」與本規則矛盾（改為「預設解耦＋repo opt-in」）、起手式「五步」計數 drift（定義源 pointer 解法，計數不動）。</li>
+    <li><b>最有價值發現</b>：<code>/rebase all</code> 目標集合＝<code>git branch</code> − trunk——進行中卡 branch 會被提前吸收、可拋棄保證破裂（SM-14 護欄吸收）。</li>
+    <li><b>反轉對照</b>：muse 前次七個反對論點（線映射破裂、開錯 base、清理債…）逐一對照——多數被「線縮寫前綴＋判定升級＋session 級生命」化解，殘餘（窗口期、收斂頻率假設）轉為 S2 生效排序與監控項。</li>
+    <li><b>落地結構</b>：S1（本 repo）＝AGENTS.md git 慣例節＋kanban skill 兩處編輯；S2（衍生 MOS 卡）＝mosaic 線判定升級＋owning 線欄位＋映射表——<b>判定升級先落地，mosaic 才開第一張卡 branch</b>。</li>
+  </ul>
+  <p class="src">
+    EP：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-08-card-branch-lifecycle/ep.md">ai-analysis/_tasks/_archived/09-08-card-branch-lifecycle/ep.md</a><br>
+    task baseline：d4c98ab · projection source：ep@82b1dd84（未 commit content SHA）· 卡：AIR-46
+  </p>
+</section>
+
+<section id="s4">
+  <h2>實作與驗收</h2>
+  <div class="sub">docs mode 弧——3 個 product 檔＋歸檔；muse 雙輪審查閉環；全程狗糧</div>
+  <ul class="dots">
+    <li><b>做了什麼</b>：AGENTS.md 新「git 慣例（本 repo 卡 branch）」節（命名 air-46／生命／收尾三連／<code>/rebase all</code> 護欄／軟條款／mosaic 純指針）＋ kanban 三處（差異宣告改寫「預設解耦＋repo opt-in」、起手式⑥ pointer、建卡段守衛）；EP＋殼歸檔 <code>done/</code>；卡 AIR-46 結案兩步＋消費場景提煉。</li>
+    <li><b>狗糧實錄</b>：本弧全程站在 <code>air-46</code> branch 上工作——開工 checkout（誤開 main-46 → <code>branch -m</code> 正名）、工作 commits 落其上、commit 確認後吸收三連回 main。harness 顯示的 branch 名即當前卡。</li>
+    <li><b>驗證證據</b>：rg 殘留零（per-task branch 舊句／main-46）；<code>/consistency</code> AGENTS.md＋kanban 六維 100/100（修正後重驗：三連結檔案存在）；muse 審查 10 findings 全採納 → <b>resume 同 session</b> followup：F1-F10 全 resolved、零殘留。</li>
+    <li><b>認知誤差點</b>：①命名 prefix 兩次反轉（air → 誤判 main → 定案 WT basename 縮寫）——「最穩定的身份層」是 <b>worktree 路徑</b>不是 branch 名（branch 開卡後就換了）；②AIR-50 建卡 commit 落在 air-46 上——「建卡即 commit 進所在線」的落點假設在卡 branch 開著時失效（守衛已入 kanban 建卡段）。</li>
+    <li><b>delta tour</b>：docs mode 弧（無 code edges 變更）——降級不產，EP 對照由 muse 審查＋本節承擔。</li>
+  </ul>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'dark'});mermaid.run({querySelector:'pre.mermaid'});}
+</script>
+</body>
+</html>

@@ -140,7 +140,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 | 並行 session **活躍中**（非本任務範圍） | 顯式排除＋報告記錄 |
 | 並行弧**已終結**但結算未 commit（孤兒結算：卡 Done／結算物在場、owning session 已結束） | **收編進本 commit 或另開補 commit**，不排除（實證：AIR-17 結算懸掛半日、前 commit 假結算） |
 
-**半套歸檔偵測**（隱形漏失主形態）：` D` 舊路徑與 `??` 新路徑（`done/` 等）成對＝歸檔搬移只搬未 add——搬移必須雙側同 commit，否則卡 refs 指向 git 不存在的路徑。
+**半套歸檔偵測**（隱形漏失主形態）：` D` 舊路徑與 `??` 新路徑（`done/` 等）成對＝歸檔搬移只搬未 add——搬移必須雙側同 commit，否則卡 refs 指向 git 不存在的路徑（ai-guide `_tasks/` 弧 AIR-77 起永不搬，此處成對即異常；本條留給線任務／外部分類搬移）。
 
 **memory 池對帳腿**（git 掃不到的出口保證——memory 池在 repo 外）：`rg` 本專案 memory 池（掃描面＝`_inventory.md` 全量 desc 投影＋常駐 MEMORY.md＋條目檔——B 形態下 MEMORY.md 只含常駐定額、全量條目只在 `_inventory.md`，漏掃即漏對帳；池形態例 repo `.agents/memory/` 主體或 `~/.zcode/cli/memories/projects/<id>/memory/`〔多為 symlink 指主體〕；載體細節見 [memory-audit](../memory-audit/SKILL.md)「適用載體」）。掃描鍵聯集＝本次弧建卡 id ∪ staged diff／branch 名內卡 id（2.8 時點 commit message 尚未生成、非掃描源）∪ 本 EP「UC 盤點」登記的「結案蒸餾範圍」條目路徑 ∪ 弧主題詞；池不存在 → 報告標「無 memory 池，跳過」。**結案態前置**（三分歸屬前）：`backlog task view <id> --plain` 取卡狀態（無 backlog CLI → 保守視為未結案）——卡未 Done／結案兩步未執行 → 命中條目標「活躍弧 in-flight——不動」（進行中弧線收案前禁加段、等一次性蒸餾）。命中三分歸屬（LLM/user 判）：**活知識錨**（教訓索引式引用）→ 保留；**弧流水**（狀態快照、進度、git 可推導內容、過期詞）→ 結案蒸餾當場做；**已是終態 facts** → 過。歸屬他弧且 owner 線未結案 → 保守不動、列清單標註。報告附命中清單＋歸屬判定（零命中亦標）。蒸餾方法論單一源＝[kanban-board](../kanban-board/SKILL.md)「弧結案蒸餾（第三動）」＋[memory-audit](../memory-audit/SKILL.md)「寫入端紀律」，此處不重述。
 

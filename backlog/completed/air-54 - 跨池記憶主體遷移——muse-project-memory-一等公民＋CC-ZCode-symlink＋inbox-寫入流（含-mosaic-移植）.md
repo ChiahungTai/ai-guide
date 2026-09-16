@@ -12,8 +12,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-analysis/_tasks/done/09-09-memory-spine-migration/ep.md
-  - ai-analysis/_tasks/done/09-09-memory-spine-migration/ep.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-analysis/_tasks/_archived/09-09-memory-spine-migration/ep.md
+  - ai-analysis/_tasks/_archived/09-09-memory-spine-migration/ep.md
 ordinal: 46000
 ---
 

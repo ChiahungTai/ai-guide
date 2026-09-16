@@ -8,8 +8,8 @@ updated_date: '2026-09-15 14:30'
 labels: []
 dependencies: []
 references:
-  - ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md
-  - ai-analysis/_tasks/done/09-15-model-capability-routing/index.html
+  - ai-analysis/_tasks/_archived/09-15-model-capability-routing/ep.md
+  - ai-analysis/_tasks/_archived/09-15-model-capability-routing/index.html
 ordinal: 77000
 ---
 
@@ -31,7 +31,7 @@ ordinal: 77000
 ## 工單身份
 
 - baseline：`ai-guide@df3741b81e90dad01ed30fb383750ad55630998d`
-- EP：`ai-analysis/_tasks/done/09-15-model-capability-routing/ep.md`
+- EP：`ai-analysis/_tasks/_archived/09-15-model-capability-routing/ep.md`
 - 背景材料：`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult.md`、`ai-analysis/reports/2026-09-14-sub-model-marshal-cross-consult-圖解說明.md`
 
 ## 目標

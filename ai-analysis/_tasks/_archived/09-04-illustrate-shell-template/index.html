@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-23 illustrate 報告殼 template 化 — 任務簡報殼</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── 可折疊 sidebar：nav width→0、main flex 吃滿（禁 display:none 於 iframe／section 承載）── */
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  /* ── main ── */
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  /* ── 折疊鈕：展開態貼 sidebar 右緣垂直居中；折疊態浮出鈕固定左上 ── */
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>illustrate 報告殼 template 化（可折疊 sidebar）</h1>
+    <div class="meta">AIR-23 · task baseline 46005e2<br>projection source：ep.md sha256:5df6a08c838f<br>orchestrate = GLM · writer = muse spark</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼・動機鏈</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>凍結決策</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>S1–S3 做了什麼</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>驗證證據</a></li>
+    <li><a href="#s5" onclick="return go('s5',this)"><span class="num">05</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board</span><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-04-illustrate-shell-template/ep.md">EP 全文（viewer）</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>為什麼・動機鏈</h2>
+  <div class="sub">布局決策從 prose 進 code：結構上讓整類 bug 不可能，而非靠 session 記性</div>
+  <ul class="dots">
+    <li><b>問題</b>：報告殼的布局／視覺／互動約束（dark theme、NB 視口、首屏規則、嵌入參數）以 prose 承載，每次建殼由 AI 重手寫約兩百行 HTML——每輪重推導都是 drift 機會。實證：AIR-14 首屏落在無圖章節，圖 rect 0×0 失效。</li>
+    <li><b>解法</b>：抽成共用 template（<code>skills/_common/illustrate-report-shell.html</code>）——結構決策一次寫進 code，建殼只填 slot；順勢新增可折疊 sidebar（NB 視口下圖吃滿全寬，「圖是主角」裁決的自然延伸）。本殼即首個消費者，dogfooding 驗證。</li>
+    <li><b>分工</b>：GLM 寫 EP＋審查＋委派監工；muse 跑 implement（單工單覆蓋 S1→S2→S3，全序列）。本殼採基礎款（無圖）是成本分級選擇，非缺場——升級款按 EP 規模或 user 點名。</li>
+  </ul>
+  <div class="frame-wrap degraded">
+    <div class="bar"><span>圖槽位（降級變體示範：archify 實際在場，此槽位展示缺場時長相）</span></div>
+    <div class="degraded-body"><b>降級變體示範</b>：archify 實際在場（repo clone＋doctor 全綠，2026-09-04），此槽位刻意展示缺場時長相——圖尚未產生時顯示待裝提示而非另起一套殼。安裝指路：<code>git clone https://github.com/tt-a1i/archify ~/Github/archify</code>，偵測與降級規則見 illustrate-html-mode.md「存在性偵測與降級」段。本殼無 hash 首屏依 template 規則落在本節（首個含圖槽章節，降級槽計入）。</div>
+  </div>
+</section>
+
+<section id="s2">
+  <h2>凍結決策</h2>
+  <div class="sub">EP S1 已決策凍結＋Review 六項回寫——writer 不重辯，殼照投影</div>
+  <table>
+    <tr><th>#</th><th>決策</th></tr>
+    <tr><td>1</td><td>落點 <code>skills/_common/</code>（殼帶 ai-rules 工作流語義——badge／board／任務家——不落 archify）</td></tr>
+    <tr><td>2</td><td>全盤承襲 AIR-13 參考殼：dark palette、sidebar 264px、iframe 視口高、main 寬上限、section 切換＋hash、嵌入參數、元件詞彙、board＋viewer backlinks</td></tr>
+    <tr><td>3</td><td>折疊＝body class 切換（nav 收零、main 吃滿）；禁任何觸發 iframe 重載的實作；折疊鈕為 button＋aria-expanded＋浮出鈕＋localStorage 記憶</td></tr>
+    <tr><td>4</td><td>首屏 active＝首個含圖槽章節（含降級槽計入）；無圖槽才 fallback 首章（AIR-14 規則進 code）</td></tr>
+    <tr><td>5</td><td>降級統一＝同一 template 的 degraded 變體，非第二套殼 codepath</td></tr>
+    <tr><td>6</td><td>檔頭 usage 註解承接三條硬約束 rationale——失敗教訓瘦身後的 durable 落點</td></tr>
+    <tr><td>7</td><td>不做 manifest 驅動產生器；零依賴 vanilla JS</td></tr>
+    <tr><td>8</td><td>spec 瘦身只收斂布局／視覺／互動細節為 pointer；政策層（篩選通則／骨架變體／位置分流／生命週期／雙向一致性／badge 回源）不搬</td></tr>
+  </table>
+  <div class="note">殼是投影非平行創作：以上均出自 EP，殼內無 EP 沒有的大方向級主張；EP 修訂時殼同步重投影（投影鎖定）。</div>
+</section>
+
+<section id="s3">
+  <h2>S1–S3 做了什麼</h2>
+  <div class="sub">三段全序列：template 本體 → spec 瘦身 → 本殼回填</div>
+  <div class="cardrow">
+    <div class="card"><div class="t c">S1 template 本體</div><p>新建共用殼：八槽位標記、折疊／首屏／降級三機制、usage 註解三條 rationale；承襲值機械核對全命中。</p></div>
+    <div class="card"><div class="t v">S2 spec 瘦身＋同步</div><p>html-mode 三層結構段收斂為 template pointer＋降級句改 degraded 槽；execution-plan 成本分級改複製填槽模型；illustrate 表加 template 行。</p></div>
+    <div class="card"><div class="t g">S3 本殼（首個消費者）</div><p>從 template 複製填槽：badge（🟡 隨結算轉 ✅）、AIR-23＋baseline 元資訊、EP 判斷材料五章、SM-4 刻意降級槽（見動機鏈節）。</p></div>
+  </div>
+</section>
+
+<section id="s4">
+  <h2>驗證證據</h2>
+  <div class="sub">可重跑 verifier＋雙 context review＋獨立視覺驗收</div>
+  <ul class="dots">
+    <li><b>Runtime：</b><code>node ai-analysis/_tasks/_archived/09-04-illustrate-shell-template/verify-shell.cjs</code> → exit 0，39 assertions；覆蓋 template/consumer browser parse、UTF-8、nav topology、hostile hash、折疊幾何、1024px viewport、top-left control、inert/focus、aria、localStorage reload restore、projection content SHA 與 iframe window/source 不變。</li>
+    <li><b>Static/link：</b>同一 verifier 驗證 consumer 無 slot marker／placeholder token、八種 slot 齊全、charset 在 usage prose 前、EP local links 全可解析、Done card 雙 ref 指向終態 shell。</li>
+    <li><b>Visual：</b>Playwright 於 1728×900、等待 300ms transition 後產三張截圖；獨立 vision-review 對 collapsed consumer、expanded consumer、collapsed template 給 3/3 PASS（中文無 mojibake、無 clip/重疊、control 可發現）。</li>
+    <li><b>Source hygiene：</b><code>git diff --check -- &lt;AIR-23 allowlist&gt;</code> → exit 0；Report Shell URL HTTP 200。最終 consistency/metadata 結果見 post-build completion report。</li>
+  </ul>
+  <div class="note"><b>delta tour：</b>本弧為 uncommitted docs-mode artifact，且 repo 無 <code>.tours/manifest.toml</code>／可比對的 committed graph snapshots，因此不偽造 persistent delta tour；前後差異由雙審查 Finding Record 與本節 runtime evidence 承接。</div>
+  <div class="note"><b>認知誤差點：</b>初輪 collapsed 截圖在 180ms CSS transition 中途擷取，造成「sidebar 未收起」的 false finding；settled DOM 幾何反證後改為等待 300ms。另一方面，template usage 的巢狀 HTML comment 確實讓 browser 把說明文字吞入 title 並造成 mojibake，經 fresh/primed review 找出、修正並加入 parse/UTF-8 gate。</div>
+</section>
+
+<section id="s5">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  <p class="src">
+    EP（含 Review 六項回寫）：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-04-illustrate-shell-template/ep.md">ai-analysis/_tasks/_archived/09-04-illustrate-shell-template/ep.md</a><br>
+    Template（殼單一源）：skills/_common/illustrate-report-shell.html<br>
+    規格（瘦身後 pointer）：skills/_common/illustrate-html-mode.md「html 報告殼」段<br>
+    引用同步：skills/illustrate/SKILL.md（Supporting Files）· skills/execution-plan/SKILL.md（成本分級）<br>
+    卡：backlog/tasks/air-23（已結案兩步，卡留 Done 欄）<br>
+    task baseline：46005e2 · projection source：ep.md sha256:5df6a08c838f · board:VSCode Backlog Cards · viewer：<a href="http://127.0.0.1:6421">:6421</a>
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  // 折疊態先於首屏恢復（只改 nav 寬度，不碰 iframe/section——不觸發重載）
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  // hash restore 優先；無 hash 時首屏＝首個含 .frame-wrap 的章節（.degraded 計入），都無則首章（AIR-14）
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

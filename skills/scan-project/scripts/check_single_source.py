@@ -229,7 +229,7 @@ INVARIANTS = [
         "bridge_model_vocab（僅 .md；tests/ 排除——guard fixtures 合法引用禁用形；"
         "catalog.toml／presets.toml 非 .md 不在面內）。header 錨定避開 S2 移除標記"
         "註解與決策記錄（historical-exclusion）；清單＝S4A broad rg 掃描反推的最小集合"
-        "（ai-analysis/_tasks/done/09-15-model-capability-routing/references/"
+        "（ai-analysis/_tasks/_archived/09-15-model-capability-routing/references/"
         "current-consumers.md）——lite/full 作為 presets 相容 requirement token、"
         "slug 名（lite-verify）、handoff「建議執行 tier」欄（管轄對照已裁定非 drift）、"
         "memory-audit full/lite 級別、EP 規模 full 皆合法不在禁止列。錨點＝"

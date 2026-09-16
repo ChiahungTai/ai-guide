@@ -2,15 +2,15 @@
 """Report Shell provenance lint（ai-analysis 任務家殼的回源完整性）。
 
 殼是 source 的 projection（illustrate-html-mode「投影鎖定與 stale 標記」＋
-kanban-board 結案兩步 `--ref` 換 done/ 路徑）——本 lint 把三類已發生的失真
-變機械閘門（codex 09-06 全 repo 審查 I-7）：
+kanban-board 開工 refs 出生即寫——AIR-77 起任務目錄永不搬，結案不換路徑）——
+本 lint 把三類已發生的失真變機械閘門（codex 09-06 全 repo 審查 I-7）：
 1. 同殼宣告多個互斥 projection SHA（一殼只能有一個 current identity）；
 2. projection SHA 與同目錄 ep.md 的 content SHA 不符（stale projection）；
 3. 回源連結失效：`file:///Users/` 絕對路徑（跨 worktree/clone 必斷）、
-   `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔未補 done/）；
+   `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔/月份層未同步）；
 4. 連結合約（09-14 裁決：ai-guide 退出 :6421 report server）：殼內 .md 連結
    採 repo 相對路徑（VSCode 直接開檔）——viewer URL 形態（127.0.0.1:6421、
-   /viewer/_md-viewer.html）在活躍殼即 violation；歷史位置（_tasks/done/、
+   /viewer/_md-viewer.html）在活躍殼即 violation；歷史位置（_tasks/_archived/、
    reports/、blueprint/）殼留歷史態豁免，不回改。
 
 掃描範圍：git-tracked `ai-analysis/**/index.html`（渲染產物 diagram-*.html
@@ -36,14 +36,14 @@ _RAW_MD_ROUTE = re.compile(r'href="([^"]*/(?:ai-rules|ai-guide)/[^"]*\.md)"')
 # viewer URL 形態（09-14 退役）：活躍殼即 violation，歷史位置殼豁免
 _VIEWER_URL = re.compile(r"""(?:127\.0\.0\.1:6421|localhost:6421|/viewer/_md-viewer\.html)""")
 _HISTORICAL_PREFIXES = (
-    "ai-analysis/_tasks/done/",
+    "ai-analysis/_tasks/_archived/",
     "ai-analysis/reports/",
     "ai-analysis/blueprint/",
 )
 
 
 def _is_historical(shell: Path, repo_root: Path) -> bool:
-    """殼位於歷史位置（done/＋reports/＋blueprint/）→ 留歷史態，豁免 viewer 檢查。"""
+    """殼位於歷史位置（_archived/＋reports/＋blueprint/）→ 留歷史態，豁免 viewer 檢查。"""
     rel = shell.relative_to(repo_root).as_posix()
     return rel.startswith(_HISTORICAL_PREFIXES)
 
@@ -92,7 +92,7 @@ def lint_shell(shell: Path, repo_root: Path) -> list[str]:
         target = repo_root / "ai-analysis" / urllib.parse.unquote(rel)
         if target.suffix in (".md", ".json") and not target.exists():
             issues.append(
-                f"route 回源路徑不存在（任務歸檔未補 done/？）: ai-analysis/{rel}"
+                f"route 回源路徑不存在（任務歸檔/月份層未同步？）: ai-analysis/{rel}"
             )
     return issues
 

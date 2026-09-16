@@ -9,8 +9,8 @@ labels:
   - plugins
 dependencies: []
 references:
-  - 'http://127.0.0.1:6421/ai-rules/_tasks/done/09-02-muse-plugin-cc/index.html'
-  - ai-analysis/_tasks/done/09-02-muse-plugin-cc/ep.md
+  - 'http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-02-muse-plugin-cc/index.html'
+  - ai-analysis/_tasks/_archived/09-02-muse-plugin-cc/ep.md
 ordinal: 12000
 ---
 

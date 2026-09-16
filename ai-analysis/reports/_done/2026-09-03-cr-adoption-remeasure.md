@@ -44,7 +44,7 @@ CR 工具實際使用：3/5 sessions 跑結構查詢（主 research 股 refs×5+
 
 ## 3. 殘餘問題：引用落地斷鏈（最後一哩）
 
-cr-research 的查詢結果**有進 EP 文檔**——`mosaic_alpha ai-analysis/_tasks/done/09-01-switch-preamble-consolidation/ep.md` 的「依賴錨點清單」是 callers 形態（`_begin_switch → 定義 shell / 消費 base _on_instrument_change`），結構資料可辨——但 **`[SRC]`／工具輸出引用標記全部遺失**；`09-02-tagging-machine-loop/ep.md` 的依賴宣稱（如「兄弟線已收 e4d4a176」）以 commit hash 引用；`09-01-readiness-bounded-probe/ep.md` 直接標明「rg 全掃」形態。EP skill「每個 ripple 宣稱附工具輸出引用」條文未閉環：**查了、用了、沒留痕**——驗證軌跡（哪個工具、哪個輸出）不可回溯。
+cr-research 的查詢結果**有進 EP 文檔**——`mosaic_alpha ai-analysis/_tasks/_archived/09-01-switch-preamble-consolidation/ep.md` 的「依賴錨點清單」是 callers 形態（`_begin_switch → 定義 shell / 消費 base _on_instrument_change`），結構資料可辨——但 **`[SRC]`／工具輸出引用標記全部遺失**；`09-02-tagging-machine-loop/ep.md` 的依賴宣稱（如「兄弟線已收 e4d4a176」）以 commit hash 引用；`09-01-readiness-bounded-probe/ep.md` 直接標明「rg 全掃」形態。EP skill「每個 ripple 宣稱附工具輸出引用」條文未閉環：**查了、用了、沒留痕**——驗證軌跡（哪個工具、哪個輸出）不可回溯。
 
 ai-rules 端兩個新 EP（muse-plugin-cc、three-pool）為 docs-mode 無 ripple 宣稱，CR 缺席屬正當（GATE 不觸發）。
 

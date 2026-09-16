@@ -12,8 +12,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-08-carrier-misuse-definition/index.html
-  - ai-analysis/_tasks/done/09-08-carrier-misuse-definition/ep.md
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-08-carrier-misuse-definition/index.html
+  - ai-analysis/_tasks/_archived/09-08-carrier-misuse-definition/ep.md
 ordinal: 40000
 ---
 
@@ -39,7 +39,7 @@ ordinal: 40000
 
 【P5 完成 09-08 深夜】①catalog 真通道探針：源碼查證（render.rs 三層階梯＋System→Admin→Repo→User 省略序、USER scope 最尾）＋live 探針 11/12 exact＋tier-2 縮短警告實彈（94 skills 真預算零省略下可達）——SM-7 關閉；清理 94→82 diff 零差異。②writer 歸因建議：三案四維矩陣推薦 (b) telemetry last-writer 投影，三 user 裁決點標出。P4 dogfood 窗口開放（case#1 三段已記，n=1/3-5，48h 至 09-10）——首輪結束回餵＋結案兩步。產出隨批 commit（p5-codex-catalog-probe.md／p5-writer-attribution-proposal.md／dogfood 記錄）。
 
-【09-09 合併】user 裁定 AIR-48 剩餘（P4 dogfood 收尾——窗口至 09-10＋P5 三 user 裁決點＋統一定義表 wrapper 條目）併 AIR-50 整合弧執行——EP：ai-analysis/_tasks/done/09-09-skill-contract-fixes/ep.md（S9 段）；結案兩步隨該弧
+【09-09 合併】user 裁定 AIR-48 剩餘（P4 dogfood 收尾——窗口至 09-10＋P5 三 user 裁決點＋統一定義表 wrapper 條目）併 AIR-50 整合弧執行——EP：ai-analysis/_tasks/_archived/09-09-skill-contract-fixes/ep.md（S9 段）；結案兩步隨該弧
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

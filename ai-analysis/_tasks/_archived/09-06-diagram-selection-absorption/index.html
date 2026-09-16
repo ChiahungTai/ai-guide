@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-30 畫圖選型與產線吸收弧 — 任務簡報殼</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── 可折疊 sidebar：nav width→0、main flex 吃滿（禁 display:none 於 nav／iframe／section 承載）── */
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  /* ── main ── */
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  /* ── 折疊鈕 ── */
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>AIR-30 畫圖選型與產線吸收弧</h1>
+    <div class="meta">baseline a8072ce<br>projection a63277e567fedf4e（EP content SHA）<br>diagram-selection＋mermaid 無縫＋archify 止損</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>為什麼</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>決策預設</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>段落總覽</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>未決與驗收</a></li>
+    <li><a href="#s5" onclick="return go('s5',this)"><span class="num">05</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board</span><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-06-diagram-selection-absorption/ep.md">EP 全文</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>為什麼——「效果不錯，但畫太久、成本太高」</h2>
+  <div class="sub">動機鏈：user 評價 → 三軸成本鑑識 → 材料吸收</div>
+  <ul class="dots">
+    <li><b>現象</b>：archify 產線近三天 ~3 小時、~20 分鐘/圖量級；時序鑑識證實時間絕大多數耗在 LLM 生成（validate 迴圈），工具本身秒級——「工具慢」是錯覺</li>
+    <li><b>根因三層</b>：①不該進迴圈的圖進了（有通道小圖 mermaid 一輪可成）②spec 過重導致迴圈空轉（>4 輪不收斂＝caller 端問題，非 agent 不努力）③單輪 reasoning 燒在「validate 建議值直接抄」就解決的座標上</li>
+    <li><b>三弧同構證據</b>：archify 線、kchart 線、MOS-42 各自獨立收斂到「機械渲染 → flash vision 契約判讀 → 回數字驗證 → 人類板」同一形態——統一 skill 的依據</li>
+    <li><b>user 追加裁示</b>：archify 非必要不用；mermaid 在 HTML 殼下要無縫融合一體（同主題/透明底/無 iframe 痕跡）</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2>決策預設</h2>
+  <div class="sub">user 授權採推薦傾向——⚖️ 標記者醒後可否決翻案</div>
+  <div class="cardrow">
+    <div class="card"><div class="t c">D1 統一選型 skill</div><p>新建 <code>diagram-selection</code>：判準四問（通道/交錯/是否圖論問題/成本軸）＋載體對照＋跨載體共性池；工具配方留原地（mermaid/archify-gen/kbar/ui-visual-verify）</p></div>
+    <div class="card"><div class="t c">archify=最後手段</div><p>選型預設 mermaid／HTML 塊；只有互動導航、大規模依賴網、無通道大圖才走 archify 產線</p></div>
+    <div class="card"><div class="t g">D4(b) 殼時間點</div><p>hook 1 只建殼骨架＋零管線內容；渲染管線圖延到 hook 2 內容凍結一次產——砍掉 hook 1 圖的重投影成本</p></div>
+    <div class="card"><div class="t a">D2/D3 產線修正</div><p>止損分層（>4 輪回頭改 spec＋12 輪降級）、建議值直接抄、rounds ledger 進 git（成本觀測面，下次不用 db 驗屍）</p></div>
+  </div>
+  <div class="note">⚖️ 可否決項：C3 git policy（源+receipt 進、渲染產物不進＋fresh clone 再生；per-repo 可覆蓋——MOS-27 三件套全進不採）｜C1 class 圖兩層判準｜SF7 archify 定位句兩處重述（已標注判準源）</div>
+  <div class="frame-wrap">
+    <div class="bar"><span>選型判準流程（mermaid——判準四問完整版，LR 單向通道）</span><a href="diagram-selection-flow.svg" target="_blank">↗ 全屏</a></div>
+    <iframe src="diagram-selection-flow.svg" title="選型判準流程" style="height:600px;background:transparent"></iframe>
+  </div>
+</section>
+
+<section id="s3">
+  <h2>做了什麼</h2>
+  <div class="sub">S1→S7 全 docs mode 落地＋POC 實證——EP review 28 findings、build review 3 perspective 22 findings 全數處置</div>
+  <table>
+    <tr><th>段</th><th>結果</th></tr>
+    <tr><td>S1</td><td>✅ <code>skills/diagram-selection/SKILL.md</code> 新建（判準四問＋9 載體對照＋共性池＋五路指針）＋索引註冊——10 檔交叉引用</td></tr>
+    <tr><td>S2</td><td>✅ mermaid skill 殼內嵌段（渲染雙路徑三嵌法＋陷阱六條＋init 例外＋<code>.mmd</code> 源進 git）</td></tr>
+    <tr><td>S3</td><td>✅ illustrate-html-mode 12 處改版（概念→載體映射兩軸分層、嵌圖四形態、hook 骨架制、guard 分層＋rounds ledger 單一源、containment/readability 分離）</td></tr>
+    <tr><td>S4</td><td>✅ archify-gen role 改版（D2 12 條＋schema 靜態坑＋幾何前移七條＋止損 pointer 帶絕對路徑）＋sync_agents 投影 body identical</td></tr>
+    <tr><td>S5</td><td>✅ seamless POC：機械全綠（iframe 自適應、CDN lazy 2/2、零 console error）＋vision 3/3 PASS＋<code>-I svgId</code> 全改寫發現（id/marker/style selector）→ 回寫 S2</td></tr>
+    <tr><td>S6</td><td>✅ 周邊同步：hook 語義 11 檔掃描（hook 2 增產圖職貴×4）、gitignore 補條目、memory 四條目修正、驗證電池全綠</td></tr>
+    <tr><td>S7</td><td>✅ AIR-26 degraded 槽換裝（mermaid 選型）＋vision PASS（像素級取樣證實）</td></tr>
+  </table>
+</section>
+
+<section id="s4">
+  <h2>驗證證據與認知誤差點</h2>
+  <div class="sub">機械驗證（命令＋exit code）＋審視自己失誤的最終態</div>
+  <h3>驗證證據</h3>
+  <ul class="dots">
+    <li><code>sync_agents.py</code> exit 0×2（冪等）；投影 diff 僅 frontmatter＋生成註記</li>
+    <li>殘留掃描 CLEAN：<code>rg "類型映射|建殼＋計畫章節|可選 archify 圖" skills/</code> 零命中；<code>產圖一次</code> 4 檔命中；<code>diagram-selection</code> 交叉引用 10 檔</li>
+    <li>gitignore 雙向：<code>check-ignore .mmd</code> exit 1（源進 git）／<code>diagram-*.svg|*.png</code> exit 0（產物不進）</li>
+    <li>POC 截圖三張＋vision verdict 3/3 PASS（AIR-26 補驗亦 PASS）；mmdc `-t dark -b transparent`／`mermaid.run` v10+ 官方文檔 grounding</li>
+    <li>review 鏈：EP review 雙 agent 28 findings（26✅/1❌/1⚠️）＋build review 3 perspective 22 findings（全處置）＋spot-check 4 findings（全修）＋apply 後機械電池全綠</li>
+  </ul>
+  <h3>認知誤差點（review 抓出的自我失誤）</h3>
+  <ul class="dots">
+    <li><b>寫規則的人踩規則</b>：mermaid POC 實證句自己寫入了日期＋精確統計——正是 instruction-writing 紅線禁止的元資訊（clean review 🔴 抓出）；規範知識≠行為紀律</li>
+    <li><b>單一源宣言自相矛盾</b>：role 寫「不重述數字」同句自帶「>4 輪」——宣告與實作在同一行內打架，需要外部視角才看得見</li>
+    <li><b>判準反用</b>：AIR-26 換裝時把「分支扇出」（判準裡的反指標）寫成選 mermaid 的正當化理由——吸收新判準的當下仍用舊直覺歸因</li>
+    <li><b>POC 結論回寫不全</b>：S5 發現 `-I` 鬆綁只回寫了 mermaid skill、漏了 html-mode 四形態段——同弧內的知識同步也會漏</li>
+  </ul>
+  <h3>未決項（⚖️ user 可否決——醒後翻案）</h3>
+  <ul class="dots">
+    <li>C3 git policy：已落地「源＋receipt 進、產物不進＋一命令再生；per-repo 可覆蓋」（MOS-27 三件套全進不採為單一源）</li>
+    <li>SF7：archify「最後手段」定位句在 diagram-selection 與 html-mode 兩處就地重申（消費端 gate 強調，已標注判準源）</li>
+    <li>⚠️ 記錄性偏差未修：AIR-26/本殼 iframe 用固定高度（非 A-2 自適應 JS——歸檔殼低風險，後續殼漸進採用）</li>
+    <li>MOS-42 ②③④⑥（回測紀律/單位單一源/point-in-time/探索↔正式化）→ 另弧收 trading-analysis</li>
+  </ul>
+</section>
+
+<section id="s5">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  <p class="src">
+    EP：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-06-diagram-selection-absorption/ep.md">ai-analysis/_tasks/_archived/09-06-diagram-selection-absorption/ep.md</a><br>
+    裁定包（材料總綱）：<a href="http://127.0.0.1:6421/viewer/">.agent-tmp/2026-09-05-diagram-cost-adjudication.md</a>（暫存區，隨弧清理）<br>
+    task baseline：a8072ce · projection source：a63277e567fedf4e（EP content SHA） · 卡：AIR-30
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>

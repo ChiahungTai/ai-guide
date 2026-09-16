@@ -11,8 +11,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-08-card-branch-lifecycle/index.html
-  - ai-analysis/_tasks/done/09-08-card-branch-lifecycle/ep.md
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-08-card-branch-lifecycle/index.html
+  - ai-analysis/_tasks/_archived/09-08-card-branch-lifecycle/ep.md
 ordinal: 38000
 ---
 

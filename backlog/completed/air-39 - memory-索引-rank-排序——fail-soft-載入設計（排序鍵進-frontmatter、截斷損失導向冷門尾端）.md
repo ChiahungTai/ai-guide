@@ -10,8 +10,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/done/09-07-memory-rank-sorting/ep.md
-  - ai-analysis/_tasks/done/09-07-memory-rank-sorting/
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/_archived/09-07-memory-rank-sorting/ep.md
+  - ai-analysis/_tasks/_archived/09-07-memory-rank-sorting/
 ordinal: 30000
 ---
 

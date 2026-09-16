@@ -402,9 +402,11 @@ WT 基建落地後，可以移除「因共享單一 checkout，所以同 repo ca
 
 放置規則（規範源在 illustrate-html-mode「產物位置分流」，此處只投影）：
 
+即日起，新弧任務目錄直接落 _tasks/2026-09/<MM-DD-主題>/，不進 done/；歷史 done/ 31 弧由 AIR-77 遷移弧一次收入 _archived/。此慣例使遷移不再追著移動目標跑。
+
 | 產物類型 | 位置 | 入口 |
 | --- | --- | --- |
-| 弧產物（有卡） | `ai-analysis/_tasks/<MM-DD-主題>/`；線任務 `_projects/<線>/tasks/`；完成搬同家 `done/` | `index.html`（ep/spec/殼同處） |
+| 弧產物（有卡） | `ai-analysis/_tasks/YYYY-MM/<MM-DD-主題>/`（永不搬移；狀態只看卡 status）；線任務 `_projects/<線>/tasks/`；歷史完成弧一次性收入同家 `_archived/`（凍結） | `index.html`（ep/spec/殼同處） |
 | 常設 domain 導覽 | `ai-analysis/<域>/`（如 `blueprint/`） | 域名即路徑 |
 | 按需視覺／決策 viewport | `ai-analysis/<域>/`（如 `blueprint/`、`test-contract/`——AIR-74 起 arch-report 退役） | `index.html`（進 git） |
 | md 沉澱 | `ai-analysis/reports/` | — |

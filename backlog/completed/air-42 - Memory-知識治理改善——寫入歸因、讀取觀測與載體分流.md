@@ -11,7 +11,7 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/done/09-07-memory-governance/ep.md
+    http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/ai-analysis/_tasks/_archived/09-07-memory-governance/ep.md
 ordinal: 33000
 ---
 
@@ -31,5 +31,5 @@ ordinal: 33000
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-memory 知識治理三弧全落地：AIR-40 寫入歸因 telemetry（22 tests＋weekly live）、AIR-41 body Read 觀測（13 tests＋reads live＋dual review 修正輪）、AIR-42.1 載體分流校準（advisory 10 條＋Q2/固化/blocker/cluster 規則修訂）。證據分立陳述（寫入/讀取/分流三份 evidence）、未知不冒充零（window_shortfall/unpaired 揭露）、無新閘門（hooks/ 零變更）。advisory 遺留 user 裁量：退出候選 1＋指針保留 1＋遷移候選 1（均未動共享池）。歸檔 ai-analysis/_tasks/done/09-07-memory-governance/
+memory 知識治理三弧全落地：AIR-40 寫入歸因 telemetry（22 tests＋weekly live）、AIR-41 body Read 觀測（13 tests＋reads live＋dual review 修正輪）、AIR-42.1 載體分流校準（advisory 10 條＋Q2/固化/blocker/cluster 規則修訂）。證據分立陳述（寫入/讀取/分流三份 evidence）、未知不冒充零（window_shortfall/unpaired 揭露）、無新閘門（hooks/ 零變更）。advisory 遺留 user 裁量：退出候選 1＋指針保留 1＋遷移候選 1（均未動共享池）。歸檔 ai-analysis/_tasks/_archived/09-07-memory-governance/
 <!-- SECTION:FINAL_SUMMARY:END -->

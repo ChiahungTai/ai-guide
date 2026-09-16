@@ -9,7 +9,7 @@
 
 - 兩份 `2026-09-14-sub-model-marshal-cross-consult*.md` 均在本 reports 目錄，已完整讀取；先前對話「找不到」不成立。
 - 當日材料：`2026-09-15-dev-flow-current-practices-inventory.md`、`2026-09-15-dev-flow-overhead-inventory.md`、`2026-09-15-controlled-compact-strategy.md`、`2026-09-15-memory-mechanism-analysis.md`、`2026-09-15-codex-compact-architecture.md`。
-- AIR-91 成果在 `ai-analysis/_tasks/done/09-15-model-capability-routing/`；STATE.md 的 To Do 觀察已過時。後續核對結案 EP／卡與現行 doctrine，不能將昨天待裁事項當今天未完成。
+- AIR-91 成果在 `ai-analysis/_tasks/_archived/09-15-model-capability-routing/`；STATE.md 的 To Do 觀察已過時。後續核對結案 EP／卡與現行 doctrine，不能將昨天待裁事項當今天未完成。
 - 開場既有 dirty：`.githooks/pre-commit`、`scripts/sync_agents.py`、`skills/model-routing/SKILL.md`、`skills/model-routing/catalog.toml`、`tests/test_sync_agents.py`；當日五份報告未追蹤。保留所有既有工作；本次只寫規劃產物。
 - 已讀 execution-plan（user 提供全文）、rules-reminder、zcode-session-query、arch-thinking。ZCode skill 提供本機 readonly SQLite 與 tail 腳本；不能因 Codex 沒 ReadSessionContext 就宣稱本機對話不可讀。本次先完成 user 最新指定的報告分析。
 

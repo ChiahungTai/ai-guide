@@ -11,8 +11,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-06-diagram-selection-absorption/index.html
-  - ai-analysis/_tasks/done/09-06-diagram-selection-absorption/index.html
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-06-diagram-selection-absorption/index.html
+  - ai-analysis/_tasks/_archived/09-06-diagram-selection-absorption/index.html
 ordinal: 21000
 ---
 

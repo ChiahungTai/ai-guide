@@ -143,7 +143,7 @@ subagent／fresh-context pressure test 仍是 **A 軸機器自驗證**。它能�
 
 ## Pilot 草案：[must-execute-before-complete](../../rules/must-execute-before-complete.md)
 
-設計稿（三個壓力情境＋兩個 harness 前提，**未執行、不構成 RED/GREEN 證據**）已遷至 [must-execute-pilot-scenarios](../../ai-analysis/_tasks/done/09-14-skills-corpus-contract-governance/materials/must-execute-pilot-scenarios.md)；執行時依本 skill 的機械觀察面 protocol 跑，結果由 pilot 弧承接。
+設計稿（三個壓力情境＋兩個 harness 前提，**未執行、不構成 RED/GREEN 證據**）已遷至 [must-execute-pilot-scenarios](../../ai-analysis/_tasks/_archived/09-14-skills-corpus-contract-governance/materials/must-execute-pilot-scenarios.md)；執行時依本 skill 的機械觀察面 protocol 跑，結果由 pilot 弧承接。
 
 ## 完成判準
 

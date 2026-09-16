@@ -91,7 +91,7 @@ muse `add_memory`/`edit_memory` 經 PreToolUse 閘（承載＝user-scope plugin 
 
 ### 層 4：EP/任務狀態盤點
 
-- 完成態信號：EP 已歸檔（任務家歸檔目錄——`ai-analysis/_tasks/done/`、`ai-analysis/_projects/<線>/done/`、或 `00-tasks/` 下 `done/`//`_done/`；判定單一源見 [metadata-sync](../metadata-sync/SKILL.md)）、工具被取代、等待條件已解除 → 清理候選
+- 完成態信號（AIR-77 起 lifecycle 唯一源＝卡 status）：卡已 Done（board-control 翻的終態；`_archived/` 位置是歷史歸檔事實、非判定源；判定單一源見 [metadata-sync](../metadata-sync/SKILL.md)）、工具被取代、等待條件已解除 → 清理候選；無卡弧（免 UC 小修／研究弧）豁免 lifecycle 追蹤
 - **project-\* 計畫完結收斂**：計畫完成（commit 落地）後，對應 `project-*` 條目收斂——刪現況細節（未 commit 狀態、session 進度），留決策與教訓；主題重疊時併入相關 cluster
 - 未完成 → **列表交用戶逐項判斷**；禁自行判斷「應該做完了」——宣稱完成 ≠ 實作落地，查實際檔案與 git 狀態
 

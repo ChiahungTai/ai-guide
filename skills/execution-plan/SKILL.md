@@ -452,7 +452,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 ### 1. 模組 instruction 檔 Capabilities + Kanban 更新
 
 - 已完成 UC：在對應模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格新增一行（能力 + 入口 + ✅）
-- 卡結案（repo 有 `backlog/` 時；時點＝收斂後——post-build hook 2／無 post-build 弧走 implement 階段 6 fallback；5a 只做 Capabilities Built 結算）——**結案兩步＋弧結案蒸餾第三動**（命令合約見 [kanban-board](../kanban-board/SKILL.md)）：`backlog task edit <id> -s Done --final-summary "<一句>"` → `task edit <id> --ref "<done/ EP 相對路徑>[,<shell 相對路徑>]"`（任務目錄遷 done/ 後路徑更新），卡留 Done 欄；第三動＝本弧 memory 條目蒸餾為終態 facts；無 `backlog/` → 跳過
+- 卡結案（repo 有 `backlog/` 時；時點＝收斂後——post-build hook 2／無 post-build 弧走 implement 階段 6 fallback；5a 只做 Capabilities Built 結算）——**結案兩步＋弧結案蒸餾第三動**（命令合約見 [kanban-board](../kanban-board/SKILL.md)）：`backlog task edit <id> -s Done --final-summary "<一句>"` → `task edit <id> --ref "<開工既有 EP 相對路徑>[,<shell 相對路徑>]"`（AIR-77 起永不搬，路徑不變時可略過），卡留 Done 欄；第三動＝本弧 memory 條目蒸餾為終態 facts；無 `backlog/` → 跳過
 - **原子操作**：各時點內同時完成（5a：Capabilities＋消費場景＋SM 預覽；收斂後：結案兩步＋SM 升級＋EP 歸檔＋flow-feedback 歸檔——定義見 [metadata-sync](../metadata-sync/SKILL.md) 原子性）
 - **從 EP Scenario Matrix 提煉「消費場景」**（full/standard 變更）：將矩陣中所有引用該 UC 的場景，提煉成自包含一句話描述（不引用 EP/SM 編號），寫入 Capabilities 表格備註或 backlog 卡（`backlog task edit <id> --append-notes`）
 
@@ -480,7 +480,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 
 ## 輸出
 
-- **位置**：任務家 `MM-DD-<task-name>/ep.md`（相對於專案根目錄；**任務家探測**：`ai-analysis/_tasks/` 在場→雜項家、session 從線 context 來→`ai-analysis/_projects/<線>/tasks/`、否則 repo-root `00-tasks/`——單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；與 Report Shell 同 task 目錄——一弧全生命檔案同處；`ai-analysis/execution-plans/` 慣例退役）
+- **位置**：任務家 `YYYY-MM/<MM-DD-主題>/ep.md`（AIR-77 起永不搬；相對於專案根目錄；**任務家探測**：`ai-analysis/_tasks/` 在場→雜項家、session 從線 context 來→`ai-analysis/_projects/<線>/tasks/`、否則 repo-root `00-tasks/`——單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；與 Report Shell 同 task 目錄——一弧全生命檔案同處；`ai-analysis/execution-plans/` 慣例退役）
 - **檔名**：固定 `ep.md`（task 名已在目錄名，檔名不重複）
 - **結構**：實作總覽 → **UC 盤點** → Scenario Matrix → **測試規劃段**（適用時）→ 段落劃分原則 → 各段落（Context → 要點 → Pseudo Code → 驗證）→ 整合策略 → 收尾步驟
 - **整合策略必含 baseline 記錄**：一行 `baseline: <hash>`（`git rev-parse HEAD`，EP 建立當下）——下游 `/post-build`/`/code-review` 任務弧審查的範圍邊界，由 EP 攜帶跨 session 不重新推導（缺漏由 implement 階段 1 補記；模式見 [code-review](../code-review/SKILL.md)「任務弧模式」）

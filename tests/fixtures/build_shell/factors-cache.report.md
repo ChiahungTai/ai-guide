@@ -5,7 +5,7 @@ title: factors cache 回歸 OHLCV 派生模型 — EP 導讀
 report_type: delta-report
 task_type: architecture
 status: done
-ep_path: ai-analysis/_tasks/done/09-04-factors-cache-incremental/ep.md
+ep_path: ai-analysis/_tasks/_archived/09-04-factors-cache-incremental/ep.md
 diagram_heights:
   arch: 640
   daily-flow: 720

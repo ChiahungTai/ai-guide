@@ -11,8 +11,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-09-skill-contract-fixes/index.html
-  - ai-analysis/_tasks/done/09-09-skill-contract-fixes/index.html
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-09-skill-contract-fixes/index.html
+  - ai-analysis/_tasks/_archived/09-09-skill-contract-fixes/index.html
 ordinal: 42000
 ---
 

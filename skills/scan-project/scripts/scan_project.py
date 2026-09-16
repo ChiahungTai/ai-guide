@@ -544,13 +544,23 @@ def run_cross_validation(
             continue
         ep_ref = e["ep_ref"]
         # Task-home conventions: ai-analysis/_tasks/, line projects, 00-tasks/
-        # (probe mirrors metadata-sync EP archiving)
+        # (probe mirrors metadata-sync EP archiving; AIR-77: new arcs live
+        # under _tasks/YYYY-MM/ and never move, history is frozen _archived/)
+        tasks_home = project_root / "ai-analysis" / "_tasks"
         ep_candidates = [
-            project_root / "ai-analysis" / "_tasks" / ep_ref,
-            project_root / "ai-analysis" / "_tasks" / "done" / ep_ref,
+            tasks_home / ep_ref,
+            tasks_home / "_archived" / ep_ref,
             project_root / "00-tasks" / ep_ref,
             project_root / ep_ref,
         ]
+        if tasks_home.is_dir():
+            ep_candidates.extend(
+                month_dir / ep_ref
+                for month_dir in sorted(
+                    tasks_home.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]")
+                )
+                if month_dir.is_dir()
+            )
         projects_dir = project_root / "ai-analysis" / "_projects"
         if projects_dir.is_dir():
             for line_dir in sorted(projects_dir.iterdir()):
@@ -760,13 +770,14 @@ def _scan_rust_workspace(project_root: Path) -> dict | None:
     return {"root": str(ws_root.relative_to(project_root)), "crates": crates}
 
 
-def _dir_inventory(project_root: Path, max_depth: int = 3, cap: int = 800) -> dict:
+def _dir_inventory(project_root: Path, max_depth: int = 4, cap: int = 800) -> dict:
     """Mechanical directory inventory (bounded) — the enumeration ground truth.
 
     Structural listings consumed by instruction-init / doc flows must come
     from mechanical output, not from LLM prose summaries. File NAMES are
     included only for dirs with ≤60 direct files (larger dirs get counts
-    only) to keep the snapshot bounded.
+    only) to keep the snapshot bounded. Depth 4 covers the AIR-77 month
+    layer (ai-analysis/_tasks/YYYY-MM/<arc>/).
     """
     dirs_out: list[dict] = []
     truncated = False

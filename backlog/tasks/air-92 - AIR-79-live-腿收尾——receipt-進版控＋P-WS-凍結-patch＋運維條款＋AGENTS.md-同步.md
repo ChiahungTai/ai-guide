@@ -9,7 +9,7 @@ labels: []
 dependencies: []
 references:
   - >-
-    ai-analysis/_tasks/done/09-12-muse-memory-governance-plugin/poc/live_receipt_20260914.md
+    ai-analysis/_tasks/_archived/09-12-muse-memory-governance-plugin/poc/live_receipt_20260914.md
 ordinal: 78000
 ---
 
@@ -18,7 +18,7 @@ ordinal: 78000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 〔human-summary〕muse memory 防護閘的 live 驗證已全綠（mosaic 端跑完），這卡把四件收尾落到本 repo：證據進版控、一個小 patch、寫兩處文檔。做完後每次升級 governance plugin 都記得重新 approve。
 
-〔baseline：ai-rules main @ 016eff9〕證據源＝ai-analysis/_tasks/done/09-12-muse-memory-governance-plugin/poc/live_receipt_20260914.md（untracked，live 驗證 L1-L6 全綠 2026-09-14）
+〔baseline：ai-rules main @ 016eff9〕證據源＝ai-analysis/_tasks/_archived/09-12-muse-memory-governance-plugin/poc/live_receipt_20260914.md（untracked，live 驗證 L1-L6 全綠 2026-09-14）
 
 〔已決策勿重辯：①approve 綁 definition_hash（content update→hash 變→hook 停火＝fail-open 窗口，形態是 update 後非 install 後；重新 approve 即恢復）②O7 修正：plugins list 的 hooks-require-review warning 是常駐雜訊非 approval 訊號，真訊號＝inspect --json 的 runtime_capabilities[].status③P-WS 凍結：resolver 以 .cwd 為權威首選（live stdin 無 workspace/host_workspace 欄），patch 文本已在 receipt 禁重新設計④mosaic 側已收口勿越界⑤L4 收緊是 open user 裁決項非本卡範圍〕
 

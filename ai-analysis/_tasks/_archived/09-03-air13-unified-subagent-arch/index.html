@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-13 統一 External-Runtime Subagent 架構 — 任務簡報殼</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  /* ── sidebar ── */
+  nav{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  nav .brand{padding:0 20px 16px;border-bottom:1px solid var(--border)}
+  nav .brand .badge{display:inline-block;background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green);border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600}
+  nav .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav ul{list-style:none;padding:10px 0;flex:1}
+  nav li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent}
+  nav li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav li a:hover{color:var(--fg);background:#1f242c}
+  nav li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2}
+  nav .backlinks a{color:var(--accent);text-decoration:none}
+  /* ── main ── */
+  main{flex:1;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="brand">
+    <span class="badge">✅ 完成</span>
+    <h1>統一 External-Runtime Subagent 架構</h1>
+    <div class="meta">AIR-13 · baseline 63f2041<br>投影自 ep.md @ 09-03 build 終態<br>orchestrate = GLM · writer = muse spark</div>
+  </div>
+  <ul>
+    <li><a href="#s1" class="active" onclick="return go('s1',this)"><span class="num">01</span>為什麼・架構總覽</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>三層落地與檔案地圖</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>實作與驗證證據</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>Dispatch 形態轉移・量測</a></li>
+    <li><a href="#s5" onclick="return go('s5',this)"><span class="num">05</span>誤差點與待決事項</a></li>
+    <li><a href="#s6" onclick="return go('s6',this)"><span class="num">06</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board</span><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-03-air13-unified-subagent-arch/ep.md">EP 全文（viewer）</a>
+  </div>
+</nav>
+<main>
+
+<section id="s1" class="active">
+  <h2>為什麼・架構總覽</h2>
+  <div class="sub">動機鏈：muse 導入 → 三臭皮匠獨立調查 → 統一架構定案 → 用自己完成自己</div>
+  <ul class="dots">
+    <li><b>起點</b>：muse spark 已是主力實作 model（GLM=規劃審查、muse=實作、codex=診斷），但三家族分工沒有 routing 真相源——派誰、怎麼派、怎麼收、誰驗收，全靠即興。</li>
+    <li><b>定案方法</b>：三臭皮匠——GLM 實機掃描（CLI --help 補兩家文檔盲區）＋muse 逐 job 證據普查＋codex 對抗性查證（抓 reviewer 證據缺口）；雙 ep-review 22 findings 全數回寫 EP。</li>
+    <li><b>成果</b>：三層架構（路由表／介面層／工單協議）＋治理契約（eligibility gate 五條、reviewer 交接契約、dispatch 三態判定）。</li>
+    <li><b>最強證明</b>：整個 build 就是用這個架構跑的——4 張工單全 muse 執行、4 位 GLM reviewer 全 accept、零重工。</li>
+  </ul>
+  <div class="frame-wrap">
+    <div class="bar"><span>dispatch lifecycle — 從任務規劃到 EP record 結案（點圖可互動：搜尋／focus／深淺色）</span><a href="diagram-workflow.html" target="_blank">↗ 全屏</a></div>
+    <iframe src="diagram-workflow.html?embed=1" title="統一架構 dispatch lifecycle"></iframe>
+  </div>
+</section>
+
+<section id="s2">
+  <h2>三層落地與檔案地圖</h2>
+  <div class="sub">model id 與容量數字只住一處（解析表）——model 改版只改一個檔</div>
+  <table>
+    <tr><th>層</th><th>職責</th><th>落地檔案</th></tr>
+    <tr><td><b>路由表</b></td><td>該不該派、派哪個 family——family 表＋五條 eligibility gate＋reviewer 交接契約</td><td><code>rules/model-routing.md</code>（骨架）＋<code>skills/model-routing/SKILL.md</code>（解析表＝model id 唯一落腳處）</td></tr>
+    <tr><td><b>介面層</b></td><td>怎麼喚起——thin forwarder 定案＋flag profile（advisory/implement/review）＋dispatch face 與收法＋三態判定表</td><td><code>agents/AGENTS.md</code></td></tr>
+    <tr><td><b>協議層</b></td><td>任務本文契約——十節硬欄位（紅線首段／Baseline identity／已決策＋矛盾例外／驗收／證據紀律＋PII／交付報告格式）</td><td><code>skills/_common/work-order.md</code>（muse／codex 共用）</td></tr>
+  </table>
+  <h3>首批批次手術（同弧落地）</h3>
+  <ul class="dots">
+    <li>review-engine 背景句（pointer）／python-standards 相對 import 行／at-skill one-shot miss 識別</li>
+    <li><b>受影響測試集機械反查</b>三處——「禁目錄直覺」：mosaic 歷史漏網實證（8 FAIL 活過結案）以 rg＋impact_radius 雙路反查重現，證明配方可擋</li>
+    <li>post-build 四缺口——額度降級顯式記錄／增量≥3 檔補審／階段 0 背景寫入者前置／並行線排除明列</li>
+  </ul>
+  <div class="note">工單協議的<b>矛盾例外</b>是設計亮點：已決策凍結不許重辯，但 writer 發現具體證據與凍結決策衝突時<b>必須停下舉證</b>——服從不等於靜默做錯。</div>
+</section>
+
+<section id="s3">
+  <h2>實作與驗證證據</h2>
+  <div class="sub">每張工單：muse 執行（背景）→ GLM acceptance reviewer 獨立重跑驗收 → record 落 EP</div>
+  <div class="kpi">
+    <div class="card"><div class="num-big" style="color:var(--green)">4/4</div><div class="lab">muse 工單一次成功</div></div>
+    <div class="card"><div class="num-big" style="color:var(--green)">4/4</div><div class="lab">reviewer accept（0🔴 0🟡）</div></div>
+    <div class="card"><div class="num-big" style="color:var(--green)">0</div><div class="lab">重工輪次</div></div>
+    <div class="card"><div class="num-big" style="color:var(--green)">0</div><div class="lab">sandbox-error</div></div>
+    <div class="card"><div class="num-big" style="color:var(--amber)">3</div><div class="lab">writer 報告失準被抓</div></div>
+  </div>
+  <h3>驗收命令證據（reviewer 獨立重跑，非 writer 自述）</h3>
+  <ul class="dots">
+    <li>WO-1 架構核心：9/9 驗收過；mtime 取證證明 backlog 卡非 writer 所動</li>
+    <li>WO-2 七檔批次：8/8 file:line 驗證正確；S4-3「有缺口」判定被 memory 源檔證實</li>
+    <li>WO-3 回歸錨：<code>rg -l</code>（text-derived）與 <code>impact_radius</code>（graph-derived）交叉一致列出歷史漏網的 alpha_forge 測試檔；<code>ef114979</code> message 釘住 8 FAIL 根因</li>
+    <li>WO-4 四缺口：跨引用三目標全存在；no-duplication 加驗（pre-change 同義詞掃描）</li>
+    <li>全量：架構層零 model id（<code>rg "muse-spark|gpt-" rules/ …</code> 零命中）· deploy 3/3 · 90KiB gate 93% · /consistency 三核心檔全過</li>
+  </ul>
+  <div class="note">reviewer 契約的讀料順序（work order → diff → evidence → <b>writer report 最後</b>）實戰有效：三處 writer 報告失準（description 尺寸數字錯、「1024 bytes」無據、驗收條件過述）全是先形成獨立判斷後比對才抓到的。</div>
+</section>
+
+<section id="s4">
+  <h2>Dispatch 形態轉移・量測</h2>
+  <div class="sub">build 期撞到的 transport 問題，當場蒸餾成架構（B-1/B-2）</div>
+  <p>本弧前半段 wrapper agent（muse-rescue／codex-rescue）連續四在 runtime 未終局時提前收工、codex 又遇 <code>CLAUDE_PLUGIN_ROOT</code> 為空導致 job 未建立——三種失敗模式對應三種完全相反的處置，不能靠即興判斷。</p>
+  <div class="cardrow">
+    <div class="card"><div class="t c">① transport 未啟動</div><p>env/module 錯誤、log MODULE_NOT_FOUND、jobs.json 無該 job → <b>可安全重派</b></p></div>
+    <div class="card"><div class="t a">② 在跑・wrapper 已收</div><p>jobs.json running、ps 進程在 → <b>poll 收集，禁重派</b>（重派＝雙跑）</p></div>
+    <div class="card"><div class="t r">③ 死中途・wrapper 空轉</div><p>進程已亡、jobs.json 停滯 → <b>機械驗收＋TaskStop</b></p></div>
+  </div>
+  <h3>形態轉移實證（B-1）</h3>
+  <ul class="dots">
+    <li>WO-1（wrapper 形態）：需 1 次 resume-to-poll 介入</li>
+    <li>WO-2/3/4（<b>主 session 直呼 bridge CLI</b>＋背景 Bash＋jobs.json 輪詢）：<b>零介入</b>，完成通知直達</li>
+    <li>muse 委派預設形態改為直呼；wrapper 降為別名——從源頭消除生命週期錯位</li>
+  </ul>
+  <h3>首批量測（擴大委派的依據）</h3>
+  <p class="src">額度面：build 級工單各吃訂閱 5h 窗口數個百分點——4 發工單＋6 次審查 agent 同日完成，窗口健康。context 面：4 次手術全在 muse/reviewer runtime context 消化，主 session 只收報告。</p>
+</section>
+
+<section id="s5">
+  <h2>誤差點與待決事項</h2>
+  <div class="sub">殼是投影非平行創作——以下均為 EP 內容的判斷材料，無新增主張</div>
+  <h3>後議三項（需人先定邊界，才可能成工單）</h3>
+  <table>
+    <tr><th>項</th><th>內容</th><th>需要你定的邊界</th></tr>
+    <tr><td>四律九律分拆</td><td>mosaic 治理觀察提煉的 4+9 條紀律，落點全走 skill（四律→execution-plan、九律分拆 acceptance-evidence 等）</td><td>哪些屬 ai-rules 通用、哪些留在 mosaic——逐條裁定歸屬</td></tr>
+    <tr><td>debugging＋modern-cli 擇要</td><td>背景長跑三態／git pathspec／Edit 邊界等 2 條候選（VSCode 7 組已裁不建）</td><td>選哪 2 條入選</td></tr>
+    <tr><td>contracts.md muse 對照欄</td><td>五家 harness 對照表補 muse 欄</td><td>硬約束已定：「過時以原站為準＋每格附行號」——確認欄位範圍後即可成工單</td></tr>
+  </table>
+  <h3>跨 repo roadmap（muse-plugin-cc 側，僅記錄）</h3>
+  <ul class="dots">
+    <li>bridge 暴露 <code>--disable-write</code>（advisory 工單機械強制 read-only，取代 prompt 紅線）</li>
+    <li>bridge 暴露 <code>-w worktree</code>（委派寫入隔離）</li>
+    <li>task 類 job 加 <code>muse export</code>（implement 工單可復盤——觀測盲區）</li>
+  </ul>
+  <div class="note">治理警訊：rules bundle 86,594B＝90KiB gate 的 93%（本弧 +3KB）。下次新增 rule 前需先瘦身（encoder-philosophy：砍可推導與敘事、深層下沉 skill）。</div>
+  <h3>已知的推斷性標記</h3>
+  <p>「mosaic 當年漏跑歸因於目錄直覺」無直接證據（commit message 未載結案測試集）——引用該案例時標推斷；配方的防護價值由反查重現獨立成立，不受影響。</p>
+</section>
+
+<section id="s6">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  <p class="src">
+    EP（含 22+3 findings 回寫、4 條 reviewer record、量測結算）：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-03-air13-unified-subagent-arch/ep.md">ai-analysis/_tasks/_archived/09-03-air13-unified-subagent-arch/ep.md</a><br>
+    工單×4（work-order.md 模板首四個活樣本）：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-03-air13-unified-subagent-arch/work-orders/s1-s3-arch-core.md">s1-s3-arch-core.md</a> · s4-b1b2-wr2-batch.md · a-affected-test-set.md · b-post-build-gaps.md<br>
+    架構三層：rules/model-routing.md · skills/model-routing/SKILL.md · agents/AGENTS.md · skills/_common/work-order.md<br>
+    圖 IR（可再生）：air13-dispatch.workflow.json（archify deliver 確定性重現）<br>
+    卡：backlog/tasks/air-13（In Progress → commit 後結案兩步）<br>
+    baseline commit：63f2041 · board:VSCode Backlog Cards · viewer：<a href="http://127.0.0.1:6421">:6421</a>
+  </p>
+  <p style="color:var(--muted);font-size:12.5px;margin-top:14px">圖 viewer 內建 UI 為英文（archify locale 支援 en/zh-CN，本圖內容為 zh-TW 故省略 locale）。</p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('nav li a').forEach(a=>a.classList.remove('active'));
+  el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+const h=location.hash.slice(1);
+if(h&&document.getElementById(h)){
+  const a=document.querySelector('nav li a[href="#'+h+'"]');
+  if(a)a.click();
+}
+</script>
+</body>
+</html>

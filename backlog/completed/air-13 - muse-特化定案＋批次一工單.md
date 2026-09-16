@@ -12,8 +12,8 @@ labels:
 dependencies: []
 references:
   - >-
-    http://127.0.0.1:6421/ai-rules/_tasks/done/09-03-air13-unified-subagent-arch/index.html
-  - ai-analysis/_tasks/done/09-03-air13-unified-subagent-arch/index.html
+    http://127.0.0.1:6421/ai-rules/_tasks/_archived/09-03-air13-unified-subagent-arch/index.html
+  - ai-analysis/_tasks/_archived/09-03-air13-unified-subagent-arch/index.html
 ordinal: 5000
 ---
 
@@ -31,7 +31,7 @@ created: 2026-09-03 13:27
 【handoff 09-03】承接方：同 repo 未來 session。
 ■ 任務一句話：AIR-13 架構已落地（commit 47aa89d＋2a6f018，卡 Done）——接手標的是三件衍生：後議三項（人先定邊界才可成工單）、muse-plugin-cc roadmap 三條（跨 repo 僅記錄待轉達）、rules bundle 93% 瘦身觸發。
 ■ baseline：2a6f018。
-■ 來源：ai-analysis/_tasks/done/09-03-air13-unified-subagent-arch/ep.md（EP Review 22+3 findings 全回寫＋4 條 reviewer record＋量測結算）；殼=index.html 同目錄。
+■ 來源：ai-analysis/_tasks/_archived/09-03-air13-unified-subagent-arch/ep.md（EP Review 22+3 findings 全回寫＋4 條 reviewer record＋量測結算）；殼=index.html 同目錄。
 ■ 已決策（勿重辯）：三層分工（routing=model-routing／介面=agents registry／協議=work-order.md）；thin forwarder 不長特化 agent（鑑 FIX-S3-R2）；model id 兩層契約（解析表=唯一權威值；agents/zcode pin=允許 materialization）；muse dispatch 預設直呼 bridge CLI（wrapper=別名）；後議三項屬 viewport 軌道——AI 不自行裁定歸屬，等 user 邊界。
 ■ 下一步：①user 裁定後議三項→逐項建卡/工單（四律九律分拆〔落點方向：四律→execution-plan、九律分拆 acceptance-evidence 等，逐條歸屬待裁〕；debugging+modern-cli 擇要〔候選：背景長跑三態、git pathspec、Edit 邊界，user 選 2 條；VSCode 7 組已裁不建〕；contracts.md muse 對照欄〔硬約束：過時以原站為準＋每格附行號〕）②muse-plugin-cc 側開 session 承接 roadmap：bridge 暴露 --disable-write、-w worktree、task 類 job 加 muse export③下次加 rule 前先 bundle 瘦身（86,594B/90KiB gate 93%）。
 ■ 驗收：後議項落地時依 work-order.md 十節工單＋GLM acceptance reviewer 契約（無 record 不結卡）。

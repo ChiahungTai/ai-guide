@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIR-26 external-runtime 委派收法 push 化 — 任務簡報殼</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --border:#30363d;
+    --fg:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --green:#3fb950;
+    --amber:#d29922; --rose:#f85149; --violet:#bc8cff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex}
+  nav#sidebar{width:264px;min-width:264px;background:var(--panel);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;overflow-x:hidden;transition:width .18s ease,min-width .18s ease,padding .18s ease}
+  nav#sidebar .brand{padding:0 20px 16px;border-bottom:1px solid var(--border);white-space:normal}
+  nav#sidebar .brand .badge{display:inline-block;border-radius:12px;padding:2px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+  nav#sidebar .brand .badge.plan{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand .badge.progress{background:#2d220066;border:1px solid #d2992266;color:var(--amber)}
+  nav#sidebar .brand .badge.done{background:#1f6f3c33;border:1px solid #2ea04366;color:var(--green)}
+  nav#sidebar .brand h1{font-size:15.5px;margin-top:8px;line-height:1.45}
+  nav#sidebar .brand .meta{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.7;font-family:ui-monospace,Menlo,monospace}
+  nav#sidebar ul{list-style:none;padding:10px 0;flex:1}
+  nav#sidebar li a{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);text-decoration:none;font-size:13.5px;border-left:2px solid transparent;white-space:nowrap}
+  nav#sidebar li a .num{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;min-width:26px;text-align:center}
+  nav#sidebar li a:hover{color:var(--fg);background:#1f242c}
+  nav#sidebar li a.active{color:var(--fg);background:#1f242c;border-left-color:var(--accent)}
+  nav#sidebar .backlinks{padding:14px 20px;border-top:1px solid var(--border);font-size:12px;line-height:2;white-space:nowrap}
+  nav#sidebar .backlinks a{color:var(--accent);text-decoration:none}
+  body.sidebar-collapsed nav#sidebar{width:0;min-width:0;padding-left:0;padding-right:0;border-right:0}
+  body.sidebar-collapsed main{max-width:none}
+  main{flex:1;min-width:0;max-width:1480px;padding:26px 34px;overflow-y:auto}
+  section{display:none}
+  section.active{display:block}
+  section h2{font-size:20px;margin-bottom:4px}
+  section .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  section h3{font-size:14.5px;color:var(--accent);margin:18px 0 8px}
+  p,li{font-size:14px;line-height:1.75;color:var(--fg)}
+  ul.dots{list-style:none;margin:6px 0}
+  ul.dots li{padding-left:18px;position:relative;margin:4px 0}
+  ul.dots li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .cardrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:14px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .card .t{font-size:13px;font-weight:700;margin-bottom:6px}
+  .card .t.c{color:var(--accent)}.card .t.r{color:var(--rose)}.card .t.g{color:var(--green)}.card .t.v{color:var(--violet)}.card .t.a{color:var(--amber)}
+  .card p{font-size:12.5px;color:var(--muted);line-height:1.65}
+  .tag-plan{display:inline-block;font-size:11.5px;color:var(--violet);border:1px solid #6e40c966;background:#6e40c622;border-radius:10px;padding:1px 8px;margin-left:8px;white-space:nowrap;vertical-align:middle}
+  .num-big{font-size:26px;font-weight:800;font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap{margin-top:14px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .frame-wrap .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace}
+  .frame-wrap .bar a{color:var(--accent);text-decoration:none}
+  iframe{width:100%;height:calc(100vh - 190px);min-height:640px;border:0;display:block;background:#fff}
+  .frame-wrap.degraded .degraded-body{padding:22px 18px;font-size:13.5px;line-height:1.8;color:var(--muted)}
+  .frame-wrap.degraded .degraded-body b{color:var(--fg)}
+  .frame-wrap.degraded .degraded-body code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--border);padding:7px 11px;text-align:left;vertical-align:top;line-height:1.6}
+  th{background:var(--panel2);color:var(--muted);font-weight:600;font-size:12px}
+  td code{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--accent);background:#1b222c;border-radius:4px;padding:1px 5px}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+  .kpi .card{text-align:left}
+  .kpi .lab{font-size:11.5px;color:var(--muted)}
+  .note{border-left:3px solid var(--amber);background:#2d220066;padding:10px 14px;border-radius:0 6px 6px 0;font-size:13px;line-height:1.7;margin:12px 0}
+  .src{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,monospace;line-height:1.9}
+  .src a{color:var(--accent);text-decoration:none}
+  .collapse-tab{position:fixed;top:50%;z-index:30;width:26px;height:64px;padding:0;cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;line-height:1;border-radius:0 8px 8px 0}
+  .collapse-tab:hover{color:var(--fg);border-color:var(--accent)}
+  #collapse-btn{left:264px;transform:translateY(-50%)}
+  body.sidebar-collapsed #collapse-btn{display:none}
+  #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
+  body.sidebar-collapsed #expand-btn{display:block}
+</style>
+</head>
+<body>
+<button type="button" id="expand-btn" class="collapse-tab" aria-expanded="false" aria-controls="sidebar" aria-label="展開章節導覽" onclick="return setCollapsed(false,true)">›</button>
+<nav id="sidebar" aria-label="章節導覽">
+  <div class="brand">
+    <span class="badge done">✅ 完成</span>
+    <h1>AIR-26 external-runtime 委派收法 push 化</h1>
+    <div class="meta">baseline 55d128a<br>projection e75624718b11（EP content SHA，審查 2 輪定稿）<br>2026-09-05</div>
+  </div>
+  <ul>
+    <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>問題與解法</a></li>
+    <li><a href="#s2" onclick="return go('s2',this)"><span class="num">02</span>收法決策樹</a></li>
+    <li><a href="#s3" onclick="return go('s3',this)"><span class="num">03</span>段落與驗收</a></li>
+    <li><a href="#s4" onclick="return go('s4',this)"><span class="num">04</span>實作完成</a></li>
+    <li><a href="#s5" onclick="return go('s5',this)"><span class="num">05</span>回源</a></li>
+  </ul>
+  <div class="backlinks">
+    <span>← backlog board</span><br>
+    <a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-05-external-runtime-push-collection/ep.md">EP 全文（md）</a>
+  </div>
+</nav>
+<button type="button" id="collapse-btn" class="collapse-tab" aria-expanded="true" aria-controls="sidebar" aria-label="收合章節導覽" onclick="return setCollapsed(true,true)">‹</button>
+<main>
+
+<section id="s1">
+  <h2>問題與解法</h2>
+  <div class="sub">為什麼現在的委派收法在燒 request——以及 push 化怎麼消掉它</div>
+  <div class="kpi">
+    <div class="card"><div class="lab">LLM 層輪詢成本</div><div class="num-big">N × request</div><p>每輪檢查＝1+ LLM invocation 且全 context 重送；30 分鐘 job 每 3 分鐘查 ≈ 10 request</p></div>
+    <div class="card"><div class="lab">push 收法成本</div><div class="num-big">1 × request</div><p>背景 Bash 掛 bridge 阻塞呼叫，exit 自動喚醒——等待期 0 request、完成時恰好 1 個</p></div>
+    <div class="card"><div class="lab">bridge 內部輪詢</div><div class="num-big">0 request</div><p>muse wait 以 500ms 輪詢 ledger——純 Node process，零 LLM 成本、亞秒偵測</p></div>
+  </div>
+  <ul class="dots">
+    <li><b>現行收法在 LLM 層輪詢</b>：<code>agents/AGENTS.md</code> 記載 muse＝「背景 Bash＋jobs.json 輪詢（rg＋ps）」、codex＝「wrapper＋resume-to-poll」</li>
+    <li><b>wrapper≠job 錯位是實證</b>：AIR-13 弧 muse×2＋codex×2 均需人工介入收斂；wrapper Bash 另有 10 分鐘上限（因果未證，僅標註）</li>
+    <li><b>三家阻塞能力已齊</b>：muse <code>wait</code>（bridge 0.2.4 已落地）、codex <code>status --wait</code>、grok <code>runs --wait</code>——不需動 upstream</li>
+  </ul>
+</section>
+
+<section id="s2">
+  <h2>收法決策樹</h2>
+  <div class="sub">四種形態各走各的路——LLM 層永遠只做「等喚醒」</div>
+  <div class="frame-wrap">
+    <div class="bar"><span>收法決策樹（mermaid——LR 單向通道＋多站鑽石決策、無互動導航需求）</span><a href="diagram-collection-routing.svg" target="_blank">↗ 全屏</a></div>
+    <iframe src="diagram-collection-routing.svg" title="收法決策樹" style="height:640px;background:transparent"></iframe>
+  </div>
+  <table>
+    <tr><th>形態</th><th>收法</th><th>備註</th></tr>
+    <tr><td>簡單轉發（review／critique／diagnosis）</td><td>主 session 背景 Bash 直呼 bridge <code>task</code>（阻塞形）→ exit 喚醒 → stdout 即 finalText</td><td>jobId 照記（reviewer 交接契約不變）</td></tr>
+    <tr><td>長跑 &gt;10min</td><td>同上——背景 Bash 無前景 10min 限制；或兩段式 <code>--background</code> 拿 jobId → 背景 Bash 掛 wait（<b>muse</b> <code>wait --timeout 0</code>：裸 wait 預設 5min 到期＝exit 124、0＝forever；<b>codex</b> <code>status --wait --json</code>：預設 4min 到期＝正常 exit 0＋<code>waitTimedOut:true</code> 旗標——無 0=forever，<code>--timeout-ms 0</code> 靜默回落 4min，只能顯式大值）</td><td>唯一未實證前提＝致命 POC（build 前必跑）</td></tr>
+    <tr><td>prompt 工程（codex）</td><td>wrapper 內單次阻塞 <code>task</code>＋env fallback 預寫</td><td>wrapper Bash 10min 上限；預期超時改走直呼</td></tr>
+    <tr><td>fallback（罕見：背景 Bash 不可掛）</td><td><b>ETA-gate</b>：推估完成前零檢查 → 屆時單查 → 重掛遞減 timeout 的阻塞 <code>wait</code></td><td>階梯緊化由 timeout 遞減達成——永不做 LLM 層定時輪詢</td></tr>
+    <tr><td>codex env 假完成</td><td>判 job 未建立 → 重派<b>新</b> agent</td><td>非輪詢、非雙跑</td></tr>
+  </table>
+  <div class="note"><b>已決策勿重辯</b>：push 優先（user 09-05 裁定）｜bridge 端 ETA 階梯輪詢 YAGNI（wait 已 500ms、bridge 輪詢零 LLM 成本；但 <b>timeout 形狀</b>要管——muse 長跑帶 <code>--timeout 0</code>（0＝forever）；codex 無 0=forever，timeout 到期＝exit 0＋<code>waitTimedOut</code> 旗標）｜codex／grok upstream 不改｜S2 降級＝範本預載＋落差記錄（ZCode 事件子集無 SessionEnd——repo 定案）｜user 階梯設計以 LLM 層 fallback 紀律（ETA-gate）形式吸收</div>
+</section>
+
+<section id="s3">
+  <h2>段落與驗收</h2>
+  <div class="sub">三段線性：約定 → hooks 接線 → 收尾</div>
+  <div class="cardrow">
+    <div class="card"><div class="t c">S1 收法約定 push 化</div><p><code>agents/AGENTS.md</code> dispatch face 與收法段改寫（muse 直呼收法去輪詢化、codex 預設改直呼、wrapper 限 prompt 工程）＋ <code>model-routing</code> skill 新增「完成回報收法」決策樹小節＋收法經濟學。rg 舊詞彙（resume-to-poll／jobs.json 輪詢）0 殘留。</p></div>
+    <div class="card"><div class="t v">S2 SessionEnd hook 範本預載（降級）</div><p>三家 plugin 都有 SessionEnd 孤兒清理 hook，但 ZCode 事件子集<b>無 SessionEnd</b>（repo 定案 contracts.md）→ 現版不註冊 config：範本預載 muse／codex 條目（grok 註解待安裝）＋落差記錄；merge 延至官方支援。Remediation＝<b>app 重開＋git status</b>（成本極低，user 確認）。</p></div>
+    <div class="card"><div class="t g">S3 收尾</div><p>/consistency、AIR-21 卡處置（wait 已落地但<b>零測試覆蓋</b>——補測試帶去 muse-plugin-cc session）、EP 卡結案兩步、memory 終態補記。</p></div>
+  </div>
+  <ul class="dots">
+    <li><b>致命先驗 POC</b>：真實小委派以背景 Bash 直呼——驗證跨 turn 阻塞至終局、exit 自動喚醒、stdout＝finalText；失敗＝EP 方向重評</li>
+    <li><b>驗收</b>：rg 0 殘留（歷史/計畫 artifact 除外）＋跨檔一致（agents/AGENTS.md ↔ model-routing ↔ post-build）＋導航有效＋/consistency＋致命 POC 雙腿；S2＝範本 JSON parse 有效＋hook 直跑 exit 0＋落差記錄在場（config <b>不</b> merge——延至 ZCode 官方支援 SessionEnd）</li>
+  </ul>
+</section>
+
+<section id="s4">
+  <h2>實作完成</h2>
+  <div class="sub">2026-09-05 build（flash agent）＋審查兩輪閉環——反映修正迴圈後最終態</div>
+  <div class="cardrow">
+    <div class="card"><div class="t c">S1 三層文檔 ✅</div><p><code>agents/AGENTS.md</code> 收法段＋三態表 row-2、<code>skills/model-routing/SKILL.md</code>「完成回報收法」決策樹、<code>rules/model-routing.md</code> pointer——<code>deploy_agents.py</code> exit 0＋三端 rg 命中（zcode/opencode/codex）</p></div>
+    <div class="card"><div class="t v">S2 範本預載＋落差記錄 ✅</div><p><code>hooks/zcode-registration.json</code> 預載 muse/codex SessionEnd 條目（grok 註解待裝）；<code>hooks/AGENTS.md</code> 落差記錄；config.json 未觸碰（mtime 驗證）＋live events 僅 PreToolUse/Stop</p></div>
+    <div class="card"><div class="t g">AIR-21 附帶結案 ✅</div><p>bridge <code>wait</code> L4 行為驗收：steps-1 探針 job-mtnp784d-upbyzi——短 wait 撞 running＝exit 124、長 wait 阻塞至終局＝exit 0＋final JSON；既有 tests fail 0。測試債（wait 零覆蓋）記 memory，補測試歸 muse-plugin-cc session</p></div>
+  </div>
+  <h3>驗證證據</h3>
+  <ul class="dots">
+    <li><b>POC 雙腿</b>：sleep 90 背景 Bash exit → 喚醒 stdout 逐字命中；真實腿＝muse review 背景直呼（job-mtnnzoez-jp8nq6）阻塞至終局 exit 0、stdout＝verdict JSON——<b>push 收法用它自己驗證了自己</b>（委派 1 發、等待 0 request）</li>
+    <li><b>rg 殘留</b>：`resume-to-poll|jobs\.json 輪詢|poll 收集` 活體 instruction 檔 0 命中（18 命中全為歷史弧／EP 本體／卡 desc 引述）</li>
+    <li><b>審查兩輪 12 findings 全閉環</b>：EP 審查 10（P0×1＋P1×4＋P2×2＋P3×3）＋diff 審查 2 P1；judge 均先機械複核後採納</li>
+  </ul>
+  <h3>審查抓的認知誤差點</h3>
+  <ul class="dots">
+    <li><b>muse 其實有 SessionEnd hook</b>——只查了 codex/grok 漏自家（P0）；教訓入 memory：宣稱「X 無 hook」前逐家 cat hooks.json</li>
+    <li><b>ZCode 事件子集無 SessionEnd 是 repo 既有定案</b>——S2 原設計（config 註冊）是死路，降級為範本預載＋落差記錄</li>
+    <li><b>codex timeout 訊號家系差異</b>——codex 到期＝exit 0＋<code>waitTimedOut:true</code>（非 124）、無 0=forever（<code>--timeout-ms 0</code> 靜默回落 4min）；照 muse 語義操作 codex＝假成功。已拆家系寫進所有文檔</li>
+  </ul>
+  <div class="note"><b>delta tour 降級</b>：docs mode 未跑 code-reality snapshot（code edges 不變）→ 無 a/b 對照底稿；EP 對照由 build 完成報告的宣稱-vs-git-diff 機械對帳承接（對帳通過：4 修改＋1 新增與自述逐檔一致、零 scope creep）</div>
+</section>
+
+<section id="s5">
+  <h2>回源</h2>
+  <div class="sub">殼是展示層——本體（source of record）與證據鏈全在 repo</div>
+  <p class="src">
+    EP：<a href="http://127.0.0.1:6421/viewer/_md-viewer.html?p=/ai-rules/_tasks/_archived/09-05-external-runtime-push-collection/ep.md">ai-analysis/_tasks/_archived/09-05-external-runtime-push-collection/ep.md</a><br>
+    task baseline：55d128a1ef1b32f71fa211f774c57b59e8055ec0 · projection source：e75624718b11（EP content SHA，審查 2 輪定稿） · 卡：AIR-26（board:VSCode Backlog Cards）
+  </p>
+</section>
+
+</main>
+<script>
+function go(id,el){
+  var section=document.getElementById(id);
+  if(!section||!section.matches('main section'))return false;
+  document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+  section.classList.add('active');
+  document.querySelectorAll('#sidebar li a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  history.replaceState(null,'','#'+id);
+  return false;
+}
+var SIDEBAR_KEY='illustrate-shell-sidebar-collapsed';
+function setCollapsed(c,moveFocus){
+  document.body.classList.toggle('sidebar-collapsed',!!c);
+  try{localStorage.setItem(SIDEBAR_KEY,c?'1':'0');}catch(e){}
+  var sidebar=document.getElementById('sidebar');
+  sidebar.toggleAttribute('inert',!!c);
+  if(c)sidebar.setAttribute('aria-hidden','true');else sidebar.removeAttribute('aria-hidden');
+  document.querySelectorAll('#collapse-btn,#expand-btn').forEach(function(b){
+    b.setAttribute('aria-expanded',String(!c));
+  });
+  if(moveFocus)document.getElementById(c?'expand-btn':'collapse-btn').focus();
+  return false;
+}
+(function init(){
+  var c=false;
+  try{c=localStorage.getItem(SIDEBAR_KEY)==='1';}catch(e){}
+  if(c)setCollapsed(true);
+  var h=location.hash.slice(1);
+  var candidate=h&&document.getElementById(h);
+  var target=(candidate&&candidate.matches('main section'))?h:null;
+  if(!target){
+    var framed=document.querySelector('main section .frame-wrap');
+    target=framed?framed.closest('section').id:document.querySelector('main section').id;
+  }
+  var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
+  go(target,link);
+})();
+</script>
+</body>
+</html>
