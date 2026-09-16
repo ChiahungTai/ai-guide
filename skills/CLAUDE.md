@@ -86,8 +86,7 @@
 
 ### 工作流 skills — 流程演化回饋
 
-- `/flow-feedback` — session 摩擦收集器：不順 session 後，user 植入摩擦 + AI map 到 skills/commands，產 type-1（時機）/type-2（設計）建議 + 具體例子，寫 `ai-analysis/flow-feedback/`
-- `/flow-review` — 定期讀累積 flow-feedback，找重複摩擦 + 聚合 type-2 設計缺陷 + memory-routing 判定（教訓→Skill/STATE/棄），跟 user 討論改善 skills/commands（B 軸）；定案 → /execution-plan（大改，必要時先 /spec 釐清需求）/ kanban（小改）→ /implement
+- `/flow-review` — 定期讀累積 flow-feedback（`ai-analysis/flow-feedback/`——素材手寫進池，前收集器 `/flow-feedback` skill 已退役），找重複摩擦 + 聚合 type-2 設計缺陷 + memory-routing 判定（教訓→Skill/STATE/棄），跟 user 討論改善 skills/commands（B 軸）；定案 → /execution-plan（大改，必要時先 /spec 釐清需求）/ kanban（小改）→ /implement
 
 ### 工作流 skills — 日常工具
 

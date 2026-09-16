@@ -23,17 +23,16 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 
 ### Phase 0：先結算再排程（checkpoint-first）
 
-排程前把工程狀態落進既有 durable 載體，讓 resume 從檔案接續、不依賴將死的 context：
+排程前依 [task-recovery](../_common/task-recovery.md)「寫入端」把工程狀態落進 durable 載體；at-context（bootstrap ticket，Phase 2）只承載**任務身份與指針**——不抄 read-set、規格、完成度：
 
-1. 有 EP → EP 進度節 append（現行階段、已驗/未驗、下一個可執行動作）
-2. 有追蹤卡 → `backlog task edit <id> --append-notes` 掛進度
-3. 寫 STATE.md 觀察（卡在哪/為何轉向/下次起手點；步驟見 [state-md-write](../_common/state-md-write.md)）
+1. 有 EP → 只 append EP 進度節（checkpoint 必要欄位＝task-recovery 寫入端表）；有卡且具 board 寫權 → 卡 notes 僅加一行「進度見 EP §X」指針——**board single-writer：無 board 寫權的 session 連指針行也不寫**，改在 ticket Pointers 註記 `card: <id>（未寫 notes，無權）`
+2. 無 EP → 既有 `.agent-tmp/session-journal.md`；user 指定 report → 該 report
+3. STATE.md 僅在本 session 確有轉向／卡點觀察時更新（觀察層職責不變）；禁把 read-set／完成度／EP checkpoint 抄進 STATE 或 ticket
+4. UC 級任務排程前必須已有卡——**/at 不建卡**（排程不是建卡入口；臨時非 UC 工作走 `task_ref: ad-hoc`，見 Phase 2）
 
-checkpoint 欄位清單見 [task-recovery](../_common/task-recovery.md)「寫入端」。結算完成才進 Phase 1——at-context 仍只記任務目標（ephemeral；「不捕獲 git snapshot」語義不變，結算住 durable 載體、不住 at-context）。
+> **接續授權失效條款**：resume 卷開場＝新授權週期——**卷內既有授權全部失效，outward 動作一律 PENDING**（outward-action-consent「一次授權≠永久授權」的會話層投影）；本命令的自主執行指令**不得解讀為授權展期**——自主續工可以，outward 動作照 PENDING 規則回報待 user 拍板。條款句＝Phase 3 capsule invariant。
 
-> **接續授權失效條款**：resume 卷開場＝新授權週期——**卷內既有授權全部失效，outward 動作一律 PENDING**（outward-action-consent「一次授權≠永久授權」的會話層投影）；本命令「禁止詢問用戶確認」是自主執行指令、**不得解讀為授權展期**——自主續工可以，outward 動作（commit／push／deploy／send 等）照 PENDING 規則回報待 user 拍板。條款句固定注入 Phase 3 resume prompt。
-
-### Phase 1：解析時間 + 捕獲 Context
+### Phase 1：解析時間 + 提取任務目標
 
 1. **解析用戶輸入**：
 
@@ -41,74 +40,50 @@ checkpoint 欄位清單見 [task-recovery](../_common/task-recovery.md)「寫入
    |---------|---------|------|
    | `HH:MM` | 今天指定時間；已過 → 明天 | `14:30` → 今天 14:30 |
 
-   **觸發時刻 T = 輸入 +1 分鐘**（秒數誤差防護；時間邏輯同 [usage-ping](../usage-ping/SKILL.md)）。計算 cron 表達式（5-field：`分 時 日 月 週`）用 T pinned 到具體日/月（當前日期以 `date` 輸出為準，跨日跨月交給 `date -v` 疊加**不手算**），DoW = `*`。**不做整點/半點提前 shift**——usage-ping CC 端的 `:00`/`:30` +1 jitter 是探測場景防早跑需求；本命令是接續任務，提前數十秒觸發無害（user 裁定不做）。
+   **觸發時刻 T = 輸入 +1 分鐘**（秒數誤差防護；時間邏輯同 [usage-ping](../usage-ping/SKILL.md)）。計算 cron 表達式（5-field：`分 時 日 月 週`）用 T pinned 到具體日/月（當前日期以 `date` 輸出為準，跨日跨月交給 `date -v` 疊加**不手算**），DoW = `*`。**不做整點/半點提前 shift**。
 
-> **不支援相對時間**（`+Xh`/`+Xm`）：相對延遲須 LLM 自算換算成絕對時刻，註冊瞬間時刻已過會靜默滾到一年後才觸發。用戶給相對時間時，用 `date` 查當前時間換算成絕對時刻（跨日時明確向用戶確認目標日期），再排程。
+> **不支援相對時間**（`+Xh`/`+Xm`）：相對延遲須換算成絕對時刻，註冊瞬間時刻已過會靜默滾到一年後才觸發。用戶給相對時間時，用 `date` 查當前時間換算成絕對時刻（跨日時明確向用戶確認目標日期），再排程。
 
-2. **提取 task hint**：時間之後的所有文字為任務簡述（**任務目標** — resume 接續的依據）；無則標記「用戶未提供具體描述，resume 時看 git log 推斷進度」。
+2. **提取任務目標**：時間之後的所有文字為**任務目標一行**（進 ticket 的 goal 行）；詳細規格／read-set 住 durable owner（EP 進度節／卡 notes／journal），不展開進 ticket。
 
-> **不捕獲 git snapshot**：/at 預設是「usage reset 後接續」，resume 時狀態可能已變（quota 期間其他進度）。context 只記**任務目標**，resume 時看**當前 git log/status** 知進度到哪 — 不比對排程時 snapshot（舊狀態無意義）。
+### Phase 2：寫入 Context 檔案（bootstrap ticket）
 
-### Phase 2：寫入 Context 檔案
+> **路徑選擇理由**：判斷 auto mode 是否放行的條件是「路徑是否為 protected path」，與是否 gitignore 無關。`.claude/` 是 protected path（auto mode classifier 硬擋、accept-edits mode 彈框）；`.at-contexts/` 不是 protected path，所有 edit mode 零摩擦放行。
 
-> **路徑選擇理由**：判斷 auto mode 是否放行的條件是「路徑是否為 protected path」,與是否 gitignore 無關。`.claude/` 是 protected path(auto mode classifier 硬擋、accept-edits mode 彈框);`.at-contexts/` 不是 protected path,所有 edit mode 零摩擦放行。故 context 寫 `.at-contexts/`。
-
-寫入 `.at-contexts/at-context-{YYYYMMDD-HHMM}.md`(排程時間戳,避免衝突)。
-
-**Context 檔案格式**：
+寫入 `.at-contexts/at-context-{YYYYMMDD-HHMM}.md`（排程時間戳，避免衝突）。**固定骨架、禁自由散文**——缺段即 malformed（補齊再排程），不允許第 4 段「背景資料」（規格與 read-set 住 durable owner，ticket 只留指針）：
 
 ```markdown
 ---
 scheduled_at: "{ISO 時間}"
 resume_at: "{ISO 時間}"
 project_path: "{當前專案路徑}"
+task_ref: "{卡 id | ad-hoc}"
+owner_ref: "{EP 路徑#進度節 | .agent-tmp/session-journal.md | none}"
 ---
 
-# 排程接續任務
-
-## 任務目標
-{task hint}
-
-## ⛔ 給 Resume LLM 的指令
-這是排程任務（usage reset 後接續），不是閒聊。你必須：
-1. 先執行 `git log --oneline -10` + `git status` 看**當前進度**（做到哪、剩什麼）
-2. 根據任務目標 + 當前進度，接續未完成的工作（不比對排程時狀態 — quota 期間進度可能已變）
-3. 完成後刪除此檔案
+# {任務目標一行}
 ```
 
-**寫 STATE.md**：已併入 Phase 0 結算——排程後 session 若繼續產生新轉向/卡點觀察，離開前更新 repo root `STATE.md`（覆寫非累積；步驟見 [state-md-write](../_common/state-md-write.md)）。`.at-contexts` 維持一次性 ephemeral lifecycle（排程時建立 → resume 後刪、gitignore），STATE.md 是持久觀察層——**兩者不取代**（不同 lifecycle，不可混溶）。
+- `task_ref`／`owner_ref`＝read-set 指針——「已有欄位不重抄」（[task-recovery](../_common/task-recovery.md)）
+- ad-hoc 任務（無卡非 UC）：`task_ref: ad-hoc`＋一行 goal 即可；若任務已需要大量規格，代表不再 ad-hoc——先進 durable owner 再排程
 
-> **本區現況**：`.at-contexts/` 只剩 `at-context-*`（`handoff --save` 寫檔已退場，交接改 `backlog task edit --append-notes` 掛卡）；`at-context-*` resume 後刪維持，夜間掃 7 天兜底（見 rule 協作約束）。
+> **本區現況**：`.at-contexts/` 只剩 `at-context-*`（`handoff --save` 寫檔已退場，交接改 `backlog task edit --append-notes` 掛卡）；ticket resume 後刪，夜間掃 7 天兜底。
 
 ### Phase 3：建立 CronCreate
 
-呼叫 `CronCreate`：
+呼叫 `CronCreate`，cron 欄位依 Phase 1 計算（`recurring: false` one-shot）。prompt capsule **八行封頂**：
 
 ```
-cron: "{分} {時} {日} {月} *"
-recurring: false
-prompt: |
-  🔴 排程接續任務 — 用戶於 {scheduled_time} 排程此工作在 {resume_time} 自動接續。
+🔴 /at resume — {resume_time}，task_ref: {task_ref}
+context: {context_file_path}
 
-  立即執行：
-  1. 讀取 context 檔案：{context_file_path}（任務目標）
-  2. 執行 `git log --oneline -10` + `git status` 看**當前進度**（不比對排程時 snapshot — quota 期間進度可能已變）；排程前已結算 EP 進度/卡 notes/STATE（恢復順序見 `skills/_common/task-recovery.md`），一併讀取
-  3. 根據任務目標 + 當前進度，接續未完成的工作
-  4. 完成後刪除 context 檔案 {context_file_path}
-
-  ⛔ 禁止事項：
-  - 禁止回答「目前沒有需要做的事」— 用戶明確排程了這次接續
-  - 禁止靜默結束 — 如果無法判斷任務，產出 git 狀態報告
-  - 禁止詢問用戶確認 — 這是自主執行模式（不得解讀為授權展期——一次授權≠永久授權）
-  - **授權失效條款**：卷內既有授權全部失效，outward 動作一律 PENDING——commit／push／deploy／send 等 outward 動作停在 PENDING 回報，自主完成其餘剩餘工作
-
-  如果 context 檔案不存在或無法判斷任務：
-  → 執行 git status + git log -5 + git stash list
-  → 產出「當前狀態報告」
-  → 不要靜默結束
+1. 讀 context → 沿指針讀 durable owner（EP 進度節／卡／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
+2. ⛔ 前卷 outward 授權已失效——commit/push/deploy/send 等 outward 一律 PENDING 等新授權；其餘工作自主完成
+3. context 缺失／不可讀 → 以 task_ref 定位 durable owner；仍無法確立任務身份 → 產出狀態報告（首行標 `at-context missing: {path}`），禁靜默結束、禁推測另一任務
+4. 刪 context 檔時機＝恢復已成功且（工作完成 OR 進度已 re-checkpoint 回 durable owner）
 ```
 
-> `{context_file_path}` = `.at-contexts/at-context-{YYYYMMDD-HHMM}.md`（Phase 2 寫入的 context 檔路徑）
+> **capsule invariants**：第 2、3 條是 /at 特有語義（授權失效＋fail-loud）——**禁併入 generic recovery 指針、禁後續簡化移除**（review 時當 gate 查）。`task_ref` 在 capsule 與 ticket 各留一次＝刻意的**身份冗餘**（ticket 被清淤誤刪後 fresh session 仍能辨認任務），非 read-set 投影。
 
 ### Phase 4：確認 + 通知
 
@@ -118,8 +93,8 @@ prompt: |
 ✅ 排程已建立（/at）
 - Resume 時間：{HH:MM}（輸入 +1 分後的實際觸發時刻）
 - Cron ID：{job_id}
-- Context：{context_file_path}
-- 任務：{task hint}
+- Ticket：{context_file_path}
+- task_ref：{task_ref}｜任務：{任務目標一行}
 ```
 
 語音通知：`say -v Meijia -r 180 "已排程在 HH:MM 接續工作"`（報實際觸發時刻）
@@ -128,14 +103,7 @@ prompt: |
 
 ## Resume 後的行為
 
-Resume 觸發時，LLM 應（**恢復順序單一源＝[task-recovery](../_common/task-recovery.md)**，下列為 /at 場景落點）：
-
-1. **讀 context 檔案** → 了解**任務目標**（`.at-contexts/` 非 protected path，讀取零摩擦）
-2. **讀 STATE.md**（repo root，若存在）→ 補 **Last session 觀察**（卡在哪、為何轉向、下次起手點）——「為什麼」參考；**完成度走 recovery 事實層**（git + EP re-derive，見 [autonomous-execution](../autonomous-execution/SKILL.md)「Session 級 Recovery」），STATE 不覆蓋完成度
-3. **看當前進度** → `git log --oneline -10` + `git status` 知做到哪（**不比對排程時 snapshot**，理由見 Phase 1）
-4. **接續未完成** → 建進度提醒 sentinel（`touch /tmp/.claude-voice-pending`），根據任務目標 + 當前進度，自主完成剩餘（同 `/deep-work` 模式）
-5. **清理** → 完成後刪除 context 檔案
-6. **通知** → 清 sentinel（`rm -f /tmp/.claude-voice-pending`）+ 套 [voice-notification skill](../voice-notification/SKILL.md)「任務完成」樣板 say（隨機稱謂）
+/at 場景落點＝讀 ticket → 按 [task-recovery](../_common/task-recovery.md) 恢復順序執行（定位任務→核對實物→恢復→接續）；完成通知沿用 [voice-notification](../voice-notification/SKILL.md)「任務完成」樣板（隨機稱謂）＋清 sentinel。
 
 ---
 
@@ -145,8 +113,8 @@ Resume 觸發時，LLM 應（**恢復順序單一源＝[task-recovery](../_commo
 # 指定時間接續（14:30 輸入 → 14:31 實際觸發）
 /at 14:30
 
-# 指定時間 + 任務簡述
-/at 14:30 繼續 /implement docs/execution-plan.md 段落 3
+# 指定時間 + 任務目標一行（規格在 EP/卡，ticket 只留指針）
+/at 14:30 繼續 EP 段落 3
 ```
 
 ---
@@ -154,10 +122,10 @@ Resume 觸發時，LLM 應（**恢復順序單一源＝[task-recovery](../_commo
 ## 執行約束
 
 - **觸發時 host 必須開啟**：排程由 host 進程在觸發時刻 dispatch — Claude Code 是 terminal session、ZCode 是 app；關閉期間到點不觸發，重開後排程定義仍在但補觸發無保證，需接續就把 host 開到觸發時刻
-- **生命週期因 harness 而異**：Claude Code 綁 session，session 結束排程即消失；ZCode automation 持久於 workspace（跨重啟存活、one-shot 跑完留 completed 記錄不自動刪）— 殘留檢查用 CronList、清理用 CronDelete。一次性接續用途足夠（善用 usage reset 後的配額窗口內接續工作）
-- **one-shot miss 識別**：ZCode 上 one-shot 若觸發時刻 host 未開啟，記錄可能呈 `enabled=false`＋`lifecycleStatus=completed`＋`runCount=0` 且無 `lastRunAt`——外觀為 completed 但並未執行、無執行證據且仍佔名額；殘留判讀與 supersede 掃描**不可依賴 `runCount`/`lastRunAt` 判斷是否真的跑過**，以 `CronList` 現場狀態與 `.at-contexts/` 殘留為準
-- **清理**：Resume 完成後必須刪除 context 檔案，避免殘留
+- **生命週期因 harness 而異**：Claude 綁 session（session 結束排程即消失）；ZCode automation 持久於 workspace（跨重啟存活、one-shot 跑完留 completed 記錄不自動刪）——殘留檢查用 CronList、清理用 CronDelete
+- **one-shot miss 識別**：ZCode 上 one-shot 若觸發時刻 host 未開啟，記錄可能呈 `enabled=false`＋`lifecycleStatus=completed`＋`runCount=0` 且無 `lastRunAt`——外觀 completed 但並未執行；判讀**不可依賴 `runCount`/`lastRunAt`**，以 `CronList` 現場狀態與 `.at-contexts/` 殘留為準
+- **清理**：resume 完成（恢復成功＋工作完成或 re-checkpoint）後刪 ticket；夜間清淤以 mtime>7 天掃 `.at-contexts/`——**排程超過 7 天的 ticket 會被誤刪**（已知缺口：清淤應依 `resume_at`＋grace 判；現行 mtime 口徑僅適合 ≤7 天排程，長程排程需另定保留對策）
 - **多個排程**：若 `.at-contexts/` 已有 `at-context-*` 檔案，提示用戶確認是否有衝突
-- **版控排除（一次性設定，與 auto-mode 放行無關）**：`.at-contexts/` 含任務目標描述，建議加入該專案 `.gitignore` 或全域 `core.excludesFile`，避免誤 commit
-- **排程經濟**：每次觸發即消耗 quota（≈1 prompt + 全 context 重送）——排**資訊密集**的任務（一次量多指標，如同批多項驗證）、polling 型（usage-ping 類）保持最低頻率
-- **語音通知**：遵循 `voice-notification` skill 規範
+- **版控排除（一次性設定）**：`.at-contexts/` 含任務目標描述，加入該專案 `.gitignore` 或全域 `core.excludesFile`
+- **排程經濟**：每次觸發即消耗 quota（≈1 prompt + 全 context 重送）——排**資訊密集**的任務，polling 型（usage-ping 類）保持最低頻率
+- **語音通知**：遵循 [voice-notification](../voice-notification/SKILL.md) 規範

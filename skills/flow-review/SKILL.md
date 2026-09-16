@@ -9,7 +9,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash"]
 
 # /flow-review — 摩擦回顧 + 改善討論
 
-> **核心理念**：演化迴圈的**討論端**。讀累積 flow-feedback → 找 pattern → 跟你討論 → 改善決策。深度反思在這裡（human-in-loop, B 軸），不在 `/flow-feedback`。
+> **核心理念**：演化迴圈的**討論端**。讀累積 flow-feedback → 找 pattern → 跟你討論 → 改善決策。深度反思在這裡（human-in-loop, B 軸）。
 
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
@@ -19,7 +19,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash"]
 ## 流程
 
 ### 1. glob 回饋
-`ai-analysis/flow-feedback/*.md`（或 `--since <date>` 限定）。若空 → 提示「尚無 feedback，先跑 `/flow-feedback`」。
+`ai-analysis/flow-feedback/*.md`（或 `--since <date>` 限定）。若空 → 本期無素材可審——素材以手寫 `ai-analysis/flow-feedback/*.md` 進池（前收集器 skill `/flow-feedback` 已退役）。
 
 ### 2. 聚合分析
 - **重複摩擦**：同一 command/skill 跨多筆反覆出現 → **系統性問題**（單次 = 偶然，重複 = 該改）
@@ -78,5 +78,5 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash"]
 
 ## 與其他命令
 
-- ← [`/flow-feedback`](../flow-feedback/SKILL.md)：素材源（每筆 feedback）
+- 素材源：`ai-analysis/flow-feedback/*.md`（手寫進池；前收集器 skill `/flow-feedback` 已退役，歷史檔案仍在）
 - → `/execution-plan`（必要時先 `/spec` 釐清需求）/ kanban card / `/implement`：改善落地
