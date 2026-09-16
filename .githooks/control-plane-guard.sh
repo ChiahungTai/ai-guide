@@ -2,9 +2,9 @@
 # 控制面 canonical 隔離閘（AIR-106）——canonical main 上禁 commit 控制面路徑。
 # why：Claude 端 ~/.claude/rules/ 是 live symlink，canonical 一落即對所有 session 生效；
 # F8 實證（AIR-105）commit 先於審查腿回收＝activation-before-review 洞。
-# 路徑清單單一源＝本檔 CONTROL 那行 grep pattern（commit skill / instruction-writing
+# 路徑清單單一源＝本檔 hits= 那行 grep pattern（commit skill / instruction-writing
 # skill 引用此處，不重刻清單）。機械判定（branch×path regex），無語義例外；
-# 逃生口＝git commit --no-verify（須在卡 notes 記錄理由）。
+# 逃生口＝git commit --no-verify（同時跳過測試閘——手動補跑；須在卡 notes 記錄理由）。
 
 branch="$(git symbolic-ref --short -q HEAD || echo DETACHED)"
 [ "$branch" = "main" ] || exit 0

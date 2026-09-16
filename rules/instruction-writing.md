@@ -9,7 +9,7 @@ bootstrap-pointer: "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md �
 
 # Instruction File 撰寫規範
 
-修改任何 instruction 檔前必載入 **instruction-writing skill**；frontmatter、章節、引用、導航/Decoder Test、映射 drift、自洽五維與元資訊禁令以該 skill 為單一源。條文語義變更落地前依 review-engine 風險 profile 分類並完成所需審查腿（細節見 skill「落地前審查閘」節）；控制面語義修改在卡 branch 隔離 authoring、審查回執齊後才 merge canonical——canonical main 上控制面 commit 由各 repo pre-commit hook 機械擋（ai-guide 形態＝`.githooks/control-plane-guard.sh`）。
+修改任何 instruction 檔前必載入 **instruction-writing skill**；frontmatter、章節、引用、導航/Decoder Test、映射 drift、自洽五維與元資訊禁令以該 skill 為單一源。條文語義變更落地前依 review-engine 風險 profile 分類並完成所需審查腿（細節見 skill「落地前審查閘」節）；控制面修改在隔離 worktree（persistent card WT；canonical 主樹留 main）authoring、審查回執齊後才 merge canonical；canonical main 上控制面 commit 由 pre-commit guard 機械擋（ai-guide 形態＝`.githooks/control-plane-guard.sh`；per-clone 需設 `core.hooksPath`，未設＝閘未上線）。
 
 ## Always-on 核心
 
