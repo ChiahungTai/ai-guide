@@ -207,7 +207,7 @@ info "board finalization 提醒：git 收斂已完成——結案兩步（status
 # 卡 WT 才能刪 branch；branch -d 在 trunk checkout 處執行（-d 只認執行處 HEAD 的合併狀態）
 git -C "$PRIMARY" worktree remove "$WT_PATH" || die "worktree remove 失敗（dirty？P2 應已攔）"
 git -C "$MERGE_WT" branch -d "$CUR_BR" || die "branch -d 被拒（未完全合併？）——停下查原因，禁 -D"
-if [ -n "$TMP_WT" ]; then
+if [ -n "${TMP_WT:-}" ]; then
   git -C "$PRIMARY" worktree remove "$TMP_WT"
   TMP_WT=""
   trap 'rm -rf "$LOCK"' EXIT
