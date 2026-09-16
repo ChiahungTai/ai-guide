@@ -9,10 +9,12 @@
 </script>
 <!--
   projection identity
-  generated from ai-analysis/blueprint/AGENTS.md ＋ workflow.md ＋ onboarding.md @ 2026-09-10
+  generated from ai-analysis/blueprint/AGENTS.md ＋ structure.md ＋ workflow.md ＋ onboarding.md @ 2026-09-16
+  （AIR-81：補 Priority backbone 段＋structure 章＋八站導引卡投影；wt-open/close 落地現況對齊 AIR-72、
+  _tasks 遷移對齊 AIR-77、測試契約對齊 v3.1 六檔落檔）
   template reference：skills/_common/illustrate-report-shell.html（殼唯一源：CSS/sidebar/hash/focus contract 沿用）
   srcdoc 內嵌與 zoom 機制參考：mosaic marking 09-09 illustrate-build-report-shell-v2.html
-  本頁是人類 viewport（三檔的投影）；規範權威在三檔與其真相源，本頁不建立第二套規則
+  本頁是人類 viewport（四檔的投影）；規範權威在四檔與其真相源，本頁不建立第二套規則
 -->
 <title>ai-rules 開發藍圖——工作怎麼來、在哪做、怎麼收、壞了怎麼回來</title>
 <style>
@@ -150,7 +152,7 @@
       <button class="theme-btn" id="theme-btn" type="button" title="切換淺色／深色（記住選擇）">主题</button>
     </div>
     <h1>ai-rules 開發藍圖——工作怎麼來、在哪做、怎麼收、壞了怎麼回來</h1>
-    <div class="meta">source of record：ai-analysis/blueprint/<br>AGENTS.md・workflow.md・onboarding.md</div>
+    <div class="meta">source of record：ai-analysis/blueprint/<br>AGENTS.md・structure.md・workflow.md・onboarding.md</div>
   </div>
   <ul>
     <li><a href="#s1" onclick="return go('s1',this)"><span class="num">01</span>五分鐘駕駛艙</a></li>
@@ -163,6 +165,8 @@
     <li><a href="#s8" onclick="return go('s8',this)"><span class="num">08</span>這些說法從哪來？</a></li>
     <li><a href="#s9" onclick="return go('s9',this)"><span class="num">09</span>產物怎麼看、放哪？</a></li>
     <li><a href="#s10" onclick="return go('s10',this)"><span class="num">10</span>測試怎麼驗？agent 怎麼分？</a></li>
+    <li><a href="#s11" onclick="return go('s11',this)"><span class="num">11</span>命令為誰服務？優先序</a></li>
+    <li><a href="#s12" onclick="return go('s12',this)"><span class="num">12</span>載體怎麼接？結構圖</a></li>
   </ul>
   <div class="backlinks">
     <span>← backlog board（VSCode Backlog Cards）</span><br>
@@ -181,9 +185,9 @@
     <div class="frame-body">
       <div class="kpi">
         <div class="card"><div class="lab">追蹤面總數</div><div class="num-big">19</div></div>
-        <div class="card"><div class="lab">✅ 已落地運行</div><div class="num-big" style="color:var(--green)">4</div></div>
-        <div class="card"><div class="lab">⚠️ 半成品（有源未閉環）</div><div class="num-big" style="color:var(--amber)">8</div></div>
-        <div class="card"><div class="lab">❌ target 未落地</div><div class="num-big" style="color:var(--rose)">7</div></div>
+        <div class="card"><div class="lab">✅ 已落地運行</div><div class="num-big" style="color:var(--green)">7</div></div>
+        <div class="card"><div class="lab">⚠️ 半成品（有源未閉環）</div><div class="num-big" style="color:var(--amber)">10</div></div>
+        <div class="card"><div class="lab">❌ target 未落地</div><div class="num-big" style="color:var(--rose)">2</div></div>
       </div>
     </div>
   </div>
@@ -191,19 +195,19 @@
   <div class="cardrow">
     <div class="card">
       <div class="t g">① 工作從哪來？<span class="chip good">✅</span></div>
-      <p>想法先落 draft／pending 區；一旦承諾，才由 board（Backlog.md kanban）建卡並配置 id。board 就是 control plane，卡是所有 downstream（status、refs、驗收）的錨。<br>現況：board 運轉中；single-writer 化 ❌ 待建（見 <a class="jump" href="#s4" onclick="return go2('s4')">04</a>）。</p>
+      <p>想法先落 draft／pending 區；一旦承諾，才由 board（Backlog.md kanban）建卡並配置 id。board 就是 control plane，卡是所有 downstream（status、refs、驗收）的錨。<br>現況：board 運轉中；single-writer 化 ⚠️ 大致落地（09-16 AIR-72——config 切 true＋kanban 條款＋mkdir lock；見 <a class="jump" href="#s4" onclick="return go2('s4')">04</a>）。</p>
     </div>
     <div class="card">
-      <div class="t r">② 在哪做？<span class="chip bad">❌</span></div>
-      <p>target：primary 只管 board state；寫碼改文檔進該卡的 persistent worktree；免卡小修走 ephemeral WT。<br>現況：wt-open／wt-close 未實作——過渡期仍照現行 git 慣例（primary 自 main checkout 卡 branch）執行（見 <a class="jump" href="#s3" onclick="return go2('s3')">03</a>）。</p>
+      <div class="t r">② 在哪做？<span class="chip warn">⚠️</span></div>
+      <p>target：primary 只管 board state；寫碼改文檔進該卡的 persistent worktree；免卡小修走 ephemeral WT。<br>現況：wt-open／wt-close helper ✅ 已落地（09-16 AIR-72）——走 WT 的卡進 persistent WT，未走 WT 的卡仍照現行 git 慣例（雙軌並存、同卡禁混用；見 <a class="jump" href="#s3" onclick="return go2('s3')">03</a>）。</p>
     </div>
     <div class="card">
-      <div class="t r">③ 誰能寫什麼？<span class="chip bad">❌</span></div>
-      <p>按「這份 state 的唯一 writer 是誰」分：board metadata 只有 primary 能寫；code／rules／skills／docs 只有該卡 WT 能寫；顧問與 audit 唯讀。<br>現況：❌ target；顧問／唯讀環境 ⚠️ 現有做法可支撐、未機械化（見 <a class="jump" href="#s3" onclick="return go2('s3')">03</a>）。</p>
+      <div class="t r">③ 誰能寫什麼？<span class="chip warn">⚠️</span></div>
+      <p>按「這份 state 的唯一 writer 是誰」分：board metadata 只有 primary 能寫；code／rules／skills／docs 只有該卡 WT 能寫；顧問與 audit 唯讀。<br>現況：card WT ⚠️ 已落地（雙軌）、ephemeral ✅；顧問／唯讀環境 ⚠️ 現有做法可支撐、未機械化（見 <a class="jump" href="#s3" onclick="return go2('s3')">03</a>）。</p>
     </div>
     <div class="card">
       <div class="t g">④ 如何收？<span class="chip good">✅</span></div>
-      <p>validate → review → commit → owning line 吸收（必要時 rebase，一律 ff-only）→ finalization → 移除 WT；顧問產出也要有收法，不許丟著等它自己回來。<br>現況：收斂 git 紀律 ✅ 現行不變；wt-close transaction ❌ target（見 <a class="jump" href="#s5" onclick="return go2('s5')">05</a>）。</p>
+      <p>validate → review → commit → owning line 吸收（必要時 rebase，一律 ff-only）→ finalization → 移除 WT；顧問產出也要有收法，不許丟著等它自己回來。<br>現況：收斂 git 紀律 ✅ 現行不變；wt-close helper ✅ 已落地（真卡收線已驗——AIR-77；工具 receipt 待補記；見 <a class="jump" href="#s5" onclick="return go2('s5')">05</a>）。</p>
     </div>
     <div class="card">
       <div class="t a">⑤ 機器壞了怎麼回來？<span class="chip warn">⚠️</span></div>
@@ -229,25 +233,60 @@
     classDef ok fill:#10b981,color:#000000
     classDef warn fill:#f59e0b,color:#000000
     classDef bad fill:#ef4444,color:#ffffff
-    class A1,A2,A7 ok
-    class A5,A6,A8 warn
-    class A3,A4 bad&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;" title="八站生命週期" style="height:360px;min-height:360px"></iframe>
+    class A1,A2,A3,A7 ok
+    class A4,A5,A6,A8 warn&lt;/pre&gt;&lt;/body&gt;&lt;/html&gt;" title="八站生命週期" style="height:360px;min-height:360px"></iframe>
   </div>
   <table>
     <thead><tr><th>站</th><th>一句職責</th><th>關鍵載體</th><th>現況</th></tr></thead>
     <tbody>
       <tr><td>① 想法</td><td>未承諾想法留 draft／pending；承諾才由 board control plane 建卡配 id</td><td><code>Backlog.md</code> draft/task、建卡預掃</td><td>✅</td></tr>
-      <tr><td>② 規劃</td><td>card intent 轉成可跨 session 接手的 self-contained spec／EP（固定 baseline、scope、已決策、驗收）</td><td><code>ep.md</code>、task home、shell-ready md</td><td>✅（殼 codegen AIR-73 前為 LLM 手填殼）</td></tr>
-      <tr><td>③ 開工</td><td>為已存在 card 建立 branch／WT／baseline／cwd 的機械身份</td><td><code>wt-open</code>、In Progress refs、freshness check</td><td>❌ wt-open 未實作；現行＝起手式＋primary checkout 卡 branch</td></tr>
-      <tr><td>④ 實作</td><td>寫入在該工作的 execution plane 內完成</td><td>card persistent WT；免卡小修 ephemeral fast-path</td><td>❌ target；現行＝共享 primary checkout</td></tr>
+      <tr><td>② 規劃</td><td>card intent 轉成可跨 session 接手的 self-contained spec／EP（固定 baseline、scope、已決策、驗收）</td><td><code>ep.md</code>、task home、shell-ready md</td><td>✅（shell-ready md → <code>build_shell.py</code> codegen 已落地，AIR-73）</td></tr>
+      <tr><td>③ 開工</td><td>為已存在 card 建立 branch／WT／baseline／cwd 的機械身份</td><td><code>wt-open</code>、In Progress refs、freshness check</td><td>✅ 已落地（09-16 AIR-72 <code>scripts/wt-open.sh</code> 試點通過；未走 WT 的卡照舊 checkout——雙軌）</td></tr>
+      <tr><td>④ 實作</td><td>寫入在該工作的 execution plane 內完成</td><td>card persistent WT；免卡小修 ephemeral fast-path</td><td>⚠️ helper 已落地（<code>wt-open</code> 含 <code>--ephemeral</code>）；未走 WT 的卡仍走 card branch——雙軌</td></tr>
       <tr><td>⑤ 驗證</td><td>claim 對上足夠獨立的 evidence；negative claim 不以單次文字搜尋冒充</td><td>tests、integration、code-review、acceptance evidence</td><td>⚠️ instruction-testing pilot 尚未實跑</td></tr>
-      <tr><td>⑥ 收斂</td><td>review、修正、依 rebase→ff-only 吸回 owning line，再收尾</td><td>post-build、<code>wt-close</code>、finalization</td><td>⚠️ git 紀律 ✅ 現行；wt-close／殼 refresh 未機械化</td></tr>
+      <tr><td>⑥ 收斂</td><td>review、修正、依 rebase→ff-only 吸回 owning line，再收尾</td><td>post-build、<code>wt-close</code>、finalization</td><td>⚠️ git 紀律 ✅ 現行；<code>wt-close</code> helper 已落地（pipe-test、真卡收線已驗——AIR-77；receipt 待補記）</td></tr>
       <tr><td>⑦ 沉澱</td><td>完成能力、設計理由、跨 session 事實放回正確 carrier；memory 不成規範副本</td><td>AGENTS/Capabilities、architecture/blueprint、memory pointer</td><td>✅</td></tr>
       <tr><td>⑧ 運維</td><td>hooks、排程、備份、清理、fresh-machine recovery 可重建</td><td>hooks、schedule registry、memory bundle、runbook</td><td>⚠️ 六段 runbook 有缺口（見 06）</td></tr>
     </tbody>
   </table>
   <div class="note">八站是整體敘事，不取代各 skill 的細部 workflow。免 UC 的小型 fix 可以不建卡，但仍須有明確 execution plane、validation 與收斂路徑。</div>
-  <p class="src">投影自：<a href="workflow.md">workflow.md</a>「八站主軸」節</p>
+  <h3>逐站導引卡（從哪進入、去哪詳讀）</h3>
+  <div class="sub">投影自 workflow.md「逐站怎麼做」導引層——每站只列入口 command／skill ID＋連結＋現況，不重述 command 內部步驟；command 語義以各 SKILL.md 為權威。</div>
+  <div class="cardrow">
+    <div class="card">
+      <div class="t g">① 想法<span class="chip good">✅</span></div>
+      <p><b>入口</b>：未承諾想法留 draft／pending；決定承諾時依 <a href="../../skills/kanban-board/SKILL.md">kanban-board</a> 建卡，不先進實作流程。<br><b>詳讀</b>：看板生命週期與建卡／狀態／refs 以 kanban-board 為準。</p>
+    </div>
+    <div class="card">
+      <div class="t g">② 規劃<span class="chip good">✅</span></div>
+      <p><b>入口</b>：需求仍需釐清可先 <a href="../../skills/spec/SKILL.md">/spec</a>；正式規劃走 <a href="../../skills/execution-plan/SKILL.md">/execution-plan</a>；需獨立覆核用 <a href="../../skills/ep-review/SKILL.md">/ep-review</a>，高技術風險假設可加 <a href="../../skills/ep-validate/SKILL.md">/ep-validate</a>；pre-EP whole-picture 可用 <a href="../../skills/illustrate/SKILL.md">/illustrate</a> 作人類 viewport。<br><b>詳讀</b>：spec／execution-plan skills。</p>
+    </div>
+    <div class="card">
+      <div class="t g">③ 開工<span class="chip warn">⚠️ current（雙軌）</span></div>
+      <p><b>入口</b>：<code>wt-open &lt;card&gt;</code> 建 branch／persistent WT／baseline／cwd identity——已落地（09-16 AIR-72：<code>scripts/wt-open.sh &lt;card&gt; --base main</code>）；未走 WT 的卡照舊依 repo AGENTS.md 建 card branch（雙軌過渡、同卡禁混用），並依 <a href="../../skills/kanban-board/SKILL.md">kanban-board</a> 完成起手式。<br><b>詳讀</b>：workflow.md「Worktree 形態定案／過渡條款」（本頁 <a class="jump" href="#s3" onclick="return go2('s3')">03</a> 節）。</p>
+    </div>
+    <div class="card">
+      <div class="t a">④ 實作<span class="chip warn">⚠️ 雙軌</span></div>
+      <p><b>入口</b>：標準 EP 工作走 <a href="../../skills/implement/SKILL.md">/implement</a>；程式邏輯變更依 <a href="../../skills/test-driven-development/SKILL.md">test-driven-development</a> 的 TDD 方法。<br><b>execution plane</b>：persistent card WT／免卡小修 ephemeral WT（helper 已落地；未走 WT 的卡仍走 card branch——雙軌過渡）。</p>
+    </div>
+    <div class="card">
+      <div class="t a">⑤ 驗證<span class="chip warn">⚠️</span></div>
+      <p><b>入口</b>：實作流程內依 /implement 執行測試與 <a href="../../skills/audit-test/SKILL.md">/audit-test</a>；instruction artifact 另依 <a href="../../skills/instruction-testing/SKILL.md">instruction-testing</a> 做行為驗證。<br><b>詳讀</b>：<a href="../../rules/acceptance-evidence.md">acceptance-evidence rule</a>＋<a href="../../skills/acceptance-evidence/SKILL.md">skill</a>。<br><b>注意</b>：<code>/code-review</code> 不是本站日常入口——段級 review 在④由 /implement 啟動，全弧獨立 review 在⑥由 /post-build 編排。</p>
+    </div>
+    <div class="card">
+      <div class="t a">⑥ 收斂<span class="chip warn">⚠️</span></div>
+      <p><b>入口</b>：<a href="../../skills/post-build/SKILL.md">/post-build</a> 編排 /code-review → /judge-review → 修正 → finalization；人類 checkpoint 按需用 <a href="../../skills/illustrate/SKILL.md">/illustrate</a> 或 <a href="../../skills/debrief/SKILL.md">/debrief</a>；最後走 <a href="../../skills/commit/SKILL.md">/commit</a>。<br><b>git 收斂</b>：<code>wt-close</code> 已落地（<code>scripts/wt-close.sh</code>；真卡收線已驗——AIR-77），未走 WT 的卡依 repo AGENTS.md rebase→ff-only。</p>
+    </div>
+    <div class="card">
+      <div class="t g">⑦ 沉澱<span class="chip good">✅</span></div>
+      <p><b>入口</b>：通常由 /implement／/post-build 內的 <a href="../../skills/metadata-sync/SKILL.md">metadata-sync</a> 收回 Capabilities 等；跨 session 事實再依 <a href="../../skills/memory-audit/SKILL.md">memory-audit</a> 判斷（規範正文不得複製進 memory）。<br><b>詳讀</b>：repo AGENTS.md 載體治理＋memory-audit 載體統一定義表。</p>
+    </div>
+    <div class="card">
+      <div class="t a">⑧ 運維<span class="chip warn">⚠️</span></div>
+      <p><b>入口</b>：例行維護走 <a href="../../skills/daily-maintain/SKILL.md">/daily-maintain</a>；fresh-machine／重建路徑從 <a href="onboarding.md">onboarding.md</a> 進入。<br><b>詳讀</b>：<a href="../../skills/maintain/SKILL.md">maintain</a>；排程現況看 <a href="../schedule-registry.md">schedule-registry</a>，code-reality 接線看 <a href="../../skills/code-reality/SKILL.md">code-reality skill</a>。</p>
+    </div>
+  </div>
+  <p class="src">投影自：<a href="workflow.md">workflow.md</a>「八站主軸」＋「逐站怎麼做」導引層（八站→入口命令／詳讀來源 mapping 單一源）</p>
 </section>
 
 <section id="s3">
@@ -269,23 +308,23 @@
     </div>
     <div class="topo-exec-col">
       <div class="topo-box exec">
-        <div class="topo-t">card WT A<span class="chip bad">❌ target</span></div>
+        <div class="topo-t">card WT A<span class="chip warn">⚠️ 已落地（雙軌）</span></div>
         <div class="topo-sub">1 card = 1 branch = 1 persistent worktree</div>
         <ul class="dots">
           <li>code／rules／skills／docs／EP／tests／scripts 的寫入都在這裡</li>
           <li>writer＋reviewer 指向同一份工作狀態：共讀、按流程串行寫</li>
-          <li><code>.agents/memory</code>、<code>.agents/memory-inbox</code> symlink → primary canonical（❌ 接線未建）</li>
+          <li><code>.agents/memory</code>、<code>.agents/memory-inbox</code> symlink → primary canonical（✅ wt-open 內建接線）</li>
         </ul>
       </div>
       <div class="topo-box exec">
-        <div class="topo-t">card WT B …<span class="chip bad">❌ target</span></div>
+        <div class="topo-t">card WT B …<span class="chip warn">⚠️ 已落地（雙軌）</span></div>
         <div class="topo-sub">同一 topology；跨 session 接續重用同一 WT</div>
       </div>
     </div>
   </div>
   <div class="topo-foot">
     <div class="topo-box small">
-      <div class="topo-t">免卡小修 → ephemeral WT fast-path<span class="chip bad">❌ target</span></div>
+      <div class="topo-t">免卡小修 → ephemeral WT fast-path<span class="chip good">✅ 已落地</span></div>
       <div class="topo-sub">修改＋驗證＋收斂後移除；scope 擴大即停 fast-path、升正式卡</div>
     </div>
     <div class="topo-box small">
@@ -293,7 +332,7 @@
       <div class="topo-sub">不改變 active writer 的 cwd／branch；跨 repo 回各 repo 自己的 topology</div>
     </div>
   </div>
-  <div class="note"><b>過渡條款（現在怎麼跑）</b>：WT 基建弧落地前，repo AGENTS.md 現行 git 慣例仍是 runtime authority——卡開工在 primary 自 <code>main</code> checkout 卡 branch、收尾 ff-only 吸回。target 章節不得被當成已存在的行为；過渡期禁止混合兩種 lifecycle（primary 已切卡 branch 又建同卡 persistent WT）。</div>
+  <div class="note"><b>雙軌過渡（現在怎麼跑，09-16 AIR-72 起）</b>：WT 基建弧已落地——卡可走 persistent card WT（<code>scripts/wt-open.sh</code>），也可照舊在 primary 自 owning line checkout 卡 branch；repo AGENTS.md「git 慣例」雙軌條款是 runtime authority。primary 永久留 control plane 仍是 target；同一卡禁止混合兩種 lifecycle（primary 已切卡 branch 又建同卡 persistent WT＝ownership 不唯一）。</div>
 
   <div class="story">
     <div class="sh">User Story ①——多 session 共享 WT 打架</div>
@@ -305,7 +344,7 @@
     <div class="sh care">Care（為什麼要管）</div>
     <p>branch／cwd 是 session 的隱形地基，被別人動了，「我以為我在哪」的全部假設失效——這是 ③開工站斷點最多的根因。</p>
     <div class="sh">Status / Source</div>
-    <p class="src">❌ target 尚未落地——<a href="workflow.md">workflow.md</a>「Worktree 形態定案」「過渡條款」；事故記載：ai-analysis/reports/2026-09-10-wt-workflow-decision.md 背景。</p>
+    <p class="src">⚠️ 已落地（09-16 AIR-72：wt-open 試點通過、wt-close 真卡收線已驗——AIR-77；雙軌並存）——<a href="workflow.md">workflow.md</a>「Worktree 形態定案」「過渡條款」；事故記載：ai-analysis/reports/2026-09-10-wt-workflow-decision.md 背景。</p>
   </div>
   <p class="src">投影自：<a href="workflow.md">workflow.md</a>「Worktree 形態定案」「寫入責任決策樹」「過渡條款」節</p>
 </section>
@@ -324,7 +363,7 @@
     <div class="sh care">Care（為什麼要管）</div>
     <p>id 是卡的機械身份。撞號之後「哪張卡是真相」變成考古題，board 的全部下游（status、refs、precheck、Capabilities 結算）跟著錯。</p>
     <div class="sh">Status / Source</div>
-    <p class="src">❌ target 尚未落地——<a href="workflow.md">workflow.md</a>「Board single-writer」節；事故記載：ai-analysis/reports/2026-09-10-wt-workflow-decision.md 背景。</p>
+    <p class="src">⚠️ 大致落地（09-16 AIR-72：<code>check_active_branches: true</code>＋kanban board single-writer 條款＋開收 mkdir lock；card WT 內禁 <code>task edit</code> 尚為語義條款、非機械 enforcement）——<a href="workflow.md">workflow.md</a>「Board single-writer」節；事故記載：ai-analysis/reports/2026-09-10-wt-workflow-decision.md 背景。</p>
   </div>
 
   <h3>為什麼打開 config flag 不夠</h3>
@@ -348,6 +387,7 @@
     <li><b>移除 execution plane</b>：刪 card WT、刪已被完整吸收的 branch、<code>git worktree list</code>＋ancestry 最終確認、釋放 lock。</li>
   </ol>
   <ul class="dots">
+    <li>helper 已落地（09-16 AIR-72）：<code>scripts/wt-open.sh</code> 試點通過、<code>scripts/wt-close.sh --preflight</code> pipe-test 驗證（真卡收線已驗——AIR-77；receipt 待補記）；未走 WT 的卡沿用既有 git 紀律收斂。</li>
     <li>鐵律：trunk／owning line 不被 rebase、不 force；不以 merge commit 迴避 ff-only 失敗。</li>
     <li>任一步失敗都要保留可判斷的 branch／WT／control state；不得靠刪 WT 製造表面完成。</li>
     <li>board <code>Done</code> 表示工作已被 owning line 接收——不先於 convergence。</li>
@@ -358,7 +398,7 @@
     <div class="sh">User Story ③——顧問結果要有收法</div>
     <p>身為派出顧問（external runtime）的 caller，我希望顧問的產出有明確收法，不會停在背景工作裡沒人認領。</p>
     <div class="sh bad">❌ 實際痛點</div>
-    <p>（保守敘述——本卡的事實源不在 blueprint 三檔內，收法記載於 WT workflow 裁決報告）顧問產出走 bridge 背景工作、落到暫存輸出檔；caller 必須主動收回（wait／認領）並固化，產出不會自己進入決策流。裁決報告即一次收回實例：雙顧問全文經 <code>.agent-tmp/bridge-{muse,codex}-wt-out.txt</code> 收回後固化進裁決。</p>
+    <p>（保守敘述——本卡的事實源不在 blueprint 四檔內，收法記載於 WT workflow 裁決報告）顧問產出走 bridge 背景工作、落到暫存輸出檔；caller 必須主動收回（wait／認領）並固化，產出不會自己進入決策流。裁決報告即一次收回實例：雙顧問全文經 <code>.agent-tmp/bridge-{muse,codex}-wt-out.txt</code> 收回後固化進裁決。</p>
     <div class="sh good">✅ 採用架構</div>
     <p>顧問結果收回是 caller 的收斂責任：背景工作掛 wait、產出落 repo 內暫存區（禁 /tmp）、由 caller 認領並固化進 report／blueprint；「做完怎麼收」的序列裡沒有「丟著等它自己回來」這一步。唯讀／顧問 session 的執行環境依 03 節 routing（read-only checkout 或 ephemeral WT）。</p>
     <div class="sh care">Care（為什麼要管）</div>
@@ -426,11 +466,11 @@
       <tr><td>3</td><td>記憶池 primary canonical</td><td><code>.agents/memory</code>＋<code>memory-inbox</code> 實體 canonical、CC/ZCode/Muse 接線</td><td>✅</td><td>workflow.md「記憶池拓撲」</td></tr>
       <tr><td>4</td><td>唯讀／顧問 session 環境</td><td>read-only checkout／ephemeral WT，不擾 active writer</td><td>⚠️</td><td>workflow.md「唯讀／顧問 session」</td></tr>
       <tr><td>5</td><td>primary＝control plane</td><td>primary 只寫 board/card control state；board state 唯一 working copy＝primary（UI 載體可替換）</td><td>❌ target</td><td>workflow.md「Primary checkout」</td></tr>
-      <tr><td>6</td><td>card persistent WT</td><td>1 card = 1 branch = 1 persistent worktree</td><td>❌ target</td><td>workflow.md「Card worktree」</td></tr>
-      <tr><td>7</td><td>免卡小修 ephemeral fast-path</td><td>小型免 UC 工作用 ephemeral WT，擴大即升正式卡</td><td>❌ target</td><td>workflow.md「免卡小修」</td></tr>
-      <tr><td>8</td><td>board single-writer</td><td>lock＋<code>check_active_branches: true</code>＋max-id 預掃</td><td>❌ target（現值 <code>false</code>）</td><td>workflow.md「Board single-writer」＋<code>backlog/config.yml:13</code></td></tr>
-      <tr><td>9</td><td>wt-open／wt-close transaction</td><td>open：lock→建/重用 WT→baseline 驗證→接 shared state；close：preflight→收斂→finalization→移除</td><td>❌ 未實作</td><td>workflow.md「<code>wt-open</code>／<code>wt-close</code>」</td></tr>
-      <tr><td>10</td><td>card WT 記憶池 symlink 接線</td><td>兩條 symlink 指向 primary canonical；Muse hook 接線二選一由基建弧裁決</td><td>❌ target</td><td>workflow.md「Card WT 接線」</td></tr>
+      <tr><td>6</td><td>card persistent WT</td><td>1 card = 1 branch = 1 persistent worktree</td><td>⚠️ 已落地（與 checkout 模式雙軌並存）</td><td>workflow.md「Card worktree」</td></tr>
+      <tr><td>7</td><td>免卡小修 ephemeral fast-path</td><td>小型免 UC 工作用 ephemeral WT，擴大即升正式卡</td><td>✅ 已落地（<code>wt-open --ephemeral</code>）</td><td>workflow.md「免卡小修」</td></tr>
+      <tr><td>8</td><td>board single-writer</td><td>lock＋<code>check_active_branches: true</code>＋max-id 預掃</td><td>⚠️ 大致落地（config 已切 <code>true</code>；card WT 內禁寫尚為語義條款）</td><td>workflow.md「Board single-writer」＋<code>backlog/config.yml</code></td></tr>
+      <tr><td>9</td><td>wt-open／wt-close transaction</td><td>open：lock→建/重用 WT→baseline 驗證→接 shared state；close：preflight→收斂→finalization→移除</td><td>⚠️ 已落地（open 試點通過；close 真卡收線已驗——AIR-77，receipt 待補記）</td><td>workflow.md「<code>wt-open</code>／<code>wt-close</code>」</td></tr>
+      <tr><td>10</td><td>card WT 記憶池 symlink 接線</td><td>兩條 symlink 指向 primary canonical；Muse hook 接線二選一由基建弧裁決</td><td>✅ 已落地（wt-open 內建；Muse plugin 單閘 AIR-79）</td><td>workflow.md「Card WT 接線」</td></tr>
       <tr><td>11</td><td>fresh-machine 工具鏈</td><td>空機可照 runbook 裝到 prerequisite probe 全過</td><td>❌</td><td>onboarding.md 第 1 節</td></tr>
       <tr><td>12</td><td>rules/skills 部署</td><td>bundle 生成＋各端 symlink 集中 bootstrap＋verify</td><td>⚠️</td><td>onboarding.md 第 2 節</td></tr>
       <tr><td>13</td><td>hooks 接線</td><td>ZCode/CC/Muse setup＋verify；CC secret 有 recovery pointer</td><td>⚠️</td><td>onboarding.md 第 3 節</td></tr>
@@ -438,22 +478,23 @@
       <tr><td>15</td><td>cron／launchd 重建</td><td>prompt/plist 有 reconstruction source，可 load 並對帳 runtime</td><td>⚠️</td><td>onboarding.md 第 5 節</td></tr>
       <tr><td>16</td><td>code-reality</td><td>binary＋repo graph 可從 source 重建</td><td>✅</td><td>onboarding.md 第 6 節</td></tr>
       <tr><td>17</td><td>人類 viewport 供給</td><td>三層：內建瀏覽器日視圖（<code>file:</code> 零 server）＋:6421 穩定引用＋Live Preview 選配；session 交付路徑不開臨時 server</td><td>⚠️ 架構定案、常駐層運行中；慣例句未落檔</td><td>workflow.md「人類 viewport 供給」＋viewport 架構裁決</td></tr>
-      <tr><td>18</td><td>測試契約與驗證分工</td><td>EP 測試規劃段凍結 TC＋challenge（高風險）＋same-writer RED 三栓＋audit 軸A／review 軸B＋test-gen=P0 最後手段；研究層 cr-research 升 full</td><td>⚠️ v3.1 架構定案（三方裁決）；六檔 skill 未落檔</td><td>workflow.md「測試契約與驗證分工」＋測試契約裁決 v3.1</td></tr>
+      <tr><td>18</td><td>測試契約與驗證分工</td><td>EP 測試規劃段凍結 TC＋challenge（高風險）＋same-writer RED 三栓＋audit 軸A／review 軸B＋test-gen=P0 最後手段；研究層 cr-research 升 full</td><td>✅ v3.1 已落檔（三方裁決；六檔 skill 已改）</td><td>workflow.md「測試契約與驗證分工」＋測試契約裁決 v3.1</td></tr>
       <tr><td>19</td><td>政策翻轉 gate＋結構治理</td><td>AIR-75 consumer-propagation gate（post-build）；--yolo 通則＋liveness ticker（model-routing）；③ commit 粒度互補＋④ bundle ratchet 待落檔</td><td>⚠️ gate＋yolo 已落地 skill；③④已定案待落檔</td><td>workflow.md「結構治理待建項」＋post-build skill＋model-routing skill</td></tr>
     </tbody>
   </table>
-  <div class="note"><b>過渡條款</b>：target（#5–#10）由同一個 WT 基建弧整體收斂；落地時同步改版 repo AGENTS.md「git 慣例」與 kanban 消費接線，完成前以現行規則執行、不得混合兩種 lifecycle。基建落地後「同 repo card session 絕不能並存」的機械限制才可移除——是否真平行仍依 shared-file／semantic overlap 判斷，不直接打散既有六線波次（L1→L3→L2→L4→L5 主序列，L6 跨 repo 真平行）。</div>
+  <div class="note"><b>雙軌過渡</b>：WT 基建弧已落地（09-16 AIR-72）——#6／#7／#10 已落地、#8／#9 大致落地；repo AGENTS.md「git 慣例」已補雙軌條款（未走 wt-open 的卡仍走 checkout 模式，同卡禁混用）。#5（primary 永久留 control plane）仍是 target。「同 repo card session 絕不能並存」的機械限制移除後，是否真平行仍依 shared-file／semantic overlap 判斷，不直接打散既有六線波次（L1→L3→L2→L4→L5 主序列，L6 跨 repo 真平行）。</div>
   <p class="src">投影自：<a href="workflow.md">workflow.md</a>「待建基建」「六線波次」＋<a href="onboarding.md">onboarding.md</a>「Fresh-machine 完成 gate」</p>
 </section>
 
 <section id="s8">
   <h2>這些說法從哪來？</h2>
-  <div class="sub">本頁是三檔的投影。三檔各自不是終點——它們向下指向真相源（正式裁決 report、repo 慣例、scripts、skills），更新觸發與 drift 速度也各不相同。</div>
+  <div class="sub">本頁是四檔的投影。四檔各自不是終點——它們向下指向真相源（正式裁決 report、repo 慣例、scripts、skills），更新觸發與 drift 速度也各不相同。</div>
   <table>
     <thead><tr><th>檔</th><th>真相源（who owns the facts）</th><th>drift 速度</th><th>負責合成的跨域敘事</th></tr></thead>
     <tbody>
       <tr><td><a href="workflow.md">workflow.md</a></td><td>WT 形態與責任邊界→<a href="../reports/2026-09-10-wt-workflow-decision.md">WT workflow 正式裁決報告</a>；git/branch 收斂語義→repo AGENTS.md「git 慣例」＋kanban-board；八站→<a href="../reports/2026-09-10-holistic-design-review.md">整體設計審視</a>；O1–O8 與波次→<a href="../blueprint-execution-order-0910.md">執行順序藍圖</a>；②⑥站殼 codegen→illustrate 三方終案＋mosaic 試驗附錄（跨 repo pointer）；viewport 供給→<a href="../reports/2026-09-10-viewport-serving-architecture.md">viewport 架構裁決</a>＋mosaic run-report-server.sh（跨 repo）＋schedule-registry 條 A5＋illustrate-html-mode 放置分流；測試契約與 agent 分工→<a href="../reports/2026-09-11-test-contract-design.md">測試契約裁決 v3.1</a></td><td>中；WT 基建落地期偏快</td><td>八站生命週期、primary/card-WT 責任分界、board single-writer、memory 拓撲、open/close transaction、波次與 freshness invariant、viewport 供給三層與放置規則、測試契約與驗證分工、agent 分工原則</td></tr>
       <tr><td><a href="onboarding.md">onboarding.md</a></td><td>MULTI-MACHINE.md＋<code>deploy_agents.py</code>＋rules 部署契約＋agents registry 契約＋UC6/7 dry run 清單；排程輔助→schedule-registry；code-reality 安裝語義→code-reality skill</td><td>中；machine-local 接線改動時快</td><td>從空機器恢復的六段 runbook 與現有支撐／缺口</td></tr>
+      <tr><td><a href="structure.md">structure.md</a></td><td>載體增退役／generator／invariant／接線改變→各域治理檔（rules／agents／hooks AGENTS.md＋skills/CLAUDE.md＋root AGENTS.md）＋generator source（<code>sync_agents.py</code>／<code>deploy_agents.py</code>）</td><td>中；載體增退役或接線改變時快</td><td>五層載體×四種邊型的結構全景（本頁 <a class="jump" href="#s12" onclick="return go2('s12')">12</a> 節投影）</td></tr>
       <tr><td><a href="AGENTS.md">AGENTS.md</a></td><td>本表＋更新紀律本身（真相源映射的單一源）</td><td>—</td><td>誰在什麼觸發下、以什麼紀律重編哪一檔</td></tr>
     </tbody>
   </table>
@@ -509,7 +550,7 @@
   <table>
     <thead><tr><th>產物類型</th><th>位置</th><th>入口</th></tr></thead>
     <tbody>
-      <tr><td>弧產物（有卡）</td><td><code>ai-analysis/_tasks/&lt;MM-DD-主題&gt;/</code>；線任務 <code>_projects/&lt;線&gt;/tasks/</code>；完成搬同家 <code>done/</code></td><td><code>index.html</code>（ep/spec/殼同處）</td></tr>
+      <tr><td>弧產物（有卡）</td><td><code>ai-analysis/_tasks/YYYY-MM/&lt;MM-DD-主題&gt;/</code>（永不搬移；狀態只看卡 status）；線任務 <code>_projects/&lt;線&gt;/tasks/</code>；歷史完成弧一次性收入同家 <code>_archived/</code>（凍結；AIR-77）</td><td><code>index.html</code>（ep/spec/殼同處）</td></tr>
       <tr><td>常設 domain 導覽</td><td><code>ai-analysis/&lt;域&gt;/</code>（如 <code>blueprint/</code>）</td><td>域名即路徑</td></tr>
       <tr><td>按需視覺／決策 viewport</td><td><code>ai-analysis/&lt;域&gt;/</code>（如 <code>blueprint/</code>、<code>test-contract/</code>）</td><td><code>index.html</code>（<b>進 git</b>——AIR-74 起 arch-report 退役、殼一律版控）</td></tr>
       <tr><td>md 沉澱</td><td><code>ai-analysis/reports/</code></td><td>—</td></tr>
@@ -527,7 +568,7 @@
 
 <section id="s10">
   <h2>測試怎麼驗？agent 怎麼分工？</h2>
-  <div class="sub">測試契約×驗證分工 v3.1——user 三輪挑戰＋muse/codex 三輪複驗的定案。⚠️ 架構已定案≠已落地：六檔 skill 未改前 runtime 仍走現行流程。</div>
+  <div class="sub">測試契約×驗證分工 v3.1——user 三輪挑戰＋muse/codex 三輪複驗的定案。✅ 六檔 skill 已落檔，runtime 走 v3.1 流程。</div>
   <div class="cardrow">
     <div class="card">
       <div class="t g">設計原則</div>
@@ -575,6 +616,115 @@
   </table>
   <div class="note"><b>dispatch 經濟學</b>：下一步需要的是「它自己做過的事」就 session resume；需要的是「策展最小輸入」就 fresh（獨立性任務永遠 fresh——challenge 強制 fresh）。MVP＝seeded fault-injection（注入已知壞樣，量 challenge 偵測率＋review 架構軸偵測率＋defect routing correctness，過線標準預凍結）。</div>
   <p class="src">投影自：<a href="workflow.md">workflow.md</a>「測試契約與驗證分工」＋<a href="../reports/2026-09-11-test-contract-design.md">測試契約裁決 v3.1</a>（三輪挑戰與複驗全記錄）；全圖與路由表：<a href="../test-contract/index.html">ai-analysis/test-contract</a></p>
+</section>
+
+<section id="s11">
+  <h2>命令為誰服務？（Priority backbone）</h2>
+  <div class="sub">09-12 拍板的多卡優先序治理——commands 不是按生命週期階段（EP / code）分，是按<b>產出受眾</b>分。設計、審查、討論任何命令時，先問「這命令的產出給誰消費」。</div>
+  <h3>受眾二分：兩軌道平行不交匯</h3>
+  <table>
+    <thead><tr><th>軌道</th><th>消費者</th><th>產出形式</th><th>誰推動</th></tr></thead>
+    <tbody>
+      <tr><td>① LLM 執行鏈</td><td>機器自讀自判自修</td><td>工程化、self-contained（EP、findings、code）</td><td>AI 自主（人類開頭觸發）</td></tr>
+      <tr><td>② 人類 viewport</td><td>人類用「大原則」判讀</td><td>意圖（行為 artifact＋認知誤差點）＋結構（whole-picture 心智模型）</td><td>人類切入（或 AI 產出、人類讀）</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>單檔單受眾</b>：一檔兩受眾必然產生 token 牆——<code>/ep-review</code>、<code>/code-review</code>、<code>/audit-test</code>、<code>/implement</code> 內部審查、<code>/judge-review</code> 屬軌道①；<code>/debrief</code>（改動理解）、<code>/illustrate</code>（結構 viewport）、<code>/smell-detector</code>（壞味道）是軌道②。本頁即軌道②的產物。</div>
+  <h3>原理：人補 LLM 的結構性 blind spot（direction &gt;&gt; quality）</h3>
+  <table>
+    <thead><tr><th>LLM blind spot</th><th>失敗</th><th>人類互補認知</th><th>命令</th></tr></thead>
+    <tbody>
+      <tr><td>缺 whole picture → 重造既有</td><td>重造 enum／模組</td><td>整體直覺（細節忘但感覺得到關係／重用）</td><td><code>/illustrate</code>（結構 viewport）</td></tr>
+      <tr><td>抓不準意圖 → 偏方向</td><td>漂亮但錯方向</td><td>持有 vision，判「這是我要的嗎」</td><td><code>/debrief</code></td></tr>
+    </tbody>
+  </table>
+  <p><b>優先級：方向 &gt;&gt; 品質</b>。LLM 預期能做到 Clean Code 等級（頂多需人提點）；災難性、無法靠 polish 彌補的是方向錯。所以 viewport 重度傾斜在<b>方向驗證</b>，不浪費人注意力在 code 品質（那是 <code>/code-review</code>＋LLM 自身能力的事）。viewport 渲染的是人類用來承載意圖／理解結構的 artifact（use case／scenario／UI／範例／心智模型），不是 code 結構。</p>
+  <h3>三層介入（證據獨立性遞增）</h3>
+  <table>
+    <thead><tr><th>層</th><th>機制</th><th>獨立性</th><th>軸</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>same-session LLM 自判（agent review、<code>/ep-review</code> in-pipeline、<code>/audit-test</code>）</td><td>低</td><td>A</td></tr>
+      <tr><td>2</td><td>跨 session LLM 第二意見（開新 session 跑 <code>/code-review</code>／<code>/ep-review</code>，findings 貼回實作 LLM → <code>/judge-review</code>）</td><td>中</td><td>A</td></tr>
+      <tr><td>3</td><td><code>/debrief</code>（改動理解＋驗證證據）＋<code>/illustrate</code>（結構 viewport）＋<code>/smell-detector</code>（壞味道）：人類 viewport 判讀</td><td>高（不同智能）</td><td>B</td></tr>
+    </tbody>
+  </table>
+  <h3>核心流程命令分類</h3>
+  <table>
+    <thead><tr><th>命令</th><th>受眾</th><th>層</th><th>誰呼叫</th></tr></thead>
+    <tbody>
+      <tr><td><code>/spec</code></td><td>LLM（人互動·需求釐清）</td><td>鏈</td><td>人類觸發</td></tr>
+      <tr><td><code>/execution-plan</code></td><td>LLM</td><td>鏈</td><td>人類觸發</td></tr>
+      <tr><td><code>/ep-review</code></td><td>LLM</td><td>1（同 session 自判）／2（跨 session）</td><td>AI-self／人類（跨 session）</td></tr>
+      <tr><td><code>/ep-validate</code></td><td>LLM</td><td>鏈</td><td>AI-self</td></tr>
+      <tr><td><code>/implement</code></td><td>LLM</td><td>鏈</td><td>人類觸發</td></tr>
+      <tr><td><code>/post-build</code></td><td>LLM</td><td>鏈（build 後收尾鏈編排）</td><td>人類觸發</td></tr>
+      <tr><td><code>/audit-test</code></td><td>LLM</td><td>1</td><td>AI-self</td></tr>
+      <tr><td><code>/code-review</code></td><td>LLM</td><td>1／2（跨 session）</td><td>LLM／人類（跨 session）</td></tr>
+      <tr><td><code>/judge-review</code></td><td>LLM</td><td>鏈</td><td>AI-self</td></tr>
+      <tr><td><code>/followup-review</code></td><td>LLM</td><td>2（Review LLM 驗收實作 LLM）</td><td>LLM／人類觸發</td></tr>
+      <tr><td><code>/fix-test</code>／<code>/lint-fix</code></td><td>LLM</td><td>鏈（修復）</td><td>AI-self</td></tr>
+      <tr><td><b><code>/debrief</code></b></td><td><b>人類（改動理解簡報）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
+      <tr><td><b><code>/illustrate</code></b></td><td><b>人類（結構 viewport）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
+      <tr><td><b><code>/smell-detector</code></b></td><td><b>人類（壞味道偵測）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
+      <tr><td><code>/commit</code></td><td>人類確認</td><td>—</td><td>人類</td></tr>
+      <tr><td><code>/metadata-sync</code></td><td>LLM</td><td>1</td><td>人類／AI-self</td></tr>
+    </tbody>
+  </table>
+  <p>工具／維護命令（<code>/doc-health</code>、<code>/consistency</code>、<code>/instruction-*</code> 等）與受眾模型正交，完整索引見 skills/CLAUDE.md。</p>
+  <p class="src">投影自：root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節（受眾二分＋blind spot 原理＋三層介入＋命令分類表全量）</p>
+</section>
+
+<section id="s12">
+  <h2>載體怎麼接？（structure 章投影）</h2>
+  <div class="sub">載體層結構地圖——回答「這個 repo 的東西怎麼互相接」。規範權威在各域治理檔與 generator source，本節只投影結構全景（盤點快照），不建立第二套規則。</div>
+  <h3>五層載體</h3>
+  <table>
+    <thead><tr><th>層</th><th>內容</th><th>單源與治理</th><th>生成／接線</th><th>機械守護</th></tr></thead>
+    <tbody>
+      <tr><td>L0 authoring（手改單源）</td><td>guide、<code>rules/</code>、<code>skills/</code>（含 <code>_common/</code>）、<code>agents/roles/</code>、<code>hooks/</code>、memory-governance plugin、root AGENTS.md＋CLAUDE.md wrapper、<code>backlog/</code>、<code>ai-analysis/</code></td><td>各域治理檔：<a href="../../rules/AGENTS.md">rules</a>／<a href="../../agents/AGENTS.md">agents</a>／<a href="../../hooks/AGENTS.md">hooks</a> AGENTS.md＋<a href="../../skills/CLAUDE.md">skills/CLAUDE.md</a>＋root AGENTS.md</td><td>—（手改）</td><td>—</td></tr>
+      <tr><td>L1 生成投影（禁手改）</td><td><code>agents/zcode/</code>＋<code>agents/claude/</code> registry；非 Claude 三家 bundle；<code>blueprint/index.html</code>（本目錄四檔投影）</td><td><code>roles/</code> 為 authoring 單源</td><td><code>sync_agents.py</code>／<code>deploy_agents.py</code>；index.html 手寫＋殼 codegen</td><td><code>agents_projection_sync</code>、<code>deploy_bundle_freshness</code></td></tr>
+      <tr><td>L2 部署接線（各 harness 全域位置）</td><td>skills 三根、agents 兩根、Claude rules 目錄 symlink＋CLAUDE.md、hooks 絕對路徑 config、muse user-scope plugin＋marker</td><td>Claude rules＝目錄 symlink 即時生效；非 Claude＝bundle snapshot（改 rule 後須重跑 deploy）</td><td>symlink／config 引用（hooks 無目錄載入點不能 symlink）</td><td><code>hook_registration</code>、<code>zcode_live_parity</code>、<code>skill_allowlist_coverage</code></td></tr>
+      <tr><td>L3 狀態資料</td><td><code>.agents/memory/</code> 主體＋<code>memory-inbox/</code>、memory-spine、<code>.tours/</code>、<code>.code-reality/</code>、<code>.review/</code></td><td>寫入端紀律＝memory-audit skill；tour 契約＝tour-bootstrap／code-reality skill</td><td>主體→CC 舊徑 symlink→ZCode 雙跳；codex 唯讀（單一寫入點）</td><td>memory hooks sensors＋index-regen gate、<code>tour_validate</code></td></tr>
+      <tr><td>L4 排程消費</td><td>ZCode cron ×3、launchd（backlog-cleanup／report-server :6421／nightly-sequence）、mosaic 23:20 report</td><td>反查表＝<a href="../schedule-registry.md">schedule-registry</a> A1–A6</td><td>cron prompt 引用 skill 為方法論源</td><td>precheck 紅燈跳過該卡</td></tr>
+    </tbody>
+  </table>
+  <p>跨 repo 邊（消費非部署）：code-reality（機械 symbol graph 工具鏈）、delegate-bridge（三家族委派 bridge）、mosaic（report-server 宿主、測試契約 consumer）。非 Claude bundle 受 harness 截斷線約束（rule 只放首個有後果決策前在場的最小核心）。</p>
+  <h3>四種邊型</h3>
+  <ul class="dots">
+    <li><b>部署邊</b>（誰投影到哪）：三個 generator＋symlink 群＋兩家 config——<b>唯一由 invariant 機械守護的邊群</b>（細節在 rules／agents AGENTS.md「部署紀律」「registry 結構」，此處不複載）。</li>
+    <li><b>引用邊</b>（誰引用誰）：rule 留 always-on 核心＋pointer、深層住同名 skill（reference 分層配對，見下表）；其餘 rule→skill pointer 為常規跳轉；skill→skill 以 review-engine 家族真相源與 <code>_common/</code> 20 檔為樞紐。</li>
+    <li><b>消費邊</b>（workflow 哪階段用誰）：生命週期 dispatch 表在 agents/AGENTS.md（execution contract）；命令分類表在 root AGENTS.md（本頁 <a class="jump" href="#s11" onclick="return go2('s11')">11</a> 節）；核心流程拓撲在 skills/CLAUDE.md；排程反查表在 schedule-registry。</li>
+    <li><b>治理邊</b>（誰驗誰）：single-source invariants 11 條（<code>check_single_source.py</code>，<code>/sync-sources</code> 消費）＋blueprint 對齊覆核觸發＋kanban precheck＋memory hooks。</li>
+  </ul>
+  <h3>引用邊：reference 分層配對（含 bundle role 欄）</h3>
+  <table>
+    <thead><tr><th>rule</th><th>skill（深層載體）</th><th>分層內容</th><th>bundle role</th></tr></thead>
+    <tbody>
+      <tr><td>design-thinking</td><td>deep-thinking</td><td>輸出格式模板、8 問清單、查證細則</td><td>bootstrap split</td></tr>
+      <tr><td>acceptance-evidence</td><td>acceptance-evidence</td><td>Intent Drift、filter trap、Runtime Invariant 深層理論</td><td>bootstrap split</td></tr>
+      <tr><td>symbol-query-routing</td><td>symbol-query-routing</td><td>LSP 速查表、rg 陷阱群、跨 harness 載體對照</td><td>bootstrap split</td></tr>
+      <tr><td>instruction-writing</td><td>instruction-writing</td><td>撰寫規範全量、五維自洽檢查</td><td>projected（AIR-85 已落地）</td></tr>
+      <tr><td>llm-output-convention</td><td>llm-output-convention</td><td>print tag 全表、閉環細則</td><td>second pilot ready</td></tr>
+      <tr><td>modern-cli-preference</td><td>modern-cli-preference</td><td>fd/rg 陷阱目錄、雙掃陷阱</td><td>reference layering</td></tr>
+      <tr><td>model-routing</td><td>model-routing</td><td>tier×provider 解析表、收法決策樹、family 契約</td><td>bootstrap split</td></tr>
+      <tr><td>context-management</td><td>memory-audit</td><td>寫入端紀律（六問）、載體統一定義表</td><td>bootstrap split</td></tr>
+      <tr><td>quality-constraints</td><td>validation-strategy</td><td>消費端驗證模式、整合器判定、漸進驗證細則</td><td>bootstrap split</td></tr>
+    </tbody>
+  </table>
+  <div class="note">bundle role 語義：bootstrap split＝rule 留 minimal semantic closure、body 在 skill；projected＝AIR-85 投影已落地；second pilot ready＝機制已驗證、待該 rule opt-in；reference layering＝常規深層配對。判準源＝scope 分界研究＋memory-audit 載體統一定義表。</div>
+  <h3>已知斷鏈與受控缺口</h3>
+  <table>
+    <thead><tr><th>項</th><th>狀態</th><th>處置</th></tr></thead>
+    <tbody>
+      <tr><td><code>blueprint/index.html</code> 投影落後</td><td>✅ 本卡已解（AIR-81）</td><td>backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估）</td></tr>
+      <tr><td>grok-build 未安裝但 dispatch matrix 引用</td><td>⚠️</td><td>已標「引用前先查證」；安裝後補 SessionEnd 條目</td></tr>
+      <tr><td>ZCode 無 SessionEnd 事件</td><td>⚠️</td><td>hooks/AGENTS.md 定案＝remediation 成本極低非缺口</td></tr>
+      <tr><td><code>skills/CLAUDE.md</code> 索引手維護</td><td>⚠️</td><td>無機械防線；超載時可評估 invariant 化</td></tr>
+      <tr><td>AGENTS.md 家族命名不對稱</td><td>⚠️</td><td>低風險，改名成本大於收益</td></tr>
+      <tr><td>WT 形態（board single-writer／wt-open/close）</td><td>✅ 已落地（AIR-72；大致——語義以 workflow.md 為準）</td><td>錨點＝workflow.md「待建基建」＋<code>scripts/wt-open.sh</code>／<code>wt-close.sh</code>；_tasks 遷移由 AIR-77 落地</td></tr>
+    </tbody>
+  </table>
+  <p class="src">投影自：<a href="structure.md">structure.md</a> 全檔（五層載體表＋四邊型＋bundle role 欄＋斷鏈表）＋root AGENTS.md 語義補註（跨 repo 邊段）；各邊權威語義以表內連結的源檔為準</p>
 </section>
 
 </main>

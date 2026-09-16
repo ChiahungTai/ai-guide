@@ -34,7 +34,7 @@
 | ③ 開工 | **目標入口**：`wt-open <card>` 建立 card branch／persistent WT／baseline／cwd identity——**⚠️ 已落地（09-16 AIR-72）**：`scripts/wt-open.sh <card> --base main`（試點通過——AIR-73 dogfood）；未走 WT 的卡照舊依 [repo AGENTS.md「git 慣例」](../../AGENTS.md) 建 card branch（雙軌過渡條款，同卡禁混用），並依 [kanban-board](../../skills/kanban-board/SKILL.md) 完成 In Progress／refs 起手式（卡 metadata 寫入＝board-control）。**詳讀**：本檔「Worktree 形態定案／過渡條款」。 |
 | ④ 實作 | **入口**：標準 EP 工作走 [`/implement`](../../skills/implement/SKILL.md)；程式邏輯變更依 [test-driven-development](../../skills/test-driven-development/SKILL.md) 的 TDD 方法。**execution plane**：target 為 persistent card WT／免卡小修 ephemeral WT；helper 已落地（`scripts/wt-open.sh`，含 `--ephemeral`）——雙軌過渡期，未走 WT 的卡仍依 repo AGENTS.md 現行 card-branch 慣例執行。 |
 | ⑤ 驗證 | **入口**：實作流程內依 `/implement` 執行測試與 [`/audit-test`](../../skills/audit-test/SKILL.md)；instruction artifact 另依 [instruction-testing](../../skills/instruction-testing/SKILL.md) 做行為驗證。**詳讀**：[acceptance-evidence rule](../../rules/acceptance-evidence.md)＋[acceptance-evidence skill](../../skills/acceptance-evidence/SKILL.md)。（變更級獨立 review：邊界觸發的段級 review 在④由 `/implement` 啟動，全弧獨立 review 在⑥收斂站由 `/post-build` 編排——皆非本站日常入口） |
-| ⑥ 收斂 | **入口**：[`/post-build`](../../skills/post-build/SKILL.md) 編排 `/code-review` → `/judge-review` → 修正 → consistency／metadata finalization；人類方向／結構 checkpoint 按需用 [`/illustrate`](../../skills/illustrate/SKILL.md) 或 [`/debrief`](../../skills/debrief/SKILL.md)；最後走 [`/commit`](../../skills/commit/SKILL.md)。**git 收斂**：target 為 `wt-close`——**⚠️ 已落地（09-16 AIR-72）**：`scripts/wt-close.sh --wt <path>`（`--preflight` 全檢查零變更，trunk 收斂由 marshal 收線在 user 授權下執行；真卡收線全流程待試點卡收線驗證）；未走 WT 的卡依 [repo AGENTS.md「git 慣例」](../../AGENTS.md) 的 rebase→ff-only 規則。 |
+| ⑥ 收斂 | **入口**：[`/post-build`](../../skills/post-build/SKILL.md) 編排 `/code-review` → `/judge-review` → 修正 → consistency／metadata finalization；人類方向／結構 checkpoint 按需用 [`/illustrate`](../../skills/illustrate/SKILL.md) 或 [`/debrief`](../../skills/debrief/SKILL.md)；最後走 [`/commit`](../../skills/commit/SKILL.md)。**git 收斂**：target 為 `wt-close`——**⚠️ 已落地（09-16 AIR-72）**：`scripts/wt-close.sh --wt <path>`（`--preflight` 全檢查零變更，trunk 收斂由 marshal 收線在 user 授權下執行；真卡收線已驗——air-77 首例 74d483d，工具 receipt 待補記）；未走 WT 的卡依 [repo AGENTS.md「git 慣例」](../../AGENTS.md) 的 rebase→ff-only 規則。 |
 | ⑦ 沉澱 | **入口**：通常由 `/implement`／`/post-build` 內的 [metadata-sync](../../skills/metadata-sync/SKILL.md) 把 Capabilities、SYSTEM-MAP、architecture／相關 metadata 收回正確載體；跨 session 事實再依 [memory-audit](../../skills/memory-audit/SKILL.md) 判斷，規範正文不得複製進 memory。**詳讀**：repo `AGENTS.md` 的載體治理＋memory-audit 載體統一定義表。 |
 | ⑧ 運維 | **入口**：例行維護走 [`/daily-maintain`](../../skills/daily-maintain/SKILL.md)；fresh-machine／重建路徑從 [onboarding.md](onboarding.md) 進入。**詳讀**：[maintain](../../skills/maintain/SKILL.md)；排程現況看 [schedule-registry](../schedule-registry.md)，code-reality 接線看 [code-reality skill](../../skills/code-reality/SKILL.md)。 |
 
@@ -68,7 +68,7 @@
 - 同一 card identity 可供 writer 與 reviewer 指向同一份工作狀態；**共用 identity 表示可共同讀取並按流程串行寫入，同檔並發寫仍按 collaboration constraints 處理；board metadata 另外受 primary single-writer 限制。**
 - execution plane 可讀 card state；目標架構下不直接寫 board runtime metadata，status/ref/finalization 由 control plane 處理。
 
-`wt-open`／`wt-close` 與 persistent card WT lifecycle **已由 AIR-72 落地**（09-16：`scripts/wt-open.sh`／`scripts/wt-close.sh`；wt-open 試點通過，wt-close 經 pipe-test、真卡收線全流程待驗）——本節維持 target contract 定位，實作差異以各段標記與腳本檔頭「設計決策」為準。
+`wt-open`／`wt-close` 與 persistent card WT lifecycle **已由 AIR-72 落地**（09-16：`scripts/wt-open.sh`／`scripts/wt-close.sh`；wt-open 試點通過，wt-close 經 pipe-test、真卡收線已驗——air-77 首例 74d483d，工具 receipt 待補記）——本節維持 target contract 定位，實作差異以各段標記與腳本檔頭「設計決策」為準。
 
 ### 免卡小修：ephemeral WT fast-path — ⚠️ 已落地（09-16 AIR-72：`scripts/wt-open.sh --ephemeral <name>`）
 
@@ -112,7 +112,7 @@ helper 已定案：由 `wt-open --ephemeral` 承載（`scripts/wt-open.sh --ephe
 
 1. **WT 基建弧已落地（09-16 AIR-72）**：repo `AGENTS.md`「git 慣例」已補雙軌過渡條款——未走 `wt-open` 的卡仍以 checkout 模式為 runtime authority；本檔 WT 章節升為可執行參考（實作差異以腳本為準）。
 2. **基建弧落地時**：同一弧同步改版 repo `AGENTS.md`「git 慣例」與 kanban 消費接線（board single-writer 條款、check_active_branches 切換、建卡預掃 porcelain 面）——已完成。
-3. **改版完成後**：`workflow.md` 的 target 標記已依實際驗證結果升為 `⚠️`（wt-open：試點通過；wt-close：pipe-test 驗證、真卡收線待驗）。
+3. **改版完成後**：`workflow.md` 的 target 標記已依實際驗證結果升為 `⚠️`（wt-open：試點通過；wt-close：pipe-test 驗證、真卡收線已驗——air-77 首例，receipt 待補記）。
 4. 過渡期間不得混合兩種 lifecycle，例如 primary 已切 card branch、同時又建立同 card persistent WT，否則 ownership 再次不唯一。
 
 ## 寫入責任決策樹
@@ -196,7 +196,7 @@ Muse hook 接線策略已由 AIR-79 落地並完成 cutover：user-scope plugin 
 
 control-plane metadata commit 授權（user 09-11 裁定）：建卡＋開工 metadata 特赦；結案兩步 metadata 走條件授權鏈（precheck 綠＋結算物與卡狀態同 commit）——單一源＝outward-action-consent「Commit 專屬段」，blueprint 不另行擴張。
 
-## `wt-open` / `wt-close`：目標 transaction — ⚠️ 已落地（AIR-72；wt-open 試點通過、wt-close pipe-test 驗證／真卡收線待驗）
+## `wt-open` / `wt-close`：目標 transaction — ⚠️ 已落地（AIR-72；wt-open 試點通過、wt-close pipe-test 驗證＋真卡收線已驗——air-77 首例，receipt 待補記）
 
 `wt-open` **只接收已存在 card**。建卡與 id allocation 屬①想法站的 board-control 工作，不塞進開工 transaction。
 
@@ -450,7 +450,7 @@ WT 基建落地後，可以移除「因共享單一 checkout，所以同 repo ca
 基建 substrate 由 WT 基建弧（AIR-72，09-16）整體收斂，現況：
 
 - ✅ `wt-open`：只接已存在 card，建立／重用 persistent card WT（`scripts/wt-open.sh`——試點通過：AIR-73 dogfood）。
-- ⚠️ `wt-close`：preflight、rebase/ff-only、finalization、WT/branch removal 的可重入 transaction（`scripts/wt-close.sh`——pipe-test 驗證；真卡收線全流程待試點卡收線）。
+- ⚠️ `wt-close`：preflight、rebase/ff-only、finalization、WT/branch removal 的可重入 transaction（`scripts/wt-close.sh`——pipe-test 驗證；真卡收線已驗——air-77 首例 74d483d，receipt 待補記）。
 - ✅ primary board single-writer lock（兩腳本共享 `.git` mkdir lock）＋kanban board single-writer 條款。
 - ✅ [backlog/config.yml](../../backlog/config.yml) `check_active_branches: true`，`backlog task list --plain` 實際驗證通過。
 - ✅ card WT 的 canonical `memory` / `memory-inbox` symlink 接線（wt-open 內建＋`.git/info/exclude` 防污染面；exclude 為 machine-local 非版本控——新 clone／新機首跑前無保護，首跑 wt-open 即冪等追加）。

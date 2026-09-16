@@ -74,12 +74,12 @@ L2 部署接線（各 harness 全域位置）
 
 | 項 | 狀態 | 處置 |
 | --- | --- | --- |
-| `blueprint/index.html` 投影落後（Priority backbone 段與本檔未入投影） | ⚠️ | 投影刷新卡承接；投影無 gate 是結構性弱點，刷新時一併補 |
+| `blueprint/index.html` 投影落後（Priority backbone 段與本檔未入投影） | ✅ 投影落後已解（AIR-81） | AIR-81 收斂：backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估，不在本卡範圍） |
 | grok-build 未安裝但 dispatch matrix 引用 | ⚠️ | 已標「引用前先查證」；安裝後補 SessionEnd 條目 |
 | ZCode 無 SessionEnd 事件（plugin 孤兒清理缺席） | ⚠️ | hooks/AGENTS.md 定案＝remediation 成本極低非缺口 |
 | `skills/CLAUDE.md` 索引手維護（自標 drift-prone） | ⚠️ | 無機械防線；超載時可評估 invariant 化 |
 | AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md） | ⚠️ | 低風險，改名成本大於收益 |
-| WT 形態 target（board single-writer／wt-open/close） | ❌ | 屬 workflow.md 管轄（AIR-72／77 承接），此處僅 pointer |
+| WT 形態（board single-writer／wt-open/close） | ✅ 已落地（AIR-72） | 落地錨點＝workflow.md「待建基建」＋`scripts/wt-open.sh`／`scripts/wt-close.sh`（wt-open 試點通過、wt-close 真卡收線已驗——AIR-77 74d483d，工具 receipt 待補記；board single-writer 大致落地）；_tasks 遷移由 AIR-77 落地。此處僅 pointer，語義以 workflow.md 為準 |
 
 ## 維護語義
 
