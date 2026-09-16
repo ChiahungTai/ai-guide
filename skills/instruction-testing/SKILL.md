@@ -49,6 +49,14 @@ description: "Instruction artifact 行為驗證方法。建立或修改會約束
 - **機械 matcher 只當 locator**：逐筆人工讀 flagged case——prompt 引用、反例文字、template echo 都會被誤計命中。
 - provider／環境故障（session 起不來、stream 中斷）＝INCONCLUSIVE 或時間盒順延，**不在故障窗 retry-to-green**。
 
+### per-harness activation 判讀基準（AIR-107）
+
+activation 路徑是 per-harness 的——同一個 PASS 在不同 harness 的觸發機制不同，判分必須標注歸因 channel：
+
+- **ZCode 端**（headless `--json` 實測，AIR-99 A5 取證）：available-skills 呈現**僅 name＋path**，desc／when_to_use 不進模型決策面。合法觸發路徑＝①rule 錨（rule 文本指向 skill，session 載入 rule 後按指引載入）②名字字面命中（user 輸入恰為 skill 名）③明示 invoke（Skill tool 點名）。**PASS 歸因紀律**：probe 綠燈若實際由名字字面命中造成，不得記為「desc 觸發 PASS」——AIR-87 舊四 PASS 重解讀＝名字字面命中非 desc 觸發（判讀錯誤的實證）。
+- **CC 端**：desc 全文消費——desc 觸發為合法路徑，activation probe 可直接驗 desc 命中。
+- **主路徑判準（ZCode 新 skill 驗收）**：以「rule 錨在場」為可觸發判準；名字語義弱（非自明）又無錨＝ZCode 端無觸發路徑——處置二選一（補 rule 錨／接受明示 invoke），矩陣治理＝AIR-107（`ai-analysis/_tasks/09-16-air107-skills-activation-matrix/`）。
+
 ## RED → GREEN → REFACTOR
 
 這裡的 TDD 對象是 agent behavior。程式碼 TDD 的細節仍由 [test-driven-development](../test-driven-development/SKILL.md) 擁有。
