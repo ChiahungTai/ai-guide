@@ -25,7 +25,7 @@ when_to_use: "需要對 K 線形態做獨立判讀：單案複審（誤判嫌疑
 - **圖題不做權威源**（agent OCR 可能誤讀）——caller prompt 自帶 header 重複宣告
 - 標記語義明確：事件虛線（▲發動點/D~E 區間）＋窗底色＋圖例；量軸標單位
 - 長期線短歷史 null（上市年數 < 線期）→ agent 報「未見」是**正確行為**（誠實 scope），fallback 短一期線
-- 產圖工具在**任務 repo**（渲染原語重用該專案圖表庫——如 mosaic `tools/kchart_case_render.py`：focus 日K＋background 週K，`--view both`）；headless 匯出＝HTML→playwright 截圖
+- 產圖工具在**任務 repo**（渲染原語重用該專案圖表庫——如任務 repo 自帶的 K 線 case render 工具：focus 日K＋background 週K 雙視圖一次輸出）；headless 匯出＝HTML→playwright 截圖
 
 ## Agent dispatch 合約（vision-review 為載體——**定義不改，任務知識全在 caller prompt**）
 

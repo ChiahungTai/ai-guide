@@ -1,6 +1,7 @@
 ---
 name: autonomous-execution
 description: "Guides autonomous execution — decision-making, error recovery, completion reporting, workspace safety, session-level recovery. Use when implementing without user interaction, such as EP-based build or deep-work mode. Triggers on: autonomous execution, self-healing, session recovery, false-done 偵測, workspace safety, path invariants, deferred questions, completion report, don't-self-decide boundaries."
+when_to_use: "Fires during unattended execution when a decision, error, or completion claim must be handled without the user——歧義自決＋記錄理由、紅線／黃線分級（commit、force push、DB DROP 等不自主執行）、error recovery、false-done 偵測、completion report 彙整、workspace safety。觸發詞：autonomous execution、無人介入、自主執行、deferred questions。啟動整套開發流程（plan→build→post-build 編排）屬 deep-work；流程已跑起來後的無人決策與安全邊界歸本 skill（deep-work 內同樣適用）。"
 ---
 
 # Autonomous Execution

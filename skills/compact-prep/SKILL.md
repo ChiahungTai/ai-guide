@@ -1,6 +1,7 @@
 ---
 name: compact-prep
 description: "當你要跑 /compact 壓縮對話前，外部化前置：掃全 session 產脈絡外部化檔（結構化 preserve-list，禁時序流水帳），然後請 user 執行 /compact；memory 候選整理是落盤後可選步驟、非救援必要路徑。不解決壓縮本身（harness 擁有），只解決 compact 後的接續材料。"
+when_to_use: "當 context 即將壓縮（user 宣告要 /compact、context window 快滿、長 session 準備壓縮）時載入——compact 前產脈絡外部化檔＋compact 後恢復指針。觸發詞：compact 準備、context 外部化、壓縮前、preserve-list、compact-audit。跨 session／repo／provider 交接屬 handoff、usage reset 自動接續屬 at——兩者皆不做 compact 前外部化，不重疊。"
 ---
 
 # compact-prep：/compact 的前置外部化

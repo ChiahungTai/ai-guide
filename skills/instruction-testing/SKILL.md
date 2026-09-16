@@ -1,6 +1,7 @@
 ---
 name: instruction-testing
-description: "Instruction artifact 行為驗證方法。建立或修改會約束、塑造 agent 行為的 rule、skill、AGENTS.md、CLAUDE.md，或懷疑 guidance 會被 rationalize、忽略、誤套時載入。觸發詞：instruction testing、skill-as-TDD、壓力情境、behavior test、rationalization、micro-test、wording、form-to-failure、surface gate、四態分類、機械觀察面、premature-action。"
+description: "Instruction artifact 行為驗證方法。建立或修改會約束、塑造 agent 行為的 rule、skill、AGENTS.md、CLAUDE.md，或懷疑 guidance 會被 rationalize、忽略、誤套時載入。觸發詞：instruction testing、skill-as-TDD、壓力情境、behavior test、rationalization、micro-test、wording、form-to-failure、surface gate、四態分類、機械觀察面、premature-action、PASS 歸因、歸因 channel、名字字面命中。"
+when_to_use: "Fires when an instruction change must be validated as observable agent behavior（四 surface gate → behavior scenario／activation probe／micro-test），或 probe 綠燈需歸因到觸發 channel 時（PASS 歸因紀律——名字字面命中 vs desc 觸發 vs rule／AGENTS.md 錨）。情境：壓力情境驗 guidance、rationalization 檢測、wording micro-test、activation 驗證。純靜態撰寫規範屬 instruction-writing，不觸發本 skill。"
 ---
 
 # Instruction Testing — Instruction Artifact 行為驗證
@@ -53,9 +54,9 @@ description: "Instruction artifact 行為驗證方法。建立或修改會約束
 
 activation 路徑是 per-harness 的——同一個 PASS 在不同 harness 的觸發機制不同，判分必須標注歸因 channel：
 
-- **ZCode 端**（headless `--json` 實測，AIR-99 A5 取證）：available-skills 呈現**僅 name＋path**，desc／when_to_use 不進模型決策面。合法觸發路徑＝①rule 錨（rule 文本指向 skill，session 載入 rule 後按指引載入）②名字字面命中（user 輸入恰為 skill 名）③明示 invoke（Skill tool 點名）④**AGENTS.md 錨**（root／開場載入面的命令表在場＝session 起始即知，等價 rule 錨——tri 終審補，AIR-107 矩陣五支即此類）。**PASS 歸因紀律**：probe 綠燈若實際由名字字面命中造成，不得記為「desc 觸發 PASS」——AIR-87 舊四 PASS 重解讀＝名字字面命中非 desc 觸發（判讀錯誤的實證）。
+- **ZCode 端**（headless `--json` 實測，AIR-99 A5 取證；機制定位 AIR-107）：available-skills 呈現**取決於 metadataBudget 總量預算**——skill 清單總長溢出預算時降級**僅 name＋path**（desc／when_to_use 不進模型決策面）；預算內呈現官方文檔全格式（desc／when_to_use 在場、可觸發）。合法觸發路徑＝①rule 錨（rule 文本指向 skill，session 載入 rule 後按指引載入）②名字字面命中（user 輸入恰為 skill 名）③明示 invoke（Skill tool 點名）④**AGENTS.md 錨**（root／開場載入面的命令表在場＝session 起始即知，等價 rule 錨——tri 終審補，AIR-107 矩陣五支即此類）⑤desc 觸發（僅全格式模式下在場）。**PASS 歸因紀律**：probe 前先確認當下呈現模式——降級模式下綠燈若實際由名字字面命中造成，不得記為「desc 觸發 PASS」（AIR-87 舊四 PASS 重解讀＝名字字面命中非 desc 觸發，判讀錯誤的實證）；全格式模式下 desc 命中是合法歸因 channel，仍須以 nonmatch 對照排除名字字面命中的混淆。
 - **CC 端**：desc 全文消費——desc 觸發為合法路徑，activation probe 可直接驗 desc 命中。
-- **主路徑判準（ZCode 新 skill 驗收）**：以「rule 錨（或等價 AGENTS.md 錨）在場」為可觸發判準；名字語義弱（非自明）又無錨＝ZCode 端無觸發路徑——處置二選一（補 rule 錨／接受明示 invoke），矩陣治理＝AIR-107（`ai-analysis/_tasks/09-16-air107-skills-activation-matrix/`）。
+- **主路徑判準（ZCode 新 skill 驗收）**：以「rule 錨（或等價 AGENTS.md 錨）在場」為可觸發判準；名字語義弱（非自明）又無錨＝ZCode 端僅剩 desc 觸發（預算依賴——溢出即無觸發路徑），不作主路徑判準——處置二選一（補 rule 錨／接受明示 invoke），矩陣治理＝AIR-107（`ai-analysis/_tasks/09-16-air107-skills-activation-matrix/`）。
 
 ## RED → GREEN → REFACTOR
 

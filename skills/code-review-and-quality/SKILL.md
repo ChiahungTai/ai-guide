@@ -1,6 +1,7 @@
 ---
 name: code-review-and-quality
 description: "當你要審查合併前 code 變更品質時，多軸 code review（六軸：Correctness/Readability/Architecture/Security/Performance/Capability Coverage）。code review 的 profile 定義源（what to check）。通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/Writer-Reviewer 分離/多層驗證）見 review-engine。"
+when_to_use: "Fires when reviewing pre-merge code changes against the six-axis checklist（Correctness/Readability/Architecture/Security/Performance/Capability Coverage）——需要逐軸檢查清單、Security／Performance 軸 checklist、loud→silent 與錯誤處理點枚舉、Capability Coverage 對照時。判定規則（嚴重度／信心水準）與執行預設屬 review-engine；發起審查任務用 /code-review 命令——本 skill 只回答 what to check。"
 ---
 
 # Code Review and Quality — code 六軸審查
