@@ -1,12 +1,14 @@
 ---
 id: AIR-103
 title: harness 文檔鏡像生命週期規範——何時新增、怎麼更新、何時退役
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 00:41'
-updated_date: '2026-09-16 00:41'
+updated_date: '2026-09-16 03:48'
 labels: []
 dependencies: []
+references:
+  - ref-docs/harness/LIFECYCLE.md
 ordinal: 88000
 ---
 
