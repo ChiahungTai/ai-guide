@@ -95,7 +95,7 @@
 
 - 總數：82
 - 有 rule 錨（-w 口徑）：31／82（子串口徑：31）
-- 無觸發路徑（僅明示 invoke）：6——kbar-form-analysis、nt-query、nt-v1-query、swing-analysis、upgrade-nt、upgrade-sj
+- 無觸發路徑（僅明示 invoke）：6——kbar-form-analysis、nt-query、nt-v1-query、swing-analysis、upgrade-nt、upgrade-sj（**口徑註**：此欄＝「無自主觸發路徑」總面還有 16 支「弱名字＋無 AGENTS.md 錨」者——見下方名字字面（弱）分類；它們同樣無 autonomous path，差別僅在政策上接受現狀（fail-driven）。統計拆兩軸呈現＝tri 終審 codex 腿 P2 修正）
 - 名字字面（弱）：21——blueprint-bootstrap、compact-prep、corrections-weekly、debrief、ep-review、ep-validate、flow-feedback、flow-review、illustrate、instruction-clean、instruction-init、instruction-sync、instruction-testing、judge-review、maintain、python-type-gap、scan-project、state-review、tour-bootstrap、ui-collab、usage-ping
 - 名字字面：24——api-and-interface-design、audit-test、code-review、code-review-and-quality、cross-verify、daily-maintain、diagram-selection、doc-health、fix-test、followup-review、frontend-ui-engineering、handoff、lint-fix、mermaid、metadata-sync、post-build、rebase、rules-reminder、self-contained-prompt、smell-detector、test-driven-development、ui-visual-verify、voice-notification、zcode-session-query
 
@@ -107,14 +107,15 @@
 
 三支「rule 錨」降級為噪音（字面誤中）：`spec`（bridge-dispatch.md「spec brief」指規格文件）、`consistency`（rules/AGENTS.md「self-consistency」複合詞）、`implement`（collaboration-constraints.md「IMPLEMENT」流程步驟）。三者 root AGENTS.md 命令表／開場導引皆在場（session 載入面即錨），觸發路徑實質不受影響。
 
-### 無觸發路徑六支 → 全數「接受明示 invoke」
+### 無觸發路徑六支 → 兩類處置（tri 終審 codex 腿修正拆分）
 
-`kbar-form-analysis`、`nt-query`、`nt-v1-query`、`swing-analysis`、`upgrade-nt`、`upgrade-sj`——事件驅動／工具專屬 skill（升級程序、查詢工具、特定分析），啟動語境即 user 點名。補 rule 錨＝以 always-on bundle 預算購買事件驅動觸發，違反寫入門檻（預設少寫）——處置＝接受明示 invoke（合法終態，非缺口；已入 instruction-testing「per-harness activation 判讀基準」）。
+- **補錨（2 支）**：`nt-query`、`nt-v1-query`——自身 when_to_use 即要求「調查 NT runtime 行為前自主載入」（`Load BEFORE diving into v2 source`），user 不會點名 skill 名——照「補錨只為 session 必須自主觸發的 skill」原則**應補錨**；錨落 root AGENTS.md（ai-guide 專屬工具鏈行，不進全域 bundle——2026-09-16 tri 終審後補）。
+- **接受明示 invoke（4 支）**：`kbar-form-analysis`、`swing-analysis`、`upgrade-nt`、`upgrade-sj`——事件驅動／user 點名語境（升級程序、特定分析），補錨＝以 always-on bundle 預算購買事件驅動觸發，違反寫入門檻（預設少寫）。合法終態，非缺口。
 
 ### 名字字面（弱）21 支 → 兩類
 
 - **AGENTS.md 錨在場（5 支）**：`debrief`、`ep-review`、`ep-validate`、`illustrate`、`judge-review`——命令表在場，開場載入面即觸發路徑，無需補錨。
-- **無 AGENTS.md 錨（16 支）**：`blueprint-bootstrap`、`compact-prep`、`corrections-weekly`、`flow-feedback`、`flow-review`、`instruction-clean`、`instruction-init`、`instruction-sync`、`instruction-testing`、`maintain`、`python-type-gap`、`scan-project`、`state-review`、`tour-bootstrap`、`ui-collab`、`usage-ping`——處置＝**接受現狀**（名字字面＋鏈內 skill 互指＋slash 明示），補錨留待實際觸發失敗實證（fail-driven；無觀察到失效前補錨＝投機加稅）。本矩陣使這 16 支機械可查，後續 activation probe 失敗時按 instruction-testing 判讀基準升級處置。
+- **無 AGENTS.md 錨（16 支）**：`blueprint-bootstrap`、`compact-prep`、`corrections-weekly`、`flow-feedback`、`flow-review`、`instruction-clean`、`instruction-init`、`instruction-sync`、`instruction-testing`、`maintain`、`python-type-gap`、`scan-project`、`state-review`、`tour-bootstrap`、`ui-collab`、`usage-ping`——處置＝**接受現狀（無 autonomous path、政策性接受——鏈內 skill 互指＋slash 明示可達）**，補錨留待實際觸發失敗實證（fail-driven；無觀察到失效前補錨＝投機加稅）。本矩陣使這 16 支機械可查，後續 activation probe 失敗時按 instruction-testing 判讀基準升級處置。
 
 ### 處置原則（單一源）
 
