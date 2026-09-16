@@ -29,14 +29,14 @@
 | cr-query | rules/symbol-query-routing.md | 無 | 非語義 | rule 錨 |
 | cross-verify | 無 | ./agents/AGENTS.md | 語義自明 | 名字字面 |
 | daily-maintain | 無 | 無 | 語義自明 | 名字字面 |
-| debrief | 無 | ./AGENTS.md、./CLAUDE.md | 半語義 | 名字字面（弱） |
+| debrief | 無（AGENTS.md 錨——見處置節） | ./AGENTS.md、./CLAUDE.md | 半語義 | 名字字面（弱） |
 | debugging-and-error-recovery | rules/tool-discipline.md | 無 | 語義自明 | rule 錨 |
 | deep-thinking | rules/AGENTS.md、rules/design-thinking.md | ./rules/AGENTS.md | 語義自明 | rule 錨 |
 | deep-work | rules/context-management.md、rules/outward-action-consent.md | ./AGENTS.md | 語義自明 | rule 錨 |
 | diagram-selection | 無 | 無 | 語義自明 | 名字字面 |
 | doc-health | 無 | ./AGENTS.md | 語義自明 | 名字字面 |
-| ep-review | 無 | ./AGENTS.md | 半語義 | 名字字面（弱） |
-| ep-validate | 無 | ./AGENTS.md | 半語義 | 名字字面（弱） |
+| ep-review | 無（AGENTS.md 錨——見處置節） | ./AGENTS.md | 半語義 | 名字字面（弱） |
+| ep-validate | 無（AGENTS.md 錨——見處置節） | ./AGENTS.md | 半語義 | 名字字面（弱） |
 | execution-plan | rules/AGENTS.md | ./AGENTS.md、./rules/AGENTS.md | 語義自明 | rule 錨 |
 | fix-test | 無 | ./AGENTS.md | 語義自明 | 名字字面 |
 | flow-feedback | 無 | 無 | 半語義 | 名字字面（弱） |
@@ -44,14 +44,14 @@
 | followup-review | 無 | ./AGENTS.md | 語義自明 | 名字字面 |
 | frontend-ui-engineering | 無 | 無 | 語義自明 | 名字字面 |
 | handoff | 無 | ./AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 語義自明 | 名字字面 |
-| illustrate | 無 | ./AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 半語義 | 名字字面（弱） |
+| illustrate | 無（AGENTS.md 錨——見處置節） | ./AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 半語義 | 名字字面（弱） |
 | implement | 〔噪音——見處置節〕rules/AGENTS.md、rules/collaboration-constraints.md 原列 | ./AGENTS.md、./agents/AGENTS.md、./rules/AGENTS.md〔子串口徑另有1檔〕 | 半語義 | rule 錨 |
 | instruction-clean | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-init | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-sync | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-testing | 無 | 無 | 半語義 | 名字字面（弱） |
 | instruction-writing | rules/AGENTS.md、rules/_ai-behavior-constraints.md、rules/instruction-writing.md | ./AGENTS.md、./CLAUDE.md、./rules/AGENTS.md | 語義自明 | rule 錨 |
-| judge-review | 無 | ./AGENTS.md、./agents/AGENTS.md | 半語義 | 名字字面（弱） |
+| judge-review | 無（AGENTS.md 錨——見處置節） | ./AGENTS.md、./agents/AGENTS.md | 半語義 | 名字字面（弱） |
 | kanban-board | rules/outward-action-consent.md | ./AGENTS.md、./agents/AGENTS.md、./ai-analysis/blueprint/AGENTS.md | 語義自明 | rule 錨 |
 | kbar-form-analysis | 無 | 無 | 非語義 | （無——僅明示 invoke） |
 | lint-fix | 無 | ./AGENTS.md | 語義自明 | 名字字面 |
