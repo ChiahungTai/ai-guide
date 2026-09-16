@@ -94,14 +94,14 @@ Demo 檔案有規劃？測試有規劃？`__init__.py` 的 `__all__` 需要更�
 
 ### F5: 場景覆蓾度檢查
 
-大型/中型變更必須有 Scenario Matrix。檢查：
+full tier 變更必須有 Scenario Matrix。檢查：
 - 場景是否涵蓋 happy path、錯誤操作、邊界案例、效能期待差異？
 - 每個場景的「觸發 → 預期行為」是否具體可驗證？
 - Checkpoint 語義是否與程式碼中的實際 checkpoint 對齊（snapshot / catalog / 無）？
 - 矩陣中的「對應 UC」是否與 EP 段落的 UC 引用一致？
 - 是否遺漏明顯的使用者情境（如回補多天、跨日、缺前置條件）？
 
-小型變更（bug fix）跳過此維度。
+simple 變更（bug fix）跳過此維度。
 
 ### 「審 EP profile」維度映射表（與 execution-plan EP Review 共用，零失落）
 

@@ -74,7 +74,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 **git diff fallback**（僅當 `$ARGUMENTS` 空）— 只取**未 commit** 變更，不 fallback 到已 commit：
 
 1. 合併 `git diff --name-only`（unstaged）+ `git diff --cached --name-only`（staged），去重 = working tree 與 HEAD 的全部落差
-2. **禁止 fallback 到 `HEAD~1 HEAD`**：自動偵測的服務對象是「剛改完待檢查」的未 commit 狀態 —— 已 commit 的文檔不在服務範圍（提交前閘門非 Always：純 `.md` 常繞過 `/implement` 直接 `/commit`、且 `/implement` 5d 僅大型/中型；故不假設「已 commit = 已被 consistency 檢查」），要審請顯式 `/consistency <path>`。無未 commit 變更 = 提示用戶並結束（fail-loud，不硬擠目標）
+2. **禁止 fallback 到 `HEAD~1 HEAD`**：自動偵測的服務對象是「剛改完待檢查」的未 commit 狀態 —— 已 commit 的文檔不在服務範圍（提交前閘門非 Always：純 `.md` 常繞過 `/implement` 直接 `/commit`、且 `/implement` 5d 僅 full／standard；故不假設「已 commit = 已被 consistency 檢查」），要審請顯式 `/consistency <path>`。無未 commit 變更 = 提示用戶並結束（fail-loud，不硬擠目標）
 
 從結果篩選 `.md`，**排除 `skills/consistency/SKILL.md`（定義檔自身）**，作為檢查目標。若無任何 `.md`，提示用戶並結束。
 

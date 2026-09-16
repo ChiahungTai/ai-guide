@@ -236,6 +236,58 @@ INVARIANTS = [
         "must_contain_all（新 doctrine 三源：contract schema／供給 catalog／部署 "
         "presets——逐一缺席各 critical）。",
     },
+    {
+        "id": "classifier_guide_projection",
+        "type": "source_contains",
+        "source": "ai-development-guide.md",
+        "must_contain_any": [
+            "state ownership、public contract、跨 context invariant、控制面 authority"
+        ],
+        "note": "AIR-111 followup 機械閘：guide 規模句的 full 判準枚舉是 execution-plan "
+        "四層表的壓縮投影——此錨逐字對齊投影面，guide 改詞未與 skill 同步（或反向）"
+        "即 critical。整串枚舉單錨＝ALL 語義（拆散任一關鍵詞即失 match，迫使兩處同改）。",
+    },
+    {
+        "id": "classifier_source_anchors",
+        "type": "forbidden_pattern",
+        "source": "skills/execution-plan/SKILL.md",
+        "must_contain_all": [
+            "評估順序＝simple→standard→full",
+            "provenance anchor",
+            "Promotion ladder",
+            "state ownership",
+        ],
+        "scan": [
+            "ai-development-guide.md",
+            "AGENTS.md",
+            "rules/",
+            "skills/",
+            "agents/",
+        ],
+        "forbid": [
+            {
+                "pattern": r"full/boundary|boundary tier",
+                "why": "full/boundary 並列名＝四層制前舊寫法（boundary 是 full 判準成分非 tier 名，AIR-111 F-05）",
+            },
+            {
+                "pattern": r"standard\+|standard＋",
+                "why": "standard+ 記號無定義（四層制無此集合簡寫，AIR-111 F-06）——列舉 tier 名",
+            },
+            {
+                "pattern": r"卡 Planning Contract",
+                "why": "中文形殘留——canonical 術語是 ASCII 形（AIR-111 術語統一裁定）",
+            },
+            {
+                "pattern": r"小型變更不需 UC",
+                "why": "斷引——guide 現行措辭是「小 bug/doc 免 UC」，舊引文指向不存在句（AIR-111 終掃）",
+            },
+        ],
+        "note": "AIR-111 followup 機械閘：規劃載體四層分級定義源骨架四錨（evaluation "
+        "precedence／provenance gate／promotion／boundary 列舉——逐一缺席各 critical）"
+        "＋退役記號殘留 guard（活面 .md 零容忍；歸檔面 ai-analysis/ref-docs 與 "
+        "tests/fixtures 不掃）。guide↔skill 判準對齊由 classifier_guide_projection "
+        "錯另一側——兩 entry 合計＝parity 錨點單源住本 REGISTRY。",
+    },
 ]
 
 

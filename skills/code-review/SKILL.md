@@ -83,7 +83,7 @@ review 執行預設（force 獨立 / model 預設）見 [review-engine](../revie
 | Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight；**diff 含 test files 時加掛測試架構六項**（定義源 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 3「測試架構六項」） | 變更 ≥ 3 files 或 arch-thinking 觸發表命中；**diff 含 test files** | P1 |
 | Security | 輸入驗證、權限檢查 | diff 含 HTTP/auth/credential | P1 |
 | Performance | N+1、無界操作 | 變更 ≥ 5 files | P2 |
-| Capability Coverage | Capabilities 行為覆蓋 | 大型/中型變更 | P2 |
+| Capability Coverage | Capabilities 行為覆蓋 | full／standard 變更 | P2 |
 
 啟用軸數超過並發容量 → 從低優先級（P2 起）合併至前一個 agent（不丟棄任何軸——合併是容量約束下的分工手段，非固定派滿）。
 
@@ -149,7 +149,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 ### Capability Coverage — 滿足 Capabilities 描述嗎？
 
-**checklist 單一真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 6**（涵蓋行為、diff 對應、入口指向 library 非 scripts/、小型變更跳過）。本命令僅定義執行時機：大型/中型變更時審查，小型變更（bug fix）跳過；審查題材為模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格 + EP 段落引用 + 「消費場景」情境（happy path、錯誤操作、邊界、效能期待差異）。
+**checklist 單一真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 6**（涵蓋行為、diff 對應、入口指向 library 非 scripts/、simple 變更跳過）。本命令僅定義執行時機：full／standard 變更時審查，simple 變更（bug fix）跳過；審查題材為模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格 + EP 段落引用 + 「消費場景」情境（happy path、錯誤操作、邊界、效能期待差異）。
 
 ### 深層思考（決策證據與後果）
 - **讀相關程式碼**：不只看 diff，讀取被修改檔案引用的其他模組

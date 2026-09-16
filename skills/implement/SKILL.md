@@ -31,7 +31,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 | work unit | Role | authority | judgment_floor | qualifications | 說明 |
 |---|---|---|---|---|---|
-| 實作主腿（各段落執行） | Implementer | apply（accepted EP 後）／evidence | execution | implement_from_accepted_ep | `implement_from_accepted_ep + execution + apply`——進場受 accepted-EP predicate 約束（階段 0） |
+| 實作主腿（各段落執行） | Implementer | apply（accepted EP 後）／evidence | execution | implement_from_accepted_ep | `implement_from_accepted_ep + execution + apply`——進場受 accepted-EP predicate 約束（階段 0）；card Planning Contract 任務走 contract 分支（六欄齊備代檢查，同在階段 0） |
 | 機械驗證腿（ruff/mypy/pytest／rg 殘留對帳） | Verifier | evidence artifact（無 disposition/apply） | execution | evidence_retrieval | 組合命令形態；lite 測試＝規格陳述，驗收證據由 full 複驗 |
 | Agent Review Reviewer legs（階段 4） | Reviewer | findings（無 disposition/apply） | execution（預設；高保護面／跨邊界語義面升 decision） | review_findings | 執行形態照 [review-engine](../review-engine/SKILL.md)「review 執行預設」 |
 | finding 裁決（invoke /judge-review） | Arbiter | final disposition | decision | adjudication | seat 非 decision-qualified 時外派 decision-qualified candidate；無 candidate 禁 self-downgrade |

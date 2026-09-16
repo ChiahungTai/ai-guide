@@ -41,7 +41,7 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 ## Solo + AI 開發工作流
 
-一人＋AI、無團隊/CI；一 EP＝一 session，段落自含、可結算接續。model 退化先結算再 handoff 新 session；Writer/Reviewer 分離，review 支援跨 session findings 回貼。
+一人＋AI、無團隊/CI；一 EP＝一 session（bounded child 卡各自一 session，繼承 parent EP 已定決策），段落自含、可結算接續。model 退化先結算再 handoff 新 session；Writer/Reviewer 分離，review 支援跨 session findings 回貼。
 
 ## 架構設計紀律
 
