@@ -4,7 +4,7 @@ title: codex hook 控制面探測——同一套 AI 協作防護能否裝到 cod
 status: To Do
 assignee: []
 created_date: '2026-09-15 06:12'
-updated_date: '2026-09-16 06:50'
+updated_date: '2026-09-16 07:17'
 labels: []
 dependencies: []
 ordinal: 81000
@@ -36,4 +36,6 @@ MOS-105 討論中發現 codex 官方文檔有 lifecycle hooks 機制（PreToolUs
 〔0916 實測結案記錄〕FIRING 實測 NOT_FIRING（firing.out）→T1 canary＝機制有效（FIRING_CONFIRMED 級：deny＋模型 workaround 行為正確）→T2＝trust skip 定罪。AC-2 firing 證據已產（.agent-tmp/air-95/＋~/.air-95-firing/）；AC stdin 對照已產（dossier §1）；AC-3 成本已產（80-90ms）。剩 A/B/C 三項決策待 user（見 Plan）。卡面原描述『bash-write-guard 移植評估』的觸發載體描述已修正（c-comment 攔多行 python -c 非 heredoc）。
 
 〔0916 launcher 調查反轉（muse）〕launcher（codex-chatgpt-web）從不啟動 codex 進程——codex exec argv 由 delegate-bridge Rust carrier 組裝（rust/crates/bridge-families/src/codex.rs:126-194 build_args 硬編碼 exec --json --skip-git-repo-check，無 trust flag 無透傳）。注入點排序：①bridge build_args 加 --dangerously-bypass-hook-trust（自家 repo 最強升級存活）②零改碼＝EXPLICIT_PATH_ENV 指 shim（codex.rs:100-121 非空即權威）③requirements.toml managed hook（trusted by policy，路徑待驗）④/hooks 互動信任（止血，hook 一變即失效）⑤fork 改動＝構造不出 codex argv，排除。已驗：managed 區塊不隨升級重寫；非託管區安全。待實機：V1 launcher 自寫 hash codex 認不認、V3 requirements.toml 路徑。
+
+〔0916 firing 終局證據〕連續 3 次 headless exec（無 bypass、非 repo cwd）均攔截成功——codex router log 逐字：ERROR codex_core::tools::router: Command blocked by PreToolUse hook: [Hook Blocked] python -c 命令含換行 + # 註解。先前 NOT_FIRING 實例（bridge job／T2）現已不可重現＝非確定性靜默 skip（transient），非確定性 trust 閘；監測方式＝本協議可隨時重跑。B（file-write 註冊＋timeout 10s）已落地 hooks.json；A（bridge 旗標）暫不需要——若靜默 skip 復發再議（contingency：bridge build_args 或 launcher 旗標）。
 <!-- SECTION:NOTES:END -->
