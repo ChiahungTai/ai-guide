@@ -76,6 +76,7 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 backlog task edit <id> -s Done --final-summary "<一句>"
 backlog task edit <id> --ref "<done/ EP 相對路徑>[,<shell 相對路徑>]"   # --ref 整組替換
 ```
+**收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：實作 commit＋review＋judge 過＝達收 Done 條件，即收；L4／實機驗證項目集中掛該 repo 的總驗卡驗收清單，總驗發現問題→重開卡（Done→In Progress）。**「待 L4」不是停留 To Do 的理由**——卡留 To Do 只在 Notes 記待驗＝板面說謊（下個 session 會把已完成卡當新工重派），禁止。實例：southchariot SC-19/22/26 三卡「實作＋judge 已過」停 To Do、Notes 記「待 L4 收卡」，險些被當新工重派；同 session 對 SC-28 卻收 Done——同一人兩種收法＝慣例缺口非個人疏失。
 **結案 metadata commit 特赦（user 09-11，條件授權鏈；autonomous 適用性 09-13 user 裁定收回）**：結案兩步＋其 commit（僅 `backlog/`＋結算搬移檔、**同 commit**）在 **precheck 綠（跨線掃描 exit 0）** 時免逐次確認——機械守門替代人確認（例外條款③，**限互動 session**；autonomous session 所有 commit 一律待用戶確認）；條件不滿足 → 走確認 gate。註：precheck 在此是特赦的守門條件，非結案兩步本身的新要求（「結案兩步不需 precheck」現狀不變）。
 
 **弧結案蒸餾（第三動，同時機）**：owning session 將本弧 project_/feedback_ memory 條目重寫為終態 facts——刪日期/session id/進度流水與 git 可推導內容，留決策教訓與終態結論，敘事指向 repo 檔案（EP/卡）；無相關條目明示無。規則細節＝[memory-audit](../memory-audit/SKILL.md)「寫入端紀律」（含 desc 三不）。
