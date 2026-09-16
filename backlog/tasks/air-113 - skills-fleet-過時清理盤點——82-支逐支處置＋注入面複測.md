@@ -4,9 +4,11 @@ title: skills fleet 過時清理盤點——82 支逐支處置＋注入面複測
 status: In Progress
 assignee: []
 created_date: '2026-09-16 13:51'
-updated_date: '2026-09-16 21:08'
+updated_date: '2026-09-17 06:08'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/reports/guides-refactoring/usage-fit-audit-20260917.md
 ordinal: 98000
 ---
 
@@ -29,4 +31,6 @@ ordinal: 98000
 
 <!-- SECTION:NOTES:BEGIN -->
 0917 凌晨第一波開工（caller 排程提前）：M-A 三類處置的現場核驗＋落地——六支 domain skills 逐支核（遷出 vs 留＋desc 瘦身）、nt 對 desc 瘦身、instruction-testing AC#4 歸因修正、when_to_use 補欄六支。逐項以現場證據重驗前提（F-01 教訓）。
+
+0917 晨：AC#1 的 usage 證據軸已落地＝references 報告（82 支三源矩陣：30 天觀測窗、invocation/read/mention 三軸、conflict matrix、零低用清單）。要點：唯一非 young 真零消費＝flow-feedback（**已退役**，首例）；frontend-ui-engineering＝保守級 merge/localize candidate（UI 三支責任互異）；swing/upgrade-nt/upgrade-sj 零低用支持既有遷出；lint-fix/python-type-gap 有直讀非零用（併入選項前提＝保 lint/type recipes）。young 清單（age<60d）不進零用判據。
 <!-- SECTION:NOTES:END -->
