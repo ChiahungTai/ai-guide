@@ -1,9 +1,10 @@
 ---
 id: AIR-113
 title: skills fleet 過時清理盤點——82 支逐支處置＋注入面複測
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 13:51'
+updated_date: '2026-09-16 21:08'
 labels: []
 dependencies: []
 ordinal: 98000
@@ -23,3 +24,9 @@ ordinal: 98000
 - [ ] #4 instruction-testing:56 歸因張力修正（絕對句→條件化＋PASS 歸因紀律補 desc channel）——acceptance 語義面，隨卡 tri 腿審查，本卡審查級別含 tri
 - [ ] #5 .agent-tmp 遺留清掃（probe 證據 air-107-budget-probe／air-107-docsync＋journal 收斂）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0917 凌晨第一波開工（caller 排程提前）：M-A 三類處置的現場核驗＋落地——六支 domain skills 逐支核（遷出 vs 留＋desc 瘦身）、nt 對 desc 瘦身、instruction-testing AC#4 歸因修正、when_to_use 補欄六支。逐項以現場證據重驗前提（F-01 教訓）。
+<!-- SECTION:NOTES:END -->
