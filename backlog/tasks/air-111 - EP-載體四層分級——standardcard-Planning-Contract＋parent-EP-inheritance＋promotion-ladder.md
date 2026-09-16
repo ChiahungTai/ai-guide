@@ -3,11 +3,16 @@ id: AIR-111
 title: >-
   EP 載體四層分級——standard=card Planning Contract＋parent EP inheritance＋promotion
   ladder
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 10:15'
+updated_date: '2026-09-16 10:17'
 labels: []
 dependencies: []
+references:
+  - ai-development-guide.md
+  - skills/execution-plan/SKILL.md
+  - skills/_common/work-order.md
 ordinal: 96000
 ---
 
