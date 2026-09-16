@@ -1,10 +1,10 @@
 ---
 id: AIR-105
 title: 治理接線第一波——instruction 審查閘＋部署面對帳＋工單完整性＋deploy 提醒
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-16 02:16'
-updated_date: '2026-09-16 02:55'
+updated_date: '2026-09-16 02:58'
 labels: []
 dependencies: []
 ordinal: 90000
@@ -40,3 +40,9 @@ ordinal: 90000
 
 〔落地回執（AIR-105 新閘首次自適用）〕classification=boundary（review-engine 判定表：控制面 authority/gate 面）；review=muse job-mu3hb5yu（conditional pass→F1-F4 修）＋codex job-mu3hb615（needs-fix→C1-C6 修）＋fresh code-reviewer flash（needs-fix 8 條→F3/F6/F7/F8/F10/F11/F12 修，F1/F2/F4/F5/F9 前輪已覆蓋經其實測確認）；session-freshness=applied（deploy ACTION 雙跑實證：實寫印變更名單、identical 靜默）；deployment-surfaces=healthy（探針 freshness 零發現＋skills symlink 活視圖）。學習記錄：F8——本卡 commit 先於審查腿回收（activation-before-review 洞，第二波處理：card WT 隔離 authoring）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+治理接線第一波四件全落地（審查閘/部署面對帳/work-order invariant/deploy 條件提醒）＋panel 陪審詞彙進 model-routing。bi panel＋fresh 三腿審查 22 findings 全數修復（02500c2），落地回執四欄補齊（8113508）。F8 learning（commit 先於審查回收＝activation-before-review 洞）併第二波。
+<!-- SECTION:FINAL_SUMMARY:END -->
