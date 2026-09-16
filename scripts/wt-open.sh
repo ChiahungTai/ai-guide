@@ -142,6 +142,11 @@ for pat in ".agents/memory" ".agents/memory-inbox"; do
 done
 
 # ── 池／inbox symlink（primary canonical 主體 → WT 內同名路徑）────────────
+# 池拓撲是 opt-in：primary 無 .agents/ 的 repo（未採 AIR-71 池形態）整段跳過，
+# 不 die（採池 repo 行為不變；真實案例：southchariot 動卡 wt-open 即死於此檢查）
+if [ ! -d "$PRIMARY/.agents" ]; then
+  info "primary 無 .agents/——repo 未採記憶池拓撲，跳過池 symlink"
+else
 mkdir -p "$WT_PATH/.agents"
 for d in memory memory-inbox; do
   TARGET="$PRIMARY/.agents/$d"
@@ -157,6 +162,7 @@ for d in memory memory-inbox; do
   fi
   ln -sfn "$TARGET" "$LINK"
 done
+fi
 
 # ── identity contract 落盤（位置理由見檔頭）────────────────────────────────
 IDENT_DIR="$WT_PATH/.agent-tmp"
@@ -215,6 +221,7 @@ if [ "$MODE" = "card" ]; then
 fi
 
 # ── 池 symlink 解析驗證（斷鏈＝fatal）＋ignore 面檢查────────────────────────
+if [ -d "$PRIMARY/.agents" ]; then
 for d in memory memory-inbox; do
   LINK="$WT_PATH/.agents/$d"
   [ -e "$LINK" ] || die "池 symlink 斷鏈：$LINK"
@@ -222,6 +229,7 @@ for d in memory memory-inbox; do
     warn "池路徑 .agents/$d 未被 gitignore 涵蓋——repo 應補 .gitignore（.agents/memory/ 與 .agents/memory-inbox/），否則 WT 恆 dirty"
 done
 info "池拓撲：.agents/{memory,memory-inbox} → primary canonical（池內容不入 branch；交付分流＝資產源隨 branch、池副本 marshal 合併後套）"
+fi
 
 # ── 釋鎖＋回報───────────────────────────────────────────────────────────
 rm -rf "$LOCK"; trap - EXIT
