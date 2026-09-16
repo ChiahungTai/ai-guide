@@ -33,14 +33,17 @@
 
 import argparse
 import json
+import logging
 import os
+import re
 import subprocess
 import sys
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 # ---- 常數（路徑契約：本機探測面；測試經參數/monkeypatch 注入 tmp 路徑）----
 
@@ -53,7 +56,20 @@ HEALTHZ_TIMEOUT_S = 5.0
 CATALOG_STALE_S = 6 * 3600  # catalog 時間戳超齡＝ChatGPT 端回應存疑（heuristic，可調）
 
 SCHEMA_VERSION = 1
-USAGE_PROBE_ALLOWLIST = frozenset({"codex", "glm"})
+_logger = logging.getLogger("scripts.probe_entitlements")
+# P4 capability matrix（unsupported 顯性化）：usage 探測能力 per-family 事實；
+# USAGE_PROBE_ALLOWLIST 是本表 supported 投影（行為面一致性釘在測試）。
+CAPABILITY_MATRIX: dict[str, Literal["supported", "unsupported"]] = {
+    "codex": "supported",
+    "glm": "supported",
+    "muse": "unsupported",
+}
+# muse 現值 provenance 唯一合法來源＝event/429（P3 quota event capture）——
+# usage probe unsupported 是 capability 事實，禁任何 muse usage 值假造（A4）。
+CAPABILITY_PROVENANCE_MUSE = "event/429"
+USAGE_PROBE_ALLOWLIST = frozenset(
+    f for f, v in CAPABILITY_MATRIX.items() if v == "supported"
+)
 
 FAMILY_POOL: dict[str, str] = {
     "glm": "glm-native",
@@ -193,7 +209,7 @@ def record_from_bridge_entry(entry: dict[str, Any], probe_ts: str) -> Any:
             + ",".join(sorted(USAGE_PROBE_ALLOWLIST))
             + (
                 "; muse unsupported 是 capability 事實，現值 provenance "
-                "只能是 event/429（AIR-98 A4）"
+                f"只能是 {CAPABILITY_PROVENANCE_MUSE}（AIR-98 A4）"
                 if status == "unsupported"
                 else ""
             )
@@ -433,6 +449,133 @@ def aggregate_exit(records: list[Any]) -> int:
     if not records:
         return 0
     return 0 if any(r.status == "ok" for r in records) else 1
+
+
+# ---- 額度事件入帳（P3：合成注入測試；提醒式不自動寫）----
+
+
+@dataclass
+class QuotaEvent:
+    """dispatch 撞額度事件的機械訊號（P3）。
+
+    retryable_at_utc＝ISO 8601 或字面 "unknown"——只採 reset 語境（resets at
+    ／try again at／重置…）緊鄰的 ISO 時間戳；無 reset 語境、非 ISO 時間、
+    多時間戳無法判定時顯性 unknown，禁從訊息歷史或週期表推度現值。
+    """
+
+    as_of_utc: str
+    family: str
+    failure_class: str
+    retryable_at_utc: str
+    source_message: str
+
+
+_ISO_TS_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:?\d{2})?")
+# reset 語境詞——時間戳須緊鄰其後才可作 retryable-at（裸 ISO 時間戳如呼叫
+# 時間不入帳，禁取首個）；非 ISO 時間（"try again at 3:30pm"）一律不採。
+_RESET_CONTEXT_RE = re.compile(
+    r"(?:resets?\s+at|reset\s+at|try\s+again\s+at|retry\s+after|重置(?:於|時間)?|恢復(?:於|時間)?)"
+    r"\s*[:：]?\s*("
+    + _ISO_TS_RE.pattern
+    + r")",
+    re.IGNORECASE,
+)
+_SIG_1308 = re.compile(r"\b1308\b")
+_SIG_429 = re.compile(r"\b429\b")
+_SIG_WEB_USAGE = re.compile(r"you've hit your usage limit")
+# 額度事件 family 白名單（typo/偽造 family 禁透傳進事件行）
+QUOTA_EVENT_FAMILIES = frozenset(CAPABILITY_MATRIX)
+
+
+def capture_quota_event(
+    family: str, message: str, observed_at_utc: str
+) -> QuotaEvent | None:
+    """辨識額度事件簽名 → QuotaEvent；回 None＝未識別，非無事件。
+
+    三簽名（AIR-98 A3，優先序 1308＞web usage＞429 釘死在測試）：
+    ①原生 429——訊息含明確 reset 語境時間戳（resets at／try again at／重置…
+    緊鄰其後）亦採用，無 reset 語境時間戳 → retryable-at=unknown
+    ②GLM 1308（錯誤含重置時間戳，解析之）③web usage limit（"You've hit your
+    usage limit ... try again at <time>"，解析 <time>）。
+
+    retryable-at 擷取限定 reset 語境：時間戳須緊鄰 reset 語境詞；訊息含多個
+    ISO 時間戳且無法判定（reset 語境零命中或多個互斥）→ retryable-at=
+    unknown＋log 原文（warning），禁取首個時間戳冒充重置點。非 ISO 時間
+    （如 "try again at 3:30pm"）不採，一律 unknown——禁把本地時間偽裝成 ISO。
+
+    None 語義：簽名未命中＝「未識別，非無事件」——簽名表覆蓋窄（變體如
+    "quota exceeded" 未列），調用方禁把 None 當「無額度事件」入帳依據。
+
+    輸入校驗 fail-loud：family 非白名單（codex/glm/muse）、observed_at_utc
+    非 ISO 8601 → ValueError，禁透傳污染事件行。
+
+    輸出只有提醒 log 行＋spine 格式事件行（reminder_log_line／
+    spine_event_line）——寫回 spine 由 ai-guide session 校驗後執行，本模組
+    不含任何 spine 寫入路徑；合成注入測試，禁真呼叫探測。
+    """
+    if family not in QUOTA_EVENT_FAMILIES:
+        raise ValueError(
+            f"capture_quota_event: unknown family {family!r} "
+            f"(expected one of {sorted(QUOTA_EVENT_FAMILIES)})"
+        )
+    if _parse_iso_z(observed_at_utc) is None:
+        raise ValueError(
+            f"capture_quota_event: observed_at_utc is not ISO 8601: "
+            f"{observed_at_utc!r}"
+        )
+    lowered = message.lower()
+    if _SIG_1308.search(lowered):
+        failure_class = "usage_limit_1308"
+    elif _SIG_WEB_USAGE.search(lowered):
+        failure_class = "usage_limit_web"
+    elif _SIG_429.search(lowered):
+        failure_class = "rate_limit_429"
+    else:
+        return None
+    reset_ctx_ts = sorted(set(_RESET_CONTEXT_RE.findall(message)))
+    if len(reset_ctx_ts) == 1:
+        retryable_at = reset_ctx_ts[0]
+    else:
+        retryable_at = "unknown"
+        # 多個 ISO 時間戳無法判定 → 顯性 log 原文（禁靜默丟棄；原文另存
+        # source_message 欄供消費端覆核）
+        if len(_ISO_TS_RE.findall(message)) > 1:
+            _logger.warning(
+                "capture_quota_event: ambiguous reset timestamps "
+                "(%d ISO ts, no unique reset-context match), "
+                "retryable_at=unknown, raw message: %s",
+                len(_ISO_TS_RE.findall(message)),
+                message,
+            )
+    return QuotaEvent(
+        as_of_utc=observed_at_utc,
+        family=family,
+        failure_class=failure_class,
+        retryable_at_utc=retryable_at,
+        source_message=message,
+    )
+
+
+def spine_event_line(event: QuotaEvent) -> str:
+    """spine 格式事件行（as-of＋family＋failure_class＋retryable-at）。
+
+    文字產物：由處置 session 校驗後併入 spine 條目「近期事件」（本模組不
+    寫任何檔到 spine 位置——單一寫者不變，AIR-98 決策②）。
+    """
+    return (
+        f"quota-event as_of={event.as_of_utc} family={event.family} "
+        f"failure_class={event.failure_class} "
+        f"retryable_at={event.retryable_at_utc}"
+    )
+
+
+def reminder_log_line(event: QuotaEvent) -> str:
+    """提醒 log 行——提醒式不自動寫：處置 session 校驗後更新 spine 事件行。"""
+    return (
+        f"[quota-event reminder] {event.as_of_utc} {event.family} "
+        f"{event.failure_class} retryable_at={event.retryable_at_utc}"
+        "——提醒處置 session 校驗後更新 spine 事件行（不自動寫）"
+    )
 
 
 # ---- main ----

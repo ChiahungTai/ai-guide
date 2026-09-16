@@ -62,7 +62,16 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 ### AvailabilitySnapshot（tri-state，volatile——不進 catalog）
 
-`state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。
+`state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。窗口重置週期與「是否再 probe」的消費語義見下方「窗口語義（重置週期正典）」節：距 last-probe 超過週期→值得再 probe（web 池不適用週期推度，見該節 codex 行）；現值不可推度——retryable-at ≠ available。
+
+### 窗口語義（重置週期正典）
+
+> 正典住本節（AIR-98 P2，as-of 2026-09-15 user 對帳）；spine（`model-runtime-entitlements`）只留指針＋as-of＋事件行，禁拷貝本節窗口/週期數字。V 現值（訂閱到期日／消耗倍率現值／促銷活動）不住本節——唯一歸宿＝spine；本節只留窗口機制與計費結構。數字變更以 provider dashboard／實際錯誤訊息為準。
+
+- **GLM（legacy v1）**：5h 上限、無 weekly；觸發語義＝額度滿後**再呼叫一次**才起算五小時；premium 計費結構＝尖峰（週一～五 14:00–18:00 UTC+8）3×、離峰 1×。
+- **muse（Power）**：5h 窗口；request 計費（非 token）；無公開硬上限。
+- **codex**：chatgpt-web 池訊息額度與原生訂閱池分帳；主力＝Web High；launcher 每 1–2 天自動 logout；usage 探測只見原生池（web 池盲區——pool_visibility=none）。**web 池不適用週期推度**（訊息額度非時間窗口——只走事件＋健康三訊號）。
+- **消費語義**：「是否再 probe」形態可推度——距 last-probe 超過週期→值得再 probe（web 池除外，見 codex 行）；現值不可推度——retryable-at ≠ available。
 
 ### ArcOverride／RoutingPolicy／DispatchPlan／DispatchTrace
 
