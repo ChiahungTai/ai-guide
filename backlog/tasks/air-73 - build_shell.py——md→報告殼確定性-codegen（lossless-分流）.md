@@ -1,10 +1,10 @@
 ---
 id: AIR-73
 title: build_shell.py——md→報告殼確定性 codegen（lossless 分流）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-10 03:35'
-updated_date: '2026-09-15 22:06'
+updated_date: '2026-09-16 01:28'
 labels:
   - tooling
   - illustrate
@@ -28,3 +28,9 @@ ordinal: 59000
 
 〔09-16 wave 決策——排 Wave-2 並兼任 AIR-72 試點卡〕S4 圖觸發政策（task 型態預設＋一眼看到重點判準）已落地＝本卡內容需求輸入到位。作為 AIR-72 wt-open/close 的試點白老鼠跑全流程，dogfood 結果回饋兩卡。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+build_shell.py 進 main（6bd68f1，49 tests＋golden×4 gate）；外審 A–I 修復閉合；渲染 smoke PASS（headless Chrome＋vision-review 目檢：版型/導航/首屏/CJK 健康；折疊按鈕由 a11y gate DOM 斷言補證）；收線經 wt-close dogfood 天然驗收。
+<!-- SECTION:FINAL_SUMMARY:END -->

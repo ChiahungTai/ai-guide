@@ -1,10 +1,10 @@
 ---
 id: AIR-102
 title: opencode 停用後的 ai-guide 殘留清掃——腳本死路徑＋四支 skill 文檔
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-16 00:03'
-updated_date: '2026-09-16 00:03'
+updated_date: '2026-09-16 01:23'
 labels:
   - tooling
 dependencies: []
@@ -17,6 +17,14 @@ ordinal: 87000
 opencode harness 已停用（user 2026-09-16 裁決），mosaic_alpha 側已清完；本卡清 ai-guide repo 內殘留：一支檢查腳本的死路徑＋四支 skill 文檔提及。鏡像目錄 ref-docs/harness/opencode/ 暫保留，刪否等 user 拍板（決策 7）。
 <!-- SECTION:DESCRIPTION:END -->
 
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 check_single_source.py 檢查路徑清單＝~/.zcode、~/.codex、~/.config/muse 三目標；腳本實跑綠（有測試則補一條）
+- [ ] #2 四支 SKILL.md（context7／symbol-query-routing／instruction-init／zcode-session-query）OpenCode 引用清除或標 retired，不混用
+- [ ] #3 驗收掃描：rg -il opencode --glob '!ref-docs/**' --glob '!backlog/**' --glob '!ai-analysis/**' --glob '!.git/**' → 僅 AGENTS.md（決策 7 保留時的五家鏡像描述句）
+- [ ] #4 symlink 直達驗證：readlink ~/.zcode/skills 相關條目證據——repo 改即生效，無部署步驟
+<!-- AC:END -->
+
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
@@ -25,10 +33,8 @@ opencode harness 已停用（user 2026-09-16 裁決），mosaic_alpha 側已清�
 範圍五項：①skills/scan-project/scripts/check_single_source.py:96 檢查路徑改現行三目標（~/.zcode、~/.codex、~/.config/muse 的 AGENTS.md）＋有測試補一條②skills/context7/SKILL.md:21 移除 OpenCode、Codex/Muse 支援狀態照實標注（未驗證不升格）③skills/symbol-query-routing/SKILL.md:97 harness 對照表 OpenCode 刪列（擇一勿混）④skills/instruction-init/SKILL.md:111 改「（ZCode/Codex）」⑤skills/zcode-session-query/SKILL.md:5 when_to_use 移除 OpenCode
 <!-- SECTION:PLAN:END -->
 
-## Acceptance Criteria
-<!-- AC:BEGIN -->
-- [ ] #1 check_single_source.py 檢查路徑清單＝~/.zcode、~/.codex、~/.config/muse 三目標；腳本實跑綠（有測試則補一條）
-- [ ] #2 四支 SKILL.md（context7／symbol-query-routing／instruction-init／zcode-session-query）OpenCode 引用清除或標 retired，不混用
-- [ ] #3 驗收掃描：rg -il opencode --glob '!ref-docs/**' --glob '!backlog/**' --glob '!ai-analysis/**' --glob '!.git/**' → 僅 AGENTS.md（決策 7 保留時的五家鏡像描述句）
-- [ ] #4 symlink 直達驗證：readlink ~/.zcode/skills 相關條目證據——repo 改即生效，無部署步驟
-<!-- AC:END -->
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+opencode 退役清掃進 main（bc9ca06）：四 skill 除痕＋決策 7 四處連動刪除（鏡像/manifest/crawler/AGENTS.md）＋contracts.md 對照欄刪除（codex 裁決 b）；四條 shell 驗收補跑全綠。
+<!-- SECTION:FINAL_SUMMARY:END -->

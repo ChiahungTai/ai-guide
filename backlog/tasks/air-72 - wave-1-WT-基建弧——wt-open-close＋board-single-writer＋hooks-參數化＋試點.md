@@ -1,10 +1,10 @@
 ---
 id: AIR-72
 title: wave-1 WT 基建弧——wt-open/close＋board single-writer＋hooks 參數化＋試點
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-10 01:50'
-updated_date: '2026-09-15 22:23'
+updated_date: '2026-09-16 01:23'
 labels:
   - governance
   - wt
@@ -25,3 +25,9 @@ Blueprint workflow.md『待建基建』清單全部（ai-analysis/blueprint/work
 <!-- SECTION:NOTES:BEGIN -->
 〔09-16 wave 決策——Wave-1 基建線＋試點已定〕試點卡＝AIR-73（真實交付＋dogfood wt-open→工作→wt-close→Done 全流程）。必吸收本 session（09-16 三 WT 實戰）新增形態：①池 gitignored 拓撲→涉及池的交付拆『資產源隨 branch＋池副本 marshal 合併後套』兩段——wt-open/close 應內建此分流 ②backlog 卡 metadata 由 marshal 單點 commit 的慣例已實證可行（board single-writer ③ 的實戰依據）③plist 進 deploy/ 版控慣例（deploy/entitlements-probe.plist 先例）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+wt-open/close＋board single-writer＋雙軌條款進 main（62327be）；pipe-test 22/22；真卡收線殘項經 air-73 dogfood 實證閉環（附帶修復 SIGPIPE＋TMP_WT 兩缺陷：2ca2240/33cb3ea）。
+<!-- SECTION:FINAL_SUMMARY:END -->

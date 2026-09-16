@@ -1,10 +1,10 @@
 ---
 id: AIR-60
 title: session 接續恢復鏈治理——rehydration 單一源＋at 先結算再排程＋接續授權失效條款
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-09 13:20'
-updated_date: '2026-09-15 23:07'
+updated_date: '2026-09-16 01:23'
 labels:
   - governance
   - skills
@@ -34,3 +34,9 @@ ordinal: 49000
 
 〔09-16 Wave-1 lane60 worker 檢查點——全程未 commit，詳 verdict＝.agent-tmp/air-60/verdict.md〕段①授權失效條款三處在場（at:34,102-103／work-order:13／model-routing:270，rg 逐字驗證）；段②雙 lens closure 條文落 workflow-review-pattern「closure lens 分工」節＋post-build 階段 3 hook（primed 術語碰撞改稱 closure 腿/fresh 腿——待裁決 D2-a）；段③segment receipt 生成器 scripts/segment_receipt.py＋6 測試 GREEN＋implement 斷點條文＋實跑 FRESH。待 marshal：D4 Plan/AC 修訂草案套用、task-recovery 讀端一行（D3-a）、真實 codex followup runtime 驗證（D2-b）、deploy 實跑授權（dry-run 量測 30,335B＝32%/82% gate）。全套件 569 passed。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+授權失效條款 4 處＋closure lens＋segment_receipt.py 進 main（d030fa5）；570 tests 綠＋外審六項裁決全落地＋三代命名一致性掃描閉環。
+<!-- SECTION:FINAL_SUMMARY:END -->

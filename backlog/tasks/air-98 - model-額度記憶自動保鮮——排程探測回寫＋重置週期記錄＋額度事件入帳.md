@@ -1,10 +1,10 @@
 ---
 id: AIR-98
 title: model 額度記憶自動保鮮——排程探測回寫＋重置週期記錄＋額度事件入帳
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-15 13:03'
-updated_date: '2026-09-15 16:17'
+updated_date: '2026-09-16 01:23'
 labels:
   - governance
   - memory
@@ -62,3 +62,9 @@ Provenance：09-15 user 授權『整理建議→codex+muse 討論→OK 開卡』
 
 P1 Runtime probe pipeline 實作完成（2026-09-15 worker session，working tree 待 marshal 審後提交）：交付①scripts/probe_entitlements.py——glm/codex/muse 經 delegate-bridge usage --json（binary resolve＝installed_plugins.json delegate@delegate-market installPath；bounded timeout 60s；exit map 契約＝聚合內含 family error 回 1 但 stdout 仍完整，per-family status 才是 fail-loud 切面，live 抓到後已釘測試）＋codex chatgpt-web 池健康兩訊號（healthz accepting_turns＋catalog 時間戳、browser-turns 最新 trace checkpoint——真實 layout 為 traceId 子目錄內 NN-checkpoint.json，非平鋪 *.json；doctor --json 留 TODO）；usage allow-list={codex,glm}、muse 只落 unsupported+reason、webgpt 欄 pool_visibility=none 零用量數字；落地 schema v1 原子寫+latest 指針至 ~/.agents/probe-entitlements/；--min-interval 30 skip 防重疊、--family 過濾、全腿非 ok exit 1；②tests/test_probe_entitlements.py 29 綠（RED→GREEN，bridge 三形態 fixture/webgpt 兩訊號 tmp 注入/原子寫/exit 語義/min-interval/allow-list 負向/檔名 schema）；③schedule-registry.md launchd 表加列 entitlements-probe（待安裝）＋plist 內容備於 .agent-tmp/air-98/entitlements-probe.plist（不 install）；live 實跑：glm ok（plan pro+limits 原樣）、codex upstream_error（not logged in，fail-loud 示範）、muse unsupported、webgpt verdict=degraded（healthz 全綠但最新 turn failed 非 rate limit——三訊號組合價值實證），exit 0。消費協議：ai-guide session 讀 latest-*.json 校驗（probe_ts_utc/failure_class）後寫 spine as-of+per-family 現值；probe/runtime/cron 永不直寫 spine。P2 窗口語義正典／P3 429 事件入帳／P4 capability matrix 檔案化本弧未做。mypy 不在 repo dev 工具鏈（僅 pytest+ruff），段級閘門以 ruff+pytest 為準。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+窗口語義正典＋probe 額度事件入帳進 main（c2c7024，45 tests）；兩段制交付閉環——spine patch 已套（手工合併 DB-8 漂移）＋rg 複驗零週期拷貝＋probe 試跑綠。
+<!-- SECTION:FINAL_SUMMARY:END -->

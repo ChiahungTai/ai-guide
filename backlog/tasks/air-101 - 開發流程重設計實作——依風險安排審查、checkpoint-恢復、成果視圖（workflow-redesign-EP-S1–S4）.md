@@ -1,10 +1,10 @@
 ---
 id: AIR-101
 title: 開發流程重設計實作——依風險安排審查、checkpoint 恢復、成果視圖（workflow redesign EP S1–S4）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-15 15:49'
-updated_date: '2026-09-15 22:06'
+updated_date: '2026-09-16 01:23'
 labels:
   - governance
   - skills
@@ -40,4 +40,12 @@ ordinal: 86000
 〔09-16 deploy 完成（user 授權「可以Deploy了」）〕deploy_agents 三端 OK（~/.zcode、~/.codex、~/.config/muse 各 AGENTS.md；dry-run 30,335B 全 gate 綠；舊 bundle 備份 *.bak-20260916-052452）；逐端 rg 驗 task-recovery 單一源行在場（:191）。注意：本 session 載入的是舊規則——新預設（review profile 化等）自下一個 fresh session 生效；fresh context 驗收＋SM 行為抽樣＋真實 pilot 仍待跑（驗收腿）。
 
 〔09-16 wave 決策——驗收腿騎 Wave-1 觀察〕不獨立成弧：Wave-1 新 session（新規則已部署生效）跑真實弧時掛觀察 overlay——一般變更 pilot＝AIR-99、控制面變更 pilot＝AIR-72；觀察點＝資源規劃簡報有無出現／review 是否自動依風險配置／checkpoint-first 中斷接續／post-build 三閘行為。觀察綠＋SM 抽樣過＝本卡可結案。
+
+〔09-16 Wave-1 驗收腿觀察結論——新規則首個真實使用者（marshal session）〕四觀察點：①資源規劃簡報＝出現（開工 dispatch 前報派工腿×額度現值，probe 重跑保鮮，ArcOverride 入口在場）②review 依風險配置＝部分自發——marshal 按新 profile 概念安排了 ordinary/boundary 差異與跨家族外審，但「fresh/intent 分離升級」在本 wave 無觸發樣本（無 boundary code 變更）；外審鏈＝muse×5（read-only 紅線＋bundle 材料化）全數 needs-fix→修復閉合，judge（marshal session）裁決有效③checkpoint-first＝未遇 compact/quota 自身中斷；但 worker-99 1302 陣亡的黑板 checkpoint 讓續作零考古接手（等效驗證）＋worker-72「測完又改碼」由 mtime 考古抓出（verdict 與實物脫鉤的偵測）④post-build 三閘＝本 wave 走 marshal 形態未跑 /post-build 標準鏈——三閘行為樣本留待下一真實弧（形態性缺席非紅燈）。SM 抽樣（靜態面）：Explore 腿盤點 SM-01..24 文本錨點 24/24 covered（3 半邊 unverified）；行為面實踩 SM-02/10/17/20/22＋SM-08 等效（1302 陣亡 residue-first 處置）；SM-13/SM-23 未自然觸發。附帶治理發現：ZCode available-skills 注入僅 name＋path、desc 不進決策面——skill 觸發機制 per-harness，rule 錨＋明示 invoke 為 ZCode 主路徑（治理卡候選）。結論：觀察綠（四點無紅燈）——具備結案條件，結案經 muse 確認。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Wave-1 收線結算：六線（98/99/60/72/73/102）全數進 main＋deploy 3/3；觀察綠，本卡驗收腿完成。
+<!-- SECTION:FINAL_SUMMARY:END -->

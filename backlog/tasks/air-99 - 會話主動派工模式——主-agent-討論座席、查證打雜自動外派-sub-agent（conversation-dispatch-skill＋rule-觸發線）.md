@@ -3,10 +3,10 @@ id: AIR-99
 title: >-
   會話主動派工模式——主 agent 討論座席、查證打雜自動外派 sub agent（conversation-dispatch skill＋rule
   觸發線）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-15 14:09'
-updated_date: '2026-09-15 22:23'
+updated_date: '2026-09-16 01:23'
 labels:
   - governance
   - skills
@@ -58,3 +58,9 @@ Bundle 量測基線（09-15，deploy_agents.py --dry-run＋實體 wc）：muse g
 
 〔09-16 wave 決策——升 Wave-1 主線首位〕user 連兩次問到『主 agent 自動保持討論座席、打雜自動外派』需求，優先序自『與 71 相鄰』升為 Wave-1 主線。交付＝conversation-dispatch skill＋rule 觸發線（動 rules/→結案需 deploy_agents 重跑 bundle）。新規則下第一個消費者：implement 階段 1 資源規劃簡報條款（09-16 已落）與本卡的座席形態互補——簡報管『派誰』、本卡管『主 session 保持可討論』。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+conversation-dispatch skill＋rule 觸發線進 main（458535f）；A6 端到端驗收＋A5 activation 治理發現（ZCode desc 不進決策面）落 activation-results.md；muse 外審修復閉合。
+<!-- SECTION:FINAL_SUMMARY:END -->
