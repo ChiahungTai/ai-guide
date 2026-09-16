@@ -1,6 +1,6 @@
 ---
 name: agent-workflow
-description: "Guides Agent spawning, worktree isolation, concurrency control, parallel execution, and delegation. Use when spawning agents, using worktrees, running parallel tasks, delegating to agents, handling scope-external discoveries, invoking /implement with --max-agents, or setting up Writer/Reviewer patterns. Triggers on: agent, worktree, spawn, parallel, delegation, side-discovery, scope redirect, manager-delegate, isolation, subagent, background task, auto mode."
+description: "Guides Agent spawning, worktree isolation, concurrency control, parallel execution, and delegation. Use when spawning agents, using worktrees, running parallel tasks, delegating to agents, handling scope-external discoveries, invoking /implement with --max-agents, or setting up Writer/Reviewer patterns. Triggers on: agent, worktree, spawn, parallel, delegation, side-discovery, scope redirect, manager-delegate, isolation, subagent, background task, auto mode. Boundary: how to spawn safely lives here; when to dispatch in conversation (主動派工/討論座席) = conversation-dispatch skill."
 allowed-tools:
   - Read
   - Write

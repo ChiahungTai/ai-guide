@@ -6,7 +6,7 @@ harness-scope: neutral
 
 ## Session 管理
 
-不同任務重置 context（Claude: /clear）；大範圍探索用獨立 context agent 回摘要，Writer/Reviewer 分離。同題連續糾正兩次仍失敗就換 prompt＋重置 context，超過兩次應檢討 prompt。
+不同任務重置 context（Claude: /clear）；大範圍探索用獨立 context agent 回摘要，Writer/Reviewer 分離。**會話查證外派**：廣度探索／多檔查證先判外派；唯讀查證腿可自主派——判準表載入 `skills/conversation-dispatch/SKILL.md`。同題連續糾正兩次仍失敗就換 prompt＋重置 context，超過兩次應檢討 prompt。
 
 **Session freshness**：governing rules/bundle 在 session 中變更後（redeploy、slimming、刪除、政策反轉），下一個依賴該規則的 consequential action 前必 refresh context（重讀新版）；**涉及刪除/反轉/衝突語義時重讀不是充分條件**——舊文已在 context 不會因重讀消失，須 reset/new session＋恢復主題材料（resume read-set：卡/EP/notes→journal/compact-context→active .review→目標態報告→所需 skills）。
 
