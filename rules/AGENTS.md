@@ -61,7 +61,7 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 | `outward-action-consent` | 🟢 neutral | outward action 需用戶授權（commit / deploy / push / send / live order；reversibility test + AUTH line）|
 | `llm-output-convention` | 🟢 neutral | print/Logger 雙通道核心——state transition 定義＋Namespace（tag 表/細則在 llm-output-convention skill）|
 | `symbol-query-routing` | 🟢 neutral | cr-first 符號/型別查詢路由＋任務啟動 gate（LSP operation 速查表、反例群、Agent prompt 模板、載體對照、staleness 處置在 symbol-query-routing skill）|
-| `modern-cli-preference` | 🟢 neutral | fd/rg 核心分工（陷阱目錄在 modern-cli-preference skill；Claude 權限段括號註隔離）|
+| `modern-cli-preference` | 🟢 neutral | 工具分工指針（路由權威＝symbol-query-routing rule；陷阱目錄在 modern-cli-preference skill；Claude 權限段括號註隔離）|
 | `tool-discipline` | 🟢 neutral | 通用工具紀律（uv run / pipe-exit / 禁 sed / pytest 背景跑 / 視覺判讀 agent 路由——禁主 session 讀圖；Edit 失敗階梯、zsh flags 邊界、Read 紀律案例在 tool-discipline skill）|
 | `edit-discipline` | 🟢 neutral | 通用編輯紀律（SRP/DIP/變更紀律/禁混合寫法）|
 | `bash-hard-rules` | 🔴 claude-specific | Claude 權限偵測（`#` 換行註解 / `$` 展開 / 陣列靜態攔截）|

@@ -6,7 +6,7 @@ harness-scope: neutral
 
 ## 工具選擇原則
 
-符號→code-reality、型別→bridge、文字→rg、檔案→fd（詳 [symbol-query-routing.md](symbol-query-routing.md)）。視覺判讀走 vision-review agent，禁主 session 讀圖；spawn prompt 必指定工具（如 LSP hover、rg），禁只寫「讀取/驗證」。
+符號/文字/檔案/型別查詢路由見 [symbol-query-routing.md](symbol-query-routing.md)（fd 預設遵守 `.gitignore`）。視覺判讀走 vision-review agent，禁主 session 讀圖；spawn prompt 必指定工具（如 LSP hover、rg），禁只寫「讀取/驗證」。
 
 ## Skill 調用紀律
 

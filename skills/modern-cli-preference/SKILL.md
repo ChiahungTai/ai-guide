@@ -1,11 +1,11 @@
 ---
 name: modern-cli-preference
-description: "搜尋工具陷阱細則載體（reference skill）——fd/rg 旗標與 alternation 陷阱、grep 旗標遷移、glob 錨定、git pathspec 三陷阱、統計用途禁 head 截斷、盤點執行點雙掃；rule 端留核心分工句（文字 rg／檔案 fd）。觸發詞：rg 陷阱、fd、pathspec、head 截斷、計數、統計、旗標遷移、盤點雙掃、-H、--hidden、alternation、ls-files。"
+description: "搜尋工具陷阱細則載體（reference skill）——fd/rg 旗標與 alternation 陷阱、grep 旗標遷移、glob 錨定、git pathspec 三陷阱、統計用途禁 head 截斷、盤點執行點雙掃；rule 已退為指針（路由權威＝symbol-query-routing rule；fd/rg 陷阱目錄在本 skill）。觸發詞：rg 陷阱、fd、pathspec、head 截斷、計數、統計、旗標遷移、盤點雙掃、-H、--hidden、alternation、ls-files。"
 ---
 
 # modern-cli-preference — 搜尋工具陷阱細則
 
-> 本 skill 是 `rules/modern-cli-preference.md` 的 on-demand 深層載體：rule 端保留 always-on 核心分工句（文字搜尋 rg／檔案搜尋 fd＋符號路由 pointer），陷阱目錄在本檔——**寫 rg/fd/git pathspec 命令前載入**。
+> 本 skill 是搜尋工具陷阱細則的 on-demand 載體：rule 端已退為指針，工具選擇路由權威＝symbol-query-routing rule；陷阱目錄在本檔——**寫 rg/fd/git pathspec 命令前載入**。
 
 Claude Code 對 `find -exec`/`grep -r` 有系統層硬限制，`fd`/`rg` 預設可 auto-allow；其他 harness 無此限制，但 fd/rg 的語法與噪音優勢通用。
 
