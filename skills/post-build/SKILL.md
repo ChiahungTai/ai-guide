@@ -152,7 +152,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 - **discover**：`ls deploy/surfaces/*.md`；registry 缺席或零 surface → 一筆 `N/A`（附 registry 狀態為證），不給非部署變更加稅——**僅限非 owner repo；owner repo（ai-guide）registry 缺席＝覆蓋缺失，記 `unverified`**
 - **dispatch**：逐 surface 跑其 touches 候選偵測；觸及者執行 probe（typo-only 的 `rules/**` 變更免審查腿但**不免**對帳探針）
-- **collect**：產出 `deployment-convergence` verdict 四態進收尾報告：`healthy`／`unhealthy`（探針**實證不健康**——已驗證失敗，非未驗）／`pending`（已知應做、因 AC／授權未完成）／`unverified`（探針沒跑或無法判定）。**`unhealthy` 與 `unverified` 都擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending` 保持——不得以翻 Done 沖掉，且 `pending`／`unverified` 同步登記該 repo 總驗卡（AIR-104 收 Done 條款的集中驗收機制——verdict 是總驗卡的輸入，結案消費之）；`N/A` 僅在 surface-owned 候選偵測明確零命中時使用。
+- **collect**：產出 `deployment-convergence` verdict 四態進收尾報告（即回執 `deployment-surfaces` 欄之值）：`healthy`／`unhealthy`（探針**實證不健康**——已驗證失敗，非未驗）／`pending`（已知應做、因 AC／授權未完成）／`unverified`（探針沒跑或無法判定）。**`unhealthy` 與 `unverified` 都擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending` 保持——不得以翻 Done 沖掉，且 `pending`／`unverified` 同步登記該 repo 總驗卡（AIR-104 收 Done 條款的集中驗收機制——verdict 是總驗卡的輸入，結案消費之）；`N/A` 僅在 surface-owned 候選偵測明確零命中時使用。
 
 防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看；部署面存在但無對應 surface 檔＝**未覆全**，collect 記 `unverified`（擋收線）＋登記補檔。
 
