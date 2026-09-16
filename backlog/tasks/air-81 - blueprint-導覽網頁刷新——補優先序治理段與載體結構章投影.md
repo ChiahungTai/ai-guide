@@ -1,10 +1,10 @@
 ---
 id: AIR-81
 title: blueprint 導覽網頁刷新——補優先序治理段與載體結構章投影
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-12 13:28'
-updated_date: '2026-09-16 11:09'
+updated_date: '2026-09-16 13:07'
 labels: []
 dependencies: []
 references:
@@ -24,3 +24,9 @@ blueprint 的人類導覽網頁（index.html）是治理檔的投影，目前需
 
 開工提示：894 行手寫檔刷新屬 AIR-73 build_shell.py codegen 可承接域——若 AIR-73 已落地優先走 codegen；未落地則手寫刷新。**index projection 現況 stale 範圍＝backbone 段＋structure 章＋八站導引卡，由本卡一次收斂（source 側 workflow.md 已先行，drift 有 owner）**。斷鏈表中「投影無 gate」弱點的機械防線不在本卡範圍（另行評估）。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+blueprint 導覽投影一次收斂三類 stale——backbone 段＋structure 章＋八站導引卡入 index.html（894→1045 行）；wt-close 驗證狀態對時 air-77 首例（receipt 待補記）；雙審腿 codex+flash＋judge 15 處修正；KPI 7/10/2 經機械導出驗證
+<!-- SECTION:FINAL_SUMMARY:END -->
