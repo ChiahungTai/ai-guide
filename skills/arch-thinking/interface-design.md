@@ -1,9 +1,6 @@
----
-name: api-and-interface-design
-description: "Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type contracts between modules, or establishing boundaries between frontend and backend."
----
+# Interface Design — 介面合約設計 reference（arch-thinking 側檔）
 
-# API and Interface Design
+> 前身＝`api-and-interface-design` skill（AIR-113 reference-demotion：退出 resident 注入面、內容降為 arch-thinking 的介面合約側檔）。語義與責任邊界判定歸 [arch-thinking](SKILL.md)；本檔承載介面合約的具體設計原則。
 
 Design stable, well-documented interfaces that are hard to misuse. Good interfaces make the right thing easy and the wrong thing hard.
 
@@ -31,7 +28,7 @@ Trust internal code. Validate at system edges: API route handlers, form submissi
 - 內層（domain / use case）之間信任型別合約，不重複驗證
 - 設計介面時，介面屬於內層（use case 定義 needs），實作屬於外層（adapter 提供）
 
-**與 [arch-thinking](../arch-thinking/SKILL.md) 分工（RC-2 邊界）**：本 skill 設計**介面合約**（Hyrum's Law、Validate at Boundaries、穩定性）；arch-thinking 檢視**整體結構**（分層依賴、bounded context）。介面是 adapter 邊界的具體化 — 設計介面用本 skill，看整體分層用 thinking。
+**與 [arch-thinking](SKILL.md) 分工（RC-2 邊界）**：本檔設計**介面合約**（Hyrum's Law、Validate at Boundaries、穩定性）；arch-thinking 檢視**整體結構**（分層依賴、bounded context）。介面是 adapter 邊界的具體化 — 設計介面用本檔，看整體分層用 thinking。
 
 ### Prefer Addition Over Modification
 

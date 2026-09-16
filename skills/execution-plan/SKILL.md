@@ -219,7 +219,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 
 **same-family precondition（producer 側）**：EP 整合策略記 `author_family: <family>` **metadata 欄位**（非 prose）——消費端 dispatch gate 在 [implement](../implement/SKILL.md)（相同家族時 RED 前須 challenge completed 或 degraded 明示記錄）。
 
-**下游對帳（引用不重複定義）**：本段 TC 格式是 [audit-test 角度 8](../audit-test/SKILL.md)（軸A 機械對帳）、[code-review 軸B 六項](../code-review/SKILL.md)（架構面，定義源 code-review-and-quality）、[fix-test mutation authority gate](../fix-test/SKILL.md) 的共同引用源。
+**下游對帳（引用不重複定義）**：本段 TC 格式是 [audit-test 角度 8](../audit-test/SKILL.md)（軸A 機械對帳）、[code-review 軸B 六項](../code-review/SKILL.md)（架構面，定義源 review-engine 的 code-quality profile）、[fix-test mutation authority gate](../fix-test/SKILL.md) 的共同引用源。
 
 ---
 
@@ -401,10 +401,10 @@ docs mode 的 `/implement` 執行分支見 [implement skill](../implement/SKILL.
 - EP 完整內容
 - 該維度的檢查項目清單（見 [/ep-review](../ep-review/SKILL.md) 五維度 + 維度映射表）
 - 相關檔案路徑（必讀）
-- 引用 [review-engine](../review-engine/SKILL.md)（通用：嚴重度/信心水準/審查者自證/LSP 查證/模式判定規則）+ [arch-thinking](../arch-thinking/SKILL.md)（Clean Arch 視角 §一 + 結構機械 §二）+ [code-review-and-quality](../code-review-and-quality/SKILL.md) 方法論
+- 引用 [review-engine](../review-engine/SKILL.md)（通用：嚴重度/信心水準/審查者自證/LSP 查證/模式判定規則）+ [arch-thinking](../arch-thinking/SKILL.md)（Clean Arch 視角 §一 + 結構機械 §二）+ [code-quality profile](../review-engine/code-quality-profile.md) 方法論
 - rules-reminder 規則摘要（Agent 看不到 auto-loaded rules）
 
-> **agents→skills 統一**（#B12 探討）：agent 審查知識（通用審查邏輯、Clean Arch 視角、結構機械能力、方法論）沉 skill 統一引用，agent prompt 只組裝 — 非各命令內嵌審查邏輯。EP review agent 引用 review-engine（通用）+ arch-thinking（視角+機械維度）+ code-review-and-quality（方法論），與 `/code-review`、`/illustrate` 共用同一組 skill（整脊「能力下沉」一致性）。
+> **agents→skills 統一**（#B12 探討）：agent 審查知識（通用審查邏輯、Clean Arch 視角、結構機械能力、方法論）沉 skill 統一引用，agent prompt 只組裝 — 非各命令內嵌審查邏輯。EP review agent 引用 review-engine（通用，含 code-quality profile）+ arch-thinking（視角+機械維度），與 `/code-review`、`/illustrate` 共用同一組 skill（整脊「能力下沉」一致性）。
 
 ### 單一 Agent Prompt（ordinary profile）
 
@@ -415,7 +415,7 @@ Spawn Agent（subagent_type: "Explore"），prompt 包含：
   2. **Pattern Alignment（最重要）**：EP 設計假設的 usage pattern 是否與 callers 實際 pattern 一致？
   3. **下游依賴發現**：有沒有 EP 沒提到的 callers？
   4. **邊界條件**：空值、null、缺少欄位等
-- Clean Arch 審查（**top-down**：先結構後正確性，引用 [arch-thinking](../arch-thinking/SKILL.md) + [code-review-and-quality](../code-review-and-quality/SKILL.md)）：
+- Clean Arch 審查（**top-down**：先結構後正確性，引用 [arch-thinking](../arch-thinking/SKILL.md) + [code-quality profile](../review-engine/code-quality-profile.md)）：
   1. **分層依賴**：domain←use case←adapter←infra 依賴向內？有循環？Call Stack 可行？
   2. **bounded context**：不跨域存取 `_private`？邊界清楚？職責單一？
   3. **use case 覆蓋**：消費者要什麼行為？EP 撐得起？UC 完整覆蓋？每段有驗收標準？檔案完整？依賴遺漏？

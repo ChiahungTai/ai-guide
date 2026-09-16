@@ -66,8 +66,7 @@
 
 ### 工作流 skills — 品質工具
 
-- `/lint-fix` — ruff + mypy 自動修正
-- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）
+- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）；**含 lint/type 修復**（ruff/mypy recipes＝`fix-test/lint-type-recipes.md`，前身 `/lint-fix` 已併入）
 - `/audit-test` — 測試品質稽核（反模式偵測、覆蓋對稱性、mock 健康度，只讀不寫）；v3.1 角度 8 測試契約七項對帳（EP 含凍結 TC 時）
 - `/smell-detector` — 壞味道偵測（layer 3，行動前/審既有）：架構審查＋重構前期研究＋測試優化盤點；兩 mode——`<dir|files>` zoom 變焦批判（質疑存在：6 判準+查證誠信+Domain 層判準 4/5）/ `--baseline <dir>` 廣角盤點（per-directory 4 檔+invariants+--status/--stale/--arch）；測試 smell 三類（資源/怪獸/結構，與 /audit-test 正交）；read-only 偵測器，修復走 /implement、/fix-test
 - `/consistency` — 文檔品質檢查（自洽性、矛盾性、順序、自包含、精準度、Signal/Noise）
@@ -100,7 +99,6 @@
 
 ### 工作流 skills — 其他
 
-- `/swing-analysis` — Swing Analysis 協作模式（Trajectory Viewer + 日誌監控）
 
 ### 開發流程（spec → 交付）
 - `test-driven-development` — TDD 驅動實作（RED → GREEN → 重構；AI 失敗模式反制：反 rationalization、mock 階層、xfail strict）
@@ -112,14 +110,13 @@
 > 通用方法論（發散收斂、任務分解/垂直切片、增量交付、spec-first、官方文檔 grounding）屬 LLM 原生能力，不設 skill——相關委託點已改為就地摘要。
 
 ### 品質與審查
-- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用
-- `code-review-and-quality` — code 六軸審查 profile（what to check，含 Security/Performance 軸 checklist 與 Capability Coverage 單源）；通用邏輯見 review-engine
+- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用；**code 六軸 profile＝[code-quality-profile](review-engine/code-quality-profile.md) 側檔**（前身 `code-review-and-quality` skill 已降級併入）
 - `python-type-gap` — 第三方套件型別缺口的四層策略
 - `validation-strategy` — 驗證策略紀律（e2e 優先/交易 replay>live/放 scripts//不重驗 package；與 TDD 流程分工）
 - `acceptance-evidence` — 驗收證據深層理論（reference skill：認知誤差與 EP 預見極限、Intent Drift 兩型、filter trap、L3 整合實例、Runtime Invariant Assurance、B 軸演進、盤點執行點雙掃；rule 留 L1-L6/A-B 軸 always-on 核心——rule+skill 分層控制 bundle 尺寸）
 
 ### 架構與演進
-- `api-and-interface-design` — 穩定 API / 模組邊界 / 公開介面設計（Hyrum's Law、邊界驗證、agent-friendly interface）
+- `arch-thinking` 側檔 `interface-design.md` — 穩定 API / 模組邊界 / 公開介面設計（Hyrum's Law、邊界驗證、agent-friendly interface；前身 `api-and-interface-design` skill 已降級併入）
 
 ### 專案維運
 - `kanban-board` — Tasks.md 看板卡片管理（讀 / 建 / 移動 / 回顧）
@@ -153,7 +150,6 @@
 - `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知）
 
 ### UI / 協作
-- `frontend-ui-engineering` — Panel/Bokeh 互動 dashboard / 視覺化
 - `ui-collab` — 互動式 UI 的 LLM 協作模式（`[ACTION]` 操作日誌）
 - `ui-visual-verify` — UI 開發/健檢**驗收**編排（啟動就緒判定 → playwright 截圖＋shadow DOM 量測 → vision-review 盲判讀 → findings 合流 → 契約沉澱 pytest；與 ui-collab 分工＝驗收期 vs 互動期）
 

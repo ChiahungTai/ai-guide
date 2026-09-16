@@ -1,6 +1,6 @@
 ---
 name: arch-thinking
-description: "當設計或審查模組邊界、依賴、共用契約、重用、state ownership，或修缺陷／刪除／重構可能影響其他消費者時使用。以 use case、Clean Architecture、DDD 判斷責任，按觸發條件查既有機制、補償邏輯與寫入路徑，產結構證據及限制。City Map、call graph、type structure、data-flow、Pattern Radar 配方按需讀取；決策摘要由 deep-thinking、呈現由消費命令負責。"
+description: "當設計或審查模組邊界、依賴、共用契約、重用、state ownership，或修缺陷／刪除／重構可能影響其他消費者時使用；設計 API／模組邊界／公開介面合約（Hyrum's Law、邊界驗證、agent-friendly interface）時亦用——合約細節見 interface-design 側檔。以 use case、Clean Architecture、DDD 判斷責任，按觸發條件查既有機制、補償邏輯與寫入路徑，產結構證據及限制。City Map、call graph、type structure、data-flow、Pattern Radar 配方按需讀取；決策摘要由 deep-thinking、呈現由消費命令負責。"
 ---
 
 # Architecture Thinking — 結構判準與查證
@@ -35,7 +35,7 @@ bounded context 是語義與模型的一致性邊界，不能只憑資料夾或 
 - 共用契約或實作錯誤 → 修正 authority，盤點消費者遷移與補償邏輯；不永久疊加 consumer patch 掩蓋錯誤。
 - 同名概念其實語義不同 → 明確分開模型或介面；只有共同且穩定的政策才抽共用。不能因欄位相同就合併 context。
 
-介面合約的具體設計交 [api-and-interface-design](../api-and-interface-design/SKILL.md)；本節判定誰擁有什麼責任。
+介面合約的具體設計交 [interface-design](interface-design.md)；本節判定誰擁有什麼責任。
 
 ## 二、結構機械：觸發與配方
 
@@ -72,7 +72,7 @@ bounded context 是語義與模型的一致性邊界，不能只憑資料夾或 
 - [deep-thinking](../deep-thinking/SKILL.md)：決策問題、選項、後果與改判條件；本 skill 供結構判準。
 - [debugging-and-error-recovery](../debugging-and-error-recovery/SKILL.md)：主導故障定位；涉及共用契約、補償、ownership 時調用本 skill，除錯不是排除條件。
 - [acceptance-evidence](../acceptance-evidence/SKILL.md)／[validation-strategy](../validation-strategy/SKILL.md)：決定驗證深度與方式；本 skill 指出需要驗證的 invariant 與組合路徑。
-- [api-and-interface-design](../api-and-interface-design/SKILL.md)：介面合約設計；本 skill 處理語義與責任邊界。
+- [interface-design](interface-design.md)：介面合約設計；本 skill 處理語義與責任邊界。
 - [illustrate](../illustrate/SKILL.md)／[code-review](../code-review/SKILL.md)：擁有 viewport／finding 形式、審查者與嚴重度政策。
 
 ## 五、不做與完成條件

@@ -14,7 +14,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Workflow"]
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 - [review-engine](../review-engine/SKILL.md) — 通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定規則/多層驗證）
-- [code-review-and-quality](../code-review-and-quality/SKILL.md) — code 六軸審查方法論（what to check；Security/Performance 軸的 checklist 亦在該檔，細節判斷屬 LLM 原生能力）
+- [code-quality profile](../review-engine/code-quality-profile.md) — code 六軸審查方法論（what to check；Security/Performance 軸的 checklist 亦在該檔，細節判斷屬 LLM 原生能力）
 
 Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（模式判定見 review-engine；多軸並行時的協調載體——載體由風險 profile 與協調需求決定，非 effort 門檻）
 
@@ -80,7 +80,7 @@ review 執行預設（force 獨立 / model 預設）見 [review-engine](../revie
 |----------|---------|---------|--------|
 | Correctness | 邏輯 bugs、邊界案例、測試充分性 | **always** | P0 |
 | Readability & Simplicity | 命名、控制流、避免過早抽象 | **always** | P0 |
-| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight；**diff 含 test files 時加掛測試架構六項**（定義源 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 3「測試架構六項」） | 變更 ≥ 3 files 或 arch-thinking 觸發表命中；**diff 含 test files** | P1 |
+| Architecture（axis 3，調用 arch-thinking skill） | 設計模式、模組邊界、重用、dep weight；**diff 含 test files 時加掛測試架構六項**（定義源 [code-quality profile](../review-engine/code-quality-profile.md) ### 3「測試架構六項」） | 變更 ≥ 3 files 或 arch-thinking 觸發表命中；**diff 含 test files** | P1 |
 | Security | 輸入驗證、權限檢查 | diff 含 HTTP/auth/credential | P1 |
 | Performance | N+1、無界操作 | 變更 ≥ 5 files | P2 |
 | Capability Coverage | Capabilities 行為覆蓋 | full／standard 變更 | P2 |
@@ -95,7 +95,7 @@ review 執行預設（force 獨立 / model 預設）見 [review-engine](../revie
 - `git diff` 範圍
 - 該軸的檢查項目清單（如上表）
 - 相關檔案路徑（必讀）
-- 方法論引用（code-review-and-quality；Architecture 軸引用 arch-thinking（視角+機械））
+- 方法論引用（code-quality profile；Architecture 軸引用 arch-thinking（視角+機械））
 - rules-reminder 規則摘要（Agent 看不到 auto-loaded rules）
 - CR 接線查證段（硬性；[review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」——Explore＝CLI 形態）
 - schema: DimensionVerdict（定義在 workflow-review-pattern.md）
@@ -120,7 +120,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 - **context 差異在 spawn prompt，非 agent 定義**（ZCode subagent 自動注入 AGENTS.md，「空 context」不可能全空；可控制的是不餵 EP/架構文檔）
 - **spawn prompt 必含 CR 接線查證段（硬性）**：fresh-eyes 與 primed 皆含（registry agents＝MCP 形態；逐字照 [review-engine](../review-engine/SKILL.md)「spawn prompt 工具紀律」CR 段）
-- **測試架構六項注入（v3.1——diff 含 test files 時）**：fresh-eyes 與 primed 兩側 spawn prompt 均注入六項（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面——定義源 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 3「測試架構六項」，本處只 wiring 不重複定義）；primed 額外拿 EP 凍結 TC（測試規劃段）作 context。**排除面**：翻譯忠實度（test↔TC 逐條對帳）不歸軸B——歸 [audit-test](../audit-test/SKILL.md) 角度 8（軸A 機械對帳）
+- **測試架構六項注入（v3.1——diff 含 test files 時）**：fresh-eyes 與 primed 兩側 spawn prompt 均注入六項（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面——定義源 [code-quality profile](../review-engine/code-quality-profile.md) ### 3「測試架構六項」，本處只 wiring 不重複定義）；primed 額外拿 EP 凍結 TC（測試規劃段）作 context。**排除面**：翻譯忠實度（test↔TC 逐條對帳）不歸軸B——歸 [audit-test](../audit-test/SKILL.md) 角度 8（軸A 機械對帳）
 - **delta_tour 對照（若 repo 可跑 code_reality——偵測單一真相源見 [code-reality](../code-reality/SKILL.md)）**：**僅弧模式（code 已 commit、HEAD 越過 EP baseline）產出**——spawn primed 前對當下 HEAD 跑 `code-reality snapshot --repo <repo>`（呼叫形態：`code-reality <tool> --repo <repo>`），與 EP baseline snapshot（implement 階段 1 落下；定位＝EP baseline hash8 → `<repo>-<sha8>.json`，`--label` 僅入 `_meta`；**snapshot 身份與 EP baseline 分開記**——消費實際存在者，snapshot 晚於 baseline〔resume 形態〕時明示對照只覆蓋該區間）對跑 `code-reality delta_tour <a> <b> --ep <ep.md> --repo <repo> --out-dir .agent-tmp/`（**臨時自產不持久**——不寫 `.tours/delta/`：持久版產點＝post-build hook 2 ask-once〔demand-driven，user 確認才產〕、無 post-build 弧＝implement 階段 6 fallback 同語義；`.tours/delta/` 進 git），其 `.tour` description（宣稱對照三態＋實際變動模組＋退化/跨面 pair 自動警示；json 中間產物不落盤）併入 primed 餵料——intent drift（Type A）從 LLM 推導升級為機械底稿（宣稱抽取只認特定模組路徑前綴，宣稱欄 NONE ≠ EP 無宣稱——範圍見真相源）。**HEAD == baseline（uncommitted 審查）→ 不跑**：同 sha 對跑＝零差異假陰性，且此時對 baseline sha 跑 graph 刷新＋snapshot 會以 working-tree 修改覆寫 baseline sidecar；印 `[WARN]` 退回純 LLM 對照。snapshot 報 stale WARN → 視同缺報告跳過（stale snapshot 照寫、基於舊原料）。缺 baseline snapshot 或未裝 → 跳過不阻擋。工具用法真相源：[code-reality](../code-reality/SKILL.md) skill
 - **無 EP 時降級規則**（dual 情境）：EP 是 primed 側的意圖合約核心；無 EP（跨 session resume、非 build 場景）→ 降級單 fresh-eyes agent 並印 `[WARN] no EP for primed context`（primed 缺 EP 仍跑 = 架構契合/完整度光譜可審、意圖對齊空轉，findings 噪音可能多於信號）
 - **findings 合併**：同 file:line 去重；**矛盾不裁決**——標 `conflict` 欄（兩方意點並列）交 `/judge-review` 裁決層；合併/衝突規則真相源見 [review-engine](../review-engine/SKILL.md)「fresh＋intent 分離編排」（單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」）
@@ -135,9 +135,9 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 ## 六軸審查 + 深層思考
 
-> **六軸定義**（Correctness / Readability & Simplicity / Architecture / Security / Performance / Capability Coverage）見 [code-review-and-quality](../code-review-and-quality/SKILL.md) — **單一真相源**（完整定義沉 skill）。本命令：上方啟用軸表的「審查項目」是 agent-prompt 啟用條件 + 摘要（agent 看的），非定義重複；另定義執行方式（top-down、axis 3 接線、Capability Coverage 審查細節、深層思考）。
+> **六軸定義**（Correctness / Readability & Simplicity / Architecture / Security / Performance / Capability Coverage）見 [code-quality profile](../review-engine/code-quality-profile.md) — **單一真相源**（完整定義沉 skill）。本命令：上方啟用軸表的「審查項目」是 agent-prompt 啟用條件 + 摘要（agent 看的），非定義重複；另定義執行方式（top-down、axis 3 接線、Capability Coverage 審查細節、深層思考）。
 >
-> **Correctness 三層**（消歧）：**lens**（base perspective，所有 review 共用視角）見 [review-engine](../review-engine/SKILL.md) 點 4 ③；**checklist**（what to check 細節）見 code-review-and-quality ### 1；本命令上方啟用軸表是 **agent-prompt 摘要**（非定義）。
+> **Correctness 三層**（消歧）：**lens**（base perspective，所有 review 共用視角）見 [review-engine](../review-engine/SKILL.md) 點 4 ③；**checklist**（what to check 細節）見 [code-quality profile](../review-engine/code-quality-profile.md) ### 1；本命令上方啟用軸表是 **agent-prompt 摘要**（非定義）。
 
 **top-down 審查順序**：axis 3（Architecture，結構）先於細部正確性（Correctness 等）— 結構錯了正確性審白費。
 
@@ -149,7 +149,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 ### Capability Coverage — 滿足 Capabilities 描述嗎？
 
-**checklist 單一真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 6**（涵蓋行為、diff 對應、入口指向 library 非 scripts/、simple 變更跳過）。本命令僅定義執行時機：full／standard 變更時審查，simple 變更（bug fix）跳過；審查題材為模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格 + EP 段落引用 + 「消費場景」情境（happy path、錯誤操作、邊界、效能期待差異）。
+**checklist 單一真相源在 [code-quality profile](../review-engine/code-quality-profile.md) ### 6**（涵蓋行為、diff 對應、入口指向 library 非 scripts/、simple 變更跳過）。本命令僅定義執行時機：full／standard 變更時審查，simple 變更（bug fix）跳過；審查題材為模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格 + EP 段落引用 + 「消費場景」情境（happy path、錯誤操作、邊界、效能期待差異）。
 
 ### 深層思考（決策證據與後果）
 - **讀相關程式碼**：不只看 diff，讀取被修改檔案引用的其他模組
@@ -166,7 +166,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 不向後相容原則下，API 變更或**刪除**必須同步更新所有消費端。**刪除是最高風險**——「零 caller」是 no-impact self-claim，須獨立全消費端驗證，不採信 commit/EP 自述（見 [acceptance-evidence](../../rules/acceptance-evidence.md) Claim→Evidence→Trust「刪除/死碼自述同理」）。
 
-**全消費端列舉的 what-to-check 真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md)「Dead Code Hygiene」**（LSP findReferences + rg scripts/lab/configs + 動態派發 + import 測試）——本節是 Main LLM post-flow 步驟的執行點，不重抄清單（避免 single-source drift）。切記消費端**不只 demo/poc**：**scripts/、lab/、saved config** 是清理日 over-deletion 的典型盲區。
+**全消費端列舉的 what-to-check 真相源在 [code-quality profile](../review-engine/code-quality-profile.md)「Dead Code Hygiene」**（LSP findReferences + rg scripts/lab/configs + 動態派發 + import 測試）——本節是 Main LLM post-flow 步驟的執行點，不重抄清單（避免 single-source drift）。切記消費端**不只 demo/poc**：**scripts/、lab/、saved config** 是清理日 over-deletion 的典型盲區。
 
 ---
 
@@ -174,7 +174,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 > 補盲區：消費端影響檢查看 **code consumer**（API/刪除 → scripts/lab/config）；本節看 **arch doc consumer**（結構變更 → 架構文檔）。code-review 只 **flag 提醒**，不做 sync。
 
-偵測 structural signal（新/移/改名 module、跨模組 import edge 變、觸及 hub/ripple component、新抽象層；非 file-count）→ 產 finding 提醒檢查架構文檔（`dependency-graph.md`（若有） / 模組 AGENTS.md 架構段 / `SYSTEM-MAP.md`），**每個 finding 指向其 owner tool**（what-to-check 真相源在 [code-review-and-quality](../code-review-and-quality/SKILL.md)「Architecture Doc Drift Reminder」，不重抄——single-source drift 防護）。
+偵測 structural signal（新/移/改名 module、跨模組 import edge 變、觸及 hub/ripple component、新抽象層；非 file-count）→ 產 finding 提醒檢查架構文檔（`dependency-graph.md`（若有） / 模組 AGENTS.md 架構段 / `SYSTEM-MAP.md`），**每個 finding 指向其 owner tool**（what-to-check 真相源在 [code-quality profile](../review-engine/code-quality-profile.md)「Architecture Doc Drift Reminder」，不重抄——single-source drift 防護）。
 
 **為什麼獨立成節**：`dependency-graph.md`（per-repo opt-in）無 build-time owner（人工策展，同 `architecture.md`），是架構文檔最易 silent drift 的；axis 3 被「≥3 files」gate 擋住，會漏 1-file 高 ripple 改動（如改 hub module 的單檔），故獨立、signal-triggered 接住。
 

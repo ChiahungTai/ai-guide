@@ -45,7 +45,7 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 ## 架構設計紀律
 
-spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 [design-thinking.md](rules/design-thinking.md)，SOLID 見 [edit-discipline.md](rules/edit-discipline.md)；結構查證用 arch-thinking，介面用 api-and-interface-design skill。
+spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 [design-thinking.md](rules/design-thinking.md)，SOLID 見 [edit-discipline.md](rules/edit-discipline.md)；結構查證用 arch-thinking，介面合約設計（API／模組邊界／公開介面）用 arch-thinking 的 interface-design 側檔。
 
 ## 量化交易專屬鐵律
 

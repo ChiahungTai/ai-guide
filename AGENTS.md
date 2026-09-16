@@ -91,7 +91,7 @@
 | `/code-review` | LLM | 1 / 2（跨 session） | LLM / 人類（跨 session） |
 | `/judge-review` | LLM | 鏈 | AI-self |
 | `/followup-review` | LLM | 2（Review LLM 驗收實作 LLM） | LLM / 人類觸發 |
-| `/fix-test` `/lint-fix` | LLM | 鏈（修復） | AI-self |
+| `/fix-test` | LLM | 鏈（修復，含 lint/type recipes） | AI-self |
 | **`/debrief`** | **人類（改動理解簡報）** | **3** | **人類** |
 | **`/illustrate`** | **人類（結構 viewport）** | **3** | **人類** |
 | **`/smell-detector`** | **人類（壞味道偵測）** | **3** | **人類** |

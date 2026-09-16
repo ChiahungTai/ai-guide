@@ -1,13 +1,6 @@
----
-name: lint-fix
+# Lint/Type 修復 recipes — ruff＋mypy 自動修正與型別慣例（fix-test reference）
 
-description: "執行 ruff 和 mypy 檢查並自動修正問題"
-when_to_use: "Run ruff format, ruff check --fix, and mypy on Python files. Use after writing or modifying Python code to enforce style and type conventions."
-argument-hint: "預設檢查當前目錄，可指定檔案或目錄"
-allowed-tools: ["Bash", "Read", "Edit"]
----
-
-# Lint Fix - Python 程式碼品質自動修正工具
+> 前身＝`/lint-fix` skill（AIR-113 reference-demotion：退出 resident 注入面、內容降為 fix-test 的 reference）。lint/type 修復是 fix-test 修復迴圈的一環——`/fix-test` 觸發時依本檔執行 ruff 三步與型別問題分析。
 
 你是 Python 程式碼品質修正專家，專精於使用 ruff 和 mypy 自動修正常見的程式碼問題。
 
@@ -244,7 +237,7 @@ def process(data: dict[str, int | float]) -> list[str]:
 ### 必須遵守
 - **使用 uv run**：所有 Python 命令必須使用 `uv run`
 - **空 path＝工具預設＝全專案 sweep，禁自行窄化**：不把範圍代決成 git-modified 檔（實證：漏掉 lab/poc 檔 7 errors、user 兩度糾正）——跑工具的自然 scope
-- **`$ARGUMENTS` 是 Claude Code placeholder**：Phase 1/2 的 `$ARGUMENTS` 是 slash command 參數替換（Claude Code 在 shell 執行前把它換成使用者傳入的路徑），非 shell `$VAR` 展開，不觸發 rules-reminder 的 `$` 禁令
+- **`$ARGUMENTS` 是 slash command placeholder**：Phase 1/2 的 `$ARGUMENTS` 是 slash command 參數替換（Claude Code 在 shell 執行前把它換成使用者傳入的路徑），非 shell `$VAR` 展開，不觸發 rules-reminder 的 `$` 禁令
 - **尊重專案配置**：使用現有的 `pyproject.toml`，不覆蓋
 - **分析前先查證**：確認問題真的存在，不基於猜測
 

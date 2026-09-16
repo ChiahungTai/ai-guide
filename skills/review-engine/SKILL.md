@@ -1,7 +1,7 @@
 ---
 name: review-engine
 description: "決定 finding 嚴重度（Critical/Important/Suggestion）、標信心水準（confirmed/evidence-based/inferred）、查證審查宣稱、選審查模式（Workflow/Agent Tool）、理解多層驗證鏈、決定 review 執行預設（force 獨立/風險 profile/必需視角/model/spawn-vs-session）時使用。review 命令家族通用審查邏輯的 domain 真相源 — 審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證設計；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用。"
-when_to_use: "Fires when deciding review methodology or judging findings — 嚴重度分級（Critical/Important/Suggestion）、信心水準（confirmed/evidence-based/inferred）、審查宣稱查證、審查模式判定（Workflow/Agent Tool）、review 執行預設（force 獨立／風險 profile／必需視角／model／spawn-vs-session）。情境：審查判定規則怎麼定、review 命令家族共用邏輯變更。六軸 what-to-check 屬 code-review-and-quality；發起審查任務跑 /code-review 等命令——兩者皆不觸發本 skill。"
+when_to_use: "Fires when deciding review methodology or judging findings — 嚴重度分級（Critical/Important/Suggestion）、信心水準（confirmed/evidence-based/inferred）、審查宣稱查證、審查模式判定（Workflow/Agent Tool）、review 執行預設（force 獨立／風險 profile／必需視角／model／spawn-vs-session）。情境：審查判定規則怎麼定、review 命令家族共用邏輯變更。六軸 what-to-check 屬本 skill 側檔 code-quality-profile；發起審查任務跑 /code-review 等命令——兩者皆不觸發本 skill。"
 ---
 
 # review-engine — 通用審查邏輯 domain 層
@@ -23,7 +23,7 @@ review 命令家族的 **domain 層**：跨 ep-review / code-review / audit-test
 
 **不裝**（留各 adapter）：維度定義（各 profile 自訂）、產出動作（回寫 EP / commit message / 報告）、stance（audit「偵測器非判官」）、Workflow schema/腳本（留 workflow-review-pattern）。
 
-> **Correctness 邊界（lens vs checklist）**：③ Correctness **lens**（視角，執行預設 — base perspective）在 domain（點 4 ③，所有 review 共用）；Correctness **checklist**（what to check：null / boundary / error path 細節）屬 profile，留 [code-review-and-quality](../code-review-and-quality/SKILL.md) ### 1（adapter）。lens 上移、checklist 留 adapter —— 符合本行「維度定義留各 adapter」（checklist 是維度定義；lens 是執行預設）。
+> **Correctness 邊界（lens vs checklist）**：③ Correctness **lens**（視角，執行預設 — base perspective）在 domain（點 4 ③，所有 review 共用）；Correctness **checklist**（what to check：null / boundary / error path 細節）屬 profile，留 [code-quality profile](code-quality-profile.md) ### 1。lens 上移、checklist 留 profile —— 符合本行「維度定義留各 adapter」（checklist 是維度定義；lens 是執行預設）。
 
 ---
 
@@ -62,7 +62,7 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 - **claim 必須查證**：聲稱檔案存在 → Read 它；聲稱命名衝突 → LSP `findReferences` 查 import 鏈；聲稱依賴順序有問題 → LSP `incomingCalls`/`outgoingCalls` 追蹤；聲稱 dead code → LSP `findReferences`（zero hits = 確認）
 - **無法查證標 `unverified`**：不得當成事實陳述
 - **對外部行為判斷必須實證**（通用原則）：對套件/演算法/數值特性的判斷，不能只靠推理 — 寫最小 demo 跑一次、或引用套件 source（`.venv/lib/...`）具體行號佐證，否則標 inferred + 降級
-- **歸因紀律（mixed-tree）**：審查範圍含非本次變更引入的既有問題時，**不報為 diff 新引入**（標 `pre-existing` 或不報；判準＝baseline 態已存在）。finding 訊噪比政策（HIGH SIGNAL／DO-NOT-FLAG 六條）屬 profile 層——單一源見 [code-review-and-quality](../code-review-and-quality/SKILL.md)「HIGH SIGNAL filter」，本 skill 不收（非全命令適用，見「收進判準」）
+- **歸因紀律（mixed-tree）**：審查範圍含非本次變更引入的既有問題時，**不報為 diff 新引入**（標 `pre-existing` 或不報；判準＝baseline 態已存在）。finding 訊噪比政策（HIGH SIGNAL／DO-NOT-FLAG 六條）屬 profile 層——單一源見 [code-quality profile](code-quality-profile.md)「HIGH SIGNAL filter」，本 skill 不收（非全命令適用，見「收進判準」）
 
 **不收**（留各命令）：audit-test 的「偵測器非判官 + read-only」stance（只產 findings 不下判）、audit-test「套件行為 → 寫 demo 跑一次」的 test 特化方法。本 skill 只放通用「對外部行為判斷必須實證」原則。
 
@@ -186,7 +186,7 @@ spawn review agent 時，prompt 內的工具使用紀律（源方法論「token 
 | 命令 | 標的 | profile（維度）來源 | 產出動作 |
 |------|------|-------------------|---------|
 | [ep-review](../ep-review/SKILL.md) | EP | 自訂（架構 + 完整性 + 場景 + 兜底拆解） | 回寫 EP |
-| [code-review](../code-review/SKILL.md) | git diff | [code-review-and-quality](../code-review-and-quality/SKILL.md) 六軸 | findings + commit message |
+| [code-review](../code-review/SKILL.md) | git diff | [code-quality profile](code-quality-profile.md) 六軸 | findings + commit message |
 | [audit-test](../audit-test/SKILL.md) | test files | 自訂六角度 | 偵測報告 + 健康度（read-only） |
 | execution-plan EP Review / build Agent Review | EP / code | 各自 profile | 回寫 EP / apply |
 

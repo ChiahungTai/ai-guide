@@ -48,7 +48,7 @@
 4. `.../agents/AGENTS.md`——治理段現況
 5. `.../skills/_common/<template>.md`——層慣例（僅檔頭，無需全文）
 
-> review 工單（external second-opinion）必讀含審查方法論 bundle：`review-engine` + 消費命令 profile（如 code-review 場景的 `code-review-and-quality`、結構軸 `arch-thinking`）——findings 沿用 bundle 既有詞彙（不定義新詞，詞彙單一源在對應 skill），供 in-harness judge 對譯裁決。
+> review 工單（external second-opinion）必讀含審查方法論 bundle：`review-engine`（含 [code-quality profile](../review-engine/code-quality-profile.md)）+ 結構軸 `arch-thinking`——findings 沿用 bundle 既有詞彙（不定義新詞，詞彙單一源在對應 skill），供 in-harness judge 對譯裁決。
 
 ## 5. 已決策（勿重辯）＋矛盾例外
 

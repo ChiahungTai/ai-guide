@@ -47,9 +47,9 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 | F841（未使用變數） | 移除或加 `_` 前綴 |
 | E402（sys.path 後的 import） | 加 per-file-ignores 到 pyproject.toml |
 | MyPy 第三方套件型別缺口 | 依 [python-type-gap](../python-type-gap/SKILL.md) 四層策略處理 |
-| 其他可修問題 | 依 `/lint-fix` 指引修正 |
+| 其他可修問題 | 依 fix-test 的 lint/type 修復指引（`skills/fix-test/lint-type-recipes.md`）修正 |
 
-手動修正後仍無法通過 → 提示 `/lint-fix`，中止。
+手動修正後仍無法通過 → 提示 `/fix-test`（lint/type 節），中止。
 
 > **全量測試驗證不在 commit**（在 `/implement` 階段 3，見 [build.md](../implement/SKILL.md)）：commit 只守 lint + mypy。若本次變更**未經 `/implement`**（如直接修完就 commit），commit 前先跑專案全量測試（如 `make test`）確保無 regression。
 
@@ -205,6 +205,6 @@ staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-wr
 
 commit 位於主鏈末端（主鏈定義＝ai-development-guide「Session 開場導引」；review flow 詳圖**以 code-review skill「流程位置」為單一源**——本命令不重畫）。
 
-前置：`/lint-fix`（lint 不通過時）、`/code-review`
+前置：`/fix-test` lint/type 節（lint 不通過時）、`/code-review`
 
 **捷徑模式**：當 `/code-review` 已產生 commit message 時，跳過階段 2（Git 狀態分析，含 2.5 引用同步掃描），直接進入階段 1（Lint）→ **階段 2.7（POC/Demo 處置閘門）** → **階段 2.8（Finalization 對帳閘門）** → **階段 2.9（控制面回執彙集）** → 階段 5（確認）→ 階段 6（提交）。2.7/2.8/2.9 屬 commit 前檢查閘門（非被跳過的階段 2），捷徑保留；2.6 為 optional 提醒，捷徑不強制。

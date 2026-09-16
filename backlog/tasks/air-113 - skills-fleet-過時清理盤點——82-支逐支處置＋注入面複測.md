@@ -33,6 +33,7 @@ ordinal: 98000
 0917 凌晨第一波開工（caller 排程提前）：M-A 三類處置的現場核驗＋落地——六支 domain skills 逐支核（遷出 vs 留＋desc 瘦身）、nt 對 desc 瘦身、instruction-testing AC#4 歸因修正、when_to_use 補欄六支。逐項以現場證據重驗前提（F-01 教訓）。
 
 0917 晨：AC#1 的 usage 證據軸已落地＝references 報告（82 支三源矩陣：30 天觀測窗、invocation/read/mention 三軸、conflict matrix、零低用清單）。要點：唯一非 young 真零消費＝flow-feedback（**已退役**，首例）；frontend-ui-engineering＝保守級 merge/localize candidate（UI 三支責任互異）；swing/upgrade-nt/upgrade-sj 零低用支持既有遷出；lint-fix/python-type-gap 有直讀非零用（併入選項前提＝保 lint/type recipes）。young 清單（age<60d）不進零用判據。
+0917 S1+S2（架構性處置批——bi panel 計畫＋跨 session 審閱通過後執行；收 Done 後補記）：S1 拓樸掃描（`.agent-tmp/air113/s1-topology-table.md`：81 支＝hub 53／orch 2／leaf 23／orphan-candidate 3）；S2 處置（user 拍板「搬動吧」）——swing＋frontend 遷 mosaic（`.claude/skills/` 實體＋`.agents/skills/` symlink＝CC/codex/muse 覆蓋）、reference-demotion×3（code-review-and-quality→`review-engine/code-quality-profile.md`、lint-fix→`fix-test/lint-type-recipes.md`、api-and-interface-design→`arch-thinking/interface-design.md`；parent desc 已吸收 child 觸發詞）、inbound 15 檔重指（含 ai-development-guide:48）、fleet 82→76。bi 審查修正 5 項（DO-NOT-FLAG 筆誤/mosaic stale 自述/parent desc 觸發詞等）；82→76 對帳關閉（第 6 支＝flow-feedback）。shim 退場條件：索引「前身」註記行兩個 audit 週期零命中即刪。**剩餘（「之後處理」承接）**：AC#2 四支（upgrade-nt/sj＋nt 對）遷出待 mosaic 接收評估＋codex discovery smoke；S3 雙 gate（headless probe＋confusion pairs）；python-type-gap 逐支裁。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

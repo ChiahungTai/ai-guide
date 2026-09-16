@@ -79,7 +79,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
   ├─ ARG 命名 LLM-chain 命令 → 委派該命令 + 自主疊加
   │   • observed：/implement、/execution-plan、/code-review、/ep-review、/ep-validate
-  │   • reasonable：/fix-test、/lint-fix（自癒 loop）、/audit-test（測試）、/consistency（文檔自洽）、
+  │   • reasonable：/fix-test（含 lint/type 修復）（自癒 loop）、/audit-test（測試）、/consistency（文檔自洽）、
   │                /followup-review（驗收）、/metadata-sync（commit 前更新 + 補漏）、
   │                /handoff（跨 provider）
   │
@@ -89,7 +89,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
   │   （收尾鏈：code-review〔風險 profile 派發〕→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
   │   → 收尾報告；變更留 working tree，commit 等 user 確認（自主紅線不 override）
   │   例外＝非開發流程任務（純研究/調查、環境修復、一次性維護操作）→ 自身階段 1-5（complex；
-  │   可自癒接 /fix-test、/lint-fix；完成後自主品質閘門 → /audit-test、/code-review）
+  │   可自癒接 /fix-test（含 lint/type 修復）；完成後自主品質閘門 → /audit-test、/code-review）
   │
   └─ ARG 內含接續/substrate 指令：
       • /at <time> → 跨 session 接續修飾詞（reset 後 resume；inline，非獨立分支）

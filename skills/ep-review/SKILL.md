@@ -17,7 +17,7 @@ EP 審查員，在實作前審查 Execution Plan，確保計畫書完整、合�
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
 - [review-engine](../review-engine/SKILL.md) — 通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定規則/多層驗證）
 - [arch-thinking](../arch-thinking/SKILL.md) — 架構視角 + 結構機械（F3 用；視角見 §一、機械見 §二）
-- [code-review-and-quality](../code-review-and-quality/SKILL.md) — code 審查方法論
+- [code-quality profile](../review-engine/code-quality-profile.md) — code 審查方法論
 
 Workflow 執行協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（模式判定見 review-engine；本檔定義「審 EP profile」F1-F5 維度）
 
@@ -59,7 +59,7 @@ Reviewer work unit（兩 profile 共用）：qualification=`review_findings`、a
 - EP 完整內容（boundary fresh 腿例外——無錨配置不餵意圖側材料，見上表）
 - 該維度的檢查項目清單（F1-F5 各自定義）
 - 計畫書提到的檔案路徑（必讀）
-- 方法論引用（code-review-and-quality）
+- 方法論引用（code-quality profile）
 - rules-reminder 規則摘要（Agent 看不到 auto-loaded rules）
 - schema: DimensionVerdict（定義在 workflow-review-pattern.md）
 

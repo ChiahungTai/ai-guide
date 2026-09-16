@@ -1,8 +1,8 @@
 ---
 name: fix-test
 
-description: "測試失敗修復 — 先分類再修復，防止盲目讓測試通過"
-when_to_use: "Fix failing tests with first-principles classification. Use when tests fail after refactoring, implementation changes, or when pasting test failure logs. Forces classification before any fix."
+description: "測試失敗修復＋Python lint/type 自動修正（ruff/mypy）— 先分類再修復，防止盲目讓測試通過；lint/type 修復 recipes 見 lint-type-recipes.md"
+when_to_use: "Fix failing tests with first-principles classification. Use when tests fail after refactoring, implementation changes, or when pasting test failure logs. Also use for Python lint/type fixes — ruff format, ruff check --fix, mypy auto-fix and type-convention repair."
 argument-hint: "可貼測試失敗 log。無參數時自動從 git 變更推斷受影響的測試"
 allowed-tools: ["Read", "Edit", "Bash", "Grep", "Agent"]
 ---
@@ -10,6 +10,8 @@ allowed-tools: ["Read", "Edit", "Bash", "Grep", "Agent"]
 # /fix-test — 測試失敗分類修復
 
 測試失敗不是「讓它通過就好」。重構頻繁的專案中，測試失敗可能代表**程式碼有 bug**，也可能代表**測試該重寫**。本命令強制分類後再修復。
+
+> **lint/type 修復**（前身 `/lint-fix` skill，AIR-113 reference-demotion 併入）：ruff 三步與 mypy 型別問題分析 recipes 見 [lint-type-recipes](lint-type-recipes.md)。
 
 委託 Skills（需要深度 debug 時按需載入）：
 - [debugging-and-error-recovery](../debugging-and-error-recovery/SKILL.md) — 系統化 root cause 診斷（Type A 適用）
@@ -231,7 +233,7 @@ TWINS: searched <pattern> - found <N> other sites: <files, or "none">
 ## 與其他命令的協作
 
 ```
-/refactor 或手動重構 → 測試失敗 → /fix-test → /lint-fix → /commit
+/refactor 或手動重構 → 測試失敗 → /fix-test（含 lint/type 修復——recipes 見 lint-type-recipes.md）→ /commit
 /implement 段落驗證失敗 → /fix-test（分類後決定修 code 或修 test）
 ```
 

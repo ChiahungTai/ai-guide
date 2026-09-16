@@ -1,12 +1,6 @@
----
-name: code-review-and-quality
-description: "當你要審查合併前 code 變更品質時，多軸 code review（六軸：Correctness/Readability/Architecture/Security/Performance/Capability Coverage）。code review 的 profile 定義源（what to check）。通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/Writer-Reviewer 分離/多層驗證）見 review-engine。"
-when_to_use: "Fires when reviewing pre-merge code changes against the six-axis checklist（Correctness/Readability/Architecture/Security/Performance/Capability Coverage）——需要逐軸檢查清單、Security／Performance 軸 checklist、loud→silent 與錯誤處理點枚舉、Capability Coverage 對照時。判定規則（嚴重度／信心水準）與執行預設屬 review-engine；發起審查任務用 /code-review 命令——本 skill 只回答 what to check。"
----
+# Code Quality Profile — code 六軸審查（what to check）
 
-# Code Review and Quality — code 六軸審查
-
-code review 的 **profile 定義源**：六軸（what to check）。通用審查邏輯（嚴重度分級、信心水準、審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證）的真相源在 [review-engine](../review-engine/SKILL.md) — 本檔聚焦 code 六軸，不重複通用邏輯。
+> 前身＝`code-review-and-quality` skill（AIR-113 reference-demotion：退出 resident 注入面、內容降為 review-engine 的 profile reference）。本檔是 code review 的 **profile 定義源**；觸發與執行走 `/code-review` 命令，通用審查邏輯（嚴重度分級、信心水準、審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證）真相源在 [review-engine](SKILL.md)。
 
 Six-axis review with quality gates. Every change gets reviewed before merge — no exceptions.
 
@@ -16,7 +10,7 @@ Six-axis review with quality gates. Every change gets reviewed before merge — 
 
 ### 1. Correctness
 
-> **lens vs checklist 邊界**：Correctness **lens**（base perspective，所有 review 共用的視角）定義在 [review-engine](../review-engine/SKILL.md) 點 4 ③；本段是 **checklist**（what to check 細節，profile 層）。
+> **lens vs checklist 邊界**：Correctness **lens**（base perspective，所有 review 共用的視角）定義在 [review-engine](SKILL.md) 點 4 ③；本段是 **checklist**（what to check 細節，profile 層）。
 
 - Matches spec/task requirements?
 - Edge cases handled (null, empty, boundary values)?
@@ -96,7 +90,7 @@ Walk through code with the six axes.
 
 ### Step 4: Categorize Findings
 
-嚴重度分級（3 級：Critical / Important / Suggestion）+ 信心水準標註見 [review-engine](../review-engine/SKILL.md) 嚴重度框架與信心水準段。Nit/FYI 已併入 Suggestion（統一 3 級，理由見 review-engine）。
+嚴重度分級（3 級：Critical / Important / Suggestion）+ 信心水準標註見 [review-engine](SKILL.md) 嚴重度框架與信心水準段。Nit/FYI 已併入 Suggestion（統一 3 級，理由見 review-engine）。
 
 ### Step 5: Verify Verification
 - What tests were run? Did the build pass?
@@ -165,11 +159,11 @@ DEAD CODE IDENTIFIED:
 
 ## 通用審查邏輯（見 review-engine）
 
-以下通用邏輯已移至 [review-engine](../review-engine/SKILL.md)，本檔不重複（避免跨命令 drift）：
+以下通用邏輯已移至 [review-engine](SKILL.md)，本檔不重複（避免跨命令 drift）：
 
 - **嚴重度分級 + 信心水準**（原 5 級含 Nit/FYI → 統一 3 級 Critical/Important/Suggestion + confirmed/evidence-based/inferred；Critical 禁止 inferred）
 - **審查者自證 / 誠信**（原 Reviewer Self-Verification + Honesty in Review — 每 claim 必須查證、findings 非定論、對外部行為判斷必須實證、不 rubber-stamp）
 - **LSP 查證方法 + 自我否證義務**（原 LSP-Assisted Review — 符號用 LSP、文字用 rg、找不到 ≠ 不存在）
 - **Writer-Reviewer 分離 + 多層驗證**（原 Multi-Model Review Pattern — 獨立 context 審查避免自審、review→judge→followup 各層都可能錯）
 
-See also: [review-engine](../review-engine/SKILL.md)（通用審查邏輯真相源）
+See also: [review-engine](SKILL.md)（通用審查邏輯真相源）
