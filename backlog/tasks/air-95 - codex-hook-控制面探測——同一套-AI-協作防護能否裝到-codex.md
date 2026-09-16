@@ -4,7 +4,7 @@ title: codex hook 控制面探測——同一套 AI 協作防護能否裝到 cod
 status: Done
 assignee: []
 created_date: '2026-09-15 06:12'
-updated_date: '2026-09-16 07:54'
+updated_date: '2026-09-16 18:45'
 labels: []
 dependencies: []
 ordinal: 81000
@@ -38,6 +38,10 @@ MOS-105 討論中發現 codex 官方文檔有 lifecycle hooks 機制（PreToolUs
 〔0916 launcher 調查反轉（muse）〕launcher（codex-chatgpt-web）從不啟動 codex 進程——codex exec argv 由 delegate-bridge Rust carrier 組裝（rust/crates/bridge-families/src/codex.rs:126-194 build_args 硬編碼 exec --json --skip-git-repo-check，無 trust flag 無透傳）。注入點排序：①bridge build_args 加 --dangerously-bypass-hook-trust（自家 repo 最強升級存活）②零改碼＝EXPLICIT_PATH_ENV 指 shim（codex.rs:100-121 非空即權威）③requirements.toml managed hook（trusted by policy，路徑待驗）④/hooks 互動信任（止血，hook 一變即失效）⑤fork 改動＝構造不出 codex argv，排除。已驗：managed 區塊不隨升級重寫；非託管區安全。待實機：V1 launcher 自寫 hash codex 認不認、V3 requirements.toml 路徑。
 
 〔0916 firing 終局證據〕連續 3 次 headless exec（無 bypass、非 repo cwd）均攔截成功——codex router log 逐字：ERROR codex_core::tools::router: Command blocked by PreToolUse hook: [Hook Blocked] python -c 命令含換行 + # 註解。先前 NOT_FIRING 實例（bridge job／T2）現已不可重現＝非確定性靜默 skip（transient），非確定性 trust 閘；監測方式＝本協議可隨時重跑。B（file-write 註冊＋timeout 10s）已落地 hooks.json；A（bridge 旗標）暫不需要——若靜默 skip 復發再議（contingency：bridge build_args 或 launcher 旗標）。
+
+〔0916 追記——單一 representation 收斂（B 項落地位置後續）〕config.toml 內 AIR-95 canary 探針已清除（備份 config.toml.bak-20260916-air95-canary）；因 upstream warning「loading hooks from both…」（sess_2953db8d 調查），同日裁決反方向收斂：五組 hooks 自 hooks.json 遷 config.toml inline [[hooks.*]]（hooks.json 退役＝.retired-20260916），upstream issue 計畫撤。上文「已落地 hooks.json」自此改指 config.toml。遷移後五條 untrusted＝靜默 skip，需 /hooks UI 重 approve，approve 後以本卡 firing 協議複驗。AIR-110 inventory 已同步。
+
+〔0916 複驗結案〕user approve 五條（trusted_hash 六條新入 config.toml [hooks.state]，機械確認）→ firing 協議重跑＝FIRING_CONFIRMED：PreToolUse 雙 hook 觸發、router 逐字 `ERROR codex_core::tools::router: error=Command blocked by PreToolUse hook: [Hook Blocked] python -c 命令含換行 + # 註解`、模型自述「直接執行被本地 PreToolUse hook 擋住」。證據＝.agent-tmp/air-95/firing-verify-20260916.out。附帶觀察：模型二段嘗試以 stdin 餵 bash 繞過（命令字串不含多行型態，hook 未匹配）得手——屬已知防護邊界類（卡面已載「攔直接形式非 heredoc」），非遷移回歸。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
