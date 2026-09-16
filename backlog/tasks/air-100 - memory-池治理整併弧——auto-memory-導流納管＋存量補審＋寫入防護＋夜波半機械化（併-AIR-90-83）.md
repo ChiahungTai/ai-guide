@@ -1,10 +1,10 @@
 ---
 id: AIR-100
 title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存量補審＋寫入防護＋夜波半機械化（併 AIR-90/83）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-16 05:40'
+updated_date: '2026-09-16 21:11'
 labels:
   - governance
   - memory
@@ -62,4 +62,6 @@ Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」
 〔0916 補充更正〕CR binary 一項經 user 已裁定無需更新：d105806 僅改 release.sh（wheels readiness barrier，下次發版才生效），binary 行為零差異——不出 0.9.2。
 
 〔0916 user 拍板〕本卡於 sess_014a87f8-e39c-41dd-bad0-1e658d18a56b 時執行，到時完整規劃。bi panel 規劃素材已存 .agent-tmp/six-card-review/dossier.md＋bi-*.out，該 session 開工必讀——要點：①先立 cutover snapshot 阻止移動目標再逐條補審 78 條 ②baseline 以 as-of 重定（41→78 已翻倍）③staging 拓撲決策需連動 wt-open/close 的池 symlink 敘述 ④panel 依據的仲裁條目（project-uisc-audit-11card-arbitration.md）自身是未審 auto 寫入，補審須裁定可採性 ⑤卡內 staging 方案與舊排除條款矛盾先收斂成單一契約。
+
+0917 凌晨 Segment 0 前置調查開工（caller 排程）：muse（機制正確性評估）＋flash（runtime 探測）兩腿並行——涵蓋 handoff 九條 runtime validation 可執行項；完成後交 codex＋5.3 討論機制，裁決輸入回 user。調查產物＝.agent-tmp/guides-refactoring/。
 <!-- SECTION:NOTES:END -->
