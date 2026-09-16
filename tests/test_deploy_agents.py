@@ -195,6 +195,37 @@ def test_purity_guide_not_scanned(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# _changed_rule_sections：deploy ACTION 的逐 rule 變更名單（AIR-105 codex 審查
+# ——刪除 rule 必須入列：刪除正是最需要 freshness 提醒的場景）
+# ---------------------------------------------------------------------------
+
+
+def _section_bundle(sections: dict[str, str]) -> str:
+    parts = []
+    for name, body in sections.items():
+        parts.append(f"\n---\n<!-- rules/{name} -->\n{body}")
+    return "".join(parts)
+
+
+def test_changed_rule_sections_added_changed_removed_nochange():
+    old = _section_bundle({"a.md": "A1", "b.md": "B1", "c.md": "C1"})
+    new = _section_bundle({"a.md": "A2", "c.md": "C1", "d.md": "D1"})
+    # a=changed、b=removed（舊有新無）、d=added、c=no-change
+    assert da._changed_rule_sections(old, new) == ["a", "b", "d"]
+
+
+def test_changed_rule_sections_new_target_reports_all():
+    old = None
+    new = _section_bundle({"a.md": "A1", "b.md": "B1"})
+    assert da._changed_rule_sections(old, new) == ["a", "b"]
+
+
+def test_changed_rule_sections_identical_reports_none():
+    text = _section_bundle({"a.md": "A1"})
+    assert da._changed_rule_sections(text, text) == []
+
+
+# ---------------------------------------------------------------------------
 # deploy_all：staged atomic 部署（codex 09-06 審查 I-2——unlink+write_text 非
 # 原子，中斷可留截斷檔；逐 target catch 續行可讓三 harness policy split）
 # ---------------------------------------------------------------------------

@@ -148,16 +148,16 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 ## 部署面對帳閘（conditional finalization——AIR-105）
 
-diff 觸及**部署面**時，收案前逐面核對「已裝實例」與 source 的一致性（cheap candidate detection 先行——未觸及即一筆 `N/A` 帶過，不給非部署變更加稅）：
+diff 觸及**部署面**時，收線前逐面核對「已裝實例」與 source 的一致性（cheap candidate detection 先行——未觸及即一筆 `N/A` 帶過，不給非部署變更加稅；typo-only 的 `rules/**` 變更免審查腿但**不免**對帳探針。verdict 先行產出供結案消費，收尾報告補登原文）：
 
 | 觸及面 | 候選偵測 | 健康探針（唯讀，各 surface 自帶） |
 |---|---|---|
-| rule bundle | `rules/**` 變更 | `/sync-sources` 部署新鮮度（三家 bundle byte-match source） |
+| rule bundle（ai-guide 自有 surface） | 本 repo 為 ai-guide 且 diff 命中 `ai-development-guide.md|rules/**`；他 repo 的 `rules/` 非此 surface | `/sync-sources` 部署新鮮度（三家 bundle byte-match source——`rules/`＋guide 重建比對） |
 | muse plugin | `muse-plugins/**` 變更 | `muse plugins inspect <id> --json`：cache/source 一致＋runtime_capabilities status |
-| code-reality binary | code-reality repo 面 | installed binary `--version` provenance vs repo HEAD |
-| symlink／deploy asset | `deploy/**`＋已知 symlink 面 | target 存在性＋type/content identity |
+| code-reality binary | `skills/code-reality/**`、`.code-reality.toml` 變更，或跨 repo 檢查 code-reality HEAD 前進；消費端無上述變更則 N/A | installed binary `--version` provenance vs repo HEAD |
+| symlink／deploy asset | `deploy/**`＋本 diff 觸及的 link；已知清單缺登記則註明未覆全 | target 存在性＋type/content identity |
 
-產出 `deployment-convergence` verdict＝`healthy／pending／unverified` 三態進收尾報告：**unverified 擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending`＝屬任務 AC 但未部署或未授權，保持 pending——不得以翻 Done 沖掉。本 skill 只做 discover→dispatch→collect，健康判準歸各 surface owner（不在本檔重寫各產品怎麼判健康）。防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看。
+產出 `deployment-convergence` verdict 四態進收尾報告：`healthy`／`unhealthy`（探針**實證不健康**——已驗證失敗，非未驗）／`pending`（已知應做、因 AC／授權未完成）／`unverified`（探針沒跑或無法判定）。**`unhealthy` 與 `unverified` 都擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending` 保持——不得以翻 Done 沖掉，且 `pending`／`unverified` 同步登記該 repo 總驗卡（AIR-104 收 Done 條款的集中驗收機制——verdict 是總驗卡的輸入，結案消費之）；`N/A` 僅在 repo-owned 候選偵測明確零命中時使用。本 skill 只做 discover→dispatch→collect，健康判準歸各 surface owner（不在本檔重寫各產品怎麼判健康）。防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看。
 
 ## 結案（收斂點——invoke metadata-sync 結案段）
 

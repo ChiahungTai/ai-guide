@@ -187,9 +187,9 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | `tri` | 「開 tri」／三家陪審 | muse＋codex＋GLM-5.3 | 重大架構／UC 定案、風控／會計級 diff |
 | `bi` | 「bi 就好」／雙家陪審 | muse＋codex | 常規控制面審查 |
 | `single` | 「單腿頂著」 | 任一外部家族 | 額度緊的最低配置（顯式記錄降級） |
-| `tri-flash`／`bi-flash` | 「額度不夠就 flash」 | findings 腿換 `GLM-5.3-flash` | 降檔；**judge 腿永不降**（裁定恆為主 session 旗艦或 user——lite 分工律） |
+| `tri-flash` | 「額度不夠就 flash」 | tri 的 GLM-5.3 腿降 `GLM-5.3-flash`（唯一合法讀法） | 降檔；**judge 腿永不降**（裁定恆為主 session 旗艦或 user——lite 分工律） |
 
-工單／trace 用法：`panel=tri`、`panel=bi-flash`；降檔屬 findings 腿（審查）——裁定腿不適用 flash 替補。此表是組合詞彙層，各腿的 model／effort 解析仍走上方 family 表。
+工單／trace 用法：`panel=tri`、`panel=tri-flash`。bi 額度不足：缺額那家的 findings 腿換 `GLM-5.3-flash`，工單註明哪家（例：`bi（muse→flash）`），或降 `single`——不用 `bi-flash` 詞（bi 無 GLM 腿可降、組合歧義）。codex 不可派時 `bi` 塌縮為 `single`（muse＋in-harness full 雙 context）。codex 腿須 user 顯式指定（explicit-only 既有政策不因 panel 名稱繞過）。此表是組合詞彙層，各腿的 model／effort 解析仍走上方 family 表。
 
 ### family → (model, effort, 容量現值)
 

@@ -548,16 +548,17 @@ _RULE_SECTION_MARKER = re.compile(r"^---\n<!-- rules/(.+?) -->$", re.MULTILINE)
 def _changed_rule_sections(old: str | None, new: str) -> list[str]:
     """回報新舊 bundle 間內容有差的 rule 名單（AIR-105 deploy ACTION 提醒用）。
 
-    以 bundle 的 rule 區塊 marker 切段逐段比對；舊檔結構異常時回傳空名單，
-    由呼叫端 fallback 顯示（提醒用途，不阻塞部署）。
+    以 bundle 的 rule 區塊 marker 切段逐段比對；舊檔無法解析時傾向過度回報
+    （conservative——寧可誤提醒勿漏報），空名單僅出現在解析成功且零差異。
     """
 
     def sections(text: str) -> dict[str, str]:
         parts = _RULE_SECTION_MARKER.split(text)
-        # split 帶 group → [前導, 名稱1, 內容1, 名稱2, 內容2, ...]
+        # split 帶 group → [前導, 名稱1, 內容1, 名稱2, 內容2, ...]；
+        # 尾換行正規化——bundle 末段無分隔換行，非末段有，不剝會誤報純位置變化
         out: dict[str, str] = {}
         for i in range(1, len(parts) - 1, 2):
-            out[parts[i].removesuffix(".md").strip()] = parts[i + 1]
+            out[parts[i].removesuffix(".md").strip()] = parts[i + 1].rstrip("\n")
         return out
 
     if old is None:
@@ -569,7 +570,11 @@ def _changed_rule_sections(old: str | None, new: str) -> list[str]:
         return []
     if not new_map:
         return []
-    return sorted(name for name, body in new_map.items() if old_map.get(name) != body)
+    return sorted(
+        name
+        for name in old_map.keys() | new_map.keys()
+        if old_map.get(name) != new_map.get(name)
+    )
 
 
 def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
@@ -638,7 +643,11 @@ def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
         changed: set[str] = set()
         for target in written:
             changed.update(_changed_rule_sections(old_texts.get(target), bundle))
-        names = ", ".join(changed) if changed else "(non-rule content)"
+        names = (
+            ", ".join(changed)
+            if changed
+            else "(no rule-section diff — non-rule content or parse failure)"
+        )
         print(
             f"  [ACTION] governing bundle changed ({len(written)} target(s)); "
             f"changed rules: {names}"
