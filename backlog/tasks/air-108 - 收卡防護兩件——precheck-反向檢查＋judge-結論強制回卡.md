@@ -32,3 +32,9 @@ UI-SC audit 的兩條流程建議：backlog_precheck 加反向檢查（本線已
 〔已決策勿重辯：①反向檢查＝backlog_precheck.sh 增「本線已有實作 commit、卡未 Done→擋」（UI-SC audit 建議）②回卡條款＝review/judge 結論強制 --append-notes 落卡（findings 不落卡＝考古成本）③源＝.agent-tmp/air-101/flash-sc-audit.md 建議 2/3〕
 範圍：backlog_precheck.sh＋review-engine／agent-review-cycle 條文。風險分類：ordinary（既有腳本小改＋條文增補）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔0916 實作完成〕AC#1 反向檢查（To Do 卡本線實作 commit→需裁決擋；-i 補大小寫盲點；結案序列先翻 Done）＋AC#2 結論回卡條款（judge-review 單一源＋agent-review-cycle 腿級）——commit 於 air-108 branch，等 tri panel 終審。
+<!-- SECTION:NOTES:END -->
