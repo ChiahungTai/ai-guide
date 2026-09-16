@@ -9,7 +9,7 @@
 branch="$(git symbolic-ref --short -q HEAD || echo DETACHED)"
 [ "$branch" = "main" ] || exit 0
 # -c core.quotePath=false：預設 quotePath 會把非 ASCII 路徑 octal-escape＋引號包裹，
-# 三個 regex 分支全失效＝靜默 fail-open（fresh 腿 F1 機械實證）
+# 全部 alternation 分支失效＝靜默 fail-open（fresh 腿 F1 機械實證）
 staged="$(git -c core.quotePath=false diff --cached --name-only)"
 [ -n "$staged" ] || exit 0
 hits="$(printf '%s\n' "$staged" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$|^(rules|skills|agents|hooks|deploy|muse-plugins|\.githooks)/|^ai-development-guide\.md$|^tests/test_githooks\.py$|^scripts/deploy_agents\.py$')"

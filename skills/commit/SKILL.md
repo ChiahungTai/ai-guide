@@ -148,7 +148,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 ### 階段 2.9：控制面回執彙集（AIR-106）
 
-staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
+staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern——無 guard 檔的 repo 以 instruction-writing 同節的家族描述為判定）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
 
 ### 階段 4：生成 Commit Message
 
