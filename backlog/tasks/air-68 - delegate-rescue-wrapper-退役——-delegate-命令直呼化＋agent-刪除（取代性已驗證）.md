@@ -4,7 +4,7 @@ title: delegate-rescue wrapper 退役——/delegate 命令直呼化＋agent 刪
 status: To Do
 assignee: []
 created_date: '2026-09-09 22:14'
-updated_date: '2026-09-16 05:54'
+updated_date: '2026-09-16 06:15'
 labels:
   - governance
   - bridge
@@ -30,4 +30,6 @@ ordinal: 54000
 
 <!-- SECTION:NOTES:BEGIN -->
 〔0916 user 拍板〕合體案 OK——切口一立即做，S1-S5 轉 phase 2 掛 bridge 維護弧。panel 補充：驗收須含版號 bump＋重裝（已裝 2.0.12 殘影不因上游刪檔消失）。
+
+〔flash 審查條件 0916〕F1-F3 記憶池殘留（feedback_dual-family-review-dispatch:26 教舊配方／quota-failover-policy:19 特許條款未廢／external-runtime-delegation-family:14 退役指針 stale 指 AIR-50 S8）→ 路由 AIR-69 memory audit 補 deprecated 標記與 AIR-68 phase 2 指針。另：卡 PLAN 切口一「bridge-dispatch rule」項為 no-op（rule 無 wrapper 指引——已驗證），範圍實際僅 AGENTS.md。
 <!-- SECTION:NOTES:END -->
