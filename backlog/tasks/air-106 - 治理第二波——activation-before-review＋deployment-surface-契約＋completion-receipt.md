@@ -1,10 +1,10 @@
 ---
 id: AIR-106
 title: 治理第二波——activation-before-review＋deployment surface 契約＋completion receipt
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-16 03:16'
-updated_date: '2026-09-16 04:17'
+updated_date: '2026-09-16 05:28'
 labels: []
 dependencies: []
 references:
@@ -38,4 +38,12 @@ AIR-105 落地時實證的洞（F8）：Claude 端規則是 live symlink，主�
 
 <!-- SECTION:NOTES:BEGIN -->
 〔審查腿回收 0916〕bi panel＋fresh/intent 四腿全回收：①muse job-mu3k8gcj-xx1hbp（conditional pass——P1 hooksPath fail-open/merge 無閘/語義矛盾＋P2 四欄值域/N-A-未覆全劃界）②codex chatgpt-web/high（needs-fix——P0 canonical checkout 生效面：live symlink 指 canonical working tree，primary 切卡 branch＝checkout 即生效與 commit 無關；本腿中途撞 web 池限額 09-19 16:22 後恢復，findings 已完整交付）③fresh flash（needs-fix——P0 quotePath：非 ASCII 路徑 octal-escape 包裹致三 regex 分支全失效，機械重現兩次）④intent flash（conditional pass——P1 commit 捷徑模式漏 2.9）。judge 裁決：P0/P1/P2 全修（dee87d8＋ec80291），tri panel 終審待四卡齊；不採：NUL-safe（solo repo 記錄）、客製 break-glass、tests/ 全閘。
+
+〔落地回執（post-build 終版）〕classification=boundary（review-engine 判定表：控制面 authority/gate 面）。review=七腿：bi panel muse job-mu3k8gcj（conditional pass→P1/P2 修）＋codex chatgpt-web/high 首腿（needs-fix→P0 canonical checkout 生效面修；jobId 未錄，輸出 .agent-tmp/air-106/review-codex.out；中途撞 web 池限額後由 user 裁定重派）＋fresh flash（needs-fix→P0 quotePath 修）＋intent flash（conditional pass→捷徑旁路修）＋tri 終審 muse job-mu3m0kl5（conditional pass→限域/句式/欄名修）＋tri GLM-5.3 full（conditional pass→merge-tree 卡檔 union 解＋P3 批修）＋tri codex-web job-mu3mic6x（needs-fix→skill 限域/Workflow 漏接/nt 補錨修）。修復 commits：dee87d8/ec80291/36f7463（branch 已 merge 保留 hash）。session-freshness=applied（model-routing 派工前重載；codex-web 重派＝user arc 改判）。deployment-surfaces=pending（bundle redeploy 待 user 授權——新條文已進 main；muse-plugin/code-reality/symlink 三面 healthy）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+治理第二波三件全落地（card WT 隔離閘／deployment surface 契約／回執四欄正典）＋canonical 正典升級 persistent card WT。七腿審查（bi panel＋fresh/intent＋tri 終審）3×P0＋P1/P2 全修，merge cfdb1ac 已 push。bundle redeploy 待授權（deployment-surfaces=pending）。
+<!-- SECTION:FINAL_SUMMARY:END -->

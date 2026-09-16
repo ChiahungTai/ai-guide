@@ -1,10 +1,10 @@
 ---
 id: AIR-103
 title: harness 文檔鏡像生命週期規範——何時新增、怎麼更新、何時退役
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-16 00:41'
-updated_date: '2026-09-16 03:48'
+updated_date: '2026-09-16 05:28'
 labels: []
 dependencies: []
 references:
@@ -37,4 +37,12 @@ ordinal: 88000
 
 <!-- SECTION:NOTES:BEGIN -->
 〔0916 實作完成〕LIFECYCLE.md 三態判準＋退役五處連動＋殘留掃描驗證；AGENTS.md ref-docs 指針——commit 於 air-103 branch，等 tri panel 終審。
+
+〔落地回執〕classification=ordinary（LIFECYCLE.md＝ref-docs 參考文檔非 live instruction；AGENTS.md 指針行經 tri 全腿覆蓋審查）。review=tri 終審三腿 muse job-mu3m0kl5＋GLM-5.3 full＋codex job-mu3mic6x（LIFECYCLE.md 全文在範圍，零 finding）。session-freshness=applied。deployment-surfaces=N/A（ref-docs 非部署面）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+ref-docs/harness/LIFECYCLE.md 三態判準（新增／更新／退役＋五處連動＋殘留掃描驗證）＋AGENTS.md 指針落地；tri 三腿審查零 finding。
+<!-- SECTION:FINAL_SUMMARY:END -->
