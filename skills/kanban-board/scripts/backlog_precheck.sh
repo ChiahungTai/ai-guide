@@ -37,13 +37,31 @@ for id in "${ids[@]}"; do
   fi
   # --all --not HEAD = 有 commit 提及此卡、但當前 branch 不包含 = 真平行線訊號
   # （裸 --all --grep 會命中本線建卡 commit，永遠誤報；比對為子串匹配，多擋不少放——安全側）
+  # -i：卡 id 大寫（AIR-46）、實作 commit subject 小寫 scope（(air-46)）——區分大小寫會整組漏抓
   # fail-closed：git log operational 失敗（repo/object/permission）禁吞成空 hits 假「可清」——exit 2 交 caller F2 分流
-  if ! hits=$(git log --all --not HEAD --grep "$id" --oneline 2>&1); then
+  if ! hits=$(git log --all --not HEAD -i --grep "$id" --oneline 2>&1); then
     echo "[ERROR] $id — git log 失敗（runtime，非 policy）：$hits" >&2; exit 2
   fi
   if [ -n "$hits" ]; then
     echo "[不可清] $id — 跨線訊號（其他 branch commit 提及）："; echo "$hits" | sed 's/^/    /'; blocked=1
-  else
+  fi
+  # 反向檢查（AIR-108）：本線已有實作 commit、卡面未翻（To Do）＝做完未收卡。
+  # 只對 To Do 生效——翻 Done 即視為裁決完成（結案序列＝先翻卡再 precheck，Done 卡自動跳過）；
+  # 過濾 bookkeeping（chore(backlog) 建卡/開工/結案 metadata），其餘 subject 命中即訊號。
+  impl_hit=""
+  if [ "$s" = "To Do" ]; then
+    if ! own=$(git log HEAD -i --grep "$id" --oneline 2>&1); then
+      echo "[ERROR] $id — git log 失敗（runtime，非 policy）：$own" >&2; exit 2
+    fi
+    impl=$(printf '%s\n' "$own" | grep -v 'chore(backlog)' || true)
+    if [ -n "$impl" ]; then
+      echo "[需裁決] $id — 本線已有實作 commit、卡面未翻（To Do）：收 Done（結案兩步）或記錄阻擋理由："
+      echo "$impl" | sed 's/^/    /'
+      impl_hit=1
+      blocked=1
+    fi
+  fi
+  if [ -z "$hits" ] && [ -z "$impl_hit" ]; then
     echo "[可清] $id (status=$s)"
   fi
 done
