@@ -18,14 +18,18 @@ backlog init "<project>" --agent-instructions none
 ```
 
 - `--agent-instructions none`：不注入 CRITICAL_INSTRUCTION 區塊（與本 repo AGENTS.md 治理／元資訊禁令衝突）
-- config.yml 關鍵鍵：`statuses`（建議三欄 To Do/In Progress/Done）、`task_prefix`（repo 識別前綴，如 mosaic=`mos`、ai-guide=`air`）、`auto_commit: false`（外部 git 紀律——CLI 只改檔）、`check_active_branches: true`（多 WT repo 必開——board 唯讀顯示他 branch 已 commit 卡＋next-id 掃描跨 branch 卡防撞；untracked/staged 卡不在 branch ref 上，git 掃描天生看不見，殘餘防撞靠建卡預掃〔見命令合約建卡段〕；**ai-guide 現值 false**——09-09 起單 WT working copy 單一真相形態：跨 branch 掃描關閉、無跨 WT 預掃面，id 防撞＝working copy 單一真相＋建卡 id 檢查）
+- config.yml 關鍵鍵：`statuses`（建議三欄 To Do/In Progress/Done）、`task_prefix`（repo 識別前綴，如 mosaic=`mos`、ai-guide=`air`）、`auto_commit: false`（外部 git 紀律——CLI 只改檔）、`check_active_branches: true`（多 WT repo 必開——board 唯讀顯示他 branch 已 commit 卡＋next-id 掃描跨 branch 卡防撞；untracked/staged 卡不在 branch ref 上，git 掃描天生看不見，殘餘防撞靠建卡預掃〔見命令合約建卡段〕；**ai-guide 現值 true**——09-16 AIR-72 隨 persistent card WT 上線切換（多 WT 落地＝跨 branch 掃描＋建卡預掃＋porcelain 面並用，單 WT 時代「working copy 單一真相」假設不再成立））
 
 ## 命令合約（消費端引用本段）
 
 **建卡**（execution-plan UC 盤點）：
 ```bash
-# 多 WT id 防撞預掃（單 WT repo 跳過）：跨 WT 檔案系統全域 max id——涵蓋 git 掃描盲區（他 WT untracked/staged 卡）
+# 多 WT id 防撞預掃（多 WT repo 必跑）：a) 檔案系統面——跨 WT max id，涵蓋他 WT untracked/staged 卡（git 掃描看不見）；b) porcelain 面——各 WT 未 commit 卡檔歸屬（誰該協調、卡何時進 ref）
 for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do ls "$wt/backlog/tasks/" 2>/dev/null; done | rg -o '^[a-zA-Z]+-[0-9.]+' | sort -V | tail -1
+for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do git -C "$wt" status --porcelain -- backlog/tasks/ 2>/dev/null; done
+# 聚合判讀 a)：上行輸出＝filesystem 面 max-id 一行——全域最高卡號（涵蓋他 WT untracked/staged 卡）
+# 聚合判讀 b)：本行輸出＝porcelain 面歸屬表——各 WT 未 commit 卡檔逐一列出（誰該協調、卡何時進 ref）
+# 盲區聲明：兩掃母體皆為 `git worktree list --porcelain`——未註冊 WT 目錄（plain directory copy、pruned 殘留）不在掃描內
 backlog task create "<標題>" -l <labels> -d <目標一句> [--ac "<驗收條件>"]   # CLI id=本 WT max+1，無 --id 可指定
 backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"   # desc 留人話、spec 住 Plan（詳「欄位分工」；`task create --plan` 限 active status，To Do 建卡後以 edit 補）
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
@@ -38,7 +42,7 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 
 **預掃衝突處置**：預掃輸出的全域最高 id 高於本 WT 所見最高 id → 他 WT 有未進版控的更高卡，CLI 自動配 id 會撞號 → **停下協調**（他 WT 卡 commit 進 branch 後 cross-branch 掃描接手，再建卡），不得就地建。
 
-**共享 WT 建卡 id 佔用查驗三面**（多 session 共享單 WT、撞號反覆發生後強化——working copy 單一真相不豁免）：①本 WT `ls backlog/tasks/`＋untracked 新建（平行 session 未 commit 的新卡）；②`git ls-tree <各未 merge branch> backlog/tasks/`（他 branch 上的卡本 WT 看不到）；③`git log --all -- 'backlog/tasks/<prefix>-*'`（卡 id 不可重用——歷史重用同樣撞）。撞號修復先例＝owning branch 上 `git mv`＋frontmatter id 改（任務保留不廢棄）。
+**共享 WT 建卡 id 佔用查驗三面**（多 session 共享單 WT、撞號反覆發生後強化——working copy 單一真相不豁免）：①本 WT `ls backlog/tasks/`＋`git status --porcelain backlog/tasks/`（untracked／staged 新建——porcelain 面抓平行 session 未 commit 卡檔，`??`＝untracked、`A `＝staged）；②`git ls-tree <各未 merge branch> backlog/tasks/`（他 branch 上的卡本 WT 看不到）；③`git log --all -- 'backlog/tasks/<prefix>-*'`（卡 id 不可重用——歷史重用同樣撞）。撞號修復先例＝owning branch 上 `git mv`＋frontmatter id 改（任務保留不廢棄）。
 **建卡 spec gate**（跨 session To Do 卡必過；session 內即辦豁免）：工單三必有住 `Implementation Plan`——①`baseline`（`〔baseline：<repo> <hash>〕`）②`已決策勿重辯`（`〔已決策勿重辯：①…〕`）——驗收條款（③）住 AC；語義在場即可，標記形式不限。軟自查：`rg -c "baseline|已決策|驗收" backlog/tasks/<卡>.md` 應 ≥3（豁免卡除外）。風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）是「已決策」段的合法內容形態。
 **欄位分工（desc 人話／Plan 工單）**（user 拍板——board 不只是 AI 工單池，也是 user 的主視圖；09-15 改制取代舊〔human-summary〕desc 頂部標記慣例）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels 承載（人話 triage 靠 desc、spec 檢索靠 Plan），title 不背 AI 檢索職責。②`desc` **全段人話**（1-3 句）：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；AI 工單內容不進 desc。③`Implementation Plan`＝AI 工單 spec（baseline／已決策勿重辯／範圍）——原生欄位零 hack、工具寫回永不重排（檔案段落 canonical 順序＝Description→Plan→AC→Notes→Final Summary，round-trip 實證）；spec 禁放 Notes（Notes 是 `--append-notes` 的 append 目標，spec 會被進度筆記同段堆疊掩埋）。④`AC`=驗收 checklist、`Notes`=append 進度、`Final Summary`=結算。建卡流程＝`task create`（To Do，帶人話 desc）→ `task edit --plan` 補 spec。既有卡下次觸及時順手搬，不專門回填。
 
@@ -58,6 +62,8 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 （採卡 branch 的 repo 在 ⑤ 之後另有 **⑥ checkout 卡 branch**——規則源＝該 repo AGENTS.md「git 慣例」節；通用起手式恆五步，⑥ 是 repo 層擴充）
 
 **開工 metadata 即 commit（user 09-11 特赦）**：起手式 ①⑤ 的 backlog 檔變更（In Progress＋雙 refs）隨後立即 commit **僅 `backlog/`**（message `chore(backlog): <id> 開工…`）——卡狀態是跨 WT 可見性契約，未 commit 平行 session 看不見；例外條款單一源＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」②；Capabilities／程式碼結算物不隨此例外。
+
+**board single-writer 例外分工（09-16）**：automation／衍生／spawned session 的開工狀態翻轉改為**唯讀判定＋verdict 回報 board-control（marshal／主 session）代為落盤**——本段舊文「衍生 session 不走 implement 亦同（做第一動）」自 single-writer 條款（見下）生效日起由 board-control 代行，衍生 session 本身不執行 ①⑤ 的卡 metadata 寫入。
 
 **🔴 雙 ref 合約**（09-11 新制：只掛 repo 相對路徑——ext／VSCode 直接消費：`.md`→編輯器、`.html`→外部瀏覽器；新卡不掛 http URL）：
 - 第一值＝EP（無 EP 的 simple 卡掛主交付物）的 repo 相對路徑（必備）
@@ -100,7 +106,9 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 
 **註記追加**（消費場景等）：`backlog task edit <id> --append-notes "<文字>"`
 
-**卡編輯前查驗**（凡 `task edit`——開工/結案/改 refs/註記同；非跨線掃描 precheck〔那是 `task complete` 前置〕）：
+**🔴 board single-writer（多 WT 形態，09-16 AIR-72 定案）**：卡 metadata（status／refs／id allocation／final summary）只有 **board-control**（marshal／主 session，依 blueprint 寫入責任決策樹）可寫；**spawned／衍生 session 禁碰卡 metadata**（**board-control automation（backlog cleanup 批次）除外**——`run-backlog-cleanup` 的 `task complete`＋commit 為既有合法自動腿，見「清理批次自動腿」段）——禁 `task edit`／`task create`／改 `backlog/` 卡檔，worker 發現一律經 verdict 回報、由 board-control 落盤（execution plane 可讀 card state，不寫）。開／收 WT 的互斥鎖＝`scripts/wt-open.sh`／`wt-close.sh` 的共享 `.git` mkdir lock。卡 metadata 的 **marshal 單點 commit 慣例**：metadata commit 集中由 board-control 單一主體執行（建卡①／開工②／結案③特赦皆同主體，例外條款單一源＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）——多 WT 下這是撞寫防線，不是風格偏好。
+
+**🔴 卡編輯前查驗**（凡 `task edit`——開工/結案/改 refs/註記同；非跨線掃描 precheck〔那是 `task complete` 前置〕）：
 - **對時卡 id 歸屬**：只引用建卡 CLI 回報的 id，禁假設下一號（編號會被平行 session 佔走——真實案例：假設下一號 AIR-26 實配 AIR-28，`task edit -s --ref` 打在平行 session 的**已結案卡**上，refs 被整組替換毀掉、status 被覆蓋）；對非本 session 建的卡操作前先讀卡（status/refs 對時）——「本 session 無其他寫入者」保證可能數小時內過時
 - **`--ref` 整組替換即毀原 refs**：誤打他卡＝直接毀卡（結案兩步靠此語義換路徑——見上結案 bash 註解）
 - **誤改復原**：已 commit 卡被誤改 → **先確認該卡 diff 全屬本次誤改**（共享 WT 下他人合法未提交變更在同檔＝停，依 collaboration-constraints 機械衝突訊號確認）→ 才 `git checkout HEAD -- <卡檔>` 全量復原（反向 CLI 操作不夠——格式化差異會留 diff）
