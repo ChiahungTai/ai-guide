@@ -8,15 +8,17 @@
 
 branch="$(git symbolic-ref --short -q HEAD || echo DETACHED)"
 [ "$branch" = "main" ] || exit 0
-staged="$(git diff --cached --name-only)"
+# -c core.quotePath=false：預設 quotePath 會把非 ASCII 路徑 octal-escape＋引號包裹，
+# 三個 regex 分支全失效＝靜默 fail-open（fresh 腿 F1 機械實證）
+staged="$(git -c core.quotePath=false diff --cached --name-only)"
 [ -n "$staged" ] || exit 0
-hits="$(printf '%s\n' "$staged" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$|^(rules|skills|agents|hooks|deploy|muse-plugins|\.githooks)/|^ai-development-guide\.md$')"
+hits="$(printf '%s\n' "$staged" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$|^(rules|skills|agents|hooks|deploy|muse-plugins|\.githooks)/|^ai-development-guide\.md$|^tests/test_githooks\.py$|^scripts/deploy_agents\.py$')"
 if [ -n "$hits" ]; then
   {
     echo "[pre-commit] 控制面路徑禁落 canonical main（activation-before-review 防線，AIR-106）"
-    echo "  authoring 走卡 branch（air-<N>）或 persistent card WT；審查腿＋回執四欄齊後才 merge canonical。命中："
+    echo "  authoring 走非 canonical WT 的卡 branch 或 persistent card WT（canonical 主樹留 main）；審查腿＋回執四欄齊後才 merge canonical。命中："
     printf '%s\n' "$hits" | sed 's/^/    /'
-    echo "  逃生口：git commit --no-verify（須在卡 notes 記錄理由）"
+    echo "  逃生口：git commit --no-verify（同時跳過測試閘——手動補跑；須在卡 notes 記錄理由）"
   } >&2
   exit 1
 fi

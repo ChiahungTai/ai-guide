@@ -8,6 +8,8 @@ guard 是行為閘門核心——regression 直接改變隔離面：
 import subprocess
 from pathlib import Path
 
+import pytest
+
 GUARD = Path(__file__).resolve().parent.parent / ".githooks" / "control-plane-guard.sh"
 PRE_COMMIT = Path(__file__).resolve().parent.parent / ".githooks" / "pre-commit"
 
@@ -37,7 +39,7 @@ def _run_guard(repo: Path) -> subprocess.CompletedProcess:
 
 
 # ---------------------------------------------------------------------------
-# block：main 上控制面路徑 staged
+# block：main 上控制面路徑 staged（一路徑一斷言——regex 各交替分支 typo 即紅）
 # ---------------------------------------------------------------------------
 
 
@@ -48,28 +50,39 @@ def _stage(repo: Path, rel: str) -> None:
     _git(repo, "add", rel)
 
 
-def test_block_rules_on_main(tmp_path):
+@pytest.mark.parametrize(
+    "rel",
+    [
+        "rules/tool-discipline.md",
+        "skills/foo/SKILL.md",
+        "agents/roles/reviewer.md",
+        "hooks/block-x.py",
+        "deploy/entitlements-probe.plist",
+        "muse-plugins/memory-governance/x.md",
+        ".githooks/pre-commit",
+        "tests/test_githooks.py",
+        "scripts/deploy_agents.py",
+        "ai-development-guide.md",
+        "ai-analysis/blueprint/AGENTS.md",
+        "CLAUDE.md",
+    ],
+)
+def test_block_control_plane_paths_on_main(tmp_path, rel):
     repo = _init_repo(tmp_path)
-    _stage(repo, "rules/tool-discipline.md")
+    _stage(repo, rel)
     r = _run_guard(repo)
-    assert r.returncode == 1
+    assert r.returncode == 1, f"應擋未擋：{rel}"
     assert "控制面路徑禁落 canonical main" in r.stderr
-    assert "rules/tool-discipline.md" in r.stderr
 
 
-def test_block_deep_module_agents_md(tmp_path):
+def test_block_non_ascii_path_quotepath_regression(tmp_path):
+    """quotePath regression（fresh 腿 F1 P0）：非 ASCII 路徑預設被 octal-escape＋
+    引號包裹，pattern 三分支全失效＝gate 靜默放行。stderr 須見 raw 路徑。"""
     repo = _init_repo(tmp_path)
-    _stage(repo, "ai-analysis/blueprint/AGENTS.md")
+    _stage(repo, "rules/工具規範.md")
     r = _run_guard(repo)
     assert r.returncode == 1
-
-
-def test_block_skills_and_root_guide(tmp_path):
-    repo = _init_repo(tmp_path)
-    _stage(repo, "skills/foo/SKILL.md")
-    _stage(repo, "ai-development-guide.md")
-    r = _run_guard(repo)
-    assert r.returncode == 1
+    assert "rules/工具規範.md" in r.stderr
 
 
 def test_block_unborn_main_head(tmp_path):

@@ -5,11 +5,11 @@ owner: code-reality repo（binary 安裝真相源＝skills/code-reality/SKILL.md
 
 ## touches（候選偵測）
 
-`skills/code-reality/**`、`.code-reality.toml` 變更；收線時另跨 repo 檢查 code-reality HEAD 前進（post-build collect 腿執行）。消費端無上述變更則 N/A。
+`skills/code-reality/**`、`.code-reality.toml` 變更；跨 repo 的 code-reality HEAD 前進。消費端無上述變更則 N/A。
 
 ## probe（唯讀健康探針）
 
-installed binary `--version` provenance vs repo HEAD。
+installed binary `--version` provenance vs repo HEAD（HEAD 前進偵測於收線 dispatch 時執行）。
 
 ## health 判準
 
