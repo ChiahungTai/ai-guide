@@ -4,7 +4,7 @@ title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存�
 status: To Do
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-15 15:31'
+updated_date: '2026-09-16 01:55'
 labels:
   - governance
   - memory
@@ -56,4 +56,8 @@ Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」
 09-15 user 質問「改連 memory-auto 後 ZCode 怎用到維護池」——P1 增設計項【開場注入保護】：事實＝ZCode 對池的消費有兩面——push（開場注入 MEMORY.md 常駐 12 條，經 zcode memory dir 雙跳）與 pull（AGENTS.md 觀察池路由：主體路徑＋rg _inventory → Read body，always-on）。改指後 pull 不受影響（路由行與 symlink 無關）；push 會失去。緩解＝在 memory-auto/ 手寫 MEMORY.md 當 routing 指針（本目錄＝未審 staging；curated 池在 .agents/memory/，rg _inventory）→ 開場注入變成池的指針。待驗證＝ZCode 背景寫入者會否覆寫/重生成其目錄的 MEMORY.md（P1 實測；若會，fallback＝強化 AGENTS.md 路由行）。誠實成本＝常駐 12 條的被動提醒（~2.3KB）改為指針；CC 端不受影響（readlink 實證：CC 腳獨立直連池，zcode 腳改指不動它）。
 
 09-15 user 裁定①：**P0 POC gate 前置、不馬上做**——staging 形態 (a)/(b) 及開場注入方案須 POC 實證後才拍板。②user 提出**變體 (c)：memory-auto/MEMORY.md 用 symlink 連到池的 MEMORY.md**——直接保住 push 注入（優於手寫指針）；風險＝若背景寫入者會寫 index，write-through symlink 會污染池投影——這正是 POC 要測的。P0 POC 項：(1) 背景寫入者是否寫/重生成其目錄 MEMORY.md（觀察 code-reality 原生 dir＋ai-guide 改指後實測）(2) 若寫，是否 write-through symlink 進池 (3) 變體 (c) 下注入是否真吃到池 index。pre-POC 證據（09-15）：code-reality MEMORY.md 為 session 手筆風格（rich 列點/✅終態/跨引用），未見 originSessionId 條目入列——index 由 session LLM 維護的假說獲佐證、背景寫入者不動 index 的機率高。P0 通過後才動 P1 手術。
+
+〔09-16 重裝稽核新事實——muse governance plugin 更新鏈已斷，建議隨本弧 P1 併處〕①稽核實測：muse-memory-governance plugin 的 source provenance 指向 ~/Github/ai-rules/muse-plugins/memory-governance（rename 前舊路徑，現已不存在）；現況 muse cache 內容與 ai-guide/muse-plugins/memory-governance 逐檔一致、runtime trusted_enabled——功能正常，但下次 content update 的源頭註冊會失敗。②與本卡關係：本卡 P1 staging 手術（symlink 改指 memory-auto／變體 c write-through）動的是同一目錄族（.agents/memory* symlink＋memory-governance.json marker＋inbox divert＋reconciler 假設）——plugin 重註冊（源改指 ai-guide 現路徑）宜隨 P1 同弧一次做完，避免兩次動同一拓撲。③原排除條款「不動 muse governance plugin」係指 AIR-93 軸（session-end 繞閘，已 Done）；本項是 0916 稽核新發現的部署鏈事實，非重辯。④處置選項留 user：(a) 隨本弧併處（預設建議）(b) 立即單獨重註冊（一個 muse plugin 指令）。附帶：CR binary 落後 d105806 一 fix（非 memory 域，另計）；「部署面對帳」流程缺口已列治理卡候選。
+
+〔0916 補充更正〕CR binary 一項經 user 已裁定無需更新：d105806 僅改 release.sh（wheels readiness barrier，下次發版才生效），binary 行為零差異——不出 0.9.2。
 <!-- SECTION:NOTES:END -->
