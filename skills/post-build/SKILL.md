@@ -146,18 +146,15 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - 重產後仍 FAIL → callstack md 幀手術（dead symbol／簽名漂移；rg 現場驗證行號與簽名）→ 再重產
 - 最終殘留列收尾報告「tour corpus 應修清單」＋閉環統計（重產 N 族／手術 N 檔）；工具語義見 [code-reality](../code-reality/SKILL.md)
 
-## 部署面對帳閘（conditional finalization——AIR-105）
+## 部署面對帳閘（conditional finalization——AIR-105 設閘、AIR-106 surface 契約化）
 
-diff 觸及**部署面**時，收線前逐面核對「已裝實例」與 source 的一致性（cheap candidate detection 先行——未觸及即一筆 `N/A` 帶過，不給非部署變更加稅；typo-only 的 `rules/**` 變更免審查腿但**不免**對帳探針。verdict 先行產出供結案消費，收尾報告補登原文）：
+**surface 發現契約**：每個部署 surface 在 `deploy/surfaces/<name>.md` 自答三項——①**touches**（候選偵測：什麼 diff 算觸及本 surface）②**probe**（唯讀健康探針 command）③**health 判準**（歸 surface owner，不在本檔重寫各產品怎麼判健康）。本 skill 只做 **discover→dispatch→collect**，禁硬編 surface 清單（新 surface＝加一個契約檔，非改本 skill）：
 
-| 觸及面 | 候選偵測 | 健康探針（唯讀，各 surface 自帶） |
-|---|---|---|
-| rule bundle（ai-guide 自有 surface） | 本 repo 為 ai-guide 且 diff 命中 `ai-development-guide.md|rules/**`；他 repo 的 `rules/` 非此 surface | `/sync-sources` 部署新鮮度（三家 bundle byte-match source——`rules/`＋guide 重建比對） |
-| muse plugin | `muse-plugins/**` 變更 | `muse plugins inspect <id> --json`：cache/source 一致＋runtime_capabilities status |
-| code-reality binary | `skills/code-reality/**`、`.code-reality.toml` 變更，或跨 repo 檢查 code-reality HEAD 前進；消費端無上述變更則 N/A | installed binary `--version` provenance vs repo HEAD |
-| symlink／deploy asset | `deploy/**`＋本 diff 觸及的 link；已知清單缺登記則註明未覆全 | target 存在性＋type/content identity |
+- **discover**：`ls deploy/surfaces/*.md`；registry 缺席或零 surface → 一筆 `N/A`（附 registry 狀態為證），不給非部署變更加稅
+- **dispatch**：逐 surface 跑其 touches 候選偵測；觸及者執行 probe（typo-only 的 `rules/**` 變更免審查腿但**不免**對帳探針）
+- **collect**：產出 `deployment-convergence` verdict 四態進收尾報告：`healthy`／`unhealthy`（探針**實證不健康**——已驗證失敗，非未驗）／`pending`（已知應做、因 AC／授權未完成）／`unverified`（探針沒跑或無法判定）。**`unhealthy` 與 `unverified` 都擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending` 保持——不得以翻 Done 沖掉，且 `pending`／`unverified` 同步登記該 repo 總驗卡（AIR-104 收 Done 條款的集中驗收機制——verdict 是總驗卡的輸入，結案消費之）；`N/A` 僅在 surface-owned 候選偵測明確零命中時使用。
 
-產出 `deployment-convergence` verdict 四態進收尾報告：`healthy`／`unhealthy`（探針**實證不健康**——已驗證失敗，非未驗）／`pending`（已知應做、因 AC／授權未完成）／`unverified`（探針沒跑或無法判定）。**`unhealthy` 與 `unverified` 都擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending` 保持——不得以翻 Done 沖掉，且 `pending`／`unverified` 同步登記該 repo 總驗卡（AIR-104 收 Done 條款的集中驗收機制——verdict 是總驗卡的輸入，結案消費之）；`N/A` 僅在 repo-owned 候選偵測明確零命中時使用。本 skill 只做 discover→dispatch→collect，健康判準歸各 surface owner（不在本檔重寫各產品怎麼判健康）。防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看。
+防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看；部署面存在但無對應 surface 檔＝**未覆全**，collect 不得宣稱 healthy（如實標未覆全＋登記補檔）。
 
 ## 結案（收斂點——invoke metadata-sync 結案段）
 
@@ -167,6 +164,7 @@ diff 觸及**部署面**時，收線前逐面核對「已裝實例」與 source 
 
 ```markdown
 ## Post-Build 收尾報告
+- 回執四欄（控制面弧必填；非控制面弧標 N/A）：classification=<profile>／review=<腿＋evidence ref>／session-freshness=<值>／deployment-surfaces=<verdict>——欄位定義單一源＝[instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節
 - code 鏈：findings N（✅N/❌N/⚠️N）、修正 N 項、followup <通過|未收斂(殘留清單)>
 - muse 委派（鏈內有派 muse 時才列）：jobId＋status 清單（經 bridge 入口）；ledger 查無的 muse 產出標「未經 bridge，副作用側考古」
 - EP 對照：delta_tour=<機械底稿|LLM 對照|無（原因：uncommitted 模式/小變更）>——宣稱觸及 vs 實際變動模組、unexplained 差異項

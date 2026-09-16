@@ -146,6 +146,10 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 報告附 `git status --porcelain` 原始輸出（機械事實不可靜默跳過）。歸屬判斷是語義的（本任務 vs 並行遺留），故為 skill 步驟而非 hook——機械掃描列命中、LLM/user 判歸屬（同 2.7「機械掃描＋逐項處置」模式）。
 
+### 階段 2.9：控制面回執彙集（AIR-106）
+
+staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern）時執行，否則跳過：從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit（backlog／scripts／ai-analysis 等）此階段空跳。
+
 ### 階段 4：生成 Commit Message
 
 **格式**：`<type>(<scope>): <description>`
