@@ -4,7 +4,7 @@ title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存�
 status: In Progress
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-16 21:11'
+updated_date: '2026-09-16 21:35'
 labels:
   - governance
   - memory
@@ -64,4 +64,6 @@ Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」
 〔0916 user 拍板〕本卡於 sess_014a87f8-e39c-41dd-bad0-1e658d18a56b 時執行，到時完整規劃。bi panel 規劃素材已存 .agent-tmp/six-card-review/dossier.md＋bi-*.out，該 session 開工必讀——要點：①先立 cutover snapshot 阻止移動目標再逐條補審 78 條 ②baseline 以 as-of 重定（41→78 已翻倍）③staging 拓撲決策需連動 wt-open/close 的池 symlink 敘述 ④panel 依據的仲裁條目（project-uisc-audit-11card-arbitration.md）自身是未審 auto 寫入，補審須裁定可採性 ⑤卡內 staging 方案與舊排除條款矛盾先收斂成單一契約。
 
 0917 凌晨 Segment 0 前置調查開工（caller 排程）：muse（機制正確性評估）＋flash（runtime 探測）兩腿並行——涵蓋 handoff 九條 runtime validation 可執行項；完成後交 codex＋5.3 討論機制，裁決輸入回 user。調查產物＝.agent-tmp/guides-refactoring/。
+
+0917 凌晨機制裁決（caller 拍板，codex/muse/5.3 三顧問共識）：D1 admission 唯一化（consolidation 唯一入池權威）；D3 crash 分級（品質門 fail-open、admission 門 fail-closed）；D4 codex 補最小 path-deny-all（tool 名先探針）；D5 退役夜波快照結算——今晚零工程、停波＝正確行為；S1-S5 吸收為 Segment 0/1 不另開卡，唯 S4/S5（全波停閘改 per-file／scoped snapshot 鏈）因 D5 退役而 moot 不執行；S1（sensor --source 顯式傳入）無條件先做；muse plugin source.path 舊路徑＝從 canonical source 重裝＋re-approve；subagent 雙面隱形＝接受 detected-only＋spawn contract 加禁碰池約束。⚠️ I4 反轉更正：『ZCode sensor 從未 fire』為誤——memory-write-sensor.py:48 硬編 source label，ZCode hooks 一直在 fire（64/64 join 實證）；真盲區＝背景蒸餾器寫入。runtime 探測全記錄＝.agent-tmp/guides-refactoring/{f-probe-output,m-mech-output,mech-synthesis}.md
 <!-- SECTION:NOTES:END -->
