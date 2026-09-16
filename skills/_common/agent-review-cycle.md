@@ -75,7 +75,7 @@ Writer/Reviewer 分離的品質閘門 — 用獨立 Agent context 審查，避�
 
 findings 若需持久化（跨 session / `.review/` / EP 回寫），用 [workflow-review-pattern.md](./workflow-review-pattern.md) 的 Finding Record 格式（跨命令追蹤標準）。
 
-**結論回卡（強制——AIR-108）**：各腿回收當下以一行 `backlog task edit <卡id> --append-notes "<腿名＋verdict＋evidence ref/jobId>"` 落卡——詳細 findings 留工單輸出檔、卡面帶指針，禁逐腿全文散寫（噪音防護）；無卡弧 → 落 EP／report 並記錄去向。Arbiter 裁決的回卡契約單一源＝[judge-review](../judge-review/SKILL.md)「寫入持久化」第 6 點。
+**結論回卡（強制——AIR-108）**：各腿 verdict 回收後，由 **owning session／board-control**（回收主體）以一行 `backlog task edit <卡id> --append-notes "<腿名＋verdict＋evidence ref/jobId>"` 落卡——spawned worker 禁直寫卡 metadata（board single-writer，worker 經 verdict 回報、回收主體代落）；詳細 findings 留工單輸出檔、卡面帶指針，禁逐腿全文散寫（噪音防護）；無卡弧 → 落 EP／report 並記錄去向。Arbiter 裁決的回卡契約單一源＝[judge-review](../judge-review/SKILL.md)「寫入持久化」第 6 點。
 
 ---
 
