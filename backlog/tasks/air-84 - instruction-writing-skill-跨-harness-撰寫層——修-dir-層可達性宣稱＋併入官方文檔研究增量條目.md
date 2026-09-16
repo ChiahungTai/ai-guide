@@ -1,12 +1,14 @@
 ---
 id: AIR-84
 title: instruction-writing skill 跨 harness 撰寫層——修 dir 層可達性宣稱＋併入官方文檔研究增量條目
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-12 22:24'
-updated_date: '2026-09-16 07:58'
+updated_date: '2026-09-16 11:09'
 labels: []
 dependencies: []
+references:
+  - skills/instruction-writing/SKILL.md
 ordinal: 70000
 ---
 

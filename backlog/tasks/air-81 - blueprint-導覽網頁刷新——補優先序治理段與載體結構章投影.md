@@ -1,12 +1,14 @@
 ---
 id: AIR-81
 title: blueprint 導覽網頁刷新——補優先序治理段與載體結構章投影
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-12 13:28'
-updated_date: '2026-09-13 02:26'
+updated_date: '2026-09-16 11:09'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/blueprint/index.html
 ordinal: 67000
 ---
 

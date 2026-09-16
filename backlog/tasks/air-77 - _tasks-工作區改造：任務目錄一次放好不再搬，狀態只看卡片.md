@@ -1,14 +1,16 @@
 ---
 id: AIR-77
 title: _tasks 工作區改造：任務目錄一次放好不再搬，狀態只看卡片
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-11 22:51'
-updated_date: '2026-09-11 23:18'
+updated_date: '2026-09-16 11:09'
 labels:
   - structure
   - migration
 dependencies: []
+references:
+  - ai-analysis/blueprint/workflow.md
 ordinal: 63000
 ---
 
