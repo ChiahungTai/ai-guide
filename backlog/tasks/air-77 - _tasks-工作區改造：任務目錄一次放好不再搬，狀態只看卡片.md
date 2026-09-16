@@ -4,7 +4,7 @@ title: _tasks 工作區改造：任務目錄一次放好不再搬，狀態只看
 status: In Progress
 assignee: []
 created_date: '2026-09-11 22:51'
-updated_date: '2026-09-16 11:09'
+updated_date: '2026-09-16 13:50'
 labels:
   - structure
   - migration
@@ -50,4 +50,6 @@ mosaic 腿（跨 repo）：handoff 已產出交 mosaic 側自行派工——評�
 〔09-12 補裁決〕卡 notes ⑥ 結案：月內弧命名終局形態＝保留 MM-DD 前綴，即 _tasks/2026-09/<MM-DD-主題>/——user 拍板；glm「日期雙重編碼」意見已知悉不採。慣例文件同步時寫明此終局形態。另：Done/completed 兩階段行為查證（backlog CLI 源碼）未完成，卡平面後續想法擱置不擴張。
 
 〔09-12 查證結案〕Done/completed 兩階段行為經 lite-verify 源碼＋runtime 雙證據裁決：user 主張成立——Done＝board 可見終態（檔留 tasks/），task complete＝手動 cleanup 封存（completed/，board/list/search 全隱形），官方 help 明言僅供 cleanup/archive 用，上游 repo 自身留 165 張 Done 卡在 tasks/。先前顧問「Done 留 tasks/＝漂移」宣稱不成立；「廢 task complete」後續卡想法撤銷。board 過濾憑目錄成員資格非 status 欄；backlog CLI 只讀 backlog/ 樹，與本卡（ai-analysis/_tasks）零接觸。
+
+〔wt-close 首例 receipt（人肉補記，marshal 2026-09-16——執行輸出節錄自收線 session）〕①preflight：P2 clean／P2.5 池 symlink 無／P3 1 顆全屬 air-77／P4 WARN owning 線已前進／P5 rebase 可行。②因分叉先 rebase main（→74d483d 零衝突）＋post-rebase 驗證（殘留 0／lint 0／664 tests）＋user gate ①核准。③ff-only 吸收 f827231→74d483d（443 檔）。④wt-close full 調用：首次誤帶 --full（旗標不存在——usage 教訓）→ 正確調用成功：Already up to date→Deleted branch air-77→已移除 WT＋branch。⑤殘留清理：gitignored 目錄殼（done/＋09-08-unification，僅 .bak fixture）手動移除；期間平行 followup session 落 ea94964（linear 譜系已驗）。後續自動化＝AIR-112 receipt 落盤卡。
 <!-- SECTION:NOTES:END -->
