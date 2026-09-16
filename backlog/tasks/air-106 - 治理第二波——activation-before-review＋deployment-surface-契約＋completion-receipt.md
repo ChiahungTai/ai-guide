@@ -1,12 +1,15 @@
 ---
 id: AIR-106
 title: 治理第二波——activation-before-review＋deployment surface 契約＋completion receipt
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 03:16'
-updated_date: '2026-09-16 03:17'
+updated_date: '2026-09-16 03:24'
 labels: []
 dependencies: []
+references:
+  - skills/instruction-writing/SKILL.md
+  - skills/post-build/SKILL.md
 ordinal: 91000
 ---
 
