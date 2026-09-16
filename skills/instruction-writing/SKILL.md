@@ -70,7 +70,7 @@ allowed-tools: ["Read", "Write", "Edit"]
 
 同一份 SKILL.md desc，兩端消費面不同——撰寫時以較嚴端為準：
 
-- **ZCode（flat `key: value` 解析）**：`name`/`description` 缺失、或 **desc「值」>1024 chars → 整支 skill 靜默 drop**（不報錯、清單直接缺席）；觸發呈現＝name＋desc 前 ~250 chars 截斷＋`when_to_use` 全文，無 keyword matcher——前 250 需語義說明「何時用」。認可鍵：`name`/`description`/`when_to_use`/`license`/`metadata`。但書：~250 截斷與 `when_to_use` 呈現源於官方文檔；AIR-87 probe 實測 headless `--json` 下 available-skills 呈現僅**名稱＋路徑**（無 desc/when_to_use）——官方文檔與 runtime 分歧，開放機制問題。desc 撰寫紀律仍以此較嚴契約為準（互動端呈現＋強錨點匹配面不變）。
+- **ZCode（flat `key: value` 解析）**：`name`/`description` 缺失、或 **desc「值」>1024 chars → 整支 skill 靜默 drop**（不報錯、清單直接缺席）；觸發呈現＝name＋desc 前 ~250 chars 截斷＋`when_to_use` 全文，無 keyword matcher——前 250 需語義說明「何時用」。認可鍵：`name`/`description`/`when_to_use`/`license`/`metadata`。但書：~250 截斷與 `when_to_use` 呈現源於官方文檔；AIR-87 probe 實測（headless `--json`）available-skills 呈現僅**名稱＋路徑**（無 desc/when_to_use），與官方文檔分歧——原因已定位（AIR-107 後續逆向＋probe 實證）：注入有 metadataBudget 總量預算（config `skills.metadataBudget`），skill 清單總長溢出即降級名稱＋路徑、預算內才呈現官方文檔全格式。desc 撰寫紀律仍以此較嚴契約為準（互動端呈現＋強錨點匹配面不變）。
 - **CC**：desc 全文消費，無截斷、無 drop 閾值。
 - **量測軸＝值 chars（非整行、非 bytes）**：CJK 3 bytes/char，awk `length()` 給 bytes 是陷阱；兩種解析器對 ` #` 分歧（完整 YAML 剝註解、flat 不剝）——desc 一律引號化或 block scalar（`>`/`|`）。
 - **寫作紀律**：觸發條件句（「當…時／…前」）前置、內容索引後接；工作流 skills 配 `when_to_use`（repo 慣例）；高流量 skill desc 值建議 ≤950 留餘裕防編輯撞線；desc 值內遇雙引號優先改寫內文而非 escape；量測口徑＝as-written 含引號字元。

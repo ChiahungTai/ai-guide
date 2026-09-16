@@ -129,24 +129,22 @@ uv run python scripts/sync_agents.py
 
 ### 2.4 Skills symlink — ⚠️
 
-先前 dry run 將 `ls` 穿透 directory symlink 的結果誤判成「多個實體複製」。實際 topology 是：
+先前 dry run 將 `ls` 穿透 directory symlink 的結果誤判成「多個實體複製」。實際 topology 是單根（AIR-107 後續已退役 `~/.zcode/skills` 冗餘根）：
 
 ```
-~/.zcode/skills  → <repo>/skills/
 ~/.agents/skills → <repo>/skills/
 ```
 
-因此 fresh machine 不需要逐個複製 skill，也不需要一套 generated inventory deployment；真正缺的是把這兩條 symlink 重建並驗證。
+因此 fresh machine 不需要逐個複製 skill，也不需要一套 generated inventory deployment；真正缺的是把這條 symlink 重建並驗證。**禁補建 `~/.zcode/skills`**——ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，雙根並存＝skill 清單重複注入（同 `skills/CLAUDE.md` 架構節）。
 
 驗證時必須檢查 link 本身，而不是列出 link target 後誤判內容來源：
 
 ```
-ls -ld ~/.zcode/skills ~/.agents/skills
-readlink ~/.zcode/skills
+ls -ld ~/.agents/skills
 readlink ~/.agents/skills
 ```
 
-兩條都應解析到目前 ai-rules repo 的 `skills/`。
+應解析到目前 ai-guide repo 的 `skills/`。
 
 ### 2.5 本節缺口
 
@@ -154,7 +152,7 @@ readlink ~/.agents/skills
 
 - Claude guide/rules。
 - ZCode/Claude agents。
-- ZCode/agents skills。
+- ZCode/agents skills（單根 `~/.agents/skills`；禁補建 `~/.zcode/skills`）。
 
 helper 應處理「target 已存在但不是預期 symlink」的情況，不直接破壞現有內容。
 

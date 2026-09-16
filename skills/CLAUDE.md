@@ -14,7 +14,7 @@
 
 ## 架構
 
-- `~/.claude/skills`、`~/.zcode/skills`、`~/.agents/skills` 三根符號連結指向本目錄，實現 Git 版本控制、跨專案共享和即時更新（ZCode 會同時掃 `.zcode` 與 `.agents` 兩根，清單內 skill 各出現兩次屬預期）。驗證：`readlink ~/.claude/skills`
+- `~/.claude/skills`、`~/.agents/skills` 兩根符號連結指向本目錄，實現 Git 版本控制、跨專案共享和即時更新（ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，單留 `~/.agents/skills` 即足；**禁補建 `~/.zcode/skills`**——雙根並存＝清單重複注入）。驗證：`readlink ~/.agents/skills ~/.claude/skills`（兩根同指本目錄即 PASS）
 - `skills/_common/` — 跨 skill 共用子範本（非 skill、無 SKILL.md）；skill 間以 `../_common/<file>` 相對路徑引用
 - 工作流 skill 間互相引用以相對路徑 link（`../<name>/SKILL.md`）；散文中 `/name` slash 語意兩端皆有效（Claude slash 直調、ZCode Skill tool 調用）
 
@@ -164,9 +164,9 @@
 
 ## Frontmatter 配置
 
-> **跨 harness 支援度**：**`when_to_use` 是 ZCode 官方認可鍵**（觸發呈現含其全文）；headless `--json` 實測 available-skills 呈現僅名稱＋路徑——官方文檔與 runtime 分歧屬開放機制問題。ZCode desc 契約單一源＝[instruction-writing 跨 harness description 消費差異節](instruction-writing/SKILL.md)，本表其餘欄位為 Claude 端機制。
+> **跨 harness 支援度**：**`when_to_use` 是 ZCode 官方認可鍵**（觸發呈現含其全文）；headless `--json` 實測 available-skills 呈現僅名稱＋路徑——分歧機制已解＝metadataBudget 預算降級梯（詳單一源 [instruction-writing 跨 harness description 消費差異節](instruction-writing/SKILL.md)）。本表其餘欄位為 Claude 端機制。
 
-> **上限是 harness-specific**：Claude 端 `description + when_to_use` 合計截斷 **1536 字元**（對齊 `skill-cleaner.ts` 的 `MAX_DESCRIPTION_CHARS`；可用 `maxSkillDescriptionChars` 覆寫），清單預算由 `skillListingBudgetFraction` 控制；ZCode 端 description **>1024 字元整顆 drop**（非截斷）、清單注入每條摘要 ~250 字元、全體共享固定預算（ZCode 官方 skill 文檔）。**寫 description 兩端約束都取交集：精簡、觸發詞前置**。
+> **上限是 harness-specific**：Claude 端 `description + when_to_use` 合計截斷 **1536 字元**（對齊 `skill-cleaner.ts` 的 `MAX_DESCRIPTION_CHARS`；可用 `maxSkillDescriptionChars` 覆寫），清單預算由 `skillListingBudgetFraction` 控制；ZCode 端 description **>1024 字元整顆 drop**（非截斷）、清單注入每條摘要 ~250 字元、全體共享固定預算（ZCode 官方 skill 文檔；config key `skills.metadataBudget` 係 AIR-107 後續逆向所得、鏡像文檔未載）。**寫 description 兩端約束都取交集：精簡、觸發詞前置**。
 
 ```yaml
 ---

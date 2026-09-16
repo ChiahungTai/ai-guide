@@ -23,7 +23,7 @@
 ```bash
 muse skills list                      # bundled 面
 ls ~/.local/share/muse/skills/bundled/muse-core/skills/   # bundled 實體目錄
-ls ~/.agents/skills/ ~/.zcode/skills/                     # ai-guide 部署面
+ls ~/.agents/skills/                                        # ai-guide 部署面（單根；~/.zcode/skills 已退役禁補建）
 ```
 
 ## 最後驗證依據（防語義漂移——codex advisory R1）

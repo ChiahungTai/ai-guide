@@ -38,7 +38,7 @@ uv run python <scan-project-skill-dir>/scripts/scan_project.py --project-root . 
 
 多語言 repo：Rust 側依賴由 snapshot 的 `rust_workspace` 涵蓋；其他語言用 Phase 1 分析補。
 
-**腳本找不到時的紀律**：預期路徑不存在 ≠ 腳本不存在——先在部署的 skills 根下搜尋（`fd scan_project.py <skills 根>/scan-project/`；各 harness skills 目錄如 `~/.zcode/skills/`、`~/.agents/skills/`），找到即用；真的沒有才跳過 Phase 1.5。單一路徑失效就放棄機械盤點，列舉品質會退回 LLM 摘要（dogfood 實證：init 曾因跳過 snapshot 而以 agent 摘要列目錄，漏掉近半項目）。
+**腳本找不到時的紀律**：預期路徑不存在 ≠ 腳本不存在——先在部署的 skills 根下搜尋（`fd scan_project.py <skills 根>/scan-project/`；各 harness skills 目錄如 `~/.claude/skills/`、`~/.agents/skills/`），找到即用；真的沒有才跳過 Phase 1.5。單一路徑失效就放棄機械盤點，列舉品質會退回 LLM 摘要（dogfood 實證：init 曾因跳過 snapshot 而以 agent 摘要列目錄，漏掉近半項目）。
 
 從 snapshot 取得：
 
