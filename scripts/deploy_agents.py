@@ -542,6 +542,36 @@ def check_size_gate(bundle_bytes: int, target: DeployTarget) -> str | None:
     )
 
 
+_RULE_SECTION_MARKER = re.compile(r"^---\n<!-- rules/(.+?) -->$", re.MULTILINE)
+
+
+def _changed_rule_sections(old: str | None, new: str) -> list[str]:
+    """回報新舊 bundle 間內容有差的 rule 名單（AIR-105 deploy ACTION 提醒用）。
+
+    以 bundle 的 rule 區塊 marker 切段逐段比對；舊檔結構異常時回傳空名單，
+    由呼叫端 fallback 顯示（提醒用途，不阻塞部署）。
+    """
+
+    def sections(text: str) -> dict[str, str]:
+        parts = _RULE_SECTION_MARKER.split(text)
+        # split 帶 group → [前導, 名稱1, 內容1, 名稱2, 內容2, ...]
+        out: dict[str, str] = {}
+        for i in range(1, len(parts) - 1, 2):
+            out[parts[i].removesuffix(".md").strip()] = parts[i + 1]
+        return out
+
+    if old is None:
+        old = ""
+    try:
+        old_map = sections(old)
+        new_map = sections(new)
+    except Exception:
+        return []
+    if not new_map:
+        return []
+    return sorted(name for name, body in new_map.items() if old_map.get(name) != body)
+
+
 def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
     """Stage-then-commit 部署，回傳成功就位的 targets（含 identical 跳過者）。
 
@@ -557,6 +587,7 @@ def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
     """
     staged: list[tuple[pathlib.Path, pathlib.Path]] = []
     skipped: list[pathlib.Path] = []
+    old_texts: dict[pathlib.Path, str | None] = {}
     new_bytes = bundle.encode("utf-8")
     try:
         for target in targets:
@@ -575,6 +606,9 @@ def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
                     backup = target.with_suffix(".md.bak")
                     backup.write_text(existing, encoding="utf-8")
                     print(f"  [WARN] backed up {target} -> {backup}")
+            old_texts[target] = (
+                target.read_text(encoding="utf-8") if target.exists() else None
+            )
             tmp = target.with_name(target.name + ".tmp")
             staged.append(
                 (tmp, target)
@@ -589,14 +623,31 @@ def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
         print(f"  [FAIL] staging: {exc}", file=sys.stderr)
         return []
     deployed: list[pathlib.Path] = list(skipped)
+    written: list[pathlib.Path] = []
     for tmp, target in staged:
         try:
             os.replace(tmp, target)
+            written.append(target)
             deployed.append(target)
             print(f"  -> {target}")
         except Exception as exc:
             tmp.unlink(missing_ok=True)
             print(f"  [FAIL] replace {target}: {exc}", file=sys.stderr)
+    if written:
+        # AIR-105：僅實際寫入時提醒 Session freshness（identical 重跑靜默防提醒疲勞）
+        changed: set[str] = set()
+        for target in written:
+            changed.update(_changed_rule_sections(old_texts.get(target), bundle))
+        names = ", ".join(changed) if changed else "(non-rule content)"
+        print(
+            f"  [ACTION] governing bundle changed ({len(written)} target(s)); "
+            f"changed rules: {names}"
+        )
+        print(
+            "           Session freshness：下一個 policy-dependent consequential "
+            "action 前重讀受影響 rule；反轉／刪除類變更 → reset/new session"
+            "（rules/context-management.md）"
+        )
     return deployed
 
 

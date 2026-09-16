@@ -146,6 +146,19 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - 重產後仍 FAIL → callstack md 幀手術（dead symbol／簽名漂移；rg 現場驗證行號與簽名）→ 再重產
 - 最終殘留列收尾報告「tour corpus 應修清單」＋閉環統計（重產 N 族／手術 N 檔）；工具語義見 [code-reality](../code-reality/SKILL.md)
 
+## 部署面對帳閘（conditional finalization——AIR-105）
+
+diff 觸及**部署面**時，收案前逐面核對「已裝實例」與 source 的一致性（cheap candidate detection 先行——未觸及即一筆 `N/A` 帶過，不給非部署變更加稅）：
+
+| 觸及面 | 候選偵測 | 健康探針（唯讀，各 surface 自帶） |
+|---|---|---|
+| rule bundle | `rules/**` 變更 | `/sync-sources` 部署新鮮度（三家 bundle byte-match source） |
+| muse plugin | `muse-plugins/**` 變更 | `muse plugins inspect <id> --json`：cache/source 一致＋runtime_capabilities status |
+| code-reality binary | code-reality repo 面 | installed binary `--version` provenance vs repo HEAD |
+| symlink／deploy asset | `deploy/**`＋已知 symlink 面 | target 存在性＋type/content identity |
+
+產出 `deployment-convergence` verdict＝`healthy／pending／unverified` 三態進收尾報告：**unverified 擋收線**（部署面壞＝下次鏈斷，不可帶病收）；`pending`＝屬任務 AC 但未部署或未授權，保持 pending——不得以翻 Done 沖掉。本 skill 只做 discover→dispatch→collect，健康判準歸各 surface owner（不在本檔重寫各產品怎麼判健康）。防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看。
+
 ## 結案（收斂點——invoke metadata-sync 結案段）
 
 修正迴圈收斂（followup 全 verified）→ 本 skill 是**呼叫端**，invoke [metadata-sync](../metadata-sync/SKILL.md)「收斂後結案」mode：backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔（命令合約見 [kanban-board](../kanban-board/SKILL.md)「結案兩步」；掛點全貌見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」）＋badge ✅。未收斂 → 不結案（見階段 3 上限處置）。code 鏈未跑弧（triage code=no——純修飾快道／資料文檔）→ 以 docs 鏈收斂（consistency 綠＋metadata 結算面完成）視為收斂，走同結案段。無 post-build 弧時此結案由 `/implement` 階段 6 fallback 承接（並列主路徑）。

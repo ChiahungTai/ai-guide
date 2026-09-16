@@ -180,6 +180,17 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 > 兩種 review 邊界：external second-opinion review（跨家族獨立視角）與 in-harness acceptance reviewer（GLM 主審、把關工單結案）職責分離，前者補視角、後者定結論。容量不足的家族禁派大工單——現值見下表，rule 不寫數字與型號。重大架構／風控／會計 diff 的跨家族 review＝**軟提醒非硬閘**（額度現實：muse/codex 額度吃緊時派不動）——額度允許時至少一側跨家族；不足時顯式記錄降級（in-harness full 雙 context 承接），禁靜默略過。
 
+### 審查陪審團（panel tiers——cross-family review 的組合詞彙）
+
+| `panel=` 值 | 口語 | 組成 | 用途 |
+|---|---|---|---|
+| `tri` | 「開 tri」／三家陪審 | muse＋codex＋GLM-5.3 | 重大架構／UC 定案、風控／會計級 diff |
+| `bi` | 「bi 就好」／雙家陪審 | muse＋codex | 常規控制面審查 |
+| `single` | 「單腿頂著」 | 任一外部家族 | 額度緊的最低配置（顯式記錄降級） |
+| `tri-flash`／`bi-flash` | 「額度不夠就 flash」 | findings 腿換 `GLM-5.3-flash` | 降檔；**judge 腿永不降**（裁定恆為主 session 旗艦或 user——lite 分工律） |
+
+工單／trace 用法：`panel=tri`、`panel=bi-flash`；降檔屬 findings 腿（審查）——裁定腿不適用 flash 替補。此表是組合詞彙層，各腿的 model／effort 解析仍走上方 family 表。
+
 ### family → (model, effort, 容量現值)
 
 | family | model | effort | 容量現值 | 備註 |

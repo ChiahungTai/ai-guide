@@ -14,6 +14,19 @@ when_to_use: "Fires when creating or editing instruction files — AGENTS.md、C
 
 instruction file 是給 AI 的協作指南，應專注於**核心原則**和**執行約束**，避免冗餘細節。
 
+## 落地前審查閘（控制面條文——AIR-105）
+
+instruction 條文的**語義變更**（改變 agent 的 decision／authority／gate／authorization／acceptance 可觀察行為）落地前，必須：
+
+1. **風險分類**：依 [review-engine](../review-engine/SKILL.md) 風險 profile 判定表分類（控制面 authority／gate 面＝boundary）。分類記錄進卡／工單——**無分類記錄＝fail-closed，預設按最高適用腿處理並擋落地**。
+2. **配審查腿**：boundary＝fresh＋intent 分離＋跨家族外審（panel 詞彙查 [model-routing](../model-routing/SKILL.md) 陪審團表）；ordinary＝至少一條獨立 context 腿。
+3. **無特權路徑**：author session（含 marshal 直編）不豁免——控制面修改走 card WT 隔離→審查→merge canonical。Claude 端 `~/.claude/rules/` 為 live symlink，canonical 樹一改即對 Claude session 生效——「merge 前審查」才等於「生效前審查」。
+4. **豁免**：純 typo／link／格式／零語義差（由 diff 自證行為等價）走 static-only。**行數不是判準**——一個 modal word（MUST→SHOULD）可以是高影響控制面變更。
+5. **回執**：結算記錄 `classification=…／review=…（evidence ref）`——缺回執不得宣稱收斂。
+
+已知威脅（防儀式化）：外審容量緊時「降級分類」是理性選擇——fast-track（static-only）必須保持機械可判定不得擴張；分類有爭議時 author 提案、reviewer／judge 複核。
+
+
 ## 載體選擇（機制設計入口 → 統一定義表）
 
 「該寫哪／該用哪個載體」的**統一定義表**（載體職責×常駐-按需×寫入預設交叉表＋「該寫哪」一行流）單一源在 [memory-audit](../memory-audit/SKILL.md)「載體統一定義表」節——知識寫入與機制設計共用一表。本段承載 hook 資格論證（機制載體的方法論面）：

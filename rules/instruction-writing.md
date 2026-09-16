@@ -4,12 +4,12 @@ paths:
   - "**/*.md"
 bundle-projection: pointer
 pointer-target: instruction-writing
-bootstrap-pointer: "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md 等 instruction 檔前，先載入 `instruction-writing` skill；frontmatter、載體選擇、引用、Signal/Noise 與自洽檢查以該 skill 為準。"
+bootstrap-pointer: "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md 等 instruction 檔前，先載入 `instruction-writing` skill；frontmatter、載體選擇、引用、Signal/Noise 與自洽檢查以該 skill 為準。條文語義變更（decision／authority／gate／authorization／acceptance 面）落地前依 review-engine 風險 profile 分類並完成所需審查腿；純 typo／格式／零語義差豁免。"
 ---
 
 # Instruction File 撰寫規範
 
-修改任何 instruction 檔前必載入 **instruction-writing skill**；frontmatter、章節、引用、導航/Decoder Test、映射 drift、自洽五維與元資訊禁令以該 skill 為單一源。
+修改任何 instruction 檔前必載入 **instruction-writing skill**；frontmatter、章節、引用、導航/Decoder Test、映射 drift、自洽五維與元資訊禁令以該 skill 為單一源。條文語義變更落地前依 review-engine 風險 profile 分類並完成所需審查腿（細節見 skill「落地前審查閘」節）。
 
 ## Always-on 核心
 
