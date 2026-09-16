@@ -120,7 +120,7 @@ if [ "$OWNING_TIP" = "$ID_BASE_HASH" ]; then
   chk "P4 owning 線未前進（ff-only candidate）" 1
   NEED_REBASE=0
 else
-  ADVANCED="$(git -C "$WT_PATH" log --oneline "${ID_BASE_HASH}..${OWNING_TIP}" | head -n 5)"
+  ADVANCED="$(git -C "$WT_PATH" log --oneline -5 "${ID_BASE_HASH}..${OWNING_TIP}")"
   warn "P4 owning 線已前進（baseline／relay 假設需對照）：$ADVANCED"
   NEED_REBASE=1
 fi
