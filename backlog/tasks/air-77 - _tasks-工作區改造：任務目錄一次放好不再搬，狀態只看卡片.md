@@ -1,10 +1,10 @@
 ---
 id: AIR-77
 title: _tasks 工作區改造：任務目錄一次放好不再搬，狀態只看卡片
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-11 22:51'
-updated_date: '2026-09-16 13:50'
+updated_date: '2026-09-16 22:52'
 labels:
   - structure
   - migration
@@ -53,3 +53,9 @@ mosaic 腿（跨 repo）：handoff 已產出交 mosaic 側自行派工——評�
 
 〔wt-close 首例 receipt（人肉補記，marshal 2026-09-16——執行輸出節錄自收線 session）〕①preflight：P2 clean／P2.5 池 symlink 無／P3 1 顆全屬 air-77／P4 WARN owning 線已前進／P5 rebase 可行。②因分叉先 rebase main（→74d483d 零衝突）＋post-rebase 驗證（殘留 0／lint 0／664 tests）＋user gate ①核准。③ff-only 吸收 f827231→74d483d（443 檔）。④wt-close full 調用：首次誤帶 --full（旗標不存在——usage 教訓）→ 正確調用成功：Already up to date→Deleted branch air-77→已移除 WT＋branch。⑤殘留清理：gitignored 目錄殼（done/＋09-08-unification，僅 .bak fixture）手動移除；期間平行 followup session 落 ea94964（linear 譜系已驗）。後續自動化＝AIR-112 receipt 落盤卡。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+_tasks 工作區改造完成（74d483d 進 main，443 檔）：_archived 一次遷入＋月份層＋path→status 消費者翻轉；wt-close full 首例收線（WT/branch 已移除，receipt 人肉補記 notes :54）；自動化後續＝AIR-112
+<!-- SECTION:FINAL_SUMMARY:END -->
