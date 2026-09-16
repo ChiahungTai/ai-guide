@@ -1,5 +1,7 @@
 # Usage × 適配度審計——ai-guide skills/rules/hooks 實際使用證據與工作流適配（self-contained 報告）
 
+> ⚠️ **更正（2026-09-17，sess_b25cf458 反轉後補記）**：本報告 §「ZCode 端零 fire」相關結論（原 :18、:148——「518 筆全 source=claude／ZCode hooks 從未 fire」）**已失效**：根因＝`hooks/memory-write-sensor.py:48` 硬編 `"source": "claude"` label——ZCode hooks 一直在 fire（event log 393 筆 64/64 session join 實證）。真盲區＝背景蒸餾器寫入（非 tool call，架構上不觸發 PostToolUse）。修復＝AIR-100 S1（`--source` 註冊端顯式傳入）。引用本報告 sensor 歸因數據者以本更正為準。
+
 > 產出：2026-09-17 02:0x–03:xx（02:01 排程 deep-work 自主弧，report-only——零 commit、零 skills/rules/hooks 修改、零卡面變更）。
 > 觸發：user 2026-09-16 23:09 原話——「檢查目前每個 skill 是否都有被使用，派一個 flash agent 去查看看對話紀錄……跑之前跟 codex 建議，我覺得目前應該有些不需要 rules/skills/hooks；另外每個 skills 也要檢查是不是有跟目前工作流程不搭，例如 /at overhead 是不是太大……最後請 5.3 去做統整跟分析，然後跟 codex 討論後出一個 self-contained 的完整報告」。
 > 執行鏈：codex 設計審（job-mu4evo0v）→ flash 統計腿（lite-verify/glm-5.3-flash，唯讀掃三家對話紀錄）→ GLM 5.3 統整（native）→ codex 結論討論（job-mu4fy1g0）→ 本報告。
