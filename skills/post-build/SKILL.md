@@ -99,7 +99,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 1. 實作所有 ✅ 採納項（反拖延原則：合理就當下落地；**先規劃整批再批次套用**——目標檔先 Read、多個 Edit 同 block 發、鄰近一行式小修合併、真依賴才序列，見 [tool-discipline](../../rules/tool-discipline.md)「獨立呼叫批次化」+「檔案修改禁令」（Read 紀律））
 2. **證據過期標記（PB4）**：apply 後，先前驗證證據（lite-verify 錨點核對、EP 驗證策略覆蓋率核對）中受 apply 觸及檔影響者標過期 → 按變更風險重跑（修正面窄 → 重跑受影響項；修正面廣 → 全量重跑；組合命令形態，非全量無差別）
-3. 執行 `followup-review`（[skills/followup-review/SKILL.md](../followup-review/SKILL.md)；讀 `.review/<branch>.md`）——followup 只回驗收 findings／證據（逐項重跑驗證式）；**本 skill（主鏈編排者）是帳本 status 唯一寫入者**：僅有可核對驗證結果且原 judge 決策未受挑戰才寫 `verified`/`closed`；followup 帶回新增／矛盾 findings → 回階段 2 交 judge 重裁後再更新（寫入責任與值域見 [followup-review](../followup-review/SKILL.md)「status 寫入責任」）
+3. 執行 `followup-review`（[skills/followup-review/SKILL.md](../followup-review/SKILL.md)；讀 `.review/<branch>.md`）——followup 只回驗收 findings／證據（逐項重跑驗證式）；**closure 腿（同 session 續接）只做逐 finding closure，修正越出 finding scope／新問題密度高 → 補 regression（優先跨家族）腿再結案**（分工單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)「closure lens 分工」）；**本 skill（主鏈編排者）是帳本 status 唯一寫入者**：僅有可核對驗證結果且原 judge 決策未受挑戰才寫 `verified`/`closed`；followup 帶回新增／矛盾 findings → 回階段 2 交 judge 重裁後再更新（寫入責任與值域見 [followup-review](../followup-review/SKILL.md)「status 寫入責任」）
 4. 未通過 → 再修 → 再驗收（**上限 3 輪**；超過 = 停下：卡維持 🟡／In Progress（**不發布 Done／badge ✅**），殘留項列入收尾報告＋EP 進度節（durable 落點——`.review` 隨 commit 清除、報告在對話，兩者皆非 durable）標「未收斂」——連續失敗比乾淨報告更糟，不硬撐）
 5. EP 在場（uncommitted 或弧模式皆）→ spawn lite-verify 核對 **EP 驗證策略覆蓋率**（逐情境：入庫測試或跳過理由；agent 定義自帶此項）——機械對帳，不靠 judge 自覺回頭看
 

@@ -153,6 +153,14 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 - **decision → status 映射**(judge-review):✅ → `adopted`、❌ → `rejected`、⚠️ → `needs-confirmation`
 - commit 階段 2.6（optional）列出殘留 `open` finding 提醒（不阻擋；status 靠 LLM 更新會漏，僅作提醒線索非機械閘門，最終把關靠人對照 diff）
 
+### closure lens 分工（修正驗證雙腿——AIR-61 標準化）
+
+> 修正驗收的 lens 配置規則；執行面接線（同 session 續接形態、cost 判準、守衛處置）單一源＝[followup-review](../followup-review/SKILL.md)「muse reviewer 續接驗收」＋[model-routing](../model-routing/SKILL.md)「session 定向接續」，本節不重抄。
+
+- **closure 腿（同 session 續接 followup——原 reviewer 帶 findings context）只做逐 finding closure**（逐項通過/未通過＋驗證式機械複跑），**不當 final acceptance**——原 reviewer 對自己 findings 的修正驗證有保真度優勢（MOS-74 實證），對修正引入的新問題卻有共同盲點。**例外條款**：finding 級 closure 附驗證式且機械複跑通過者，可為**該 finding** 的終驗（粒度＝單一 finding，非整弧覆蓋）
+- **regression 腿（優先跨家族）補派觸發（兩者其一即派）**：①**修正越出 finding scope**——修正 diff 觸及 findings 未覆蓋的檔面/invariant；②**新問題密度高**——修正輪帶回的新增 findings 密度達編排者裁量之顯著水準（heuristic，由編排者當弧判）。任務＝抓 fix-induced regression 與 scope drift；觸發判定由主鏈編排者做（post-build 階段 3／implement 修正迴圈），觸發①（越出 finding scope）走既有新 scope 重分級路徑（review-engine 風險 profile 重判定）；觸發②為本節新增密度 heuristic
+- **量測獨立性**：closure 腿的 closure accuracy 與 regression 腿的 drift-detection rate **分開記錄**——closure 全綠**不得**推斷無 drift；兩 lens 輸出差異的裁決不得同家族單審（independence 語義見本檔「Authority／independence／artifact schema」節）
+
 ### 持久化位置（optional）
 
 > **人主導工作流**（finding 在 review session 對話、`/copy` 搬運）：不需持久化，finding 處置由人對照 diff 判讀。以下持久化僅給**跨命令自動化場景**（接 `/judge-review` / `/followup-review`）。

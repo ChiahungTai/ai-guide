@@ -203,6 +203,8 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 invariant assertions：§1b 觸發段的 invariant test 隨段落 RED/GREEN 落地（見上表），段落結果欄引用其 test 名。
 
+**segment receipt（斷點機械欄——AIR-62 併入標準化）**：段落收斂時跑 `uv run python scripts/segment_receipt.py --repo <root> --segment <段落號> --ep <ep 路徑> [--parent <上張 receipt>] [--pytest-args "<scoped 測試 args>"]`——git 可推導欄（baseline HEAD／diff digest／untracked manifest／選測 pytest exit＋計數）**機械生成、LLM 零手寫**（解「receipt 最被需要時 model 最退化」的寫入者悖論）；判斷欄仍寫上方 EP 進度四欄，receipt 只記 EP 指針不重抄。**freshness 鏈**：receipt 帶 parent receipt identity——resume／接手端跑 `--verify <receipt>` 判「世界是否已分叉」：FRESH＝EP 進度判斷欄仍有效、不從 git log 反推；DRIFTED＝完成度以 Git＋EP re-derive 為準（單一源恢復序列「核對當前實物」步的機械比對鍵）。**receipt 是 transcript cache 的 validity token，不是第二真相源**；住 `.agent-tmp/segment-receipts/`（ephemeral），非第六落盤層。工具住 ai-guide repo——跨 repo 以 ai-guide checkout 絕對路徑呼叫（先例 `scripts/reconcile_memory_pool.py`）。
+
 **段級 review 觸發（普通中間段不觸發；弧級獨立 review 仍必跑——見階段 4）**：段落收斂時命中任一 → 該段 spawn 獨立 context 段級 review（context 配置照 [review-engine](../review-engine/SKILL.md)「審查模式判定規則」風險 profile；findings 併入 `.review/<branch>.md` 帳本走既有 judge 鏈）：
 
 - **公開邊界**／**跨 context** invariant／**高保護面**（會計總量／風控 sizing／控制面 authority）變更

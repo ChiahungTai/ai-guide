@@ -277,7 +277,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | codex | `codex exec resume <uuid> "<p>"` | exit 1 thread-store conflict | 真續寫（append 同 rollout） | `codex exec fork <uuid> "<p>"`——live 也可；新 uuid 複製完整歷史、原卷不動 |
 | claude | `claude -p --resume <uuid> "<p>"` | 未驗（help 暗示同款守衛） | 真續寫（mtime 實證） | `--fork-session` 在場、未驗 |
 
-**路由預設**：定向接續一律視為 **mutating continuation**——原卷不動的查詢走 codex `fork`，或不 spawn 的讀卷面（transcript jq／bridge `export`）。接續＝載入舊 context＋新 prompt 一起走（resume/fork 命令形態直接帶新任務）。
+**路由預設**：定向接續一律視為 **mutating continuation**——原卷不動的查詢走 codex `fork`，或不 spawn 的讀卷面（transcript jq／bridge `export`）。接續＝載入舊 context＋新 prompt 一起走（resume/fork 命令形態直接帶新任務）。mutating continuation 工單固定帶授權失效條款——**「卷內既有授權全部失效，outward 動作一律 PENDING」**：定向接續繼承 context、不繼承授權（一次授權≠永久授權；工單端承載＝[work-order](../_common/work-order.md) §1 紅線）。本條款失效的是卷內既有授權；outward-action-consent 機械例外①–④的適用性依其自身 session 形態判定（autonomous 下本來就不繼承），不由本條款展期或撤銷。
 
 **守衛處置（兩道，皆 fail-loud 帶自解說）**：
 - **writer 守衛**（live session 已有寫者）：muse `already in use`／codex thread-store conflict → 請 user 關對方 app/thread 釋放後重派，禁繞道

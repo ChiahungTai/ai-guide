@@ -33,7 +33,7 @@
 ## 恢復順序（接手端）
 
 1. **定位指定任務**——以 user 指定／卡／工單為準；**不用「最新 session」猜身份**（同 worktree 並行 session 會撈錯）
-2. **核對當前實物**——git HEAD/dirty、EP 進度、卡狀態、active job（機械核對檔案／hash／job 狀態）
+2. **核對當前實物**——git HEAD/dirty、EP 進度、卡狀態、active job（機械核對檔案／hash／job 狀態）。段落 receipt 在場時跑 `scripts/segment_receipt.py --verify <receipt>`（FRESH＝EP 進度判斷欄仍有效；DRIFTED＝以實物 re-derive，receipt 是 validity token 非第二真相源；跨 repo 消費以 ai-guide checkout 絕對路徑呼叫）
 3. **active findings＋最新證據**——`.review`／EP review 區段、實跑結果指針
 4. **checkpoint 理由及未決**——為何轉向、哪些未決；checkpoint 舊 hash 只是比對依據，**不是當前 HEAD 必須回到的 target**
 5. **按需 STATE/memory**——STATE 是觀察層，補「為什麼」不覆蓋完成度；完成度以實物核對為準

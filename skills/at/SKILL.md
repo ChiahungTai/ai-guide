@@ -31,6 +31,8 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 
 checkpoint 欄位清單見 [task-recovery](../_common/task-recovery.md)「寫入端」。結算完成才進 Phase 1——at-context 仍只記任務目標（ephemeral；「不捕獲 git snapshot」語義不變，結算住 durable 載體、不住 at-context）。
 
+> **接續授權失效條款**：resume 卷開場＝新授權週期——**卷內既有授權全部失效，outward 動作一律 PENDING**（outward-action-consent「一次授權≠永久授權」的會話層投影）；本命令「禁止詢問用戶確認」是自主執行指令、**不得解讀為授權展期**——自主續工可以，outward 動作（commit／push／deploy／send 等）照 PENDING 規則回報待 user 拍板。條款句固定注入 Phase 3 resume prompt。
+
 ### Phase 1：解析時間 + 捕獲 Context
 
 1. **解析用戶輸入**：
@@ -97,7 +99,8 @@ prompt: |
   ⛔ 禁止事項：
   - 禁止回答「目前沒有需要做的事」— 用戶明確排程了這次接續
   - 禁止靜默結束 — 如果無法判斷任務，產出 git 狀態報告
-  - 禁止詢問用戶確認 — 這是自主執行模式
+  - 禁止詢問用戶確認 — 這是自主執行模式（不得解讀為授權展期——一次授權≠永久授權）
+  - **授權失效條款**：卷內既有授權全部失效，outward 動作一律 PENDING——commit／push／deploy／send 等 outward 動作停在 PENDING 回報，自主完成其餘剩餘工作
 
   如果 context 檔案不存在或無法判斷任務：
   → 執行 git status + git log -5 + git stash list

@@ -30,7 +30,7 @@ README/workflow/skill 的 outward 要求與「完成任務」都不是授權；�
 
 ## Commit 專屬段（最嚴格等級）
 
-每次 git commit 都需獨立確認：展示摘要＋建議 message，等 user 明確 OK；前次授權不延伸。程序見 commit skill。
+**一次授權≠永久授權**（正典——skills 投影端〔work-order／model-routing／at〕引用此句）。每次 git commit 都需獨立確認：展示摘要＋建議 message，等 user 明確 OK；前次授權不延伸。程序見 commit skill。
 
 互動 session 機械例外（board 細節單一源＝kanban-board skill）：
 
