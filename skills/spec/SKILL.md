@@ -39,7 +39,7 @@ UC-Driven Development 方法論見 [ai-development-guide.md](../../ai-developmen
 | 規模 | 後續行為 |
 |------|---------|
 | 大型（跨模組、新功能） | 完整 Phase 1-4 + 後續 `/execution-plan` |
-| 中型（功能優化、新 API） | Phase 1-4（深度調整） |
+| 中型（功能優化、新 API） | Phase 1-4（深度調整）；後續規劃載體（card Planning Contract 或 standalone EP）依 [execution-plan](../execution-plan/SKILL.md) 流程規模分級裁定 |
 | 小型（bug fix、文檔） | 建議直接做，跳過 `/spec` |
 
 User Story 格式（參考）：

@@ -79,6 +79,8 @@
 >
 > 每條＝可貼上執行的命令＋預期結果，機械可判；逐條實跑並採集原始輸出。
 
+> **規劃載體前置（AIR-111）**：本工單不取代 owning workflow 的規劃文檔——standard／full 任務先規劃載體（card Planning Contract／standalone EP，分級單一源＝execution-plan skill「流程規模分級」節）後工單；規劃決策不在工單內做，工單只承載執行契約。
+
 1. `rg -n "external-runtime" rules/model-routing.md` → ≥1 命中
 2. `rg -n "eligibility" rules/model-routing.md` → 命中
 3. `rg -n "needs-fix" skills/model-routing/SKILL.md` → 命中

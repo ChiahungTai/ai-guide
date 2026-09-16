@@ -66,7 +66,7 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 **board single-writer 例外分工（09-16）**：automation／衍生／spawned session 的開工狀態翻轉改為**唯讀判定＋verdict 回報 board-control（marshal／主 session）代為落盤**——本段舊文「衍生 session 不走 implement 亦同（做第一動）」自 single-writer 條款（見下）生效日起由 board-control 代行，衍生 session 本身不執行 ①⑤ 的卡 metadata 寫入。
 
 **🔴 雙 ref 合約**（09-11 新制：只掛 repo 相對路徑——ext／VSCode 直接消費：`.md`→編輯器、`.html`→外部瀏覽器；新卡不掛 http URL）：
-- 第一值＝EP（無 EP 的 simple 卡掛主交付物）的 repo 相對路徑（必備）
+- 第一值＝EP（無 standalone EP 的卡——simple／standard——掛主交付物；parent-EP bounded child 掛 parent EP）的 repo 相對路徑（必備）
 - 第二值＝report shell `index.html` 的 repo 相對路徑（有殼才並列；殼未建不寫 viewer 過渡 URL——EP 路徑一點即編輯器／preview）
 - 既有卡 http 值由批次遷移清除（pilot MOS-93）；過渡期殘留視為待遷，不視為錯誤
 - 已知取捨：browser（on-demand 後備）上相對路徑不可點（`TaskDetailsModal.tsx:1362-1375` 只 linkify http(s)）；主力 UI＝ext 直接開檔不受影響
@@ -117,7 +117,7 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 
 ## 卡即 handoff（卡拼裝＝self-contained）
 
-卡 `desc`＋`plan`＋`AC`＋`notes`＋`references`＋`EP`（若有）拼裝即 handoff——接手 session 讀卡即接手，不重辯已定事。分工：`desc`=人話摘要層（詳「欄位分工」）／`Implementation Plan`=決策層（baseline／已決策勿重辯／範圍，不變共識）／`AC`=驗收層／`EP`=規劃層（怎麼做）／`notes`=留言層（接手指針，過程不沉澱）。兩層判定承諾時已定（見 [execution-plan](../execution-plan/SKILL.md) 規模分級，不新造）：small 不建 EP 直行、standard+ 建 EP。決策層變更（scope／驗收校準）→同步回寫卡 Plan／AC。
+卡 `desc`＋`plan`＋`AC`＋`notes`＋`references`＋`EP`（若有）拼裝即 handoff——接手 session 讀卡即接手，不重辯已定事。分工：`desc`=人話摘要層（詳「欄位分工」）／`Implementation Plan`=決策層（baseline／已決策勿重辯／範圍，不變共識）／`AC`=驗收層／`EP`=規劃層（怎麼做）／`notes`=留言層（接手指針，過程不沉澱）。規劃載體分級承諾時已定（見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級，不新造）：simple 不寫 EP 直行、standard／parent-EP bounded child 用 card Planning Contract、full 寫 standalone EP。決策層變更（scope／驗收校準）→同步回寫卡 Plan／AC。
 
 ## UI 入口
 
@@ -132,7 +132,7 @@ board server **常駐已退役**（09-11 三方裁定：state ownership 在 prim
 
 ## 與官方工作流的差異宣告（兩條）
 
-1. **PLAN 不寫進卡**——實作計畫唯一源＝EP（任務家 `<task>/ep.md`）；卡用 `references` 指回 EP/殼（EP 深度＝baseline hash/Report Shell/post-build 鏈，是卡 PLAN 欄位的超集）
+1. **full tier：PLAN 不寫進卡**——實作計畫唯一源＝standalone EP（任務家 `<task>/ep.md`）；卡用 `references` 指回 EP/殼（EP 深度＝baseline hash/Report Shell/post-build 鏈，是卡 PLAN 欄位的超集）；standard 的規劃住卡 plan 段（card Planning Contract，見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）
 2. **任務與分支預設解耦；採卡 branch 的 repo 以其 AGENTS.md「git 慣例」節為準**（多 worktree 紀律由各 repo 自訂）；spawned／automation session 的 owning-WT 約束單一源＝[collaboration-constraints rule](../../rules/collaboration-constraints.md)「Agent 派發與產出回收」（always-load 層—— spawned session 不載本 skill 也約束得到）
 
 ## 容錯

@@ -58,7 +58,7 @@ scope 極大（50+ 檔）才用 Agent（free-text 產出，主 session 組報告
 | 3 | **嚴格不放水** | 機械查證不靠善意；對抗性自查（挑戰自己判斷） | [collaboration-constraints](../../rules/collaboration-constraints.md) 反 Sycophancy + [review-engine](../review-engine/SKILL.md) 審查者自證 |
 | 4 | **質疑命名/設計** | 命名碰撞（LSP）/ domain 一致 / phantom API（rg + LSP 確認符號存在）；**arch-thinking 觀：bounded context 邊界 / dep weight / 設計 pattern** | **本 mode 自帶**（分散承載 → 封裝即價值；詳見 Domain 層） |
 | 5 | **scope 釐清** | mixed-tree 分組（`git status`）+ 結論 framing 對應 scope | **本 mode 自帶**（完全無既有承載；詳見 Domain 層） |
-| 6 | **大改動管控** | 風險分級 → EP / 直接改 分流 | [ai-development-guide](../../ai-development-guide.md) 風險 + 規模分級 |
+| 6 | **大改動管控** | 風險分級 → 直接改 / card Planning Contract / EP 三分流（[ai-development-guide](../../ai-development-guide.md) 風險＋規模分級） | [ai-development-guide](../../ai-development-guide.md) 風險 + 規模分級 |
 
 ## 輸出格式（全貌 + 問題 + 建議 + 圖 + 查證誠信）
 
@@ -114,7 +114,7 @@ zoom 是 read-only（產 finding + 建議，不改 code）。後續修正 + 驗�
 | 階段 | 規模 | 命令 |
 |------|------|------|
 | 修正 | 輕量（文件 / 刪碼） | 對話 |
-| 修正 | 大型（跨檔 / 邏輯） | `/implement`（EP 驅動） |
+| 修正 | 大型（跨檔 / 邏輯） | `/implement`（Planning Contract／EP 驅動） |
 | **品質閘門** | 所有 code 修正 | ruff + mypy + test（範例：`uv run ruff check --fix .` + `uv run mypy .` + `make test`）——確認 code 沒壞（純文件修正可跳過；action 修正必跑） |
 | 驗證 | action 修正（刪碼 / 改邏輯） | `/followup-review`（對照 finding 驗收 + 機械查證 test / 副作用） |
 | 驗證 | 輕量修正（文件） | 重跑 zoom（before/after：finding 消除 = 修對） |
@@ -137,7 +137,7 @@ zoom 是 read-only（產 finding + 建議，不改 code）。後續修正 + 驗�
 
 ## 流程位置
 
-**user-driven 主動偵查入口**（非 canonical chain）。用戶想批判檢視既有 code → zoom 放大鏡。非 build / commit 流程節點（那是 code-review / audit-test）。重構前期研究場景：zoom（存在質疑）→ baseline（穩固度地圖）→ EP。
+**user-driven 主動偵查入口**（非 canonical chain）。用戶想批判檢視既有 code → zoom 放大鏡。非 build / commit 流程節點（那是 code-review / audit-test）。重構前期研究場景：zoom（存在質疑）→ baseline（穩固度地圖）→ card Planning Contract／EP。
 
 ---
 

@@ -53,6 +53,8 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 快速確認 EP 品質，**僅嚴重矛盾才停下**，其餘自行判斷並記錄。
 
+**card Planning Contract 任務**：卡 plan 段六欄齊備＝進場資格（六欄定義見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）——免 accepted-EP 四條檢查，直行 execution；六欄缺一＝停在決策層補齊，不開工。
+
 **accepted-EP predicate（進場硬閘門——AIR-91 S3）**：實作腿（execution/apply）進場前四條全要，任一不成立＝**禁止 execution/apply**：
 
 1. EP review ledger（`## EP Review Findings` 表格）每列 status 皆 terminal——`implemented`／`rejected`／`verified`（EP flow 的收斂態；`open`／`adopted` 未回寫／`needs-confirmation` 皆非 terminal）
@@ -307,7 +309,7 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 **讀取 EP 收尾段**：EP 結構末段的「收尾步驟」定義了本 EP 的具體收尾範圍。讀取後按以下三項執行：
 
-#### 5a. metadata-sync 結算（依情境；大型/中型變更）
+#### 5a. metadata-sync 結算（依情境；full／standard 變更）
 
 **委派** [metadata-sync](../metadata-sync/SKILL.md) skill（build mode）—— 依「結算情境矩陣」（見 skill）決定本 build 的結算範圍：
 
@@ -315,14 +317,15 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 |------|------|
 | **情境 A** EP 最後段、UC 全完成 | **Built 結算（5a）**：Capabilities ✅ 行寫入（導航職責——正式 ✅ 完成宣稱時點仍是收斂後結案兩步，此處語義＝Built 🟡）＋ 消費場景寫入 ＋ SYSTEM-MAP 預覽（Built）；**final 結案（收斂後——post-build hook 2／無 post-build 弧走階段 6 fallback）**：backlog 結案兩步＋弧結案蒸餾第三動（`-s Done --final-summary` → `--ref` 換 `done/` 新 URL，卡留 Done 欄；本弧 memory 條目蒸餾終態 facts；見 [kanban-board](../kanban-board/SKILL.md)）＋ SYSTEM-MAP 升級 ＋ EP 歸檔 ＋ flow-feedback 歸檔 |
 | **情境 B** EP 中間段 | **預覽 only**：SYSTEM-MAP `📋→✅ Built`（不寫 ✅、不升 Verified）；loop 未收斂（達 3 輪上限）→ 阻止升級 + ⚠️ |
-| **情境 C** 小型變更（bug fix／單檔小 tweak，無新 UC） | **跳過** Capabilities／Kanban 結算（純 refactor 不自動歸此——依規模，見下方小型變更段） |
+| **情境 C** simple 變更（bug fix／單檔小 tweak，無新 UC） | **跳過** Capabilities／Kanban 結算（純 refactor 不自動歸此——依規模，見下方 simple 變更段） |
 | **情境 D** docs-mode EP（無 .py UC，EP 完成） | **EP 歸檔 only** |
+| **情境 E** standard 變更（card Planning Contract，無 standalone EP） | **以卡 plan 段 Planning Contract 為結算基準**：六欄驗證式（結晶為卡 AC 欄）逐條機械驗證替代 EP 段落驗收；結算範圍依卡六欄（Baseline／Scope／Scenarios）裁定，Capabilities／SYSTEM-MAP 結算比照情境 A／C 依規模分流 |
 
 > **為什麼結算在 build 不在 commit**：finalization 是 working tree 編輯（改 instruction 檔 / mv EP / 搬 Kanban），不需 `outward-action-consent` rule（commit 場景）；commit 退回純 git 提交（一次帶走 code + finalization）。舊設計（commit 階段 3 內嵌）對 LLM 是建議性、會漏跑（實證：commit 歷史多個「補漏」單獨 commit）。working tree 編輯沒 commit 就不永久，跟 code 一起 stash/checkout。Kanban 搬 In-Progress/（暫時狀態）已在階段 1 完成；消費場景提煉隨 Capabilities 寫入一併落地（原「暫存供 commit 寫入」取消）。
 
 **Report Shell badge 同步**：本 EP 對應殼（任務家 `<task>/index.html`，execution-plan 定稿 hook 1 所建）存在時隨結算同步——情境 A（Built 結算）→ badge 🟡；收斂後 final 結案（post-build hook 2／階段 6 fallback）→ badge ✅；情境 B（中間段）→ 🟡；無殼（hook 1 未跑）跳過不阻擋。殼掛點全貌（hook 1/2、fallback、持久 delta tour）見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」。
 
-#### 5b. 模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）+ architecture.md 更新（大型/中型變更）
+#### 5b. 模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）+ architecture.md 更新（full／standard 變更）
 
 > **為什麼兩份一起**：AGENTS.md（what / where，雙檔模式內容來源）與 architecture.md（why / whole-picture）同為導航文檔（見 [ai-development-guide](../../ai-development-guide.md) 文檔體系）。涉及設計變更時兩份都要看，避免 architecture.md 漂移成 LLM 讀不到現狀設計。純 feature（不改設計）只更 AGENTS.md。
 
@@ -335,9 +338,9 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 執行 `/audit-test` 對新增/修改的測試進行品質稽核（階段 2 已逐段檢查整合路徑覆蓋，此處複驗整體 + 其他角度如反模式、mock 健康度、測試必要性）。稽核結果附於完成報告。
 
-**小型變更**（bug fix／單檔小 tweak＝情境 C）：跳過 5a Capabilities／Kanban 結算；僅執行 5c（/audit-test）+ 5b／5d（若動過導航文檔）。**純 refactor 不以「無新 UC」判小型**——跨檔／跨模組／改架構描述的 refactor 達大型／中型規模即走 5a／5b 照跑（恰是最需架構同步的變更；規模判準見 [ai-development-guide](../../ai-development-guide.md) 變更規模分級）。
+**simple 變更**（bug fix／單檔小 tweak＝情境 C）：跳過 5a Capabilities／Kanban 結算；僅執行 5c（/audit-test）+ 5b／5d（若動過導航文檔）。**純 refactor 不以「無新 UC」判 simple**——跨檔／跨模組／改架構描述的 refactor 達 standard／full 規模即走 5a／5b 照跑（恰是最需架構同步的變更；規劃載體分級見 [ai-development-guide](../../ai-development-guide.md) 規模段）。
 
-#### 5d. 導航文檔 /consistency 品質閘門（大型/中型變更）
+#### 5d. 導航文檔 /consistency 品質閘門（full／standard 變更）
 
 > **核心原則**：導航文檔（AGENTS.md / CLAUDE.md / architecture.md / SYSTEM-MAP.md，見 [ai-development-guide](../../ai-development-guide.md) 文檔體系）任一份內部 drift 都誤導 LLM。本次修改過的導航文檔必須通過單檔自洽閘門。
 
@@ -374,7 +377,7 @@ layer 旗標（本段）與檔尾「與其他命令的協作」段的軟提醒�
 3. 每段必須 TDD（RED → GREEN → REFACTOR）—— docs mode EP 除外
 4. 每段必須獨立驗證（ruff + mypy + pytest）—— docs mode EP 除外（改 rg 殘留 + 跨檔一致性 + `/consistency`）
 5. 禁止 `from __future__ import annotations`
-6. 必須執行收尾步驟（階段 5）：大型/中型 → metadata-sync 依情境結算（5a：情境 A Built 結算 / B 預覽 / D EP 歸檔；收斂後 final 結案見階段 6 fallback；含 Report Shell badge 同步）+ instruction 檔 / architecture.md 內容同步（5b）+ /audit-test（5c）+ /consistency 導航文檔閘門（5d，含 Capabilities 行複驗）；小型（情境 C）→ /audit-test（5c）
+6. 必須執行收尾步驟（階段 5）：full／standard → metadata-sync 依情境結算（5a：情境 A Built 結算 / B 預覽 / D EP 歸檔 / E Planning Contract 結算；收斂後 final 結案見階段 6 fallback；含 Report Shell badge 同步）+ instruction 檔 / architecture.md 內容同步（5b）+ /audit-test（5c）+ /consistency 導航文檔閘門（5d，含 Capabilities 行複驗）；simple（情境 C）→ /audit-test（5c）
 
 ### 禁止
 

@@ -85,7 +85,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
   │
   ├─ ARG = 任務描述（開發任務：feature/fix/refactor）→ **預設＝完整開發流程**：
   │   /execution-plan（UC 盤點＋EP；流程規模分級在此裁定——simple 邊界不寫 EP 直接 build、
-  │   大型自動建 backlog 卡）→（可選 /ep-validate、/ep-review）→ /implement → /post-build
+  │   standard 走 card Planning Contract、大型自動建 backlog 卡（full 寫 standalone EP））→（可選 /ep-validate、/ep-review）→ /implement → /post-build
   │   （收尾鏈：code-review〔風險 profile 派發〕→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
   │   → 收尾報告；變更留 working tree，commit 等 user 確認（自主紅線不 override）
   │   例外＝非開發流程任務（純研究/調查、環境修復、一次性維護操作）→ 自身階段 1-5（complex；

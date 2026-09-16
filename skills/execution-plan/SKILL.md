@@ -1,8 +1,8 @@
 ---
 name: execution-plan
 
-description: "為跨檔 feature／中型以上變更規劃實作時載入——段落式實作計畫書生成器，自足生成 Self-Contained Segments（含段落 0 全域研究 + UC盤點）。/execution-plan \"任務描述\" [PROMPT檔案]"
-when_to_use: "Use when a feature or refactor spans 3+ files, needs parallel agent execution, or scope is unclear. Skip for single-file changes, bug fixes, or straightforward tweaks unless high-risk."
+description: "為 full tier（架構/跨模組/🔴高風險/新 boundary）變更規劃 standalone EP 時載入——段落式實作計畫書生成器，自足生成 Self-Contained Segments（含段落 0 全域研究 + UC盤點）。/execution-plan \"任務描述\" [PROMPT檔案]"
+when_to_use: "Use when a feature or refactor spans 3+ files, needs parallel agent execution, or scope is unclear. Skip for single-file changes, bug fixes, or straightforward tweaks unless high-risk. Skip if the change is cross-file but introduces no new architecture/boundary decision — use a card Planning Contract instead（見流程規模分級節）"
 argument-hint: "<實作任務描述> [可選：PROMPT檔案路徑]"
 ---
 
@@ -44,26 +44,48 @@ EP 分兩類，由任務規模決定：
 
 | ep_type | 適用 | 結構 | build 行為 |
 |---------|------|------|-----------|
-| **implementation**（預設） | 小型 / 單一中型變更 | 完整段落（Context + 要點 + Pseudo Code + 驗證策略 + Scenario Matrix） | 正常逐段 /implement |
-| **blueprint**（綱要 EP） | **≥ 5 段都是中型變更**（每段本身需完整 EP 規劃深度，單一 EP 裝不下） | 段落是藍圖層級（描述要做什麼 + 依賴 + 吸收範圍）+ 每段標「→ 衍生子 EP（路徑）」；**不含可實作 Pseudo Code** | **不直接 /implement** — 提示逐段衍生子 EP（見 `/implement` 階段 0 ep_type 偵測） |
+| **implementation**（預設） | full tier 變更（寫 EP 前先過下方流程規模分級） | 完整段落（Context + 要點 + Pseudo Code + 驗證策略 + Scenario Matrix） | 正常逐段 /implement |
+| **blueprint**（綱要 EP） | **≥ 5 段都是 full tier 變更**（每段本身需完整 EP 規劃深度，單一 EP 裝不下） | 段落是藍圖層級（描述要做什麼 + 依賴 + 吸收範圍）+ 每段標「→ 衍生子 EP（路徑）」；**不含可實作 Pseudo Code** | **不直接 /implement** — 提示逐段衍生子 EP（見 `/implement` 階段 0 ep_type 偵測） |
 
 **欄位格式**（結構化，與 `parent` 一致 — `/implement` 機械掃描欄位非語義字眼）：EP 標頭標 `> **ep_type**: blueprint` 或 `> **ep_type**: implementation`（預設 implementation，可不標）。blueprint EP 必標；implementation EP 若描述到 blueprint 概念也標（避免語義掃描自指誤判）。
 
 **衍生機制**：blueprint EP 每段 → 衍生 implementation 子 EP（標 `parent: <master EP 路徑>` + 繼承該段 Context/依賴/吸收範圍）。子 EP 是完整 implementation EP，可獨立 /implement。
 
-**觸發條件**（避免過度工程）：任務含 ≥ 5 段都是[中型變更](../../ai-development-guide.md)（變更規模分級見 ai-development-guide）→ blueprint；否則 implementation。視複雜度調整 — 小型任務硬拆成 blueprint 是過度工程。
+**觸發條件**（避免過度工程）：任務含 ≥ 5 段都是[full tier 變更](../../ai-development-guide.md)（規劃載體分級見 ai-development-guide 規模段）→ blueprint；否則 implementation。視複雜度調整 — 小型任務硬拆成 blueprint 是過度工程。
 
-## 流程規模分級（是否寫 EP — 與 ep_type 正交）
+## 流程規模分級（規劃載體分級 — 與 ep_type 正交）
 
-ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**是否寫 EP**」（規模維度，與 docs mode 的 product-type 維度正交）：
+ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**規劃載體選哪種**」（規模維度，與 docs mode 的 product-type 維度正交）：
 
-| 規模 | 判準 | 流程 |
+| 規模 | 判準 | 規劃載體 |
 |------|------|------|
-| **simple** | 單檔 bug fix、小 tweak、🟢 低風險 | **不寫 EP** — 直接 TDD + 驗證（`/implement` 裸任務或直接實作）；對齊 [ai-development-guide](../../ai-development-guide.md)「小型變更不需 UC」 |
-| **standard** | 跨檔 feature、🟡 中風險 | 寫 EP（implementation，本命令預設） |
-| **full** | 架構、跨模組、🔴 高風險 | 完整流程（`/spec`（純輔助·需求釐清）→ EP → `/ep-validate` → review → `/implement` → judge） |
+| **simple** | 單檔 bug fix、小 tweak、🟢 低風險 | **不寫 EP** — card AC/scope，直接 TDD + 驗證（`/implement` 裸任務或直接實作）；對齊 [ai-development-guide](../../ai-development-guide.md)「小 bug/doc 免 UC」 |
+| **standard** | 跨檔 feature/refactor、🟡 中風險、**無新 architecture/boundary 決策** | **card Planning Contract**（不寫 standalone EP）— 卡 plan 段六欄結構化規劃，見下方小節；執行＝`/implement` contract 分支（六欄齊備代 accepted-EP 檢查） |
+| **full** | 架構、跨模組、🔴 高風險、**新 boundary**（state ownership／public contract／跨 context invariant／控制面 authority） | **standalone EP** + 完整流程（`/spec`（純輔助·需求釐清）→ EP → `/ep-validate` → review → `/implement` → judge） |
+| **parent-EP bounded child** | accepted EP 已定案上游架構決策，本卡只實作其中 bounded 一段 | **引用 parent EP**（`parent: <ep 路徑>`＋段錨）＋ card Planning Contract——繼承已決策，不重寫完整子 EP |
 
-> **防濫用**：simple「不寫 EP」是跳過**規劃文檔**，非跳過品質 — 仍須 TDD + 驗證。判準機械化（檔案數 + 跨模組 + 風險等級）；**不確定歸 standard，勿把中型降級 simple**。
+> 評估順序＝simple→standard→full，依序命中即止；architecture／boundary 判準命中即 full，優先於『跨檔歸 standard』。
+
+> blueprint 衍生子 EP（上行〔ep_type 節〕）與 parent-EP bounded child（本表第四列）是兩個機制：前者＝EP 底下再開 EP（綱要層），後者＝EP 底下開卡（卡層實作）。用後者的判準是 decision-ownership：本卡所需的 boundary／architecture 決策**全部**已由 parent EP 定案且可逐項 anchor；任一決策 parent 未定案→不是 bounded child，走 full（amendment／子 EP）。
+
+### card Planning Contract（standard／parent-EP child 的規劃載體）
+
+standard／parent-EP bounded child 不寫 standalone EP，規劃住卡 plan 段六欄，**缺一＝未規劃**：
+
+1. **Baseline**：現況＋錨點 file:line
+2. **已決策**（勿重辯）：parent-EP child 另列 inherited decisions 附 parent EP 錨點。每條 boundary／architecture 決策必須帶 provenance anchor——parent EP 錨點、既有檔案 file:line、或先前已結案卡；**無 anchor＝新決策**→本卡不是 standard，contract 成立前即 promotion 至 full
+3. **Scope**：動／不動檔案
+4. **Scenarios**：行為情境，含邊界／fail 情境
+5. **Integration**：下游消費者／整合點
+6. **驗證式**：AC 機械可判——命令＋預期結果；驗證式＝AC 的規劃態——開工承諾時結晶為卡 AC 欄，卡 AC 欄是唯一驗收源
+
+standard 用 Planning Contract 跳過的是 EP 儀式（段落 pseudo-code、EP Review Cycle、report shell），不是跳過規劃。parent-EP bounded child 的 inherited decisions 引用 parent EP 錨點即可，禁整段抄錄 parent EP。
+
+### Promotion ladder（升級觸發）
+
+contract 直行中發現新 **architecture** 決策（新 module 責任／依賴方向）**或**新 boundary 決策（state ownership／public contract／跨 context invariant／控制面 authority）——與 full tier 判準同一列舉 → 停止 contract 直行 → 升 EP amendment 或子 EP（full tier 流程）。判準：該決策是否超出卡前已 anchor 決策範圍。
+
+> **防濫用**：simple「不寫 EP」是跳過**規劃文檔**，非跳過品質 — 仍須 TDD + 驗證。判準機械化（檔案數 + 跨模組 + 風險等級）；**不確定歸 standard，勿把中型降級 simple**。standard 的 Planning Contract 同理——跳過的是 EP 儀式，六欄缺一＝未規劃，勿把 standard 降級 simple。
 >
 > **silent-corruption 前置掃描**（判 simple 前必跑——多數 simple 修復走裸任務直接實作、不載 execution-plan，掃描掛 EP 護不到主要入口，guide always-on 面同步掛）：對照 §1b 觸發條件（會計總量／風控 sizing／共用 domain service／silent-corruption path 如單位邊界／除權息／時區）——命中 → 升 standard（優先）或 simple＋輕量 invariant 聲明（受影響 invariant＋驗證式，3 行內）。
 
@@ -76,11 +98,11 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 ---
 
-## 🔴 UC 盤點（大型/中型變更必填，寫在 Scenario Matrix 之前）
+## 🔴 UC 盤點（full tier 變更必填，寫在 Scenario Matrix 之前）
 
 > **核心原則**：UC-Driven Development 要求模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + backlog board 卡（`backlog/`，Backlog.md——機制單一源見 [kanban-board](../kanban-board/SKILL.md)）是開發的**起點**，不是段落的附屬品。EP 必須在一開始就盤點 UC，後續段落才能引用。
 
-**何時需要**：大型/中型變更必填；小型變更（bug fix、文檔）跳過。
+**何時需要**：full tier 變更必填；simple 變更（bug fix、文檔）跳過。
 
 **執行步驟**（生成 EP 時的強制前置動作）：
 
@@ -148,11 +170,11 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 ---
 
-## Scenario Matrix（大型/中型變更必填）
+## Scenario Matrix（full tier 變更必填）
 
 > **核心原則**：規劃時強制思考「使用者會遇到哪些情境」，避免實作完成才發現漏掉錯誤路徑或邊界案例。矩陣產出後散到 UC 的「消費場景」欄位。
 
-**何時需要**：大型/中型變更必填；小型變更（bug fix、文檔）跳過。
+**何時需要**：full tier 變更必填；simple 變更（bug fix、文檔）跳過。
 
 **格式**（放在 UC 盤點之後、段落劃分原則之前，作為 top-level 區段）：
 
@@ -172,11 +194,11 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 ---
 
-## 測試規劃段（中型以上且 EP 含可執行碼必填——top-level，實作段落之前）
+## 測試規劃段（full tier 變更且 EP 含可執行碼必填——top-level，實作段落之前）
 
 > **核心原則（v3.1 測試契約）**：契約層先——TC（測試契約）在任何人寫實作碼前凍結（文件順序＝時間順序，本段放 Scenario Matrix 之後、段落 0 之前）。oracle 獨立性由「EP 作者↔實作者本來就跨家族」兌現；same-family 時此前提裂縫——見下方 same-family precondition（本處是 producer 側記錄，consumer 側 gate 在 [implement](../implement/SKILL.md)）。
 
-**何時需要**：中型以上且 EP 含可執行碼；純文檔 EP 跳過（標記理由）。
+**何時需要**：full tier 變更且 EP 含可執行碼；純文檔 EP 跳過（標記理由）。
 
 **TC 格式**（每條 TC 的欄位）：
 
@@ -242,7 +264,7 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 - **背景資訊**：基於需求討論（有 `/spec` 則引用其 UC/SM；無則段落自行釐清）
 - **需求邊界繼承**：有 `/spec` 時其 Always / Ask First / Never 邊界顯式入段（自包含轉述，不引用編號——段落自足原則）；無 spec 寫「無」
-- **UC 引用**：本段落實作的能力描述（如「實作 [能力描述]」）。大型變更必須引用；中型變更更新既有 UC；小型變更可不引用
+- **UC 引用**：本段落實作的能力描述（如「實作 [能力描述]」）。full 變更必須引用；standard 變更更新既有 UC；simple 變更可不引用
 - **依賴關係**：與其他段落的依賴和整合點
 - **語義約束**：與其他段落共享的隱含假設（型別定義、命名慣例、架構決策）。無則寫「無」，有則寫「與 S{N} 共享 [具體假設]」
 - **基礎設施盤點**：設計 pseudo code 前的必做步驟（讀 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）可複用基礎設施 → LSP `workspaceSymbol` + `rg` 搜尋相關元件 → 列出可複用元件或寫「無」）
@@ -297,13 +319,13 @@ EP 專屬約束：
 
 ## 段落設計檢查清單
 
-- [ ] UC 盤點已完成（大型/中型變更：掃描 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + backlog 卡、列出新增/更新 UC、卡關聯）
+- [ ] UC 盤點已完成（full tier 變更：掃描 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + backlog 卡、列出新增/更新 UC、卡關聯）
 - [ ] Backlog 自動建卡已完成（新增 UC 已有對應卡 + EP 整體追蹤卡；建卡已 commit——`chore(backlog)` 顆粒）
-- [ ] Scenario Matrix 已填寫（大型/中型變更；涵蓋 happy path、錯誤操作、邊界、效能期待差異）
-- [ ] 測試規劃段已完成（適用時——中型以上且含可執行碼：TC 凍結＋amendment 附錄＋author_family 欄位；純文檔 EP 標記跳過理由）
+- [ ] Scenario Matrix 已填寫（full tier 變更；涵蓋 happy path、錯誤操作、邊界、效能期待差異）
+- [ ] 測試規劃段已完成（適用時——full tier 變更且含可執行碼：TC 凍結＋amendment 附錄＋author_family 欄位；純文檔 EP 標記跳過理由）
 - [ ] 標題明確且獨立
 - [ ] Context 包含所有必要背景
-- [ ] UC 引用已標記（引用 UC 盤點區段的能力描述；大型必須，中型可選）
+- [ ] UC 引用已標記（引用 UC 盤點區段的能力描述；full 必須，standard 可選）
 - [ ] Pseudo Code 具體可執行
 - [ ] 驗證策略完整可執行
 - [ ] 整合點清晰定義
@@ -329,7 +351,7 @@ EP 產物全為 instruction/documentation 檔，或其 static HTML Report Shell�
 | UC 盤點 | 掃 library Capabilities | 掃「受影響命令/rules 清單」（元專案無 Capabilities 表格）|
 | kanban / SYSTEM-MAP | 強制 | 元專案 / 無對應時跳過（正當跳過，標記理由）|
 | Context 錨點 | file:line 符號（LSP）| file:line 文檔行號錨點（rg 驗證行號指向預期內容）|
-| Scenario Matrix | 大型/中型必填 | 影響命令行為時仍填，但「觸發/預期行為」改文檔語境（rg 命中/0 殘留），非程式執行結果 |
+| Scenario Matrix | full tier 必填 | 影響命令行為時仍填，但「觸發/預期行為」改文檔語境（rg 命中/0 殘留），非程式執行結果 |
 | 測試規劃段 | TC 凍結＋amendment 附錄＋author_family 欄位 | **跳過**（純文檔 EP 無可執行碼面——標記理由）|
 | Pseudo Code | 類別 + Call Stack | **裁剪**（文檔無類別）；以「修改要點」替代 |
 | 驗證策略 | POC/demo + 測試 + 整合測試 | 改為文檔驗證（rg 殘留、跨檔一致性、`/consistency`、導航有效性）|
@@ -425,14 +447,14 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 
 > **核心原則**：EP 必須包含收尾段，列出所有功能段落完成後的強制收尾動作。`/implement` 階段 5 執行。未完成收尾不得宣稱 EP 實作完成。
 
-每個 EP 的收尾段必須包含以下三項：
+每個 EP 的收尾段必須包含以下四項：
 
 ### 1. 模組 instruction 檔 Capabilities + Kanban 更新
 
 - 已完成 UC：在對應模組 instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）Capabilities 表格新增一行（能力 + 入口 + ✅）
 - 卡結案（repo 有 `backlog/` 時；時點＝收斂後——post-build hook 2／無 post-build 弧走 implement 階段 6 fallback；5a 只做 Capabilities Built 結算）——**結案兩步＋弧結案蒸餾第三動**（命令合約見 [kanban-board](../kanban-board/SKILL.md)）：`backlog task edit <id> -s Done --final-summary "<一句>"` → `task edit <id> --ref "<done/ EP 相對路徑>[,<shell 相對路徑>]"`（任務目錄遷 done/ 後路徑更新），卡留 Done 欄；第三動＝本弧 memory 條目蒸餾為終態 facts；無 `backlog/` → 跳過
 - **原子操作**：各時點內同時完成（5a：Capabilities＋消費場景＋SM 預覽；收斂後：結案兩步＋SM 升級＋EP 歸檔＋flow-feedback 歸檔——定義見 [metadata-sync](../metadata-sync/SKILL.md) 原子性）
-- **從 EP Scenario Matrix 提煉「消費場景」**（大型/中型變更）：將矩陣中所有引用該 UC 的場景，提煉成自包含一句話描述（不引用 EP/SM 編號），寫入 Capabilities 表格備註或 backlog 卡（`backlog task edit <id> --append-notes`）
+- **從 EP Scenario Matrix 提煉「消費場景」**（full/standard 變更）：將矩陣中所有引用該 UC 的場景，提煉成自包含一句話描述（不引用 EP/SM 編號），寫入 Capabilities 表格備註或 backlog 卡（`backlog task edit <id> --append-notes`）
 
 ### 2. SYSTEM-MAP.md 更新（如果存在）
 
@@ -452,7 +474,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 - 確認無反模式、覆蓋對稱性合理、mock 健康度良好
 - 稽核結果附於 `/implement` 完成報告
 
-**小型變更**（bug fix）：僅執行 /audit-test，跳過 UC 和 instruction 檔更新。
+**simple 變更**（bug fix）：僅執行 /audit-test，跳過 UC 和 instruction 檔更新。
 
 ---
 
