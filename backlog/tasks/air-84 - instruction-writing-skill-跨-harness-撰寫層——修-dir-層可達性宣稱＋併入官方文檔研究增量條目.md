@@ -4,6 +4,7 @@ title: instruction-writing skill 跨 harness 撰寫層——修 dir 層可達性
 status: To Do
 assignee: []
 created_date: '2026-09-12 22:24'
+updated_date: '2026-09-16 07:31'
 labels: []
 dependencies: []
 ordinal: 70000
@@ -21,3 +22,9 @@ ordinal: 70000
 
 範圍：skills/instruction-writing/SKILL.md（修宣稱＋新節）、skills/model-routing/SKILL.md（webgpt 表）、skills/CLAUDE.md（如索引需同步）。來源素材：ai-analysis/reports/2026-09-12-cross-harness-md-writing-research/synthesis-draft.md（含七開放問題裁決紀錄）；DRAFT-6（webgpt 失敗簽名實證關聯）。弧閉環：本卡建立即 cross-harness-md-writing-guideline-arc 指針退休條件成立。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔0916 muse 調查卷宗〕建卡後零施工。①錯誤宣稱還在線上：SKILL.md:38「每層雙檔確保四家 harness 都讀得到」被 ZCode 官方文檔明文證偽（不掃子目錄——斷），對 Muse（向上-only）／Codex（cwd-only）／CC（lazy）也過強 ②研究素材十檔齊備未動用（reports/2026-09-12-cross-harness-md-writing-research/，1158dc9 定錨）③AC③ 兩 webgpt 簽名未補、glm 429 實證源不明 ④四處脫鉤：行號 24→38、口徑 OpenCode→Muse、失敗態五類→六類、M3 觀察窗已過期。處置建議＝先改卡面（對齊現況）→ 施工。卷宗＝本對話 air-84-muse.out。
+<!-- SECTION:NOTES:END -->

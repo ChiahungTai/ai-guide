@@ -1,10 +1,10 @@
 ---
 id: AIR-95
 title: codex hook 控制面探測——同一套 AI 協作防護能否裝到 codex
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-15 06:12'
-updated_date: '2026-09-16 07:17'
+updated_date: '2026-09-16 07:54'
 labels: []
 dependencies: []
 ordinal: 81000
@@ -39,3 +39,9 @@ MOS-105 討論中發現 codex 官方文檔有 lifecycle hooks 機制（PreToolUs
 
 〔0916 firing 終局證據〕連續 3 次 headless exec（無 bypass、非 repo cwd）均攔截成功——codex router log 逐字：ERROR codex_core::tools::router: Command blocked by PreToolUse hook: [Hook Blocked] python -c 命令含換行 + # 註解。先前 NOT_FIRING 實例（bridge job／T2）現已不可重現＝非確定性靜默 skip（transient），非確定性 trust 閘；監測方式＝本協議可隨時重跑。B（file-write 註冊＋timeout 10s）已落地 hooks.json；A（bridge 旗標）暫不需要——若靜默 skip 復發再議（contingency：bridge build_args 或 launcher 旗標）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+探測完成：stdin 契約與 ZCode 同構、firing 證據 3/3（headless 無 bypass 逐字 router log）、單次成本 80-90ms；NOT_FIRING 曾現象＝暫時性靜默 skip（現不可重現，非確定性 trust 閘——監測協議在卡）。B（file-write 註冊）C（timeout 10s）已落地；A（bridge 旗標）暫不需要（contingency 記錄在案）。附帶修正卡面觸發載體描述（多行 python -c 非 heredoc）。
+<!-- SECTION:FINAL_SUMMARY:END -->
