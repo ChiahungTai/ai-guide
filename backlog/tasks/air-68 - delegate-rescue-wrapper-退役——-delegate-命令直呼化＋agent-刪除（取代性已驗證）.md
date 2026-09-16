@@ -1,14 +1,17 @@
 ---
 id: AIR-68
 title: delegate-rescue wrapper 退役——/delegate 命令直呼化＋agent 刪除（取代性已驗證）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-09 22:14'
-updated_date: '2026-09-16 06:15'
+updated_date: '2026-09-16 07:01'
 labels:
   - governance
   - bridge
 dependencies: []
+references:
+  - AGENTS.md
+  - rules/bridge-dispatch.md
 ordinal: 54000
 ---
 
