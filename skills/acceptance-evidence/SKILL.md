@@ -39,6 +39,39 @@ when_to_use: "Fires when judging evidence strength for acceptance claims — no-
 - **silent-failure claim**（真實案例）：smell-detector baseline（原 codebase-sweep）state.yaml 把 Interval 自創名稱（如 `"1M"`）標「silent drift」——靜態推論「1M 撞 1m」沒跑 `Interval("1M")`，實證 StrEnum 精確比對 + raise → loud crash 非 silent。同類：tilde bug 靜態推論「消費端 inline 沒問題」沒執行 → 實證推翻。教訓通用（silent-claim 須執行證據），不依賴特定符號現狀。
 - **自報元資料不可信**（真實案例）：vision 判讀 111 案中模型自報 contradicts 漏報 44——模型給了不同 label 卻自報未推翻；正解＝llm_label vs 標準答案逐案機械比對，禁用自報欄位做統計。Review 雙向應用觸發形態：審查時看到以自報分類／判讀欄位彙算的統計（通過率／推翻率）→ 視為須逐案機械比對的觸發信號，不得直接採信。
 
+## Closure 三層閘與防線標記制（enforcement 類 AC 的驗收契約）
+
+> **適用範圍**：宣稱 hard guard / deny / enforcement 能力的 AC（含以 hook 為載體者）——結案 receipt 必須逐層出示證據，缺任一層＝不得 Done。detection／telemetry 類 hook 宣稱不在此列（其驗收＝emission/observation 證據，非 negative 被擋）。這是跨卡 coordination contract（後續所有 enforcement 類卡結案時消費），不是個別卡的 plan。載體 residency（為何住 skill 不住 rule）判準見 [memory-audit](../memory-audit/SKILL.md)「載體統一定義表」。
+
+### 三層閘
+
+| 層 | 驗什麼 | 證據形態 | 常見假綠 |
+|----|--------|---------|---------|
+| **Existence** | 實作與測試 artifact 存在 | file:line 錨、rg 可達 | dead code／dead matcher／未 registration 的 handler——「檔案裡有這段字」只證落盤可定位，存在≠被走到，須由下層 Invocation 拆穿 |
+| **Invocation** | 實際 registration / caller 會走到它 | wiring 錨：註冊點 file:line → handler 入口 file:line | matcher 宣稱支援某事件但 handler 無對應分支（靜默落 exit 0） |
+| **Behavior** | negative case 被擋＋positive control 放行 | 雙向實測，各一條驗證式＝「命令＋預期結果」 | 只驗 negative＝過擋（擋掉合法流量）而不自知；只驗 positive＝防線失效不擋也不自知；guard crash／registration inactive 走 fail-open 靜默放行——雙向 probe 皆綠仍可能全失守，hard guard claim 須至少一條 failure-path 證據（crash 注入或 log 斷言） |
+
+claim 涵蓋某 harness 時加第四層：**actual-runtime receipt**——該 harness 實跑證據（靜態接線或他端實跑皆不可替代）。
+
+結案時 **fresh rerun** 全部驗證式（驗證式＝命令＋預期結果；**claim 與預期結果 planning 時即凍結**，命令允許實作期修正但須記理由於卡 notes，fresh rerun 跑最終版），receipt 掛回卡。**Done status 是 metadata，不是 capability evidence**——卡面勾 Done 不構成上列任何一層的證據。
+
+### 反例（真實案例）：AIR-90 狀態後綴硬擋——卡面 Done、enforcement 零實作
+
+air-90 卡面記 Done，宣稱「狀態後綴（-pending/-inflight/-landed 等）新建條目 exit-2 硬擋」已上線。入册時實測：`hooks/block-memory-index-write.py` 全文無任何 stem-suffix 邏輯（擋面僅索引手寫／desc 三不／新建大小上限／膨脹類）；掃當時列管的 enforcement 載體集合（`hooks/`、`muse-plugins/`、`scripts/`、`skills/memory-audit/`）零條 suffix-deny 實作；被擋的 writer 路徑＝**無（零）**，沒被擋＝全部。
+
+結案 gate 為何漏：驗收了**文件宣稱**（決策文本存在＋卡面狀態）而非 **code 錨**（guard anchor → 接線 → 雙向行為）——「決策已記錄」與「enforcement 已存在」是兩件事。治理方式不是新增 card schema，是本節三層閘：結案 receipt 逐層出示，Done 降級為 metadata。
+
+### 防線標記制（writer×防線聯合 coverage matrix）
+
+多層防線各自驗綠**不可推論 union coverage**——聯合視圖必須另組矩陣並作為 acceptance artifact，每個 writer×防線格明標三態之一：
+
+- `prevented` — 事前攔截（寫入前 deny；例：PreToolUse hook exit-2）
+- `detected` — 事後偵測（寫入後發現；例：reconcile porcelain delta，exit 2＝dirty）
+- `unsupported` — 無防線（機制上看不見；例：Bash redirect 直寫——tool-event hook 不可見）
+- `unknown` — 認識態非防線態：接線在場但 runtime fire 未證。格先標 `unknown`＋附待跑驗證式，禁止暫填前三態（誤標 `unsupported`＝誇大缺口、`detected`＝假安慰）；Done 前所有 in-scope 格必須消除 `unknown`
+
+**禁跨類推論**：`detected` 不可當 `prevented` 用（偵測網存在≠攔截）；「每層各有 Done」不可推論「聯合起來護到了」——缺口只在合併視圖現形。
+
 ## 盤點執行點雙掃（間接層＋直呼層）
 
 > **核心原則**：盤點「誰執行/呼叫 X」（CI 跑哪些測試、哪些入口呼叫某工具、cutover 影響域）時，間接層（make target/wrapper 引用）與直呼層（raw command 直接出現，**含 Makefile recipe 內**）**兩層都要掃**——只掃一層系統性漏，且自審抓不到（掃了什麼就被當成完整）。路徑集按 repo 調整——CI workflow、launchd plist（現值＝`~/Library/LaunchAgents/`）、cron 排程必含；**跨 repo 消費面同必含**：排程 registry 反查表（ai-guide `ai-analysis/schedule-registry.md`——排程→消費端映射）＋目標 workspace 的 memory 池（跨 repo 排程/接線的記載面，如 `reference_periodic-task-landscape` 條目形態）＋消費端 repo 的 `deploy/`（plist/服務腳本）。本 repo 掃不到的依賴從這幾面現身（真實案例：standup 誤刪——ai-guide 端盤點看不見 mosaic 排程載體對 skill 的依賴而誤判無消費者，時刻/載體現值見 registry 反查表 A1）。
