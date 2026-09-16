@@ -1,6 +1,7 @@
 ---
 name: trading-analysis
 description: "股票與市場走勢分析的三層框架（經典技術分析 → 量化指標 → 第二層思考整合）＋事件研究與回測量測紀律（可回補模擬、單位單一源、point-in-time、探索↔正式化界線）。分析個股、市場走勢、技術分析（TA）、個股判斷、Dow Theory、Elliott Wave、Wyckoff、Darvas Box、Bollinger Bands、支撐阻力、量價分析、回測紀律、事件研究、point-in-time、data snooping、單位口徑時載入。輸出必含「各理論共識/歧異對照」表格。"
+when_to_use: "分析個股或市場走勢、需要技術分析判斷（TA：Dow Theory、Elliott Wave、Wyckoff、Darvas Box、Bollinger Bands、支撐阻力、量價分析），或設計／審查回測與事件研究量測（可回補模擬、單位單一源、point-in-time、data snooping）時載入。K 線圖形的視覺判讀 pipeline（vision agent 盲判）屬 kbar-form-analysis；畫圖選型屬 diagram-selection——兩者皆不觸發本 skill。"
 ---
 
 # 股票分析框架
@@ -26,10 +27,10 @@ description: "股票與市場走勢分析的三層框架（經典技術分析 �
 
 ### Layer 2（疊加）：量化/系統觀點
 
-經典 TA 框架建立後，疊加系統計算的指標和結構（以量化交易專案為例，跨專案時替換為當前專案的對應模組）：
-- `mosaic_alpha/indicators/` — 40+ 技術指標（RSI, MACD, ATR 等）
-- `mosaic_alpha/structure/` — WaveNode, SwingLeg, TrajectoryTree
-- `mosaic_alpha/features/` — Spec-driven 特徵工程
+經典 TA 框架建立後，疊加系統計算的指標和結構（跨專案時替換為當前專案的對應模組）：
+- 當前專案的指標模組（如 RSI、MACD、ATR 計算層）
+- 當前專案的結構模組（swing/leg/trajectory 類結構節點）
+- 當前專案的特徵工程模組（spec-driven 特徵管道）
 
 ### Layer 3（整合）：第二層思考
 
