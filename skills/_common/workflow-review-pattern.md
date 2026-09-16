@@ -316,6 +316,8 @@ Workflow 完成後回傳 `{confirmed, stats}`，由 Main LLM 接手後續處理�
 | `/ep-review` | 合成 4 個 DimensionVerdict → EP write-back（回寫修正） |
 | `/code-review` | 合成 results → 分三級（Critical/Important/Suggestion）→ commit message |
 
+**結論回卡（adapter-neutral——AIR-108，與 Agent Tool 載體同契約）**：有卡弧時，caller／board-control 在每腿回收後以一行 `backlog task edit <卡id> --append-notes "<腿名＋verdict＋evidence ref>"` 落卡——`.review/<branch>.md` 隨 commit 清除、卡面是跨 session durable 驗證狀態源；spawned worker 禁直寫卡 metadata（verdict 隨回報交 board-control 代落，同 single-writer 分工）。契約細節單一源＝[agent-review-cycle](./agent-review-cycle.md)「結果交接」節。
+
 ---
 
 ## 與 Agent Tool Fallback 的關係
