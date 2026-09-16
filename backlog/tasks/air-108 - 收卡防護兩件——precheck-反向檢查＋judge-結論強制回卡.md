@@ -1,12 +1,15 @@
 ---
 id: AIR-108
 title: 收卡防護兩件——precheck 反向檢查＋judge 結論強制回卡
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 03:17'
-updated_date: '2026-09-16 03:17'
+updated_date: '2026-09-16 04:00'
 labels: []
 dependencies: []
+references:
+  - skills/kanban-board/scripts/backlog_precheck.sh
+  - skills/judge-review/SKILL.md
 ordinal: 93000
 ---
 
