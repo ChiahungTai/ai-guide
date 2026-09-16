@@ -4,7 +4,7 @@ title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存�
 status: To Do
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-16 01:55'
+updated_date: '2026-09-16 05:40'
 labels:
   - governance
   - memory
@@ -60,4 +60,6 @@ Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」
 〔09-16 重裝稽核新事實——muse governance plugin 更新鏈已斷，建議隨本弧 P1 併處〕①稽核實測：muse-memory-governance plugin 的 source provenance 指向 ~/Github/ai-rules/muse-plugins/memory-governance（rename 前舊路徑，現已不存在）；現況 muse cache 內容與 ai-guide/muse-plugins/memory-governance 逐檔一致、runtime trusted_enabled——功能正常，但下次 content update 的源頭註冊會失敗。②與本卡關係：本卡 P1 staging 手術（symlink 改指 memory-auto／變體 c write-through）動的是同一目錄族（.agents/memory* symlink＋memory-governance.json marker＋inbox divert＋reconciler 假設）——plugin 重註冊（源改指 ai-guide 現路徑）宜隨 P1 同弧一次做完，避免兩次動同一拓撲。③原排除條款「不動 muse governance plugin」係指 AIR-93 軸（session-end 繞閘，已 Done）；本項是 0916 稽核新發現的部署鏈事實，非重辯。④處置選項留 user：(a) 隨本弧併處（預設建議）(b) 立即單獨重註冊（一個 muse plugin 指令）。附帶：CR binary 落後 d105806 一 fix（非 memory 域，另計）；「部署面對帳」流程缺口已列治理卡候選。
 
 〔0916 補充更正〕CR binary 一項經 user 已裁定無需更新：d105806 僅改 release.sh（wheels readiness barrier，下次發版才生效），binary 行為零差異——不出 0.9.2。
+
+〔0916 user 拍板〕本卡於 sess_014a87f8-e39c-41dd-bad0-1e658d18a56b 時執行，到時完整規劃。bi panel 規劃素材已存 .agent-tmp/six-card-review/dossier.md＋bi-*.out，該 session 開工必讀——要點：①先立 cutover snapshot 阻止移動目標再逐條補審 78 條 ②baseline 以 as-of 重定（41→78 已翻倍）③staging 拓撲決策需連動 wt-open/close 的池 symlink 敘述 ④panel 依據的仲裁條目（project-uisc-audit-11card-arbitration.md）自身是未審 auto 寫入，補審須裁定可採性 ⑤卡內 staging 方案與舊排除條款矛盾先收斂成單一契約。
 <!-- SECTION:NOTES:END -->

@@ -4,7 +4,7 @@ title: 多工調度中心：一次開多張卡、各自 worktree、AI agents 並
 status: To Do
 assignee: []
 created_date: '2026-09-10 01:50'
-updated_date: '2026-09-15 21:57'
+updated_date: '2026-09-16 05:55'
 labels:
   - governance
   - agents
@@ -20,6 +20,14 @@ ordinal: 57000
 
 User 09-10 願景：一個 command center session 一次控制多卡（各卡對應 WT、每 WT 兩三個 agents 協同）——user 不再當 WT 間搬運工（mosaic 三 WT 痛點：context 經 user 轉譯）。分層：L0 user（一個 viewport）→L1 調度層（CC session：wt-open/close 呼叫者＋agent 編隊＋跨卡對帳，不寫 code——即本日 CC 形態的泛化）→L2 執行層（每卡一 WT，卡內 writer＋reviewers×2＋judge 編隊）→L3 shared（board control plane＋memory symlink＋bridge ledger）。範圍三段：〔A 調度層設計〕agents 進 WT 的機制（bridge cwd 參數／絕對路徑守則升級為主形態／worker session——對照 mosaic B 研究的三案；POC 已實證 subshell cd 形態可行＋路徑契約三閘〔prompt 只帶路徑/branch 自驗/錯位 STOP〕）＋agents 共享黑板（.agent-poc/<card>/ 落盤近似 CC agent teams 的 teammate 互訊——ZCode 無原生）＋CC context 預算（產出落盤只收 verdict）。〔B fleet 規範〕並行度成文上限＋成組慣例＋失敗階梯擴充＋fleet 成本量測腿＋stopped 回收慣例。〔C routing drift 查證〕review 主鏈實況 full 為主 vs model-routing reviewer-lite 預設。前置：AIR-72。素材：reports/2026-09-10-agents-fleet-research.md＋.agent-tmp/poc-wt-report.md。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide cfdb1ac〕
+〔已決策勿重辯：①user 0916 拍板架構＝marshal 是唯一協調點，worker 禁互講（hub-and-spoke）；共享狀態＝磁碟落盤由 marshal 收斂——黑板機制從設計刪除（實戰 9 worker 全 PASS 零重派已證不需要）②前置已兌現：AIR-72 wt-open/close＋AIR-109 池拓撲 opt-in（f03f800）＋bridge heartbeat＋liveness ticker＋09-16 三 WT 實戰 ③硬約束：池拓撲敘述跟隨 AIR-100（sess_014a87f8）決策，禁寫死現行 pool-symlink 形狀；本卡實作排 AIR-100 之後〕
+縮範圍＝marshal 實戰形態產品化：黃金模板六要素（role 宣告／baseline／三線規格表／已決策勿重辯／驗收／執行 tier）成文進慣例文檔＋路徑契約三閘＋[Dispatch] preview＋獨立機械驗證（重跑 pytest＋rg 抽查）標準化。B 段四項逐項建議（final 勾選待 user）：①can_run preflight 保留（與 model-routing 額度快照合流）②execution identity ledger 保留簡版（孤兒偵測優先）③fault domain 五欄併 agent-workflow 既有 doctrine 精簡 ④observability 彙整保留。執行 tier：本改卡＝主 session 文件工作；產品化實作排 AIR-100 之後另弧。
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
