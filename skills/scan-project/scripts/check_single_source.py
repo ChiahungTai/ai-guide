@@ -93,7 +93,7 @@ INVARIANTS = [
         "id": "deploy_bundle_freshness",
         "type": "deploy_freshness",
         "note": "部署 bundle 是 rules/ + guide（單一源）的衍生 snapshot；非 Claude 三端"
-        "（~/.zcode、~/.config/opencode、~/.codex 的 AGENTS.md）只讀 bundle，stale = "
+        "（~/.zcode、~/.codex、~/.config/muse 的 AGENTS.md）只讀 bundle，stale = "
         "session 讀舊規則。Claude 端 ~/.claude/rules/ 目錄 symlink 即時，不在檢查範圍。"
         "真實案例：2026-08-18 發現部署版落後 source 六條 rules（tool-discipline 新紀律"
         "缺席）——編輯 rules 的 ZCode session 讀不到部署紀律（紀律在 meta rule，不進 "

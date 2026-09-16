@@ -94,7 +94,6 @@ task prompt 寫「若有 LSP 工具可用...無 LSP 則用 rg」是**提醒確�
 |---------|---------|---------|
 | Claude Code | 原生 plugin set（pyright/rust-analyzer/clangd/gopls/jdtls/...）| `LSP` tool（native，非 MCP），參數 `operation`/`filePath`/`line`/`character` |
 | ZCode | 無原生 → 現行：符號走 cr index（`pyrefly-index`／SCIP）、型別走 `code-reality-lsp-bridge`（lsp-python MCP 2026-08-28 起停擺，見下「現況」註） | 舊形態（歷史）：單一 `mcp__lsp-python__lsp(operation=...)` tool（mosaic_alpha `tools/lsp_mcp/server.py` 參考實作；CC-aligned dispatch） |
-| OpenCode | 原生 LSP（官方文檔說有，未實測） | 原生 tool |
 | 未來無 native 的 harness | 用 MCP server 支援 | mosaic_alpha `lsp-python` 為 reference impl（per-project http server） |
 
 LSP operation 語義一致，差異只在載體（native tool vs MCP tool）— 決策樹、反例、驗證 workflow 跨 harness 通用。mosaic_alpha `lsp-python` MCP 已進一步對齊 CC：單一 tool + `operation` 參數 + camelCase operation 值，跨 harness 呼叫結構一致（差異僅 `LSP` vs `mcp__lsp-python__lsp` 前綴）。goToImplementation：CC 有、ZCode pyright 不支援（`implementationProvider` 未實作）。

@@ -18,4 +18,4 @@ Do not use for: refactoring, writing scripts from scratch, debugging business lo
 
 ## 跨 harness 支援
 
-Context7 MCP 三家 non-Claude harness 支援（ZCode 已驗證、OpenCode/Codex 預計）；Claude 端同樣有 Context7 MCP——查詢流程跨 harness 一致。
+Context7 MCP 三家 non-Claude harness 支援（ZCode 已驗證；Codex/Muse 未驗證——Muse 端實際可用性未知）；Claude 端同樣有 Context7 MCP——查詢流程跨 harness 一致。

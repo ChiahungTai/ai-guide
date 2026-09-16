@@ -2,7 +2,7 @@
 """
 Multi-harness docs mirror crawler.
 
-Mirrors official docs from Claude Code, OpenCode, ZCode, Codex, Meta (Muse Code)
+Mirrors official docs from Claude Code, ZCode, Codex, Meta (Muse Code)
 into ref-docs/harness/<source>/.
 Prefers markdown endpoints (llms.txt / .md suffix); falls back to HTML extraction
 (zcode, and Claude blog when .md unavailable). Deterministic: writes a file only
@@ -14,7 +14,6 @@ Usage:
     uv run python ref-docs/harness/crawl.py                            # all sources
     uv run python ref-docs/harness/crawl.py --source claude-code       # one source
     uv run python ref-docs/harness/crawl.py --source zcode --limit 3   # smoke test
-    uv run python ref-docs/harness/crawl.py --source opencode --limit 3
 """
 
 import argparse
@@ -29,7 +28,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 from pathlib import Path
-from xml.etree import ElementTree as ET
 
 BASE_DIR = Path(__file__).resolve().parent
 USER_AGENT = "ai-rules-harness-mirror/1.0 (local docs cache)"
@@ -135,7 +133,6 @@ class PageResult:
 
 CLAUDE_BASE = "https://code.claude.com"
 CLAUDE_BLOG_BASE = "https://claude.com"  # blog posts live on the marketing host
-OPENCODE_BASE = "https://opencode.ai"
 ZCODE_BASE = "https://zcode.z.ai"
 CODEX_BASE = "https://learn.chatgpt.com"
 # Merged ChatGPT+Codex docs index; developers.openai.com/codex/* 308-redirects here.
@@ -181,38 +178,6 @@ def fetch_claude_code(page: Page) -> tuple[str, bytes]:
         text = extract_main_text(body)
         return ("extracted-html" if text else "sparse-html"), _norm(text)
     return "ok", _norm(body)
-
-
-def discover_opencode() -> list[Page]:
-    sitemap = fetch_until_ok(OPENCODE_BASE + "/sitemap.xml")
-    if not sitemap:
-        print("[WARN] opencode: sitemap.xml unreachable; skipped")
-        return []
-    pages: list[Page] = []
-    try:
-        root = ET.fromstring(sitemap)
-    except ET.ParseError as exc:
-        print(f"[FAIL] opencode: sitemap parse error: {exc}")
-        return []
-    for loc in root.iter():
-        tag = loc.tag.split("}")[-1]
-        if tag != "loc":
-            continue
-        url = (loc.text or "").strip()
-        # Keep the docs tree only. Sitemaps may nest (sitemap-index); we only read
-        # loc URLs directly, which covers a flat sitemap. Nested indexes are skipped.
-        if "/docs/" not in url:
-            continue
-        path = url.removeprefix(OPENCODE_BASE).rstrip("/")
-        pages.append(Page(url.rstrip("/") + ".md", path.lstrip("/") + ".md"))
-    return _dedup(pages)
-
-
-def fetch_opencode(page: Page) -> tuple[str, bytes]:
-    status, body = http_get(page.url)
-    if 200 <= status < 300:
-        return "ok", _norm(body)
-    return "fail", b""
 
 
 _ZCODE_DOC_LINK = re.compile(r'"/(cn|en)/docs/([a-z0-9-]+)"')
@@ -303,7 +268,6 @@ def fetch_meta(page: Page) -> tuple[str, bytes]:
 
 SOURCES = {
     "claude-code": (CLAUDE_BASE, discover_claude_code, fetch_claude_code),
-    "opencode": (OPENCODE_BASE, discover_opencode, fetch_opencode),
     "zcode": (ZCODE_BASE, discover_zcode, fetch_zcode),
     "codex": (CODEX_BASE, discover_codex, fetch_codex),
     "meta": (META_BASE, discover_meta, fetch_meta),

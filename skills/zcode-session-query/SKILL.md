@@ -2,7 +2,7 @@
 name: zcode-session-query
 
 description: "（ZCode 專用）跨 session 查詢與參考：查 session 清單/id、讀指定 session 尾部真人互動、ReadSessionContext 引用。handoff / relay 的「讀進來」側"
-when_to_use: "ZCode session 需要理解另一個 ZCode session 的內容時：handoff 接手方回查來源 session、user relay 互傳訊息、比對 compact 前後品質、盤點並行 session。僅 ZCode 有效（依賴 ~/.zcode 遙測 DB 與 ZCode 內建 ReadSessionContext；Claude / OpenCode / Codex 端不適用）"
+when_to_use: "ZCode session 需要理解另一個 ZCode session 的內容時：handoff 接手方回查來源 session、user relay 互傳訊息、比對 compact 前後品質、盤點並行 session。僅 ZCode 有效（依賴 ~/.zcode 遙測 DB 與 ZCode 內建 ReadSessionContext；Claude / Codex 端不適用）"
 allowed-tools:
   - Bash
   - Read

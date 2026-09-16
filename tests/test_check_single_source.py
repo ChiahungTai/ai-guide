@@ -346,6 +346,16 @@ def _freshness_inv():
     return next(i for i in css.INVARIANTS if i["id"] == "deploy_bundle_freshness")
 
 
+def test_deploy_freshness_non_claude_paths_no_opencode():
+    """AIR-102：非 Claude 三端檢查路徑＝~/.zcode、~/.codex、~/.config/muse
+    （opencode 停用後殘留清掃——死路徑不得殘留於 invariant note）。"""
+    note = _freshness_inv()["note"]
+    assert "~/.zcode" in note
+    assert "~/.codex" in note
+    assert "~/.config/muse" in note
+    assert "opencode" not in note.lower()
+
+
 def _fake_deploy_repo(tmp_path: Path) -> Path:
     """tmp repo：假 deploy_agents.py（自帶 HEADER/TARGETS/build_bundle）＋已部署 target。"""
     scripts = tmp_path / "scripts"
