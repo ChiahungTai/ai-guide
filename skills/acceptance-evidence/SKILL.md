@@ -63,7 +63,7 @@ air-90 卡面記 Done，宣稱「狀態後綴（-pending/-inflight/-landed 等�
 
 ### 防線標記制（writer×防線聯合 coverage matrix）
 
-多層防線各自驗綠**不可推論 union coverage**——聯合視圖必須另組矩陣並作為 acceptance artifact，每個 writer×防線格明標三態之一：
+多層防線各自驗綠**不可推論 union coverage**——聯合視圖必須另組矩陣並作為 acceptance artifact，每個 writer×防線格標記**防線三態**（prevented／detected／unsupported）之一，認識態 `unknown`（非防線態）另計：
 
 - `prevented` — 事前攔截（寫入前 deny；例：PreToolUse hook exit-2）
 - `detected` — 事後偵測（寫入後發現；例：reconcile porcelain delta，exit 2＝dirty）

@@ -28,16 +28,21 @@ from memory_hook_common import emit, is_pool_entry, utc_now
 
 
 def cli_source(argv):
-    """--source <name> from the registering harness; absent = legacy 'claude'.
+    """--source <name> from the registering harness, validated against an
+    allowlist. Unknown/missing values emit "unknown" (visible in telemetry)
+    instead of silently relabeling as claude — silent mislabeling is exactly
+    the drift class this sensor exists to expose (2026-09-17 audit: 76% of
+    events were mislabeled before --source existed).
 
-    AIR-100 S1: ZCode events were mislabeled 'claude' (hardcoded); registrations
-    now pass --source explicitly. Manual argv scan (not argparse) keeps the
-    always-exit-0 contract — argparse would exit 2 on malformed args.
+    Manual argv scan (not argparse) keeps the always-exit-0 contract —
+    argparse would exit 2 on malformed args.
     """
+    value = None
     for i, arg in enumerate(argv):
         if arg == "--source" and i + 1 < len(argv):
-            return argv[i + 1]
-    return "claude"
+            value = argv[i + 1]
+            break
+    return value if value in ("claude", "zcode") else "unknown"
 
 
 def main():

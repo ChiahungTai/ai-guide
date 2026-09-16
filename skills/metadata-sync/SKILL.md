@@ -14,7 +14,7 @@ build 後的「文檔狀態結算」方法論（commit 不再內嵌 finalization
 | mode | 觸發者 | 職責 |
 |------|--------|------|
 | **build** | `/implement` 階段 5 | 依情境結算(見情境矩陣)—— 結算是 working tree 編輯,不需 outward-action-consent(commit 場景) |
-| **收斂後結案** | `/post-build` hook 2（收斂點 invoke 本 skill 結案段；無 post-build 弧走 `/implement` 階段 6 fallback） | 僅結案段（backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔） |
+| **收斂後結案** | `/post-build` hook 2（收斂點 invoke 本 skill 結案段；無 post-build 弧走 `/implement` 階段 6 fallback） | 僅結案段（backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔）；**enforcement 類 AC（宣稱 hard guard／deny／hook 的 AC）結案前依 [acceptance-evidence](../acceptance-evidence/SKILL.md)「closure 三層閘」逐層出示 receipt（Existence→Invocation→Behavior），缺層不得 Done** |
 | **standalone** | `/metadata-sync`(獨立入口) | 偵測漏項/過時 → 補(commit 前更新 + 事後補漏共用;偵測 git 錨定見下方 standalone 段) |
 
 > **build mode 零偵測**:build 是變更的 producer——EP 路徑、UC 清單、情境矩陣都在自己 context 內,結算項**由情境矩陣 + EP 內容直接推導**,不跑 standalone 的偵測流程(producer 不 rediscover 自己剛做的變更)。
