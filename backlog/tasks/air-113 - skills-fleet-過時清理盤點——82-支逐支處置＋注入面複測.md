@@ -1,10 +1,10 @@
 ---
 id: AIR-113
 title: skills fleet 過時清理盤點——82 支逐支處置＋注入面複測
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-16 13:51'
-updated_date: '2026-09-17 06:08'
+updated_date: '2026-09-16 22:27'
 labels: []
 dependencies: []
 references:
@@ -34,3 +34,9 @@ ordinal: 98000
 
 0917 晨：AC#1 的 usage 證據軸已落地＝references 報告（82 支三源矩陣：30 天觀測窗、invocation/read/mention 三軸、conflict matrix、零低用清單）。要點：唯一非 young 真零消費＝flow-feedback（**已退役**，首例）；frontend-ui-engineering＝保守級 merge/localize candidate（UI 三支責任互異）；swing/upgrade-nt/upgrade-sj 零低用支持既有遷出；lint-fix/python-type-gap 有直讀非零用（併入選項前提＝保 lint/type recipes）。young 清單（age<60d）不進零用判據。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+第一波：六支遷出評估（mosaic 無接收面→全留）＋desc 瘦身(nt對 885→782/938→873)＋kbar 佔位化＋instruction-testing 條件化＋PASS 歸因 desc channel＋when_to_use×6（commit 6435955）；剩餘 82 支長尾＋注入面複測之後處理
+<!-- SECTION:FINAL_SUMMARY:END -->
