@@ -1,10 +1,10 @@
 ---
 id: AIR-84
 title: instruction-writing skill 跨 harness 撰寫層——修 dir 層可達性宣稱＋併入官方文檔研究增量條目
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-12 22:24'
-updated_date: '2026-09-16 11:09'
+updated_date: '2026-09-16 13:42'
 labels: []
 dependencies: []
 references:
@@ -31,3 +31,9 @@ ordinal: 70000
 <!-- SECTION:NOTES:BEGIN -->
 〔0916 muse 調查卷宗〕建卡後零施工。①錯誤宣稱還在線上：SKILL.md:38「每層雙檔確保四家 harness 都讀得到」被 ZCode 官方文檔明文證偽（不掃子目錄——斷），對 Muse（向上-only）／Codex（cwd-only）／CC（lazy）也過強 ②研究素材十檔齊備未動用（reports/2026-09-12-cross-harness-md-writing-research/，1158dc9 定錨）③AC③ 兩 webgpt 簽名未補、glm 429 實證源不明 ④四處脫鉤：行號 24→38、口徑 OpenCode→Muse、失敗態五類→六類、M3 觀察窗已過期。處置建議＝先改卡面（對齊現況）→ 施工。卷宗＝本對話 air-84-muse.out。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+跨 harness 撰寫層修正落 main（5962dc0）：SKILL.md 虛假可達性宣稱重寫為四家差異表＋撰寫層增量節；model-routing webgpt 失敗態六→八類；雙審腿 codex+flash＋judge 10 處修正；glm 429 維持不寫入（實證源不明——雙腿收斂）；draft-6:18 第四簽名未補（範圍外，另案評估）
+<!-- SECTION:FINAL_SUMMARY:END -->
