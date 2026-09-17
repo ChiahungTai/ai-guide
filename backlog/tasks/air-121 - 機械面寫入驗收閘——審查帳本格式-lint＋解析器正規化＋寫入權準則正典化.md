@@ -1,10 +1,10 @@
 ---
 id: AIR-121
 title: 機械面寫入驗收閘——審查帳本格式 lint＋解析器正規化＋寫入權準則正典化
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 08:58'
-updated_date: '2026-09-17 11:04'
+updated_date: '2026-09-17 13:17'
 labels: []
 dependencies: []
 ordinal: 106000
@@ -41,4 +41,6 @@ AI 手寫的審查帳本格式一直漂（9 份歷史帳本 4 種格式），機
 
 <!-- SECTION:NOTES:BEGIN -->
 實作完成（agent_a5731351，主 session 獨立抽查綠）：review_ledger.py lint/parse 雙子命令 TDD 20 案例 RED→GREEN；9 帳本回歸全分類；air-91 核心斷言 resolved 5/未決 0（POC 語義錯誤修復）；prose 計數禁用；exit 四態。五檔條文：quality-constraints 兩句 core（先實查無更近 invariant）、memory-audit 寫入權軸、workflow-review-pattern 指針＋canonical 宣告、judge-review 指針、kanban 窗期寫入分流。bi 外審 job-mu5ai4dl/mu5ai4ew。deferred：post-build SKILL 掛接（air-119 撞檔，收線 rebase 後補）；lint 接 commit gate（同）；compiler 卡指針（卡未建）
+
+結算（final）：落地 main ce2a8a7。審查鏈＝bi 設計審（mu5ai4dl/6ypgu2 條件吸收）＋muse intent（mu5ima3z request_changes→R2 修復）＋fresh 腿（F1-F7→R2 修復，--stage 生命週期分級＋terminal 兩軸對齊）。9→8 fixture 對照（R2 附）：air-52.fresh/primed＝air-52 分腿形態併入主檔；air-57 缺席（無狀態欄、收斂證據在 prose，固化無回歸價值）。R2 後 33 passed、air-91 parse 零漂移。deferred 全數落地（S2 掛接＋--stage）；compiler 卡指針待建卡時補。deploy 由 AIR-122 同批收線時統一執行（quality-constraints 兩弧同觸）。
 <!-- SECTION:NOTES:END -->
