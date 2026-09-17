@@ -4,9 +4,11 @@ title: 主鏈跳步機械閘——post-build receipt＋commit gate＋Stop hook �
 status: In Progress
 assignee: []
 created_date: '2026-09-17 08:35'
-updated_date: '2026-09-17 08:36'
+updated_date: '2026-09-17 10:11'
 labels: []
 dependencies: []
+references:
+  - hooks/post-build-gate.py
 ordinal: 104000
 ---
 
