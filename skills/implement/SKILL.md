@@ -274,7 +274,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 進入「/judge-revie
 | 階段 2 路徑覆蓋觸發（新簽名/注入點） | `公開簽名變更` | architecture + consumer-perspective 腿＋**觸發段級 review**（該段收斂時——見階段 2「段落收斂」） |
 | EP UC 盤點計數 >6（半機械：LLM 數 EP UC 清單，非純 diff） | `UC 數 >6` | UC-split——弧級 review 內拿 UC 子集做分拆深度審查（唯一給 intent 開專項的情境；不觸發段級 review） |
 
-**範圍（只接線既有信號，不新造偵測）**：build adapter 只翻譯上表兩個既有機械信號（IO + 簽名）+ EP UC 計數。**無特徵命中 → 僅 profile base 配置，不開 extra**（機械避免浪費，非 LLM 判）。**跨模組特徵在 build 無 adapter**（無既有偵測，不新造；跨模組 ripple 交階段 6 layer 旗標導向 layer 2，不在 build 段落自檢 — 同 session 看不全跨模組 ripple）。
+**範圍（只接線既有信號，不新造偵測）**：build adapter 只翻譯上表兩個既有機械信號（IO + 簽名）+ EP UC 計數。**無特徵命中 → 僅 profile base 配置，不開 extra**（機械避免浪費，非 LLM 判）。**跨模組特徵在 build 無 adapter**（無既有偵測，不新造；跨模組 ripple 交階段 6 layer 旗標導向 layer 2（跨家族第二意見），不在 build 段落自檢 — 同 session 看不全跨模組 ripple）。
 
 **依賴方向（DIP）**：build 是 adapter（提供特徵偵測 + 翻譯成通用特徵名）；review-engine 是 domain（定義特徵→視角映射與觸發後果）。build 引用 review-engine 通用特徵名，review-engine 不列 build 特有名詞。
 
@@ -299,9 +299,9 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 3. judge-review 有新 ✅ 採納 → 再 apply → re-review（迭代）
 4. **收斂條件**：judge-review 無新 ✅ 採納（pass）或**達迭代上限 3 輪**（純防無限 loop，**與 base lens 配置無關**——兩個獨立的上限）
 
-**達上限硬性處置**（loop 未收斂）：標 ⚠️「loop 未收斂（達 3 輪上限，仍有未修 finding）」+ **阻止 Capabilities/Kanban 升級**（階段 5a 結算條件加「loop 須收斂」）+ **layer 旗標導向 layer 2**（階段 6 layer 旗標條件加「loop 未收斂」）。
+**達上限硬性處置**（loop 未收斂）：標 ⚠️「loop 未收斂（達 3 輪上限，仍有未修 finding）」+ **阻止 Capabilities/Kanban 升級**（階段 5a 結算條件加「loop 須收斂」）+ **layer 旗標導向 layer 2（跨家族第二意見）**（階段 6 layer 旗標條件加「loop 未收斂」）。
 
-> **Loop engineering 邊界**：build 內 loop（profile base 覆蓋含 correctness lens）收斂「視角覆蓋內」的錯（邏輯邊界、語意、結構）；**同 session 盲點類**（設計假設、系統性偏誤）loop 結構性抓不到 → 階段 6 layer 旗標導向 layer 2（loop 外部收斂）。不假裝 build loop 全閉環。
+> **Loop engineering 邊界**：build 內 loop（profile base 覆蓋含 correctness lens）收斂「視角覆蓋內」的錯（邏輯邊界、語意、結構）；**同 session 盲點類**（設計假設、系統性偏誤）loop 結構性抓不到 → 階段 6 layer 旗標導向 layer 2——跨家族第二意見（loop 外部收斂）。不假裝 build loop 全閉環。
 
 ### 階段 5：收尾步驟（EP 強制）
 
@@ -360,7 +360,7 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 **layer 旗標（硬性 — commit 前方向提示）**：偵測本 EP 變更是否觸及**跨模組**（`git diff --name-only` top-level 模組目錄計數 ≥2；模組目錄 = 專案 bounded context 根目錄，各專案自訂）、**公開簽名變更**（階段 2 路徑覆蓋觸發）、**整合器段落**（階段 0 標記）、或 **build loop 未收斂**（階段 4 達 3 輪上限）。命中 → 完成報告必含：
 
-> ⚠️ 本 build 僅 layer 1（AI 自洽天花板）。此變更觸及 [跨模組/公開簽名/外部整合]，**建議跑跨 session `/code-review`（layer 2）** 抓全貌漣漪 / 同 session 盲點（段落自檢 + Agent Review 都是 layer 1，看不全跨模組 ripple）。
+> ⚠️ 本 build 僅 layer 1（AI 自洽天花板）。此變更觸及 [跨模組/公開簽名/外部整合]，**建議跑 `/code-review` 跨家族第二意見（layer 2，經 delegate-bridge）** 抓全貌漣漪 / 同 session 盲點（段落自檢 + Agent Review 都是 layer 1，看不全跨模組 ripple）。
 
 layer 旗標（本段）與檔尾「與其他命令的協作」段的軟提醒（涵蓋 debrief/illustrate/code-review）並存——前者是觸發條件命中時的硬性提示，後者是常規協作導覽。
 
@@ -398,7 +398,7 @@ layer 旗標（本段）與檔尾「與其他命令的協作」段的軟提醒�
 
 **搭配 `/goal`**：啟動後設定 `all segments implemented, uv run pytest exits 0, ruff clean, mypy clean, all demos run` 搭配 auto mode 效果最佳。
 
-> **Agent Review Cycle（LLM 鏈, layer 1）已完成。** 機器自驗天花板 = AI 自洽,commit 前建議跑 `/debrief`（layer 3 改動理解簡報：驗證證據+認知誤差點）跨越認知誤差、`/illustrate`（layer 3 結構 viewport）跨越重造盲點;如需 LLM 第二意見可跑獨立 `/code-review`（layer 1/2）。
+> **Agent Review Cycle（LLM 鏈, layer 1）已完成。** 機器自驗天花板 = AI 自洽,commit 前建議跑 `/debrief`（layer 3 改動理解簡報：驗證證據+認知誤差點）跨越認知誤差、`/illustrate`（layer 3 結構 viewport）跨越重造盲點;如需 LLM 第二意見可跑獨立 `/code-review`（layer 1/2——layer 2＝跨家族第二意見）。
 
 ---
 

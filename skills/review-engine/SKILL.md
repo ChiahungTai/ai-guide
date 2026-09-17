@@ -115,7 +115,7 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 
 ### 為何 Writer/Reviewer 分離
 
-用獨立 Agent context 審查，避免主 LLM 審自己寫的 code/EP。理論基礎：[acceptance-evidence](../../rules/acceptance-evidence.md) 證據獨立性 — AI 同寫 impl + test 時獨立性塌縮，審查同理（同 LLM 審自己的計畫/實作 = 零獨立性 = 證據強度低）。獨立 context 提升證據獨立性（雖同家族 LLM 共享系統偏誤，quorum 對共同盲點無效 — 見 acceptance-evidence A/B 軸）。
+用獨立 Agent context 審查，避免主 LLM 審自己寫的 code/EP。理論基礎：[acceptance-evidence](../../rules/acceptance-evidence.md) 證據獨立性 — AI 同寫 impl + test 時獨立性塌縮，審查同理（同 LLM 審自己的計畫/實作 = 零獨立性 = 證據強度低）。獨立 context 提升證據獨立性——fresh reviewer（同 session 不同 context 的 spawn）抓 **anchoring／局部 reasoning failure**；**systematic bias 是升級軸**：同家族 reviewer 共享家族偏誤，quorum 對共同盲點無效 → 升**跨家族第二意見**（`different_provider_family`，見點 7；跨家族非萬能，終極獨立性是人類 viewport — 見 acceptance-evidence A/B 軸）。
 
 ### 為何多層驗證
 
@@ -150,18 +150,20 @@ review finding 可經多層驗證，**各層都可能錯**：
    - **三者錨定方式不同 → 正交**（故不適用「共享錨定遞減」移除理由）：① 無錨讀 smell / ② 錨 EP / ③ 質疑邊界事實
    - **ordinary（單一獨立 context）順序**：fresh-first——先無錨讀 source/diff（① 軸），再正確性與驗證（③ 軸），最後需求對照（② 軸）；**同一 reviewer 必覆蓋 profile 各軸**，省略任一軸＝scope 未覆蓋。**明示：單 context 順序覆蓋不是 fresh/primed 雙 context 的等價品**——只保證 writer context 分離，不宣稱等同多個 context 的獨立查證（boundary 場景仍分離，見下一行）。
    - **boundary（分離配置）**：① 與 ② 各自獨立 context（fresh 腿不餵意圖、intent 腿餵 EP/UC——餵料差異見點 6），③ correctness 或點 5 專項視角按觸發附加。
-   - **為何 ③ 同 session 有效**（F1 證偽 agent-review-cycle 舊論述「clean 自然覆蓋正確性」）：clean 是 smell 視角，不主動質疑邊界 → `max(fill_dates)` 跨日 bug 看起來不怪 → 漏。③ correctness 主動質疑邊界事實，**不共享 writer 意圖假設** → 對**非系統性偏誤**邊界 bug 同 session 可抓。**例外**：系統性偏誤（LLM 普遍弱項，如某類邊界推理）同家族也漏 → layer 2 跨 session review（見 acceptance-evidence 系統性偏誤）
+   - **為何 ③ 同 session 有效**（F1 證偽 agent-review-cycle 舊論述「clean 自然覆蓋正確性」）：clean 是 smell 視角，不主動質疑邊界 → `max(fill_dates)` 跨日 bug 看起來不怪 → 漏。③ correctness 主動質疑邊界事實，**不共享 writer 意圖假設** → 對**非系統性偏誤**邊界 bug，同 session fresh reviewer 可抓。**例外**：系統性偏誤（LLM 普遍弱項，如某類邊界推理）同家族也漏 → **跨家族第二意見**（`kind=different_provider_family`——systematic bias 的升級軸，見點 7；同家族 fresh context 仍抓 stochastic／局部 failure，對家族共享 systematic bias 無效；跨家族亦非萬能，終極獨立性是人類 viewport——見 acceptance-evidence 系統性偏誤與 A/B 軸）
    - 執行範本見 [agent-review-cycle](../_common/agent-review-cycle.md)；code-review 六軸、ep-review F1-F5 等以**維度 profile** 分配 context（見各命令 + 上方 profile 判定表），非此 fresh/intent/correctness lens 詞彙本體。
 
 5. **特徵 extras（機械特徵觸發，非 LLM 語義判「高風險」）**：由**消費命令提供的變更特徵**觸發，附加於任一 profile——**不得被 ordinary 單 context 吞掉**：`外部整合`（整合器／外部整合段）→ adversarial **且觸發段級 review**、`公開簽名變更`（新簽名／注入點）→ architecture+consumer-perspective **且觸發段級 review**、`跨模組` → architecture、`UC 數 >6` → UC-split（拿 UC 子集做分拆深度審查，保留適用 scope 的分拆；唯一給 intent 開專項的情境）。`跨模組` 映射目前無 adapter 接線，保留供未來消費命令。**特徵偵測由消費命令提供**（adapter）；review-engine 只定義映射框架（domain），**不列消費命令特有名詞**（DIP — domain 不被 adapter 污染）。容量不足需截斷時依 **architecture（axis 3）> adversarial / edge > consumer-perspective** 取最高，截斷其餘並顯式提示；**絕不** 2nd fresh / 2nd **同一** lens —— 複製 lens 同家族共享盲點，邊際覆蓋 ≈0（UC-split 是不同子集做深度，非複製；多樣性 > 數量）。
 
 6. **fresh＋intent 分離編排（boundary profile 用；dual-context 語義的新錨）**：點 4 的 ①fresh + ②intent 錨定二分法在邊界變更場景的分離配置 —— fresh 腿（如 `code-reviewer`，只餵 diff/source）+ intent 腿（如 `code-reviewer-primed`，餵 diff + EP + Capabilities + dependency-graph（若有）＋消費命令的條件式附加項，如 code-review「B. Agent 載體」的 delta_tour 對照——定義在各消費命令；意圖對齊 / 架構契合 / 測試精簡度 / 完整度光譜）。**context 差異在 spawn prompt 餵料，非 agent 定義**（subagent 自動注入 AGENTS.md，「空 context」靠不餵意圖文件達成）。**由風險 profile 觸發（邊界變更即分離），不按檔案數或 effort 切換**（舊「≥3 files 才 dual」門檻廢除——可觀察變更語義決定）。**findings 合併規則（單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」）**：同位置**且同一 claim** 才合併；**矛盾不裁決** —— 合併端自行裁決 = 球員兼裁判，標 `conflict` 欄（兩方觀點並列）交 Arbiter 裁決層，不以投票或「先回者」裁決。多樣性 > 數量：絕不 spawn 第二個同 context 的 fresh 腿（共享盲點，邊際覆蓋 ≈0，同點 5 原則）。
 
-7. **spawn vs 另開 session 共存**（非二選一）：
-   - **spawn**（命令內、即時、同家族 LLM 天花板）—— 預設路徑
-   - **另開 session**（user 手動、最強獨立、抓 spawn 漏的）—— 高風險建議補跑
-   - **另開 handoff 套件** = 持久化 finding（EP review 區段 / kanban，tracked）+ git diff + 標的 / EP / UC 路徑 —— 讓新 session 不靠記憶還原審查標的
-   - **跨 session 鏈**（另開 session 時，persistence 串起每步；不靠對話記憶 —— 跨 session 不在）：`review` 寫 finding → `judge-review` 寫決策（✅ / ❌ / ⚠️）→ apply（主 agent / impl LLM 改）→ `followup-review` 讀持久化逐項驗收（verified / closed / open）。findings 交接格式見 [workflow-review-pattern](../_common/workflow-review-pattern.md) Finding Record。
+7. **獨立性階梯（A 軸）：同家族 fresh-context spawn → 跨家族第二意見 → 人類 viewport**（spawn 為預設路徑；manual new session 非獨立性層級——同家族新 session 買不到額外獨立性、不構成升級軸；跨 context transport 需求由持久化鏈承接，見下）:
+   - **spawn**（命令內、即時、fresh 獨立 context）—— 預設路徑；fresh reviewer 抓 **anchoring／局部 reasoning failure**（writer 意圖假設、作者 rationalize）
+   - **跨家族第二意見**（`kind=different_provider_family`，經 delegate-bridge `--family muse|codex`）—— **systematic bias 的升級軸**：同家族 reviewer（spawn 或 manual new session 皆然）共享家族偏誤，quorum 對共同盲點無效；跨家族抓家族共享盲點。**跨家族非萬能**——不同家族仍可能共享普遍弱項，終極獨立性是人類 viewport（層 3）
+   - **單家族顯性降級**：無 alternate family 可用（或額度撞牆）→ `explicit_same_family_degradation` 顯性降級＋記錄（詞彙與欄位見 [agent-review-cycle](../_common/agent-review-cycle.md) independence 欄），或依點 8 記 **no-candidate** 入既有帳本（規劃期＝EP Review 節；實作期＝`.review/<branch>.md`）；**user 明示跨家族＝required，缺場 fail loud**（禁靜默同家族替代）
+   - **manual new session＝窄義 escape clause（meta-review 對照組）**：僅當 **reviewer orchestration 本身被審查**（懷疑審查機制自身）或 **spawn isolation 不可信**（spawn 基建被污染）時，作 escape/control mechanism——**非常設獨立性層級、非高風險常設補審**
+   - **持久化鏈（durability 基建——與 session 邊界脫鉤）**：`review` 寫 finding → `judge-review` 寫決策（✅ / ❌ / ⚠️）→ apply（主 agent / impl LLM 改）→ `followup-review` 讀持久化逐項驗收（verified / closed / open）——persistence 串起每步、不靠對話記憶（防 compact／context 死亡；跨 context 接續與跨家族 findings 貼回消費同一鏈）。findings 交接格式見 [workflow-review-pattern](../_common/workflow-review-pattern.md) Finding Record。
+   - **spawn prompt 餵料衛生（高風險 review）**：fresh 腿**最小餵料**——只餵 diff／source，**禁塞 implementer 解讀與 dispatcher 自身結論摘要**（退化 dispatcher 污染面：dispatcher 把判讀塞進 fresh prompt＝fresh 腿被錨定，獨立性假象）；意圖材料只進 intent 腿（餵料差異見點 6）
 
 8. **no-candidate＝顯性 pending，入既有帳本**：缺合格 candidate 時由該 workflow 編排者在**既有帳本**記 open 阻擋項（規劃期＝EP Review 節；實作期＝`.review/<branch>.md`），欄位：scope/profile、原因、owner、DispatchTrace、下次查 availability 的重查條件。完成報告與 post-build triage 必列出；有已授權排程才排 re-arm，否則保留明確接續動作，**不暗建 automation**。再次 dispatch 前先查有無活 job——**不把無候選和 worker timeout 混同**；不以主模型裸自審取代缺口的獨立性（本條與 SM-13 對應；「缺 candidate 顯性 pending」不可被省配置跳過）。
 

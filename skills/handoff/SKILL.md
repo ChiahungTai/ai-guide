@@ -23,7 +23,7 @@ allowed-tools:
 | 命令 | 解什麼 | 觸發 |
 |------|--------|------|
 | `/at` | **時間接續**：usage 用盡，自己 resume | 5h usage limit |
-| `/handoff` | **空間分工**：交另一個 session/provider | 主 session 在忙 / 要第二意見 / 跨 repo |
+| `/handoff` | **空間分工**：交另一個 session/provider | 主 session 在忙 / 跨家族第二意見（bridge 工單 `--family muse|codex`→findings 貼回→judge） / 跨 repo |
 | 定向接續（`--session-id` resume/fork） | **context 接力**：對方 runtime 載入完整對話記憶續問 | 需對方記得整段對話（追問/糾偏/深挖）——成本警示：帶整包 context（codex resume 127K／fork 65K 實測） |
 
 要「自己之後繼續」→ `/at`；要「別人現在接」→ `/handoff`；要「對方帶著完整對話記憶接」→ 定向接續（判準：任務可口述 → handoff doc；需對方記得整段對話才值得續卷成本）。通道現值：muse／codex 兩家族經 bridge（muse＝`task --session-id`，跨 workspace 加 `--allow-workspace-switch`；codex＝`task --family codex --session-id`，原卷不動查詢走 `codex exec fork` raw CLI）；glm／CC 驗證狀態隨 EP 推進變動（隨查 model-routing 專節）——語義矩陣與守衛處置見 [model-routing](../model-routing/SKILL.md)「session 定向接續」。
@@ -105,7 +105,7 @@ git rev-parse HEAD            # baseline commit hash
 ## 流程位置
 
 ```
-（主 session 在忙 / 要第二意見 / 跨 repo）→ /handoff [接手方] → 貼到目標 session/provider
+（主 session 在忙 / 跨家族第二意見 / 跨 repo）→ /handoff [接手方] → 貼到目標 session/provider
 ```
 
-接手方給建議 → 貼回原 session → `/judge-review` 評估採納。
+第二意見走跨家族：`/handoff` 產 self-contained 工單 → bridge 派發（`task --family muse|codex`）→ 對方 findings 貼回原 session → `/judge-review` 評估採納（獨立性階梯見 [review-engine](../review-engine/SKILL.md) 執行預設點 7——跨家族是 systematic bias 的升級軸）。非第二意見的一般交接 → 接手方回覆 → 貼回原 session → `/judge-review` 評估採納。

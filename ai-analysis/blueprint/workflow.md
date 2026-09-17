@@ -438,7 +438,7 @@ WT 基建落地後，可以移除「因共享單一 checkout，所以同 repo ca
 - **挑戰層（高風險＋P0 強制）**：pre-RED challenge＝跨家族 advisory、fresh context、**blind derive→reveal**（先自行推 oracle 再比對，防錨定）＋completeness（抓漏場景）；必產 falsifiable 探針。oracle 錯→EP amendment（authority 四分：user intent→人類）。
 - **實作層（same-writer）**：實作家族（單一 model、context 連續）照凍結 TC 寫 RED→GREEN→REFACTOR；**provenance 三栓**——RED receipt 落檔存證（非中途 commit）／gate 過後 contract-test digest 凍結／基線跑法（baseline 上必須紅）。撞牆走 **mutation authority gate**（想改哪側 truth→有沒有 authority；改 TC oracle 必經 amendment，「實作現況」永遠不是證據）。
 - **審計層（軸A 機械）**：audit-test——TC↔test predicate 對帳／mock↔evidence class／oracle 圓形依賴／receipt＋digest 驗證／基線跑法／fixture provenance／路徑覆蓋反查。
-- **審查層（軸B 架構面）**：/code-review 跨 session dual-context（boundary profile 的 fresh＋primed 雙腿——派發由風險 profile 決定）加一軸——整體測試邏輯 vs diff 結構（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面）；翻譯忠實度明寫不歸它。
+- **審查層（軸B 架構面）**：/code-review dual-context（boundary profile 的 fresh＋primed 雙腿——派發由風險 profile 決定）加一軸——整體測試邏輯 vs diff 結構（拓撲 vs blast radius／層級平衡／符號≠路徑／evidence fidelity／shared dependency／耦合面）；翻譯忠實度明寫不歸它。
 - **routing**：`test-gen`＝**P0 最後手段**（啟用條件預寫死：MVP 證明防線擋不住 fixture fidelity 級穿透才啟用）——AIR-70 幽靈角色答案反轉。
 
 **agent 分工原則（判斷密集 vs 機械可驗）**：探索／研究不派 lite——EP 段落 0 全域研究（可複用盤點＋**風險假設識別**）是判斷密集位，`cr-research` 升 **full**；淺研究「自信但薄」→EP 重造既有／漏致命假設，研究省的 token 遠小於錯 EP 的重工。機械子腿（逐字引用、CR 查詢執行）仍可 flash 承接——作為 full 研究者的下游查詢，不獨立出研究結論。

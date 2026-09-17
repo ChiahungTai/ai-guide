@@ -1,10 +1,10 @@
 ---
 id: AIR-118
 title: 審查腿簡化——取消手動另開 session 常設補審，第二意見改由跨模型家族擔任
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 06:41'
-updated_date: '2026-09-17 06:42'
+updated_date: '2026-09-17 11:03'
 labels: []
 dependencies: []
 ordinal: 103000
@@ -36,3 +36,9 @@ ordinal: 103000
 掃描法（codex 建議）：epistemic 詞組（layer 2／second opinion／systematic bias／另開 session／最強獨立）與 transport/durability 詞組（cross-session／finding record／followup／handoff）分開掃——後者原則上保留。
 本卡為控制面 instruction 語義變更：實作走 instruction-writing 審查閘（profile=boundary、跨家族腿），部署走 deploy_agents.py＋fresh session 驗證。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+實作完成（agent_6d678929，主 session 獨立抽查綠）：7 檔——review-engine 點7獨立性階梯四件＋點4③改跨家族＋分離理由措辭；AGENTS.md 三層表/review鏈行/命令分類表；ep-review:14；implement 五處；handoff 跨家族入口；blueprint:441；guide:44。bi 外審 job-mu55o7p5/mu55o7qb 附條件同意全吸收。殘留：index.html 投影 stale（已知情，另卡處理）；AGENTS.md:24 同檔 drift sync 經裁准。AC#4 落地閘（跨家族審查腿＋deploy＋fresh session）收線前執行
+<!-- SECTION:NOTES:END -->

@@ -11,7 +11,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Agent", "Workflow", "Write", "Edit"]
 
 EP 審查員，在實作前審查 Execution Plan，確保計畫書完整、合規、可執行。
 
-> **受眾**：LLM 執行鏈命令（layer 1 同 session 自判 / layer 2 跨 session），產出回寫 EP 餵回產 EP 的 LLM，**不給人看**。EP 的人類 viewport 是 `/illustrate --ep`（layer 3 結構 viewport）；方向確認 = 人讀 EP（Scenario Matrix 情境）+ 本命令機器審查。見 root [AGENTS.md](../../AGENTS.md)（legacy `../CLAUDE.md`）「命令的受眾視角」。
+> **受眾**：LLM 執行鏈命令（layer 1 獨立 context 自判 / layer 2 跨家族第二意見），產出回寫 EP 餵回產 EP 的 LLM，**不給人看**。EP 的人類 viewport 是 `/illustrate --ep`（layer 3 結構 viewport）；方向確認 = 人讀 EP（Scenario Matrix 情境）+ 本命令機器審查。見 root [AGENTS.md](../../AGENTS.md)（legacy `../CLAUDE.md`）「命令的受眾視角」。
 
 委託 Skills：
 - [rules-reminder](../rules-reminder/SKILL.md) — Bash 規則
