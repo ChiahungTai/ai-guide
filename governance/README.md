@@ -68,6 +68,8 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 `--uninstall` 移除套件註冊條目、保留他鍵；共享 scripts 留 repo（dead but harmless）；**rules/agents 面不受 uninstall 影響**（wrap 不反部署——bundle 回退走 `rules/AGENTS.md` 部署紀律、registry 走 `sync_agents.py` 自身）；skills 母鏈拆除＝harness 即時讀不到 ai-guide skills（session 內已載入者不受影響）；codex `[hooks.state]` orphan 條目 codex 無 GC 路徑——`key＋trusted_hash` 皆相符才精準 cleanup，否則 leave-and-report（隨 session 自然失效）；**positional index 前移警告**：uninstall 本套件 group 後，同-event 後續 group 的既有 trust 會失效（輸出會警告）。
 
+**`--uninstall --surface all` 範圍**（review C-1 定案）：五面反裝＋**muse disable＋monitor unload**（EP rollback 契約「全包含 monitor unload」）。對稱性註記：install-all 不含 monitor 裝載（monitor＝顯式排程面，`--surface monitor` 單獨裝載）——反裝取「清除機器上一切套件痕跡」的保守語義。
+
 ## 已知限制
 
 - ZCode 事件子集：無 FileChanged／SessionEnd（harness 限制，不可套件化修補）。
@@ -93,4 +95,4 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 4. 手動 approve：CC `/hooks`、codex trust review、ZCode 重開 session（見分欄表）。
 5. 驗證：`--verify`——muse PASS、CC/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
 6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）。
-7. 排程：`--surface monitor` 後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄。
+7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄。

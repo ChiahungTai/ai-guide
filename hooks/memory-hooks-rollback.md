@@ -28,8 +28,8 @@ F=$(python3 -c 'import sys,json;print(json.load(sys.stdin).get("tool_input",{}).
 2. Stop 陣列刪 `memory-index-regen.py` 那個 hook 物件（保留 stop-notification.sh）
 3. **保留** `block-python-file-write.py`（Bash matcher）——那是既有 template parity 修復，非本弧產物
 
-`hooks/zcode-registration.json`（repo 模板）**不隨回滾**——它是 repo 資產；回滾僅作用 live config。回滾後 repo 腳本留在 hooks/（不刪）：rule/skill 已宣稱機制，修復後可重接線（check_single_source 的 `zcode_live_parity` 會在重接前報 critical——這是預期行為，提示接線未完成）。
+註冊模板（現為 `governance/registrations/zcode.json`，AIR-116 收編）**不隨回滾**——它是 repo 資產；回滾僅作用 live config。回滾後 repo 腳本留在 hooks/（不刪）：rule/skill 已宣稱機制，修復後可重接線（check_single_source 的 `zcode_live_parity` 會在重接前報 critical——這是預期行為，提示接線未完成）。
 
 ## 修復後重接線
 
-ZCode：把 `hooks/zcode-registration.json` 全文重新 merge 進 live config 的 `hooks` 鍵（merge 不是整檔覆蓋——config 含 mcp/plugins 區塊）。Claude：把 repo script 指令貼回（見上方「目前是」的兩行）。
+兩家統一走 governance installer：`uv run python governance/install.py --surface hooks`（merge 不是整檔覆蓋——config 含 mcp/plugins 區塊，安全模型見 [governance/README.md](../governance/README.md)）。

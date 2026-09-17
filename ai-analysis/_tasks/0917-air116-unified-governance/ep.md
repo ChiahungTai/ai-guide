@@ -453,7 +453,9 @@ main():
 
 ## amendment 附錄（TC 變更判決落點）
 
-（空——凍結後 TC 變更須記 old/new oracle＋reason＋authority 於此）
+| TC | old oracle | new oracle | reason | authority |
+|----|-----------|-----------|--------|-----------|
+| TC-6 | P6-3「codex pipe payload exit 2」 | codex 改三層驗收（層一 discovery 診斷＋層二 user approve＋層三 host-level fixture——manifest `[probes.codex] type=codex-three-layer`） | S3 實作採 codex ⑥ 三層驗收形態；pipe 合成 payload 不可替代 host-level（2026 deny-bypass bug 先例）——TC 表撰寫早於 S3 節細化，屬取代非矛盾 | EP S3 節＋Segment 0 P0-10 降級契約 |
 
 
 

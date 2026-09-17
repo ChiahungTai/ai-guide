@@ -44,6 +44,10 @@ EXIT_GUARD = 2
 EXIT_NOT_IMPL = 3
 EXIT_EXEC = 4  # 執行錯誤（malformed／lost-update／子進程失敗）——journal 有線索
 
+# S6 穩定契約（[bootstrap_cli] 機器可讀投影的 argv 面錨點——兩面對帳防 drift）。
+CLI_SURFACES = ["rules", "skills", "hooks", "agents", "memory", "monitor", "all"]
+CLI_FLAGS = ["--dry-run", "--uninstall", "--check", "--verify"]
+
 # P0-2 凍結：CC/ZCode live config 逐字重現參數（＋尾換行）。
 SERIALIZE_PARAMS = {"indent": 2, "ensure_ascii": False}
 
@@ -87,6 +91,8 @@ def serialize_json(obj: object) -> str:
 
 
 def read_json_config(path: Path) -> dict:
+    if not path.exists():
+        return {}  # 乾淨機器：檔案缺席＝自空根建（EP Q3——malformed 只指 parse 失敗）
     try:
         return json.loads(path.read_text())
     except (json.JSONDecodeError, OSError) as exc:
@@ -131,7 +137,7 @@ def _prune_glob(directory: Path, pattern: str, keep: int) -> None:
 def backup_target(real: Path) -> Path:
     """R7：僅變更備份（caller 保證內容將變）；copy2 保 mtime；保留最近 3 份（限自家命名）。"""
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    bak = real.with_name(f"{real.name}.bak-{ts}-gov")
+    bak = real.with_name(f"{real.name}.bak-{ts}-{os.getpid()}-gov")  # pid 防同秒碰撞（S-4）
     shutil.copy2(real, bak)
     # 只 prune 自家後綴（他弧手工 bak 不入額度）；按 mtime 排序非檔名（1201 事故教訓——
     # 檔名排序把最新備份當最舊刪）。
@@ -153,25 +159,27 @@ def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False,
     """
     if _DRY_RUN:
         raise GovernanceError("dry-run 模式嘗試寫入（結構性防線——路由 bug 不應能到這裡）")
-    current = real.read_text()
+    current: str | None = real.read_text() if real.exists() else None
     if current == new_text:
         return "noop"
     import plistlib
-    if toml_validate:
+    if toml_validate and current is not None:
         try:
             tomllib.loads(current)  # live 可解析才護得起
         except tomllib.TOMLDecodeError as exc:
             raise GovernanceError(
                 f"malformed config，拒寫 fail-loud：{real}\n{exc}"
             ) from exc
-    if plist_validate:
+    if plist_validate and current is not None:
         try:
             plistlib.loads(current.encode())
         except plistlib.InvalidFileException as exc:
             raise GovernanceError(
                 f"malformed plist，拒寫 fail-loud：{real}\n{exc}"
             ) from exc
-    backup_target(real)
+    if current is not None:
+        backup_target(real)
+    real.parent.mkdir(parents=True, exist_ok=True)  # 乾淨機器 ~/.zcode/cli 等父目錄未必在場（AC-6.3 fixture 實證）
     tmp = real.with_name(f".{real.name}.tmp-{os.getpid()}")
     tmp.write_text(new_text)
     if toml_validate:
@@ -186,7 +194,8 @@ def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False,
         except plistlib.InvalidFileException as exc:
             tmp.unlink(missing_ok=True)
             raise GovernanceError(f"新 plist parse 驗證失敗（未寫入）：{real}\n{exc}") from exc
-    if real.read_text() != current:
+    current_now: str | None = real.read_text() if real.exists() else None
+    if current_now != current:
         tmp.unlink(missing_ok=True)
         raise GovernanceError(
             f"lost-update：live file 已變（與 preimage 不符），fail/retry：{real}"
@@ -337,6 +346,31 @@ def _codex_group_identity(unit_text: str) -> tuple:
     return (event, mm.group(1) if mm else None, scripts)
 
 
+def codex_positional_shift_warnings(live_text: str, template_text: str) -> list[str]:
+    """Q6/SM-14：uninstall 移除套件 group 後，同 event 後續非套件 group 的
+    positional index 前移——其 state key 綁舊 index，既有 trust 失效，需 re-approve。
+    """
+    owned = {_codex_group_identity(u["text"])
+             for u in codex_group_units(template_text)[1] if u["kind"] == "group"}
+    warnings: list[str] = []
+    counters: dict[str, int] = {}
+    removed_before: dict[str, int] = {}
+    for u in codex_group_units(live_text)[1]:
+        if u["kind"] != "group":
+            continue
+        ident = _codex_group_identity(u["text"])
+        event = ident[0]
+        idx = counters.get(event, 0)
+        counters[event] = idx + 1
+        if ident in owned:
+            removed_before[event] = removed_before.get(event, 0) + 1
+        elif removed_before.get(event):
+            warnings.append(
+                f"positional 前移：{event} group #{idx}→#{idx - removed_before[event]}"
+                f"（matcher={ident[1]!r}）——既有 trust 將失效，需 re-approve")
+    return warnings
+
+
 def merge_codex_text(live_text: str, template_text: str, *, remove: bool) -> tuple[str, list[str]]:
     """group 級 merge/uninstall；回 (new_text, 訊息清單)。identity 相符才動，他 family 禁碰。"""
     preamble, live_units = codex_group_units(live_text)
@@ -454,9 +488,12 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
         for sl in manifest["surfaces"]["skills"]["symlinks"]:
             targets.append({"kind": "symlink", "link": sl["link"], "target": sl["target"],
                             "action": "remove" if mode == "uninstall" else "merge"})
-    if surface == "memory" and mode == "uninstall":
+    if surface in ("memory", "all") and mode == "uninstall":
         targets.append({"kind": "muse-disable", "action": "remove"})
-    if surface == "monitor":
+    if surface == "monitor" or (surface == "all" and mode == "uninstall"):
+        # C-1：all-uninstall 含 monitor unload（EP rollback「--uninstall --surface
+        # all …含 monitor unload」）；all-install 不含（monitor＝顯式排程面，README
+        # bootstrap 步驟 7 單獨裝載——非對稱屬設計，README uninstall 節載明）。
         mon = manifest["surfaces"]["monitor"]
         targets.append({
             "kind": "launchd-plist",
@@ -495,7 +532,13 @@ def print_plan(plan: dict) -> None:
 
 
 def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
-    """逐 target 執行 plan；回 exit code。"""
+    """逐 target 執行 plan；回 exit code。
+
+    I-2：dry-run 斷言上移到 plan 層——chokepoint 之外的路徑（symlink／launchd
+    plist create）同受結構性防線保護，路由 bug 任何落點都寫不進去。
+    """
+    if _DRY_RUN:
+        raise GovernanceError("dry-run 模式嘗試 apply（結構性防線第二層——涵蓋全部 target kind）")
     jp = journal_path(plan["surface"]) if journal else None
     if jp:
         write_journal(jp, plan)
@@ -519,6 +562,8 @@ def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
 def _apply_target(reg: dict, t: dict, mode: str) -> str:
     if t["kind"].startswith("json-subtree:"):
         target = real_target(home_path(t["target"]))
+        if mode == "uninstall" and not target.exists():
+            return "not-present（leave）"  # 乾淨機器 uninstall＝零動作（EP Q3）
         live = read_json_config(target)
         tmpl = json.loads(render((MANIFEST_PATH.parent / t["template"]).read_text()))
         new_root, _changed = merge_json_hooks(
@@ -528,13 +573,16 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         return outcome
     if t["kind"] == "toml-groups":
         target = real_target(home_path(t["target"]))
-        live_text = target.read_text()
+        live_text = target.read_text() if target.exists() else ""  # 乾淨機器：自空建
         try:
             tomllib.loads(live_text)
         except tomllib.TOMLDecodeError as exc:
             raise GovernanceError(f"malformed config，拒寫 fail-loud：{target}\n{exc}") from exc
         template_text = render((MANIFEST_PATH.parent / t["template"]).read_text())
         new_text, _msgs = merge_codex_text(live_text, template_text, remove=(mode == "uninstall"))
+        if mode == "uninstall":
+            for w in codex_positional_shift_warnings(live_text, template_text):
+                print(f"  ⚠ {w}")
         try:
             tomllib.loads(new_text)  # 新全文 parse 驗證（transaction——壞輸出絕不落盤）
         except tomllib.TOMLDecodeError as exc:
@@ -545,7 +593,9 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
     if t["kind"] == "symlink":
         link, want = home_path(t["link"]), render(t["target"])
         if mode == "uninstall":
-            if link.is_symlink() and os.readlink(link) == want:
+            if not link.is_symlink():
+                return "absent（冪等——nothing to remove）"
+            if os.readlink(link) == want:
                 link.unlink()
                 return "removed"
             return "leave-and-report（非套件 symlink，不自動刪）"
@@ -555,6 +605,7 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
             raise GovernanceError(f"symlink 指錯（fail-loud 不自動改）：{link} → {os.readlink(link)}")
         if link.exists():
             raise GovernanceError(f"路徑已存在且非 symlink（零遷移原則）：{link}")
+        link.parent.mkdir(parents=True, exist_ok=True)  # 乾淨機器 ~/.agents 等父目錄未必在場（AC-6.3 fixture 實證）
         os.symlink(want, link)
         return "created"
     if t["kind"] == "muse-disable":
@@ -642,33 +693,54 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
             print("[uninstall] rules/agents 面不受影響（wrap 不反部署——"
                   "bundle 回退走 rules/AGENTS.md 部署紀律、registry 走 sync_agents 自身）")
     else:  # install
+        # 編排語義（AC-6.3 fixture 實證後定案）：面與面獨立——單面失敗照常安裝
+        # 其他面（機器不留半套無告警），結束以最壞 rc 彙整報告。
+        face_failures: list[str] = []
+        if surface in ("skills", "all"):
+            # rules 面 pointer preflight 驗證 skill runtime 可達（~/.agents/skills/...）
+            # ——skills 母鏈必須先於 rules wrap 建置，乾淨機器否則 deploy_agents abort。
+            if apply_plan(manifest, build_plan(manifest, "skills", mode)) != EXIT_OK:
+                face_failures.append("skills")
         for wrapped in ("rules", "agents"):
             if surface in (wrapped, "all"):
-                rc = run_wrap(manifest["surfaces"][wrapped]["argv"])
-                if rc != 0:
-                    return EXIT_EXEC
+                if run_wrap(manifest["surfaces"][wrapped]["argv"]) != 0:
+                    face_failures.append(wrapped)
         if surface in ("memory", "all"):
             plugin_path = REPO_ROOT / manifest["surfaces"]["memory"]["plugin_path"]
             pid = manifest["surfaces"]["memory"]["plugin_id"]
+            muse_ok = True
+            # 順序契約（AC-2.5 round-trip 實證）：disable 後 approve 無 active
+            # capabilities 會失敗——必須 enable 先於 approve。
             for argv in (["muse", "plugins", "install", str(plugin_path), "--scope", "user"],
+                         ["muse", "plugins", "enable", pid],
                          ["muse", "plugins", "approve", pid]):
                 proc = subprocess.run(argv, capture_output=True, text=True)
                 if proc.returncode != 0:
                     print(f"[FAIL] {' '.join(argv)}\n{proc.stderr}", file=sys.stderr)
-                    return EXIT_EXEC
+                    muse_ok = False
+                    break
                 print(f"[muse] {' '.join(argv[:2])}… OK")
-            pool_setup = REPO_ROOT / manifest["surfaces"]["memory"]["pool_setup"]
-            proc = subprocess.run(["bash", str(pool_setup), "--apply"],
-                                  capture_output=True, text=True)
-            print(f"[pool-topology] {proc.stdout.strip() or proc.stderr.strip()}")
-            if proc.returncode != 0:
-                return EXIT_EXEC
+            if muse_ok:
+                pool_setup = REPO_ROOT / manifest["surfaces"]["memory"]["pool_setup"]
+                proc = subprocess.run(
+                    ["bash", str(pool_setup),
+                     *manifest["surfaces"]["memory"].get("pool_setup_apply_args", ["--apply"])],
+                    capture_output=True, text=True)
+                print(f"[pool-topology] {proc.stdout.strip() or proc.stderr.strip()}")
+                if proc.returncode != 0:
+                    muse_ok = False
+            if not muse_ok:
+                face_failures.append("memory")
     if surface in ("hooks", "skills", "all", "memory", "monitor"):
         plan = build_plan(manifest, surface, mode)
         rc = apply_plan(manifest, plan)
         if rc != EXIT_OK:
             return rc
     print_manual_steps(surface)
+    if mode == "install" and face_failures:
+        print(f"[install] 部分面失敗：{'、'.join(face_failures)}"
+              "（其他面已就位——修復後重跑失敗面）", file=sys.stderr)
+        return EXIT_EXEC
     return EXIT_OK
 
 
@@ -729,7 +801,8 @@ def check_json_face(manifest: dict, harness: str, drifts: list[tuple[str, str]])
             gi = _group_identity(g)
             if gi not in tmpl_idents and _group_scripts(g) & pkg_scripts:
                 drifts.append((harness, f"多條目（套件腳本現身非模板 group）"
-                               f"{evt}/{sorted(gi[1])}"))
+                               f"{evt}/{sorted(gi[1])}——install 不清除，"
+                               f"手工移除或 --uninstall --surface hooks 後重裝"))
 
 
 def check_codex_face(manifest: dict, drifts: list[tuple[str, str]],
@@ -771,7 +844,8 @@ def check_codex_face(manifest: dict, drifts: list[tuple[str, str]],
             drifts.append(("codex", f"缺 group {ident[0]}/{ident[1]} {sorted(ident[2])}"))
     owned_live = [i for i, _ in live_groups if i in tmpl_by_ident]
     if len(owned_live) > len(tmpl_by_ident):
-        drifts.append(("codex", "重複 inline group（同 identity 多份）——雙 fire"))
+        drifts.append(("codex", "重複 inline group（同 identity 多份）——雙 fire；"
+                       "--uninstall --surface hooks 後重裝對稱化"))
     for w in codex_mixed_rep_warnings(live_text, codex_home=codex_home):
         drifts.append(("codex", f"mixed-rep：{w}"))
 
@@ -873,6 +947,13 @@ def check_skills_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
                            f"（期望 {want}）——fail-loud 不自動改"))
 
 
+def check_hooks_scripts(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    """S-1：manifest [surfaces.hooks].scripts 逐檔存在性（死鍵活化——腳本被刪即 drift）。"""
+    for rel in manifest.get("surfaces", {}).get("hooks", {}).get("scripts", []):
+        if not (REPO_ROOT / rel).exists():
+            drifts.append(("hooks", f"manifest 註冊腳本缺席：{rel}"))
+
+
 def cmd_check(manifest: dict, surface: str) -> int:
     """--check：五面 parity（唯讀，drift 列清單 exit 1——sync_agents --check 同語義）。
 
@@ -890,6 +971,7 @@ def cmd_check(manifest: dict, surface: str) -> int:
         elif face == "skills":
             check_skills_face(manifest, drifts)
         elif face == "hooks":
+            check_hooks_scripts(manifest, drifts)
             check_json_face(manifest, "cc", drifts)
             check_json_face(manifest, "zcode", drifts)
             check_codex_face(manifest, drifts)
@@ -1017,7 +1099,14 @@ def codex_host_level_fixture(codex_home: Path | None = None) -> tuple[str, str]:
         if canary.read_text() != before:
             return "FAIL", (f"canary 被改——host-level deny 未生效（{detail}）；"
                             f"證據保留：{canary}")
+        if proc.returncode != 0:
+            # I-1 fail-closed：rc≠0＝codex exec 本身未正常完成——canary 雖未變，
+            # 無法證明是 deny 擋下（可能 CLI/auth/網路失敗根本沒跑 patch）。
+            return "FAIL", (f"codex exec 異常結束（{detail}）——canary 雖未變但無法證明 "
+                            f"deny 生效（fail-closed）；檢查 codex CLI/auth/網路後重驗")
         canary.unlink(missing_ok=True)
+        if not any(pseudo_pool.iterdir()):
+            pseudo_pool.rmdir()  # S-4：probe 自清空目錄（非套件資產，空才刪）
         return "PASS", f"canary byte-level 未變（{detail}）"
     except Exception:
         canary.unlink(missing_ok=True)
@@ -1107,6 +1196,11 @@ def cmd_verify(manifest: dict, surface: str) -> int:
         return EXIT_NOT_IMPL
     names = PROBE_ORDER if surface == "all" else PROBE_SURFACES[surface]
     probes = manifest.get("probes", {})
+    if surface == "all" and set(PROBE_ORDER) != set(probes):
+        # S-3：probe 集合雙源對帳——manifest 新增 probe 而忘排程時 fail-loud 非靜默跳過
+        print(f"[verify] probe 集合失同步：manifest={sorted(probes)} vs "
+              f"PROBE_ORDER={sorted(PROBE_ORDER)}", file=sys.stderr)
+        return EXIT_GUARD
     worst = EXIT_OK
     for name in names:
         probe = probes.get(name)
@@ -1129,8 +1223,7 @@ def cmd_verify(manifest: dict, surface: str) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="install.py", description="ai-guide governance installer（五面；README 為運維單一源）")
-    ap.add_argument("--surface", required=True,
-                    choices=["rules", "skills", "hooks", "agents", "memory", "monitor", "all"])
+    ap.add_argument("--surface", required=True, choices=CLI_SURFACES)
     group = ap.add_mutually_exclusive_group()
     for flag in ("dry_run", "uninstall", "check", "verify"):
         group.add_argument(f"--{flag.replace('_', '-')}", action="store_true")

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Claude Code Stop / SessionEnd Hook — 進度提醒（長任務召回）
 # 觸發：Stop event（每 turn 結束）+ SessionEnd event（session 結束；Claude 端專屬——ZCode 無此事件）
-# 跨 harness：Claude（Stop+SessionEnd）與 ZCode 3.7.7+（僅 Stop，見 hooks/zcode-registration.json）共用本腳本。
+# 跨 harness：Claude（Stop+SessionEnd）與 ZCode 3.7.7+（僅 Stop，註冊模板 governance/registrations/zcode.json）共用本腳本。
 # 職責：長任務進行中（sentinel 存在）每 INTERVAL 秒召回用戶檢查。
 #   - Stop：sentinel 存在 AND 距上次提醒 ≥ INTERVAL → say 進度提醒 + 更新時間
 #   - SessionEnd：清理殘留 sentinel（1.5s timeout，只 rm 不 say）

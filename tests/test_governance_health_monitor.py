@@ -28,24 +28,28 @@ def _patch(monkeypatch, results):
 def test_monitor_pass_exit_zero(monkeypatch, capsys):
     _patch(monkeypatch, [(0, "[verify] 全部 PASS"), (0, "[check] 五面 parity 綠")])
     assert mod.main() == 0
-    assert "PASS" in capsys.readouterr().out
+    # 釘 monitor 自有輸出前綴——passthrough 的子命令輸出不能替代告警/結論行
+    assert "[governance-health] PASS" in capsys.readouterr().out
 
 
 def test_monitor_verify_fail_alerts(monkeypatch, capsys):
     _patch(monkeypatch, [(1, "[verify:muse] FAIL——x"), (0, "[check] 綠")])
     assert mod.main() == 1
-    assert "FAIL" in capsys.readouterr().out
+    # TC-7 P7-1：monitor 自有告警行必須在場（ passthrough 的 FAIL 字樣不算數——audit I1）
+    assert "[governance-health] FAIL" in capsys.readouterr().out
 
 
 def test_monitor_check_fail_alerts(monkeypatch, capsys):
     _patch(monkeypatch, [(0, "[verify] PASS"), (1, "[check] 1 項 drift")])
     assert mod.main() == 1
+    assert "[governance-health] FAIL" in capsys.readouterr().out
 
 
 def test_monitor_both_fail_alerts(monkeypatch, capsys):
     _patch(monkeypatch, [(1, "verify fail"), (1, "check fail")])
     assert mod.main() == 1
     out = capsys.readouterr().out
+    assert "[governance-health] FAIL" in out
     assert "verify" in out and "check" in out
 
 

@@ -7,10 +7,12 @@ NotebookEdit payload 路徑鍵是 `notebook_path` → file_path guard 直落 exi
 處置＝(a) 移 matcher 字面（EP 寫死決策），本測試防「再加 matcher 字面而無分支」
 的 dead-matcher 再生。
 
-三來源（AC-C2）：範本 hooks/zcode-registration.json、CC settings（repo
-settings.json——~/.claude/settings.json symlink 真實目標）、ZCode live config
-（~/.zcode/cli/config.json——enforcement 面）。live config 缺席 → skip＋標記
-`live-config-absent`，不得靜默綠。
+三來源（AC-C2）：範本 governance/registrations/zcode.json（AIR-116 收編，原
+hooks/zcode-registration.json）、CC settings（repo settings.json——
+~/.claude/settings.json symlink 真實目標；**gitignored local-only，fresh
+worktree 天生缺席** → skip＋標記 `live-config-absent`）、ZCode live config
+（~/.zcode/cli/config.json——enforcement 面；缺席 → skip 同標記）。範本是
+版控資產，缺席＝fail 不得靜默。
 """
 
 import json
@@ -20,7 +22,7 @@ from pathlib import Path
 import pytest
 from conftest import REPO_ROOT
 
-TEMPLATE = REPO_ROOT / "hooks" / "zcode-registration.json"
+TEMPLATE = REPO_ROOT / "governance" / "registrations" / "zcode.json"
 CC_SETTINGS = REPO_ROOT / "settings.json"
 ZCODE_LIVE = Path.home() / ".zcode" / "cli" / "config.json"
 HANDLED_SCRIPT = REPO_ROOT / "hooks" / "block-memory-index-write.py"
@@ -91,8 +93,12 @@ def test_matcher_lives_within_handler_branches():
     collected = collect_memory_hook_matchers(sources)
     if collected["zcode-live"] is None:
         pytest.skip("live-config-absent: ~/.zcode/cli/config.json 缺席——live 面未驗")
+    if collected["cc-settings"] is None:
+        pytest.skip(
+            "live-config-absent: repo settings.json 缺席（gitignored local-only——"
+            "fresh worktree 天生無）——CC 面未驗"
+        )
     assert collected["template"] is not None, "範本缺席＝registration 源斷裂（fail）"
-    assert collected["cc-settings"] is not None, "CC settings 缺席＝registration 源斷裂（fail）"
     for name, matchers in collected.items():
         assert matchers is not None, name
         extra = matchers - handled

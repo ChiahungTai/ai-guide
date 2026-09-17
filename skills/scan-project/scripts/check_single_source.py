@@ -113,7 +113,7 @@ INVARIANTS = [
     {
         "id": "hook_registration",
         "type": "hook_registration",
-        "registrations": ["settings.json", "hooks/zcode-registration.json"],
+        "registrations": ["settings.json", "governance/registrations/zcode.json"],
         # 僅接 Claude 端的 hook：settings.json 是 local-only（gitignored），
         # fresh clone 上缺場 → 這些 hook 豁免（註冊事實存在於本機設定，
         # repo 內不可驗證）；settings.json 在場時仍照常檢查
@@ -124,15 +124,15 @@ INVARIANTS = [
         "note": "hooks/*.py 是「code 在、接線不在」的孤兒溫床（真實案例 "
         "2026-08-29 F8：compact-tail-inject.py 兩處註冊面皆無、從未生效——"
         "防線看起來存在，實際從未攔截）。每個 hook 腳本至少要出現在一個註冊處"
-        "（settings.json = Claude 端、hooks/zcode-registration.json = ZCode 端"
-        "範本），否則 critical",
+        "（settings.json = Claude 端、governance/registrations/zcode.json = "
+        "ZCode 端模板），否則 critical",
     },
     {
         "id": "zcode_live_parity",
         "type": "zcode_live_parity",
-        "template": "hooks/zcode-registration.json",
+        "template": "governance/registrations/zcode.json",
         "live": "~/.zcode/cli/config.json",
-        "note": "zcode-registration.json（repo 模板）的每個 hook 接線必須已部署到 "
+        "note": "governance/registrations/zcode.json（repo 模板）的每個 hook 接線必須已部署到 "
         "live ~/.zcode/cli/config.json 且 hooks.enabled=true——template 有、live 無 "
         "= hook 不會 fire（F8 形狀：防線看起來存在實際從未攔截；2026-08-30 實例："
         "block-python-file-write 在模板、live 缺席直到人工補）。live 檔不存在"
@@ -686,7 +686,7 @@ def _wiring(data: dict) -> set[tuple[str, str, str]]:
 def check_zcode_live_parity(
     inv: dict, live_path: Path | None = None
 ) -> list[tuple[str, str, str]]:
-    """zcode-registration.json（repo 模板）的 hook 接線必須已部署到 live config。
+    """governance/registrations/zcode.json（repo 模板）的 hook 接線必須已部署到 live config。
 
     抓「註冊≠fire」的部署漂移：template 加了 hook、live config 沒 merge →
     hook 從未執行（F8 形狀）。**結構比對**（event＋matcher＋檔名三元組）：

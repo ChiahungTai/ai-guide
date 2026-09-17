@@ -127,6 +127,15 @@ def _codex_manifest(target: Path) -> dict:
         "target": str(target), "template": "registrations/codex.toml"}}}
 
 
+def test_check_codex_duplicate_inline_group_drift(tmp_path):
+    t = _rendered("registrations/codex.toml")
+    target = tmp_path / "config.toml"
+    target.write_text(_codex_live(t + t))  # 整份模板寫兩次＝每 owned group 重複
+    drifts: list = []
+    mod.check_codex_face(_codex_manifest(target), drifts, codex_home=tmp_path)
+    assert any("重複 inline group" in m for _, m in drifts)
+
+
 def test_check_codex_clean(tmp_path):
     t = _rendered("registrations/codex.toml")
     target = tmp_path / "config.toml"
@@ -243,6 +252,22 @@ def test_check_muse_source_path_not_canonical(tmp_path, monkeypatch):
     assert any("canonical" in m for _, m in drifts)
 
 
+def test_check_muse_source_extra_file_and_approve_fail(tmp_path, monkeypatch):
+    """S5 補腿：approve 態 FAIL 分支＋source 多檔（cache 舊）分支。"""
+    from types import SimpleNamespace as SN
+    src = tmp_path / "muse-plugins/memory-governance"
+    (src / "hooks").mkdir(parents=True)
+    (src / "a.md").write_text("v1")
+    cache = tmp_path / "cache/package"
+    cache.mkdir(parents=True)  # cache 空——source 多檔
+    _muse_manifest_patch(tmp_path, cache, monkeypatch)
+    monkeypatch.setattr(mod, "probe_muse", lambda pid: ("FAIL", "非 trusted_enabled（mock）"))
+    drifts: list = []
+    mod.check_muse_face(_muse_face_manifest(tmp_path, cache), drifts)
+    assert any("approve 態" in m for _, m in drifts)
+    assert any("source 多檔" in m for _, m in drifts)
+
+
 def test_check_muse_not_registered(tmp_path, monkeypatch):
     cache = tmp_path / "cache"
     cache.mkdir(parents=True)
@@ -315,3 +340,36 @@ def test_cmd_check_missing_configs_exit_drift_not_crash(tmp_path):
 
 def test_cmd_check_monitor_stub():
     assert mod.cmd_check({}, "monitor") == mod.EXIT_NOT_IMPL
+
+
+def test_cmd_check_clean_exit_ok(tmp_path, monkeypatch):
+    """TC-4 P4-2 對稱腿：全面乾淨 → cmd_check EXIT_OK（drifts 空路徑）。"""
+    stub = SimpleNamespace(expected_bundle_for=lambda p: b"B")
+    monkeypatch.setattr(mod, "_DEPLOY_AGENTS_MOD", stub)
+    deployed = tmp_path / "AGENTS.md"
+    deployed.write_bytes(b"B")
+    skills = tmp_path / "skills"
+    skills.mkdir()
+    link = tmp_path / "skills-link"
+    link.symlink_to(skills)
+    tmpl_cc = json.loads(_rendered("registrations/cc.json"))
+    cc = _write(tmp_path, "settings.json", {"hooks": tmpl_cc})
+    tmpl_zc = json.loads(_rendered("registrations/zcode.json"))
+    zc = _write(tmp_path, "config.json", {"mcp": {}, "plugins": {}, "hooks": tmpl_zc})
+    ct = _rendered("registrations/codex.toml")
+    cx = tmp_path / "config.toml"
+    cx.write_text("[hooks.state]\n\n" + ct)
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
+    monkeypatch.setattr(mod, "check_muse_face", lambda m, d: None)  # muse 腿 mock 層另測
+    manifest = {"registrations": {
+        "cc": {"target": str(cc), "template": "registrations/cc.json",
+               "merge_root": "hooks", "target_is_symlink": False},
+        "zcode": {"target": str(zc), "template": "registrations/zcode.json",
+                  "merge_root": "hooks", "target_is_symlink": False},
+        "codex": {"target": str(cx), "template": "registrations/codex.toml"}},
+        "surfaces": {"rules": {"deployed_targets": [str(deployed)]},
+                     "hooks": {"scripts": []},
+                     "skills": {"symlinks": [{"link": str(link), "target": str(skills)}]},
+                     "agents": {"argv": ["true"], "check_args": []},
+                     "memory": {"plugin_id": "x", "plugin_path": "p"}}}
+    assert mod.cmd_check(manifest, "all") == mod.EXIT_OK

@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 06:50'
+updated_date: '2026-09-17 08:10'
 labels: []
 dependencies: []
 references:
@@ -45,4 +45,6 @@ ordinal: 101000
 09-17 S4 完成：--check stub 轉正——五面 parity（JSON 語義 diff 缺/多/內容差＋symlink 健康腿／codex Modified 獨立 class＋mixed-rep／muse R6 source↔cache 逐檔 byte 腿（複用 probe_muse，S3/S4 同一實作）／rules=唯讀 import deploy_agents.expected_bundle_for()／agents=sync_agents --check 退出碼串接／skills 母鏈）＋單元測試 21 tests。live：AC-4.1 乾淨態 exit 0；AC-4.2 CC 刪條目→exit 1 命中該條→復原 sha 逐字等→exit 0（附帶實證：mutation heredoc 被 block-python-file-write 即時攔，治理閘在 authoring session 自身生效）；AC-4.5 弄髒生成 registry→透傳 rc=1→復原 exit 0。receipt＝references/s4-check-receipt.md。待續：S5（monitor 對帳）→S6 收尾→live uninstall round-trip（AC-2.5）。
 
 09-17 S5 完成：monitor 對帳收編——AIR-100 S-E muse approve monitor 吸收（舊 script＋測試刪、probe_muse 補 non-dict 腿、plist git mv 改名 governance-health-monitor），五面 health 上線（governance_health_monitor.py 消費 install.py verify+check，薄編排零重寫）。--surface monitor 裝載/卸載入 installer（manifest [surfaces.monitor]）。live：直跑 exit 0、launchctl start 觸發 log 五面行 PASS（含 codex L3 於 launchd 環境）、冪等 noop、殘留掃描零命中（AC-5.5）。途中三事故結構性修復：launchd PATH 無 codex 裸 crash（probe_codex 加 has_cli 守衛，L1/L2 照報+L3 GUARD）／XML 註解含雙連字號被嚴格解析拒讀（create 路徑補 plistlib 源驗證——帶病寫入 chokepoint 堵死；R7 fail-loud 攔截 reload 實證有效）／stale-loaded 誤報 noop（重載分支涵蓋 created）。單元測試 5 支（TC-7）。receipt＝references/s5-monitor-receipt.md。待續：S6 收尾（110 對齊＋instruction 同步＋live uninstall round-trip＋全段補跑 post-build）。
+
+09-17 S6 完成（弧收尾）：bootstrap 契約凍結（CLI_SURFACES/CLI_FLAGS 常數＋[bootstrap_cli] 對帳測試四支）；AC-6.3 fixture 模擬乾淨機器揪出四個新機器 bug 全修復（skills 先於 rules 順序／symlink 父目錄／config 缺席自空根建／config 父目錄 mkdir）；AC-2.5 live uninstall round-trip 定版全 PASS（三 config shasum 逐字對稱；揪出 muse disable 後 approve 失敗——install path 改 install→enable→approve 順序契約，實證回復 trusted_enabled）；AC-6.4 air-110 卡對齊落 notes。post-build 全段補跑（user 指示）：audit-test agent（1C/4I/7S 全採納——substring oracle／寫入側 21 條新測試）＋code-review agent（1C/3I/5S＋red lines 五條全 PASS——C-1 all-uninstall 補 muse disable＋monitor unload、I-1 codex exec rc≠0 fail-closed、I-2 apply_plan 第二層 dry-run 斷言、I-3 blueprint 指針、S 全補）＋judge 主 session 降級記錄；跨 session 轉交修復（fresh-worktree matcher parity 假敗＋收編三來源斷鏈＋check_single_source fixtures）；EP amendment 記 TC-6 P6-3 取代。既有缺陷記錄未修：hook_registration invariant 看不到 codex 註冊面（誤報孤兒 CRITICAL）。receipt＝references/s6-closing-receipt.md（含 audit/review 明細）。待：最終 commit gate→結案兩步。
 <!-- SECTION:NOTES:END -->

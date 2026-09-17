@@ -1,13 +1,13 @@
 # hooks/ — 跨 harness Hook 實作腳本
 
-> 本目錄腳本跨 Claude/ZCode 單一來源。hooks 無目錄載入點，**不能 symlink**——兩家 config 以絕對路徑引用：Claude `~/.claude/settings.json`；ZCode 3.7.7+ user-level hooks 註冊範本見 [zcode-registration.json](zcode-registration.json)（範本內容是 `~/.zcode/cli/config.json` `hooks:` 鍵下的子樹值，merge 進去而非整檔覆蓋）。`notification.sh` 不移植。
+> 本目錄腳本跨 Claude/ZCode 單一來源。hooks 無目錄載入點，**不能 symlink**——兩家 config 以絕對路徑引用：Claude `~/.claude/settings.json`；ZCode 3.7.7+ user-level hooks 註冊模板＝[../governance/registrations/zcode.json](../governance/registrations/zcode.json)（AIR-116 收編；安裝/升級唯一入口＝`uv run python governance/install.py --surface hooks`——模板是 `~/.zcode/cli/config.json` `hooks:` 鍵下的子樹值，installer 只動 hooks 子樹、mcp/plugins 逐鍵不變）。`notification.sh` 不移植。
 
-## zcode-registration.json 維護語義
+## ZCode hooks 註冊維護語義（註冊面已收編 governance/——本節存 hook 本體紀律）
 
 - **hook 執行環境＝OS 預設 python3（CommandLineTools 3.9）**：ZCode.app（GUI 行程）spawn hooks，PATH 不含 user shell 的 pyenv/uv shim——bare `python3` 解析到 `/usr/bin/python3`；hook 腳本**禁 3.10+ 語法**（repo pyproject 宣告 py312，ruff auto-fix 會把新語法修進 hook——真實案例：UP017 `datetime.UTC` 在 3.9 ImportError，functional 複驗攔下）；改 hook 後必以 bare `python3` 實跑複驗，不可只信 ruff 綠
-- **merge 方式**：取 `events` 子樹 merge 進 config 的 `hooks:` 鍵下，`_comment` 鍵不隨行
+- **merge 方式**：由 installer 自動化（`--surface hooks`）——取 `events` 子樹 merge 進 config 的 `hooks:` 鍵下，備份／preimage／原子寫由 installer 安全模型承擔（[governance/README.md](../governance/README.md)）
 - **SessionEnd 條目＝範本預載、ZCode 端未 merge**：merge 閘門＝`ref-docs/harness/contracts.md` 的 ZCode hooks 事件表**出現 SessionEnd**（當前無——初測 3.7.7，子集實測見 04 報告 §207）；閘門開後對 zcode hooks 文檔事件表複核一次才 merge 進 config
-- **plugin 升級＝路徑維護點**：plugin cache 版號路徑漂移會使範本內 muse/codex 條目的絕對路徑過時——plugin 升級時同步更新路徑
+- **plugin 升級＝路徑維護點**：plugin cache 版號路徑漂移會使註冊模板（`governance/registrations/`）內 muse/codex 條目的絕對路徑過時——plugin 升級時同步更新模板並重跑 installer
 - **grok-build 未安裝**：安裝後照 muse/codex 條目形態補第三條 SessionEnd（其 cache 的 `scripts/session-lifecycle-hook.mjs` 同款）
 
 ## Agent 背景 gate（ZCode）
@@ -24,7 +24,7 @@
 - `memory-dirty-sensor.py`（FileChanged，omitted matcher——匹配所有 watched file）：只記 dirty（watcher≠writer，不指派）。**接線（2026-09-09 已接）**：matcher 種子是 cwd 域字面檔名 watch 不到池外路徑 → 經 `memory-watch-seed.py`（SessionStart 回傳 `watchPaths` 池條目絕對路徑）動態注入 watch list（CC 鏡像 FileChanged 節指引）。live 觸發驗證＝下個 CC session 的 hook log（首次 session start 後生效）；外部寫入後備仍是 hash 腿。
 - ZCode hooks 事件子集**含 PostToolUse**（04 報告 §207 實測，初測 3.7.7）→ write-sensor 兩家都已接（ZCode 側 process 形態；payload schema 差異由 sensor 容錯吸收——最壞靜默 no-op fail-safe）。
 - `memory-watch-seed.py`（SessionStart，CC-only——ZCode 無 FileChanged 事件故無此需求）：列 ai-guide 記憶池條目（頂層 .md、排除 MEMORY.md 與 `_` 前綴——與 `is_pool_entry` 同過濾）輸出 `hookSpecificOutput.watchPaths`；冪等、池缺場輸出空清單。
-- 註冊（user 側 `~/.claude/settings.json` → symlink 至 repo `settings.json`〔gitignored，版控化 local-only〕，merge 非覆蓋；改前 cp .bak）：PostToolUse 條目 command 指本目錄絕對路徑＋matcher `Edit|Write`；FileChanged 條目 omitted matcher；SessionStart 條目＝watch-seed。ZCode 側範本 `zcode-registration.json` 已含 PostToolUse。collector 消費：`attribution --hook-events <log>`（merge 去重＋dirty 旗）。
+- 註冊（user 側 `~/.claude/settings.json` → symlink 至 repo `settings.json`〔gitignored，版控化 local-only〕）：兩家註冊由 governance installer 維護（`--surface hooks`；CC 條目見 `governance/registrations/cc.json`、ZCode 見 `zcode.json`）。collector 消費：`attribution --hook-events <log>`（merge 去重＋dirty 旗）。
 
 ## 孤兒清理落差（SessionEnd hook 在 ZCode 缺席）
 

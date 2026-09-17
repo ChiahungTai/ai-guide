@@ -49,7 +49,7 @@ def test_hook_registration_missing_reg_file_skipped(tmp_path, monkeypatch):
     (tmp_path / "hooks").mkdir()
     (tmp_path / "hooks" / "a.py").write_text("pass")
     # settings.json 不存在（local/gitignored 機器）→ skip 不 false positive，
-    # 但 zcode-registration.json 也不存在時仍應全部抓孤兒
+    # 但 governance/registrations/zcode.json 也不存在時仍應全部抓孤兒
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = css.check_hook_registration(_hook_inv())
     assert len(findings) == 1
@@ -85,10 +85,9 @@ TPL_JSON = {
 
 
 def _write_tpl(tmp_path):
-    (tmp_path / "hooks").mkdir()
-    (tmp_path / "hooks" / "zcode-registration.json").write_text(
-        json.dumps(TPL_JSON), encoding="utf-8"
-    )
+    tpl_dir = tmp_path / "governance" / "registrations"
+    tpl_dir.mkdir(parents=True)
+    (tpl_dir / "zcode.json").write_text(json.dumps(TPL_JSON), encoding="utf-8")
 
 
 def _ok_group(matcher="Edit|Write", path="/x/hooks/ok.py"):

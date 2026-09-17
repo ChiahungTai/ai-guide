@@ -4,6 +4,8 @@
 
 依賴：bash、coreutils（`shasum`/`date`）、`jq`、`python3`（verify 的 inode/generator 檢查用；新機裸環境未必有 uv——本 runbook 不依賴 uv）。
 
+> **有 uv 的機器**：安裝/註冊面（hooks 四家註冊、skills symlink、rules bundle、agents registry、muse plugin、monitor 排程）統一走 governance installer——`uv run python governance/install.py --surface all`，契約與逐面檢查清單見 [governance/README.md](../governance/README.md) bootstrap 節（AIR-110 bootstrap 消費同一入口）。本 runbook＝**無 uv 裸環境 fallback**；本文的傳池步驟（§1）installer 不涵蓋，照走。
+
 ## 程序（按依賴序）
 
 ### 1. 傳池（二選一）
@@ -29,7 +31,7 @@ muse plugins install <repo>/muse-plugins/memory-governance --scope user
 muse plugins approve muse-memory-governance
 ```
 
-user-scope plugin 裝一次全 marker repo 生效（repo opt-in marker＝`.agents/memory-governance.json`，隨 repo 走無需重跑）——plugin 是 muse memory 寫入閘唯一承載（legacy machine-local `.muse/hooks.json` 註冊已隨 AIR-79 cutover 退役）；運維（update 後必重 approve 等）見 [muse-plugins/memory-governance/README.md](../../muse-plugins/memory-governance/README.md) 運維節。
+user-scope plugin 裝一次全 marker repo 生效（repo opt-in marker＝`.agents/memory-governance.json`，隨 repo 走無需重跑）——plugin 是 muse memory 寫入閘唯一承載（legacy machine-local `.muse/hooks.json` 註冊已隨 AIR-79 cutover 退役）；運維（update 後必重 approve 等）見 [muse-plugins/memory-governance/README.md](../muse-plugins/memory-governance/README.md) 運維節。
 
 ### 4. 重建排程（最易漏——僅 primary 機）
 

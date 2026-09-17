@@ -25,10 +25,11 @@ def _muse_doc(status: str, cap_id: str = "memory-inbox") -> str:
 
 def _patch_run(monkeypatch, *, returncode=0, stdout="", stderr=""):
     fake = SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
-    calls = []
     monkeypatch.setattr(mod, "subprocess",
-                        SimpleNamespace(run=lambda *a, **k: (calls.append((a, k)), fake)[1]))
-    return calls
+                        SimpleNamespace(run=lambda *a, **k: fake))
+    # probe_muse 先跑 shutil.which——不 patch 時 muse-less 機器回 GUARD 假紅（review S-5）
+    monkeypatch.setattr(mod, "shutil",
+                        SimpleNamespace(which=lambda name: "/usr/bin/muse"))
 
 
 # ── muse probe（AC-3.3：mock 非 trusted → FAIL）──────────────────
@@ -77,7 +78,7 @@ def test_muse_probe_inspect_nonzero_is_fail(monkeypatch):
 
 
 def test_muse_probe_cli_missing_is_guard(monkeypatch):
-    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda name: None))
     assert mod.probe_muse("x")[0] == "GUARD"
 
 
@@ -102,7 +103,7 @@ def test_pipe_payload_probe_hook_allow_is_fail(monkeypatch):
     monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=fake_run))
     status, detail = mod.probe_pipe_payload("hooks/block-memory-index-write.py")
     assert status == "FAIL"
-    assert "0" in detail
+    assert "實得 0" in detail
 
 
 def test_pipe_payload_probe_timeout_is_fail(monkeypatch):
@@ -124,9 +125,9 @@ def _group(event: str, matcher: str, script: str) -> str:
             f"command = \"python3 /Users/x/ai-guide/hooks/{script}\"\n\n")
 
 
-def test_mixed_rep_duplicate_inline_group_warns():
+def test_mixed_rep_duplicate_inline_group_warns(tmp_path):
     live = _group("PreToolUse", "apply_patch", "codex_memory_path_deny.py") * 2
-    warnings = mod.codex_mixed_rep_warnings(live, codex_home=None)
+    warnings = mod.codex_mixed_rep_warnings(live, codex_home=tmp_path)
     assert any("重複 inline group" in w for w in warnings)
 
 
@@ -160,7 +161,9 @@ def test_codex_trust_diagnostics_reports_trusted():
     live, tmpl = _codex_toml_with_state(key)
     lines = mod.codex_trust_diagnostics(live, tmpl)
     assert len(lines) == 1
-    assert "Trusted" in lines[0] and "pre_tool_use:0:0" in lines[0]
+    # 完整字串釘住分類方向——"Trusted" 是 "Untrusted" 的子串，substring 斷言
+    # 會讓「恆報 Untrusted」變異體存活（post-build audit C1）
+    assert "Trusted(state 在場)" in lines[0] and "pre_tool_use:0:0" in lines[0]
 
 
 def test_codex_trust_diagnostics_reports_untrusted():
@@ -192,7 +195,7 @@ def test_probe_codex_cli_absent_guard_with_l1(tmp_path, monkeypatch):
     target.write_text("[hooks.state]\n\n" + tmpl)
     manifest = {"registrations": {"codex": {"target": str(target),
                                             "template": "registrations/codex.toml"}}}
-    monkeypatch.setattr(mod.shutil, "which", lambda n: None)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
     status, _detail, lines = mod.probe_codex(manifest)
     assert status == "GUARD"
     assert any("[L1] 在場" in ln for ln in lines)
@@ -215,3 +218,15 @@ def test_cmd_verify_missing_probe_def_is_fail():
 
 def test_cmd_verify_monitor_stub_not_impl():
     assert mod.cmd_verify({}, "monitor") == mod.EXIT_NOT_IMPL
+
+
+def test_cmd_verify_fail_dominates_guard(monkeypatch):
+    """GUARD 不得吞 FAIL——worst 語義（install.py cmd_verify docstring 契約）釘住。"""
+    manifest = {"probes": {"claude": {"type": "pipe-payload", "script": "x"},
+                           "zcode": {"type": "pipe-payload", "script": "x"},
+                           "codex": {"type": "codex-three-layer"}}}
+    monkeypatch.setattr(mod, "run_probe", lambda m, n, p: next(_seq))
+    _seq = iter([("GUARD", "", []), ("PASS", "", []), ("FAIL", "", [])])
+    assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_DRIFT
+    _seq = iter([("GUARD", "", []), ("PASS", "", []), ("GUARD", "", [])])
+    assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_GUARD

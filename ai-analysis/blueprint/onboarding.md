@@ -160,20 +160,20 @@ helper 應處理「target 已存在但不是預期 symlink」的情況，不直�
 
 ### 3.1 ZCode user-level hooks — ✅
 
-source：[zcode-registration.json](../../hooks/zcode-registration.json)、[hooks/AGENTS.md](../../hooks/AGENTS.md)
+source：[governance/registrations/zcode.json](../../governance/registrations/zcode.json)（AIR-116 收編，原 `hooks/zcode-registration.json`）、[hooks/AGENTS.md](../../hooks/AGENTS.md)
 
-`zcode-registration.json` 是 `~/.zcode/cli/config.json`（machine-local，不入連結）中 `hooks:` 子樹的註冊範本。
+`governance/registrations/zcode.json` 是 `~/.zcode/cli/config.json`（machine-local，不入連結）中 `hooks:` 子樹的註冊模板。
 
 重建：
 
 1. 讀現有 user config。
-2. 只取範本 `events` 子樹。
+2. 只取模板 `events` 子樹。
 3. merge 進 config 的 `hooks:`。
 4. `_comment` 不隨行。
-5. 不以範本覆蓋整份 config。
+5. 不以模板覆蓋整份 config。
 6. 只 merge 目前 ZCode runtime 支援的事件。
 
-核心 invariant 是「merge hooks 子樹」，不是「以 registration template 重建完整 config」。
+核心 invariant 是「merge hooks 子樹」，不是「以 registration template 重建完整 config」。**安裝/重接線唯一入口＝`uv run python governance/install.py --surface hooks`**（AIR-116——上述步驟由 installer 自動化，手動 merge 僅作 fallback 理解）。
 
 ### 3.2 Muse memory 閘 — ✅ user-scope plugin（AIR-79）＋repo 隨行 marker
 
