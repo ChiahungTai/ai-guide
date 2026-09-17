@@ -217,12 +217,12 @@ zoom 的 test 段聚焦**判準 2（收窄：production wrapper 重複測試）*
 | test 與 production 脫節（docstring 語意誤導）| 過時 / 死測試 — 角度 6 |
 | —（其餘隱含覆蓋場景：同行為不同入口重複測等） | 反模式 / 過時死測試 / 測試必要性 — 角度 1 / 角度 6 |
 
-**判準 2 收窄理由**：audit-test 角度 1 + 角度 6 已覆蓋多數隱含覆蓋場景。zoom 判準 2 **真正獨有**的是「**production wrapper 重複測試**」判斷——測 wrapper 時要查 wrapper 是否有**獨立 production 入口**：
+**判準 2 收窄理由**：audit-test 域 1（反模式＋測試必要性）已覆蓋多數隱含覆蓋場景。zoom 判準 2 **真正獨有**的是「**production wrapper 重複測試**」判斷——測 wrapper 時要查 wrapper 是否有**獨立 production 入口**：
 
 - 有獨立 production 入口（如 `throttle()` 被 production 直接呼叫）→ **保留**（覆蓋 production 路徑，非重複）
 - 無獨立 production 入口（wrapper 只被 test 呼叫，本體已被別處測）→ **冗餘**（建議清除）
 
-> 區分 audit-test 角度 6：角度 6 是「**動態過時**」（重構後 assertion 迎合實作）；本判準是「**production wrapper 重複**」（wrapper 無獨立入口）。語義不同。
+> 區分 audit-test 域 1 測試必要性：該節是「**動態過時**」（重構後 assertion 迎合實作）；本判準是「**production wrapper 重複**」（wrapper 無獨立入口）。語義不同。
 
 ## 誠信 stance（對 audit-test 的差異化）
 

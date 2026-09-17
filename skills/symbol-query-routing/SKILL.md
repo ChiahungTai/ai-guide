@@ -80,7 +80,7 @@ task prompt 寫「若有 LSP 工具可用...無 LSP 則用 rg」是**提醒確�
 - 文字搜尋（字串、註解、config）→ 用 rg
 - 檔案搜尋 → 用 fd
 - Cython 模組（.pyx/.so）→ 用 rg + Read（LSP 不索引 Cython）
-- audit-test 角度 2 覆蓋判斷 → 禁用單一 rg pattern；registry membership / class 引用 / method call 必須 LSP findReferences 為主、rg 為輔
+- audit-test 域 2（Traceability）覆蓋判斷 → 禁用單一 rg pattern；registry membership / class 引用 / method call 必須 LSP findReferences 為主、rg 為輔
 - judge-review 符號查證 → 「X 是否存在 / 在哪引用」必須 LSP findReferences / workspaceSymbol；rg 0 hits 不可直接下「不存在」結論
 ```
 

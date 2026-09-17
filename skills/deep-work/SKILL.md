@@ -144,7 +144,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 4. **Agent Review Cycle**（見下方）
 5. instruction 檔同步檢查（AGENTS.md 為主，legacy CLAUDE.md）
 6. 移除除錯用程式碼
-7. **/audit-test checkpoint**（見 [audit-test](../audit-test/SKILL.md)）：跑 `/audit-test`（Diff Audit）。重點看角度 4（消費端驗證覆蓋：新 public 參數路徑、整合器型真實邊界）與角度 2（registry 接線）。缺口不得帶進 /commit。用戶不在場時，這是「單元全綠但接線/邊界沒測」隱性 regression 的唯一機械化閘門。
+7. **/audit-test checkpoint**（見 [audit-test](../audit-test/SKILL.md)）：跑 `/audit-test`（Diff Audit）。重點看域 2 的消費端路徑證據（新 public 參數路徑、整合器型真實邊界）與覆蓋查詢（registry 接線）。缺口不得帶進 /commit。用戶不在場時，這是「單元全綠但接線/邊界沒測」隱性 regression 的唯一機械化閘門。
 8. **任務級整合路徑檢查**（非 `/implement` 任務；若變更含新 callable 參數/注入點 → `rg "<新參數>=" tests/` → 0 hits 必須補消費端整合測試，見 [build.md](../implement/SKILL.md) 階段 2）
 9. **紅線跳過覆盤**：盤點任務過程中跳過的紅線操作（見 [autonomous-execution](../autonomous-execution/SKILL.md) Don't-Self-Decide Boundaries 🔴 紅線段），寫入 completion report「🔴 紅線跳過清單」段。半夜自主跑時不阻塞、不語音通知——早上靠此覆盤段判讀任務是否因紅線而半完成。
 10. **寫 STATE.md Last session 觀察**：**若本 session 有轉向 / 卡點觀察**，把卡點 / 轉向 / 下次起手點寫入 repo root `STATE.md`（覆寫非累積；寫入步驟 + A↔C negative guidance 見 [state-md-write](../_common/state-md-write.md)）。

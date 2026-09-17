@@ -137,7 +137,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 1. **三 gate 當場驗**（RED 完成時逐項確認，非事後補驗）：**STRUCT_OK**（測試結構可判 RED——非 skip/xfail 偽裝）／**SEM_OK**（斷言語義對應 TC predicate——凍結 TC 存在時逐 TC-ID 核對）／**BEFORE_GREEN**（基線跑法：新測試在 pre-change baseline 必須紅——baseline 綠＝vacuous/test-after 劇場化，直接退回）
 2. **RED receipt 落檔**：RED 完成即寫任務家 `red-receipts.md`——TC-ID＋baseline 身份＋test 檔 sha256 digest＋failing predicate 清單（非中途 commit，隨弧結案進版控）；digest 算式凍結＝sha256 of test 檔 bytes，receipt 落檔時記
-3. **digest 凍結**：GREEN 前記 contract-test digest；GREEN 期 frozen test 唯讀——重算不一致＝靜默改（[audit-test](../audit-test/SKILL.md) 角度 8 抓）
+3. **digest 凍結**：GREEN 前記 contract-test digest；GREEN 期 frozen test 唯讀——重算不一致＝靜默改（[audit-test](../audit-test/SKILL.md) TC 契約對帳〔域 2 第一 gate〕抓）
 
 無凍結 TC 的 EP（舊 EP/存量）→ 三栓跳過，照現行驗證策略執行。TC 格式與 amendment 語彙定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）。
 

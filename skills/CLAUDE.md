@@ -67,7 +67,7 @@
 ### 工作流 skills — 品質工具
 
 - `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）；**含 lint/type 修復**（ruff/mypy recipes＝`fix-test/lint-type-recipes.md`，前身 `/lint-fix` 已併入）＋**第三方型別缺口四層策略**（前身 `python-type-gap` skill 已降級＝`fix-test/python-type-gap.md`）
-- `/audit-test` — 測試品質稽核（反模式偵測、覆蓋對稱性、mock 健康度，只讀不寫）；v3.1 角度 8 測試契約七項對帳（EP 含凍結 TC 時）
+- `/audit-test` — 存量測試品質稽核（五證據域＋oracle 分級 S/H/I/N＋mutation 條件 gate＋8 維 vector 報告；night-mode 夜間多家族補強生產線）；TC 契約對帳七項＝域 2 第一 gate（EP 含凍結 TC 時）
 - `/smell-detector` — 壞味道偵測（layer 3，行動前/審既有）：架構審查＋重構前期研究＋測試優化盤點；兩 mode——`<dir|files>` zoom 變焦批判（質疑存在：6 判準+查證誠信+Domain 層判準 4/5）/ `--baseline <dir>` 廣角盤點（per-directory 4 檔+invariants+--status/--stale/--arch）；測試 smell 三類（資源/怪獸/結構，與 /audit-test 正交）；read-only 偵測器，修復走 /implement、/fix-test
 - `/consistency` — 文檔品質檢查（自洽性、矛盾性、順序、自包含、精準度、Signal/Noise）
 - `/sync-sources` — 跨檔 single-source invariant 機械檢查（含非 Claude 部署 bundle 新鮮度）
