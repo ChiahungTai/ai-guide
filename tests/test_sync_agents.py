@@ -561,6 +561,7 @@ workloads = [
   "visual_observation",
 ]
 harness_alias_tokens = ["sonnet", "haiku", "opus"]
+families = ["glm", "muse", "codex", "anthropic", "xai"]
 
 [[model_identity]]
 id = "glm-5.3"
@@ -593,6 +594,7 @@ carrier = "zcode"
 surface = "agent-definition"
 token = "glm-5.3"
 token_kind = "provider_native"
+family = "glm"
 effort_encoding = "field"
 effort_values = ["low", "high", "max"]
 
@@ -603,6 +605,7 @@ carrier = "zcode"
 surface = "agent-definition"
 token = "glm-5.3-flash"
 token_kind = "provider_native"
+family = "glm"
 effort_encoding = "field"
 effort_values = ["low", "high", "max"]
 transport = ["image_transport"]
@@ -614,6 +617,7 @@ carrier = "claude-code"
 surface = "agent-definition"
 token = "opus"
 token_kind = "harness_alias"
+family = "anthropic"
 effort_encoding = "param"
 effort_values = ["low", "high"]
 
@@ -624,6 +628,7 @@ carrier = "bridge"
 surface = "glm-family"
 token = "GLM-5.3"
 token_kind = "provider_native"
+family = "glm"
 effort_encoding = "unsupported"
 
 [[dispatch_binding]]
@@ -633,6 +638,7 @@ carrier = "bridge"
 surface = "glm-family"
 token = "GLM-5.3-Flash"
 token_kind = "provider_native"
+family = "glm"
 effort_encoding = "unsupported"
 
 [[dispatch_binding]]
@@ -642,6 +648,7 @@ carrier = "bridge"
 surface = "codex-family"
 token = "chatgpt-web/high"
 token_kind = "carrier_slug"
+family = "codex"
 effort_encoding = "slug_fixed"
 fixed_effort = "high"
 
@@ -652,6 +659,7 @@ carrier = "bridge"
 surface = "codex-family"
 token = "gpt-5.6-sol"
 token_kind = "provider_native"
+family = "codex"
 effort_encoding = "param"
 effort_values = ["minimal", "low", "medium", "high", "xhigh"]
 
@@ -662,6 +670,7 @@ carrier = "bridge"
 surface = "muse-family"
 token = "muse-spark-1.3"
 token_kind = "provider_native"
+family = "muse"
 effort_encoding = "param"
 effort_values = ["low", "medium", "high", "xhigh", "ultra"]
 transport = ["image_transport"]
@@ -747,6 +756,7 @@ def test_catalog_rejects_duplicate_binding_id():
             'surface = "agent-definition"\n'
             'token = "haiku"\n'
             'token_kind = "harness_alias"\n'
+            'family = "anthropic"\n'
             'effort_encoding = "param"\n'
             'effort_values = ["low", "high"]\n'
         ),
@@ -768,6 +778,7 @@ def test_catalog_rejects_duplicate_binding_token_scope():
         'surface = "agent-definition"\n'
         'token = "glm-5.3"\n'
         'token_kind = "provider_native"\n'
+        'family = "glm"\n'
         'effort_encoding = "field"\n'
         'effort_values = ["low", "high", "max"]\n'
     )
@@ -963,9 +974,10 @@ def test_catalog_rejects_effort_encoding_shape_mismatch():
         sync.parse_catalog(
             mutated_catalog(
                 'token = "GLM-5.3"\ntoken_kind = "provider_native"\n'
-                'effort_encoding = "unsupported"',
+                'family = "glm"\neffort_encoding = "unsupported"',
                 'token = "GLM-5.3"\ntoken_kind = "provider_native"\n'
-                'effort_encoding = "unsupported"\neffort_values = ["low"]',
+                'family = "glm"\neffort_encoding = "unsupported"\n'
+                'effort_values = ["low"]',
             )
         )
 

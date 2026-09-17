@@ -126,6 +126,7 @@ class DispatchBinding:
     surface: str
     token: str
     token_kind: str
+    family: str
     effort_encoding: str
     effort_values: tuple[str, ...]
     fixed_effort: str | None
@@ -146,6 +147,7 @@ class QualificationRecord:
 class ModelCatalog:
     workloads: frozenset[str]
     harness_alias_tokens: frozenset[str]
+    families: frozenset[str]
     identities: dict[str, ModelIdentity]
     bindings: dict[str, DispatchBinding]
     qualifications: tuple[QualificationRecord, ...]
@@ -204,9 +206,11 @@ def parse_catalog(text: str) -> ModelCatalog:
     assert version == 1, f"catalog: schema_version {version!r}（預期 1）"
     allow = data.get("allow_lists", {})
     _catalog_keys_ok(
-        allow, frozenset({"workloads", "harness_alias_tokens"}), "allow_lists"
+        allow,
+        frozenset({"workloads", "harness_alias_tokens", "families"}),
+        "allow_lists",
     )
-    for list_key in ("workloads", "harness_alias_tokens"):
+    for list_key in ("workloads", "harness_alias_tokens", "families"):
         values = allow.get(list_key)
         assert (
             isinstance(values, list)
@@ -218,6 +222,7 @@ def parse_catalog(text: str) -> ModelCatalog:
         )
     workloads = frozenset(allow["workloads"])
     alias_tokens = frozenset(allow["harness_alias_tokens"])
+    families = frozenset(allow["families"])
 
     # --- model_identity ---
     identities: dict[str, ModelIdentity] = {}
@@ -263,6 +268,7 @@ def parse_catalog(text: str) -> ModelCatalog:
                     "surface",
                     "token",
                     "token_kind",
+                    "family",
                     "effort_encoding",
                     "effort_values",
                     "fixed_effort",
@@ -280,6 +286,7 @@ def parse_catalog(text: str) -> ModelCatalog:
                 "surface",
                 "token",
                 "token_kind",
+                "family",
                 "effort_encoding",
             ),
             "dispatch_binding",
@@ -293,6 +300,11 @@ def parse_catalog(text: str) -> ModelCatalog:
         kind = row["token_kind"]
         assert kind in _TOKEN_KINDS, (
             f"catalog: unknown token_kind {kind!r}（合法：{sorted(_TOKEN_KINDS)}）"
+        )
+        family = row["family"]
+        assert family in families, (
+            f"catalog: binding {bid!r}: unknown family {family!r}"
+            f"（合法：{sorted(families)}——allow_lists.families 閉集）"
         )
         token = row["token"]
         if kind == "provider_native":
@@ -356,6 +368,7 @@ def parse_catalog(text: str) -> ModelCatalog:
             row["surface"],
             token,
             kind,
+            family,
             encoding,
             values,
             fixed,
@@ -455,7 +468,9 @@ def parse_catalog(text: str) -> ModelCatalog:
             QualificationRecord(workload, mid, status, evidence, scope, minimum)
         )
 
-    return ModelCatalog(workloads, alias_tokens, identities, bindings, tuple(records))
+    return ModelCatalog(
+        workloads, alias_tokens, families, identities, bindings, tuple(records)
+    )
 
 
 def load_catalog(repo: Path) -> ModelCatalog:
