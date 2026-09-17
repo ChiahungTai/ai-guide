@@ -1,10 +1,10 @@
 ---
 id: AIR-122
 title: 投影 freshness 驗收閘——index.html 複本降級改 link＋manifest hash gate
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 11:06'
-updated_date: '2026-09-17 11:07'
+updated_date: '2026-09-17 12:56'
 labels: []
 dependencies: []
 ordinal: 107000

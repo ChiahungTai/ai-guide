@@ -1,10 +1,10 @@
 ---
 id: AIR-123
 title: 額度現值 dispatch 讀端——spine＋catalog 機械轉 routing 建議（resolver 執行腿最小切片）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 11:28'
-updated_date: '2026-09-17 12:11'
+updated_date: '2026-09-17 12:56'
 labels: []
 dependencies: []
 ordinal: 108000
