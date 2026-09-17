@@ -1,10 +1,10 @@
 ---
 id: AIR-123
 title: 額度現值 dispatch 讀端——spine＋catalog 機械轉 routing 建議（resolver 執行腿最小切片）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 11:28'
-updated_date: '2026-09-17 12:56'
+updated_date: '2026-09-17 13:47'
 labels: []
 dependencies: []
 ordinal: 108000
@@ -27,3 +27,9 @@ ordinal: 108000
 明示不動：spine 本體、AIR-98 probe、resolver 判斷腿、bridge。
 AC：①catalog family 欄＋loader fail-loud（未知 family 值拒載）②availability_snapshot.py 四態 exit 各有 pytest（stale 邊界恰 3/4 天、as-of 缺席、可用行 vs 禁派事件衝突態、malformed 可用行 WARN 不 crash）③family 覆蓋斷言（每 family ≥1 binding 或顯式 no-binding 行，禁靜默）④8 回放＝behavior parity leg（bridge ledger ground truth）⑤SKILL 指針⑥instruction-writing 審查閘（boundary 跨家族）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+結算（final）：落地 main 7b8e420＋deploy 3/3。catalog family 欄（9 binding 歸屬凍結＋loader fail-loud 雙向）＋availability_snapshot.py（evaluator-not-router）＋31 tests。審查鏈：tri 三事項 panel 裁定→spec 修訂→flash 實作→fresh 腿 7 findings→R2 修復（衝突配對收緊等）。AC④ 回放：15 次 bridge 派工全完成 vs snapshot available 零矛盾。殘留：live keyword 掃描限制（能力序裁定行）接受並 SKILL 明示非窮興。
+<!-- SECTION:NOTES:END -->
