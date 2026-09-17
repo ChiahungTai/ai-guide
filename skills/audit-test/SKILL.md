@@ -1,21 +1,21 @@
 ---
 name: audit-test
 
-description: "測試品質稽核 — 反模式偵測、覆蓋對稱性、mock 健康度。只讀不寫。"
-when_to_use: "Audit test quality: detect anti-patterns, coverage gaps, and over-mocking. Use after /implement, before /commit, or in scheduled scans. Read-only report, does not modify any files."
-argument-hint: "/audit-test — uncommitted | /audit-test fd7a50e8 — commit | /audit-test --daily — 全專案"
-allowed-tools: ["Read", "Bash"]
+description: "存量測試品質稽核 — 五證據域（Semantic Integrity／Traceability & Evidence Depth／Adversarial Strength／Test-System Integrity／Suite Operability）、vacuous-green 條件式斷言、oracle 分級 S/H/I/N、mutation 條件 gate；night-mode 夜間補強生產線。只讀不寫（night-mode P4 例外——紅線內只寫 tests/fixtures）。"
+when_to_use: "Audit existing/legacy test suite strength — five evidence domains, vacuous-green guard-assertion detection, oracle authority grading (S/H/I/N), mutation conditional gates. Use after /implement, before /commit (Diff/Commit Audit), or via the night-mode reinforcement pipeline (--night; Daily Scan absorbed into night-mode)."
+argument-hint: "/audit-test — uncommitted | /audit-test fd7a50e8 — commit | /audit-test --night — 夜間補強管線"
+allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 ---
 
-# /audit-test — 測試品質稽核
+# /audit-test — 存量測試品質稽核（五證據域）
 
-偵測**通過但品質差**的測試。`ruff` 抓語法問題，`/fix-test` 修失敗測試，本命令抓**隱性品質問題**。
+偵測**通過但品質差**的測試。`ruff` 抓語法問題，`/fix-test` 修失敗測試，本命令抓**隱性品質問題**。定位＝**存量補強場景**：程式碼跑一段時間後回頭稽核測試強度並補強——建造管線（RED 流程）屬 [test-driven-development](../test-driven-development/SKILL.md) 領域。
 
-方法論定義見 [test-driven-development](../test-driven-development/SKILL.md)（反模式定義）；覆蓋對稱性（source↔test 對應）的判定流程定義在本檔角度 2。通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/多層驗證）見 [review-engine](../review-engine/SKILL.md)。
+方法論定義見 [test-driven-development](../test-driven-development/SKILL.md)（反模式定義）；behavior impact evidence（行為影響查詢，非 source↔test diff 對稱）的判定流程定義在本檔域 2。通用審查邏輯（嚴重度/信心水準/審查者自證/LSP 查證/多層驗證）見 [review-engine](../review-engine/SKILL.md)。
 
-> **audit-test 是 review 執行預設的例外**：review 執行預設（force 獨立／風險 profile context 配置／mode 判定，見 [review-engine](../review-engine/SKILL.md)「review 執行預設」）適用 ep-review/code-review/execution-plan/implement；**audit-test 是 read-only 偵測器**（不做平行多腿配置、不 mode 判定；Daily Scan 分段落盤的 `{agent}` 命名見「長任務 findings 落盤策略」段），僅共用通用審查邏輯（spawn 失敗處理仍走 [agent-workflow](../agent-workflow/SKILL.md) general 階梯）。
+> **audit-test 是 review 執行預設的例外**：review 執行預設（force 獨立／風險 profile context 配置／mode 判定，見 [review-engine](../review-engine/SKILL.md)「review 執行預設」）適用 ep-review/code-review/execution-plan/implement；**audit-test 是 read-only 偵測器**（不做平行多腿配置、不 mode 判定；night-mode P1/P2 分段落盤的 `{agent}` 命名見 night-mode 節「長任務 findings 落盤策略」段），僅共用通用審查邏輯（spawn 失敗處理仍走 [agent-workflow](../agent-workflow/SKILL.md) general 階梯）。
 >
-> **與 review profile 覆蓋的關係（S1 證據復用——不固定全量重跑）**：既有 review（弧級／段級，帳本 header 帶 identity）的 `coverage` 已含**相同 test 的相同審核軸**時，本命令引用該證據不重跑——復用判準五條（同基線／同實物內容／scope 覆蓋／profile 相容／證據可讀）見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」；scope 新增的 test 檔補審。test 特有 mandate（反模式／mock 健康度／mutation 抽查等角度）保留，不因 profile 覆蓋而省——profile 覆蓋只吸收**相同軸**；**複用 findings 不等於複用測試**——環境／config／input 改變時驗證證據另行失效（同 workflow-review-pattern 不變項）。
+> **與 review profile 覆蓋的關係（S1 證據復用——不固定全量重跑）**：既有 review（弧級／段級，帳本 header 帶 identity）的 `coverage` 已含**相同 test 的相同審核軸**時，本命令引用該證據不重跑——復用判準五條（同基線／同實物內容／scope 覆蓋／profile 相容／證據可讀）見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」；scope 新增的 test 檔補審。test 特有 mandate（反模式／mock 危險形態／mutation 抽查等域 detector）保留，不因 profile 覆蓋而省——profile 覆蓋只吸收**相同軸**；**複用 findings 不等於複用測試**——環境／config／input 改變時驗證證據另行失效（同 workflow-review-pattern 不變項）。
 
 ---
 
@@ -31,86 +31,147 @@ allowed-tools: ["Read", "Bash"]
 
 ---
 
-## 三種輸入模式
+## 輸入模式與掃描範圍
 
 | 模式 | 參數 | 掃描範圍 | 場景 |
 |------|------|---------|------|
-| **Diff Audit** | 無參數 | uncommitted test files | pre-commit gate |
+| **Diff Audit** | 無參數 | uncommitted test files | pre-commit gate（接點不變——`/commit` pre-commit gate 消費本命令輸出） |
 | **Commit Audit** | `fd7a50e8` | 該 commit 的 test file 變更 | post-commit review |
-| **Daily Scan** | `--daily` | 全部 test files | 週期排程（排程載體條件段）→ append `### 🔍 audit-test` section 進 daily-report |
+| **night-mode** | `--night` | target manifest 凍結範圍（契約 1） | 週期排程補強生產線——**Daily Scan 已被 night-mode 吸收**（night-mode 即 Daily 的強化形態；管線見「night-mode 補強生產線」節） |
 
 ### 掃描範圍判定
 
 **Diff Audit**：`git diff HEAD` + `git diff --cached` 中 `tests/` 下的 `.py` 檔案。
 **Commit Audit**：`git show <commit-id> --stat` 中 `tests/` 下的 `.py` 檔案。讀取 commit diff 取得完整 test body。
-**Daily Scan**：`fd -e py . tests/` 全部 test files。受影響的 source files = 所有被 import 的模組。
-
-### 長任務 findings 落盤策略（Daily Scan 必讀）
-
-> Daily Scan 涵蓋數百 test files，單一 agent 可能跑數十分鐘。**必須假設會中斷**（rate limit、context 上限、network），findings 即時落盤，避免 resume 重跑。
-
-1. **分段輸出**：每完成一個子任務（一個 test 目錄 / 一組 test files），立即將該段 findings 寫入中間檔案（如 `ai-analysis/audit-test-daily-scan-{date}-{agent}.partial.md`），不在 context 中累積全部 findings 才一次輸出
-2. **進度標記**：每段含進度標記（如 `<!-- agent=2, segment=3/8, completed=true -->`），resume 時讀 `.partial.md` 判斷已完成段落
-3. **彙整**：全部子任務完成後，讀所有 `.partial.md` 彙整成最終報告，刪除中間檔
-4. **resume**：中斷後 resume 先讀 `.partial.md`，只重跑未完成段落
-
-**反例（真實案例）**：某 Daily Scan agent 跑多個子任務，findings 全留 context，彙整前因 rate limit 中斷 → resume 需完整重跑全部子任務。即時落盤則只需重跑中斷時正在做的那一段。
+**night-mode**：範圍由 P1 前凍結的 target manifest 決定（見 night-mode 節契約 1），非無差別全掃。
 
 ---
 
-## 檢查角度
+## 五證據域（存量稽核主體）
 
-| # | 角度 | 對應標準 | 嚴重程度 |
-|---|------|---------|---------|
-| 1 | 反模式掃描 | test-driven-development SKILL.md（5 項） | Critical / Important |
-| 2 | 覆蓋對稱性 | 本檔角度 2 判定流程（+ quality-constraints 符號 vs 路徑覆蓋） | Important |
-| 3 | Mock 健康度 | test-driven-development SKILL.md（Mock 階層） | Important |
-| 4 | 消費端驗證覆蓋 | acceptance-evidence L3 + quality-constraints 符號 vs 路徑覆蓋 | Important / Suggestion |
-| 5 | 漸進驗證合規 | quality-constraints 漸進式驗證（DEPTH-MIN 集合） | Suggestion |
-| 6 | 測試必要性 | acceptance-evidence 證據時效性 | Important / Suggestion |
-| 7 | 變異測試抽查（mutation-testing-lite） | acceptance-evidence L2 獨立性塌縮（機械量測面） | Critical（survived 真實缺口） |
-| 8 | 測試契約對帳（EP 含凍結 TC 時，條件觸發） | 本檔角度 8（TC 格式定義源＝execution-plan 測試規劃段） | Critical（receipt/digest 不一致、圓形依賴）／Important |
+| 域 | 抓什麼 | 核心 detector |
+|---|---|---|
+| 1 **Semantic Integrity** | 測試本身說的是真話嗎 | 反模式、vacuous-green、mock 危險形態、測試必要性 |
+| 2 **Traceability & Evidence Depth** | 行為影響有證據嗎、來源可追溯嗎 | TC 契約對帳（第一 gate）、behavior impact evidence、出生證明查核 |
+| 3 **Adversarial Strength** | 斷言經得起突變嗎 | mutation 三層 gate＋週期輪抽 |
+| 4 **Test-System Integrity** | 測試系統自身健全嗎 | fixture provenance、隔離／污染 |
+| 5 **Suite Operability** | 套件跑得動、結果穩嗎 | collect 健康、flake、skip 盤點 |
 
----
+### 域 1：Semantic Integrity
 
-## 檢查角度詳細定義
+#### 反模式掃描
 
-### 角度 1：反模式掃描
-
-對每個 test function，逐一檢查以下 5 項反模式（定義見 [test-driven-development](../test-driven-development/SKILL.md)）：
+對每個 test function，逐一檢查以下反模式（定義見 [test-driven-development](../test-driven-development/SKILL.md)）：
 
 | 反模式 | 偵測方式 | 嚴重程度 | 判斷標準 |
 |--------|---------|---------|---------|
 | **幽靈斷言** | 掃描 assert 語句品質 | Important | test body 只有 `assert result is not None` / `assert len > 0` / 無 assert；或 assert 存在但與 docstring 描述的行為無關 |
 | **同義反覆** | 比對 test 與 source 的 hardcoded 值 | Important | test 的 expected value 和 source code 中的值完全相同（同一個 magic number 兩邊各寫一次） |
 | **空殼覆蓋** | 掃描 test body 結構 | Critical | test function 只有 `pass` / `...` / `@pytest.mark.skip`（無 reason 或 reason 不含 "EP 標記"） |
-| **過度 mock** | 計算 mock/assert 比例 | Important | test file 中 `@patch` / `Mock()` / `mock_` 出現次數 > `assert` 出現次數 |
 | **標題不符** | 比對 test name 與 assert 內容 | Suggestion | test function name 暗示測某行為（如 `test_dividend_calculation`），但 assert 驗證的是另一件事（如只檢查 type） |
 
 **偵測方式**：
 
 1. 讀取 test file，提取所有 test function（名稱、docstring、body）
 2. 對每個 test function：
-   - 計算 assert 數量和類型
-   - 計算 mock 數量（`@patch`、`Mock()`、`mock_` 變數）
+   - 檢查 assert 數量和類型（類型語義，非計數）
    - 比對 docstring/test name 語義與 assert 實際驗證對象
    - 檢查是否有 `@skip`、`pass`、`...`
 3. 讀取對應的 source file，比對 hardcoded 值
 
-### 角度 2：覆蓋對稱性
+#### vacuous-green（條件式斷言）
 
-**核心原則**：修改了 source code，必須有對應的 test 驗證。
+**核心原則**：守衛斷言若無 else-fail，條件不成立時測試**靜默通過**——綠燈但零驗證。
+
+| 反模式 | 偵測方式 | 嚴重程度 | 判斷標準 |
+|--------|---------|---------|---------|
+| **vacuous-green** | 掃描守衛斷言形態 | **Important** | assert 包在 `if` / `try` / `with` 守衛內且**無 else-fail**：條件不成立時斷言從未執行 |
+
+**形態案例（test_accounting 形態）**：`if hasattr(strategy, "qty"): assert strategy.qty > 0`——`strategy` 無 `qty` 屬性時整段斷言從未執行，測試綠燈但什麼都沒驗證。`try: ... except Exception: pass` 包斷言同型。判定＝找到守衛＋確認無 else-fail／fallthrough assert。
+
+#### Mock 危險形態
+
+**核心原則**：Mock 應該用最少代價隔離外部依賴，不是把被測系統也隔離掉。
+
+| 檢查項 | 嚴重程度 | 判斷標準 |
+|--------|---------|---------|
+| Mock 被測對象本身（mock 了正在測的 class） | Critical | `@patch("module.ClassUnderTest")` — 如果 mock 了主角，測試什麼？ |
+| Mock 層級過低（patch private method / 內部函數） | Suggestion | patch 路徑含 `_` 開頭的函數 |
+| 未使用繼承式 Mock（可用但未用） | Suggestion | 多個 test 用相同 `@patch` 組合 → 建議抽取 `MockClient(RealClient)` |
+| **`type(obj).attr = PropertyMock(...)` patch 真實 class** | Important | 見下方「PropertyMock type-level 危險性」 |
+
+#### PropertyMock type-level 危險性
+
+`type(obj).attr = PropertyMock(...)` 是 class-level patch，跨測試殘留風險真實。但**是否危險取決於 `obj` 的型別**：
+
+| `obj` 型別 | 風險 | 判定 |
+|-----------|------|------|
+| `MagicMock` instance / 純 mock fixture | 🟢 安全 | `type(obj)` 是 mock 類型，patch 不影響真實 class |
+| 真實 class instance（fixture 回傳 `RealClass()`） | 🔴 危險 | `type(obj)` 是真實 class，patch 污染整個 class，跨測試殘留 |
+
+**調查 / 修改前的強制義務**：
+
+1. **確認 fixture 回傳型別**：用 LSP `hover` / `goToDefinition` 跳到 fixture 定義，確認回傳 `MagicMock` 還是 `RealClass()`。**禁止憑 fixture 名稱猜測**（`<client_fixture>` 可能回傳真實 `<ServiceClient>`，不是 mock）
+2. **必讀專案踩雷指南**：修改 PropertyMock 前，讀專案 `tests/CLAUDE.md` 的 mock 規範段落（每個專案可能有不同的 PropertyMock 例外規則）
+
+**反例（真實案例）**：audit 稱某 `type(obj).attr = PropertyMock(...)` 多餘可刪，認為 fixture 回傳 mock；實作查證推翻 — fixture 回傳**真實 class**，該行是唯一讓某狀態（如某個 boolean 連線旗標）成立的機制，不能刪。調查前未確認 fixture 型別。
+
+#### per-repo mock 豁免教義
+
+**被迫正確的環境 API mock 是豁免項，不是過度 mock**：某些環境 API 在測試環境無法真實存在（editor 全域、外部 provider 帳號面），mock 它們是唯一可選項——如 `vi.mock('vscode')` 形態（editor API）、NT test-kit providers（外部 provider 面）。判定＝該依賴在測試環境**是否被迫**（無法真實存在）而非「圖方便」。**豁免清單 repo 自持**（各 repo tests/ instruction 檔列自己的豁免清單）——audit-test 對清單內依賴不報 mock finding，清單外的同型 mock 仍逐案判。
+
+#### 測試必要性
+
+**核心原則**：過時測試比沒測試更危險 — 它給虛假信心。其餘 detector 假設「測試該存在」，本節質疑「測試還有必要存在嗎」。理論見 [acceptance-evidence](../../rules/acceptance-evidence.md)「證據時效性」。
+
+| 檢查項 | 嚴重程度 | 判斷標準 |
+|--------|---------|---------|
+| 過時測試（重構後 assertion 被改成迎合實作） | Important | 測試在最近重構 commit 被改，改動是 assertion 值/邏輯迎合新實作（非新增案例）— 從「驗證意圖」降級為「反映實作」（同義反覆的動態版本） |
+| 死測試（還在過但驗證行為已無關） | Important | 測試斷言的行為與當前 EP/spec 無對應；或測試的消費端已不存在 |
+| 大型重構後未重評估的測試 | Suggestion | 重構（行為語意改變）後，受影響測試未被重新檢視必要性 |
+
+**過時偵測流程**：
+
+1. `git log --oneline -20` 找最近重構 commit（行為語意改變，非純重命名/格式）
+2. `git show <commit> --stat` 找該 commit 改動的 test files
+3. 對這些 test files，diff 看改動是「assertion 值/邏輯迎合新實作」（過時信號）還是「新增測試案例」（正常）
+4. **判定「迎合」標準並報告**：assertion 改成等於新實作輸出（literal value 追隨），而非新增獨立案例 — 需讀完整 test body 判斷（不能只看 diff 的 `+/-` 行，rename 也會產生 diff）。若不確定，標「需實作查證」而非定論。**判定為迎合 → 過時信號，報 Important**
+
+**與同義反覆的區別**：反模式「同義反覆」是靜態（test/source 同值）；「過時」是動態（重構後 test 被改迎合）。同義反覆抓不到動態漂移。
+
+**與靜態隱含覆蓋的區別（/smell-detector zoom 判準 2 收窄後的分界）**：本節（動態過時）與「靜態他處已測 = 冗餘」語義不同 — 後者指測試的行為已被**另一個測試**隱含驅動。分界：**production wrapper 重複測試**（測 thin wrapper 且 wrapper 無獨立 production 入口）的判斷見 [smell-detector zoom mode](../smell-detector/zoom.md) 判準 2；**其餘靜態冗餘**（同行為不同入口重複測等）屬本命令（域 1 反模式／測試必要性）；本節聚焦動態過時。
+
+**3-signal correlation（升級 2-signal → 3-signal，捕 intent drift）**：判讀 passing test 是真通過還是 silent drift，單看「過時」（動態）不夠 —— 須關聯三訊號：① 原始 test intent（story / 建立時擷取）② 當前 test result ③ 引入的 code changes。三者不一致 = intent drift 訊號（test 還過但已不驗原意圖）。coverage 增加也不保證 test 仍驗意圖。3-signal taxonomy 見 [acceptance-evidence skill](../acceptance-evidence/SKILL.md)「Intent Drift 的兩型 + 3-signal correlation」（rule 端 always-on 核心見 [acceptance-evidence](../../rules/acceptance-evidence.md)）。
+
+### 域 2：Traceability & Evidence Depth
+
+#### TC 契約對帳（第一 gate——EP 含凍結 TC 時）
+
+**核心原則**：凍結 TC 是契約，測試是契約的消費——本域機械對帳「測試忠實消費契約且 provenance 完整」。TC 格式（claim／Given-When／oracle／oracle_source／evidence class／uncovered）定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）；三 gate 語彙（STRUCT_OK／SEM_OK／BEFORE_GREEN）與 [implement](../implement/SKILL.md) RED provenance 精確同名——對帳鍵單一套。**有凍結 TC 時本對帳是域 2 第一 gate**——先對帳再談其他覆蓋查詢。
+
+**觸發輸入（operationalize）**：任務家 `ep.md` 探測（arc/獨立跑形態——讀 EP 整合策略有無凍結 TC 段）或 session context EP（in-context 形態）；兩者皆缺 → 對帳子節跳過（standalone 無 EP 的存量測試不適用），改走出生證明查核（下下方）。
+
+| # | 對帳項 | 機械操作 |
+|---|---|---|
+| 1 | predicate 對帳 | TC predicate-ID ↔ test 斷言逐一映射（`rg <TC-ID> tests/`；缺漏列 finding） |
+| 2 | mock↔evidence class | TC 標 L4-L6 的項若以 mock 驅動→finding（evidence 降級）；mock 回傳值來源比對 oracle_source |
+| 3 | oracle 圓形依賴 | oracle_source 指向待測實作（或 test 硬編碼 impl 值）→Critical（此類屬 oracle 級：標記 escalate challenge，非 audit 自斷） |
+| 4 | RED receipt＋digest | receipt 檔（任務家 `red-receipts.md`）存在、TC-ID 齊、sha256 與 frozen test 現值一致（不一致＝GREEN 期靜默改——Critical） |
+| 5 | 基線跑法（BEFORE_GREEN） | receipt 記 failing predicate；抽查測試在 baseline（`git stash` 形態）確實紅；STRUCT_OK／SEM_OK gate 痕跡核對 |
+| 6 | fixture provenance | fixture 值來源標注（歷史數據/構造）；無源 fixture 用於 oracle 級斷言→finding |
+| 7 | 路徑覆蓋反查 | 掛引用：消費端路徑證據（符號≠路徑）——TC 對應消費端路徑驅動確認（下方「消費端路徑證據」），本項不重複定義 |
+
+判斷密集項（如「mock 回傳值是否即 oracle」的 fidelity 裁決）標「需查證」交下游（judge-review／實作查證）——與「Audit 誠信約束」一致。
+
+#### behavior impact evidence 覆蓋查詢
+
+**核心原則（behavior impact evidence，非 diff 對稱）**：不查「source 改了 test 有沒有跟著改」（source↔test diff 對稱——開發期視角，存量場景誤導：行為未變的重構不需動 test，反之 test 檔在改也不代表行為被驗）；查「**行為影響有無測試證據**」——對稽核範圍內每個 behavior-bearing 變更（新 public 契約／行為分支改變／invariant 觸及），找驅動該行為的測試證據（符號覆蓋＋路徑驅動，缺一即缺口）。有凍結 TC 時與 TC 對帳互補（對帳查「忠實消費」，本節查「契約外的行為面漏網」）。
 
 | 檢查項 | 嚴重程度 | 驗證方式 |
 |--------|---------|---------|
-| 修改了 `.py` 但沒有修改對應 test（或最近 N 個 commit 都沒改 test） | Important | 比對 `git diff` 中 source files vs test files |
-| 新增了 public class/function 但無 test 引用 | Important | 見下方「覆蓋搜尋策略」 |
+| behavior-bearing 變更（public class/function 新增或行為分支改變）無測試驅動證據 | Important | 符號覆蓋搜尋（見下方覆蓋搜尋策略）＋路徑驅動確認 |
 | test file 存在但對應 source file 已刪除 | Important | `test -f` 驗證 source 存在 |
 | 新增 registry 成員（auto-discovery）但無 membership 斷言 | Important | 見下方「Registry Membership 流程」（多工具交叉，**禁用單一 rg pattern**）；per-class 單元測試只 import 不代表接上 registry（見 [quality-constraints](../../rules/quality-constraints.md) 符號 vs 路徑覆蓋） |
-
-**判斷邏輯**：
-- Source `foo.py` → 對應 test `test_foo.py`（同名慣例）為主要測試檔案
-- 新增 class/function 在 `__init__.py` 或 `__all__` → 搜尋所有 test files
 
 **覆蓋搜尋策略**（區分 function vs method）：
 
@@ -143,35 +204,7 @@ allowed-tools: ["Read", "Bash"]
 4. **判定零覆蓋**：只有當上述多個工具都 0 hits 時，才判定為零覆蓋
 5. **報告前交叉驗證**：報告中列出「已查的工具與結果」，讓 reviewer 可複現
 
-### 角度 3：Mock 健康度
-
-**核心原則**：Mock 應該用最少代價隔離外部依賴，不是把被測系統也隔離掉。
-
-| 檢查項 | 嚴重程度 | 判斷標準 |
-|--------|---------|---------|
-| Mock 比例 > 50%（mock 數 > assert 數） | Important | test file 層級計算 |
-| Mock 被測對象本身（mock 了正在測的 class） | Critical | `@patch("module.ClassUnderTest")` — 如果 mock 了主角，測試什麼？ |
-| Mock 層級過低（patch private method / 內部函數） | Suggestion | patch 路徑含 `_` 開頭的函數 |
-| 未使用繼承式 Mock（可用但未用） | Suggestion | 多個 test 用相同 `@patch` 組合 → 建議抽取 `MockClient(RealClient)` |
-| **`type(obj).attr = PropertyMock(...)` patch 真實 class** | Important | 見下方「PropertyMock type-level 危險性」 |
-
-#### PropertyMock type-level 危險性
-
-`type(obj).attr = PropertyMock(...)` 是 class-level patch，跨測試殘留風險真實。但**是否危險取決於 `obj` 的型別**：
-
-| `obj` 型別 | 風險 | 判定 |
-|-----------|------|------|
-| `MagicMock` instance / 純 mock fixture | 🟢 安全 | `type(obj)` 是 mock 類型，patch 不影響真實 class |
-| 真實 class instance（fixture 回傳 `RealClass()`） | 🔴 危險 | `type(obj)` 是真實 class，patch 污染整個 class，跨測試殘留 |
-
-**調查 / 修改前的強制義務**：
-
-1. **確認 fixture 回傳型別**：用 LSP `hover` / `goToDefinition` 跳到 fixture 定義，確認回傳 `MagicMock` 還是 `RealClass()`。**禁止憑 fixture 名稱猜測**（`<client_fixture>` 可能回傳真實 `<ServiceClient>`，不是 mock）
-2. **必讀專案踩雷指南**：修改 PropertyMock 前，讀專案 `tests/CLAUDE.md` 的 mock 規範段落（每個專案可能有不同的 PropertyMock 例外規則）
-
-**反例（真實案例）**：audit 稱某 `type(obj).attr = PropertyMock(...)` 多餘可刪，認為 fixture 回傳 mock；實作查證推翻 — fixture 回傳**真實 class**，該行是唯一讓某狀態（如某個 boolean 連線旗標）成立的機制，不能刪。調查前未確認 fixture 型別。
-
-### 角度 4：消費端驗證覆蓋
+#### 消費端路徑證據
 
 **核心原則**：功能是給特定消費端用的，單元測試通過 ≠ 功能可用。**符號覆蓋（symbol 出現在 tests）≠ 整合路徑覆蓋（新參數 / 新接線 / 多組件組合被實際驅動）** — 見 [acceptance-evidence](../../rules/acceptance-evidence.md) L3 + [quality-constraints](../../rules/quality-constraints.md) 符號 vs 路徑覆蓋。
 
@@ -184,74 +217,82 @@ allowed-tools: ["Read", "Bash"]
 
 消費端驗證模式定義見 [quality-constraints](../../rules/quality-constraints.md) 的「消費端驗證模式」段。
 
-### 角度 5：漸進驗證合規
+#### 出生證明查核
 
-**核心原則**：測試集應有 DEPTH-MIN 子集可快速確認基本邏輯。
+**核心原則**：存量測試無 TC 對帳來源時**標注追蹤、非跳過**——測試無出生證明（無 EP 凍結 TC 涵蓋、無 provenance 標注）→ 標 `provenance:unknown` 列 finding（Important：oracle 來源不可追溯，證據權威無法分級）。出生證明接口（新測試側）見 [test-driven-development](../test-driven-development/SKILL.md) 出生證明段——新測試寫入 provenance 鍵（值域 S/H/I/N/unknown），audit 對讀到的鍵做一致性查核（宣稱 S/H 須能出示 anchor，否則降標）。
 
-| 檢查項 | 嚴重程度 | 判斷標準 |
-|--------|---------|---------|
-| 無 DEPTH-MIN / smoke test marker | Suggestion | `tests/` 下無 `@pytest.mark.quick` / `@pytest.mark.smoke` 或對應 marker |
-| 全部測試都是慢速（無分層） | Suggestion | `pytest.ini` / `pyproject.toml` 無 marker 定義 |
+### 域 3：Adversarial Strength
 
-定義見 [quality-constraints](../../rules/quality-constraints.md) 漸進式驗證（DEPTH-MIN→SAMPLE→FULL）。
+**核心原則**：AI 同寫 test+impl 的同義反覆，靜態掃描（域 1）抓不到其真實形態——實測（mosaic 2026-08-30 spike，mutmut 3.7.0 scoped）證明盲區不是 `assert x==x` 廢話型，而是**測試與 impl 共享同一組典型數字**（happy path 斷言具體、邊界值系統性缺席：0、1、恰好一半、price<1 這類金融商品邊界）。只有機械突變能把這種盲區變成可數的 survived 名單。
 
-### 角度 6：測試必要性
+#### mutation 三層 gate（條件 gate 語義）
 
-**核心原則**：過時測試比沒測試更危險 — 它給虛假信心。角度 1-5 假設「測試該存在」，本角度質疑「測試還有必要存在嗎」。理論見 [acceptance-evidence](../../rules/acceptance-evidence.md)「證據時效性」。
+| 層 | 觸發 | 形態 | gate 權威 |
+|---|------|------|----------|
+| 1 | **P0 critical path 變更弧**（會計/風控/單位邊界 silent-corruption path 在 Diff/Commit 掃描範圍內） | scoped mutmut **必跑** | **唯一 hard gate**：判定「**新增且確認 non-equivalent survivor**」→ blocking Critical（survived 抽讀分類後，真實測試缺口類） |
+| 2 | 普通變更弧 | 免跑 | 無 |
+| 3 | 週期輪抽（存量——見下方輪抽查） | 照舊執行 | **kill-rate drop＝investigation signal 不阻擋**（trend telemetry 無 blocking authority）；hard gate 僅層 1 形態 |
 
-| 檢查項 | 嚴重程度 | 判斷標準 |
-|--------|---------|---------|
-| 過時測試（重構後 assertion 被改成迎合實作） | Important | 測試在最近重構 commit 被改，改動是 assertion 值/邏輯迎合新實作（非新增案例）— 從「驗證意圖」降級為「反映實作」（同義反覆的動態版本） |
-| 死測試（還在過但驗證行為已無關） | Important | 測試斷言的行為與當前 EP/spec 無對應；或測試的消費端已不存在 |
-| 大型重構後未重評估的測試 | Suggestion | 重構（行為語意改變）後，受影響測試未被重新檢視必要性 |
+**mutation feedback 權威禁令**：survivor／mutation 結果**永不取得 oracle / expected value 修正權**——survivor 只可指出 probe 位置（哪裡缺斷言），禁用 survivor 反推或改寫 expected value／oracle（封閉迴圈防護：oracle 不變而 test 被 survivor steering 的繞道封死）。補強測試的 expected value 仍須來自 S/H oracle（分級正典見 [acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」）。
 
-**過時偵測流程**：
+**survived 必抽讀分類**（主成本在此，非機械跑）：(a) 真實測試缺口（斷言沒鎖行為/邊界——層 1 gate 的「確認 non-equivalent survivor」）(b) equivalent mutant（語義等價，殺不死是正常的——不觸發 gate）(c) 無實務意義的極端邊界——每個附 file:line 與 mutated operator。
 
-1. `git log --oneline -20` 找最近重構 commit（行為語意改變，非純重命名/格式）
-2. `git show <commit> --stat` 找該 commit 改動的 test files
-3. 對這些 test files，diff 看改動是「assertion 值/邏輯迎合新實作」（過時信號）還是「新增測試案例」（正常）
-4. **判定「迎合」標準並報告**：assertion 改成等於新實作輸出（literal value 追隨），而非新增獨立案例 — 需讀完整 test body 判斷（不能只看 diff 的 `+/-` 行，rename 也會產生 diff）。若不確定，標「需實作查證」而非定論。**判定為迎合 → 過時信號，報 Important**
+#### 週期輪抽查（存量——層 3 形態）
 
-**與角度 1 的區別**：角度 1「同義反覆」是靜態（test/source 同值）；角度 6「過時」是動態（重構後 test 被改迎合）。角度 1 抓不到動態漂移。
-
-**與靜態隱含覆蓋的區別（/smell-detector zoom 判準 2 收窄後的分界）**：本角度（動態過時）與「靜態他處已測 = 冗餘」語義不同 — 後者指測試的行為已被**另一個測試**隱含驅動。分界：**production wrapper 重複測試**（測 thin wrapper 且 wrapper 無獨立 production 入口）的判斷見 [smell-detector zoom mode](../smell-detector/zoom.md) 判準 2；**其餘靜態冗餘**（同行為不同入口重複測等）屬本命令（角度 1 反模式 / 角度 6 測試必要性）；本段角度 6 聚焦動態過時。
-
-**3-signal correlation（升級 2-signal → 3-signal，捕 intent drift）**：判讀 passing test 是真通過還是 silent drift，單看「過時」（動態）不夠 —— 須關聯三訊號：① 原始 test intent（story / 建立時擷取）② 當前 test result ③ 引入的 code changes。三者不一致 = intent drift 訊號（test 還過但已不驗原意圖）。coverage 增加也不保證 test 仍驗意圖。3-signal taxonomy 見 [acceptance-evidence skill](../acceptance-evidence/SKILL.md)「Intent Drift 的兩型 + 3-signal correlation」（rule 端 always-on 核心見 [acceptance-evidence](../../rules/acceptance-evidence.md)）。
-
-### 角度 7：變異測試抽查（mutation-testing-lite）
-
-**核心原則**：AI 同寫 test+impl 的同義反覆，靜態掃描（角度 1）抓不到其真實形態——實測（mosaic 2026-08-30 spike，mutmut 3.7.0 scoped）證明盲區不是 `assert x==x` 廢話型，而是**測試與 impl 共享同一組典型數字**（happy path 斷言具體、邊界值系統性缺席：0、1、恰好一半、price<1 這類金融商品邊界）。只有機械突變能把這種盲區變成可數的 survived 名單。
-
-**形態＝scoped 手跑抽查，非常態 gate**（spike 裁決）。**雙 trigger**：
-- **①變更觸發**：審計對象（本週變更的 tests/）含 silent-corruption critical path（會計/風控/單位邊界）且用戶明示或 EP 要求深度驗證。
-- **②存量輪抽查（週期 trigger 必跑一個）**：spot audit 只看本週變更——**零變更的舊測試不在掃描半徑**（真實案例 2026-08-30：mosaic test_cash_tracker.py 舊測試、當週零 commits，變異缺口只被 ad-hoc spike 抓到）。週期 audit-test 跑時從 repo 的 **critical path 模組清單**（來源：AGENTS.md ripple/風控標記、dependency-graph hotspots）**輪選一個**（最久未跑者優先；輪選狀態由 report 歷史或 repo 自存小檔推導）跑 scoped mutmut＋survived 全抽讀。每模組機械成本 ~秒級、不增加常態負擔。
+spot audit 只看本週變更——**零變更的舊測試不在掃描半徑**（真實案例 2026-08-30：mosaic test_cash_tracker.py 舊測試、當週零 commits，變異缺口只被 ad-hoc spike 抓到）。週期 audit-test 跑時從 repo 的 **critical path 模組清單**（來源：AGENTS.md ripple/風控標記、dependency-graph hotspots）**輪選一個**（最久未跑者優先；輪選狀態由 report 歷史或 repo 自存小檔推導）跑 scoped mutmut＋survived 全抽讀。每模組機械成本 ~秒級、不增加常態負擔。此輪選清單同時是 night-mode target manifest 的來源之一（night-mode 節契約 1）。
 
 **執行**（mutmut 3 形態；POC 暫存性，結束零足跡清除）：
+
 1. 挑 1-2 個 critical path 的 source+test（窄：全量會跑不完）
 2. `uv add --dev mutmut`；scoped config：`[tool.mutmut]` 的 `source_paths`（copy 全 package 保 import）＋`only_mutate`（目標檔 glob）＋`pytest_add_cli_args_test_selection`（目標測試檔）
 3. `mutmut run`；記錄三數字：總耗時／mutant 總數／killed:survived
-4. **survived 必抽讀分類**（主成本在此，非機械跑）：(a) 真實測試缺口（斷言沒鎖行為/邊界）(b) equivalent mutant（語義等價，殺不死是正常的）(c) 無實務意義的極端邊界——每個附 file:line 與 mutated operator
+4. survived 全抽讀分類（三分類見上）
 5. 報告：(a) 類缺口列 Critical finding（測試補強項）；清除聲明（mutants/ 目錄＋pyproject config 段＋dep＋uv.lock 還原）。**輸出落點**：open 項照既有慣例 append 進 daily report；跨 repo open 項 hub-relay 落消費端 pending-decisions inbox（mosaic 例：`ai-analysis/_inbox/pending-decisions.md`——2026-09-02 三池重構後路徑，每日 report「⏳ 待裁決」節吸收，修復可見性）
 
 **成本實證**（供報價）：288 行 critical path＋68 tests＝8.2s wall、103 mutants、87.4% kill rate、13 survived 抽讀約 10 分鐘 LLM 判讀——抓到 10 個真實缺口（含 price<1 會計＋風控雙處無保護）；補強後重跑同模組＝100:3（97.1%）、殘留 3 皆 (b)(c) 類——**輪抽查基準用補強後數字，勿把已修缺口重報**（mosaic memory `project-mutation-testing-spike-t32` 有收案記錄，承接先查勿重做）。
 
-### 角度 8：測試契約對帳（EP 含凍結 TC 時）
+### 域 4：Test-System Integrity
 
-**核心原則**：凍結 TC 是契約，測試是契約的消費——本角度機械對帳「測試忠實消費契約且 provenance 完整」。TC 格式（claim／Given-When／oracle／oracle_source／evidence class／uncovered）定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）；三 gate 語彙（STRUCT_OK／SEM_OK／BEFORE_GREEN）與 [implement](../implement/SKILL.md) RED provenance 精確同名——對帳鍵單一套。
+**核心原則**：測試系統自身的健全——fixture 來源可追溯、測試互相隔離。測試系統自身腐壞時，所有綠燈不可信。
 
-**觸發輸入（operationalize）**：任務家 `ep.md` 探測（arc/獨立跑形態——讀 EP 整合策略有無凍結 TC 段）或 session context EP（in-context 形態）；兩者皆缺 → 本角度跳過（standalone 無 EP 的存量測試不適用）。
+| 檢查項 | 嚴重程度 | 判斷標準 |
+|--------|---------|---------|
+| 無源 fixture 用於 oracle 級斷言 | Important | fixture 值無來源標注（歷史數據/構造）卻用於關鍵斷言——TC 對帳缺席的存量形態（有 TC 時走對帳項 6，無 TC 時逐 fixture 查） |
+| 跨測試殘留／污染 | Critical / Important | session/module scope 建可變狀態被多測試共用改寫；class-level patch 未還原（PropertyMock type-level 判定見域 1） |
+| conftest／測試基礎設施隱式耦合 | Suggestion | fixture 過時、conftest 隱式順序依賴（**已失敗**的基礎設施走 `/fix-test` Type D；此處查**未失敗**的隱性耦合） |
 
-| # | 對帳項 | 機械操作 |
-|---|---|---|
-| 1 | predicate 對帳 | TC predicate-ID ↔ test 斷言逐一映射（`rg <TC-ID> tests/`；缺漏列 finding） |
-| 2 | mock↔evidence class | TC 標 L4-L6 的項若以 mock 驅動→finding（evidence 降級）；mock 回傳值來源比對 oracle_source |
-| 3 | oracle 圓形依賴 | oracle_source 指向待測實作（或 test 硬編碼 impl 值）→Critical（此類屬 oracle 級：標記 escalate challenge，非 audit 自斷） |
-| 4 | RED receipt＋digest | receipt 檔（任務家 `red-receipts.md`）存在、TC-ID 齊、sha256 與 frozen test 現值一致（不一致＝GREEN 期靜默改——Critical） |
-| 5 | 基線跑法（BEFORE_GREEN） | receipt 記 failing predicate；抽查測試在 baseline（`git stash` 形態）確實紅；STRUCT_OK／SEM_OK gate 痕跡核對 |
-| 6 | fixture provenance | fixture 值來源標注（歷史數據/構造）；無源 fixture 用於 oracle 級斷言→finding |
-| 7 | 路徑覆蓋反查 | 掛引用：既有角度 4（符號≠路徑）——TC 對應消費端路徑驅動確認，本項不重複定義 |
+### 域 5：Suite Operability
 
-判斷密集項（如「mock 回傳值是否即 oracle」的 fidelity 裁決）標「需查證」交下游（judge-review／實作查證）——與「Audit 誠信約束」一致。
+**核心原則**：套件要「跑得動、結果穩」——不可操作的套件會被繞過（手動 skip、只跑局部），稽核覆蓋隨時間塌縮。
+
+| 檢查項 | 嚴重程度 | 判斷標準 |
+|--------|---------|---------|
+| collect／import 錯誤使部分測試**靜默缺席** | Critical | pytest 收集錯誤被 `--ignore`／局部跑法壓制——缺席的測試從未執行（名義覆蓋≠實際覆蓋） |
+| flake（間歇失敗） | Important | 同 commit 重跑結果不一致；flake 使紅燈失去號誌力（修復路徑見 fix-test 階段 0.5 triage 的自癒 flaky 判定） |
+| skip／xfail 累積盤點 | Suggestion | skip/xfail 佔比與理由盤點（無理由 skip 已在域 1 空殼覆蓋；此處查套件層累積趨勢） |
+
+### 域特化指針（圍欄——本檔只留問題陳述，設計細節住彼側卡）
+
+| Repo | 問題陳述 | 彼側承載 |
+|------|---------|---------|
+| mosaic | determinism gate＋invariant/PBT/hash gate 測試補強（含 domain-validity guardrail——PBT generator 須先通過 domain 有效性驗證） | MOS 側卡（問題定義與設計細節住 mosaic backlog——此處不展開） |
+| SC | 測試補強薄改清單——**message protocol contract schema 化列首位**（protocol contract >> E2E）＋trace/retry＋selector 漸進＋vitest coverage＋flake census | SC 側卡 |
+| coverage 態度 | coverage＝trend telemetry，非 gate | mosaic test-cov 側（同下落定 gate 前提） |
+
+**落定 gate（uncommitted 前提）**：上表指針項對應的彼側卡多為 uncommitted——audit-test 消費任一指針項前，先確認彼 repo 對應 commit hash 已回填 AIR-124 卡 notes；**未落定的對應項 defer**（不消費、不展開其設計細節）。
+
+---
+
+## finding schema 與 oracle 分級
+
+每個 finding 必含（缺一即不合格）：
+
+- **file:line**（精確位置）＋**證據**（rg/fd/LSP 指令＋結果，或原始碼引用）
+- **域＋嚴重程度＋信心水準**（信心水準定義見「Audit 誠信約束」）
+- **oracle_level 欄**：`S`/`H`/`I`/`N`/`unknown`——分級正典見 [acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」（audit-test 引用不重複定義）；被測斷言的 oracle 來源無法判定標 `unknown`，**I/N 級 finding 觸發補強時須知 I/N 禁 autonomous 補強授權**（升級路徑＝找 S/H oracle，無則列 human queue）
+- **建議**（具體可執行）
+
+> **分級是 detector 標注非判官**——findings 非定論（含 oracle_level 標注），judge-review／實作查證可推翻。
 
 ---
 
@@ -266,67 +307,72 @@ allowed-tools: ["Read", "Bash"]
 
 | 指標 | 數值 |
 |------|------|
-| 掃描模式 | Diff Audit / Commit Audit / Daily Scan |
+| 掃描模式 | Diff Audit / Commit Audit / night-mode |
 | 掃描範圍 | N 個 test files |
-| 健康度 | XX% |
+
+### 證據域 vector（8 維）
+
+| 維度 | 承載域 | 狀態 |
+|------|--------|------|
+| semantic_integrity | 域 1 | 🔴 Critical evidence / 🟡 findings / 🟢 clean / n-a（本次不適用） |
+| traceability | 域 2 | ... |
+| critical_invariant_coverage | 域 2+3 | P0 invariant 測試證據在場與否 |
+| path_evidence | 域 2 | 消費端路徑驅動（符號≠路徑） |
+| adversarial_strength | 域 3 | mutation 三層 gate 結果 |
+| fixture_provenance | 域 4 | fixture 值可追溯 |
+| flake_isolation | 域 4 | 隔離／污染／殘留 |
+| suite_operability | 域 5 | 套件可運作 |
+
+**gate 判準（blocking，僅此三條）**：
+1. 任一維存在 `[confirmed]`/`[evidence-based]` 的 **Critical evidence**（`[inferred]` 禁列 Critical）
+2. **P0 mandatory dimensions 缺場**——掃描範圍觸及 silent-corruption critical path（會計/風控/單位邊界）時，critical_invariant_coverage 與 path_evidence 兩維不得為 n-a／缺場
+3. **mutation 層 1 gate**：新增且確認 non-equivalent survivor（域 3）
+
+> **trend 註記**：維度狀態與歷次比較是趨勢觀察面，**分數類無 blocking authority**——不因「比上次差」擋路（investigation signal）；blocking 只走上方三判準。
 
 ### 🔴 Critical（必須修正）
 
 > Critical 只能是 `[confirmed]` 或 `[evidence-based]`，禁止 `[inferred]`（見「Audit 誠信約束」）。
 
-- [ ] **[空殼覆蓋]** `[confirmed]` `test_<module>.py:test_<case>:NN` — test body 只有 `pass`（讀過原始碼確認）
-- [ ] **[Mock 被測對象]** `[confirmed]` `test_<module>.py:test_<case>:NN` — `@patch("<module>.<ClassUnderTest>")` mock 了主角
+- [ ] **[空殼覆蓋]** `[confirmed]` `test_<module>.py:test_<case>:NN` — test body 只有 `pass`（讀過原始碼確認）〔oracle_level: unknown〕
+- [ ] **[Mock 被測對象]** `[confirmed]` `test_<module>.py:test_<case>:NN` — `@patch("<module>.<ClassUnderTest>")` mock 了主角〔oracle_level: N〕
 
 ### 🟡 Important（建議修正）
 
-- [ ] **[幽靈斷言]** `[confirmed]` `test_<module>.py:test_<case>:NN` — 只有 `assert result is not None`
-- [ ] **[過度 mock]** `[evidence-based]` `test_<module>.py` — N 個 mock / M 個 assert（比例 X:1）
-- [ ] **[覆蓋缺口]** `[evidence-based]` `<module>.py:<func>` — `rg "<func>" tests/` → 0 hits。⚠️ 單一 rg，建議下游用 LSP `findReferences` 交叉確認
-- [ ] **[同義反覆]** `[confirmed]` `test_<module>.py:test_<case>:NN` — test 和 source 都 hardcode 同一值
+- [ ] **[vacuous-green]** `[confirmed]` `test_<module>.py:test_<case>:NN` — `if hasattr(...)` 守衛內 assert、無 else-fail〔oracle_level: I〕
+- [ ] **[幽靈斷言]** `[confirmed]` `test_<module>.py:test_<case>:NN` — 只有 `assert result is not None`〔oracle_level: N〕
+- [ ] **[覆蓋缺口]** `[evidence-based]` `<module>.py:<func>` — `rg "<func>" tests/` → 0 hits。⚠️ 單一 rg，建議下游用 LSP `findReferences` 交叉確認〔oracle_level: unknown〕
+- [ ] **[同義反覆]** `[confirmed]` `test_<module>.py:test_<case>:NN` — test 和 source 都 hardcode 同一值〔oracle_level: I〕
 
 ### 💡 Suggestion（可以改善）
 
-- [ ] **[標題不符]** `[confirmed]` `test_<module>.py:test_<case>` — 名稱暗示測 X，但 assert 驗證 Y
-- [ ] **[消費端缺驗證]** `[evidence-based]` `<module>.py` 修改只在 unit test 驗證，建議跑 integration
-- [ ] **[Mock 層級過低]** `[confirmed]` `test_<module>.py:test_<case>:NN` — patch `_internal()`（private method）
-- [ ] **[技術判斷]** `[inferred]` ⚠️ 未實證：宣稱「<套件行為>」基於推理。**禁止列 Critical**，建議實作層跑 demo 確認
+- [ ] **[標題不符]** `[confirmed]` `test_<module>.py:test_<case>` — 名稱暗示測 X，但 assert 驗證 Y〔oracle_level: —〕
+- [ ] **[Mock 層級過低]** `[confirmed]` `test_<module>.py:test_<case>:NN` — patch `_internal()`（private method）〔oracle_level: —〕
+- [ ] **[技術判斷]** `[inferred]` ⚠️ 未實證：宣稱「<套件行為>」基於推理。**禁止列 Critical**，建議實作層跑 demo 確認〔oracle_level: unknown〕
 
 ### 建議處理方式
 
 | 反模式 | 處理路徑 |
 |--------|---------|
 | 空殼覆蓋 | `/fix-test --redesign` 或刪除空殼 test |
-| 幽靈斷言 | 補充具體業務值斷言（先理解測試意圖） |
-| 過度 mock | 重構為繼承式 Mock 或 Real-World Fixture Pattern |
+| 幽靈斷言／vacuous-green | 補充具體業務值斷言（先理解測試意圖；守衛改 else-fail） |
+| 過度 mock（被測對象/層級形態） | 重構為繼承式 Mock 或 Real-World Fixture Pattern |
 | 覆蓋缺口 | 新增測試（RED → GREEN） |
 | 消費端缺驗證 | 在消費端上下文中跑一次完整流程 |
 
 ### Audit Summary（結構化結論）
 
-- mode: diff|commit|daily
+- mode: diff|commit|night
 - files_scanned: N
+- vector: {semantic_integrity: red|yellow|green|n-a, ...8 維}
+- gate_blocking: true/false（三判準）
 - critical: X（全為 confirmed/evidence-based）
 - important: X（含 Y inferred，已標 ⚠️）
 - suggestion: X
-- health_score: XX%
+- oracle_levels: {S: n, H: n, I: n, N: n, unknown: n}
 - needs_action: true/false
 - **findings_nature: 待驗證（非定論）** — 建議經 judge-review / 實作查證後再行動
 ```
-
-### 健康度計算
-
-```
-健康度 = (通過檢查的 test function 數 / 總 test function 數) × 100%
-```
-
-每個 test function 的觸發檢查項全通過 = 1 個通過。任一 Critical/Important = 不通過。
-Diff/Commit Audit 檢查預設 5 角度（反模式 + 覆蓋對稱性 + mock 健康度 + 消費端驗證覆蓋 + 測試必要性）＋角度 8（EP 含凍結 TC 時條件觸發，進分母；無 EP/無凍結 TC 跳過）；Daily Scan 檢查全部 8 角度（角度 5 daily 限定；角度 7 變異抽查按自身雙 trigger 輪選執行、未觸發不進分母；角度 8 同條件觸發）。
-
-| 評分 | 意義 |
-|------|------|
-| ≥ 90% | ✅ 健康 |
-| 70-89% | ⚠️ 需注意 |
-| < 70% | ❌ 需修正 |
 
 ---
 
@@ -334,17 +380,16 @@ Diff/Commit Audit 檢查預設 5 角度（反模式 + 覆蓋對稱性 + mock 健
 
 | 步驟 | 名稱 | 觸發 |
 |------|------|------|
-| 1 | 定位掃描範圍 | 預設 |
+| 1 | 定位掃描範圍（模式判定） | 預設 |
 | 2 | 讀取 test files | 預設 |
 | 3 | 讀取對應 source files | 預設 |
-| 4 | 反模式掃描（角度 1） | 預設 |
-| 5 | 覆蓋對稱性（角度 2） | 預設 |
-| 6 | Mock 健康度（角度 3） | 預設 |
-| 7 | 消費端驗證覆蓋（角度 4） | 預設 |
-| 8 | 漸進驗證合規（角度 5） | `--daily` |
-| 9 | 測試必要性（角度 6） | 預設 |
-| 10 | 測試契約對帳（角度 8） | 條件觸發（EP 含凍結 TC——觸發輸入見角度 8） |
-| 11 | 產出報告 | 預設 |
+| 4 | TC 契約對帳（域 2 第一 gate） | 條件觸發（EP 含凍結 TC——觸發輸入見域 2）；無 TC → 出生證明查核（標 provenance:unknown） |
+| 5 | 域 1 Semantic Integrity | 預設 |
+| 6 | 域 2 behavior impact evidence＋消費端路徑證據 | 預設 |
+| 7 | 域 3 Adversarial（mutation 三層 gate 判定） | 條件觸發（層 1＝P0 critical path 變更弧必跑；層 3 週期輪抽） |
+| 8 | 域 4 Test-System Integrity | 預設 |
+| 9 | 域 5 Suite Operability | 預設 |
+| 10 | 產出 vector 報告（oracle_level 標注） | 預設 |
 
 ### 步驟 1：定位掃描範圍
 
@@ -359,34 +404,86 @@ git diff --cached --name-only -- "tests/"
 git show <commit-id> --name-only -- "tests/"
 ```
 
-**Daily Scan**：
-```bash
-fd -e py . tests/
-```
+**night-mode**：見 night-mode 節（P1 target manifest）。
 
 ### 步驟 2：讀取 test files
 
 完整讀取掃描範圍內的每個 test file，提取：
 - test function 名稱、docstring、body
-- `@patch` / `Mock()` / `mock_` 數量
-- `assert` 數量和類型
+- assert 類型與守衛形態（if/try/with 內斷言）
+- `@patch` / `Mock()` / `mock_` 使用位置（位置語義——patch 了誰、哪一層）
 - `@skip` / `pass` / `...` 標記
 
 ### 步驟 3：讀取對應 source files
 
 從 test files 的 import 語句推斷 source files，讀取以比對 hardcoded 值。
 
-### 步驟 4-9：逐一檢查
+### 步驟 4：TC 契約對帳（域 2，條件觸發）
 
-對每個 test function，按角度 1-3 的標準檢查（步驟 4-6）。步驟 7-9（角度 4/5/6）按各自角度定義段落執行。記錄發現。
+EP 含凍結 TC 時（觸發輸入見域 2），按七項對帳表逐一執行（第一 gate）；receipt/digest 比對與 baseline 抽查按對帳項 4/5 操作。無凍結 TC → 出生證明查核：標 `provenance:unknown` 列 finding（非跳過），並在報告標記理由。
 
-### 步驟 10：測試契約對帳（角度 8，條件觸發）
+### 步驟 5-9：逐域檢查
 
-EP 含凍結 TC 時（觸發輸入見角度 8），按七項對帳表逐一執行；receipt/digest 比對與 baseline 抽查按對帳項 4/5 操作。無凍結 TC → 跳過本步驟並在報告標記理由。
+對每個 test function，按域 1-5 各自 detector 定義執行。記錄發現（每 finding 帶 oracle_level）。
 
-### 步驟 11：產出報告
+### 步驟 10：產出報告
 
-按輸出格式模板產出報告。Daily Scan 時由排程載體（週期條件段）直接 append `### 🔍 audit-test` section 進 daily-report（test-quality 在報告裡有自己的 section）；手動跑的 claude-sync log 落點慣例隨 claude -p 載體退役一併停用。
+按輸出格式模板產出 vector 報告。Diff/Commit Audit 由 `/commit` pre-commit gate 消費（無 Critical 才建議 commit）。
+
+---
+
+## night-mode 補強生產線（多家族夜間管線）
+
+**rationale**：夜間補強的 stage→家族分配軸＝**獨立性需求 × 判斷密度 × 成本**（掃描要便宜、盲審要跨家族、裁決要 decision-qualified）；夜間可用性以 spine 事件＋三訊號判定（見 [model-routing](../model-routing/SKILL.md) AvailabilitySnapshot），**不預設任一家族充裕**。panel 詞彙（tri／bi／single）定義源＝[model-routing](../model-routing/SKILL.md)「審查陪審團」段——本節引用不重定義。
+
+> 執行主體 repo 歸屬（管線跑在哪 repo／派工面、P4 branch 落點、autonomous 紅線適用哪套）＝EP open item，首次實跑前由 user 拍板回填。
+
+### 五段管線
+
+| Stage | 載體 | 輸入 | 輸出 | 停止條件 |
+|-------|------|------|------|---------|
+| **P1 掃描** | GLM flash（in-harness spawn） | target manifest（P1 前凍結——契約 1） | findings ledger（`.partial.md` 分段落盤——下方落盤策略） | manifest 掃完；flash unavailable（GLM 撞 1308 家族級→flash 預設不存活，除非 flash 有獨立 fresh snapshot＝available）→ stop＋degradation receipt |
+| **P2 跨家族盲審** | muse＋codex bridge 並行（兩 blind reviewer） | target manifest **同一份**（禁 P1 findings 入 P2 工單——契約 1/2） | 各自 findings ledger（分段落盤） | 兩家 reviewer 全缺（unavailable/timeout）→ stop＋degradation receipt（**禁靜默跳過**）；單家缺→降級記錄（契約 8）續跑 |
+| **delta 二分** | 機械比對（主 session） | 兩 reviewer findings ledgers | delta（交集／差集）＋三選一歸類（契約 3） | 零交集仍成 delta（全差集）→全部進裁決隊列，**禁自動 P4** |
+| **P3 judge 裁決** | decision-qualified judge（GLM 主 session 或 user——lite 分工律：judge 腿永不降） | delta 裁決隊列 | 決策記錄（durable ledger：finding 判定＋authority 類別＋歸類） | 無 decision-qualified judge → **stop-before-P4**（停在裁決隊列，禁進 P4） |
+| **P4 補強生產** | 補強 agent（受 admission gate） | P3 裁決通過＋admission 三證據鏈齊（契約 5）的 findings | 新 tests／fixtures（**只寫 tests/fixtures**——紅線） | admission 缺任一證據鏈成分→拒絕進入（非降級放行）；S/H oracle 測試使 baseline RED＝production defect→pending-decisions，**夜間禁改 production** |
+| **P5 機械驗收** | completion aggregator（唯一 readout 生產者——契約 10） | P4 產物＋mutation baseline（契約 4） | receipts（每 finding：驗收結果＋mutation delta）；morning readout | 驗收失敗（exit 條件不滿足）→ 列回 pending-decisions，不自動重試 |
+
+**resume 條（中斷恢復）**：P2-P5 產物同等 durable 落盤（P2 reviewer ledgers／P3 決策記錄／P4 產物 commits 前工作樹狀態標記／P5 receipts）。中斷後 resume 先讀 ledgers 判**已完成 stage**，從下一 stage 續跑——**禁重跑已完成 stage、禁污染 blind 邊界**（resume 的 P2 不得回讀已存在的另一 reviewer output；已盲審完成的 reviewer 續跑時工單仍照契約 2 禁讀清單）。
+
+### 執行契約 10 條
+
+1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots；**禁 P1 findings 決定 P2 targets**（獨立性污染）
+2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）
+3. **delta identity**：canonical key＝target/module＋behavior/predicate＋oracle anchor；交集定義＝**support-count ≥2**（寫死）；**零交集→全差集進裁決隊列、禁自動 P4**。delta 三選一歸類表：spec 歧義→修 spec／單邊漏→取聯集／兩可→user 裁決（晨間）
+4. **mutation baseline**：P4 前獨立機械 pre-run 產 survivor set（P1 不跑 mutation）；P5 以**同 scope／operator／config** rerun 得可比 delta
+5. **P4 admission**：finding 須具 **S/H oracle authority**（[acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」——I/N 禁 autonomous 補強授權）＋**三證據鏈缺一即拒**（非降級放行）：①spec/invariant oracle ②property/metamorphic/differential 測試形態 ③mutation challenge；**survivor 只可指出 probe 位置、禁決定 expected value**（封閉迴圈防護——oracle 可不變而 test 被 survivor steering 的繞道封死）
+6. **P4 exit**：補強測試驗收＝canonical baseline **GREEN** ＋ targeted mutant/negative-control **RED**；**baseline RED＝抓到 production defect→pending-decisions**（夜間禁改 production code）
+7. **per-stage availability**：P1/P2/P3/P4/P5 **各自** resolve AvailabilitySnapshot（非管線級一次判定）；GLM 撞 1308（家族級）→flash 掃描腿預設不存活（除非 flash 有獨立 fresh snapshot＝available）；P3 無 decision-qualified judge→stop-before-P4；**兩家 reviewer 全缺→stop＋degradation receipt**
+8. **degradation receipt**：降級顯式記錄——`panel=single` ＋ same-family 退化標注（`explicit_same_family_degradation` 是 independence 欄狀態非 panel token）；禁靜默降級
+9. **sink resolver**：durable sink＝**repo adapter**（mosaic inbox 慣例；無 inbox repo fallback＝daily-report 或 `.agent-tmp/`＋晨間報告）；**adapter 缺席→fail-closed＋degradation receipt＋零靜默寫入**（禁止無 sink 時把 findings 寫進未約定位置）
+10. **readout owner**：morning readout 由 **P5 completion aggregator 唯一生產**，從 immutable ledgers＋P3 決策記錄＋P5 receipts 組裝（**禁 reviewer 自述摘要**）
+
+### autonomous 紅線
+
+- **不 commit**：夜間管線零 git commit（P4 產物停留工作樹，晨間由人類審後走正常 commit gate）
+- **夜間止於 P5 證據齊**：管線終點＝receipts＋readout，不做超出授權的修復/重構
+- **P4 只寫 tests/fixtures**：禁改 spec／oracle／production source（改這三者的需求一律 pending-decisions）
+
+### 長任務 findings 落盤策略（P1/P2 必讀）
+
+> 管線涵蓋數百 test files，單一 agent 可能跑數十分鐘。**必須假設會中斷**（rate limit、context 上限、network），findings 即時落盤，避免 resume 重跑。
+
+1. **分段輸出**：每完成一個子任務（一個 test 目錄 / 一組 test files），立即將該段 findings 寫入中間檔案（如 `ai-analysis/audit-test-night-{date}-{stage}-{agent}.partial.md`），不在 context 中累積全部 findings 才一次輸出
+2. **進度標記**：每段含進度標記（如 `<!-- agent=2, segment=3/8, completed=true -->`），resume 時讀 `.partial.md` 判斷已完成段落
+3. **彙整**：全部子任務完成後，讀所有 `.partial.md` 彙整成該 stage 最終 ledger，刪除中間檔（P5 readout 組裝後）
+4. **resume**：中斷後 resume 先讀 `.partial.md`，只重跑未完成段落（blind 邊界照 resume 條）
+
+**反例（真實案例）**：某掃描 agent 跑多個子任務，findings 全留 context，彙整前因 rate limit 中斷 → resume 需完整重跑全部子任務。即時落盤則只需重跑中斷時正在做的那一段。
+
+### Deferred（judge 裁決記錄）
+
+mutation baseline（契約 4）＋管線契約抽 `_common/night-mode-contract.md`——**本弧不抽**（單一消費者，YAGNI）；promotion trigger＝第二個 night-mode 消費者（如 code-review night mode）出現時抽離。
 
 ---
 
@@ -395,17 +492,16 @@ EP 含凍結 TC 時（觸發輸入見角度 8），按七項對帳表逐一執�
 | 命令 | 與 /audit-test 的關係 |
 |------|---------------------|
 | `/fix-test` | 互補：fix-test 修**失敗**的測試，audit-test 偵測**通過但品質差**的測試 |
-| 排程載體（週期條件段） | Daily Scan 結果直接 append `### 🔍 audit-test` section 進 daily-report |
 | `/code-review` | Correctness 軸可引用 audit-test 發現 |
 | `/implement` | 段落完成後跑 audit-test 確認測試品質 |
-| `/commit` | pre-commit gate：audit-test 無 Critical 才建議 commit |
+| `/commit` | pre-commit gate：audit-test 無 blocking Critical 才建議 commit |
 
 ### 測試品質完整流程
 
 ```
 寫測試 → /audit-test（偵測反模式）→ 發現問題 → 人類判斷
   ├─ 簡單修正（改名、補斷言）→ 直接改
-  ├─ 重構測試（過度 mock → Real-World Fixture）→ /implement 段落
+  ├─ 重構測試（mock 危險形態 → Real-World Fixture）→ /implement 段落
   └─ 刪除壞測試（空殼）→ 確認後刪除
 ```
 
@@ -417,7 +513,7 @@ EP 含凍結 TC 時（觸發輸入見角度 8），按七項對帳表逐一執�
 | 測試**通過但有反模式** | `/audit-test` → 人類判斷 → 對話修正 | 偵測 → 報告 → 決策 → 執行 |
 | 需要從頭重寫壞測試 | `/implement` 段落或對話指令 | 按反模式修正建議重寫 |
 
-**核心原則**：修正反模式需要**理解測試意圖**，無法全自動。`/audit-test` 是偵測器（眼睛），不是修復器（手）。修復的決策權在人類。
+**核心原則**：修正反模式需要**理解測試意圖**，無法全自動。`/audit-test` 是偵測器（眼睛），不是修復器（手）。修復的決策權在人類（night-mode P4 的 autonomous 補強是唯一例外，受 night-mode 契約與紅線管轄）。
 
 ---
 
@@ -431,7 +527,7 @@ EP 含凍結 TC 時（觸發輸入見角度 8），按七項對帳表逐一執�
 
 信心水準定義（confirmed / evidence-based / inferred + Critical 必須 confirmed 或 evidence-based，禁止 inferred）見 [review-engine](../review-engine/SKILL.md) 信心水準段。本命令每個 finding 必須標信心水準，讓下游（judge-review / 實作查證）知道哪些需重點查證。
 
-test 場景的信心判準參考：confirmed = 已讀完整 test body + source 比對符號；evidence-based = 有 file:line + rg/fd 結果（角度 2 多數覆蓋缺口）；inferred = 基於套件行為推理（如「無 seed → 不 deterministic」）。
+test 場景的信心判準參考：confirmed = 已讀完整 test body + source 比對符號；evidence-based = 有 file:line + rg/fd 結果（覆蓋缺口多數）；inferred = 基於套件行為推理（如「無 seed → 不 deterministic」）。
 
 ### 2. 技術 / 套件行為判斷必須實證
 
@@ -449,7 +545,7 @@ test 場景的信心判準參考：confirmed = 已讀完整 test body + source �
 
 - **file:line**（精確位置，不能只寫檔名）
 - **證據**（rg/fd/LSP 指令 + 結果，或原始碼引用）
-- **角度 + 嚴重程度 + 信心水準**
+- **域 + 嚴重程度 + 信心水準 + oracle_level**
 - **建議**（具體可執行，不是「建議改善」）
 
 **禁止**：把多個 finding 壓成摘要（如「2 Critical + 4 Important」）回報 — 摘要丟失 file:line，下游無法定位。摘要只能作為總覽表格，**明細必須完整保留**。
@@ -468,7 +564,7 @@ audit-test → judge-review → 實作查證 是**刻意設計的三層**，每�
 
 ## 執行約束
 
-- **只讀不寫**：本命令只檢查和報告，不自動修改任何檔案
+- **稽核段只讀不寫**：Diff/Commit Audit 與 night-mode P1-P3/P5 只檢查和報告，不修改任何檔案；**唯一例外＝night-mode P4 補強**（只寫 tests/fixtures，紅線見 night-mode 節）
 - **必須讀取實際程式碼**：不憑檔名猜測測試品質，必須讀取 test body
 - **引用來源**：報告問題時標註具體位置（test file:function name）
 - **繁體中文輸出**：報告使用繁體中文 + 英文術語
@@ -476,13 +572,13 @@ audit-test → judge-review → 實作查證 是**刻意設計的三層**，每�
 
 ---
 
-## 反思閉環（大型 Daily Scan 後執行）
+## 反思閉環（大型 night-mode 管線後執行）
 
-> 每次 Daily Scan 涵蓋全專案、產出數十 findings，是真實流程經驗的富礦，**不提煉等於浪費**。本段定義大型 audit 後的反思流程。
+> 每次大型 night-mode 管線涵蓋大範圍、產出數十 findings，是真實流程經驗的富礦，**不提煉等於浪費**。本段定義大型 audit 後的反思流程。
 
 ### 觸發條件
 
-- Daily Scan 完成且 findings ≥ 20（Critical + Important + Suggestion 總和）
+- night-mode 管線完成且 findings ≥ 20（Critical + Important + Suggestion 總和）
 - 或 judge-review / 實作查證階段發現 ≥ 3 個 audit false positive / over-statement
 - 或長任務因 rate limit / context 中斷重跑
 

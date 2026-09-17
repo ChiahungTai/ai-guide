@@ -124,6 +124,14 @@
 - codex 腿（job-mu5mc17y，fresh）：EP-accepted with targeted fixes——S3 entry condition/契約正名 10 條/migration manifest/SM-9~13/引用側掃描/deploy projection 驗證已修；_common 抽離 Deferred（YAGNI，promotion trigger 記錄）
 - verdict 全文：.agent-tmp/dispatch-compiler-proposal/air124-epreview-*-verdict.md
 
+### AIR-124 S2 migration manifest（三精華段錨點對照——驗收對錨點非對 diff）
+
+| 舊 section heading（搬遷源） | 新域 section（落點） | status |
+|---|---|---|
+| `### 角度 8：測試契約對帳（EP 含凍結 TC 時）`（七項對帳表） | 域 2 → `### TC 契約對帳（第一 gate——EP 含凍結 TC 時）` | moved（七項表逐字；結構詞「本角度」→「本域」；對帳項 7 交叉引用「既有角度 4」→「消費端路徑證據」同域子節；升域內第一 gate） |
+| `#### PropertyMock type-level 危險性` | 域 1 → `#### PropertyMock type-level 危險性` | moved（逐字；其後新增 per-repo mock 豁免教義段——新增非改字） |
+| `**Method Coverage 流程**`＋`**Registry Membership 流程**`（含覆蓋搜尋策略三粒度表與教訓 blockquote） | 域 2 → `### 覆蓋查詢：Method Coverage／Registry Membership 流程` | moved（流程步驟逐字；外層「覆蓋對稱性」框架置換為 behavior impact evidence——框架詞替換，流程本體不改字） |
+
 ## 收尾步驟
 
 1. Capabilities/索引：skills/CLAUDE.md audit-test 條目 description 同步（存量補強＋night-mode 觸發詞）；AGENTS.md 無需（命令表層級不變）

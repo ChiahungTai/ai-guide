@@ -52,6 +52,8 @@ Every test must encode **why** the behavior matters. A test that can't fail when
 
 **自檢時機**：每個 test function 寫完後立即對照此表。RED 階段就該發現反模式，不要等到 GREEN。
 
+**出生證明接口**：每個新測試標注 provenance——值域 S/H/I/N/unknown（分級定義見 [acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」；oracle 來源無法判定標 unknown），存放位＝測試檔 docstring 行或 fixture 檔頭；供 audit-test 出生證明查核消費。
+
 ## Test What Matters
 
 - **State over interactions**: Assert on outcomes, not on which methods were called. Interaction tests break on refactor.

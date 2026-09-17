@@ -211,6 +211,8 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 | evidence class | 證據等級 | L1-L6 對應（[acceptance-evidence](../../rules/acceptance-evidence.md)） |
 | uncovered | 明示不覆蓋面 | 無則寫「無」 |
 
+**oracle authority 分級**：TC 的 oracle_source 權威四級（S/H/I/N）正典見 [acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」（I/N 禁 autonomous 補強授權——TC 供下游補強消費時須知）。
+
 **凍結語義**：TC 在實作段落設計前凍結；凍結後 EP 其他段落可改、TC baseline 不動；改 TC 走 amendment。
 
 **amendment 附錄**（EP 內記錄 TC 變更判決的附錄區）：每筆記 old/new oracle＋reason＋independent evidence＋authority。**authority 四分**：invariant／reference truth 可證偽→judge；新 integration evidence→judge；user intent／product policy→人類；來源矛盾→人類。「實作現況」永遠不是證據。deviation log（前線提案，段落內記錄）與 amendment（判決，附錄記錄）兩份分離。
@@ -219,7 +221,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 
 **same-family precondition（producer 側）**：EP 整合策略記 `author_family: <family>` **metadata 欄位**（非 prose）——消費端 dispatch gate 在 [implement](../implement/SKILL.md)（相同家族時 RED 前須 challenge completed 或 degraded 明示記錄）。
 
-**下游對帳（引用不重複定義）**：本段 TC 格式是 [audit-test 角度 8](../audit-test/SKILL.md)（軸A 機械對帳）、[code-review 軸B 六項](../code-review/SKILL.md)（架構面，定義源 review-engine 的 code-quality profile）、[fix-test mutation authority gate](../fix-test/SKILL.md) 的共同引用源。
+**下游對帳（引用不重複定義）**：本段 TC 格式是 [audit-test 域 2 TC 契約對帳](../audit-test/SKILL.md)（軸A 機械對帳）、[code-review 軸B 六項](../code-review/SKILL.md)（架構面，定義源 review-engine 的 code-quality profile）、[fix-test mutation authority gate](../fix-test/SKILL.md) 的共同引用源。
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: acceptance-evidence
-description: "審查/規劃/測試策略需要證據判準、lookup 表或深層論證時載入——驗收證據階層深層理論：認知誤差與 EP 預見極限、Intent Drift Type A/B、filter trap 重構查證義務、L3 整合測試實例、Runtime Invariant Assurance、B 軸人類驗收層演進、盤點執行點雙掃（間接層＋直呼層）、抽樣推廣與全量對帳、機械閘門的環境前提（gate 輸出也是 claim）。rule 端留 bootstrap gates（證據獨立性＋no-impact claim gate＋禁低層冒充高層）；本 skill 擁 Claim→Evidence taxonomy、L1-L6 階層表、深層理論與案例。觸發詞：證據階層、L3、整合測試、filter trap、runtime invariant、intent drift、B 軸、人類驗收、認知誤差、EP 預見極限、盤點執行點、誰呼叫、影響域、CI 執行點、雙掃、抽樣、全量對帳、樣本選擇、false-red、false-green、gate 前提。"
+description: "審查/規劃/測試策略需要證據判準、lookup 表或深層論證時載入——驗收證據階層深層理論：認知誤差與 EP 預見極限、Intent Drift Type A/B、filter trap 重構查證義務、L3 整合測試實例、Runtime Invariant Assurance、B 軸人類驗收層演進、盤點執行點雙掃（間接層＋直呼層）、抽樣推廣與全量對帳、機械閘門的環境前提（gate 輸出也是 claim）、oracle authority 分級細則（S/H/I/N 判定流程與 H anchor 形態例）。rule 端留 bootstrap gates（證據獨立性＋no-impact claim gate＋禁低層冒充高層＋oracle authority 正典）；本 skill 擁 Claim→Evidence taxonomy、L1-L6 階層表、深層理論與案例。觸發詞：證據階層、L3、整合測試、filter trap、runtime invariant、intent drift、B 軸、人類驗收、認知誤差、EP 預見極限、盤點執行點、誰呼叫、影響域、CI 執行點、雙掃、抽樣、全量對帳、樣本選擇、false-red、false-green、gate 前提、oracle authority、oracle 分級、S/H/I/N、oracle anchor。"
 when_to_use: "Fires when judging evidence strength for acceptance claims — no-impact claims、filter trap、L1-L6 階層判定、review findings 的證據獨立性、Runtime Invariant Assurance. Load BEFORE signing off 完成宣稱 with 證據分級."
 ---
 
@@ -30,6 +30,28 @@ when_to_use: "Fires when judging evidence strength for acceptance claims — no-
 | L4 可執行 demo | 真腳本/資料；API/第三方真實行為 | 可能只挑 happy path |
 | L5 對抗性 POC | 髒資料/已知陷阱：除權息、NaN、時區、溢出等 | AI 仍可能避開盲區 |
 | L6 人類觀察 | 真輸出/畫面/log；需求理解 | 疲勞、確認偏差 |
+
+## oracle authority 分級細則（正典在 [acceptance-evidence rule](../../rules/acceptance-evidence.md)「oracle authority 分級」）
+
+四級定義（S/H/I/N）正典住 rule 端，此處不重複；本節承載判定細則。
+
+**S 判定流程**（宣稱 S 須逐條過，任一不過降 H/I/N）：
+
+1. 找出該測試/TC 的 oracle_source——它實際指向什麼？
+2. **獨立性**：來源獨立於待測實作？規格文件、領域恆等式（如 cash 守恆）、歷史數據集算獨立；實作輸出、從 impl 抄的值不算
+3. **權威性**：來源是該領域的權威真相（凍結契約的規格／數學事實的恆等式／已發生事實的歷史數據）？
+4. **frozen 易錯點**：TC 已凍結≠S——凍結只保證不變，不保證來源獨立；frozen impl 衍生值仍是 I
+
+**H anchor 形態例**（宣稱 H 須附 anchor，形態依證據種類）：
+
+| 證據種類 | anchor 形態 | 例 |
+|---|---|---|
+| 歷史數據 | dataset＋version（或 hash） | `dataset=ticks-2024Q1, version=v3` |
+| 特定記錄 | record-id | `record=TX00:2024-06-03` |
+| 真實 carrier 行為 | version/hash | `shioaji==1.7.5 行為快照`（庫版可重現） |
+| 文件/規格文本 | file:line（text 類才用） | `spec.md:L42`——數據/行為類禁用 file:line 替代（檔案會改版，數據不會） |
+
+anchor 缺席＝H 宣稱不成立，降 I 標注。
 
 ## Claim 群的真實案例（taxonomy 判準的案例載體）
 
@@ -134,7 +156,7 @@ false-red 與 false-green 同危險——後者讓 coverage 型 gate 靜默放�
 - **source bug**:空 table 時 `setval(seq, COALESCE(MAX(id), 0))` → `setval(seq, 0)`,但 SERIAL 的 `MINVALUE=1`,`setval(seq, 0)` 違反約束 → fresh DB restore 後第一次 INSERT 崩潰。
 - **為什麼 mock 抓不到**:mock 假設「table 有資料,MAX 有值」,整個邊界(空 table)不在 mock 的假設世界裡。mock 循環論證讓這個假設成為 bug 來源。
 
-**啟示**:整合器型變更(接 ≥2 真實外部組件)補整合測試不是「儀式」,是**唯一能抓跨組件邊界 bug 的手段**。理論見 [validation-strategy](../validation-strategy/SKILL.md)「整合器型變更判定」;判定流程見 audit-test 角度 4(Claude command,跨 harness 路徑從略)。
+**啟示**:整合器型變更(接 ≥2 真實外部組件)補整合測試不是「儀式」,是**唯一能抓跨組件邊界 bug 的手段**。理論見 [validation-strategy](../validation-strategy/SKILL.md)「整合器型變更判定」;判定流程見 audit-test 域 2 消費端路徑證據(Claude command,跨 harness 路徑從略)。
 
 ## 重構查證義務:上抬抽象層的 filter trap(通用重構紀律)
 
