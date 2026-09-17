@@ -3,7 +3,7 @@ name: post-build
 when_to_use: "After /implement (or any substantial change set) to orchestrate the review chain automatically: diff triage decides which sub-chains run."
 argument-hint: "無參數；自動 triage（uncommitted 或 EP baseline 任務弧）"
 allowed-tools: ["Read", "Grep", "Glob", "Bash", "Edit", "Write", "Agent"]
-description: "build 後收尾鏈編排 — code-review → judge-review → 修正迴圈 → consistency → metadata-sync → tour corpus gate（general finalization）→ Report Shell refresh（hook 2：實作章節＋產圖一次＋badge ✅；持久 delta tour＝ask-once 預設略過）一次觸發。只做編排與 diff triage，方法論真相源在各被編排命令/skill。觸發詞：build 後收尾、post-build、收尾鏈、review chain 自動化、commit 前收尾。"
+description: "build 後收尾鏈編排 — code-review → judge-review → 修正迴圈 → consistency → metadata-sync → tour corpus gate（general finalization）→ memory 收尾腿（弧 footprint 盤點＋即時蒸餾/標 terminal）→ Report Shell refresh（hook 2：實作章節＋產圖一次＋badge ✅；持久 delta tour＝ask-once 預設略過）一次觸發。只做編排與 diff triage，方法論真相源在各被編排命令/skill。觸發詞：build 後收尾、post-build、收尾鏈、review chain 自動化、commit 前收尾、memory 收尾腿、弧 footprint。"
 ---
 
 # post-build — build 後收尾鏈編排
@@ -156,6 +156,16 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 防偽：觸及面定義模糊時禁填 N/A；探針輸出附原始行，禁貼了不看；部署面存在但無對應 surface 檔＝**未覆全**，collect 記 `unverified`（擋收線）＋登記補檔。
 
+## Memory 收尾腿（finalization——弧 footprint 前移處置；AIR-117）
+
+> 弧的記憶足跡（in-flight 池條目、`.agent-tmp` 證據/暫存、probe 殘留）等結案蒸餾或夜掃才處理＝積壓（真實案例：0917 池 91 筆待蒸餾積壓）。本腿把處置時點前移到收尾當下——記憶新鮮、context 在場。方法論真相源不重抄：池寫入守 [memory-audit](../memory-audit/SKILL.md)「寫入端紀律」，歸屬判定語義同 [commit 階段 2.8](../commit/SKILL.md) 池對帳腿。
+
+1. **池條目盤點**：`rg` 本弧識別鍵（卡 id ∪ EP title 詞——本腿鍵 ⊆ commit 2.8 鍵聯集，漏網由 2.8 兜底；掃描面同 commit 2.8 池對帳腿——`_inventory.md` 全量 desc 投影＋條目檔）→ 本弧新增/修改條目逐條二值處置：**即時蒸餾**（判別式：僅本弧已穩定教訓可收斂重寫——重寫非加段，禁加段紀律不變；照 memory-audit 寫入端紀律形態）或**登記 terminal 清單**（列收尾報告，交結案蒸餾一次性收斂；禁為此在池上發明新標記機制）。in-flight 弧線禁動（既有紀律不變——「進行中弧線收案前禁加段」）；歸屬他弧 → 不動不列
+2. **`.agent-tmp` 本弧產物分類**：與階段 5 前置清理同掃不同軸（前置清理＝逐項「還用嗎」；本腿＝弧歸屬）——驗證證據（測試輸出/exit code 節錄、review findings）→ 留至 EP/卡承接後清；probe/scratch/POC → 用完當場清，清單入收尾報告
+3. **probe/scratch 殘留確認**：本弧暫建的 probe 檔、POC 目錄、scratch 腳本 `fd` 反掃零殘留（清除義務單一源＝[must-execute-before-complete](../../rules/must-execute-before-complete.md)「POC 到所屬 EP 段落 build＋commit 承接後清除」）
+
+**分工邊界（互補不重複——時點前移）**：本腿＝build 後收尾時點的主動處置；[commit 階段 2.8](../commit/SKILL.md)＝commit 時點的機械防漏對帳（三分歸屬＋in-flight 不動）；結案蒸餾（[kanban-board](../kanban-board/SKILL.md) 結案兩步第三動）＝弧收案時的終態一次性重寫。本腿蒸餾掉的 → 2.8 零命中、結案蒸餾清單變短；標 terminal 的 → 成為後兩者的輸入。
+
 ## 結案（收斂點——invoke metadata-sync 結案段）
 
 修正迴圈收斂（followup 全 verified）→ 本 skill 是**呼叫端**，invoke [metadata-sync](../metadata-sync/SKILL.md)「收斂後結案」mode：backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔（命令合約見 [kanban-board](../kanban-board/SKILL.md)「結案兩步」；掛點全貌見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」）＋badge ✅。未收斂 → 不結案（見階段 3 上限處置）。code 鏈未跑弧（triage code=no——純修飾快道／資料文檔）→ 以 docs 鏈收斂（consistency 綠＋metadata 結算面完成）視為收斂，走同結案段。無 post-build 弧時此結案由 `/implement` 階段 6 fallback 承接（並列主路徑）。
@@ -171,6 +181,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - 殼 refresh（hook 2）：<完成（badge ✅；delta tour＝已產（落點＋arcId）｜略過（user 裁定，inputs 保留）｜條件不符）|跳過（原因：無殼）>
 - 已產 delta tour 時附註：AI Tours 視圖（ai-lifecycle）可走讀本弧——殼實作章節已連結 `.tours/delta/`
 - docs 鏈：consistency N 檔（pass N / fail-fixed N）、metadata-sync <跑/跳過>、tour corpus <PASS|閉環後 PASS（重產 N 族/手術 N 檔）|應修清單 N 條>
+- memory 收尾腿：池條目 <盤點 N＝即時蒸餾 N＋terminal N＋他弧不動 N｜無池>、.agent-tmp <證據留 N｜清 N>、probe/scratch 殘留 <零殘留｜清單>
 - callstack 菜單（repo 有 `ai-analysis/blueprint/callstack-plan.md` 時）：積壓 N 條待生成（機械＝plan **成鏈行數**（①-③ 軌行；④ scripts/索引行不計）− `callstack/` 既有 md 數）——報庫存不催行動，生成＝獨立觸發＋報價（blueprint-bootstrap）
 - smell=<建議 zoom 的 dir|無>——訊號源＝階段 1/2 findings 中「疑似 AI 亂加／junk／scope creep」類 finding 所指目錄。**triage 訊號非鏈內調用**：人類看到再決定開 viewport session 跑 [smell-detector](../smell-detector/SKILL.md) zoom（受眾分離——smell-detector 是軌道②人類 viewport，不進本鏈自動跑；baseline/onboarding 盤點屬週期需求，不掛 post-build）
 - ⚠️ 待用戶確認：<決策清單>
