@@ -146,14 +146,14 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 
 **不變項**：revision 或 profile 變更**不能復用舊結論**——對 delta 重審；複用 findings **不等於**複用測試——環境／config／input 改變時驗證證據另行失效。Reviewer≠Arbiter（disposition 僅 Arbiter artifact，見上方 artifact recipe）；缺證據≠PASS。
 
-**status 生命週期**:
+**status 生命週期**——decision 映射與狀態流轉是**兩條獨立的軸**(同名互斥是定義錯誤:`adopted` 是決策後中繼態、非 terminal):
 
-- **Code review flow**(經 judge-review):`open` →(`adopted` / `rejected` / `needs-confirmation`)→ `implemented` → `verified` → `closed`。**rejected 不經 implemented**,直接 `closed`(不實作)
-- **EP flow**(ep-review/ep-validate,無 judge-review):`open` → `implemented`(修正入 EP)/ `verified`(POC 通過)
-- **decision → status 映射**(judge-review):✅ → `adopted`、❌ → `rejected`、⚠️ → `needs-confirmation`
+- **decision 映射軸**(judge-review 落帳):✅ → `adopted`、❌ → `rejected`、⚠️ → `needs-confirmation`——`adopted`/`rejected`/`needs-confirmation` 皆非 terminal
+- **狀態生命週期軸**:**Code review flow**(經 judge-review):`open` →(`adopted` / `rejected` / `needs-confirmation`)→ `implemented` → `verified` → `closed`。**rejected 不經 implemented**,直接 `closed`(不實作)。**EP flow**(ep-review/ep-validate,無 judge-review):`open` → `implemented`(修正入 EP)/ `verified`(POC 通過)
+- **terminal 值域**(機械契約,單一源＝`review_ledger.py` TERMINAL_STATUSES):canonical ＝`verified|closed`(生命週期終點);`resolved`＝容錯 terminal(歷史帳本方言——parse 視同 terminal、lint converged 接受;新寫入用 verified/closed)
 - commit 階段 2.6（optional）列出殘留 `open` finding 提醒（不阻擋；status 靠 LLM 更新會漏，僅作提醒線索非機械閘門，最終把關靠人對照 diff）
 
-> **status 寫入責任（AIR-121）**：帳本 header identity／`decision`／terminal `status`（`resolved|verified|closed`）是實際被 parse/join/count 的機械契約欄位——落盤須通過 consumer-equivalent 機械驗證（`skills/post-build/scripts/review_ledger.py` lint/parse，fail-closed）；寫入保障必須至少匹配下游讀取契約，準則單一源＝[quality-constraints](../../rules/quality-constraints.md)「數據完整性優先」寫入保障段，分類軸（機械／記錄／混合面）＝[memory-audit](../memory-audit/SKILL.md)「載體統一定義表」寫入權軸。
+> **status 寫入責任（AIR-121）**：帳本 header identity／`decision`／terminal `status`（canonical `verified|closed`＋容錯 `resolved`）是實際被 parse/join/count 的機械契約欄位——落盤須通過 consumer-equivalent 機械驗證（`skills/post-build/scripts/review_ledger.py` lint/parse，fail-closed）；寫入保障必須至少匹配下游讀取契約，準則單一源＝[quality-constraints](../../rules/quality-constraints.md)「數據完整性優先」寫入保障段，分類軸（機械／記錄／混合面）＝[memory-audit](../memory-audit/SKILL.md)「載體統一定義表」寫入權軸。
 
 ### closure lens 分工（修正驗證雙腿——AIR-61 標準化）
 
@@ -181,7 +181,7 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 ```
 ## <命令> Findings — <branch 或 EP 段落>
 
-> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash> · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none）· scope=<包含檔案/UC/invariant；排除項> · review_profile=<identifier＋definition identity> · coverage=<各軸完成/未驗＋evidence ref> · writer=<命令/session>
+> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash>（或 `reviewed revision：`——兩形皆 canonical，lint 錨同受） · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none）· scope=<包含檔案/UC/invariant；排除項> · review_profile=<identifier＋definition identity> · coverage=<各軸完成/未驗＋evidence ref> · writer=<命令/session>
 
 | ID | 嚴重度 | 檔案:行 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |
 |----|--------|---------|------|------|--------|------|------|
@@ -190,6 +190,8 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 ```
 
 `/copy` 場景:用戶貼此表格給外部 LLM,回饋以同格式 append 回寫。
+
+cell 內出現 pipe(`|`)一律寫轉義形 `\|`(驗證式欄 rg pattern 常見)——`review_ledger.py` lint/parse 容錯讀取轉義形,未轉義裸 pipe 會拆壞欄位。
 
 ---
 

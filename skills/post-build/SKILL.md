@@ -89,7 +89,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 ## 階段 2 — Judge Review（僅 code 鏈）
 
-**帳本 lint（AIR-121——進本階段前機械閘）**：`uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md`——exit 0 進；exit 1/3＝帳本不合 canonical（identity 缺失／欄位值域違規），先修帳本格式再進（lint 約束見腳本 docstring）；exit 2（帳本不存在）＝首次審查常態，跳過 lint 直接進。
+**帳本 lint（AIR-121——進本階段前機械閘）**：`uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md --stage discovery`——發現時態（judge 前，decision＝—／status＝open 是常態）只查 identity 錨＋欄位存在性，decision/status 值域不查；exit 0 進；exit 1/3＝帳本不合 canonical（identity 缺失／欄位缺），先修帳本格式再進（lint 約束見腳本 docstring）；exit 2（帳本不存在）＝首次審查常態，跳過 lint 直接進。
 
 執行 `judge-review`（[skills/judge-review/SKILL.md](../judge-review/SKILL.md)；**指定帳本＝`.review/<branch>.md` 工作帳本**——輸入從該帳本讀 findings，不需人工貼上）。產出 ✅/❌/⚠️ 決策清單。
 
@@ -128,7 +128,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 帳本收斂態機械落卡（`.review/` 隨 commit 清除、對話報告非 durable——durable 落點＝卡 notes）：
 
-- 卡在場（本弧 owning 卡）→ `uv run python skills/post-build/scripts/review_ledger.py parse .review/<branch>.md` → exit 0：輸出 payload 以一行 `backlog task edit <卡id> --append-notes "<payload>"` 落卡
+- 卡在場（本弧 owning 卡）→ 先 `uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md --stage converged`（帳本此時已是終態——converged 全查含值域），exit 0 再 `uv run python skills/post-build/scripts/review_ledger.py parse .review/<branch>.md` → exit 0：輸出 payload 以一行 `backlog task edit <卡id> --append-notes "<payload>"` 落卡
 - exit 1/2/3 → **不落卡**：payload 改列收尾報告＋顯性降級記錄（fail-closed 禁猜）
 - 卡檔不在本工作樹可見（窗期——卡 commit 在 main）→ 同樣緩衝到輸出檔＋收尾報告，**禁開暫時 worktree 硬寫**
 

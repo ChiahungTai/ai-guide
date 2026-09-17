@@ -20,9 +20,11 @@ EXIT_MISSING = 2
 EXIT_STALE = 3
 
 
-def run_cli(subcommand: str, target: str | Path) -> subprocess.CompletedProcess[str]:
+def run_cli(
+    subcommand: str, target: str | Path, *extra: str
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(SCRIPT), subcommand, str(target)],
+        [sys.executable, str(SCRIPT), subcommand, str(target), *extra],
         capture_output=True,
         text=True,
         check=False,
@@ -184,6 +186,117 @@ def test_parse_join_last_wins_fixture():
     assert "open=1" in r.stdout
     assert "未決=1" in r.stdout
     assert "decisions ✅=1/❌=0/⚠️=0/unknown=1" in r.stdout
+
+
+# ---------- --stage 生命週期閘（F-1/F-2/F-4）：discovery 查結構、converged 全查 ----------
+
+
+def test_lint_discovery_ok_on_judge_after_state():
+    # judge 後態（decision=✅/⚠️、status=adopted/needs-confirmation）——discovery 只查
+    # identity 錨＋欄位存在性（decision/status 值域不查）→ 應過（F-1 修復後形態）
+    r = run_cli("lint", fixture("judge-after.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "[OK]" in r.stdout
+
+
+def test_lint_converged_fails_on_judge_after_state():
+    # converged 全查：adopted/needs-confirmation 非 terminal → FAIL
+    r = run_cli("lint", fixture("judge-after.md"), "--stage", "converged")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "status.not_terminal" in r.stdout
+
+
+def test_lint_default_stage_is_converged():
+    # 無 --stage＝converged（現行為不變）：judge 後態必 FAIL——F-1 根因
+    # （post-build 階段 2 舊 lint 閘與發現時態帳本互斥）的機械重現
+    r = run_cli("lint", fixture("judge-after.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "status.not_terminal" in r.stdout
+
+
+def test_lint_discovery_ok_on_followup_after_state():
+    r = run_cli("lint", fixture("followup-after.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_lint_converged_ok_on_followup_after_state():
+    # converged：verified/closed＝canonical terminal、resolved＝容錯 terminal（F-2）→ 應過
+    r = run_cli("lint", fixture("followup-after.md"), "--stage", "converged")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_lint_discovery_still_checks_identity_and_columns():
+    # discovery 不等於免檢：identity 錨缺席（air-66）仍 STALE、欄位缺（air-91 缺 scope/
+    # 欄位）仍 FAIL——值域才是 discovery 豁免面
+    r = run_cli("lint", fixture("air-66.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_STALE, r.stdout + r.stderr
+    r2 = run_cli("lint", fixture("air-91.md"), "--stage", "discovery")
+    assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+    assert "identity.missing_scope" in r2.stdout
+    assert "columns.missing" in r2.stdout
+    assert "status.not_terminal" not in r2.stdout  # 值域不查
+
+
+def test_lint_invalid_stage_rejected():
+    r = run_cli("lint", fixture("canonical-good.md"), "--stage", "bogus")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "usage" in r.stderr
+
+
+def test_parse_judge_after_pending_counts():
+    # parse（容錯讀）：needs-confirmation → open、adopted → unknown（自由文字）——皆計未決
+    r = run_cli("parse", fixture("judge-after.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "findings=2" in r.stdout
+    assert "decisions ✅=1/❌=0/⚠️=1/unknown=0" in r.stdout
+    assert "source=決策" in r.stdout
+    assert "open=1" in r.stdout
+    assert "未決=2" in r.stdout
+
+
+def test_parse_followup_after_all_terminal():
+    # followup 後態：resolved（容錯）/verified/closed 全 terminal——未決=0
+    r = run_cli("parse", fixture("followup-after.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "findings=3" in r.stdout
+    assert "resolved=1/verified=1/closed=1" in r.stdout
+    assert "未決=0" in r.stdout
+
+
+# ---------- 兩形 identity 錨（F-3）----------
+
+
+def test_lint_accepts_reviewed_equals_form():
+    # canonical 模板（workflow-review-pattern 表格呈現格式）identity 行形＝`reviewed=<hash>`；
+    # 舊錨（字面 reviewed revision）會誤判 stale——兩形皆 canonical
+    r = run_cli("lint", fixture("judge-after.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "identity.stale" not in r.stdout
+
+
+def test_lint_still_rejects_reviewed_colon_form():
+    # 「reviewed：」單形仍非 canonical 錨（air-75 回歸；discovery 態複驗）
+    r = run_cli("lint", fixture("air-75.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_STALE, r.stdout + r.stderr
+    assert "identity.stale" in r.stdout
+
+
+# ---------- code fence 表格跳過（F-6）----------
+
+
+def test_parse_skips_fenced_example_table():
+    # 帳本內嵌格式說明表格（``` 圍欄內、含 ID 欄）禁計數——舊行為會把 X-99 撈進 findings
+    r = run_cli("parse", fixture("fenced-example.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "findings=2" in r.stdout
+    assert "tables=1" in r.stdout
+    assert "未決=0" in r.stdout
+
+
+def test_lint_skips_fenced_example_table():
+    # lint 的 Finding Record 表定位同樣跳過 fenced 表（取真表——欄位全、terminal 全）
+    r = run_cli("lint", fixture("fenced-example.md"), "--stage", "converged")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
 
 
 # ---------- 模組載入煙霧測試（非 package 腳本，importlib 直載） ----------

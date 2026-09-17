@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
-"""審查帳本 lint＋parse——`.review/<branch>.md` 機械驗收閘（AIR-121）。
+"""審查帳本 lint＋parse——``.review/<branch>.md`` 機械驗收閘（AIR-121）。
 
 雙子命令：
-- ``lint <ledger.md>``：canonical 格式驗證（寫入時 gate）——identity 三行
-  （reviewed revision／scope／review_profile）＋Finding Record 表 canonical 欄位
-  （ID／嚴重度／位置／問題／建議／驗證式／狀態／決策）＋值域
-  （decision ∈ ✅❌⚠️；terminal status ∈ resolved|verified|closed）。
+- ``lint <ledger.md> [--stage discovery|converged]``：canonical 格式驗證（寫入時
+  gate）——identity 三行（reviewed 錨／scope／review_profile）＋Finding Record 表
+  canonical 欄位（ID／嚴重度／位置／問題／建議／驗證式／狀態／決策）＋值域
+  （decision ∈ ✅❌⚠️；terminal status 見 TERMINAL_STATUSES）。``--stage`` 對齊
+  帳本生命週期（預設 converged＝現行為全查）：
+  - ``discovery``（post-build 階段 2——judge 前）：只查 identity 錨＋欄位存在性；
+    decision/status **值域不查**（發現時態 decision＝「—」、status＝open 是常態，
+    值域檢查會與生命週期互斥——F-1）。
+  - ``converged``（收斂態落卡／commit 2.6——帳本已是終態）：全查（值域含）。
 - ``parse <ledger.md>``：容錯讀＋tally（歷史帳本回歸／消費面）——跨表 ID-join
   last-wins（發現時態表被 apply 終態表覆蓋）、prose 計數禁用（否定句陷阱：
   「零 ❌、零 ⚠️」不得入計數）、解析不出→明確 ``[FAIL]`` 類別拒收（unknown，
-  禁猜 resolved）。
+  禁猜 resolved）。``` 圍欄內的表格是格式說明範例非資料表——跳過不計（F-6）。
 
 exit 契約：``0`` 成功／``1`` 解析失敗（fail-closed）／``2`` 帳本不存在／
 ``3`` identity stale。
 
-嚴格度分工：lint 是 canonical gate（identity 須字面 ``reviewed revision``）；
+嚴格度分工：lint 是 canonical gate（identity 錨＝``reviewed=`` 或
+``reviewed revision`` 兩形皆 canonical——對齊 canonical 模板與歷史帳本，F-3）；
 parse 是容錯讀者（任何 ``reviewed`` 行即可錨定）。歷史漂移語義：狀態自由文字
 （如 implemented）不計 terminal、欄位缺席＝unknown——誤差方向安全：只省略
-不捏造，unknown 一律計入「未決」。
+不捏造，unknown 一律計入「未決」。cell 內出現 pipe 一律寫轉義形 ``\\|``
+（驗證式欄 rg pattern 常見）——split_row 容錯讀取此形，未轉義裸 pipe 會拆壞
+欄位（F-7）。
 """
 
 import re
@@ -31,10 +39,16 @@ EXIT_MISSING = 2
 EXIT_STALE = 3
 
 DECISION_EMOJI: tuple[str, ...] = ("✅", "❌", "⚠️")
+# terminal 值域（F-2 對齊）：verified|closed＝canonical terminal（status 生命週期終點，
+# 鏈上實際寫入者——post-build 階段 3 主鏈編排者）；resolved＝容錯 terminal（歷史帳本
+# 方言，如 AIR-91 收斂帳本以 resolved 落終態）——parse 視同 terminal、lint converged
+# 接受，新寫入應用 verified/closed（單一源＝workflow-review-pattern「status 生命週期」）。
 TERMINAL_STATUSES: tuple[str, ...] = ("resolved", "verified", "closed")
 PENDING_STATUSES: tuple[str, ...] = ("open", "needs-confirmation")
 
-REVIEWED_REVISION_RE = re.compile(r"reviewed\s*revision", re.IGNORECASE)
+# identity 錨兩形皆 canonical（F-3）：`reviewed revision：...`（歷史帳本形）與
+# `reviewed=<hash>`（canonical 模板 identity 行形）。
+REVIEWED_REVISION_RE = re.compile(r"reviewed\s*(?:revision|=)", re.IGNORECASE)
 PROFILE_KEYWORDS: tuple[str, ...] = (
     "review_profile",
     "review profile",
@@ -83,17 +97,33 @@ def is_separator_row(cells: list[str]) -> bool:
 
 
 def split_tables(lines: list[str]) -> list[list[list[str]]]:
-    """連續 pipe 行＝一個表 block；回傳逐表 raw rows（含 header 與 separator）。"""
+    """連續 pipe 行＝一個表 block；回傳逐表 raw rows（含 header 與 separator）。
+
+    ``` 圍欄內的 pipe 行是格式說明範例（非資料表）——跳過不計（F-6）；圍欄邊界
+    flush 緩衝，防圍欄前後兩張真表被誤併成同一表。
+    """
     tables: list[list[list[str]]] = []
     buf: list[str] = []
-    for line in lines:
-        if line.lstrip().startswith("|"):
-            buf.append(line)
-        elif buf:
+    in_fence = False
+
+    def flush() -> None:
+        nonlocal buf
+        if buf:
             tables.append([split_row(x) for x in buf])
             buf = []
-    if buf:
-        tables.append([split_row(x) for x in buf])
+
+    for line in lines:
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            flush()
+            continue
+        if in_fence:
+            continue
+        if line.lstrip().startswith("|"):
+            buf.append(line)
+        else:
+            flush()
+    flush()
     return tables
 
 
@@ -273,11 +303,12 @@ def parse_ledger(text: str) -> dict | None:
 # ---------- 子命令 ----------
 
 
-def cmd_lint(text: str, name: str) -> int:
+def cmd_lint(text: str, name: str, stage: str = "converged") -> int:
     region = identity_region(text.splitlines())
     if not has_reviewed_revision(region, strict=True):
         print(
-            f"[{name}] [FAIL] identity.stale: 無 reviewed revision 行（identity 無法錨定）"
+            f"[{name}] [FAIL] identity.stale: 無 reviewed 錨行（reviewed= 或 "
+            "reviewed revision——identity 無法錨定）"
         )
         return EXIT_STALE
 
@@ -326,12 +357,14 @@ def cmd_lint(text: str, name: str) -> int:
             )
             continue
         fid = row[id_i].strip() or "?"
-        if dec_i is not None:
-            matches = [d for d in DECISION_EMOJI if d in row[dec_i]]
-            if len(matches) != 1:
-                bad_decision.append(fid)
-        if st_i is not None and status_bucket(row[st_i]) not in TERMINAL_STATUSES:
-            bad_status.append(fid)
+        # 值域檢查僅 converged（F-1）：discovery 態 decision=—／status=open 是常態
+        if stage == "converged":
+            if dec_i is not None:
+                matches = [d for d in DECISION_EMOJI if d in row[dec_i]]
+                if len(matches) != 1:
+                    bad_decision.append(fid)
+            if st_i is not None and status_bucket(row[st_i]) not in TERMINAL_STATUSES:
+                bad_status.append(fid)
     if bad_decision:
         violations.append("decision.domain: " + ",".join(bad_decision))
     if bad_status:
@@ -343,7 +376,7 @@ def cmd_lint(text: str, name: str) -> int:
         for v in violations:
             print(f"[{name}] [FAIL] {v}")
         return EXIT_FAIL
-    print(f"[{name}] [OK] canonical")
+    print(f"[{name}] [OK] canonical (stage={stage})")
     return EXIT_OK
 
 
@@ -374,18 +407,53 @@ def cmd_parse(text: str, name: str) -> int:
     return EXIT_OK
 
 
+USAGE = (
+    "usage: review_ledger.py lint <ledger.md> [--stage discovery|converged] "
+    "| parse <ledger.md>"
+)
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in ("lint", "parse"):
-        print("usage: review_ledger.py lint|parse <ledger.md>", file=sys.stderr)
+    args = argv[1:]
+    if not args or args[0] not in ("lint", "parse"):
+        print(USAGE, file=sys.stderr)
         return EXIT_FAIL
-    subcommand, target = argv[1], Path(argv[2])
-    if not target.is_file():
-        print(f"review_ledger: [FAIL] missing: {target}", file=sys.stderr)
+    subcommand = args[0]
+    target: str | None = None
+    stage = "converged"  # 預設＝現行為（converged 全查）——F-1
+    i = 1
+    while i < len(args):
+        tok = args[i]
+        if tok == "--stage":
+            if i + 1 >= len(args):
+                print(USAGE, file=sys.stderr)
+                return EXIT_FAIL
+            stage = args[i + 1]
+            i += 2
+        elif tok.startswith("--stage="):
+            stage = tok.removeprefix("--stage=")
+            i += 1
+        elif target is None:
+            target = tok
+            i += 1
+        else:
+            print(USAGE, file=sys.stderr)
+            return EXIT_FAIL
+    if target is None or stage not in ("discovery", "converged"):
+        print(USAGE, file=sys.stderr)
+        return EXIT_FAIL
+    if subcommand == "parse" and stage != "converged":
+        # parse 是容錯讀（無 stage 語義）——拒絕誤用
+        print(USAGE, file=sys.stderr)
+        return EXIT_FAIL
+    path = Path(target)
+    if not path.is_file():
+        print(f"review_ledger: [FAIL] missing: {path}", file=sys.stderr)
         return EXIT_MISSING
-    text = target.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8")
     if subcommand == "lint":
-        return cmd_lint(text, target.name)
-    return cmd_parse(text, target.name)
+        return cmd_lint(text, path.name, stage)
+    return cmd_parse(text, path.name)
 
 
 if __name__ == "__main__":

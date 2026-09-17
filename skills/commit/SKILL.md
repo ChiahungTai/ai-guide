@@ -87,7 +87,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 **人主導工作流**（finding 在 review session 對話、`/copy` 搬到實作 LLM）：無 `.review/`，此階段跳過 —— finding 處置由用戶在階段 5 確認時對照 diff 判讀（B 軸 viewport，不靠 status 機械追蹤）。
 
-**跨命令自動化工作流**（`/judge-review` / `/followup-review` 產生 `.review/`）：若 `.review/` 存在，列出殘留 `open` finding 提醒（不阻擋）。`status` 靠 LLM 更新會漏，僅作提醒非閘門。`.review/<branch>.md` 存在時先跑 `uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md`——exit 1/3 列入殘留清單並標「帳本不合 canonical」（AIR-121；提醒線索非阻擋，本階段定位不變）。
+**跨命令自動化工作流**（`/judge-review` / `/followup-review` 產生 `.review/`）：若 `.review/` 存在，列出殘留 `open` finding 提醒（不阻擋）。`status` 靠 LLM 更新會漏，僅作提醒非閘門。`.review/<branch>.md` 存在時先跑 `uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md --stage converged`（commit 時點帳本應已是終態——converged 全查含值域）——exit 1/3 列入殘留清單並標「帳本不合 canonical」（AIR-121；提醒線索非阻擋，本階段定位不變）。
 
 > 無論哪種工作流，finding 處置的最終把關在階段 5（人確認 commit）—— 機制只列出不保證。
 
