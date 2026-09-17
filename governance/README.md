@@ -24,7 +24,7 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 | `hooks` | 四家註冊 | CC `~/.claude/settings.json`（symlink→repo settings.json，resolve 後寫）；ZCode `~/.zcode/cli/config.json`（只動 `hooks` 子樹，mcp/plugins 逐鍵不變）；codex `~/.codex/config.toml`（group 級 append＋註解標記）；muse 部分併 memory 面 |
 | `agents` | registry 生成 | wrap `scripts/sync_agents.py`（check 模式串接其 `--check` 退出碼） |
 | `memory` | muse plugin＋池拓撲 | `muse plugins install/approve`＋pool 轉移後 `hooks/setup-memory-symlinks.sh --apply` |
-| `monitor` | health 排程 | launchd plist（`deploy/` 版控源 `{{REPO}}`/`{{HOME}}` 佔位 → render → `~/Library/LaunchAgents/` 裝載；AIR-110 G4 參數化——跨機器零手改；`--check --surface monitor` 比對 live 與 render 期望） |
+| `monitor` | health 排程 | launchd plist（`deploy/` 版控源 `{{REPO}}`/`{{HOME}}` 佔位 → render（parse-modify-dump——只替換已知路徑欄位，註解隨 dump 卸除）→ `~/Library/LaunchAgents/` 裝載；AIR-110 G4 參數化——跨機器零手改；`--check --surface monitor` 比對 live 與 render 期望） |
 
 安全模型（Q3）：compute-then-apply——任何寫入前完成全部分析；plan journal 落 `~/.local/share/ai-guide/governance-plan-journal/`（保留 10 份，中途 kill 可精確 resume／回滾）；備份＝僅變更 target `.bak-*`（`copy2` 保 mtime，每目標保留 3 份）；malformed config（parse 失敗）**絕不覆寫**——fail-loud 報路徑＋錯誤；寫入＝temp＋parse 驗證＋preimage 對比＋`os.replace` 原子替換（codex 併發防護；CC 目標先 `Path.resolve()`——原子寫直打 symlink 路徑會斷鏈，P0-3 實證）。
 
@@ -103,4 +103,4 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 4. 手動 approve：CC `/hooks`、codex trust review、ZCode 重開 session（見分欄表）。
 5. 驗證：`--verify`——muse PASS、CC/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
 6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）。
-7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄；`--check --surface monitor` 驗排程面 parity（live plist＝render 期望）。
+7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄；`--check --surface monitor` 驗排程面 parity（live plist＝render 期望）。bootstrap 編排器已自動跑此兩步（Phase 2 `all` 成功後接 `--surface monitor`；Phase 4 `--check --surface monitor`）——手動逐面操作時照本清單。

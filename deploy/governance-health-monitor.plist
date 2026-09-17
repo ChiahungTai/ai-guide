@@ -4,11 +4,11 @@
 <!-- governance health monitor 排程（日頻；AIR-116 S5 收編 AIR-100 S-E 前形，
      版控於 deploy/）。裝載／卸載＝installer 面（user 機器操作，非 agent 執行）：
        governance/install.py surface=monitor（裝載）；加 uninstall flag（卸載）。
-     路徑參數化（AIR-110 G4）：機器路徑以 {{REPO}}（installer 所在 repo）與
-     {{HOME}} 佔位——installer 裝載時 render 成絕對路徑（launchd 不展開 ~ 或
-     佔位符），跨機器零手改；check 模式 surface monitor 即比對 live 與 render 期望。
-     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制——flag 字面會讓
-     嚴格 parser 拒讀；launchd 寬容不等於合法）。
+     路徑參數化（AIR-110 G4；R2 codex#5）：機器路徑（repo 根與 home）以佔位
+     token 標記於本文路徑欄位——installer 裝載時 parse-modify-dump 僅對已知
+     路徑欄位替換後重建 plist（XML 註解隨 dump 卸除，註解零 token 字樣；
+     home 路徑含雙連字號亦不毒化輸出），跨機器零手改；check 模式 surface
+     monitor 即比對 live 與 render 期望。
      行為：五面 health（install.py 的 verify＋check 兩模式）任一非零 exit 時
      告警行落 StandardOutPath/StandardErrorPath 日志；launchd 非零 exit 不觸發
      重跑（StartInterval 節流）。

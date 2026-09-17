@@ -122,6 +122,38 @@ def render(text: str) -> str:
     return text.replace(REPO_TOKEN, str(_canonical_root())).replace(HOME_TOKEN, str(Path.home()))
 
 
+def render_plist(text: str) -> str:
+    """G4 plist render（AIR-110 R2 codex#5）：parse-modify-dump——plistlib.loads
+    (源) → 只對已知路徑欄位（ProgramArguments 各元素／WorkingDirectory／
+    StandardOutPath／StandardErrorPath／EnvironmentVariables 值）做 token 替換
+    → plistlib.dumps()。
+
+    禁 XML 全文 .replace：XML 註解禁 ASCII 雙連字號——token 字樣或 home 路徑
+    含 `--` 會毒化註解使嚴格 parser 拒讀（launchd 寬容不等於合法）；dump 卸除
+    註解即免疫，且非路徑欄位（如 Label）的 token 字樣不被誤替換。
+    """
+    import plistlib
+
+    try:
+        doc = plistlib.loads(text.encode())
+    except plistlib.InvalidFileException as exc:
+        raise GovernanceError(f"版控源非合法 plist，拒 render fail-loud：{exc}") from exc
+    if not isinstance(doc, dict):
+        raise GovernanceError("版控源 plist 根非 dict（launchd 形態），拒 render")
+    args = doc.get("ProgramArguments")
+    if isinstance(args, list):
+        doc["ProgramArguments"] = [render(a) if isinstance(a, str) else a for a in args]
+    for key in ("WorkingDirectory", "StandardOutPath", "StandardErrorPath"):
+        if isinstance(doc.get(key), str):
+            doc[key] = render(doc[key])
+    env = doc.get("EnvironmentVariables")
+    if isinstance(env, dict):
+        doc["EnvironmentVariables"] = {
+            k: render(v) if isinstance(v, str) else v for k, v in env.items()
+        }
+    return plistlib.dumps(doc).decode()
+
+
 def home_path(p: str) -> Path:
     return Path(os.path.expanduser(p))
 
@@ -661,6 +693,7 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         os.symlink(want, link)
         return "created"
     if t["kind"] == "muse-disable":
+        _require_muse_cli()
         proc = subprocess.run(["muse", "plugins", "disable", "muse-memory-governance"],
                               capture_output=True, text=True)
         if proc.returncode != 0:
@@ -673,6 +706,17 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
 
 def _launchctl(*argv: str) -> subprocess.CompletedProcess:
     return subprocess.run(["launchctl", *argv], capture_output=True, text=True)
+
+
+def _require_muse_cli() -> None:
+    """R2 codex#4（installer 側防線）：memory face 執行 muse CLI 前的守衛——
+    缺席＝GovernanceError 乾淨訊息（非 FileNotFoundError traceback）。
+    bootstrap preflight 有同款前置（Phase 1 muse-cli FAIL）。"""
+    if shutil.which("muse") is None:
+        raise GovernanceError(
+            "muse CLI 缺席——先安裝 Muse CLI（訂閱載具）再跑 memory 面"
+            "（bootstrap preflight muse-cli probe 同款前置）"
+        )
 
 
 def _apply_launchd_plist(t: dict) -> str:
@@ -691,12 +735,12 @@ def _apply_launchd_plist(t: dict) -> str:
             return "unloaded＋removed（版控源留 repo——dead but harmless）"
         return "not-loaded（leave）"
     src = REPO_ROOT / t["source"]
-    new_text = render(src.read_text())  # {{REPO}}/{{HOME}} 佔位→絕對路徑（launchd 不展開）
+    new_text = render_plist(src.read_text())  # parse-modify-dump（codex#5）——路徑欄位占位→絕對路徑（launchd 不展開）
     import plistlib
-    try:  # render 後內容驗證——create 路徑同樣禁帶病寫入（XML 註解含雙連字號事故實證）
+    try:  # 裝載前 plistlib 驗證（R2 保留）——create 路徑同樣禁帶病寫入
         plistlib.loads(new_text.encode())
     except plistlib.InvalidFileException as exc:
-        raise GovernanceError(f"版控源非合法 plist，拒裝載 fail-loud：{src}\n{exc}") from exc
+        raise GovernanceError(f"render 產出非合法 plist，拒裝載 fail-loud：{src}\n{exc}") from exc
     if not inst.exists():
         inst.parent.mkdir(parents=True, exist_ok=True)
         tmp = inst.with_name(f".{inst.name}.tmp-{os.getpid()}")
@@ -766,6 +810,7 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
                 if run_wrap(manifest["surfaces"][wrapped]["argv"]) != 0:
                     face_failures.append(wrapped)
         if surface in ("memory", "all"):
+            _require_muse_cli()  # R2 codex#4：FileNotFoundError 前置乾淨化
             plugin_path = REPO_ROOT / manifest["surfaces"]["memory"]["plugin_path"]
             pid = manifest["surfaces"]["memory"]["plugin_id"]
             muse_ok = True
@@ -1008,10 +1053,11 @@ def check_skills_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
 
 
 def check_monitor_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
-    """monitor（AIR-110 G4 轉正）：live plist 與 render(版控源) byte parity（唯讀）。
+    """monitor（AIR-110 G4 轉正）：live plist 與 render_plist(版控源) byte parity（唯讀）。
 
     launchd 不展開 ~／佔位符——裝載副本必是 render 後絕對路徑；比對語義＝
-    安裝副本逐字等於 render(plist_source)。載入態（launchctl）不在本面——
+    安裝副本逐字等於 render_plist(plist_source)（parse-modify-dump 形態，
+    R2 codex#5——註解隨 dump 卸除）。載入態（launchctl）不在本面——
     parity 綠但未載入＝裝載動作缺席，install --surface monitor 冪等重跑即對齊。
     """
     mon = manifest["surfaces"]["monitor"]
@@ -1020,7 +1066,7 @@ def check_monitor_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
         drifts.append(("monitor", f"版控源缺席：{src}（manifest 與 repo 失同步）"))
         return
     inst = real_target(home_path(f"{mon['install_root']}/{mon['label']}.plist"))
-    expected = render(src.read_text())
+    expected = render_plist(src.read_text())
     if not inst.exists():
         drifts.append(("monitor", f"安裝副本缺席：{inst}——跑 install --surface monitor"))
     elif inst.read_text() != expected:

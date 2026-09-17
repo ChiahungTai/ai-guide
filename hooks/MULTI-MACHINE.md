@@ -8,22 +8,22 @@
 
 ## 新機器全裝總覽（AIR-110）
 
-入口＝**`scripts/bootstrap.py` 冪等編排器**（五階段：preflight → installer → approve 暫停點 → verify 探針 → 面外清單；唯一安裝入口＝governance installer，不下手工 config）：
+入口＝**`scripts/bootstrap.py` 冪等編排器**（五階段：preflight → installer（primary 含 monitor 裝載）→ approve 暫停點 → verify 探針 → 面外清單；唯一安裝入口＝governance installer，不下手工 config；`--approved`＝resume——跳過安裝直接 verify（`--check` 自證 Phase 2 產物在場））：
 
 ```bash
 uv run python scripts/bootstrap.py --dry-run     # 唯讀 preflight＋印計畫（零執行）
 uv run python scripts/bootstrap.py               # 安裝→停在 approve 暫停點（手動三項後續跑）
-uv run python scripts/bootstrap.py --approved    # 手動 approve 後：verify 探針＋面外清單
+uv run python scripts/bootstrap.py --approved    # 手動 approve 後 resume：跳過安裝，verify 探針＋面外清單
 ```
 
-- **installer 七項**（hooks×3 家註冊、skills/rules symlink、agents registry、muse plugin、monitor＋逐面驗證命令）：單一源＝[governance/README.md](../governance/README.md) bootstrap 節——本檔不重抄。
+- **installer 七項**（CC/ZCode/codex 三家 hooks 註冊＋muse plugin、skills/rules symlink、agents registry、monitor 排程、逐面驗證命令）：單一源＝[governance/README.md](../governance/README.md) bootstrap 節——本檔不重抄。
 - **面外步驟**（bootstrap 列印不安裝）：
   - G1 secrets：`<repo>/settings.json`（gitignored local-only、含 API keys）從舊機拷——preflight 缺席＝fail-loud 擋下，不自動建不代寫。
-  - G3 hooksPath：`git config core.hooksPath .githooks`（per-clone，clone 後手動一次；非 .githooks＝WARN 列修復指引）。
-  - G5 backlog-cleanup plist：版控化＋裝載另 flash 承接。
+  - G3 hooksPath：`git config core.hooksPath .githooks`（per-clone，clone 後手動一次；非 .githooks＝preflight WARN、verify 完成檢查 FAIL）。
+  - G5 backlog-cleanup plist：已版控（`deploy/backlog-cleanup.plist`）——手動裝載見 [governance/README.md](../governance/README.md) 面外排程清單。
   - G6 池傳輸：§1（池 local-only 永不進 repo——clone 不帶池，新機空池起步）。
   - spine：`~/.agents/memory-spine/` 跨池共享目錄——缺席＝degraded WARN（報告非擋）。
-  - cron/monitor 裝載＝primary-only：§4（`--role secondary` 本弧僅介面）。
+  - cron/monitor 裝載＝primary-only：§4（monitor 已併 bootstrap primary 安裝——`--surface all` 成功後接 `--surface monitor`；`--role secondary` 本弧僅介面）。
 - **跨 repo 工具**（各自 repo/skill 為安裝真相源）：delegate-bridge plugin（marketplace 安裝；repo `~/Github/delegate-bridge`）、code-reality binary（[skills/code-reality/SKILL.md](../skills/code-reality/SKILL.md)）、NT 查詢工具鏈（已遷 mosaic repo-local `.agents/skills/`）、mosaic `com.mosaic.*` launchd 排程（mosaic repo 側管理）、entitlements-probe（`deploy/entitlements-probe.plist` 手動裝載）。
 
 ## 程序（按依賴序）

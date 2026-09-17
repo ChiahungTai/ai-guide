@@ -6,13 +6,22 @@
 
   Phase 1 preflight——uv 在 PATH、repo root（.git）、G1 secrets（<repo>/
   settings.json gitignored local-only——缺席 fail-loud 引導手動拷，不自動建
-  不代寫，拍板①）、hooksPath（非 .githooks＝WARN 列修復指引，G3）。
-  Phase 2 core——primary 跑 installer --surface all（exit 透傳）；
+  不代寫，拍板①）、hooksPath（非 .githooks＝WARN 列修復指引，G3）、
+  muse CLI（缺席＝FAIL——installer memory face 前置，R2 codex#4）、
+  canonical checkout（git rev-parse --git-dir 含 worktrees 節／與
+  --git-common-dir 不等＝linked worktree → FAIL——card WT 安裝會在共享
+  home config 留重複 group、symlink 指向 WT 生命週期路徑，R2 codex#8）。
+  Phase 2 core——primary 依次跑 installer --surface all → --surface monitor
+  （monitor＝顯式排程面，all 成功後單獨裝載，R2 codex#1；exit 透傳）；
   secondary 本弧僅介面（拍板②）。
   Phase 3 approve 暫停點——三項手動 approve（CC /hooks、codex trust、ZCode
-  重開 session）；approve 恆手動（拍板④），無 --approved 停此 exit 0。
-  Phase 4 verify 編排——installer --verify／--check、memory-topology、
-  check_single_source、hooksPath、spine degraded（在場與否皆報告非擋）。
+  重開 session）；approve 恆手動（拍板④），無 --approved 停此 exit 0；
+  --approved＝resume 語義——跳過 Phase 2 直接 Phase 4（--check 自證
+  Phase 2 產物在場，禁「先裝再當已批准」路徑，R2 codex#2）。
+  Phase 4 verify 編排——installer --verify／--check（all＋monitor）、
+  memory-topology、check_single_source、hooksPath 完成檢查（未設
+  .githooks＝FAIL——completion exit 非零，R2 codex#3）、spine degraded
+  （在場與否皆報告非擋）。
   Phase 5 面外清單——跨 repo 工具＋G5/G6 等（列印不安裝）。
 
 冪等：編排器自身無狀態——重跑發出相同命令序列；installer noop 冪等由
@@ -57,18 +66,76 @@ def _hooks_path_value() -> str:
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
-def _check_hooks_path() -> None:
-    """hooksPath 輸出探針：.githooks＝PASS；否則 WARN＋修復指引（G3，不擋）。"""
+def _git_dirs() -> tuple[str | None, str | None]:
+    """(--git-dir, --git-common-dir) 輸出（查詢失敗＝None）。
+
+    codex#8 機制按 git 實測修正：linked worktree 的 --git-dir＝
+    <main>/.git/worktrees/<name>、--git-common-dir＝<main>/.git——common-dir
+    恆不含 worktrees 節，故判定＝git-dir 含 worktrees 節或兩 flag 不等
+    （primary checkout 兩者同值；本 WT 真跑實證 ai-guide-air-110 形態）。
+    """
+    out: list[str | None] = []
+    for flag in ("--git-dir", "--git-common-dir"):
+        r = subprocess.run(
+            ("git", "rev-parse", flag),
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        out.append(r.stdout.strip() if r.returncode == 0 else None)
+    return (out[0], out[1])
+
+
+def _check_hooks_path(*, strict: bool = False) -> bool:
+    """hooksPath 輸出探針：.githooks＝PASS；否則 Phase 1 WARN＋修復指引
+    （G3，不擋）、Phase 4 完成檢查 FAIL（strict——completion exit 非零，
+    R2 codex#3）。回是否 PASS。"""
     value = _hooks_path_value()
     if value == HOOKS_PATH_EXPECTED:
         _probe("PASS", "hooksPath", f"core.hooksPath={value}")
-    else:
+        return True
+    repair = "git -C <repo> config core.hooksPath .githooks（per-clone）"
+    if strict:
         _probe(
-            "WARN",
+            "FAIL",
             "hooksPath",
-            f"core.hooksPath={value or '（未設）'}——修復：git -C <repo> config core.hooksPath .githooks"
-            "（per-clone；控制面隔離閘未上線＝guard 不生效）",
+            f"core.hooksPath={value or '（未設）'}——完成檢查 FAIL：{repair}"
+            " 後重跑 --approved（控制面隔離閘未上線＝guard 不生效）",
         )
+        return False
+    _probe(
+        "WARN",
+        "hooksPath",
+        f"core.hooksPath={value or '（未設）'}——修復：{repair}"
+        "（控制面隔離閘未上線＝guard 不生效）",
+    )
+    return False
+
+
+def _check_canonical_checkout() -> bool:
+    """R2 codex#8：linked worktree 判定（機制見 _git_dirs 實測註記）——
+    card WT 安裝會在共享 home config 留重複 group、symlink 指向 WT 生命
+    週期路徑（muse F-1 雙 REPO_ROOT 分叉的實證後果）。"""
+    git_dir, common = _git_dirs()
+    if git_dir is None or common is None:
+        _probe(
+            "FAIL",
+            "canonical-checkout",
+            "git rev-parse --git-dir/--git-common-dir 失敗——無法判定 canonical 形態（fail-loud）",
+        )
+        return False
+    if "worktrees" in Path(git_dir).parts or git_dir != common:
+        _probe(
+            "FAIL",
+            "canonical-checkout",
+            f"git-dir={git_dir}（linked worktree；common-dir={common}）——從 "
+            "canonical primary checkout 跑（card WT 安裝會在共享 home config "
+            "留重複 group、symlink 指向 WT 生命週期路徑）",
+        )
+        return False
+    _probe("PASS", "canonical-checkout", f"git-dir={git_dir}")
+    return True
 
 
 def preflight() -> bool:
@@ -99,6 +166,18 @@ def preflight() -> bool:
             f"從舊機拷貝 settings.json（含 API keys）到 {settings}"
             "（fail-loud：不自動建、不代寫；CC ~/.claude/settings.json symlink 前置鏈依賴它）",
         )
+        ok = False
+
+    muse_path = shutil.which("muse")
+    if muse_path:
+        _probe("PASS", "muse-cli", muse_path)
+    else:
+        _probe(
+            "FAIL", "muse-cli", "先安裝 Muse CLI（訂閱載具）再跑（installer memory face 前置）"
+        )
+        ok = False
+
+    if not _check_canonical_checkout():
         ok = False
 
     _check_hooks_path()
@@ -132,12 +211,17 @@ def verify_probes() -> bool:
     run_cmd(
         INSTALLER + ("--surface", "all", "--check"), "installer --check --surface all"
     )
+    run_cmd(
+        INSTALLER + ("--surface", "monitor", "--check"),
+        "installer --check --surface monitor",  # R2 codex#1：monitor 排程面 parity
+    )
     run_cmd(("bash", "hooks/verify-memory-topology.sh"), "memory-topology")
     run_cmd(
         ("uv", "run", "python", "skills/scan-project/scripts/check_single_source.py"),
         "check_single_source",
     )
-    _check_hooks_path()
+    if not _check_hooks_path(strict=True):  # R2 codex#3：完成檢查升 FAIL
+        ok = False
 
     spine = _spine_index()
     if spine.exists():
@@ -168,9 +252,11 @@ def print_external_list() -> None:
     print("面外步驟（installer 範圍外——hooks/MULTI-MACHINE.md「新機器全裝總覽」節）：")
     print("  - G1 secrets：<repo>/settings.json 從舊機拷貝（preflight 已擋缺席）")
     print(
-        "  - G3 hooksPath：git config core.hooksPath .githooks（per-clone，preflight 列修復指引）"
+        "  - G3 hooksPath：git config core.hooksPath .githooks（per-clone，preflight WARN；verify 完成檢查 FAIL）"
     )
-    print("  - G5 backlog-cleanup plist：未版控（另 flash 承接）")
+    print(
+        "  - G5 backlog-cleanup plist：已版控（deploy/backlog-cleanup.plist）——手動裝載見 README 面外清單"
+    )
     print("  - G6 池傳輸：新機器空池起步——hooks/MULTI-MACHINE.md §1")
     print("  - spine：~/.agents/memory-spine/ 跨池共享（缺席＝degraded 非擋）")
     print(
@@ -182,15 +268,19 @@ def _print_plan() -> None:
     """--dry-run：印 Phase 2-5 將執行的計畫（零安裝執行）。"""
     print("== Phase 2/5: core installer（計畫——未執行）==")
     print(f"  [wrap] {' '.join(INSTALLER)} --surface all")
+    print(f"  [wrap] {' '.join(INSTALLER)} --surface monitor  # all 成功後（primary monitor 裝載）")
     print("== Phase 3/5: approve 暫停點（計畫——未執行）==")
     _print_approve_steps()
-    print("  無 --approved＝停此 exit 0；完成 approve 後帶 --approved 續跑")
+    print(
+        "  無 --approved＝停此 exit 0；完成 approve 後帶 --approved 續跑（resume——跳過 Phase 2 安裝）"
+    )
     print("== Phase 4/5: verify 編排（計畫——未執行）==")
     print(f"  [probe] {' '.join(INSTALLER)} --surface all --verify")
     print(f"  [probe] {' '.join(INSTALLER)} --surface all --check")
+    print(f"  [probe] {' '.join(INSTALLER)} --surface monitor --check")
     print("  [probe] bash hooks/verify-memory-topology.sh")
     print("  [probe] uv run python skills/scan-project/scripts/check_single_source.py")
-    print("  [probe] git config --get core.hooksPath（輸出探針）")
+    print("  [probe] git config --get core.hooksPath（完成檢查：未設 .githooks＝FAIL）")
     print(
         "  [probe] memory-spine degraded 檢查（~/.agents/memory-spine/index.md 在場與否皆報告非擋）"
     )
@@ -214,7 +304,8 @@ def _parse(argv: list[str] | None) -> argparse.Namespace:
     ap.add_argument(
         "--approved",
         action="store_true",
-        help="approve 步已手動完成——續跑 Phase 4 verify＋Phase 5 面外清單",
+        help="approve 步已手動完成——resume：跳過 Phase 2 安裝直接 Phase 4 verify"
+        "＋Phase 5 面外清單（--check 自證 Phase 2 產物在場）",
     )
     return ap.parse_args(argv)
 
@@ -241,22 +332,30 @@ def main(argv: list[str] | None = None) -> int:
         print("[dry-run] 零安裝執行——計畫如上；移除 --dry-run 進入安裝")
         return 0
 
-    print("== Phase 2/5: core installer ==")
-    print(f"[wrap] {' '.join(INSTALLER)} --surface all")
-    r = subprocess.run(
-        INSTALLER + ("--surface", "all"), cwd=str(REPO_ROOT), check=False
-    )
-    if r.returncode != 0:
+    if args.approved:
+        # R2 codex#2：resume 語義——approve 已手動完成，跳過 Phase 2/3 直接
+        # verify（--check 自證 Phase 2 產物在場；禁「先裝再當已批准」路徑）。
         print(
-            f"[FAIL] installer exit {r.returncode}（透傳；線索＝~/.local/share/ai-guide/governance-plan-journal/）",
-            file=sys.stderr,
+            "== [resume] --approved：跳過 Phase 2 安裝（approve 已完成；Phase 4 --check 自證產物在場）=="
         )
-        return r.returncode
+    else:
+        print("== Phase 2/5: core installer ==")
+        for surface in ("all", "monitor"):  # R2 codex#1：primary 含 monitor 裝載
+            print(f"[wrap] {' '.join(INSTALLER)} --surface {surface}")
+            r = subprocess.run(
+                INSTALLER + ("--surface", surface), cwd=str(REPO_ROOT), check=False
+            )
+            if r.returncode != 0:
+                print(
+                    f"[FAIL] installer --surface {surface} exit {r.returncode}"
+                    "（透傳；線索＝~/.local/share/ai-guide/governance-plan-journal/）",
+                    file=sys.stderr,
+                )
+                return r.returncode
 
-    print("== Phase 3/5: approve 暫停點 ==")
-    _print_approve_steps()
-    if not args.approved:
-        print("完成 approve 後帶 --approved 續跑（approve 恆手動——拍板④）")
+        print("== Phase 3/5: approve 暫停點 ==")
+        _print_approve_steps()
+        print("完成 approve 後帶 --approved 續跑（approve 恆手動——拍板④；--approved＝resume 跳過安裝）")
         return 0
 
     print("== Phase 4/5: verify 編排 ==")

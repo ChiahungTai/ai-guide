@@ -11,6 +11,7 @@ import plistlib
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 from conftest import load_module
 
 mod = load_module("governance/install.py")
@@ -96,6 +97,24 @@ def test_codex_group_identity_follows_repo_root(tmp_path, monkeypatch):
     text = (f'[[hooks.Stop]]\nmatcher = ""\n[[hooks.Stop.hooks]]\n'
             f'type = "command"\ncommand = "python3 {repo}/hooks/post-build-gate.py"\n')
     assert mod._codex_group_identity(text) == ("Stop", "", frozenset({"post-build-gate.py"}))
+
+
+def test_group_scripts_identity_diverges_across_checkouts(tmp_path, monkeypatch):
+    """R2 item8（muse F-1）：多 checkout 語義——同一 config group 在兩個 REPO_ROOT
+    下 identity 認知分叉（A 的套件腳本＝B 的外來腳本）：每個 checkout 只認自己
+    hooks/ 路徑。這是 bootstrap preflight canonical-checkout FAIL 守衛（codex#8）
+    的根據——card WT 安裝會在共享 home config 留重複 group。"""
+    repo_a = tmp_path / "ai-guide"
+    repo_b = tmp_path / "ai-guide-air-999"
+    group = {"matcher": "", "hooks": [
+        {"type": "command", "command": f"{repo_a}/hooks/stop-notification.sh"}]}
+    monkeypatch.setattr(mod, "REPO_ROOT", repo_a)
+    ident_a = mod._group_identity(group)
+    monkeypatch.setattr(mod, "REPO_ROOT", repo_b)
+    ident_b = mod._group_identity(group)
+    assert ident_a[1] == frozenset({"stop-notification.sh"})
+    assert ident_b[1] == frozenset()
+    assert ident_a != ident_b  # 分叉：B 側不認得 A 的套件腳本
 
 
 def test_check_json_malformed(tmp_path):
@@ -278,7 +297,6 @@ def test_check_muse_source_path_not_canonical(tmp_path, monkeypatch):
 
 def test_check_muse_source_extra_file_and_approve_fail(tmp_path, monkeypatch):
     """S5 補腿：approve 態 FAIL 分支＋source 多檔（cache 舊）分支。"""
-    from types import SimpleNamespace as SN
     src = tmp_path / "muse-plugins/memory-governance"
     (src / "hooks").mkdir(parents=True)
     (src / "a.md").write_text("v1")
@@ -483,8 +501,9 @@ def test_hook_identity_cross_root_card_wt(tmp_path, monkeypatch):
 # ── AIR-110 G2/G4/G5（面外缺口補齊）───────────────────────────────
 # G2 四條 home symlink 擴 manifest skills 面（user 拍板③）：真 manifest entries
 # 在場＋HOME-shim 全鏈行為（build_plan→_apply_target install/noop／check 綠）。
-# G4 monitor plist 路徑參數化：{{REPO}}/{{HOME}} 佔位＋install.py render＋
-# --check --surface monitor 轉正（live 與 render 期望 byte parity）。
+# G4 monitor plist 路徑參數化：{{REPO}}/{{HOME}} 佔位＋install.py render_plist
+# （R2 codex#5：parse-modify-dump——只對已知路徑欄位替換 token，XML 註解隨
+# dump 卸除）＋--check --surface monitor 轉正（live 與 render 期望 byte parity）。
 # G5 backlog-cleanup plist 版控化（不入 installer——安裝形態＝清單列出）。
 
 
@@ -576,17 +595,22 @@ MINIMAL_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 
-def test_g4_render_home_token():
+def test_g4_render_home_token(monkeypatch):
+    # render 錨 canonical（0918 融合）——預種 cache 使 canonical＝本 WT 根
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
     assert mod.render("{{HOME}}/x") == f"{Path.home()}/x"
     assert mod.render("{{REPO}}/y") == f"{mod.REPO_ROOT}/y"
 
 
-def test_g4_monitor_plist_source_parameterized():
+def test_g4_monitor_plist_source_parameterized(monkeypatch):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
     text = (mod.REPO_ROOT / "deploy/governance-health-monitor.plist").read_text()
     assert "{{REPO}}" in text and "{{HOME}}" in text
     assert "/Users/" not in text  # 源零機器絕對路徑（跨機器零手改）
-    doc = plistlib.loads(mod.render(text).encode())
+    rendered = mod.render_plist(text)
+    doc = plistlib.loads(rendered.encode())
     assert doc["WorkingDirectory"] == str(mod.REPO_ROOT)
+    assert "<!--" not in rendered  # codex#5：XML 註解隨 dump 卸除
 
 
 def _mon_setup(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
@@ -624,7 +648,7 @@ def test_g4_check_monitor_missing_source_drift(tmp_path, monkeypatch):
 def test_g4_check_monitor_drift_on_content_diff(tmp_path, monkeypatch):
     src, inst = _mon_setup(tmp_path, monkeypatch)
     inst.parent.mkdir(parents=True)
-    inst.write_text(mod.render(src.read_text()).replace("86400", "1"))  # 手改 live
+    inst.write_text(mod.render_plist(src.read_text()).replace("86400", "1"))  # 手改 live
     drifts: list = []
     mod.check_monitor_face(_mon_manifest(inst), drifts)
     assert any("plist 漂移" in m for _, m in drifts)
@@ -633,7 +657,7 @@ def test_g4_check_monitor_drift_on_content_diff(tmp_path, monkeypatch):
 def test_g4_check_monitor_green_on_rendered_equal(tmp_path, monkeypatch):
     src, inst = _mon_setup(tmp_path, monkeypatch)
     inst.parent.mkdir(parents=True)
-    inst.write_text(mod.render(src.read_text()))
+    inst.write_text(mod.render_plist(src.read_text()))
     drifts: list = []
     mod.check_monitor_face(_mon_manifest(inst), drifts)
     assert drifts == []
@@ -645,7 +669,7 @@ def test_g4_cmd_check_monitor_exit_codes(tmp_path, monkeypatch):
     m = _mon_manifest(inst)
     assert mod.cmd_check(m, "monitor") == mod.EXIT_DRIFT  # live 缺席
     inst.parent.mkdir(parents=True)
-    inst.write_text(mod.render(src.read_text()))
+    inst.write_text(mod.render_plist(src.read_text()))
     assert mod.cmd_check(m, "monitor") == mod.EXIT_OK
 
 
@@ -662,8 +686,54 @@ def test_g4_apply_launchd_plist_renders_tokens(tmp_path, monkeypatch):
     plistlib.loads(text.encode())  # 寫入副本仍合法 plist
 
 
-def test_g5_backlog_cleanup_plist_versioned_and_parameterized():
+def test_g4_render_plist_parse_modify_dump(tmp_path, monkeypatch):
+    """R2 codex#5：render＝parse-modify-dump——只對已知路徑欄位（ProgramArguments
+    元素／WorkingDirectory／Standard*Path／EnvironmentVariables 值）替換 token；
+    XML 註解隨 dump 卸除（註解含 token 字樣／路徑含雙連字號不再毒化輸出）。"""
+    repo = tmp_path / "repo"
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    src = MINIMAL_PLIST.replace(
+        "<key>Label</key><string>test.label</string>",
+        '<key>Label</key><string>{{REPO}}-keep</string>',
+    ).replace(
+        '<plist version="1.0">',
+        '<plist version="1.0">\n<!-- 註解含 {{REPO}} 與 {{HOME}} 字樣 -->',
+    )
+    out = mod.render_plist(src)
+    doc = plistlib.loads(out.encode())
+    assert doc["WorkingDirectory"] == str(repo)
+    assert doc["ProgramArguments"][0] == f"{Path.home()}/.local/bin/uv"
+    assert doc["Label"] == "{{REPO}}-keep"  # 非路徑欄位——token 不替換
+    assert "<!--" not in out  # 註解隨 dump 卸除
+    assert out.count("{{REPO}}") == 1 and "{{HOME}}" not in out
+
+
+def test_g4_render_plist_env_vars_renders_values(tmp_path, monkeypatch):
+    """EnvironmentVariables 值屬路徑欄位——token 替換落地。"""
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path / "repo")
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    src = MINIMAL_PLIST.replace(
+        "<key>StartInterval</key><integer>86400</integer>",
+        "<key>StartInterval</key><integer>86400</integer>\n"
+        "<key>EnvironmentVariables</key>\n<dict>\n"
+        "<key>HOME</key><string>{{HOME}}</string>\n"
+        "<key>PATH</key><string>{{HOME}}/.local/bin:/usr/bin</string>\n"
+        "</dict>",
+    )
+    doc = plistlib.loads(mod.render_plist(src).encode())
+    assert doc["EnvironmentVariables"]["HOME"] == str(Path.home())
+    assert doc["EnvironmentVariables"]["PATH"] == f"{Path.home()}/.local/bin:/usr/bin"
+
+
+def test_g4_render_plist_malformed_source_fail_loud():
+    with pytest.raises(mod.GovernanceError, match="版控源非合法 plist"):
+        mod.render_plist("not a plist at all")
+
+
+def test_g5_backlog_cleanup_plist_versioned_and_parameterized(monkeypatch):
     """版控源形態釘住 live plist（AIR-110 G5）：排程欄位＋script 路徑逐字對照。"""
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
     text = (mod.REPO_ROOT / "deploy/backlog-cleanup.plist").read_text()
     assert "{{REPO}}" in text and "{{HOME}}" in text
     assert "/Users/" not in text

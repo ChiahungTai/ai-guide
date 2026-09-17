@@ -7,9 +7,9 @@ journal 對 R2 中途 kill 回滾契約。
 """
 
 import json
+from types import SimpleNamespace
 
 import pytest
-
 from conftest import load_module
 
 mod = load_module("governance/install.py")
@@ -202,3 +202,26 @@ def test_codex_toml_uninstall_absent_file_leaves(tmp_path):
     outcome = mod._apply_target({"target": t["target"]}, t, "uninstall")
     assert outcome == "not-present（leave）"
     assert not (tmp_path / "config.toml").exists()  # 不建立任何檔案
+
+# ── muse CLI 前置守衛（R2 item7——codex#4 ownership）──────────────
+
+
+def test_memory_face_requires_muse_cli(monkeypatch):
+    """memory install 前置守衛：muse 缺席＝GovernanceError 乾淨訊息
+    （非 FileNotFoundError traceback；bootstrap preflight 同款守衛的
+    installer 側防線）。canonical 預種＝繞過非 canonical install guard
+    （本測試在 card WT 跑，不預種會先撞 EXIT_GUARD 到不了 muse 守衛）。"""
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE",
+                        {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    manifest = {"surfaces": {"memory": {"plugin_id": "x", "plugin_path": "p",
+                                        "pool_setup": "s"}}}
+    with pytest.raises(mod.GovernanceError, match="muse CLI 缺席"):
+        mod.cmd_install_uninstall(manifest, "memory", "install")
+
+
+def test_muse_disable_requires_muse_cli(monkeypatch):
+    """muse-disable target（uninstall 路徑）同受守衛——subprocess.run 前擋下。"""
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    with pytest.raises(mod.GovernanceError, match="muse CLI 缺席"):
+        mod._apply_target({}, {"kind": "muse-disable", "action": "remove"}, "uninstall")
