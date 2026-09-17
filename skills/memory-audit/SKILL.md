@@ -84,7 +84,7 @@ muse `add_memory`/`edit_memory` 經 PreToolUse 閘（承載＝user-scope plugin 
 2. **WAL light 狀態機**：inbox root `.json`（new）→ `mv` 進 `processing/`（claim）→ 處理完 `done/`｜`rejected/`，各留 receipt 一行 JSON（來源檔名/去處/時間）。`processing/` 殘留＝中斷證據——**停下人判，不自動重跑**；hook 端 temp+rename 原子發布保證本站不讀半檔。`.tmp-*` 殘留（hook 在寫入與 rename 之間崩潰的孤兒）＝同類中斷證據——列報告後順手清（mtime>1d）；它不匹配 `*.json` 消費 glob，屬偵測面非資料面
 3. **path contract（寫主體前逐條機械檢查——payload 的 path 是模型未驗證 input，不得直接當寫入座標）**：① scope=project only ② 池根 basename（禁子目錄——generator／watch-seed／索引連結只看頂層，子目錄請求明確 rejected；T4-2）③ ancestry 判定必須 delimiter-aware：`realpath` 等於 `$AGENT_MEM` 或以 `$AGENT_MEM/`（含尾 slash）為前綴——純字串 startswith 會把 sibling `memory-inbox` 誤判為池內（T3-3；回歸樣本 `../memory-inbox/<合法.md>` 必擋）④ symlink component 逐段 `lstat` 拒絕——realpath-containment 只是必要條件（`alias -> 池內實目錄` 會通過 containment，仍須擋；T3-2）⑤ 非 reserved（比對大小寫無關——本機 macOS CI fs，`memory.md` 命中 `MEMORY.md`；池 basename 現全 ASCII，Unicode aliasing 暫 N/A）⑥ edit 命中已存在且 frontmatter 合法的條目。任一不過 → `rejected/` receipt 記理由
 4. **CAS（edit 類）**：操作類只以 payload 不可變 `tool_name` 判——`_inbox_meta` 出現條件是「path 命中已存在條目」而非 tool==edit（add 指既有 path 亦附 meta；T3-6）。`_inbox_meta.base_sha256` vs 目標條目當前 hash——相等才自動套用；不等（攔截後被 CC/ZCode 改過）→ conflict queue 留人裁。add 類同名已存在 → 同 conflict queue（比對大小寫無關，同⑤）
-5. **六問→寫入**：合格條目過寫入六問 → 補/修 frontmatter（name/desc/type）→ 寫主體 → regen → `done/` receipt；不合格（任務終態可推導/未定案）→ `rejected/` receipt 記理由（去卡或棄置）
+5. **六問→寫入**：合格條目過寫入六問 → 補/修 frontmatter（name/desc/type）→ 寫主體 → regen → `done/` receipt；不合格（任務終態可推導/未定案）→ `rejected/` receipt 記理由（去卡或棄置）。**轉寫對等檢查（AIR-100 S-B）**：source 檔名或擬定 name 帶弧狀態後綴（`-pending`/`-inflight`/`-in-flight`/`-landed`/`-done`/`-closed`——與 hook `STEM_SUFFIX_RE` 同枚舉）→ 停手改寫後才轉寫：轉寫是間接過閘（後綴機械擋面只在 Write 新建路徑生效——Edit 改不了檔名），本檢查把同一 invariant 延到人/LLM 判斷面
 6. **逾期語義**：夜掃三 dot-area 不含 `.agents/`——逾期 inbox 不是垃圾，是 consolidation 停擺警訊；watchdog＝daily-maintain Phase 0 雙檢查（不同故障域；排程承載見 schedule-registry 反查表——AIR-54 P5 週節奏），age 訊號連續兩排程週期命中 → 🔴、processing 殘留/直寫立即 🔴
 
 **Pending 讀取覆層（AIR-63）**：池根 `_pending.md`（`_` 前綴不進索引投影）＝inbox new/processing 候選的確定性發現視圖——`uv run python skills/memory-audit/scripts/generate_pending.py`（手動或夜波 Phase0 refresh）。provisional：canonical > pending，不得據此覆蓋 canonical；edit 類候選對 canonical 查 CAS（base 失效＝STALE/conflict）；excerpt 前 300 字、單檔 4K 上限（超量只列條目）。生成器自產物——reconciler 豁免（上方 T4-1 訊號③）。
@@ -146,7 +146,7 @@ last_index_chars: <n> # 上次 --check chars——lite 流入率監控基線
 >
 > **residency 三測試**：① Bootstrap——body 下沉後，模型不知道其內容仍能可靠知道何時載對應 skill；不能則最小 bootstrap 留 rule。② First consequential action——若等 on-demand 載入時首個不可忽略行為已可能發生，核心須提前常駐。③ Portfolio duplication——若同一約束已由更高優先級 instruction、hook、repo AGENTS 或可靠 skill trigger 承載，user-level 重複 rule 應退出。
 >
-> **條件載入層**：Claude Code `paths:` 僅表示「Read 到 matching path 後載入 rule body」的原生 runtime 條件，不單獨作為 non-CC bundle 排除訊號；portable body→skill／bootstrap-pointer projection 必須顯式 opt-in；**projection 機制尚未落地（落地弧＝AIR-85），落地前不得據此排除 non-CC bundle body**。新增 path-scoping 亦須重新通過上述 Bootstrap／First consequential action 測試。
+> **條件載入層**：Claude Code `paths:` 僅表示「Read 到 matching path 後載入 rule body」的原生 runtime 條件，不單獨作為 non-CC bundle 排除訊號；portable body→skill／bootstrap-pointer projection 必須顯式 opt-in；**projection 已落地（AIR-85；部署 bundle 實測含 pointer projection），path-scoping 排除判準照 residency 三測試**。新增 path-scoping 亦須重新通過上述 Bootstrap／First consequential action 測試。
 
 | 載體 | 職責（收什麼） | 稀缺層（context 佔用） | 寫入預設 |
 |---|---|---|---|
