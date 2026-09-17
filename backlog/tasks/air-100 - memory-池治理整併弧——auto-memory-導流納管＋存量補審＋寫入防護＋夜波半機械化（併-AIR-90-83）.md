@@ -1,10 +1,10 @@
 ---
 id: AIR-100
 title: memory 池治理整併弧——auto-memory staging＋單向晉升＋存量補審＋寫入防護＋夜波半機械化（併 AIR-90/83）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-15 14:34'
-updated_date: '2026-09-16 21:35'
+updated_date: '2026-09-17 00:54'
 labels:
   - governance
   - memory
@@ -66,4 +66,12 @@ Provenance：09-15 user 提問「CRUD 準則有沒有開卡＋驗一下配置」
 0917 凌晨 Segment 0 前置調查開工（caller 排程）：muse（機制正確性評估）＋flash（runtime 探測）兩腿並行——涵蓋 handoff 九條 runtime validation 可執行項；完成後交 codex＋5.3 討論機制，裁決輸入回 user。調查產物＝.agent-tmp/guides-refactoring/。
 
 0917 凌晨機制裁決（caller 拍板，codex/muse/5.3 三顧問共識）：D1 admission 唯一化（consolidation 唯一入池權威）；D3 crash 分級（品質門 fail-open、admission 門 fail-closed）；D4 codex 補最小 path-deny-all（tool 名先探針）；D5 退役夜波快照結算——今晚零工程、停波＝正確行為；S1-S5 吸收為 Segment 0/1 不另開卡，唯 S4/S5（全波停閘改 per-file／scoped snapshot 鏈）因 D5 退役而 moot 不執行；S1（sensor --source 顯式傳入）無條件先做；muse plugin source.path 舊路徑＝從 canonical source 重裝＋re-approve；subagent 雙面隱形＝接受 detected-only＋spawn contract 加禁碰池約束。⚠️ I4 反轉更正：『ZCode sensor 從未 fire』為誤——memory-write-sensor.py:48 硬編 source label，ZCode hooks 一直在 fire（64/64 join 實證）；真盲區＝背景蒸餾器寫入。runtime 探測全記錄＝.agent-tmp/guides-refactoring/{f-probe-output,m-mech-output,mech-synthesis}.md
+
+【收線 coverage matrix＋卡 AC 回寫（EP 收尾步驟 1/2 執行）】writer×防線矩陣終態：CC/ZCode main Write/Edit=prevented；subagent=detected-only（reconcile 兜底；spawn contract 禁碰池已落 agent-workflow skill）；muse tool write=prevented-via-divert（trusted_enabled 已驗證）；muse teardown=Bash redirect=codex 寫池（S-A 前 unsupported→S-A 後 prevented）——codex path-deny 閘已註冊 config.toml:365-376；NotebookEdit=unsupported（matcher 移除，parity assertion 防再生）；後綴 invariant=prevented（P3 落地＋AC-B7 failure-path 誠實標記：載體 fail-open 為已知缺口）。卡 AC 回寫：A1 範圍變更（staging/晉升條文承接＝memory-audit AC-D5，quarantine allow-list 隨 D5 作廢）；A3 吸收路徑（S-D 處置表銷帳＋reconcile）；A4 隨 AIR-83 整併＋D5 作廢；A5 已修（memory-audit:149 projection 訂正 commit 12b25c0）。deferred：AC-A6 codex session live 實跑（須 trust approval 後新 codex session）、P0-5 main live 重放、AC-D1/D4 新 session 觀察——集中總驗卡機制。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+memory 寫入治理落地：codex path-deny 閘（apply_patch canonical＋fail-closed）、後綴擋 P3（air-90 承接）、NotebookEdit dead-matcher 處置＋parity assertion、approve-drift monitor 源、(a) staging 手術＋91 條 reviewed admission（收編 34/修寫 31/退役 21＋air111 墓碑/拆分 4，池 porcelain 歸零）；closure 三層閘自我消費（44 新測試，全套 715 綠）。deferred：AC-A6 live、D1/D4 新 session 觀察——總驗卡機制
+<!-- SECTION:FINAL_SUMMARY:END -->

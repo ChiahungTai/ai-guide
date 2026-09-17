@@ -1,9 +1,10 @@
 ---
 id: AIR-117
 title: post-build 增設 memory 收尾腿——本弧池條目盤點＋即時蒸餾＋.agent-tmp 分類
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-16 22:13'
+updated_date: '2026-09-17 00:54'
 labels: []
 dependencies: []
 ordinal: 102000
@@ -20,3 +21,9 @@ ordinal: 102000
 - [ ] #1 post-build skill 增步驟條文（含與 commit 2.8/結案蒸餾的分工邊界聲明）
 - [ ] #2 以一個真實弧試跑：產出本弧 footprint 清單＋處置紀錄
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+post-build memory 收尾腿條文落地（footprint 盤點＋即時蒸餾/terminal 分流＋2.8/結案分工邊界）＋guides-refactoring 弧試跑（3 條 terminal 登記＋.agent-tmp 分類）；落地前審查閘＝主 session low-risk 分類（additive step）＋muse BI 審（P-1/P-2 澄清已套用）
+<!-- SECTION:FINAL_SUMMARY:END -->

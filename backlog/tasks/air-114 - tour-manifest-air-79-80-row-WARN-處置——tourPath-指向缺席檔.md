@@ -1,9 +1,10 @@
 ---
 id: AIR-114
 title: tour manifest air-79-80 row WARN 處置——tourPath 指向缺席檔
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-16 13:51'
+updated_date: '2026-09-17 00:54'
 labels: []
 dependencies: []
 ordinal: 99000
@@ -19,3 +20,9 @@ ordinal: 99000
 <!-- AC:BEGIN -->
 - [ ] #1 處置落地後 code-reality tour_validate --manifest --repo . 重跑：WARN 0，或處置理由入卡 notes
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+處置＝維持 manifest 原狀——卡前提查證不成立（tour 檔存在且已版控 a21ced6）；WARN 1 為 delta-corpus 結構提示非異常（tour_validate 源碼實證）
+<!-- SECTION:FINAL_SUMMARY:END -->
