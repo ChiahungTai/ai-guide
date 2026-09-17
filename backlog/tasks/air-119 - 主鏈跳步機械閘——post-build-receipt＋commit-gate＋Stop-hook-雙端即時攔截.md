@@ -1,10 +1,10 @@
 ---
 id: AIR-119
 title: 主鏈跳步機械閘——post-build receipt＋commit gate＋Stop hook 雙端即時攔截
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 08:35'
-updated_date: '2026-09-17 10:49'
+updated_date: '2026-09-17 11:21'
 labels: []
 dependencies: []
 references:
@@ -28,4 +28,18 @@ implement build 收斂後直接停、跳過 /post-build——LLM 紀律失敗（
 0917 fresh-eyes 審查腿回報：9 findings（2🔴2🟡5🟢）全數 confirmed、全數修復，修後 fixture 回歸 16/16 雙解譯器綠＋pytest 788。要點：F1🔴生命週期 off-by-one（post-build receipt 寫於 commit 前→/commit 推進 HEAD 必變 stale→正確走主鏈的弧必被誤攔）→修法＝/commit 階段 6 成功後機械刷新 receipt head_sha＋stale reason 補逃生口；F2🔴slash branch（feature/x）marker 路徑缺中間目錄→預算防線靜默失效→修法＝_branch_key() 統一 → 編碼（receipt＋marker 雙側）；F3🟡commit skill 捷徑模式枚舉補 2.95；F4🟡A 腿 stringly-typed→新增 --verdict tri-state CLI（2.95 消費 JSON，禁 import 連字號檔名）；F5-F9🟢docstring／缺 head_sha 歸 missing／trunk 硬編碼限制文件化／detached HEAD 豁免／ensure_ascii 防禦。審查中自測額外抓到：_budget_consume 自截斷 bug（"w" 開檔截斷後同檔讀→計數恆 1→預算永不到頂）——測試序型＋產品各一處學費。回執四欄更新：review=fresh-eyes 獨立 context（85 萬 tokens／21 工具調用／sandbox 實證，9 findings confirmed）＋intent 本 session；跨家族外審腿未派——顯式記錄降級（本日多弧並行額度評估），由 in-harness fresh-eyes 完整承接（instruction-writing 落地前審查閘第 2 點）。
 
 更正補記：F2 編碼細節＝branch 進檔名前把斜線替換為雙底線（_branch_key 函式，receipt 與 marker 雙側同函式）——前文『統一 → 編碼』因 shell substitution 缺字。
+
+0917 live 驗證 ZCode 腿證據（落盤）：Stop hook 於新 session（builder session 結束後重開、config 由 installer 落 live）turn end 實際 fire＋block——reason 注入可見、預算計數 #1 顯示、branch=air-119 判定正確（領先 main 1 commit＋無 receipt→block）。機械證據＝Stop hook additional context 注入本 session（『本弧尚無有效 post-build receipt（branch=air-119，領先 main 1 個 commit）…此提醒有預算上限』）。剩：/post-build 寫 receipt→turn end 放行驗證；CC 一輪待跑。
+
+0917 19:10 讓位聲明（跨 session 協調）：偵測到並行 session 於本共享 WT 實作卡驅動豁免（hooks/post-build-gate.py＋skills/commit/SKILL.md 已 staged 未 commit；AIR-122 卡已開）——本 session /post-build 暫停、不寫 receipt（寫了必 stale）；A 腿 2.95 會強制 commit 者自跑收尾鏈，收尾歸 commit session 承接。本 session 既有產出：①block #1 live 證據（前則 notes）②fresh-eyes F1/F2/F4 修復抽查機械證實（commit SKILL:190 刷新／_branch_key 雙側／--verdict CLI）③tests/test_post_build_gate.py（untracked）＝fixture 提煉的永久場景測試，現編碼舊豁免矩陣——卡豁免落地後需補 fixture 卡（backlog/tasks/card-x - *.md，照 .agent-tmp fixture 75-76 行模式）才綠：可採納改寫或刪除，禁留紅燈入 suite。賽跑時間線證據：19:00 舊版 hook fixture 16/16 雙解譯器綠→19:01-02 對方 stage＋更新 fixture→19:01 pytest 對新版 exempt 而敗（非測試缺陷）。Stop hook 預算 2/2 已耗畢——本 branch turn-end 靜默＝設計行為非閘故障；receipt 寫入後自動清預算。
+
+0917 補記（前則 append 因 backlog CLI 不支援 --quiet 未落地）：設計修訂三落地完成——_card_exists 改 backlog CLI task view 權威（probe：小寫/大寫 id 解析 exit 0、查無 exit 1、耗時 200ms）；tests/test_post_build_gate.py 對齊新語義（fixture 由真 CLI init+create 建、branch=CLI 配的 id 小寫、無卡豁免案例 t9、F2 降函式級直測 _branch_key＋預算讀寫）789 全綠，已 amend 進 5169fec。協調收斂：讓位聲明所指並行 writer＝本弧 owning session（amend 的 add→pre-commit 24s 窗口被觀察為 staged；HEAD 已推進 5169fec）；殘項對帳——test file 已由 owning session 重寫並 commit（『舊豁免矩陣』狀態失效，勿重做）；receipt 本補記後寫入（head=5169fec 版本）。
+
+0917 live 驗證雙腿完成：①ZCode——接手驗證 session（gate 註冊後新開的真實 session）turn end 被 block #1（reason 注入可見、預算 #1），第二次 block 後預算 2/2 耗畢轉靜默（設計行為）；②CC——headless claude -p 實測：暫移 receipt 後 Stop hook 觸發 block ×2（budget marker=2 機械證據）、第三輪放行 exit 0，receipt 還原後 --verdict=ok 並清預算。AC 雙端 live 驗證齊備。本弧收線：結案兩步＋merge。蒸餾：無相關 memory 條目需處置（知識已住 repo：gate 腳本＋卡 notes＋POC 證據）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+主鏈跳步機械閘落地——post-build receipt＋commit 2.95 閘＋Stop hook 雙端（ZCode 真實新 session block 實證＋CC headless block ×2）；fresh-eyes 9 findings 全修；無卡豁免＋backlog CLI 卡判定＋block 預算 2 自限
+<!-- SECTION:FINAL_SUMMARY:END -->
