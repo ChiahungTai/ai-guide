@@ -438,7 +438,7 @@ Spawn Agent（subagent_type: "Explore"），prompt 包含：
 
 EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類導讀殼（Report Shell，user 裁決：「EP 我現在很少看了，太難理解」——md 給 AI，殼給人）：
 
-- 產物＝任務家 `MM-DD-<task-name>/index.html` **骨架**（零渲染管線內容——HTML 塊/表格可寫進敘事；渲染管線圖〔mermaid〕**延 hook 2 一次產**，diagram 槽留 degraded 待裝；**任務家探測**見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」）——完整規格見 [illustrate html-mode](../_common/illustrate-html-mode.md)「html 報告殼」段（三層結構/內容篩選通則/敘事骨架/雙向一致性/殼生命週期掛點），此處不重述
+- 產物＝任務家 `YYYY-MM/<MM-DD-主題>/index.html` **骨架**（與 EP 本體同任務家目錄——位置規則見本檔「位置」條與 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；零渲染管線內容——HTML 塊/表格可寫進敘事；渲染管線圖〔mermaid〕**延 hook 2 一次產**，diagram 槽留 degraded 待裝）——完整規格見 [illustrate html-mode](../_common/illustrate-html-mode.md)「html 報告殼」段（三層結構/內容篩選通則/敘事骨架/雙向一致性/殼生命週期掛點），此處不重述
 - **成本分級**：基礎款（複製 template [`skills/_common/illustrate-report-shell.html`](../_common/illustrate-report-shell.html)＋填 slot）**必備**；升級款（+圖）於 **hook 2** 依 [diagram-selection](../diagram-selection/SKILL.md) 選型補——按 EP 規模（多段/有結構主張）或 user 點名
 - 投影鎖定 EP 當下狀態（殼頭部聲明 **EP 路徑＋task integration baseline＋projection source**；未 commit 的 EP 用 content SHA——下游 `/post-build`/`code-review` 弧模式跨 session 可從殼讀，任務起點與投影新鮮度不混用）；badge 📋——推進時 badge 🟡 同步掛 implement 階段 5a（✅ 升級掛 post-build hook 2），實作章節掛 post-build hook 2（無 post-build 弧 fallback implement 階段 6；詳 [implement](../implement/SKILL.md)）
 - 交付時引導 user 開殼 review（大方向判讀用殼、批准後進 `/implement`；AI 消費仍以 md 為源）

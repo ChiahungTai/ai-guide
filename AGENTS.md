@@ -7,7 +7,7 @@
 
 本專案管理 AI coding agent 的 rules、skills、commands（跨 harness：Claude Code / ZCode / Codex / Muse）。
 
-所有 rules/skills/commands 的**文件本身供 AI 消費**（AI 讀 `.md` 來執行命令）—— 寫作、審查、修改以「AI 能否正確執行」為準。readability 對 AI = 結構可機械解析、指令可遵行，**不是人類閱讀流暢度**；禁止用「人類讀者需要前置框架/會困惑」這類人類認知論證當審查發現。無需人類式證據出處、版本履歷、精確專案數字（詳見 instruction-writing skill、`rules/instruction-writing.md`）。
+所有 rules/skills/commands 的**文件本身供 AI 消費**（AI 讀 `.md` 來執行命令）—— 寫作、審查、修改以「AI 能否正確執行」為準。readability 對 AI = 結構可機械解析、指令可遵行，**不是人類閱讀流暢度**；禁止用「人類讀者需要前置框架/會困惑」這類人類認知論證當審查發現（作用域限軌道① LLM 執行鏈命令——軌道② viewport 命令〔debrief/illustrate/smell-detector〕的產出本以人類可判讀為目的，人類認知論證是其正當審查準據）。無需人類式證據出處、版本履歷、精確專案數字（詳見 instruction-writing skill、`rules/instruction-writing.md`）。
 
 > **文件受眾 ≠ 命令受眾**：文件一律給 AI 讀（執行用）；但命令的**產出**服務不同對象 —— LLM 執行鏈（機器消費）或人類 viewport（人消費）。命令的設計、審查、討論一律以「產出受眾」為頂層脊柱（見下）。
 

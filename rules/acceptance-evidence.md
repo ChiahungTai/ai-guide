@@ -18,4 +18,4 @@ oracle 權威四級：**S**＝具獨立 authoritative oracle_source（規格/領
 
 ## 證據階層
 
-驗證深度按風險分級（L1 靜態→L6 人類觀察）；**禁用低層證據冒充高層驗收**，低風險不必爬滿六層。層級表、A/B 軸分工、驗證順序見 [quality-constraints](quality-constraints.md)與 acceptance-evidence skill。
+驗證深度按風險分級（L1 靜態→L6 人類觀察）；**禁用低層證據冒充高層驗收**，低風險不必爬滿六層。層級表、A/B 軸分工、驗證順序的單一落點＝acceptance-evidence skill（自 rule 遷入；quality-constraints 不攜層級表）。

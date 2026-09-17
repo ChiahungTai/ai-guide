@@ -48,7 +48,7 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 
 **建卡前去重**（中）：`backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿；與同域 `open-items.md`，例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾（一行指針 ≠ 承諾，`backlog` 卡 = 承諾）。
 
-**開工——起手式五步**（凡要動某卡的 session——implement 階段 1 是標準入口；automation／監控／report 等衍生 session 不走 implement 亦同）：
+**開工——起手式五步**（凡要動某卡的 session——implement 階段 1 是標準入口；automation／監控／report 等衍生 session 見下方「board single-writer 例外分工」——①⑤ 由 board-control 代行，衍生 session 本身不寫卡 metadata）：
 ```bash
 # ① 第一動——平行 session 可見
 backlog task edit <id> -s "In Progress"   # 🔴 必是動卡的第一個動作
