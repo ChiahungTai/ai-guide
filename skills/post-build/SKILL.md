@@ -89,6 +89,8 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 ## 階段 2 — Judge Review（僅 code 鏈）
 
+**帳本 lint（AIR-121——進本階段前機械閘）**：`uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md`——exit 0 進；exit 1/3＝帳本不合 canonical（identity 缺失／欄位值域違規），先修帳本格式再進（lint 約束見腳本 docstring）；exit 2（帳本不存在）＝首次審查常態，跳過 lint 直接進。
+
 執行 `judge-review`（[skills/judge-review/SKILL.md](../judge-review/SKILL.md)；**指定帳本＝`.review/<branch>.md` 工作帳本**——輸入從該帳本讀 findings，不需人工貼上）。產出 ✅/❌/⚠️ 決策清單。
 
 ⚠️ 需確認項：彙整到收尾報告給用戶；**影響 scope／AC／gate 的需確認項阻擋 accepted／Verified**（不結案、badge 維持 🟡、不移 Done——未決即收斂≠全清），純建議類可保留顯性未決但收尾報告必明列未決清單，不偽裝全清。
@@ -121,6 +123,14 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - **② Extract（LLM 萃取——candidate 非空才做）**：舊主張／新約束／consumer concept（＝引用該政策句主張的下游陳述）；全判無政策影響才空跳。
 - **③ Delegate（委派既有機制——不重定義 scan）**：定義源變更 → instruction-writing single-source scan；blueprint 在場 → 讀其 AGENTS 真相源映射／更新觸發；否則 rename 反掃的 project AGENTS／EP fast-drift list；`rg` catch-all 封底。
 - **④ Dispose（處置四值）**：`update`（改新政策／新錨）／`historical`（刻意留的退役說明；provenance 規則見 instruction-writing）／`no-change`（證據足才用）／`unverified`（證據不足——**不視為收斂**，報告帶未驗 consumer／原因）。**rg 命中≠待修**；零命中＝完成證據。
+
+## 收斂態落卡（階段 5 前——AIR-121）
+
+帳本收斂態機械落卡（`.review/` 隨 commit 清除、對話報告非 durable——durable 落點＝卡 notes）：
+
+- 卡在場（本弧 owning 卡）→ `uv run python skills/post-build/scripts/review_ledger.py parse .review/<branch>.md` → exit 0：輸出 payload 以一行 `backlog task edit <卡id> --append-notes "<payload>"` 落卡
+- exit 1/2/3 → **不落卡**：payload 改列收尾報告＋顯性降級記錄（fail-closed 禁猜）
+- 卡檔不在本工作樹可見（窗期——卡 commit 在 main）→ 同樣緩衝到輸出檔＋收尾報告，**禁開暫時 worktree 硬寫**
 
 ## 階段 5 — Report Shell refresh（hook 2——commit 前最後穩定點）
 
