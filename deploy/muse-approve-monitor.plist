@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- muse approve-drift monitor 排程（日頻；AIR-100 S-E，版控於 deploy/）。
+     未啟用（user gate）：本檔僅版控源，未安裝至 ~/Library/LaunchAgents/——
+     安裝（user 機器操作，非 agent 執行）：
+       cp deploy/muse-approve-monitor.plist ~/Library/LaunchAgents/com.ai-guide.muse-approve-monitor.plist
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.ai-guide.muse-approve-monitor.plist
+     行為：exit 1（非 trusted/命令失敗——fail-closed）時告警行落 StandardOutPath/
+     StandardErrorPath 日志；launchd 非零 exit 不觸發重跑（StartInterval 節流）。
+     回復＝launchctl bootout gui/$(id -u)/com.ai-guide.muse-approve-monitor 後刪
+     ~/Library/LaunchAgents/ 副本；script 保留（dead but harmless）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.muse-approve-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/ctai/.local/bin/uv</string>
+        <string>run</string>
+        <string>python</string>
+        <string>scripts/muse_approve_monitor.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/ctai/Github/ai-guide</string>
+
+    <key>StartInterval</key>
+    <integer>86400</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-muse-approve-monitor.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-muse-approve-monitor-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/ctai</string>
+        <key>PATH</key>
+        <string>/Users/ctai/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>
