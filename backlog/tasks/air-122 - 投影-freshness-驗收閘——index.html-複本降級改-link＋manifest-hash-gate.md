@@ -1,10 +1,10 @@
 ---
 id: AIR-122
 title: 投影 freshness 驗收閘——index.html 複本降級改 link＋manifest hash gate
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 11:06'
-updated_date: '2026-09-17 13:01'
+updated_date: '2026-09-17 13:21'
 labels: []
 dependencies: []
 ordinal: 107000
@@ -27,3 +27,9 @@ ordinal: 107000
 明示不動：AIR-118/121/123 已落地檔；mosaic 本體（泛化消費者在彼 repo）。
 AC：①freshness check script＋pytest（stale/fresh 兩態 exit 契約；fixture）②index.html 兩表複本移除改 link、rg 零舊詞彙③html-mode 三補項在場④quality-constraints 獨立小節在場⑤script repo-agnostic 斷言（path 清單全來自 manifest 參數，零 hard-code）⑥instruction-writing 審查閘（boundary 跨家族）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+結算（final）：落地 main 7320ea7（rebase 與 AIR-121 quality-constraints 段衝突已解——兩節並存正是 tri 裁定形態）。審查鏈＝bi 投影根因（mu5f07gq/hz）＋tri 三事項（mu5gjcrh/csm＋GLM 腿）裁定全吸收。12 tests 綠＋live 三方 hash 對帳 MATCH＋index.html 舊詞彙零殘留。deploy 隨收線執行。blueprint/AGENTS.md 真相源映射補記（impl 建議）＋AI R-106 follow-up：card-WT governance check 假漂移另修。
+<!-- SECTION:NOTES:END -->
