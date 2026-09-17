@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 # scripts/ -> scan-project -> skills -> repo root
@@ -113,7 +114,15 @@ INVARIANTS = [
     {
         "id": "hook_registration",
         "type": "hook_registration",
-        "registrations": ["settings.json", "governance/registrations/zcode.json"],
+        "registrations": [
+            "settings.json",
+            "governance/registrations/zcode.json",
+            # AIR-120：codex 第三面（誤報實例 codex_memory_path_deny.py 已註冊
+            # 於 codex.toml 卻被報孤兒 CRITICAL）；~ 開頭 = live 絕對路徑，
+            # 缺場（非 codex 機器）skip 不 false positive
+            "governance/registrations/codex.toml",
+            "~/.codex/config.toml",
+        ],
         # 僅接 Claude 端的 hook：settings.json 是 local-only（gitignored），
         # fresh clone 上缺場 → 這些 hook 豁免（註冊事實存在於本機設定，
         # repo 內不可驗證）；settings.json 在場時仍照常檢查
@@ -125,7 +134,22 @@ INVARIANTS = [
         "2026-08-29 F8：compact-tail-inject.py 兩處註冊面皆無、從未生效——"
         "防線看起來存在，實際從未攔截）。每個 hook 腳本至少要出現在一個註冊處"
         "（settings.json = Claude 端、governance/registrations/zcode.json = "
-        "ZCode 端模板），否則 critical",
+        "ZCode 端模板、governance/registrations/codex.toml 與 live "
+        "~/.codex/config.toml = codex 端），否則 critical",
+    },
+    {
+        "id": "codex_live_parity",
+        "type": "codex_live_parity",
+        "template": "governance/registrations/codex.toml",
+        "live": "~/.codex/config.toml",
+        "note": "governance/registrations/codex.toml（repo 模板）的每個 hook 接線"
+        "必須已部署到 live ~/.codex/config.toml——template 有、live 無 = hook "
+        "不會 fire（F8 形狀，語義同 zcode_live_parity 的 codex 對應面，AIR-120）。"
+        "TOML 解析（tomllib）＋group 級 wiring 三元組（event＋matcher＋script "
+        "basename——等價 governance/install.py _codex_group_identity 的抽取語義）；"
+        "template 的 {{REPO}} 佔位符與 live 絕對路徑由 basename 收斂。live 缺場"
+        "（非 codex 機器）skip；單向 template→live（live 端他 family hook 不誤報）；"
+        "codex 無 zcode 的 hooks.enabled 全域開關，故無 enabled 檢查。",
     },
     {
         "id": "zcode_live_parity",
@@ -611,9 +635,9 @@ def check_deploy_freshness(inv: dict) -> list[tuple[str, str, str]]:
 def check_hook_registration(inv: dict) -> list[tuple[str, str, str]]:
     """hooks/*.py 每檔至少出現在一個註冊處——抓孤兒 hook。
 
-    註冊處由 inv['registrations'] 列（相對 REPO_ROOT 的文字檔；不存在者
-    skip 不 false positive）。以檔名子字串比對——註冊處以絕對路徑引用
-    hook 腳本，檔名是穩定鍵。
+    註冊處由 inv['registrations'] 列（相對 REPO_ROOT 的文字檔，或 ~ 開頭的
+    live 絕對路徑——AIR-120 codex 面；不存在者 skip 不 false positive）。
+    以檔名子字串比對——註冊處以絕對路徑引用 hook 腳本，檔名是穩定鍵。
     """
     if inv.get("type") != "hook_registration":
         return []
@@ -623,7 +647,7 @@ def check_hook_registration(inv: dict) -> list[tuple[str, str, str]]:
     registered = ""
     claude_side_present = False
     for rel in inv["registrations"]:
-        p = REPO_ROOT / rel
+        p = Path(rel).expanduser() if rel.startswith("~") else REPO_ROOT / rel
         if p.exists():
             registered += read_text(p)
             if rel == "settings.json":
@@ -734,6 +758,85 @@ def check_zcode_live_parity(
             )
         )
     missing = _wiring(tpl_data) - _wiring(live_data)
+    for event, matcher, name in sorted(missing):
+        where = f"{event}/{matcher}" if matcher else event
+        out.append(
+            (
+                inv["id"],
+                "critical",
+                f"{name}（{where}）在 template 的接線未以同 matcher 部署到 {live}"
+                "——註冊≠fire（F8 形狀：防線存在但從未攔截）",
+            )
+        )
+    return out
+
+
+def _toml_wiring(data: dict) -> set[tuple[str, str, str]]:
+    """codex TOML 的 (event, matcher, basename) wiring 三元組。
+
+    結構：[[hooks.<Event>]] group ＝ {matcher?, hooks: [{command...}]}。
+    [hooks.state]（trust 區，非 list）自然跳過；template 的 {{REPO}} 佔位符
+    與 live 的絕對路徑由 basename regex 收斂（同 _wiring 的 negative
+    lookahead——`x.py.bak` 殘字樣不算 x.py）。
+    """
+    out: set[tuple[str, str, str]] = set()
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return out
+    for event, groups in hooks.items():
+        if not isinstance(groups, list):
+            continue
+        for g in groups:
+            if not isinstance(g, dict):
+                continue
+            matcher = g.get("matcher") or ""
+            for h in g.get("hooks") or []:
+                if not isinstance(h, dict) or h.get("enabled") is False:
+                    continue
+                text = str(h.get("command", ""))
+                for name in re.findall(r"([A-Za-z0-9_-]+\.(?:py|sh))(?![\w.-])", text):
+                    out.add((event, matcher, name))
+    return out
+
+
+def check_codex_live_parity(
+    inv: dict, live_path: Path | None = None
+) -> list[tuple[str, str, str]]:
+    """governance/registrations/codex.toml（repo 模板）的 hook 接線必須已部署到
+    live ~/.codex/config.toml（zcode_live_parity 的 codex 對應面，AIR-120）。
+
+    抓「註冊≠fire」的部署漂移：template 加了 hook、live config 沒 merge →
+    hook 從未執行（F8 形狀）。結構比對（event＋matcher＋檔名三元組，TOML 以
+    tomllib 解析）；單向 template→live（live 端他 family hook 不誤報）；
+    live 缺場（非 codex 機器）skip。codex 無 hooks.enabled 全域開關，故無此檢查。
+    """
+    if inv.get("type") != "codex_live_parity":
+        return []
+    tpl = REPO_ROOT / inv["template"]
+    if not tpl.exists():
+        return [
+            (
+                inv["id"],
+                "important",
+                f"template 檔不存在: {inv['template']}（INVARIANTS 路徑 typo？）",
+            )
+        ]
+    live = Path(live_path) if live_path else Path(inv["live"]).expanduser()
+    if not live.exists():
+        return []
+    try:
+        tpl_data = tomllib.loads(read_text(tpl))
+        live_data = tomllib.loads(read_text(live))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
+        return [
+            (
+                inv["id"],
+                "important",
+                f"template/live 非 TOML（手改壞？）: {tpl} / {live}（{exc}）",
+            )
+        ]
+    missing = _toml_wiring(tpl_data) - _toml_wiring(live_data)
+    out: list[tuple[str, str, str]] = []
     for event, matcher, name in sorted(missing):
         where = f"{event}/{matcher}" if matcher else event
         out.append(
@@ -874,6 +977,7 @@ def main() -> int:
         findings += check_deploy_freshness(inv)
         findings += check_hook_registration(inv)
         findings += check_zcode_live_parity(inv)
+        findings += check_codex_live_parity(inv)
         findings += check_agents_projection_sync(inv)
         findings += check_shell_provenance(inv)
 

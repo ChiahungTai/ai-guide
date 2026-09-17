@@ -30,6 +30,7 @@ def test_hook_registration_orphan_detected(tmp_path, monkeypatch):
         '"command": "python3 /x/hooks/ok.py"', encoding="utf-8"
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))  # 隔離 live ~ 路徑面（AIR-120）
     findings = css.check_hook_registration(_hook_inv())
     assert len(findings) == 1
     assert findings[0][1] == "critical"
@@ -42,6 +43,7 @@ def test_hook_registration_all_registered(tmp_path, monkeypatch):
     (tmp_path / "hooks" / "b.py").write_text("pass")
     (tmp_path / "settings.json").write_text("a.py b.py", encoding="utf-8")
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))  # 隔離 live ~ 路徑面（AIR-120）
     assert css.check_hook_registration(_hook_inv()) == []
 
 
@@ -51,6 +53,7 @@ def test_hook_registration_missing_reg_file_skipped(tmp_path, monkeypatch):
     # settings.json 不存在（local/gitignored 機器）→ skip 不 false positive，
     # 但 governance/registrations/zcode.json 也不存在時仍應全部抓孤兒
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))  # 隔離 live ~ 路徑面（AIR-120）
     findings = css.check_hook_registration(_hook_inv())
     assert len(findings) == 1
 
@@ -260,6 +263,174 @@ def test_parity_hook_disabled_in_live_critical(tmp_path, monkeypatch):
     findings = css.check_zcode_live_parity(_parity_inv(), live_path=live)
     assert len(findings) == 1
     assert findings[0][1] == "critical"
+
+
+# ---------------------------------------------------------------------------
+# AIR-120：hook_registration 補 codex 註冊面（模板 codex.toml＋live ~/.codex/config.toml）
+# 誤報實例：codex_memory_path_deny.py 已註冊於 governance/registrations/codex.toml
+# （AIR-100 S-A 落地），舊 checker 只認 CC/ZCode 兩面 → 誤報孤兒 CRITICAL。
+# ---------------------------------------------------------------------------
+
+CODEX_TPL_TOML = (
+    "[[hooks.PreToolUse]]\n"
+    'matcher = "apply_patch"\n\n'
+    "[[hooks.PreToolUse.hooks]]\n"
+    'type = "command"\n'
+    'command = "python3 {{REPO}}/hooks/codex_memory_path_deny.py"\n'
+    "timeout = 10\n"
+)
+
+
+def _write_codex_tpl(tmp_path, text=CODEX_TPL_TOML):
+    d = tmp_path / "governance" / "registrations"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "codex.toml").write_text(text, encoding="utf-8")
+
+
+def test_hook_registration_inv_includes_codex_face():
+    """AIR-120：registrations 需含 codex 模板與 live 兩個第三面條目。"""
+    regs = _hook_inv()["registrations"]
+    assert "governance/registrations/codex.toml" in regs
+    assert "~/.codex/config.toml" in regs
+
+
+def test_hook_registration_codex_toml_zero_orphan(tmp_path, monkeypatch):
+    """AIR-120 RED→GREEN 主測試：codex.toml 模板註冊的 hook 不誤報孤兒。
+
+    誤報形態重現：codex_memory_path_deny.py 只註冊於 codex 面（CC/ZCode 兩面
+    皆無）——補面後零 findings。
+    """
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "codex_memory_path_deny.py").write_text("pass")
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert css.check_hook_registration(_hook_inv()) == []
+
+
+def test_hook_registration_live_tilde_face_counts(tmp_path, monkeypatch):
+    """registrations 的 ~ 路徑（live config）在場時其文字也進註冊池。"""
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "a.py").write_text("pass")
+    live_dir = tmp_path / ".codex"
+    live_dir.mkdir()
+    (live_dir / "config.toml").write_text(
+        'command = "python3 /x/hooks/a.py"', encoding="utf-8"
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))  # ~ 展開指 tmp_path（live 在場）
+    assert css.check_hook_registration(_hook_inv()) == []
+
+
+# ---------------------------------------------------------------------------
+# codex_live_parity（AIR-120）：codex.toml 模板接線必須已部署 live config
+# （zcode_live_parity 的 codex 對應面——TOML 解析＋wiring 三元組對帳）
+# ---------------------------------------------------------------------------
+
+
+def _codex_parity_inv():
+    return next(i for i in css.INVARIANTS if i["id"] == "codex_live_parity")
+
+
+def _codex_live(tmp_path, text):
+    live = tmp_path / "codex-live.toml"
+    live.write_text(text, encoding="utf-8")
+    return live
+
+
+CODEX_LIVE_TOML = (
+    "[[hooks.PreToolUse]]\n"
+    'matcher = "apply_patch"\n\n'
+    "[[hooks.PreToolUse.hooks]]\n"
+    'type = "command"\n'
+    'command = "python3 /Users/x/ai-guide/hooks/codex_memory_path_deny.py"\n'
+)
+
+
+def test_codex_parity_all_deployed_ok(tmp_path, monkeypatch):
+    """template wiring 全數在 live（{{REPO}} 佔位符 vs 絕對路徑由 basename 收斂）。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    assert (
+        css.check_codex_live_parity(
+            _codex_parity_inv(), live_path=_codex_live(tmp_path, CODEX_LIVE_TOML)
+        )
+        == []
+    )
+
+
+def test_codex_parity_missing_in_live_critical(tmp_path, monkeypatch):
+    """template 有、live 無（bare live 無該 hook）＝註冊≠fire critical。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_codex_live_parity(
+        _codex_parity_inv(), live_path=_codex_live(tmp_path, "# empty\n")
+    )
+    assert len(findings) == 1
+    assert findings[0][1] == "critical"
+    assert "codex_memory_path_deny.py" in findings[0][2]
+
+
+def test_codex_parity_wrong_matcher_critical(tmp_path, monkeypatch):
+    """檔名在 live 但掛錯 matcher（apply_patch 掛成 Bash）＝未部署。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    wrong = CODEX_LIVE_TOML.replace('matcher = "apply_patch"', 'matcher = "Bash"')
+    findings = css.check_codex_live_parity(
+        _codex_parity_inv(), live_path=_codex_live(tmp_path, wrong)
+    )
+    assert len(findings) == 1
+    assert findings[0][1] == "critical"
+
+
+def test_codex_parity_live_absent_skip(tmp_path, monkeypatch):
+    """live config 缺場（非 codex 機器）skip 不 false positive。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    assert (
+        css.check_codex_live_parity(
+            _codex_parity_inv(), live_path=tmp_path / "nope.toml"
+        )
+        == []
+    )
+
+
+def test_codex_parity_template_missing_important(tmp_path, monkeypatch):
+    """template 缺席 → important（INVARIANTS 路徑 typo 不炸整個 checker）。"""
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_codex_live_parity(
+        _codex_parity_inv(), live_path=tmp_path / "live.toml"
+    )
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+
+
+def test_codex_parity_bad_toml_important(tmp_path, monkeypatch):
+    """live config 手改壞（非 TOML）→ important 非 crash。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_codex_live_parity(
+        _codex_parity_inv(), live_path=_codex_live(tmp_path, "not [ valid toml\n")
+    )
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+
+
+def test_codex_parity_state_zone_ignored(tmp_path, monkeypatch):
+    """live 的 [hooks.state]（trust 區，非 list 結構）不參與對帳也不炸。"""
+    _write_codex_tpl(tmp_path)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    live_text = (
+        CODEX_LIVE_TOML
+        + '[hooks.state."/Users/x/.codex/config.toml:pre_tool_use:0:0"]\n'
+        'hash = "abc"\n'
+    )
+    assert (
+        css.check_codex_live_parity(
+            _codex_parity_inv(), live_path=_codex_live(tmp_path, live_text)
+        )
+        == []
+    )
 
 
 # --- agents_projection_sync（AIR-29）：subprocess 委派四路 ---
