@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 03:27'
+updated_date: '2026-09-17 03:37'
 labels: []
 dependencies: []
 references:
@@ -33,4 +33,6 @@ ordinal: 101000
 
 <!-- SECTION:NOTES:BEGIN -->
 0917 user cross-ref：AIR-113 domain-skills 遷出後的「ZCode 端 skills desc 注入」缺口，未來解法＝ZCode plugin 打包（marketplace 本地目錄源）——本卡擴範圍後 skills 分發面已在 scope 內，該場景為本卡用例之一（決策記錄仍在 AIR-113）。
+
+09-17 Segment 0 完成——十探針（P0-1~P0-10）全數執行，三致命先驗全數解除、零翻案，架構凍結。凍結值：①序列化參數＝json.dumps(indent=2, ensure_ascii=False)＋尾換行（CC/ZCode live config 逐字重現實證）；②CC 寫入鐵律＝Path.resolve() 後才 os.replace（實證 os.replace 直打 symlink 路徑會斷鏈換普通檔）；③skills 面＝兩家皆單一母鏈 symlink（建 2 條即成，零遷移）；④deploy_agents 冪等重跑實證（[SKIP] identical×3、exit 0、dry-run 透傳形態）。新事實：codex pre_tool_use:1:0 已 trusted（user 已 approve——EP AC-3.2 括號陳述過時）；CC/ZCode hooks 子樹結構不同家（CC event→groups map vs ZCode {enabled,events}）；muse plugins hook test --fixture 內建命令（S3 probe 候選）；codex 面非 ai-guide groups 初盤＝Interrupt(chatgpt-web)＋SessionStart/SubagentStart(codebase-memory-mcp)。證據單一源＝references/probe-results.md（file:line 錨點＋逐字輸出）。下一步＝S1（manifest＋registrations 模板，逆抽取基準 P0-6 快照在手）；probe-results.md 尚未 commit（air-116 branch working tree）。
 <!-- SECTION:NOTES:END -->
