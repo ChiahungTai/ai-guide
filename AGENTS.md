@@ -90,7 +90,7 @@
 | `/audit-test` | LLM | 1 | AI-self |
 | `/code-review` | LLM | 1 / 2（跨家族） | LLM / 人類（跨家族） |
 | `/judge-review` | LLM | 鏈 | AI-self |
-| `/followup-review` | LLM | 2（跨家族 Review LLM 驗收實作 LLM） | LLM / 人類觸發 |
+| `/followup-review` | LLM | 1／鏈（原 reviewer 續接驗收——獨立性同層 1，非跨家族） | LLM / 人類觸發 |
 | `/fix-test` | LLM | 鏈（修復，含 lint/type recipes） | AI-self |
 | **`/debrief`** | **人類（改動理解簡報）** | **3** | **人類** |
 | **`/illustrate`** | **人類（結構 viewport）** | **3** | **人類** |

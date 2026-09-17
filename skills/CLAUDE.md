@@ -105,7 +105,7 @@
 > 通用方法論（發散收斂、任務分解/垂直切片、增量交付、spec-first、官方文檔 grounding）屬 LLM 原生能力，不設 skill——相關委託點已改為就地摘要。
 
 ### 品質與審查
-- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用；**code 六軸 profile＝[code-quality-profile](review-engine/code-quality-profile.md) 側檔**（前身 `code-review-and-quality` skill 已降級併入）
+- `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / 獨立性階梯（spawn→跨家族→人類））；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用；**code 六軸 profile＝[code-quality-profile](review-engine/code-quality-profile.md) 側檔**（前身 `code-review-and-quality` skill 已降級併入）
 - `validation-strategy` — 驗證策略紀律（e2e 優先/交易 replay>live/放 scripts//不重驗 package；與 TDD 流程分工）
 - `acceptance-evidence` — 驗收證據深層理論（reference skill：認知誤差與 EP 預見極限、Intent Drift 兩型、filter trap、L3 整合實例、Runtime Invariant Assurance、B 軸演進、盤點執行點雙掃；rule 留 L1-L6/A-B 軸 always-on 核心——rule+skill 分層控制 bundle 尺寸）
 
