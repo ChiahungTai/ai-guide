@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""
-PreToolUse hook（matcher Edit|Write|NotebookEdit）: memory 寫入治理（兩層）。
+PreToolUse hook（matcher Edit|Write）: memory 寫入治理（兩層）。
 
 ① MEMORY.md 手寫攔截——索引是 _generate_index.py 的機械投影（條目檔
    frontmatter = 單一寫入點），手寫必漂移：索引載入＝200 行或 25,000 字元
@@ -25,10 +25,18 @@ PreToolUse hook（matcher Edit|Write|NotebookEdit）: memory 寫入治理（兩�
    （memory-audit skill「hook 擴充」①設計；弧收案慣性 09-11/09-12 兩晚
    project_ 類新流入 87.5% 違 Q1 實證——結案蒸餾掛點攔不到「收案當下新寫」，
    提醒須在寫入瞬間；機械觸發禁語義偵測）。
+④ 狀態後綴擋（AIR-100 S-B）——新建條目 stem 命中弧狀態後綴（-pending/
+   -inflight/-in-flight/-landed/-done/-closed 六枚舉凍結於 air-90 卡）→ exit 2：
+   弧狀態屬卡/report 定義域，非記憶定義域。只擋新建；既有條目收斂編輯與
+   改名退役暫時寫入放行。inbox 消費側對等檢查（非機械，轉寫面）＝
+   memory-audit skill「Inbox 消費」節。
 Self-gating：同目錄無 _generate_index.py 的專案不攔（裝 script 即 opt-in）。
 對應 rule: rules/context-management.md「Memory 生命周期規範」。
 覆蓋邊界：僅攔 Edit/Write 工具面的 file_path——Bash redirect（echo >>/tee）不攔
-（紀律面處理）；**subagent 寫入不觸發本 hook**（ZCode 實證 2026-09-01：subagent
+（紀律面處理）；**NotebookEdit out-of-scope**（AIR-100 S-C 處置 (a) 移 matcher 字面
+——payload 路徑鍵是 notebook_path 非 file_path、池治理場景零 .ipynb 流量；
+handler 曾有的 NotebookEdit matcher 字面＝dead-matcher，2026-09-17 移除，
+parity assertion＝tests/test_matcher_parity.py 防再生）；**subagent 寫入不觸發本 hook**（ZCode 實證 2026-09-01：subagent
 Write 16,154 chars 落地無攔）——治理範圍＝主 session，寫入型 subagent（如
 mem-distill）的上限是 prompt 紀律非機械強制。ZCode 端 exit 2 產生 deny 已證
 （官方文檔）；stderr 指引送達模型未證（EP A3 deferred）——失敗跡象＝無解釋重試，
@@ -71,6 +79,16 @@ DATE_RE = re.compile(
 SESS_RE = re.compile(
     r"\bsess_[0-9A-Za-z]{3,}"
 )  # desc 禁 session id（09-10 M2 實作；sess_ 前綴高特異，碰撞≈零）
+STEM_SUFFIX_RE = re.compile(
+    r"-(pending|inflight|in-flight|landed|done|closed)$", re.IGNORECASE
+)  # 新建條目 stem 禁弧狀態後綴（AIR-100 S-B——air-90 決策 P3 承接，TC-4 凍結枚舉）；
+#   IGNORECASE（F-6）——`-DONE`/`-Inflight` 變體同屬弧狀態語義，大小寫不變葉不構成繞道。
+#   邊界：全形連字號（U+FF0D）不匹配——同既有三 pattern 歸夜間掃尾（F-7）。
+#   弧狀態屬卡/report 定義域，非記憶定義域（air-100 Plan ④清洗標的——帶後綴條目
+#   是弧收案慣性流入的主要形態）。**只擋新建**（cur_len==0）：既有條目收斂編輯
+#   與改名退役流程的暫時寫入放行——存量處置（S-D）不被迫走 --no-verify 逃生口。
+#   parity：Edit 無法改檔名、新建後綴實務只在 Write 出現——檢查置 tool 分支前
+#   （tool-agnostic 於「檔不存在」條件，Edit 對不存在路徑本就在 harness 面失敗）。
 # 共同邊界（三 pattern 同界）：CJK 緊貼（`案93715…` 無空白）因 \b／Unicode \w
 # 含 CJK 而漏——歸夜間掃尾，不擴邊界。
 PLACEMENT_REMINDER = (
@@ -163,6 +181,18 @@ def main() -> None:
         sys.exit(0)
     target = Path(file_path)
     cur_len = len(target.read_text(encoding="utf-8")) if target.exists() else 0
+    # ④ 狀態後綴擋（AIR-100 S-B——插在 desc 檢查前，更上游；air-90 決策 P3 落地）
+    if cur_len == 0 and STEM_SUFFIX_RE.search(target.stem):
+        print(
+            "[Hook Blocked] 新建條目檔名含弧狀態後綴（-pending/-inflight/-in-flight/"
+            "-landed/-done/-closed）。\n"
+            "弧狀態屬卡/report 定義域，非記憶定義域——inflight/landed 是弧生命週期，"
+            "不是跨 session 事實。\n"
+            "修正方式：重命名去掉狀態後綴再寫；弧進度與收案狀態歸卡/EP，"
+            "內容歸屬見六問 Q1。",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     # ③ 放置閘（非阻斷提醒——不 exit 2，寫入照常進行）
     if cur_len == 0:
         print(PLACEMENT_REMINDER, file=sys.stderr)
