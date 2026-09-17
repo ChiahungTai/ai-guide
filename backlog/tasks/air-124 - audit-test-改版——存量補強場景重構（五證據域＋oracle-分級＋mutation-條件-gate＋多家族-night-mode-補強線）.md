@@ -1,12 +1,14 @@
 ---
 id: AIR-124
 title: audit-test 改版——存量補強場景重構（五證據域＋oracle 分級＋mutation 條件 gate＋多家族 night-mode 補強線）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 14:02'
-updated_date: '2026-09-17 14:12'
+updated_date: '2026-09-17 14:37'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/0917-air124-audit-test-v2/ep.md
 ordinal: 109000
 ---
 
@@ -41,3 +43,9 @@ ordinal: 109000
 明示不動：implement/post-build 開發期鏈；mosaic/SC repo 本體；model-routing panel 詞彙（複用不改）。
 AC：①五域結構＋精華段歸宿（角度 8 七項表/PropertyMock/Registry Membership 原文在場於對應域）＋vacuous-green＋oracle 分級 detector 在場②health score 移除＋vector 模板③mutation 條件 gate＋trend line＋**trend 不具 blocking authority 明文**④night-mode 節含㉓八契約（target manifest/blind contract/delta identity/mutation baseline/P4 admission/stop-before-P4/readout producer/sink resolver 全在場）⑤角度 2 修正⑥TDD 剔除＋出生證明三欄接口（僅一句）⑦**三證據鏈 admission＋mutation feedback 禁決定 oracle/expected value 明文**⑧砍除驗收（marker 分層/mock-count heuristic 条文不在即過）＋㉒歸類表＋oracle anchor 欄⑨mosaic/SC 指針段（圍欄：問題陳述＋連結）⑩instruction-writing 審查閘（boundary 跨家族——結案條件）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0917 22:2X 前置查證產物收編回填：South Chariot main 已 commit playwright.config.ts retries+trace-on-first-retry（7222e62，southchariot repo）——本卡 probe 發現的 debuggability 缺口已補。
+<!-- SECTION:NOTES:END -->

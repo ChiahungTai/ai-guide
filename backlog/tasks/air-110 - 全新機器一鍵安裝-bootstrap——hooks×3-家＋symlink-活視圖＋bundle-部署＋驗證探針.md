@@ -1,10 +1,10 @@
 ---
 id: AIR-110
 title: 全新機器一鍵安裝 bootstrap——hooks×3 家＋symlink 活視圖＋bundle 部署＋驗證探針
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-16 07:25'
-updated_date: '2026-09-17 13:40'
+updated_date: '2026-09-17 14:35'
 labels: []
 dependencies: []
 ordinal: 95000
@@ -43,4 +43,6 @@ ordinal: 95000
 AIR-116 對齊（EP AC-6.4，0917）：bootstrap 消費 governance/install.py 穩定 CLI 契約——uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,monitor,all} [--dry-run|--uninstall|--check|--verify]；退出碼 0 成功/1 drift/2 環境守衛/3 未實裝/4 執行錯誤。契約機器可讀投影＝governance/manifest.toml [bootstrap_cli]；新機器逐面檢查清單＝governance/README.md bootstrap 節（七項）。blocked-by 依賴成立：110 bootstrap 執行器以本契約為唯一安裝入口（不下手工 config）。fixture 模擬已驗證乾淨機器安裝（AC-6.3，發現並修復四個新機器 bug：skills 先於 rules 順序/symlink 父目錄/config 缺席自空建/config 父目錄）；muse 腿真機驗證歸 110 實機 bootstrap。
 
 0917 re-scope 盤點（GLM-5.3 研究腿）：八面中 ①③⑥⑧⑨＋skills×2＋monitor 裝載＋firing 協議已由 governance installer 覆蓋（AC#3 第三項＝--verify codex L3 吸收）；真缺口＝G1 CC settings 前置鏈（repo settings.json gitignored local-only 含 API keys——user 手動拷，installer 不建 symlink、乾淨機器直接 install 會造 P0-3 斷鏈形 drift）／G2 四條 home symlink（CLAUDE.md、rules、agents×2——傾向擴 manifest skills 面）／G3 hooksPath／G4 monitor plist 絕對路徑（manifest.toml:66-67 指名 110 承接）＋monitor check stub／G5 backlog-cleanup plist 未版控／G6 池傳輸手動（MULTI-MACHINE §1）／跨 repo 工具（delegate-bridge、code-reality、NT-mosaic、mosaic launchd）列清單不安裝。完整覆蓋矩陣見研究報告（本 session .agent-tmp 產出）。四項 user 拍板：①secrets 重置＝手動拷 ②primary/副機角色（cron/monitor 裝載對象）③G2 symlink 歸屬（擴 manifest vs bootstrap 自建）④approve 三態恆手動（設計邊界）。
+
+四項拍板（user 0917『聽來合理，可以』）：①secrets 手動拷＋fail-loud 引導暫停點②--role primary|secondary 參數（secondary 只留介面不實作——YAGNI）③G2 四條 home symlink 擴 manifest skills 面（安裝動作住安裝權威；CLI surface/flag 不變屬資料層編輯，卡內記錄）④approve 三態恆手動照單全收（bootstrap 清單列暫停點）。
 <!-- SECTION:NOTES:END -->
