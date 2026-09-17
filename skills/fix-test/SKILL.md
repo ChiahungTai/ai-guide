@@ -1,8 +1,8 @@
 ---
 name: fix-test
 
-description: "測試失敗修復＋Python lint/type 自動修正（ruff/mypy）— 先分類再修復，防止盲目讓測試通過；lint/type 修復 recipes 見 lint-type-recipes.md"
-when_to_use: "Fix failing tests with first-principles classification. Use when tests fail after refactoring, implementation changes, or when pasting test failure logs. Also use for Python lint/type fixes — ruff format, ruff check --fix, mypy auto-fix and type-convention repair."
+description: "測試失敗修復＋Python lint/type 自動修正（ruff/mypy；含第三方套件型別缺口四層策略——stubs／# type: ignore 策略見 python-type-gap.md）— 先分類再修復，防止盲目讓測試通過"
+when_to_use: "Fix failing tests with first-principles classification. Use when tests fail after refactoring, implementation changes, or when pasting test failure logs. Also use for Python lint/type fixes — ruff format, ruff check --fix, mypy auto-fix and type-convention repair, third-party package type gaps (stubs, # type: ignore strategy)."
 argument-hint: "可貼測試失敗 log。無參數時自動從 git 變更推斷受影響的測試"
 allowed-tools: ["Read", "Edit", "Bash", "Grep", "Agent"]
 ---

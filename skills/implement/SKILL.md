@@ -20,7 +20,7 @@ allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "Workf
 - [test-driven-development](../test-driven-development/SKILL.md) — TDD 循環
 - [debugging-and-error-recovery](../debugging-and-error-recovery/SKILL.md) — 系統化除錯
 - [autonomous-execution](../autonomous-execution/SKILL.md) — 自主決策框架
-- [python-type-gap](../python-type-gap/SKILL.md) — 第三方套件 type gap（mypy 失敗時）
+- [python-type-gap](../fix-test/python-type-gap.md) — 第三方套件 type gap（mypy 失敗時）
 - [agent-workflow](../agent-workflow/SKILL.md) — 並發控制、模型偵測、Agent spawn 規範；**各段 dispatch 查表**見其「全生命週期 execution contract（消費側）」（表主體在 agents/AGENTS.md）
 
 Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-pattern.md)（review 載體之一——多腿協調時用，載體選擇由風險 profile 與協調需求決定〔單一源 [review-engine](../review-engine/SKILL.md)〕，非 effort 門檻）

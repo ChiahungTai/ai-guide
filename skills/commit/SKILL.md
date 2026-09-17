@@ -46,7 +46,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 | PLC0415（局部 import） | 移至 top-level import。**禁止假設 circular import** — AI 常偷懶放在函數內，99% 不是 circular。真正循環的解法是重構目錄結構，不是局部 import |
 | F841（未使用變數） | 移除或加 `_` 前綴 |
 | E402（sys.path 後的 import） | 加 per-file-ignores 到 pyproject.toml |
-| MyPy 第三方套件型別缺口 | 依 [python-type-gap](../python-type-gap/SKILL.md) 四層策略處理 |
+| MyPy 第三方套件型別缺口 | 依 [python-type-gap](../fix-test/python-type-gap.md) 四層策略處理 |
 | 其他可修問題 | 依 fix-test 的 lint/type 修復指引（`skills/fix-test/lint-type-recipes.md`）修正 |
 
 手動修正後仍無法通過 → 提示 `/fix-test`（lint/type 節），中止。

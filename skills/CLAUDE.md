@@ -66,7 +66,7 @@
 
 ### 工作流 skills — 品質工具
 
-- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）；**含 lint/type 修復**（ruff/mypy recipes＝`fix-test/lint-type-recipes.md`，前身 `/lint-fix` 已併入）
+- `/fix-test` — 測試失敗分類修復（先 triage 哨兵＋病歷＋仲裁，再分類 A/B/C/D/E；防止盲目讓測試通過）+ 階段 4.5 TWINS 同類缺陷 sweep；v3.1 mutation authority gate（凍結 TC 在場時 Type B/C/E 過 gate）；**含 lint/type 修復**（ruff/mypy recipes＝`fix-test/lint-type-recipes.md`，前身 `/lint-fix` 已併入）＋**第三方型別缺口四層策略**（前身 `python-type-gap` skill 已降級＝`fix-test/python-type-gap.md`）
 - `/audit-test` — 測試品質稽核（反模式偵測、覆蓋對稱性、mock 健康度，只讀不寫）；v3.1 角度 8 測試契約七項對帳（EP 含凍結 TC 時）
 - `/smell-detector` — 壞味道偵測（layer 3，行動前/審既有）：架構審查＋重構前期研究＋測試優化盤點；兩 mode——`<dir|files>` zoom 變焦批判（質疑存在：6 判準+查證誠信+Domain 層判準 4/5）/ `--baseline <dir>` 廣角盤點（per-directory 4 檔+invariants+--status/--stale/--arch）；測試 smell 三類（資源/怪獸/結構，與 /audit-test 正交）；read-only 偵測器，修復走 /implement、/fix-test
 - `/consistency` — 文檔品質檢查（自洽性、矛盾性、順序、自包含、精準度、Signal/Noise）
@@ -92,11 +92,6 @@
 - `/doc-health` — Capabilities + Kanban 健康檢查（12 角度驗證文件準確性）；`--report` 產出完整能力地圖；`--sync-system-map` 用 Capabilities 狀態同步 SYSTEM-MAP.md
 - `/rebase <branch|all> [ff] [--autostash|--stash]` — Trunk-based rebase。**原則：trunk 永不被 rebase**，故已對齊的 feature 由 trunk 上 `merge --ff-only` 吸收（非 rebase）；feature 可 rebase onto trunk 或另個 feature；Phase 3 報告其他 feature 落後狀況 + 提示自行同步，不自動 rebase／ff。`all` 批次：feature 上 = 同步所有 feature onto trunk、trunk 上 = 吸收所有 ff-able feature（5 停止點菜單，不自動跳過；目標集合 = `git branch` 動態列舉 − trunk，禁寫死）。`all ff` 後綴＝收斂鏈交付語義：全集收斂同 tip——必要 replay 照做、擋無謂 replay，dirty wt 的 ff 例外（WIP×incoming 不相交可 ff）
 
-### 工作流 skills — 依賴升級（收盤後執行）
-
-- `/upgrade-nt` — 升級 NautilusTrader（breaking changes 掃描 + 跨 worktree 一致性 + SJ external API 測試）
-- `/upgrade-sj` — 升級 Shioaji（breaking changes 掃描 + Volume 單位驗證 + SJ external API 測試）
-
 ### 工作流 skills — 其他
 
 
@@ -111,7 +106,6 @@
 
 ### 品質與審查
 - `review-engine` — review 命令家族通用審查邏輯 domain 真相源（嚴重度/信心水準/審查者自證/LSP 查證/審查模式判定/Writer-Reviewer 分離/多層驗證/**review 執行預設單一源**：force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用；**code 六軸 profile＝[code-quality-profile](review-engine/code-quality-profile.md) 側檔**（前身 `code-review-and-quality` skill 已降級併入）
-- `python-type-gap` — 第三方套件型別缺口的四層策略
 - `validation-strategy` — 驗證策略紀律（e2e 優先/交易 replay>live/放 scripts//不重驗 package；與 TDD 流程分工）
 - `acceptance-evidence` — 驗收證據深層理論（reference skill：認知誤差與 EP 預見極限、Intent Drift 兩型、filter trap、L3 整合實例、Runtime Invariant Assurance、B 軸演進、盤點執行點雙掃；rule 留 L1-L6/A-B 軸 always-on 核心——rule+skill 分層控制 bundle 尺寸）
 
@@ -132,8 +126,6 @@
 - `zcode-session-query` —（ZCode 專用）跨 session 查詢與參考：查 session id / 讀指定 session 尾部真人互動（scripts/zcode_tail_chat.py）/ ReadSessionContext（handoff 策略；relevant 大 session 逾時）；handoff / relay 的「讀進來」側；id 禁手打、sqlite3 CLI 無聲空輸出改 python ro uri
 
 ### 工具與查詢
-- `nt-query` — NautilusTrader **v2**（Rust+PyO3）能力 / 實作 / 用法合約 / v1→v2 移植查詢（docs-first + LSP-on-in-package-stubs + MIGRATION_V2 契約 + v2 名稱紀律）
-- `nt-v1-query` — NautilusTrader **v1**（legacy Cython runtime — 消費端現行 runtime）查詢（docs-first + LSP-on-Cython-stubs + designer intent；消費端遷移 v2 後退休）
 - `cr-query` — code-reality 知識圖譜查詢紀律（LSP-vs-code-reality 分工：symbol 真相→code-reality SCIP（Rust）／LSP（hover/簽名/即時）／impact·callers·flows·community→code-reality engine（graph_query 家族，讀 .code-reality/graph.db 自有格式；CRG MCP 已於 2026-08-26 cutover 退役）；GATE（assume + warn 不靜默降級）；anti-over-reliance：graph=structure 非 behavior；engine 在場才 fire，平行 nt-query）
 - `code-reality` — code_reality 工具鏈程序層（meta 層工具，Rust carrier `code-reality <tool> --repo`、住獨立 repo `~/Github/code-reality`：build（數據面一鍵傘形——偵測→producer→graph_db build，mixed repo 雙語言合一；手動鏈＝除錯用）／snapshot／hub_refs（含 hazard 分層安全網——防「0 refs 可刪」誤判）／runtime_edges／boundary／boundary_build／delta_tour（snapshot diff＋EP 宣稱對照——transition CLI 已退役）／chain_tour／graph_audit（Rust 完整度稽核）／scip_refs（SCIP 索引 refs 真相源——graph_audit 缺差對照）／tour_validate／tour_upgrade／tour_manifest——graph 面讀 `.code-reality/graph.db` 自有格式（純 producer graph 為常態——`import_legacy` 已完全移除〔W5〕）；repo profile `.code-reality.toml` 生態示例、存在性偵測單一真相源、claims 口徑生態語義；**工具事實/坑 standalone 真相源＝CR plugin skill（雙源分治：本檔＝接線/紀律層）**；與 cr-query 分工：cr-query 管查詢紀律、本 skill 管工具鏈程序與 EP 對照）
 - `tour-bootstrap` — repo 導覽建置程序（Chain 場景／Delta 時間層，地圖層 Overview 視重複度盤點退役；優先序裁定＝corpus 前門與動線；`.tour` 語言契約——CodeTour 消費端正則決定的 line/pattern/tour link/file link 規則；機械驗證清單＋AI 不代終審停點；建在 code-reality 工具層之上，斷點③已解——callstack 生成走 blueprint-bootstrap）
