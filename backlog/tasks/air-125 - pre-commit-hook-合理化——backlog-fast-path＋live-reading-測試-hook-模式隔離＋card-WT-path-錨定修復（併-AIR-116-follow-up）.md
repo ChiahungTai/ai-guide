@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-17 14:48'
-updated_date: '2026-09-17 14:48'
+updated_date: '2026-09-17 22:06'
 labels: []
 dependencies: []
 ordinal: 110000
@@ -37,3 +37,9 @@ commit gate 今天誤擋大宗來自三個設計缺陷：純 backlog metadata co
 明示不動：control-plane-guard 邏輯、py_compile 腿、monitor 日頻職責、特赦條款本身。
 AC 見卡面四條。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0918 擴卡（air-124 衝突事故吸訥）：④owning-line 單調性條文進 root AGENTS.md git 慣例（他人 merge 已進 owning line＝既成事實，平行 session 禁 reset/revert/stash-restore 移除；衝突停寫交裁決、forward commit 收斂——codex collision verdict 條文級一句）⑤雙層機械防線：.git/card-leases/<卡id> durable claim（wt-open 原子認領、已有 active lease 硬擋）＋pre-commit lease guard（wt-identity 對不上 active lease 拒 commit——抓手建 WT 繞道）⑥③（card-WT path 錨定）大部分已由 air-110 branch 的 F-5 修復解決（_group_scripts REPO_ROOT 化、904 passed 零假漂移）——air-110 收線後本項轉為驗證殘留（monitor live 面等）。
+<!-- SECTION:NOTES:END -->
