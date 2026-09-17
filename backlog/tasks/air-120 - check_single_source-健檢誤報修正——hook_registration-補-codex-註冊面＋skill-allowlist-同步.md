@@ -1,10 +1,10 @@
 ---
 id: AIR-120
 title: check_single_source 健檢誤報修正——hook_registration 補 codex 註冊面＋skill allowlist 同步
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 08:51'
-updated_date: '2026-09-17 13:30'
+updated_date: '2026-09-17 13:44'
 labels: []
 dependencies: []
 ordinal: 105000
@@ -31,4 +31,6 @@ AC：①checker 三註冊面（CC/ZCode/codex TOML）解析＋codex hook 零誤�
 
 <!-- SECTION:NOTES:BEGIN -->
 【spec 要點（0917 AIR-116 收尾實證帶入）】①hook_registration 補 codex 面：registrations 清單加 governance/registrations/codex.toml＋live ~/.codex/config.toml；checker 需 TOML 解析＋group 級 wiring 抽取（event＋matcher＋script basename 三元組——可參考 install.py 的 codex_group_units/_codex_group_identity，唯讀 import 或等價實作）；現有 CC/ZCode 兩面檢查語義不變。②allowlist 同步：4 支 skill 補 Skill(<name>) 入 settings.json（或逐支裁決豁免並記理由）；settings.json 是 gitignored local-only（fresh clone 缺場 → 比照既有豁免語義）。③驗收：實跑 check_single_source 全綠（或僅剩真實 finding 逐條附證據）；既有 tests/test_check_single_source.py 補 codex 面測試。
+
+結算（final）：落地 main 3d0d030。hook_registration 補 codex TOML 面（模板＋live expanduser）＋新 invariant codex_live_parity（template→live 單向對帳 7 測試）＋allowlist 補 4 條。check exit 0／critical 1→0／important 4→0；10 新測試 68 passed；全量 841 passed 零回歸。歸因修正：四 skill 為新建非 rename（git --follow 實證）。flash（impl-lite）實作＋主 session 抽查綠。
 <!-- SECTION:NOTES:END -->
