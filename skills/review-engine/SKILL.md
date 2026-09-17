@@ -1,7 +1,7 @@
 ---
 name: review-engine
-description: "決定 finding 嚴重度（Critical/Important/Suggestion）、標信心水準（confirmed/evidence-based/inferred）、查證審查宣稱、選審查模式（Workflow/Agent Tool）、理解多層驗證鏈、決定 review 執行預設（force 獨立/風險 profile/必需視角/model/spawn-vs-session）時使用。review 命令家族通用審查邏輯的 domain 真相源 — 審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證設計；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用。"
-when_to_use: "Fires when deciding review methodology or judging findings — 嚴重度分級（Critical/Important/Suggestion）、信心水準（confirmed/evidence-based/inferred）、審查宣稱查證、審查模式判定（Workflow/Agent Tool）、review 執行預設（force 獨立／風險 profile／必需視角／model／spawn-vs-session）。情境：審查判定規則怎麼定、review 命令家族共用邏輯變更。六軸 what-to-check 屬本 skill 側檔 code-quality-profile；發起審查任務跑 /code-review 等命令——兩者皆不觸發本 skill。"
+description: "決定 finding 嚴重度（Critical/Important/Suggestion）、標信心水準（confirmed/evidence-based/inferred）、查證審查宣稱、選審查模式（Workflow/Agent Tool）、理解多層驗證鏈、決定 review 執行預設（force 獨立/風險 profile/必需視角/model/獨立性階梯）時使用。review 命令家族通用審查邏輯的 domain 真相源 — 審查者自證、LSP 查證方法、Writer-Reviewer 分離、多層驗證設計；ep-review/code-review/audit-test/execution-plan EP Review/implement Agent Review 共用。"
+when_to_use: "Fires when deciding review methodology or judging findings — 嚴重度分級（Critical/Important/Suggestion）、信心水準（confirmed/evidence-based/inferred）、審查宣稱查證、審查模式判定（Workflow/Agent Tool）、review 執行預設（force 獨立／風險 profile／必需視角／model／獨立性階梯）。情境：審查判定規則怎麼定、review 命令家族共用邏輯變更。六軸 what-to-check 屬本 skill 側檔 code-quality-profile；發起審查任務跑 /code-review 等命令——兩者皆不觸發本 skill。"
 ---
 
 # review-engine — 通用審查邏輯 domain 層
@@ -133,7 +133,7 @@ review finding 可經多層驗證，**各層都可能錯**：
 
 ## review 執行預設（單一源 — 各 review 命令引用）
 
-> 各 review 命令（ep-review / code-review / audit-test / execution-plan EP Review / build Agent Review）的**執行層預設**集中於此 —— 消除「預設行為跨命令重複定義且 drift」。各命令保留自己的 profile（維度）+ 產出動作，執行預設（force 獨立 / 風險 profile 配置 / model / 視角 / spawn-vs-session）引用本段。
+> 各 review 命令（ep-review / code-review / audit-test / execution-plan EP Review / build Agent Review）的**執行層預設**集中於此 —— 消除「預設行為跨命令重複定義且 drift」。各命令保留自己的 profile（維度）+ 產出動作，執行預設（force 獨立 / 風險 profile 配置 / model / 視角 / 獨立性階梯）引用本段。
 
 > 審查類命令 spawn agent 預設背景跑（細則見 rules/tool-discipline 背景執行段）
 
