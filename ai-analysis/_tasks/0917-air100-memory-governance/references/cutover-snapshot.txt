@@ -1,0 +1,128 @@
+# cutover snapshot — generated 2026-09-17T07:19:30+0800
+# repo: /Users/ctai/Github/ai-guide
+# pool: /Users/ctai/Github/ai-guide/.agents/memory (唯讀快照；之後 delta 以本檔為對照)
+
+pool HEAD: e4ec6842260bfb34e11d685f41f11c29d1fcaf27
+pool branch: master
+
+## symlink/readlink 現值（S-D rollback 錨）
+symlink /Users/ctai/.claude/projects/-Users-ctai-Github-ai-guide/memory -> /Users/ctai/Github/ai-guide/.agents/memory
+realdir /Users/ctai/Github/ai-guide/.agents/memory (非 symlink)
+realdir /Users/ctai/Github/ai-guide/.agents/memory-inbox (非 symlink)
+realdir /Users/ctai/Github/ai-guide/.agents/memory-governance.json (非 symlink)
+
+## porcelain 清單（105 條；code | path | mtime | bytes）
+ M MEMORY.md | 2026-09-17T07:14:20 | 3846
+ M _inventory.md | 2026-09-17T07:14:20 | 85336
+ M _resident-set.md | 2026-09-16T10:31:56 | 588
+ M feedback_cjk-char-corruption-rg-verify.md | 2026-09-16T08:04:00 | 8755
+ M feedback_command-center-orchestration-mode.md | 2026-09-15T23:40:39 | 4888
+ M feedback_cross-session-commit-on-active-branch.md | 2026-09-16T08:09:11 | 2487
+ M feedback_drift-scan-include-variants.md | 2026-09-16T21:43:23 | 14855
+ M feedback_relay-claims-verify-current-state.md | 2026-09-16T08:09:42 | 11880
+ M feedback_small-task-do-now-not-defer.md | 2026-09-16T20:06:39 | 3848
+ M feedback_verify-wt-before-commit.md | 2026-09-16T21:56:45 | 7689
+ M feedback_volatile-user-facts-not-in-instructions.md | 2026-09-15T14:11:33 | 1860
+ M flow-feedback-done-archive.md | 2026-09-17T06:16:31 | 1426
+ M project-muse-user-bundle-budget.md | 2026-09-17T06:36:50 | 5924
+ M project_agents-fleet-orchestration-vision.md | 2026-09-17T06:32:25 | 5479
+ M project_agents-registry-split-design.md | 2026-09-15T14:11:33 | 6015
+ M project_air87-skills-contract-inflight.md | 2026-09-15T14:11:42 | 1806
+ M project_card-format-audience-split-pending.md | 2026-09-15T10:16:47 | 2628
+ M project_execution-tapestry-0910.md | 2026-09-15T22:22:40 | 3943
+ D project_role-vocabulary-discussion-pending.md | - | -
+ M project_submodel-dispatch-arc-landed.md | 2026-09-15T14:22:02 | 3046
+ M reference_backlog-md-section-model.md | 2026-09-15T05:03:56 | 2852
+ M reference_bridge-glm-family-facts.md | 2026-09-16T10:32:10 | 3163
+ M reference_bridge-review-subcommand-facts.md | 2026-09-16T05:35:13 | 5050
+ M reference_ff-merge-over-rebase-hash-references.md | 2026-09-16T13:13:57 | 1846
+ M reference_model-capability-ordering.md | 2026-09-15T14:13:14 | 3636
+ M reference_muse-code-cli-facts.md | 2026-09-15T12:45:04 | 18863
+ M reference_stacked-branch-merge-order.md | 2026-09-16T13:13:57 | 4545
+ M reference_zcode-platform-facts.md | 2026-09-16T08:18:37 | 14372
+ M reference_zcode-skill-load-contract.md | 2026-09-16T07:36:05 | 3427
+?? feedback_adjudications-reverify-on-site-before-apply.md | 2026-09-17T05:11:13 | 1662
+?? feedback_closure-cards-stay-on-board.md | 2026-09-16T16:03:25 | 1053
+?? feedback_codex-usage-limit-attribution.md | 2026-09-16T13:38:27 | 1539
+?? feedback_commit-propose-before-execute.md | 2026-09-16T12:20:39 | 1735
+?? feedback_control-plane-text-needs-external-review.md | 2026-09-16T10:39:50 | 2213
+?? feedback_detailed-method-with-mechanism-impact.md | 2026-09-15T19:27:56 | 1328
+?? feedback_governance-options-external-challenge.md | 2026-09-15T22:38:26 | 1125
+?? feedback_guard-last-line-instruction-first.md | 2026-09-17T05:58:38 | 1637
+?? feedback_main-agent-discussion-seat-proactive-dispatch.md | 2026-09-16T10:41:17 | 2587
+?? feedback_minimal-touchpoint-automation-goal.md | 2026-09-15T19:34:43 | 1321
+?? feedback_mv-first-unless-git-history.md | 2026-09-15T14:30:28 | 1184
+?? feedback_pilot-before-bulk-model-confirm.md | 2026-09-16T05:59:46 | 1960
+?? feedback_plain_language_reports.md | 2026-09-16T09:40:15 | 993
+?? feedback_readonly-orders-ban-git-switch.md | 2026-09-15T14:22:02 | 1132
+?? feedback_scale-ai-proposes-user-vetoes.md | 2026-09-16T05:49:55 | 1179
+?? feedback_shared-dir-rotation-filter-own-prefix.md | 2026-09-15T05:05:23 | 1157
+?? feedback_shell-diagram-task-type-defaults.md | 2026-09-15T22:51:36 | 1319
+?? feedback_uncertain_consult_external_ok.md | 2026-09-16T09:40:15 | 1195
+?? project-uisc-audit-11card-arbitration.md | 2026-09-16T13:20:41 | 2705
+?? project_air105-governance-wiring.md | 2026-09-16T11:21:38 | 2964
+?? project_air106-governance-wave2-inflight.md | 2026-09-16T15:33:42 | 2923
+?? project_air111-ep-carrier-four-tier-inflight.md | 2026-09-16T20:46:00 | 3674
+?? project_air116-unified-governance-package.md | 2026-09-17T07:12:30 | 1812
+?? project_air117-postbuild-memory-cleanup.md | 2026-09-17T06:16:31 | 1382
+?? project_air91-s3-behavior-experiment-b-plan.md | 2026-09-15T14:22:02 | 2521
+?? project_air96-residual-batch-inflight.md | 2026-09-15T19:25:09 | 1280
+?? project_air98-quota-freshness-card.md | 2026-09-16T09:39:32 | 6110
+?? project_at-scheduled-repo-memory-audit-0916.md | 2026-09-16T23:09:31 | 3531
+?? project_bi-postbuild-air115-inflight.md | 2026-09-17T06:32:25 | 2184
+?? project_carrier-crud-audit-pool-pending.md | 2026-09-17T07:12:50 | 3133
+?? project_conversation-dispatch-doctrine-gap.md | 2026-09-16T07:36:05 | 4772
+?? project_dev-workflow-redesign-plan-ready.md | 2026-09-16T07:36:05 | 3826
+?? project_execution-order-3lane-proposal.md | 2026-09-16T09:39:32 | 15785
+?? project_flash-marshal-three-preconditions.md | 2026-09-15T18:10:44 | 1186
+?? project_guides-refactoring-baseline.md | 2026-09-17T07:08:01 | 3961
+?? project_marshal-three-line-air77-81-84-inflight.md | 2026-09-16T21:56:45 | 3259
+?? project_memory-pool-89-adjudication-pending.md | 2026-09-17T06:13:00 | 2761
+?? project_mos105-muse-control-gap-handoff-assessed.md | 2026-09-15T19:08:11 | 2298
+?? project_reinstall_audit_0916.md | 2026-09-16T11:11:08 | 2507
+?? project_review-panel-naming-pending.md | 2026-09-16T10:30:20 | 547
+?? project_review-panel-tri-bi-landed.md | 2026-09-16T11:01:59 | 2344
+?? project_role-vocabulary-terminal.md | 2026-09-15T14:12:47 | 2065
+?? project_six-card-review-bipanel-inflight.md | 2026-09-16T20:46:00 | 6999
+?? project_skills-cleanup-card-pending.md | 2026-09-17T07:12:30 | 2945
+?? project_usage-fit-audit-0201-scheduled.md | 2026-09-17T06:17:22 | 634
+?? project_usage-fit-audit-terminal.md | 2026-09-17T06:16:31 | 2125
+?? project_wave1-handoffs-landed.md | 2026-09-16T10:29:25 | 2364
+?? reference_at-bootstrap-ticket-contract.md | 2026-09-17T05:26:56 | 1736
+?? reference_bi-panel-review-dispatch-form.md | 2026-09-17T06:29:51 | 1771
+?? reference_bridge-glm-output-truncation.md | 2026-09-15T14:06:55 | 3245
+?? reference_bridge-usage-json-output.md | 2026-09-16T00:03:37 | 1575
+?? reference_check-single-source-checkout-artifacts.md | 2026-09-16T08:47:46 | 1836
+?? reference_codex-lifecycle-hooks-doc-facts.md | 2026-09-16T18:54:46 | 5198
+?? reference_core-bare-corruption.md | 2026-09-15T14:22:02 | 1374
+?? reference_delegate-bridge-version-path-rot.md | 2026-09-15T22:38:26 | 1267
+?? reference_dryrun-evaluation-workorder-form.md | 2026-09-15T11:20:47 | 1884
+?? reference_headless-chrome-render-smoke.md | 2026-09-16T09:43:05 | 1206
+?? reference_judge-truncation-salvage.md | 2026-09-15T18:10:44 | 1100
+?? reference_lane-muse-review-bundle-form.md | 2026-09-16T08:09:42 | 2459
+?? reference_lane-wt-pool-write-deferral.md | 2026-09-16T05:23:46 | 1808
+?? reference_large-diff-chunked-review-form.md | 2026-09-15T13:45:49 | 1530
+?? reference_memory-sensor-source-mislabel.md | 2026-09-17T06:29:51 | 2360
+?? reference_multi-round-advisory-workorder-form.md | 2026-09-15T14:13:24 | 1448
+?? reference_muse-plugin-probe-facts.md | 2026-09-16T13:13:57 | 4274
+?? reference_pool-write-provenance-signals.md | 2026-09-17T04:40:11 | 2941
+?? reference_postbuild-mechanical-gates-form.md | 2026-09-17T06:22:27 | 1894
+?? reference_project-skill-discovery-paths.md | 2026-09-17T07:10:05 | 2020
+?? reference_quota-spine-time-semantics-gaps.md | 2026-09-15T21:07:00 | 2359
+?? reference_skill-library-architecture-evidence.md | 2026-09-17T07:12:30 | 2600
+?? reference_state-md-gitignored-and-wtclose-trunk-clean.md | 2026-09-16T19:57:21 | 1359
+?? reference_temp-worktree-precommit-pool-tests.md | 2026-09-15T14:21:19 | 1244
+?? reference_usage-stats-source-paths.md | 2026-09-17T05:26:56 | 1938
+?? reference_webgpt-task-inline-material-not-paths.md | 2026-09-16T22:33:24 | 1894
+?? reference_wt-close-full-mode-and-rename-residue.md | 2026-09-16T20:46:00 | 1758
+?? reference_wt_close_pipefail_dogfood_bugs.md | 2026-09-16T09:40:15 | 1458
+?? reference_zcode-skills-injection-budget-ladder.md | 2026-09-16T21:42:56 | 2515
+
+## reconcile --json 現況（snapshot 當下）
+reconcile exit=2 status=dirty entries=105
+
+## 快照後 delta（admission 工單開場核驗 2026-09-17T07:3x；基準仍為上方 105 條）
+下列 3 檔為快照後新流入（平行弧持續寫入），不屬本批 91 條，隨處置後殘留對照：
+?? feedback_guard-block-check-staged-baseline.md
+?? project_air113-s2-terminal.md
+?? reference_project-skill-placement-gitignore-flip.md
