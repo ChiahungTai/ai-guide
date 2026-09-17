@@ -26,15 +26,34 @@
 #   在收斂成功後印結算提醒，不代寫卡。
 # - 池副本分流（AIR-71 形態①）：池 gitignored——WT 對池的寫入隨 symlink 直落 canonical，
 #   不隨 branch 收斂；close 只在 preflight 提醒「池副本 marshal 合併後套」，不自動執行。
+# - receipt 落盤（AIR-112）：每次調用 append 一行機器可讀記錄至共享 .git/wt-close.log
+#   （格式：timestamp|mode|wt|branch|result；mode＝preflight|full）。失敗調用也記
+#   （failure receipt）；log 寫入失敗僅 stderr 警告、不改變 exit code——收線本身是主體。
+#   .git 內容永不進版控（machine-local，刻意不隨 clone 同步）、存活於 WT 移除。
 #
 # 依賴：git、bash 3.2+。退出碼：0 成功／2 鎖衝突／3 驗證失敗／4 preflight 未過。
 
 set -euo pipefail
 
 prog="$(basename "$0")"
-die() { printf 'ERROR[%s]: %s\n' "$prog" "$*" >&2; exit 3; }
+die() { printf 'ERROR[%s]: %s\n' "$prog" "$*" >&2; receipt "die: $*"; exit 3; }
 info() { printf '[wt-close] %s\n' "$*"; }
 warn() { printf '[wt-close] WARN: %s\n' "$*" >&2; }
+
+# ── receipt 落盤（AIR-112）：append-only 一行一筆至共享 .git/wt-close.log────────
+# REC_LOG 在 repo 定錨後設值；此前失敗（usage 錯誤等）無從歸屬 repo，不記。
+REC_LOG=""
+receipt() {  # $1＝result 摘要（newline 攤平維持一行）
+  if [ -z "$REC_LOG" ]; then return 0; fi
+  local mode="full" br="-" res="${1//$'\n'/ }"
+  if [ "$PREFLIGHT" = "1" ]; then mode="preflight"; fi
+  if [ -n "${CUR_BR:-}" ]; then br="$CUR_BR"; fi
+  if printf '%s|%s|%s|%s|%s\n' "$(date +%Y-%m-%dT%H:%M:%S%z)" "$mode" "$WT_PATH" "$br" "$res" 2>/dev/null >> "$REC_LOG"; then
+    return 0
+  fi
+  warn "receipt 落盤失敗：$REC_LOG 不可寫——本次記錄遺失，收線行為不受影響"
+  return 0
+}
 
 WT_PATH=""
 BASE_REF=""
@@ -56,12 +75,14 @@ done
 # ── repo 定錨（P2-A：從 --wt 所指 WT 反推共享 .git——跨 repo 誤調用時鎖對 repo）─────
 GIT_COMMON="$(git -C "$WT_PATH" rev-parse --path-format=absolute --git-common-dir)" || die "無法從 $WT_PATH 反推 git common dir（WT 非 git repo worktree？）"
 PRIMARY="$(dirname "$GIT_COMMON")"
+REC_LOG="$GIT_COMMON/wt-close.log"
 
 # ── lock─────────────────────────────────────────────────────────────────
 LOCK="$GIT_COMMON/wt-open.lock"
 if ! mkdir "$LOCK" 2>/dev/null; then
   OWNER="$(cat "$LOCK/owner" 2>/dev/null || echo '未知持有者')"
   printf 'ERROR[%s]: 鎖被佔（%s）。復原：確認 pid 無活進程後 rm -rf %s\n' "$prog" "$OWNER" "$LOCK" >&2
+  receipt "fail(lock-conflict)"
   exit 2
 fi
 printf '%s %s %s\n' "$$" "$(date +%s)" "${USER:-?}" > "$LOCK/owner"
@@ -156,11 +177,15 @@ info "池副本提醒：池 gitignored——WT 池寫入已隨 symlink 直落 pr
 
 if [ "$PREFLIGHT" = "1" ]; then
   rm -rf "$LOCK"; trap - EXIT
-  if [ "$FAIL" = "1" ]; then printf '[wt-close] preflight 未過（零變更）\n' >&2; exit 4; fi
+  if [ "$FAIL" = "1" ]; then
+    receipt "fail(preflight-checks)"
+    printf '[wt-close] preflight 未過（零變更）\n' >&2; exit 4
+  fi
+  receipt "pass"
   info "✅ preflight 全過（零變更＝內容面；鎖面有短暫副作用）——收斂由 marshal 收線時在 user 授權下執行"
   exit 0
 fi
-[ "$FAIL" = "0" ] || { printf '[wt-close] preflight 未過，停止（零變更）——先處理 FAIL 項或改跑 --preflight 檢視\n' >&2; exit 4; }
+[ "$FAIL" = "0" ] || { receipt "fail(preflight-checks)"; printf '[wt-close] preflight 未過，停止（零變更）——先處理 FAIL 項或改跑 --preflight 檢視\n' >&2; exit 4; }
 
 # ── 收斂：rebase → ff-only 吸收（trunk 永不被 rebase、永不 force）──────────
 if [ "$NEED_REBASE" = "1" ]; then
@@ -196,7 +221,7 @@ else
   info "ff-only 吸收進 $TRUNK @ 暫時 worktree"
 fi
 # 收斂結果斷言：merge rc=0 不等於 trunk 真的吸收——ref 未前進即靜默假綠（T9 事故類），大聲失敗
-git merge-base --is-ancestor "$MERGE_TARGET_BRANCH" "$TRUNK" || \
+git -C "$PRIMARY" merge-base --is-ancestor "$MERGE_TARGET_BRANCH" "$TRUNK" || \
   die "收斂驗證失敗：$TRUNK 未含 $MERGE_TARGET_BRANCH (merge rc=0 但 ref 未前進) -- 現場保留，人工依 git log/reflog 判定"
 
 # ── finalization 提醒（board 單寫者＝board-control；腳本不代寫）─────────────
@@ -215,4 +240,5 @@ fi
 info "已移除：WT $WT_PATH ＋ branch $CUR_BR （identity contract 隨 .agent-tmp 同滅）"
 
 rm -rf "$LOCK"; trap - EXIT
+receipt "pass"
 info "✅ wt-close 完成：$TRUNK @ $(git -C "$PRIMARY" rev-parse --short "$TRUNK")"

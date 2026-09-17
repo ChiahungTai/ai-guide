@@ -207,7 +207,7 @@
     </div>
     <div class="card">
       <div class="t g">④ 如何收？<span class="chip good">✅</span></div>
-      <p>validate → review → commit → owning line 吸收（必要時 rebase，一律 ff-only）→ finalization → 移除 WT；顧問產出也要有收法，不許丟著等它自己回來。<br>現況：收斂 git 紀律 ✅ 現行不變；wt-close helper ✅ 已落地（真卡收線已驗——AIR-77；工具 receipt 待補記；見 <a class="jump" href="#s5" onclick="return go2('s5')">05</a>）。</p>
+      <p>validate → review → commit → owning line 吸收（必要時 rebase，一律 ff-only）→ finalization → 移除 WT；顧問產出也要有收法，不許丟著等它自己回來。<br>現況：收斂 git 紀律 ✅ 現行不變；wt-close helper ✅ 已落地（真卡收線已驗——AIR-77；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112；見 <a class="jump" href="#s5" onclick="return go2('s5')">05</a>）。</p>
     </div>
     <div class="card">
       <div class="t a">⑤ 機器壞了怎麼回來？<span class="chip warn">⚠️</span></div>
@@ -244,7 +244,7 @@
       <tr><td>③ 開工</td><td>為已存在 card 建立 branch／WT／baseline／cwd 的機械身份</td><td><code>wt-open</code>、In Progress refs、freshness check</td><td>✅ 已落地（09-16 AIR-72 <code>scripts/wt-open.sh</code> 試點通過；未走 WT 的卡照舊 checkout——雙軌）</td></tr>
       <tr><td>④ 實作</td><td>寫入在該工作的 execution plane 內完成</td><td>card persistent WT；免卡小修 ephemeral fast-path</td><td>⚠️ helper 已落地（<code>wt-open</code> 含 <code>--ephemeral</code>）；未走 WT 的卡仍走 card branch——雙軌</td></tr>
       <tr><td>⑤ 驗證</td><td>claim 對上足夠獨立的 evidence；negative claim 不以單次文字搜尋冒充</td><td>tests、integration、code-review、acceptance evidence</td><td>⚠️ instruction-testing pilot 尚未實跑</td></tr>
-      <tr><td>⑥ 收斂</td><td>review、修正、依 rebase→ff-only 吸回 owning line，再收尾</td><td>post-build、<code>wt-close</code>、finalization</td><td>⚠️ git 紀律 ✅ 現行；<code>wt-close</code> helper 已落地（pipe-test、真卡收線已驗——AIR-77；receipt 待補記）</td></tr>
+      <tr><td>⑥ 收斂</td><td>review、修正、依 rebase→ff-only 吸回 owning line，再收尾</td><td>post-build、<code>wt-close</code>、finalization</td><td>⚠️ git 紀律 ✅ 現行；<code>wt-close</code> helper 已落地（pipe-test、真卡收線已驗——AIR-77；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112）</td></tr>
       <tr><td>⑦ 沉澱</td><td>完成能力、設計理由、跨 session 事實放回正確 carrier；memory 不成規範副本</td><td>AGENTS/Capabilities、architecture/blueprint、memory pointer</td><td>✅</td></tr>
       <tr><td>⑧ 運維</td><td>hooks、排程、備份、清理、fresh-machine recovery 可重建</td><td>hooks、schedule registry、memory bundle、runbook</td><td>⚠️ 六段 runbook 有缺口（見 06）</td></tr>
     </tbody>
@@ -387,7 +387,7 @@
     <li><b>移除 execution plane</b>：刪 card WT、刪已被完整吸收的 branch、<code>git worktree list</code>＋ancestry 最終確認、釋放 lock。</li>
   </ol>
   <ul class="dots">
-    <li>helper 已落地（09-16 AIR-72）：<code>scripts/wt-open.sh</code> 試點通過、<code>scripts/wt-close.sh --preflight</code> pipe-test 驗證（真卡收線已驗——AIR-77；receipt 待補記）；未走 WT 的卡沿用既有 git 紀律收斂。</li>
+    <li>helper 已落地（09-16 AIR-72）：<code>scripts/wt-open.sh</code> 試點通過、<code>scripts/wt-close.sh --preflight</code> pipe-test 驗證（真卡收線已驗——AIR-77；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112）；未走 WT 的卡沿用既有 git 紀律收斂。</li>
     <li>鐵律：trunk／owning line 不被 rebase、不 force；不以 merge commit 迴避 ff-only 失敗。</li>
     <li>任一步失敗都要保留可判斷的 branch／WT／control state；不得靠刪 WT 製造表面完成。</li>
     <li>board <code>Done</code> 表示工作已被 owning line 接收——不先於 convergence。</li>
@@ -469,7 +469,7 @@
       <tr><td>6</td><td>card persistent WT</td><td>1 card = 1 branch = 1 persistent worktree</td><td>⚠️ 已落地（與 checkout 模式雙軌並存）</td><td>workflow.md「Card worktree」</td></tr>
       <tr><td>7</td><td>免卡小修 ephemeral fast-path</td><td>小型免 UC 工作用 ephemeral WT，擴大即升正式卡</td><td>✅ 已落地（<code>wt-open --ephemeral</code>）</td><td>workflow.md「免卡小修」</td></tr>
       <tr><td>8</td><td>board single-writer</td><td>lock＋<code>check_active_branches: true</code>＋max-id 預掃</td><td>⚠️ 大致落地（config 已切 <code>true</code>；card WT 內禁寫尚為語義條款）</td><td>workflow.md「Board single-writer」＋<code>backlog/config.yml</code></td></tr>
-      <tr><td>9</td><td>wt-open／wt-close transaction</td><td>open：lock→建/重用 WT→baseline 驗證→接 shared state；close：preflight→收斂→finalization→移除</td><td>⚠️ 已落地（open 試點通過；close 真卡收線已驗——AIR-77，receipt 待補記）</td><td>workflow.md「<code>wt-open</code>／<code>wt-close</code>」</td></tr>
+      <tr><td>9</td><td>wt-open／wt-close transaction</td><td>open：lock→建/重用 WT→baseline 驗證→接 shared state；close：preflight→收斂→finalization→移除</td><td>⚠️ 已落地（open 試點通過；close 真卡收線已驗——AIR-77；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112）</td><td>workflow.md「<code>wt-open</code>／<code>wt-close</code>」</td></tr>
       <tr><td>10</td><td>card WT 記憶池 symlink 接線</td><td>兩條 symlink 指向 primary canonical；Muse hook 接線二選一由基建弧裁決</td><td>✅ 已落地（wt-open 內建；Muse plugin 單閘 AIR-79）</td><td>workflow.md「Card WT 接線」</td></tr>
       <tr><td>11</td><td>fresh-machine 工具鏈</td><td>空機可照 runbook 裝到 prerequisite probe 全過</td><td>❌</td><td>onboarding.md 第 1 節</td></tr>
       <tr><td>12</td><td>rules/skills 部署</td><td>bundle 生成＋各端 symlink 集中 bootstrap＋verify</td><td>⚠️</td><td>onboarding.md 第 2 節</td></tr>
