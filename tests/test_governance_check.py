@@ -7,6 +7,7 @@ crash）。live 態驗收歸 AC-4.1/4.2/4.5 receipt（真 config mutation＋復�
 
 import copy
 import json
+import plistlib
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -82,6 +83,19 @@ def test_check_json_missing_subtree(tmp_path):
     drifts: list = []
     mod.check_json_face(_cc_manifest(target), "cc", drifts)
     assert any("子樹缺席" in m for _, m in drifts)
+
+
+def test_codex_group_identity_follows_repo_root(tmp_path, monkeypatch):
+    """codex 面同步腿（雙根版）：`_codex_group_identity` 與 `_group_scripts`
+    共用 `_hook_path_pattern()`（canonical＋本 checkout 雙根——0918 合併
+    裁決後單一定義源，air-110 單根實作已退役）。"""
+    repo = tmp_path / "checkout-not-named-ai-guide"
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(repo): repo})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
+    text = (f'[[hooks.Stop]]\nmatcher = ""\n[[hooks.Stop.hooks]]\n'
+            f'type = "command"\ncommand = "python3 {repo}/hooks/post-build-gate.py"\n')
+    assert mod._codex_group_identity(text) == ("Stop", "", frozenset({"post-build-gate.py"}))
 
 
 def test_check_json_malformed(tmp_path):
@@ -319,7 +333,7 @@ def test_check_skills_symlinks(tmp_path):
         {"link": str(link), "target": want}]}}}
     drifts: list = []
     mod.check_skills_face(m, drifts)  # 缺席
-    assert any("母鏈缺席" in m2 for _, m2 in drifts)
+    assert any("缺席" in m2 for _, m2 in drifts)
     link.symlink_to(want)
     drifts = []
     mod.check_skills_face(m, drifts)  # 正確（want 不存在也可 symlink）
@@ -348,8 +362,15 @@ def test_cmd_check_missing_configs_exit_drift_not_crash(tmp_path):
     assert rc == mod.EXIT_DRIFT
 
 
-def test_cmd_check_monitor_stub():
-    assert mod.cmd_check({}, "monitor") == mod.EXIT_NOT_IMPL
+def test_cmd_check_monitor_face_wired():
+    """monitor check 轉正（AIR-110 G4）——缺席面走 drift 語義非 stub；行為腿見
+    本檔「AIR-110 G4」段。"""
+    drifts: list = []
+    m = {"surfaces": {"monitor": {
+        "plist_source": "deploy/nope.plist", "label": "x",
+        "install_root": str(Path(mod.REPO_ROOT).parent / "nope-la")}}}
+    mod.check_monitor_face(m, drifts)
+    assert any("版控源缺席" in msg for _, msg in drifts)
 
 
 def test_cmd_check_clean_exit_ok(tmp_path, monkeypatch):
@@ -459,3 +480,212 @@ def test_hook_identity_cross_root_card_wt(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
     group = {"hooks": [{"command": f"{canonical}/hooks/x.py"}]}  # live 側＝canonical 路徑
     assert mod._group_scripts(group) == frozenset({"x.py"})
+# ── AIR-110 G2/G4/G5（面外缺口補齊）───────────────────────────────
+# G2 四條 home symlink 擴 manifest skills 面（user 拍板③）：真 manifest entries
+# 在場＋HOME-shim 全鏈行為（build_plan→_apply_target install/noop／check 綠）。
+# G4 monitor plist 路徑參數化：{{REPO}}/{{HOME}} 佔位＋install.py render＋
+# --check --surface monitor 轉正（live 與 render 期望 byte parity）。
+# G5 backlog-cleanup plist 版控化（不入 installer——安裝形態＝清單列出）。
+
+
+G2_ENTRIES = [
+    ("~/.claude/CLAUDE.md", "{{REPO}}/ai-development-guide.md"),
+    ("~/.claude/rules", "{{REPO}}/rules"),
+    ("~/.claude/agents", "{{REPO}}/agents/claude"),
+    ("~/.zcode/agents", "{{REPO}}/agents/zcode"),
+]
+
+
+def _shim_repo(tmp_path: Path, monkeypatch) -> Path:
+    """HOME-shim＋fake repo：`~/...` 落 tmp HOME、{{REPO}} render 落 tmp repo。
+    canonical cache 預種＝shim repo（0918 合併融合注記——render 錨 canonical，
+    不預種會解到真 repo 根，G2 斷言路徑錯位）。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    repo = tmp_path / "repo"
+    for d in ("skills", "rules", "agents/claude", "agents/zcode"):
+        (repo / d).mkdir(parents=True)
+    (repo / "ai-development-guide.md").write_text("guide\n")
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(repo): repo})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
+    return repo
+
+
+def test_g2_manifest_contains_four_home_symlinks():
+    manifest = mod.load_manifest()
+    entries = {(s["link"], s["target"]) for s in manifest["surfaces"]["skills"]["symlinks"]}
+    for pair in G2_ENTRIES:
+        assert pair in entries
+
+
+def test_g2_install_creates_then_noop(tmp_path, monkeypatch):
+    _shim_repo(tmp_path, monkeypatch)
+    manifest = mod.load_manifest()
+    plan = mod.build_plan(manifest, "skills", "install")
+    symlinks = [t for t in plan["targets"] if t["kind"] == "symlink"]
+    assert len(symlinks) == 6  # 兩條 skills 母鏈＋G2 四條 home symlink
+    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["created"] * 6
+    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["noop"] * 6
+
+
+def test_g2_file_symlink_claude_md_created(tmp_path, monkeypatch):
+    """CLAUDE.md＝檔案 symlink（非目錄母鏈）——機構泛型形態腿。"""
+    _shim_repo(tmp_path, monkeypatch)
+    manifest = mod.load_manifest()
+    plan = mod.build_plan(manifest, "skills", "install")
+    t = next(x for x in plan["targets"] if x["link"] == "~/.claude/CLAUDE.md")
+    assert mod._apply_target({}, t, "install") == "created"
+    link = Path.home() / ".claude" / "CLAUDE.md"
+    assert link.is_symlink() and not link.is_dir()
+    assert link.resolve() == (mod.REPO_ROOT / "ai-development-guide.md").resolve()
+
+
+def test_g2_check_green_when_symlinks_correct(tmp_path, monkeypatch):
+    _shim_repo(tmp_path, monkeypatch)
+    manifest = mod.load_manifest()
+    for t in mod.build_plan(manifest, "skills", "install")["targets"]:
+        mod._apply_target({}, t, "install")
+    drifts: list = []
+    mod.check_skills_face(manifest, drifts)
+    assert drifts == []
+
+
+def test_g2_check_reports_wrong_target(tmp_path, monkeypatch):
+    _shim_repo(tmp_path, monkeypatch)
+    (tmp_path / "elsewhere").mkdir()
+    rules_link = Path.home() / ".claude" / "rules"
+    rules_link.parent.mkdir(parents=True, exist_ok=True)
+    rules_link.symlink_to(tmp_path / "elsewhere")
+    manifest = mod.load_manifest()
+    drifts: list = []
+    mod.check_skills_face(manifest, drifts)
+    assert any("指錯" in m and ".claude/rules" in m for _, m in drifts)
+
+
+MINIMAL_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>test.label</string>
+    <key>ProgramArguments</key>
+    <array><string>{{HOME}}/.local/bin/uv</string><string>run</string></array>
+    <key>WorkingDirectory</key><string>{{REPO}}</string>
+    <key>StartInterval</key><integer>86400</integer>
+</dict>
+</plist>
+"""
+
+
+def test_g4_render_home_token():
+    assert mod.render("{{HOME}}/x") == f"{Path.home()}/x"
+    assert mod.render("{{REPO}}/y") == f"{mod.REPO_ROOT}/y"
+
+
+def test_g4_monitor_plist_source_parameterized():
+    text = (mod.REPO_ROOT / "deploy/governance-health-monitor.plist").read_text()
+    assert "{{REPO}}" in text and "{{HOME}}" in text
+    assert "/Users/" not in text  # 源零機器絕對路徑（跨機器零手改）
+    doc = plistlib.loads(mod.render(text).encode())
+    assert doc["WorkingDirectory"] == str(mod.REPO_ROOT)
+
+
+def _mon_setup(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
+    """fake repo（版控 plist 源）＋live 安裝副本路徑。"""
+    repo = tmp_path / "repo"
+    (repo / "deploy").mkdir(parents=True)
+    src = repo / "deploy/monitor.plist"
+    src.write_text(MINIMAL_PLIST)
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    inst = tmp_path / "LaunchAgents/test.label.plist"
+    return src, inst
+
+
+def _mon_manifest(inst: Path) -> dict:
+    return {"surfaces": {"monitor": {
+        "plist_source": "deploy/monitor.plist", "label": "test.label",
+        "install_root": str(inst.parent)}}}
+
+
+def test_g4_check_monitor_missing_copy_drift(tmp_path, monkeypatch):
+    _src, inst = _mon_setup(tmp_path, monkeypatch)
+    drifts: list = []
+    mod.check_monitor_face(_mon_manifest(inst), drifts)
+    assert any("安裝副本缺席" in m for _, m in drifts)
+
+
+def test_g4_check_monitor_missing_source_drift(tmp_path, monkeypatch):
+    src, inst = _mon_setup(tmp_path, monkeypatch)
+    src.unlink()
+    drifts: list = []
+    mod.check_monitor_face(_mon_manifest(inst), drifts)
+    assert any("版控源缺席" in m for _, m in drifts)
+
+
+def test_g4_check_monitor_drift_on_content_diff(tmp_path, monkeypatch):
+    src, inst = _mon_setup(tmp_path, monkeypatch)
+    inst.parent.mkdir(parents=True)
+    inst.write_text(mod.render(src.read_text()).replace("86400", "1"))  # 手改 live
+    drifts: list = []
+    mod.check_monitor_face(_mon_manifest(inst), drifts)
+    assert any("plist 漂移" in m for _, m in drifts)
+
+
+def test_g4_check_monitor_green_on_rendered_equal(tmp_path, monkeypatch):
+    src, inst = _mon_setup(tmp_path, monkeypatch)
+    inst.parent.mkdir(parents=True)
+    inst.write_text(mod.render(src.read_text()))
+    drifts: list = []
+    mod.check_monitor_face(_mon_manifest(inst), drifts)
+    assert drifts == []
+
+
+def test_g4_cmd_check_monitor_exit_codes(tmp_path, monkeypatch):
+    """--check --surface monitor 轉正：drift→1／綠→0（stub EXIT_NOT_IMPL 退役）。"""
+    src, inst = _mon_setup(tmp_path, monkeypatch)
+    m = _mon_manifest(inst)
+    assert mod.cmd_check(m, "monitor") == mod.EXIT_DRIFT  # live 缺席
+    inst.parent.mkdir(parents=True)
+    inst.write_text(mod.render(src.read_text()))
+    assert mod.cmd_check(m, "monitor") == mod.EXIT_OK
+
+
+def test_g4_apply_launchd_plist_renders_tokens(tmp_path, monkeypatch):
+    _src, inst = _mon_setup(tmp_path, monkeypatch)
+    monkeypatch.setattr(mod, "_launchctl", lambda *a: SimpleNamespace(
+        returncode=0 if a[0] == "bootstrap" else 1, stderr=""))  # print→未載入
+    t = {"kind": "launchd-plist", "target": str(inst), "source": "deploy/monitor.plist",
+         "label": "test.label", "action": "merge"}
+    assert mod._apply_target({}, t, "install") == "created＋bootstrapped"
+    text = inst.read_text()
+    assert "{{REPO}}" not in text and "{{HOME}}" not in text
+    assert str(mod.REPO_ROOT) in text
+    plistlib.loads(text.encode())  # 寫入副本仍合法 plist
+
+
+def test_g5_backlog_cleanup_plist_versioned_and_parameterized():
+    """版控源形態釘住 live plist（AIR-110 G5）：排程欄位＋script 路徑逐字對照。"""
+    text = (mod.REPO_ROOT / "deploy/backlog-cleanup.plist").read_text()
+    assert "{{REPO}}" in text and "{{HOME}}" in text
+    assert "/Users/" not in text
+    doc = plistlib.loads(mod.render(text).encode())
+    assert doc["Label"] == "com.ai-guide.backlog-cleanup"
+    assert doc["ProgramArguments"] == [
+        "/bin/bash", f"{mod.REPO_ROOT}/deploy/scripts/run-backlog-cleanup.sh"]
+    assert doc["StartCalendarInterval"] == {"Hour": 23, "Minute": 50}
+    assert doc["ThrottleInterval"] == 600
+    assert (mod.REPO_ROOT / "deploy/scripts/run-backlog-cleanup.sh").exists()
+
+
+def test_g5_not_wired_into_installer():
+    """G5 決策：本弧版控化不入 installer（monitor 面仍單 plist——安裝形態清單列出）。"""
+    manifest = mod.load_manifest()
+    mon_src = mod.REPO_ROOT / manifest["surfaces"]["monitor"]["plist_source"]
+    assert "backlog-cleanup" not in mon_src.read_text()
+
+
+def test_g5_install_form_listed_in_readme():
+    """G5：backlog-cleanup 安裝形態＝README 面外清單列出（版控源＋手動裝載步驟）。"""
+    text = (mod.REPO_ROOT / "governance/README.md").read_text()
+    assert "deploy/backlog-cleanup.plist" in text
+    assert "com.ai-guide.backlog-cleanup" in text
+    assert "launchctl bootstrap" in text  # 手動裝載形態在場

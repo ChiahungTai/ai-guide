@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- backlog Done 欄清場批次（每日 23:50；卡 AIR-98 P1 前形版控化＝AIR-110 G5）。
+     行為主體＝deploy/scripts/run-backlog-cleanup.sh（已版控；twin 同步見該檔頭）。
+     路徑參數化：{{REPO}}（repo 根）與 {{HOME}} 佔位——launchd 不展開 ~ 或佔位符，
+     裝載前須 render 成絕對路徑（governance/install.py 的 render 同款替換）。
+     安裝形態（本弧不入 installer——AIR-110 決策：清單列出、user 手動裝載）：
+       1. render：{{REPO}}→repo 絕對路徑、{{HOME}}→家目錄
+       2. cp <rendered> ~/Library/LaunchAgents/com.ai-guide.backlog-cleanup.plist
+       3. launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.ai-guide.backlog-cleanup.plist
+     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制——嚴格 parser 拒讀）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.backlog-cleanup</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>{{REPO}}/deploy/scripts/run-backlog-cleanup.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>23</integer>
+        <key>Minute</key>
+        <integer>50</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-backlog-cleanup.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-backlog-cleanup-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>PATH</key>
+        <string>{{HOME}}/.npm-global/bin:{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>600</integer>
+</dict>
+</plist>

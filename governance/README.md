@@ -20,11 +20,11 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 | surface | 動作 | 機制 |
 |---|---|---|
 | `rules` | bundle 部署 | wrap `scripts/deploy_agents.py`（gate／--dry-run 輸出逐行透傳） |
-| `skills` | 母鏈 symlink | 建 `~/.agents/skills`、`~/.claude/skills` → repo `skills/`；已存在且 resolve 正確＝零動作；指錯＝fail-loud 不自動改 |
+| `skills` | symlink 活視圖 | 建 `~/.agents/skills`、`~/.claude/skills` → repo `skills/`（母鏈）＋四條 home symlink（AIR-110 G2：`~/.claude/CLAUDE.md`→`ai-development-guide.md`、`~/.claude/rules`→`rules/`、`~/.claude/agents`→`agents/claude/`、`~/.zcode/agents`→`agents/zcode/`）；已存在且指對＝零動作；指錯＝fail-loud 不自動改 |
 | `hooks` | 四家註冊 | CC `~/.claude/settings.json`（symlink→repo settings.json，resolve 後寫）；ZCode `~/.zcode/cli/config.json`（只動 `hooks` 子樹，mcp/plugins 逐鍵不變）；codex `~/.codex/config.toml`（group 級 append＋註解標記）；muse 部分併 memory 面 |
 | `agents` | registry 生成 | wrap `scripts/sync_agents.py`（check 模式串接其 `--check` 退出碼） |
 | `memory` | muse plugin＋池拓撲 | `muse plugins install/approve`＋pool 轉移後 `hooks/setup-memory-symlinks.sh --apply` |
-| `monitor` | health 排程 | launchd plist（`deploy/` 版控源 → `~/Library/LaunchAgents/` 裝載） |
+| `monitor` | health 排程 | launchd plist（`deploy/` 版控源 `{{REPO}}`/`{{HOME}}` 佔位 → render → `~/Library/LaunchAgents/` 裝載；AIR-110 G4 參數化——跨機器零手改；`--check --surface monitor` 比對 live 與 render 期望） |
 
 安全模型（Q3）：compute-then-apply——任何寫入前完成全部分析；plan journal 落 `~/.local/share/ai-guide/governance-plan-journal/`（保留 10 份，中途 kill 可精確 resume／回滾）；備份＝僅變更 target `.bak-*`（`copy2` 保 mtime，每目標保留 3 份）；malformed config（parse 失敗）**絕不覆寫**——fail-loud 報路徑＋錯誤；寫入＝temp＋parse 驗證＋preimage 對比＋`os.replace` 原子替換（codex 併發防護；CC 目標先 `Path.resolve()`——原子寫直打 symlink 路徑會斷鏈，P0-3 實證）。
 
@@ -44,7 +44,7 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 ## 健康檢查
 
 - 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面，見下節）。
-- 排程：`com.ai-guide.governance-health-monitor` launchd（日頻；AIR-100 S-E muse approve monitor 已收編）——`scripts/governance_health_monitor.py` 消費 install.py `--verify`＋`--check --surface all`，輸出透傳落 log；任一 FAIL 非零 exit＋告警行（fail-loud）。裝載／卸載＝`--surface monitor`。
+- 排程：`com.ai-guide.governance-health-monitor` launchd（日頻；AIR-100 S-E muse approve monitor 已收編）——`scripts/governance_health_monitor.py` 消費 install.py `--verify`＋`--check --surface all`，輸出透傳落 log；任一 FAIL 非零 exit＋告警行（fail-loud）。裝載／卸載＝`--surface monitor`；排程面自身 parity＝`--check --surface monitor`（AIR-110 G4：live plist vs render(版控源)，顯式面——`all` 不含）。
 - codex mixed representation：`--check` 掃同 semantic hook 是否另有 `~/.codex/hooks.json` copy／重複 inline copy（同 layer 混載＝warning＋雙 fire）。
 
 ### `--verify` probe 面（S3）
@@ -66,7 +66,7 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 ## uninstall 影響（拆接線不刪源）
 
-`--uninstall` 移除套件註冊條目、保留他鍵；共享 scripts 留 repo（dead but harmless）；**rules/agents 面不受 uninstall 影響**（wrap 不反部署——bundle 回退走 `rules/AGENTS.md` 部署紀律、registry 走 `sync_agents.py` 自身）；skills 母鏈拆除＝harness 即時讀不到 ai-guide skills（session 內已載入者不受影響）；codex `[hooks.state]` orphan 條目 codex 無 GC 路徑——`key＋trusted_hash` 皆相符才精準 cleanup，否則 leave-and-report（隨 session 自然失效）；**positional index 前移警告**：uninstall 本套件 group 後，同-event 後續 group 的既有 trust 會失效（輸出會警告）。
+`--uninstall` 移除套件註冊條目、保留他鍵；共享 scripts 留 repo（dead but harmless）；**rules/agents 面不受 uninstall 影響**（wrap 不反部署——bundle 回退走 `rules/AGENTS.md` 部署紀律、registry 走 `sync_agents.py` 自身）；skills 面 symlink 拆除（母鏈＋G2 四條）＝harness 即時讀不到 ai-guide skills／CC 端 guide＋rules／兩家 agents registry 活視圖（session 內已載入者不受影響）；codex `[hooks.state]` orphan 條目 codex 無 GC 路徑——`key＋trusted_hash` 皆相符才精準 cleanup，否則 leave-and-report（隨 session 自然失效）；**positional index 前移警告**：uninstall 本套件 group 後，同-event 後續 group 的既有 trust 會失效（輸出會警告）。
 
 **`--uninstall --surface all` 範圍**（review C-1 定案）：五面反裝＋**muse disable＋monitor unload**（EP rollback 契約「全包含 monitor unload」）。對稱性註記：install-all 不含 monitor 裝載（monitor＝顯式排程面，`--surface monitor` 單獨裝載）——反裝取「清除機器上一切套件痕跡」的保守語義。
 
@@ -76,6 +76,14 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 - CC FileChanged 單家（memory-dirty-sensor 僅 CC 註冊）。
 - codex trust 無法自動化（見 approve 分欄）；`codex-cli 0.154.0-alpha.6.2` 基準——state key 公式與 trust 行為隨版本可能變，`--verify` 輸出帶版本診斷行。
 - P0-2 凍結：CC/ZCode config 序列化＝`json.dumps(indent=2, ensure_ascii=False)`＋尾換行（byte-stability 實證）；非套件鍵區域 byte-equal。
+
+## 面外排程清單（installer 範圍外）
+
+AIR-110 G5 決策：下列 launchd 排程**不入 installer**（monitor 面維持單 plist）——版控源在 `deploy/`（`{{REPO}}`/`{{HOME}}` 佔位，render 語義與 installer 同款），安裝形態＝本清單列出、user 手動裝載：
+
+| Label | 版控源 | 行為 | 手動裝載 |
+|---|---|---|---|
+| `com.ai-guide.backlog-cleanup` | `deploy/backlog-cleanup.plist` | backlog Done 欄清場批次（每日 23:50；行為主體＝`deploy/scripts/run-backlog-cleanup.sh`） | render 佔位→絕對路徑，`cp` 至 `~/Library/LaunchAgents/com.ai-guide.backlog-cleanup.plist`，`launchctl bootstrap gui/$(id -u) <副本>`；卸載＝`launchctl bootout`＋刪副本 |
 
 ## bootstrap（新機器——AIR-110 消費契約）
 
@@ -95,4 +103,4 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 4. 手動 approve：CC `/hooks`、codex trust review、ZCode 重開 session（見分欄表）。
 5. 驗證：`--verify`——muse PASS、CC/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
 6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）。
-7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄。
+7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄；`--check --surface monitor` 驗排程面 parity（live plist＝render 期望）。

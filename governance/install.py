@@ -34,6 +34,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST_PATH = Path(__file__).resolve().parent / "manifest.toml"
 REPO_TOKEN = "{{REPO}}"
+HOME_TOKEN = "{{HOME}}"  # AIR-110 G4：plist 源機器 home 路徑佔位（registrations 同款 render）
 JOURNAL_DIR = Path.home() / ".local/share/ai-guide/governance-plan-journal"
 BAK_KEEP = 3
 JOURNAL_KEEP = 10
@@ -118,7 +119,7 @@ _HOOK_PATTERN_CACHE: dict[tuple[str, str], re.Pattern] = {}
 
 
 def render(text: str) -> str:
-    return text.replace(REPO_TOKEN, str(_canonical_root()))
+    return text.replace(REPO_TOKEN, str(_canonical_root())).replace(HOME_TOKEN, str(Path.home()))
 
 
 def home_path(p: str) -> Path:
@@ -690,9 +691,9 @@ def _apply_launchd_plist(t: dict) -> str:
             return "unloaded＋removed（版控源留 repo——dead but harmless）"
         return "not-loaded（leave）"
     src = REPO_ROOT / t["source"]
-    new_text = src.read_text()
+    new_text = render(src.read_text())  # {{REPO}}/{{HOME}} 佔位→絕對路徑（launchd 不展開）
     import plistlib
-    try:  # 源內容驗證——create 路徑同樣禁帶病寫入（XML 註解含雙連字號事故實證）
+    try:  # render 後內容驗證——create 路徑同樣禁帶病寫入（XML 註解含雙連字號事故實證）
         plistlib.loads(new_text.encode())
     except plistlib.InvalidFileException as exc:
         raise GovernanceError(f"版控源非合法 plist，拒裝載 fail-loud：{src}\n{exc}") from exc
@@ -1000,10 +1001,31 @@ def check_skills_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
         link = home_path(sl["link"])
         want = render(sl["target"])
         if not link.is_symlink():
-            drifts.append(("skills", f"母鏈缺席：{link}——跑 install --surface skills"))
+            drifts.append(("skills", f"symlink 缺席：{link}——跑 install --surface skills"))
         elif os.readlink(link) != want:
-            drifts.append(("skills", f"母鏈指錯：{link} → {os.readlink(link)}"
+            drifts.append(("skills", f"symlink 指錯：{link} → {os.readlink(link)}"
                            f"（期望 {want}）——fail-loud 不自動改"))
+
+
+def check_monitor_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    """monitor（AIR-110 G4 轉正）：live plist 與 render(版控源) byte parity（唯讀）。
+
+    launchd 不展開 ~／佔位符——裝載副本必是 render 後絕對路徑；比對語義＝
+    安裝副本逐字等於 render(plist_source)。載入態（launchctl）不在本面——
+    parity 綠但未載入＝裝載動作缺席，install --surface monitor 冪等重跑即對齊。
+    """
+    mon = manifest["surfaces"]["monitor"]
+    src = REPO_ROOT / mon["plist_source"]
+    if not src.exists():
+        drifts.append(("monitor", f"版控源缺席：{src}（manifest 與 repo 失同步）"))
+        return
+    inst = real_target(home_path(f"{mon['install_root']}/{mon['label']}.plist"))
+    expected = render(src.read_text())
+    if not inst.exists():
+        drifts.append(("monitor", f"安裝副本缺席：{inst}——跑 install --surface monitor"))
+    elif inst.read_text() != expected:
+        drifts.append(("monitor", f"plist 漂移：{inst} ≠ render(版控源)"
+                       "——跑 install --surface monitor 重載"))
 
 
 def check_hooks_scripts(manifest: dict, drifts: list[tuple[str, str]]) -> None:
@@ -1039,10 +1061,10 @@ def cmd_check(manifest: dict, surface: str) -> int:
     """--check：五面 parity（唯讀，drift 列清單 exit 1——sync_agents --check 同語義）。
 
     live config 缺席（新機器）＝報 drift 不 crash（AC-4.6）。
+
+    monitor＝顯式面（AIR-110 G4 轉正）：`--surface monitor` 專用，all 不含
+    （與 install 不對稱同理——排程面顯式操作）。
     """
-    if surface == "monitor":
-        print("[stub] monitor 面 S5 實裝——not implemented", file=sys.stderr)
-        return EXIT_NOT_IMPL
     faces = ("rules", "skills", "hooks", "agents", "memory") if surface == "all" \
         else (surface,)
     drifts: list[tuple[str, str]] = []
@@ -1060,6 +1082,8 @@ def cmd_check(manifest: dict, surface: str) -> int:
             check_agents_face(manifest, drifts)
         elif face == "memory":
             check_muse_face(manifest, drifts)
+        elif face == "monitor":
+            check_monitor_face(manifest, drifts)
     if drifts:
         print(f"[check] {len(drifts)} 項 drift：")
         for label, msg in drifts:

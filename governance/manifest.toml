@@ -43,11 +43,17 @@ argv = ["uv", "run", "python", "scripts/deploy_agents.py"]
 deployed_targets = ["~/.zcode/AGENTS.md", "~/.codex/AGENTS.md", "~/.config/muse/AGENTS.md"]
 
 [surfaces.skills]
-# 單一母鏈 symlink（P0-8 實證形態）；已存在且 resolve 正確＝零動作（冪等）；
-# 指錯＝fail-loud 報告不自動改（零遷移原則）。
+# symlink 活視圖（安裝到 home 消費點）；已存在且指對＝零動作（冪等）；
+# 指錯＝fail-loud 報告不自動改（零遷移原則）。前兩條＝skills 母鏈（P0-8
+# 實證形態）；後四條＝AIR-110 G2 home symlink 收編（user 拍板③擴本面）：
+# CC 端 CLAUDE.md→guide＋rules/agents 目錄、ZCode 端 agents registry。
 symlinks = [
     { link = "~/.agents/skills", target = "{{REPO}}/skills" },
     { link = "~/.claude/skills", target = "{{REPO}}/skills" },
+    { link = "~/.claude/CLAUDE.md", target = "{{REPO}}/ai-development-guide.md" },
+    { link = "~/.claude/rules", target = "{{REPO}}/rules" },
+    { link = "~/.claude/agents", target = "{{REPO}}/agents/claude" },
+    { link = "~/.zcode/agents", target = "{{REPO}}/agents/zcode" },
 ]
 
 [surfaces.agents]
@@ -64,9 +70,9 @@ pool_setup_apply_args = ["--apply"]
 
 [surfaces.monitor]
 # S5 收編：五面 health 排程（消費 install.py --verify＋--check 的 launchd 日頻）。
-# plist 版控源；--surface monitor 裝載（copy 至 LaunchAgents＋bootstrap）。
-# 已知限制：plist 內 repo/log 路徑為機器絕對路徑（AIR-100 S-E 先例）——跨機器
-# 安裝需先改 plist（AIR-110 bootstrap 承接範圍）。
+# plist 版控源；--surface monitor 裝載（render 至 LaunchAgents＋bootstrap）。
+# AIR-110 G4：源內機器路徑以 {{REPO}}/{{HOME}} 佔位（registrations 模板同款
+# 機構）——跨機器零手改；--check --surface monitor 比對 live 與 render 期望。
 plist_source = "deploy/governance-health-monitor.plist"
 label = "com.ai-guide.governance-health-monitor"
 install_root = "~/Library/LaunchAgents"
