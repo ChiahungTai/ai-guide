@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 05:44'
+updated_date: '2026-09-17 06:29'
 labels: []
 dependencies: []
 references:
@@ -41,4 +41,6 @@ ordinal: 101000
 0917 Stop-hook POC（機械閘方案 B 查證，用戶指示）：POC hook 已註冊 live config（擋 2 次放行第 3 次；backup=config.json.bak-20260917-124149-stop-poc），firings 落 .agent-tmp/stop-poc/。自動觸發兩路皆不通——①automation 投遞 append 進「綁定 session」（=建立 automation 的 session，AIR-82 拓撲重演），hook 快照在註冊前→不觸發；②subagent session 結束不觸發 Stop hook（實測 agent 完成、firings 空）。逆向：桌面 bundle（asar/out/host）僅含 hook 事件 schema（Stop 在 enum）但無 stop_hook_active/decision payload 實作——agent 迴圈疑似遠端（coding plan backend），本地 RE 無法閉合。結論：Stop hook block 語義只有官方文檔（明確：decision block+reason 續跑、exit 2 快捷、連續 3 次上限）＋schema 證據，runtime 驗證需要「註冊後啟動的新 main session」——只能由 user 開。附帶新證據：ZCode hook 機械在 main session 確認運作（本 session 內 PreToolUse hook 即時擋下 heredoc 寫入）。
 
 09-17 S3 完成：--verify stub 轉正——四家 probe（muse inspect fail-closed／CC+ZCode 自含 fixture pipe payload exit 2／codex 三層 L1 註冊在場+L2 trust 診斷+L3 真codex exec canary）＋mixed-rep 報告腿＋單元測試 21 tests（AC-3.3 negative＋防恆綠）。live --verify --surface all 全 PASS exit 0：codex L2 五 handlers 全 Trusted 與 P0-1 十二條吻合；L3 bypass flag=per-invocation 正當用途（不寫 state、非模擬 approve）。live 首跑抓到 S2 死碼 codex_trust_diagnostics 兩 bug：HANDLER_HEADER 缺 MULTILINE（L2 整段消失）＋state key event 段 .lower() 應為 snake_case（誤報 Untrusted）——皆修復＋回歸測試守衛。附帶：manifest [bootstrap_cli.exit_codes] 補 4=執行錯誤（S2 實裝漏投影）。receipt＝references/s3-verify-receipt.md。待續：S4（--check 五面 parity）→S5→S6 收尾→live uninstall round-trip（AC-2.5）。
+
+09-17 S4 完成：--check stub 轉正——五面 parity（JSON 語義 diff 缺/多/內容差＋symlink 健康腿／codex Modified 獨立 class＋mixed-rep／muse R6 source↔cache 逐檔 byte 腿（複用 probe_muse，S3/S4 同一實作）／rules=唯讀 import deploy_agents.expected_bundle_for()／agents=sync_agents --check 退出碼串接／skills 母鏈）＋單元測試 21 tests。live：AC-4.1 乾淨態 exit 0；AC-4.2 CC 刪條目→exit 1 命中該條→復原 sha 逐字等→exit 0（附帶實證：mutation heredoc 被 block-python-file-write 即時攔，治理閘在 authoring session 自身生效）；AC-4.5 弄髒生成 registry→透傳 rc=1→復原 exit 0。receipt＝references/s4-check-receipt.md。待續：S5（monitor 對帳）→S6 收尾→live uninstall round-trip（AC-2.5）。
 <!-- SECTION:NOTES:END -->

@@ -21,6 +21,7 @@ if sys.version_info < (3, 11):
 import argparse
 import copy
 import datetime
+import importlib.util
 import json
 import os
 import re
@@ -363,37 +364,45 @@ def _codex_state_event(event: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", event).lower()
 
 
+def _codex_owned_state_keys(live_text: str, template_text: str) -> dict[tuple, list[str]]:
+    """套件 group ident → 預測 state keys。positional key 僅診斷／分類用（Q4 紅線：
+    禁作驗收契約——--check 的 Modified 分類只影響 drift 措辭，drift 兩態都成立）。"""
+    source = f"{Path.home() / '.codex/config.toml'}"
+    _, live_units = codex_group_units(live_text)
+    owned_idents = {_codex_group_identity(u["text"])
+                    for u in codex_group_units(template_text)[1] if u["kind"] == "group"}
+    key_map: dict[tuple, list[str]] = {}
+    counters: dict[str, int] = {}
+    for u in live_units:
+        if u["kind"] != "group":
+            continue
+        ident = _codex_group_identity(u["text"])
+        event = ident[0]
+        idx = counters.get(event, 0)
+        counters[event] = idx + 1
+        if ident not in owned_idents:
+            continue
+        lst = key_map.setdefault(ident, [])
+        for h_idx in range(len(HANDLER_HEADER.findall(u["text"]))):
+            lst.append(f"{source}:{_codex_state_event(event)}:{idx}:{h_idx}")
+    return key_map
+
+
 def codex_trust_diagnostics(live_text: str, template_text: str) -> list[str]:
     """Q4：state key 僅診斷輸出（positional 非 stable identity）。
 
     group_index＝同 event 在檔序上的位置（含非套件 group——positional 語義）。
     """
-    source = f"{Path.home() / '.codex/config.toml'}"
     try:
         state = tomllib.loads(live_text).get("hooks", {}).get("state", {})
     except tomllib.TOMLDecodeError:
         state = {}
-    _, tmpl_units = codex_group_units(template_text)
-    owned_idents = {_codex_group_identity(u["text"]) for u in tmpl_units if u["kind"] == "group"}
-    _, live_units = codex_group_units(live_text)
     lines: list[str] = []
-    counters: dict[str, int] = {}
-    for u in live_units:
-        if u["kind"] != "group":
-            continue
-        event = _codex_group_identity(u["text"])[0]
-        idx = counters.get(event, 0)
-        counters[event] = idx + 1
-        ident = _codex_group_identity(u["text"])
-        if ident not in owned_idents:
-            continue
-        handlers = len(HANDLER_HEADER.findall(u["text"]))
-        matcher = ident[1]
-        scripts = sorted(ident[2])
-        for h_idx in range(handlers):
-            key = f"{source}:{_codex_state_event(event)}:{idx}:{h_idx}"
+    for ident, keys in _codex_owned_state_keys(live_text, template_text).items():
+        for key in keys:
             status = "Trusted(state 在場)" if key in state else "Untrusted(待 user approve)"
-            lines.append(f"  diagnostic key={key} matcher={matcher!r} scripts={scripts} → {status}")
+            lines.append(f"  diagnostic key={key} matcher={ident[1]!r} "
+                         f"scripts={sorted(ident[2])} → {status}")
     return lines
 
 
@@ -588,9 +597,240 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
     return EXIT_OK
 
 
+# ── drift gate（S4：五面 vs manifest 生成期望；唯讀，drift exit 1）──────
+
+
+def _pkg_scripts(tmpl_events: dict) -> frozenset:
+    """模板全事件的套件腳本名集合（F-5 窄鍵：多條目偵測只認套件腳本）。"""
+    names: set[str] = set()
+    for groups in tmpl_events.values():
+        for g in groups:
+            names |= _group_scripts(g)
+    return frozenset(names)
+
+
+def check_json_face(manifest: dict, harness: str, drifts: list[tuple[str, str]]) -> None:
+    """CC/ZCode：模板條目 vs live 套件條目語義 diff＋symlink 健康腿（P0-3）。"""
+    reg = manifest["registrations"][harness]
+    raw = home_path(reg["target"])
+    if not raw.exists():
+        drifts.append((harness, f"live config 缺席：{reg['target']}（新機器？跑 install）"))
+        return
+    if reg.get("target_is_symlink") and not raw.is_symlink():
+        drifts.append((harness, "應為 symlink（→repo settings.json）實為普通檔——"
+                       "P0-3 斷鏈形，user 處置（不自動改）"))
+    target = real_target(raw)
+    try:
+        live = json.loads(target.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        drifts.append((harness, f"malformed config：{exc}"))
+        return
+    tmpl = json.loads(render((MANIFEST_PATH.parent / reg["template"]).read_text()))
+    merge_root = reg.get("merge_root", "hooks")
+    subtree = live.get(merge_root)
+    if not isinstance(subtree, dict):
+        drifts.append((harness, f"{merge_root} 子樹缺席——跑 install --surface hooks"))
+        return
+    if "enabled" in tmpl and subtree.get("enabled") != tmpl["enabled"]:
+        drifts.append((harness, f"enabled={subtree.get('enabled')!r} ≠ 模板 "
+                       f"{tmpl['enabled']!r}"))
+    events = tmpl.get("events", tmpl)
+    ev_container = subtree.get("events") if "events" in tmpl else subtree
+    if not isinstance(ev_container, dict):
+        drifts.append((harness, "events 容器缺席——跑 install --surface hooks"))
+        return
+    pkg_scripts = _pkg_scripts(events)
+    for evt, groups in events.items():
+        live_groups = ev_container.get(evt, [])
+        tmpl_idents = {_group_identity(g) for g in groups}
+        for tg in groups:
+            ident = _group_identity(tg)
+            hit = next((g for g in live_groups if _group_identity(g) == ident), None)
+            if hit is None:
+                drifts.append((harness, f"缺條目 {evt}/{sorted(ident[1])}"))
+            elif hit != tg:
+                drifts.append((harness, f"內容差 {evt}/{sorted(ident[1])}"))
+        for g in live_groups:
+            gi = _group_identity(g)
+            if gi not in tmpl_idents and _group_scripts(g) & pkg_scripts:
+                drifts.append((harness, f"多條目（套件腳本現身非模板 group）"
+                               f"{evt}/{sorted(gi[1])}"))
+
+
+def check_codex_face(manifest: dict, drifts: list[tuple[str, str]],
+                     codex_home: Path | None = None) -> None:
+    """codex：註冊在場＋條目逐行等值＋trust Modified 獨立 class＋mixed-rep 掃描。"""
+    reg = manifest["registrations"]["codex"]
+    raw = home_path(reg["target"])
+    if not raw.exists():
+        drifts.append(("codex", f"config 缺席：{reg['target']}（新機器？跑 install）"))
+        return
+    live_text = raw.read_text()
+    try:
+        state = tomllib.loads(live_text).get("hooks", {}).get("state", {})
+    except tomllib.TOMLDecodeError as exc:
+        drifts.append(("codex", f"malformed config：{exc}"))
+        return
+    template_text = render((MANIFEST_PATH.parent / reg["template"]).read_text())
+    live_groups = [(_codex_group_identity(u["text"]), u["text"])
+                   for u in codex_group_units(live_text)[1] if u["kind"] == "group"]
+    tmpl_by_ident = {_codex_group_identity(u["text"]): u["text"]
+                     for u in codex_group_units(template_text)[1] if u["kind"] == "group"}
+    key_map = _codex_owned_state_keys(live_text, template_text)
+    seen: set[tuple] = set()
+    for ident, text in live_groups:
+        if ident not in tmpl_by_ident:
+            continue
+        seen.add(ident)
+        if text == tmpl_by_ident[ident]:
+            continue
+        # codex ⑦：registration 在場但內容變＝trust 針對舊內容 → Modified class
+        #（state key 在場僅供分類——Q4 紅線：非驗收契約）。
+        if any(k in state for k in key_map.get(ident, [])):
+            drifts.append(("codex", f"trustStatus=Modified（內容已變，trust 針對舊內容）"
+                           f"——需 user 再 approve：{ident[0]}/{ident[1]}"))
+        else:
+            drifts.append(("codex", f"內容差 group {ident[0]}/{ident[1]} {sorted(ident[2])}"))
+    for ident in tmpl_by_ident:
+        if ident not in seen:
+            drifts.append(("codex", f"缺 group {ident[0]}/{ident[1]} {sorted(ident[2])}"))
+    owned_live = [i for i, _ in live_groups if i in tmpl_by_ident]
+    if len(owned_live) > len(tmpl_by_ident):
+        drifts.append(("codex", "重複 inline group（同 identity 多份）——雙 fire"))
+    for w in codex_mixed_rep_warnings(live_text, codex_home=codex_home):
+        drifts.append(("codex", f"mixed-rep：{w}"))
+
+
+def check_muse_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    """muse：在冊＋source.path canonical＋approve 態＋source↔cache 逐檔 byte 腿（R6）。"""
+    mem = manifest["surfaces"]["memory"]
+    pid = mem["plugin_id"]
+    if shutil.which("muse") is None:
+        drifts.append(("muse", "CLI 缺席（環境守衛）"))
+        return
+    proc = subprocess.run(["muse", "plugins", "inspect", pid, "--json"],
+                          capture_output=True, text=True, timeout=60)
+    if proc.returncode != 0:
+        drifts.append(("muse", f"inspect 不可判定（fail-closed）：{proc.stderr.strip()[:150]}"))
+        return
+    try:
+        doc = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        drifts.append(("muse", f"inspect 輸出非 JSON（fail-closed）：{exc}"))
+        return
+    record = doc.get("record") or {}
+    if record.get("id") != pid:
+        drifts.append(("muse", f"plugin 不在冊：{pid}——跑 install --surface memory"))
+        return
+    canonical = str(REPO_ROOT / mem["plugin_path"])
+    src_path = (record.get("source") or {}).get("path")
+    if src_path != canonical:
+        drifts.append(("muse", f"source.path 指非 canonical：{src_path}"
+                       f"（期望 {canonical}）——reinstall"))
+    status, detail = probe_muse(pid)
+    if status != "PASS":
+        drifts.append(("muse", f"approve 態：{detail}"))
+    cache = record.get("cache_path")
+    if cache:
+        src_dir = REPO_ROOT / mem["plugin_path"]
+        cache_dir = Path(cache)
+        if not cache_dir.is_dir():
+            drifts.append(("muse", f"cache 缺席：{cache_dir}——reinstall"))
+        else:
+            src_files = {p.relative_to(src_dir) for p in src_dir.rglob("*") if p.is_file()}
+            cache_files = {p.relative_to(cache_dir) for p in cache_dir.rglob("*") if p.is_file()}
+            for rel in sorted(cache_files - src_files):
+                drifts.append(("muse", f"cache 多檔（source 缺）：{rel}"))
+            for rel in sorted(src_files - cache_files):
+                drifts.append(("muse", f"source 多檔（cache 舊）：{rel}——update＋re-approve"))
+            for rel in sorted(src_files & cache_files):
+                if (src_dir / rel).read_bytes() != (cache_dir / rel).read_bytes():
+                    drifts.append(("muse", f"cache 與 source 內容差：{rel}"
+                                   "——update＋re-approve"))
+
+
+_DEPLOY_AGENTS_MOD = None
+
+
+def _load_deploy_agents():
+    """唯讀 import deploy_agents.py（wrap 不擁有——check 只消費其 expected_bundle_for）。"""
+    global _DEPLOY_AGENTS_MOD
+    if _DEPLOY_AGENTS_MOD is None:
+        spec = importlib.util.spec_from_file_location(
+            "ai_guide_deploy_agents", REPO_ROOT / "scripts/deploy_agents.py")
+        _DEPLOY_AGENTS_MOD = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_DEPLOY_AGENTS_MOD)
+    return _DEPLOY_AGENTS_MOD
+
+
+def check_rules_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    """rules bundle parity：deploy_agents.expected_bundle_for() vs 部署檔 bytes。"""
+    dep = _load_deploy_agents()
+    for t in manifest["surfaces"]["rules"]["deployed_targets"]:
+        path = home_path(t)
+        try:
+            expected = dep.expected_bundle_for(path)
+        except KeyError:
+            drifts.append(("rules", f"未知部署目標（manifest 與工具失同步）：{t}"))
+            continue
+        if not path.exists():
+            drifts.append(("rules", f"部署檔缺席：{t}——跑 install --surface rules"))
+        elif path.read_bytes() != expected:
+            drifts.append(("rules", f"bundle 漂移：{t}——跑 install --surface rules"))
+
+
+def check_agents_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    """agents：串接 sync_agents.py --check 退出碼（不重造；輸出透傳）。"""
+    rc = run_wrap(manifest["surfaces"]["agents"]["argv"],
+                  manifest["surfaces"]["agents"].get("check_args"))
+    if rc != 0:
+        drifts.append(("agents", f"sync_agents --check 非零（rc={rc}，輸出見上）"))
+
+
+def check_skills_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
+    for sl in manifest["surfaces"]["skills"]["symlinks"]:
+        link = home_path(sl["link"])
+        want = render(sl["target"])
+        if not link.is_symlink():
+            drifts.append(("skills", f"母鏈缺席：{link}——跑 install --surface skills"))
+        elif os.readlink(link) != want:
+            drifts.append(("skills", f"母鏈指錯：{link} → {os.readlink(link)}"
+                           f"（期望 {want}）——fail-loud 不自動改"))
+
+
 def cmd_check(manifest: dict, surface: str) -> int:
-    print("[stub] --check S4 實裝——not implemented", file=sys.stderr)
-    return EXIT_NOT_IMPL
+    """--check：五面 parity（唯讀，drift 列清單 exit 1——sync_agents --check 同語義）。
+
+    live config 缺席（新機器）＝報 drift 不 crash（AC-4.6）。
+    """
+    if surface == "monitor":
+        print("[stub] monitor 面 S5 實裝——not implemented", file=sys.stderr)
+        return EXIT_NOT_IMPL
+    faces = ("rules", "skills", "hooks", "agents", "memory") if surface == "all" \
+        else (surface,)
+    drifts: list[tuple[str, str]] = []
+    for face in faces:
+        if face == "rules":
+            check_rules_face(manifest, drifts)
+        elif face == "skills":
+            check_skills_face(manifest, drifts)
+        elif face == "hooks":
+            check_json_face(manifest, "cc", drifts)
+            check_json_face(manifest, "zcode", drifts)
+            check_codex_face(manifest, drifts)
+        elif face == "agents":
+            check_agents_face(manifest, drifts)
+        elif face == "memory":
+            check_muse_face(manifest, drifts)
+    if drifts:
+        print(f"[check] {len(drifts)} 項 drift：")
+        for label, msg in drifts:
+            print(f"  - [{label}] {msg}")
+        print("修復：uv run python governance/install.py --surface <面>；"
+              "approve 類（Modified／未 approve）見 README「approve 分欄」節")
+        return EXIT_DRIFT
+    print("[check] 五面 parity 綠（唯讀）")
+    return EXIT_OK
 
 
 # ── verify probes（S3：manifest [probes]；S5 health 消費同一實作，非兩套）──
