@@ -150,6 +150,16 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern——無 guard 檔的 repo 以 instruction-writing 同節的家族描述為判定）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
 
+### 階段 2.95：Post-Build Receipt 閘（AIR-119）
+
+非 main 卡 branch、`backlog/tasks/<branch> - *.md` 卡在場，且 vs merge-base 的改動含非 `.md` 檔時執行（豁免：純文檔／卡務 commit；無卡＝非鏈上弧；trunk 非 main/master 的 repo 閘不存在）。判定單一源＝`hooks/post-build-gate.py --verdict`（cwd＝repo；stdout JSON `state`∈`ok`／`stale`／`missing`／`exempt`＋`reason`——禁 import（檔名含連字號）、禁重寫判定邏輯）：
+
+- `exempt`／`ok` → 通過
+- `missing` → fail-loud 指引「先跑 /post-build（收尾鏈）再 commit」，本輪 commit 終止
+- `stale` → fail-loud：`git log --oneline <receipt.head_sha>..HEAD` 列 receipt 之後新增的 commits，指引重跑 /post-build
+
+Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/commit 階段 6 成功後刷新 receipt `head_sha`——兩道閘共用同一判定源。
+
 ### 階段 4：生成 Commit Message
 
 **格式**：`<type>(<scope>): <description>`
@@ -176,6 +186,8 @@ staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-wr
 **「commit 確認」結算（pre-commit、無 hash）**：若本任務在拍板池（ai-guide 形態＝backlog 卡 notes 的 PENDING 段——outward-action-consent「報 PENDING」的落點；mosaic 形態＝`ai-analysis/_inbox/pending-decisions.md`）有「commit 確認」PENDING 條目——user 於階段 5 確認後、git add 前：條目搬已結案段（一行：日期＋user 確認，**不含 hash**——hash 屬 git log 可推導）；結算敘事寫卡/EP final summary（同樣 commit 前、不含 hash）；殘餘驗收項（如 L6 驗收）拆獨立未勾條目留 queue。全部 commit 前完成 → 隨本 commit 落地。**禁止 post-commit 回寫拍板池**——記錄 commit 的文字進不了它記錄的那個 commit（雞生蛋懸掛）。
 
 確認後 `git add`（**納入本次開發的完整產物**：主變更 + build 5a Built 結算＋收斂後結案的 finalization 檔 —— instruction 檔（AGENTS.md 為主，legacy CLAUDE.md）/ `backlog/`（卡＋drafts——CLI `autoCommit=false` 下只改檔，整目錄隨 finalization add）/ 任務家（EP＋spec＋Report Shell，含歸檔搬移——`ai-analysis/{_tasks,_projects}` 或 `00-tasks/`）/ `.tours/delta/`（持久 delta tour——post-build hook 2 產）/ flow-feedback 歸檔）+ `git commit`（含 attribution footer：`Co-Authored-By: <當前 harness 名>`——ZCode session 寫 `Co-Authored-By: ZCode`）。
+
+**commit 成功後刷新 post-build receipt（AIR-119）**：`.agent-tmp/post-build-receipts/<branch 經 `/`→`__` 編碼>.json` 在場時，把 `head_sha` 機械刷新為新 HEAD（冪等；缺席跳過）——receipt 覆蓋面隨 commit 推進，否則 Stop hook 對已收線的弧誤判 stale（審查 F1）。
 
 **commit 成功後清除 ephemeral 工作產物**：review 筆記為工作過程產物，commit 結算後清除（同 POC 生命週期哲學，不進 git 歷史）。**per-branch 清除**（`.review/` 可能含多 branch — 如 main / replay / backbone）：只刪當前 branch 的 `.review/<branch>.md`，**勿 `rm -f .review/*.md`**（會誤刪他 branch review）。先 `ls .review/` 確認內容；`.review/` 為 gitignore ephemeral 產物（無 git 復原途徑），per-branch 清除正是為避免誤刪他 branch。保留 `.review/` 目錄供下次 review 直接寫入。
 
@@ -207,4 +219,4 @@ commit 位於主鏈末端（主鏈定義＝ai-development-guide「Session 開場
 
 前置：`/fix-test` lint/type 節（lint 不通過時）、`/code-review`
 
-**捷徑模式**：當 `/code-review` 已產生 commit message 時，跳過階段 2（Git 狀態分析，含 2.5 引用同步掃描），直接進入階段 1（Lint）→ **階段 2.7（POC/Demo 處置閘門）** → **階段 2.8（Finalization 對帳閘門）** → **階段 2.9（控制面回執彙集）** → 階段 5（確認）→ 階段 6（提交）。2.7/2.8/2.9 屬 commit 前檢查閘門（非被跳過的階段 2），捷徑保留；2.6 為 optional 提醒，捷徑不強制。
+**捷徑模式**：當 `/code-review` 已產生 commit message 時，跳過階段 2（Git 狀態分析，含 2.5 引用同步掃描），直接進入階段 1（Lint）→ **階段 2.7（POC/Demo 處置閘門）** → **階段 2.8（Finalization 對帳閘門）** → **階段 2.9（控制面回執彙集）** → **階段 2.95（Post-Build Receipt 閘）** → 階段 5（確認）→ 階段 6（提交）。2.7/2.8/2.9/2.95 屬 commit 前檢查閘門（非被跳過的階段 2），捷徑保留；2.6 為 optional 提醒，捷徑不強制。

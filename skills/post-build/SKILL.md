@@ -175,6 +175,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 ```markdown
 ## Post-Build 收尾報告
 - 回執四欄（控制面弧必填；非控制面弧標 N/A）：classification=<profile>／review=<腿＋evidence ref>／session-freshness=<值>／deployment-surfaces=<verdict>——欄位定義單一源＝[instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節
+- post-build receipt：寫 `.agent-tmp/post-build-receipts/<branch 經 `/`→`__` 編碼>.json`（branch 原值／head_sha＝寫入當下 `git rev-parse HEAD`／legs 結算／completed_at／本報告指針；AIR-119）——/commit 階段 2.95 與 Stop hook `post-build-gate.py` 的消費源，漏寫＝commit 閘 fail-loud；branch 編碼須與閘側 `_branch_key()` 一致
 - code 鏈：findings N（✅N/❌N/⚠️N）、修正 N 項、followup <通過|未收斂(殘留清單)>
 - muse 委派（鏈內有派 muse 時才列）：jobId＋status 清單（經 bridge 入口）；ledger 查無的 muse 產出標「未經 bridge，副作用側考古」
 - EP 對照：delta_tour=<機械底稿|LLM 對照|無（原因：uncommitted 模式/小變更）>——宣稱觸及 vs 實際變動模組、unexplained 差異項

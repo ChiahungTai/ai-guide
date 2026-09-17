@@ -28,6 +28,7 @@ scripts = [
     "hooks/memory-watch-seed.py",
     "hooks/memory-write-sensor.py",
     "hooks/notification.sh",
+    "hooks/post-build-gate.py",
     "hooks/stop-notification.sh",
     "hooks/zcode_agent_background_gate.py",
 ]
