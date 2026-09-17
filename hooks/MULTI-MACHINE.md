@@ -4,7 +4,27 @@
 
 依賴：bash、coreutils（`shasum`/`date`）、`jq`、`python3`（verify 的 inode/generator 檢查用；新機裸環境未必有 uv——本 runbook 不依賴 uv）。
 
-> **有 uv 的機器**：安裝/註冊面（hooks 四家註冊、skills symlink、rules bundle、agents registry、muse plugin、monitor 排程）統一走 governance installer——`uv run python governance/install.py --surface all`，契約與逐面檢查清單見 [governance/README.md](../governance/README.md) bootstrap 節（AIR-110 bootstrap 消費同一入口）。本 runbook＝**無 uv 裸環境 fallback**；本文的傳池步驟（§1）installer 不涵蓋，照走。
+> **有 uv 的機器**：安裝/註冊面（hooks 四家註冊、skills symlink、rules bundle、agents registry、muse plugin、monitor 排程）統一走 governance installer——新機器入口＝`uv run python scripts/bootstrap.py`（見下「新機器全裝總覽」），契約與逐面檢查清單見 [governance/README.md](../governance/README.md) bootstrap 節。本 runbook＝**無 uv 裸環境 fallback**；本文的傳池步驟（§1）installer/bootstrap 皆不涵蓋，照走。
+
+## 新機器全裝總覽（AIR-110）
+
+入口＝**`scripts/bootstrap.py` 冪等編排器**（五階段：preflight → installer → approve 暫停點 → verify 探針 → 面外清單；唯一安裝入口＝governance installer，不下手工 config）：
+
+```bash
+uv run python scripts/bootstrap.py --dry-run     # 唯讀 preflight＋印計畫（零執行）
+uv run python scripts/bootstrap.py               # 安裝→停在 approve 暫停點（手動三項後續跑）
+uv run python scripts/bootstrap.py --approved    # 手動 approve 後：verify 探針＋面外清單
+```
+
+- **installer 七項**（hooks×3 家註冊、skills/rules symlink、agents registry、muse plugin、monitor＋逐面驗證命令）：單一源＝[governance/README.md](../governance/README.md) bootstrap 節——本檔不重抄。
+- **面外步驟**（bootstrap 列印不安裝）：
+  - G1 secrets：`<repo>/settings.json`（gitignored local-only、含 API keys）從舊機拷——preflight 缺席＝fail-loud 擋下，不自動建不代寫。
+  - G3 hooksPath：`git config core.hooksPath .githooks`（per-clone，clone 後手動一次；非 .githooks＝WARN 列修復指引）。
+  - G5 backlog-cleanup plist：版控化＋裝載另 flash 承接。
+  - G6 池傳輸：§1（池 local-only 永不進 repo——clone 不帶池，新機空池起步）。
+  - spine：`~/.agents/memory-spine/` 跨池共享目錄——缺席＝degraded WARN（報告非擋）。
+  - cron/monitor 裝載＝primary-only：§4（`--role secondary` 本弧僅介面）。
+- **跨 repo 工具**（各自 repo/skill 為安裝真相源）：delegate-bridge plugin（marketplace 安裝；repo `~/Github/delegate-bridge`）、code-reality binary（[skills/code-reality/SKILL.md](../skills/code-reality/SKILL.md)）、NT 查詢工具鏈（已遷 mosaic repo-local `.agents/skills/`）、mosaic `com.mosaic.*` launchd 排程（mosaic repo 側管理）、entitlements-probe（`deploy/entitlements-probe.plist` 手動裝載）。
 
 ## 程序（按依賴序）
 
