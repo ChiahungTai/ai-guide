@@ -45,6 +45,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 POOL_ROOTS = tuple(
     str(REPO_ROOT / rel) for rel in (".agents/memory", ".agents/memory-inbox", ".agents/memory-auto")
 )
+# 跨池共享層（spine）與家目錄偽池路徑——codex 為 spine 唯讀方（AIR-100 S-D＋live 探針
+# 發現 codex 會探索 ~/.agents）：寫 spine＝污染所有 harness 共享的 user state；家目錄
+# 偽池＝影子記憶目錄防禦。兩者皆 deny＋指針（有發現交 CC/ZCode 側 session）。
+POOL_ROOTS += (
+    str(Path.home() / ".agents/memory-spine"),
+    str(Path.home() / ".agents/memory"),
+)
 
 DENY_MESSAGE = (
     "[Hook Blocked] 主體對 codex 唯讀——memory 寫入權威＝CC/ZCode 側 consolidation"
