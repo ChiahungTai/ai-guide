@@ -124,6 +124,20 @@
 - codex 腿（job-mu5mc17y，fresh）：EP-accepted with targeted fixes——S3 entry condition/契約正名 10 條/migration manifest/SM-9~13/引用側掃描/deploy projection 驗證已修；_common 抽離 Deferred（YAGNI，promotion trigger 記錄）
 - verdict 全文：.agent-tmp/dispatch-compiler-proposal/air124-epreview-*-verdict.md
 
+## S5 Final acceptance（recovery owner 單一 narrator——0918 衝突裁決後重寫）
+
+- **Final authority**: recovery owner（互動主 session，user 指定）
+- **Selected implementation**: A 線（branch air-124，已收斂）
+- **Final revision**: `fd1cdc04`（＝A 實作 `7e0c92b`＋drift 同步 `61d62e4`＋吸收 commit）
+- **Acceptance evidence**: EP review 雙腿（mu5mc16p/mu5mc17y）＋落地審查 muse accept（SM-13 獨立複驗＋搬遷 byte-identical）＋codex accept（五設計遺產保真）＋5.3 judge accept；部署 3/3 從 canonical main `fd1cdc04` 重跑（provenance 重建）
+- **Incident（事故紀錄——B 的原始 S5 草稿見 .agent-tmp/air124-incident/b-epmd-delta.diff）**:
+  - A（互動主 session）與 B（平行 session，user 已令停止）自 EP 祖先 `3f582c79` 獨立實作；核心檔互 diff 769 行
+  - A 曾 merge 進 main＋部署，被 B 的 stash 操作回滾 main（owning-line 單調性違反——防護規則進 AIR-125）
+  - 衝突經 muse（品質軸：keep-A，B 無任一軸反超＋B 有 H anchor 表刪除等結構違規）＋codex（工程軸：Phase 0 凍結＋forward recovery＋防再犯）雙腿裁決＝keep-A＋吸收 B 四項（vacuous 4 訊號/契約8 指針拆分/reviewer 申報/zoom+exec-plan 補漏——吸收 commit `fd1cdc04`）
+  - B 線可驗證證據（871 passed/3F 等）作 evidence 留存；「主 session 代貼」ownership claim 不採
+  - 非選定實作（air-124-impl branch）未 merge，保留為事故 provenance；B WT 已移除
+- **事故窗口 context 注意**：A 部署→回滾期間若有 session 載入過新 audit-test，keep-A 且最終 bytes 等值下語義可續；嚴格起見該 session 下個 consequential use 前應 reset
+
 ### AIR-124 S2 migration manifest（三精華段錨點對照——驗收對錨點非對 diff）
 
 | 舊 section heading（搬遷源） | 新域 section（落點） | status |

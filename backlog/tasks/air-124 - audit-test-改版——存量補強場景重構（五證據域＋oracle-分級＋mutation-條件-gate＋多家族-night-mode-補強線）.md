@@ -1,10 +1,10 @@
 ---
 id: AIR-124
 title: audit-test 改版——存量補強場景重構（五證據域＋oracle 分級＋mutation 條件 gate＋多家族 night-mode 補強線）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 14:02'
-updated_date: '2026-09-17 14:37'
+updated_date: '2026-09-17 22:05'
 labels: []
 dependencies: []
 references:
@@ -48,4 +48,6 @@ AC：①五域結構＋精華段歸宿（角度 8 七項表/PropertyMock/Registr
 
 <!-- SECTION:NOTES:BEGIN -->
 0917 22:2X 前置查證產物收編回填：South Chariot main 已 commit playwright.config.ts retries+trace-on-first-retry（7222e62，southchariot repo）——本卡 probe 發現的 debuggability 缺口已補。
+
+結算（final——衝突裁決版）：落地 main fd1cdc04（A 線實作+drift 同步+吸收 B 四項）＋部署 3/3。審查鏈全程：EP review 雙腿→落地 muse/codex 雙 accept+5.3 judge→衝突裁決 muse（keep-A）+codex（forward recovery）。事故：平行 session（B 線 air-124-impl）同卡雙實作＋回滾 main——完整紀錄＝EP S5（單一 narrator）＋.agent-tmp/air124-incident/；防再犯（owning-line 單調性+card lease）進 AIR-125。B branch 保留為 provenance 未 merge。Deferred：night-mode 首跑（待 mosaic 彈藥卡）、_common 抽離（promotion trigger）。
 <!-- SECTION:NOTES:END -->
