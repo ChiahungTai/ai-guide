@@ -121,7 +121,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 - **① Detect（機械 candidate detector——先跑，便宜）**：`git diff --diff-filter=D` 刪檔清單＋新增列／節存在性＋定義源載體變動（何為定義源依 instruction-writing 單一源規則；叠加階段 4 表頭「僅 `.md` 變更」前置過濾）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：舊主張／新約束／consumer concept（＝引用該政策句主張的下游陳述）；全判無政策影響才空跳。
-- **③ Delegate（委派既有機制——不重定義 scan）**：定義源變更 → instruction-writing single-source scan；blueprint 在場 → 讀其 AGENTS 真相源映射／更新觸發；否則 rename 反掃的 project AGENTS／EP fast-drift list；`rg` catch-all 封底。
+- **③ Delegate（委派既有機制——不重定義 scan）**：定義源變更 → instruction-writing single-source scan；blueprint 在場 → 讀其 AGENTS 真相源映射／更新觸發；否則 rename 反掃的 project AGENTS／EP fast-drift list；`rg` catch-all 封底。**html 投影面（lite backstop——非 freshness 主機制）**：弧 diff 觸及 projection manifest 宣告的任一 upstream → 跑 freshness check（`uv run python scripts/projection_freshness.py --manifest <manifest>`；exit 1 drift → refresh 重投影後 `--update` 收斂，或不重投影則殼頭標 stale）；契約細節見 [illustrate html-mode](../_common/illustrate-html-mode.md)「投影鎖定與 stale 標記」。
 - **④ Dispose（處置四值）**：`update`（改新政策／新錨）／`historical`（刻意留的退役說明；provenance 規則見 instruction-writing）／`no-change`（證據足才用）／`unverified`（證據不足——**不視為收斂**，報告帶未驗 consumer／原因）。**rg 命中≠待修**；零命中＝完成證據。
 
 ## 收斂態落卡（階段 5 前——AIR-121）

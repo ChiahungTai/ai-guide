@@ -92,6 +92,9 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
   - **細節（軟，容忍理解差異）**：語氣/詳略/例子選擇/口語化改寫——不逐字逐句核對
 - **殼是投影非平行創作**——殼想說本體沒有的東西 → **先改本體再投影**（發現順序顛倒是警訊：本體缺該內容）；禁止殼內出現本體沒有的**大方向級主張**（新決策/新範圍/新風險等級）
 - **投影鎖定與 stale 標記**：殼頭部將 task integration baseline 與 projection source **分欄聲明**；projection source 已 commit 時用包含本體的 revision，未 commit 時用本體 content SHA（不可拿早於本體的 integration baseline 冒充）。本體修訂（review 修訂/段落結算/狀態變化）→ 殼**同步重投影**並只更新 projection source（大方向級變更必同步；純文字潤飾可不動）。同步義務與「測試斷言變更→驗收規格同步」「code 變更→Capabilities 同步」同一模式（single source of truth 的投影紀律）
+  - **projection manifest 契約**：持久投影殼（如 `ai-analysis/<域>/index.html`——跨弧存活的視圖，非任務家單弧殼）以 manifest 宣告 upstream（path＋可選 section 錨）＋content hash 快照；工具＝`scripts/projection_freshness.py`（repo-agnostic、路徑零 hard-code，manifest 由工具 --update 擁有）；部署例＝`ai-analysis/blueprint/projection-manifest.toml`
+  - **refresh owner/trigger**：owner＝投影殼所在弧的收尾鏈——弧 diff 觸及 manifest 宣告的任一 upstream 時，收尾跑 freshness check（drift exit 1 → refresh 重投影後 `--update` 收斂，或不重投影則明確標 stale）；post-build 政策翻轉 gate ③ 的 html 投影面行為 lite backstop
+  - **stale 標記**：已知 drift 未重投影的殼，頭部 badge/標題列標 **stale**＋未重投影原因——stale 不得以 current 姿態呈現（stale 冒充 current 比沒有更糟：誤導消費者把舊投影當現況）
 - **提煉篩選≠語義漂移**：篩選通則（判斷材料 vs 執行細節）授權「刪」不授權「改」——刪掉的內容一個指路連結回本體即可
 
 ## 產物生命週期

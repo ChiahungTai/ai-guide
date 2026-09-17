@@ -14,6 +14,10 @@ harness-scope: neutral
 
 寫入保障必須至少匹配下游讀取契約：機械依賴的資料欄位，成為 authoritative state 前必須通過 consumer-equivalent 的機械驗證（fail-closed）；LLM 可決定語義值，自由文字格式不得單獨承擔機械契約。寫入權是時間函數：機械讀者上線才收緊對應面；人／LLM-only 記錄面不因此 schema 化（自由度明文保護）。
 
+## 派生產物投影紀律（upstream 追溯）
+
+派生產物（投影殼、生成檔）須可追溯 upstream：manifest 宣告 upstream 清單＋content hash 快照（工具形態＝projection freshness check）。upstream 變更未重驗＝stale，**不得以 current 姿態呈現**——stale 冒充 current 比沒有更糟（誤導消費者把舊投影當現況）。
+
 ## 主動揭露錯誤（Fail Loud）
 
 未確認成功、跳過步驟/案例/驗證、migration 跳記錄、未驗邊界都須明列限制，禁報完成/全通過；隔離單元綠燈不代表功能完成。功能須有可執行例，API 實際呼叫，邊界實驗。

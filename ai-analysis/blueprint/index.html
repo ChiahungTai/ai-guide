@@ -639,39 +639,8 @@
     </tbody>
   </table>
   <p><b>優先級：方向 &gt;&gt; 品質</b>。LLM 預期能做到 Clean Code 等級（頂多需人提點）；災難性、無法靠 polish 彌補的是方向錯。所以 viewport 重度傾斜在<b>方向驗證</b>，不浪費人注意力在 code 品質（那是 <code>/code-review</code>＋LLM 自身能力的事）。viewport 渲染的是人類用來承載意圖／理解結構的 artifact（use case／scenario／UI／範例／心智模型），不是 code 結構。</p>
-  <h3>三層介入（證據獨立性遞增）</h3>
-  <table>
-    <thead><tr><th>層</th><th>機制</th><th>獨立性</th><th>軸</th></tr></thead>
-    <tbody>
-      <tr><td>1</td><td>same-session LLM 自判（agent review、<code>/ep-review</code> in-pipeline、<code>/audit-test</code>）</td><td>低</td><td>A</td></tr>
-      <tr><td>2</td><td>跨 session LLM 第二意見（開新 session 跑 <code>/code-review</code>／<code>/ep-review</code>，findings 貼回實作 LLM → <code>/judge-review</code>）</td><td>中</td><td>A</td></tr>
-      <tr><td>3</td><td><code>/debrief</code>（改動理解＋驗證證據）＋<code>/illustrate</code>（結構 viewport）＋<code>/smell-detector</code>（壞味道）：人類 viewport 判讀</td><td>高（不同智能）</td><td>B</td></tr>
-    </tbody>
-  </table>
-  <h3>核心流程命令分類</h3>
-  <table>
-    <thead><tr><th>命令</th><th>受眾</th><th>層</th><th>誰呼叫</th></tr></thead>
-    <tbody>
-      <tr><td><code>/spec</code></td><td>LLM（人互動·需求釐清）</td><td>鏈</td><td>人類觸發</td></tr>
-      <tr><td><code>/execution-plan</code></td><td>LLM</td><td>鏈</td><td>人類觸發</td></tr>
-      <tr><td><code>/ep-review</code></td><td>LLM</td><td>1（同 session 自判）／2（跨 session）</td><td>AI-self／人類（跨 session）</td></tr>
-      <tr><td><code>/ep-validate</code></td><td>LLM</td><td>鏈</td><td>AI-self</td></tr>
-      <tr><td><code>/implement</code></td><td>LLM</td><td>鏈</td><td>人類觸發</td></tr>
-      <tr><td><code>/post-build</code></td><td>LLM</td><td>鏈（build 後收尾鏈編排）</td><td>人類觸發</td></tr>
-      <tr><td><code>/audit-test</code></td><td>LLM</td><td>1</td><td>AI-self</td></tr>
-      <tr><td><code>/code-review</code></td><td>LLM</td><td>1／2（跨 session）</td><td>LLM／人類（跨 session）</td></tr>
-      <tr><td><code>/judge-review</code></td><td>LLM</td><td>鏈</td><td>AI-self</td></tr>
-      <tr><td><code>/followup-review</code></td><td>LLM</td><td>2（Review LLM 驗收實作 LLM）</td><td>LLM／人類觸發</td></tr>
-      <tr><td><code>/fix-test</code>／<code>/lint-fix</code></td><td>LLM</td><td>鏈（修復）</td><td>AI-self</td></tr>
-      <tr><td><b><code>/debrief</code></b></td><td><b>人類（改動理解簡報）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
-      <tr><td><b><code>/illustrate</code></b></td><td><b>人類（結構 viewport）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
-      <tr><td><b><code>/smell-detector</code></b></td><td><b>人類（壞味道偵測）</b></td><td><b>3</b></td><td><b>人類</b></td></tr>
-      <tr><td><code>/commit</code></td><td>人類確認</td><td>—</td><td>人類</td></tr>
-      <tr><td><code>/metadata-sync</code></td><td>LLM</td><td>1</td><td>人類／AI-self</td></tr>
-    </tbody>
-  </table>
-  <p>工具／維護命令（<code>/doc-health</code>、<code>/consistency</code>、<code>/instruction-*</code> 等）與受眾模型正交，完整索引見 skills/CLAUDE.md。</p>
-  <p class="src">投影自：root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節（受眾二分＋blind spot 原理＋三層介入＋命令分類表全量）</p>
+  <div class="note"><b>規範正典不複製</b>：三層介入表與核心流程命令分類表（含工具／維護命令歸類）的正典住 root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節——本頁不複製（殼不裝治理規則複本，本站殼頭宣言）。upstream 變更由 projection freshness gate 追蹤（<a href="projection-manifest.toml">manifest</a>）。</div>
+  <p class="src">受眾二分＋blind spot 原理投影自：root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節；三層介入／命令分類表請回源參照</p>
 </section>
 
 <section id="s12">

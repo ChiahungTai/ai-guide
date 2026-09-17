@@ -1,0 +1,25 @@
+# 投影 freshness manifest——由 scripts/projection_freshness.py 擁有（--update 重寫整檔；手改僅加 projection/upstream 條目，hash 快照由 --update 維護）
+
+[[projection]]
+artifact = "ai-analysis/blueprint/index.html"
+
+[[projection.upstream]]
+path = "ai-analysis/blueprint/AGENTS.md"
+sha1 = "ef6af52ef55a7910701858fd0cae05b3a8de781f"
+
+[[projection.upstream]]
+path = "ai-analysis/blueprint/structure.md"
+sha1 = "3c6f593c427d115d2c20c74a365946fa7c972aae"
+
+[[projection.upstream]]
+path = "ai-analysis/blueprint/workflow.md"
+sha1 = "fd3b8e7d742da7078d9136a2ab30d6d44979ce50"
+
+[[projection.upstream]]
+path = "ai-analysis/blueprint/onboarding.md"
+sha1 = "20c8324bfd8ee7de51a0f10ff20ea5b81c470dc0"
+
+[[projection.upstream]]
+path = "AGENTS.md"
+section = "命令的受眾視角"
+sha1 = "c8576d95d9c374f80b7b61181b3f9c2e08e067bc"
