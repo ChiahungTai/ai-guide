@@ -12,7 +12,7 @@ branch="$(git symbolic-ref --short -q HEAD || echo DETACHED)"
 # 全部 alternation 分支失效＝靜默 fail-open（fresh 腿 F1 機械實證）
 staged="$(git -c core.quotePath=false diff --cached --name-only)"
 [ -n "$staged" ] || exit 0
-hits="$(printf '%s\n' "$staged" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$|^(rules|skills|agents|hooks|deploy|muse-plugins|\.githooks)/|^ai-development-guide\.md$|^tests/test_githooks\.py$|^scripts/deploy_agents\.py$')"
+hits="$(printf '%s\n' "$staged" | grep -E '(^|/)(AGENTS|CLAUDE)\.md$|^(rules|skills|agents|hooks|deploy|muse-plugins|governance|\.githooks)/|^ai-development-guide\.md$|^tests/test_githooks\.py$|^scripts/(deploy_agents|sync_agents)\.py$')"
 if [ -n "$hits" ]; then
   {
     echo "[pre-commit] 控制面路徑禁落 canonical main（activation-before-review 防線，AIR-106）"

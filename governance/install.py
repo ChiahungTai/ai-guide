@@ -51,8 +51,6 @@ CLI_FLAGS = ["--dry-run", "--uninstall", "--check", "--verify"]
 # P0-2 凍結：CC/ZCode live config 逐字重現參數（＋尾換行）。
 SERIALIZE_PARAMS = {"indent": 2, "ensure_ascii": False}
 
-HOOK_MARKER = "/ai-guide/hooks/"
-
 _DRY_RUN = False  # 結構性防線：dry-run 模式下任何寫入 chokepoint 直接 raise（1201 事故教訓）
 
 
@@ -68,8 +66,59 @@ def set_dry_run() -> None:
 # ── 基礎 helpers ─────────────────────────────────────────────────
 
 
+def _canonical_root() -> Path:
+    """git main worktree 根＝控制面部署錨點（card WT/任意 basename checkout 通吃）。
+
+    live symlink/hook 路徑必須指 canonical——card WT 安裝指自己的話，WT 關閉後
+    live 指向已刪路徑（deny 閘靜默失效）。git rev-parse --git-common-dir 在
+    canonical checkout 回相對 ".git"（→REPO_ROOT）、在 worktree 回絕對
+    "/<main>/.git"（→其父）。解析失敗退 REPO_ROOT（行為同無 git 環境）。
+    快取以 REPO_ROOT 為 key（tests monkeypatch REPO_ROOT 後自動重算）。
+    """
+    key = str(REPO_ROOT)
+    if key not in _CANONICAL_CACHE:
+        try:
+            proc = subprocess.run(
+                ["git", "rev-parse", "--git-common-dir"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            out = proc.stdout.strip()
+            # 相對輸出（".git"）須對 REPO_ROOT 解析——對進程 cwd resolve 會在
+            # cwd≠REPO_ROOT 時誤判 canonical（復審 N-1）；絕對輸出（worktree 形態）
+            # 與 REPO_ROOT 相除後即自身，兩形態同一式
+            root = (REPO_ROOT / out).resolve().parent if (proc.returncode == 0 and out) else REPO_ROOT
+        except (OSError, subprocess.SubprocessError):
+            root = REPO_ROOT
+        _CANONICAL_CACHE[key] = root
+    return _CANONICAL_CACHE[key]
+
+
+_CANONICAL_CACHE: dict[str, Path] = {}
+
+
+def _hook_path_pattern() -> re.Pattern:
+    """套件 hook 路徑辨識（identity 用）——錨定 canonical 與本 checkout 兩根。
+
+    舊版字面 "/ai-guide/hooks/" 耦合 checkout basename：非 ai-guide basename
+    的 checkout（persistent card WT、未來 rename、fork clone）render 出的路徑
+    不匹配 → group identity 塌縮碰撞 → check 假 drift／merge 重複 append。
+    """
+    key = (str(_canonical_root()), str(REPO_ROOT))
+    if key not in _HOOK_PATTERN_CACHE:
+        alt = "|".join(sorted(re.escape(r) for r in set(key)))
+        _HOOK_PATTERN_CACHE[key] = re.compile(rf"(?:{alt})/hooks/[\w.\-]+")
+    return _HOOK_PATTERN_CACHE[key]
+
+
+_HOOK_PATTERN_CACHE: dict[tuple[str, str], re.Pattern] = {}
+
+
 def render(text: str) -> str:
-    return text.replace(REPO_TOKEN, str(REPO_ROOT))
+    return text.replace(REPO_TOKEN, str(_canonical_root()))
 
 
 def home_path(p: str) -> Path:
@@ -211,7 +260,7 @@ def _group_scripts(group: dict) -> frozenset:
     names = set()
     for h in group.get("hooks", []):
         joined = " ".join([str(h.get("command", ""))] + list(map(str, h.get("args", []))))
-        for m in re.findall(r"/ai-guide/hooks/[\w.\-]+", joined):
+        for m in _hook_path_pattern().findall(joined):
             names.add(m.rsplit("/", 1)[-1])
     return frozenset(names)
 
@@ -341,7 +390,7 @@ def _codex_group_identity(unit_text: str) -> tuple:
     event = m.group(1) if m else ""
     mm = re.search(r'^matcher = "(.*?)"$', unit_text, re.MULTILINE)
     scripts = frozenset(
-        s.rsplit("/", 1)[-1] for s in re.findall(r"/ai-guide/hooks/[\w.\-]+", unit_text)
+        s.rsplit("/", 1)[-1] for s in _hook_path_pattern().findall(unit_text)
     )
     return (event, mm.group(1) if mm else None, scripts)
 
@@ -573,6 +622,8 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         return outcome
     if t["kind"] == "toml-groups":
         target = real_target(home_path(t["target"]))
+        if mode == "uninstall" and not target.exists():
+            return "not-present（leave）"  # 乾淨機器 uninstall＝零動作（EP Q3；json 面對稱腿）
         live_text = target.read_text() if target.exists() else ""  # 乾淨機器：自空建
         try:
             tomllib.loads(live_text)
@@ -693,6 +744,14 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
             print("[uninstall] rules/agents 面不受影響（wrap 不反部署——"
                   "bundle 回退走 rules/AGENTS.md 部署紀律、registry 走 sync_agents 自身）")
     else:  # install
+        # canonical 錨定 guard（basename-agnostic 修復配套）：card WT 安裝會使
+        # live 指向隨 WT 關閉而消失的路徑（deny 閘靜默失效）——安裝面限 canonical。
+        if not _DRY_RUN and _canonical_root() != REPO_ROOT:
+            print(f"[guard] install 應從 canonical worktree 執行：本 checkout"
+                  f"（{REPO_ROOT}）非 canonical（{_canonical_root()}）——"
+                  "card WT 安裝＝live 指向隨 WT 關閉而消失的路徑。"
+                  "先收線回 main，再從 canonical 安裝。")
+            return EXIT_GUARD
         # 編排語義（AC-6.3 fixture 實證後定案）：面與面獨立——單面失敗照常安裝
         # 其他面（機器不留半套無告警），結束以最壞 rc 彙整報告。
         face_failures: list[str] = []
@@ -871,7 +930,7 @@ def check_muse_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
     if record.get("id") != pid:
         drifts.append(("muse", f"plugin 不在冊：{pid}——跑 install --surface memory"))
         return
-    canonical = str(REPO_ROOT / mem["plugin_path"])
+    canonical = str(_canonical_root() / mem["plugin_path"])
     src_path = (record.get("source") or {}).get("path")
     if src_path != canonical:
         drifts.append(("muse", f"source.path 指非 canonical：{src_path}"
@@ -881,7 +940,7 @@ def check_muse_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
         drifts.append(("muse", f"approve 態：{detail}"))
     cache = record.get("cache_path")
     if cache:
-        src_dir = REPO_ROOT / mem["plugin_path"]
+        src_dir = _canonical_root() / mem["plugin_path"]  # 與 source.path 同錨（card WT check 不誤報）
         cache_dir = Path(cache)
         if not cache_dir.is_dir():
             drifts.append(("muse", f"cache 缺席：{cache_dir}——reinstall"))
@@ -948,10 +1007,32 @@ def check_skills_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
 
 
 def check_hooks_scripts(manifest: dict, drifts: list[tuple[str, str]]) -> None:
-    """S-1：manifest [surfaces.hooks].scripts 逐檔存在性（死鍵活化——腳本被刪即 drift）。"""
-    for rel in manifest.get("surfaces", {}).get("hooks", {}).get("scripts", []):
+    """S-1：manifest [surfaces.hooks].scripts 逐檔存在性（死鍵活化——腳本被刪即 drift）。
+
+    反向腿：註冊模板引用的 hook 必須都在 manifest scripts 清單——新 hook 加進
+    template 忘加 manifest 時，上面的死鍵偵測面會漏接它（防腐爛，雙向等價）。
+    """
+    scripts = set(manifest.get("surfaces", {}).get("hooks", {}).get("scripts", []))
+    for rel in sorted(scripts):
         if not (REPO_ROOT / rel).exists():
             drifts.append(("hooks", f"manifest 註冊腳本缺席：{rel}"))
+    tmpl_refs: set[str] = set()
+    for reg in manifest.get("registrations", {}).values():
+        tpl_rel = reg.get("template")
+        if not tpl_rel:
+            continue  # registration 未掛模板（復審 N-3：缺鍵不崩 check）
+        tpl = MANIFEST_PATH.parent / tpl_rel
+        if not tpl.exists():
+            continue  # 模板缺席由各 check face 另報
+        tmpl_refs.update(
+            m.rsplit("/", 1)[-1] for m in _hook_path_pattern().findall(render(tpl.read_text()))
+        )
+    if not scripts and not tmpl_refs:
+        return  # 兩向皆空＝hooks 面未使用，face off
+    unlisted = tmpl_refs - {s.rsplit("/", 1)[-1] for s in scripts}
+    if unlisted:
+        drifts.append(("hooks", f"模板引用但 manifest scripts 未列（死鍵偵測漏接）："
+                                 f"{sorted(unlisted)}"))
 
 
 def cmd_check(manifest: dict, surface: str) -> int:

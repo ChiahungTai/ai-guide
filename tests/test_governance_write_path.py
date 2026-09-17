@@ -189,3 +189,16 @@ def test_symlink_uninstall_symmetric(tmp_path):
     assert mod._apply_target({}, t, "uninstall") == "removed"
     assert not link.exists()
     assert mod._apply_target({}, t, "uninstall") == "absent（冪等——nothing to remove）"
+
+
+def test_codex_toml_uninstall_absent_file_leaves(tmp_path):
+    """0917 深審弧 A2-F2：codex toml-groups 乾淨機器 uninstall＝零動作（json 面對稱）。
+
+    修復前：target 缺席時 live_text="" → merge 產出空字串 → 寫出空 config.toml
+    （違反 EP Q3 uninstall 零動作 invariant）。
+    """
+    t = {"kind": "toml-groups", "target": str(tmp_path / "config.toml"),
+         "template": "registrations/codex.toml"}
+    outcome = mod._apply_target({"target": t["target"]}, t, "uninstall")
+    assert outcome == "not-present（leave）"
+    assert not (tmp_path / "config.toml").exists()  # 不建立任何檔案

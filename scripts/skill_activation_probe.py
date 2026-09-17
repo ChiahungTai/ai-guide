@@ -497,13 +497,12 @@ def main(argv: list[str] | None = None) -> int:
         help="起始 rep（1-indexed；續跑跳過已完成 reps）",
     )
     ap.add_argument(
-        "--dry-run", action="store_true", help="只 stage carrier＋印計畫不跑"
+        "--dry-run", action="store_true", help="stage carrier 印計畫後即 shred（不留 scratch）"
     )
     args = ap.parse_args(argv)
 
     cjs = find_zcode_cjs()
     selected: list[str] = [args.skill] if args.skill else list(PROMPTS)
-    home = stage_carrier(cjs, skills=set(selected))
     arms: tuple[str, ...] = (args.arm,) if args.arm else ("positive", "nonmatch")
     plan = [
         (s, arm, r)
@@ -511,12 +510,19 @@ def main(argv: list[str] | None = None) -> int:
         for arm in arms
         for r in range(args.reps_from, args.reps + 1)
     ]
+    if not plan:
+        # 空檢查必須在 stage_carrier 之前：carrier 已把 apiKey 寫進 scratch，
+        # 早退跳過尾端 shred＝金鑰留檔（0917 深審弧 A2-F9）
+        print("plan 為空（--reps-from > --reps？）——不 stage carrier", file=sys.stderr)
+        return 1
+    home = stage_carrier(cjs, skills=set(selected))
     if args.dry_run:
         print(f"carrier={home} cjs={cjs} runs={len(plan)}")
+        # dry-run 同樣持有 apiKey——離開前 shred（復審 N-2：與主路徑同紀律）
+        shutil.rmtree(home, ignore_errors=True)
+        if home.exists():
+            print(f"!! carrier shred 失敗（apiKey 留 scratch）：{home}", file=sys.stderr)
         return 0
-    if not plan:
-        print("plan 為空（--reps-from > --reps？）——不建立 outdir", file=sys.stderr)
-        return 1
 
     ts = time.strftime("%H%M%S")
     outdir = REPO / ".agent-tmp" / "air87" / "probe" / f"matrix-{ts}"

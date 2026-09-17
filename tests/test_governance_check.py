@@ -19,6 +19,12 @@ def _rendered(rel: str) -> str:
     return mod.render((mod.MANIFEST_PATH.parent / rel).read_text())
 
 
+def _real_hooks_scripts() -> list[str]:
+    import tomllib
+    m = tomllib.loads((mod.MANIFEST_PATH.parent / "manifest.toml").read_text())
+    return m["surfaces"]["hooks"]["scripts"]
+
+
 def _cc_manifest(cc_target: Path) -> dict:
     return {"registrations": {"cc": {
         "target": str(cc_target), "template": "registrations/cc.json",
@@ -207,6 +213,10 @@ def _muse_manifest_patch(tmp_path, cache_dir, monkeypatch):
                         SimpleNamespace(which=lambda n: "/usr/bin/muse", copy2=_shutil.copy2))
     monkeypatch.setattr(mod, "probe_muse", lambda pid: ("PASS", "mocked"))
     monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    # subprocess 已被 stub——預種 canonical 快取，避免 _canonical_root 的 git
+    # 呼叫吃到假物件（byte-leg/source.path 錨定 canonical）
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(tmp_path): tmp_path})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
 
 
 def _muse_face_manifest(tmp_path: Path, cache_dir: Path) -> dict:
@@ -368,8 +378,84 @@ def test_cmd_check_clean_exit_ok(tmp_path, monkeypatch):
                   "merge_root": "hooks", "target_is_symlink": False},
         "codex": {"target": str(cx), "template": "registrations/codex.toml"}},
         "surfaces": {"rules": {"deployed_targets": [str(deployed)]},
-                     "hooks": {"scripts": []},
+                     # 反向腿語義：真模板引用+空 scripts＝真 drift——fixture 對齊
+                     # 真 manifest 的 scripts（檔案在真 REPO_ROOT/hooks 皆存在）
+                     "hooks": {"scripts": _real_hooks_scripts()},
                      "skills": {"symlinks": [{"link": str(link), "target": str(skills)}]},
                      "agents": {"argv": ["true"], "check_args": []},
                      "memory": {"plugin_id": "x", "plugin_path": "p"}}}
     assert mod.cmd_check(manifest, "all") == mod.EXIT_OK
+
+
+# ── basename-agnostic 錨定（0917 深審弧 A2-F1 回歸）───────────────
+# 根因：HOOK_MARKER="/ai-guide/hooks/" 耦合 checkout basename——card WT／fork
+# clone 的 identity 塌縮→check 假 drift／merge 重複 append。修復＝render 錨定
+# canonical root（git common dir）＋identity pattern 錨定 canonical/本 checkout 兩根。
+
+
+def test_hook_identity_matches_checkout_root_any_basename(tmp_path, monkeypatch):
+    fork = tmp_path / "my-guide-fork"  # 非 ai-guide basename
+    (fork / "hooks").mkdir(parents=True)
+    monkeypatch.setattr(mod, "REPO_ROOT", fork)
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(fork): fork})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
+    group = {"hooks": [{"command": f"{fork}/hooks/x.py"},
+                       {"command": "/foreign/other/hooks/y.py"}]}
+    assert mod._group_scripts(group) == frozenset({"x.py"})  # 自家根命中、外來路徑不認列
+
+
+def test_render_anchors_canonical_root(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): tmp_path})
+    assert mod.render("{{REPO}}/hooks/a.py") == f"{tmp_path}/hooks/a.py"
+
+
+def test_install_guard_rejects_non_canonical(monkeypatch):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE",
+                        {str(mod.REPO_ROOT): mod.REPO_ROOT.parent / "elsewhere"})
+    manifest = {"registrations": {}, "surfaces": {}}
+    assert mod.cmd_install_uninstall(manifest, "hooks", "install") == mod.EXIT_GUARD
+
+
+def test_hooks_scripts_reverse_leg(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(tmp_path): tmp_path})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "a.py").write_text("# a")
+    (tmp_path / "governance").mkdir()
+    monkeypatch.setattr(mod, "MANIFEST_PATH", tmp_path / "governance" / "manifest.toml")
+    (tmp_path / "governance" / "t.json").write_text(
+        json.dumps({"PreToolUse": [{"hooks": [{"command": f"{tmp_path}/hooks/b.py"}]}]}))
+    manifest = {"surfaces": {"hooks": {"scripts": ["hooks/a.py"]}},
+                "registrations": {"cc": {"template": "t.json"}}}
+    drifts: list = []
+    mod.check_hooks_scripts(manifest, drifts)
+    assert any("未列" in m and "b.py" in m for _, m in drifts)  # 模板引用→manifest 漏接即報
+
+
+def test_probe_empty_plan_skips_stage(monkeypatch, capsys):
+    """0917 深審弧 A2-F9：plan 空（--reps-from > --reps）不 stage carrier——
+    apiKey 絕不落 scratch。stage_carrier 被 mock 成炸彈：被呼叫即 fail。"""
+    from conftest import load_module
+    probe = load_module("scripts/skill_activation_probe.py")
+
+    def _boom(*a, **k):
+        raise AssertionError("plan 為空時不得 stage carrier")
+
+    monkeypatch.setattr(probe, "find_zcode_cjs", lambda: "/fake/cjs")
+    monkeypatch.setattr(probe, "stage_carrier", _boom)
+    rc = probe.main(["--skill", "implement", "--reps-from", "2", "--reps", "1"])
+    assert rc == 1
+    assert "不 stage carrier" in capsys.readouterr().err
+
+
+def test_hook_identity_cross_root_card_wt(tmp_path, monkeypatch):
+    """A2-F1 主場景（復審 G-F2）：card WT 跑 check 時，pattern 經 canonical
+    交替腿認出 canonical 錨定的 live 條目——canonical≠REPO_ROOT 的跨根匹配。"""
+    canonical = tmp_path / "ai-guide"          # canonical 根
+    card_wt = tmp_path / "ai-guide-air-116"    # 本 checkout（不同 basename）
+    monkeypatch.setattr(mod, "REPO_ROOT", card_wt)
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(card_wt): canonical})
+    monkeypatch.setattr(mod, "_HOOK_PATTERN_CACHE", {})
+    group = {"hooks": [{"command": f"{canonical}/hooks/x.py"}]}  # live 側＝canonical 路徑
+    assert mod._group_scripts(group) == frozenset({"x.py"})

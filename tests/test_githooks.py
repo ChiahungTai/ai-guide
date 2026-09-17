@@ -59,9 +59,12 @@ def _stage(repo: Path, rel: str) -> None:
         "hooks/block-x.py",
         "deploy/entitlements-probe.plist",
         "muse-plugins/memory-governance/x.md",
+        "governance/install.py",
+        "governance/registrations/zcode.json",
         ".githooks/pre-commit",
         "tests/test_githooks.py",
         "scripts/deploy_agents.py",
+        "scripts/sync_agents.py",
         "ai-development-guide.md",
         "ai-analysis/blueprint/AGENTS.md",
         "CLAUDE.md",
@@ -98,7 +101,7 @@ def test_block_unborn_main_head(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# allow：卡 branch、backlog／一般路徑、scripts 不在閘面
+# allow：卡 branch、backlog／一般路徑；生成器類 scripts（deploy/sync_agents）在閘面
 # ---------------------------------------------------------------------------
 
 

@@ -16,7 +16,9 @@ version = "0.1.0"
 
 [surfaces.hooks]
 # 共享腳本（repo 相對路徑）——四家註冊面指向這些檔；識別鍵＝
-# command 含 "/ai-guide/hooks/" 或 "/ai-guide/muse-plugins/"（窄鍵，F-5）。
+# command 路徑錨定 canonical checkout 根或本 checkout 根的 "/hooks/<script>"
+# 尾段（install.py `_hook_path_pattern`——basename-agnostic，任意 checkout
+# 名稱/worktree 皆成立；muse-plugins 非識別鍵形態，未實作）。
 scripts = [
     "hooks/block-memory-index-write.py",
     "hooks/block-python-c-comment.py",
