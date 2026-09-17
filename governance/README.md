@@ -13,7 +13,7 @@
 uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,monitor,all} [--dry-run|--uninstall|--check|--verify]
 ```
 
-四 flag（`--dry-run`／`--uninstall`／`--check`／`--verify`）**兩兩互斥**，違規組合 exit 2。退出碼：`0` 成功；`1` drift／verify FAIL；`2` 環境守衛（Python 地板／工具缺席／flag 衝突）；`3` 子命令未實裝。
+四 flag（`--dry-run`／`--uninstall`／`--check`／`--verify`）**兩兩互斥**，違規組合 exit 2。退出碼：`0` 成功；`1` drift／verify FAIL；`2` 環境守衛（Python 地板／工具缺席／flag 衝突）；`3` 子命令未實裝；`4` 執行錯誤（malformed／lost-update／子進程失敗——plan journal 有線索）。
 
 ## 五面對照
 
@@ -43,9 +43,26 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 ## 健康檢查
 
-- 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面）。
+- 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面，見下節）。
 - 排程：`com.ai-guide.muse-approve-monitor` launchd（日頻）——消費 install.py `--verify`＋`--check`，log 與 hook log 同域；任一 FAIL 非零 exit＋告警行。
 - codex mixed representation：`--check` 掃同 semantic hook 是否另有 `~/.codex/hooks.json` copy／重複 inline copy（同 layer 混載＝warning＋雙 fire）。
+
+### `--verify` probe 面（S3）
+
+逐家執行 manifest `[probes]`；exit 0 全 PASS／1 FAIL／2 GUARD（probe 工具缺席）。**fail-closed**：muse inspect 輸出不可判定、`runtime_capabilities` 空或缺＝FAIL（「無法證明 trusted」即 FAIL，先例 `scripts/muse_approve_monitor.py`）。
+
+| probe | 機制 | PASS 判準 |
+|---|---|---|
+| muse | `muse plugins inspect <id> --json` | `runtime_capabilities[].status` 全部 `trusted_enabled` |
+| claude／zcode | 自含 fixture（暫存目錄放空 `_generate_index.py`）合成 deny payload → `hooks/block-memory-index-write.py` | exit 2（①索引手寫攔截分支；不觸任何真實池） |
+| codex | 三層（TC-9），見下 | L1 註冊在場＋L3 canary byte-level 未變；L2 如實報告不 gate |
+
+**codex 三層語義**：
+- **L1 discovery**：config 面套件 group 註冊在場（identity 對照模板；P0-10——無 live discovery 讀取 API，降級契約＝config 在場性＋state 診斷＋L3）。
+- **L2 trust**：`[hooks.state]` 檔面診斷（key 公式見「approve 分欄」節；positional key 僅診斷輸出）。**Untrusted＝install 直後預期態非 FAIL**——印手動 approve 步驟。
+- **L3 host-level fixture**：真 `codex exec`（`--skip-git-repo-check --sandbox workspace-write --dangerously-bypass-hook-trust`）對 canary 檔施 apply_patch，斷言 **byte-level 未變**。bypass flag＝per-invocation、不寫 `[hooks.state]`、非模擬 approve——文檔明載用途（已審 hook 源的自動化）。canary 落 `~/.agents/memory/`（家目錄偽池＝deny 根之一），deny 意外失敗的殘留不觸真實治理池；PASS 即清，FAIL 保留作證據。2026 apply_patch deny-bypass bug 先例：script pipe 不可替代本層。
+
+**未測範圍（誠實標記）**：CC/ZCode 的 actual-runtime firing（hook 在真 session 被事件驅動）未由本 probe 涵蓋——AIR-100 deferred 總驗卡承接，`--verify` PASS 輸出尾行明載。codex L2 Trusted 態＝state 檔面診斷＋user `/hooks` 目視，runtime 態以 L3 為準。
 
 ## uninstall 影響（拆接線不刪源）
 
