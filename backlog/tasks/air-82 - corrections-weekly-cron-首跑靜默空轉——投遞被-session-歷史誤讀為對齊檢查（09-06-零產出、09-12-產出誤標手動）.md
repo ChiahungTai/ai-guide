@@ -1,12 +1,14 @@
 ---
 id: AIR-82
 title: corrections-weekly cron 首跑靜默空轉——投遞被 session 歷史誤讀為對齊檢查（09-06 零產出、09-12 產出誤標手動）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-12 21:35'
-updated_date: '2026-09-12 21:36'
+updated_date: '2026-09-17 03:22'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/schedule-registry.md
 ordinal: 68000
 ---
 
