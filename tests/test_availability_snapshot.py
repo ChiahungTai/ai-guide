@@ -14,6 +14,11 @@ fixtures＝自真 spine（2026-09-16 版）摘錄改編：as-of 新（fresh）�
 （stale 4d）／邊界（恰 3d）／缺席三態＋可用行完整／缺席／malformed＋
 codex 兩池事件／GLM 衝突事件。歷史態不可重放（spine 不版控）——fixture
 是形態契約非現值證據。
+
+R2 修復批（fresh 腿 findings）：F1 衝突配對收緊（family 名＋限制詞同行
+共現才算衝突，其餘降中性並列複核）／F2 word-boundary／F3 flag 帶無值
+exit 2／F4 as-of 未來日期 exit 1（時區基準 UTC）／F5 測試錨點綁明確
+binding 區塊／F7 stale×可用行缺席組合（stale 優先）＋--stale-days 負值。
 """
 
 import re
@@ -38,6 +43,8 @@ STALE_4D = FIXTURES / "availability_spine_stale_4d.md"
 NO_ASOF = FIXTURES / "availability_spine_no_asof.md"
 NO_AVAILABLE = FIXTURES / "availability_spine_no_available.md"
 MALFORMED = FIXTURES / "availability_spine_malformed_available.md"
+FUTURE = FIXTURES / "availability_spine_future.md"
+STALE_NO_AVAILABLE = FIXTURES / "availability_spine_stale_no_available.md"
 
 FAMILY_STATE_RE = re.compile(
     r"^  (\S+) = (available|unavailable|unknown)", re.MULTILINE
@@ -69,8 +76,14 @@ def test_loader_rejects_binding_without_family() -> None:
     text = REAL_CATALOG.read_text(encoding="utf-8")
     anchor = 'id = "bridge-glm-5.3"'
     assert anchor in text  # 防 catalog 漂移後假綠
-    # 移除一條 binding 的 family 欄（其餘仍在）→ 缺必要鍵 fail-loud
-    stripped = text.replace('family = "glm"\n', "", 1)
+    # F5：錨定該 binding 自己的 family 行（id 定位其後區塊內首個 family 行）
+    # ——全文 replace 第一命中會誤傷 zcode-registry 區塊的 glm 行，錨點即漂移
+    start = text.index(anchor)
+    block_end = text.index("[[dispatch_binding]]", start)
+    block = text[start:block_end]
+    fam_line = 'family = "glm"\n'
+    assert fam_line in block, "bridge-glm-5.3 區塊內須有自己的 family 行"
+    stripped = text[:start] + block.replace(fam_line, "", 1) + text[block_end:]
     with pytest.raises(AssertionError, match="family"):
         sync.parse_catalog(stripped)
     # 對照組：現 catalog family 欄齊備可載
@@ -324,6 +337,78 @@ def test_events_listed_for_human_review_when_stale(
         ["--spine", str(STALE_4D), "--catalog", str(REAL_CATALOG)], capsys
     )
     assert "額度事件" in out
+
+
+# ---- R2 F1：衝突配對收緊（family 名＋限制詞同行共現才算衝突）----
+
+
+def warn_sections(out: str) -> dict[str, str]:
+    """輸出 [WARN] 標題行 → 塊內文（標題後至下一 [WARN] 前）——塊級斷言用。"""
+    sections: dict[str, str] = {}
+    for part in out.split("[WARN]")[1:]:
+        lines = part.splitlines()
+        sections[lines[0].lstrip()] = "\n".join(lines[1:])
+    return sections
+
+
+def test_capability_ordering_line_demoted_to_parallel_not_conflict(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """「能力序裁定」形態行（含 family 名但無限制詞）→ 不入衝突、入並列複核。"""
+    rc, out = run_main(["--spine", str(FRESH), "--catalog", str(REAL_CATALOG)], capsys)
+    assert rc == 0
+    secs = warn_sections(out)
+    conflict_secs = {t: b for t, b in secs.items() if "可用行與事件衝突" in t}
+    parallel_secs = {t: b for t, b in secs.items() if t.startswith("並列複核")}
+    # 正對照：禁派 GLM 系行（glm＋禁派/耗盡/reset/1308 同行共現）仍在衝突塊
+    assert any("禁派 GLM 系" in b for b in conflict_secs.values())
+    # F1：能力序裁定形態行不入衝突塊、入並列複核塊
+    assert all("能力序裁定" not in b for b in conflict_secs.values())
+    assert any("能力序裁定" in b for b in parallel_secs.values())
+
+
+# ---- R2 F3：flag 帶無值 → exit 2（禁靜默退回預設讀真 spine）----
+
+
+@pytest.mark.parametrize("flag", ["--spine", "--catalog", "--stale-days"])
+def test_exit_2_when_flag_without_value(
+    flag: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc, out = run_main([flag], capsys)
+    assert rc == 2
+    assert flag in out
+    assert "無值" in out
+
+
+# ---- R2 F4：as-of 未來日期 → 不合法 exit 1（時區基準 UTC）----
+
+
+def test_exit_1_when_asof_in_future(capsys: pytest.CaptureFixture[str]) -> None:
+    rc, out = run_main(["--spine", str(FUTURE), "--catalog", str(REAL_CATALOG)], capsys)
+    assert rc == 1
+    assert "未來" in out
+
+
+# ---- R2 F7：stale×可用行缺席組合＋--stale-days 負值（regression pin）----
+
+
+def test_stale_priority_over_missing_available_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """stale＋可用行缺席 → exit 3（stale 判定優先於可用行解析——全 unknown 先擋）。"""
+    rc, out = run_main(
+        ["--spine", str(STALE_NO_AVAILABLE), "--catalog", str(REAL_CATALOG)], capsys
+    )
+    assert rc == 3
+    assert "stale" in out
+
+
+def test_exit_2_on_negative_stale_days(capsys: pytest.CaptureFixture[str]) -> None:
+    rc, _ = run_main(
+        ["--spine", str(FRESH), "--catalog", str(REAL_CATALOG), "--stale-days", "-1"],
+        capsys,
+    )
+    assert rc == 2
 
 
 # ---- SKILL 指針（AC⑤）----

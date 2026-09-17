@@ -14,3 +14,4 @@ description: fixture——availability_snapshot 測試樣本（自真 spine 摘�
 - **Anthropic／xai**：未訂閱，禁派
 - **額度事件（09-16 16:0x）**：in-harness flash spawn agent 撞 1308（5h 窗耗盡）——reset 前禁派 GLM 系（含 flash）（fixture 衝突態樣本：可用行列 GLM 但歷史事件行禁派——機械輸出須顯性並列，判斷歸 LLM）
 - **額度事件（09-16 18:0x 續）**：user 實測 usage 已回滿——GLM 系恢復可用，回歸常態路由
+- **能力序裁定（額度事件歸檔形態樣本，F1）**：gpt-6-astra 與 fabel 能力強於 gpt-5.6-sol／GLM-5.3——family 表未列二者＝帳號面不可達，非能力否認（fixture 並列複核樣本：含 family 名但無限制詞共現）

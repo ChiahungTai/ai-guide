@@ -62,7 +62,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 ### AvailabilitySnapshot（tri-state，volatile——不進 catalog）
 
-執行器：`uv run python skills/model-routing/scripts/availability_snapshot.py [--stale-days 3]`——讀 spine＋catalog 出 per-family tri-state evaluation（evaluator-not-router，禁揀選/排序欄位）；exit 契約＝0 fresh／1 無法判定（as-of 缺席、可用行解析失敗）／2 輸入缺席或不合法／3 stale→全 unknown；family join＝catalog `dispatch_binding.family` 欄（閉集住 `allow_lists.families`）。
+執行器：`uv run python skills/model-routing/scripts/availability_snapshot.py [--stale-days 3]`——讀 spine＋catalog 出 per-family tri-state evaluation（evaluator-not-router，禁揀選/排序欄位）；exit 契約＝0 fresh／1 無法判定（as-of 缺席或未來日期、可用行解析失敗）／2 輸入缺席或不合法／3 stale→全 unknown；family join＝catalog `dispatch_binding.family` 欄（閉集住 `allow_lists.families`）；事件塊＝keyword 掃描非窮舉，判讀仍須讀 spine 原文。
 
 `state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。窗口重置週期與「是否再 probe」的消費語義見下方「窗口語義（重置週期正典）」節：距 last-probe 超過週期→值得再 probe（web 池不適用週期推度，見該節 codex 行）；現值不可推度——retryable-at ≠ available。
 

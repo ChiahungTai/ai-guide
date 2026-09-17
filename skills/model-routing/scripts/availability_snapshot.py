@@ -10,9 +10,11 @@ override、failover）仍走 model-routing skill instruction protocol（卡⑦�
 
 fail-closed exit 契約（卡②——三處歷史不一致以此版為準）：
   0 = fresh 產出（as-of 在閾值內且「可用」行解析成功）
-  1 = 無法判定，fail-closed（spine as-of 缺席／「可用」行缺席或解析出零 family）
-  2 = 輸入缺席或不合法（spine／catalog 檔不存在、catalog loader 驗證失敗、
-      --stale-days 參數不合法）
+  1 = 無法判定，fail-closed（spine as-of 缺席或未來日期／「可用」行缺席或
+      解析出零 family）
+  2 = 輸入缺席或不合法（spine／catalog 檔不存在、--spine/--catalog/
+      --stale-days 帶 flag 無值、catalog loader 驗證失敗、--stale-days
+      參數不合法）
   3 = stale（as-of 距今超過閾值 → 全 family unknown）
 
 family join（卡③）：catalog [[dispatch_binding]] 顯式 family 欄（閉集 enum
@@ -21,8 +23,9 @@ family 推斷已退役（surface=agent-definition 面 family 資訊不存在於 
 字串，heuristic 會漂）。
 
 stale 邊界：age 恰等於 --stale-days＝fresh（> 才 stale）；--stale-days
-預設 3。spine 為給 LLM 讀的 md（非 schema 檔）——行級解析，歧義即 WARN、
-可用行解析失敗即 fail-closed，禁猜。
+預設 3；age 計算時區基準＝UTC（as-of date 與 now UTC date 的日級差），
+as-of 未來（age<0）＝不合法 exit 1。spine 為給 LLM 讀的 md（非 schema
+檔）——行級解析，歧義即 WARN、可用行解析失敗即 fail-closed，禁猜。
 """
 
 import importlib.util
@@ -45,6 +48,10 @@ AS_OF_RE = re.compile(r"as-of\s+(\d{4}-\d{2}-\d{2})")
 ENTRY_RE = re.compile(r"^-\s+\*\*(?P<head>[^*]+)\*\*\s*[：:]\s*(?P<body>.+)$")
 AVAILABLE_PREFIX = "- **可用**"
 EVENT_KEYWORDS = ("額度事件", "禁派")
+# 衝突配對限制詞（F1）：family 名與限制詞「同行共現」才算衝突；僅 family 名
+# 命中（非限制語義，如「能力序裁定」形態行）→ 中性並列複核。keyword 掃描
+# 非窮舉、非語義歸因——判讀仍須讀 spine 原文（SKILL 指針同此句）
+RESTRICTION_KEYWORDS = ("禁派", "耗盡", "reset", "1308", "429")
 
 
 def _load_sync_module():
@@ -88,7 +95,9 @@ def parse_spine(text: str, families: Iterable[str]) -> SpineState:
             state.available_line_found = True
             state.available_line_raw = stripped
             state.available = frozenset(
-                fam for fam in family_list if re.search(fam, stripped, re.IGNORECASE)
+                fam
+                for fam in family_list
+                if re.search(rf"\b{re.escape(fam)}\b", stripped, re.IGNORECASE)
             )
         m = ENTRY_RE.match(stripped)
         if m:
@@ -132,6 +141,13 @@ def _print_family_blocks(
 
 def main(argv: list[str] | None = None, *, now: datetime | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+
+    # F3：帶 flag 無值 → exit 2（禁靜默退回預設——--spine 無值時會 fail-open
+    # 讀真 spine）
+    for flag in ("--spine", "--catalog", "--stale-days"):
+        if flag in args and args.index(flag) + 1 >= len(args):
+            print(f"[FAIL] {flag} 帶 flag 無值——輸入不合法")
+            return 2
 
     def opt_value(flag: str) -> str | None:
         if flag in args:
@@ -179,6 +195,14 @@ def main(argv: list[str] | None = None, *, now: datetime | None = None) -> int:
 
     as_of_date = datetime.fromisoformat(spine.as_of).date()
     age = (now.date() - as_of_date).days
+    # F4：as-of 未來（age<0，時區基準 UTC）＝不合法——未來日期非「新」，
+    # 直接判 fresh 是 fail-open 漏網
+    if age < 0:
+        print(
+            f"[FAIL] spine as-of {spine.as_of} 為未來日期（age={age}，"
+            "時區基準 UTC）——不合法，fail-closed（exit 1）"
+        )
+        return 1
     stale = age > stale_days
     print(f"[AvailabilitySnapshot] spine={spine_path}")
     print(f"[AvailabilitySnapshot] catalog={catalog_path}")
@@ -230,21 +254,35 @@ def main(argv: list[str] | None = None, *, now: datetime | None = None) -> int:
         ),
     )
 
-    # 衝突態（AC②）：可用行 in 且歷史事件行「禁派」該 family——顯性並列，
-    # 基準＝as-of 可用行，事件待人工複核（判斷歸 LLM——卡⑦；≠crash≠降級）
+    # 衝突配對（F1 收緊）：family 名＋限制詞「同行共現」才算衝突——僅 family
+    # 名命中（如「能力序裁定」形態行）降為中性並列複核；衝突≠crash≠降級，
+    # 基準＝as-of 可用行，判斷歸 LLM（卡⑦）
     conflicts: list[tuple[str, str]] = []
+    parallels: list[tuple[str, str]] = []
     for fam in families_display:
         if fam not in spine.available:
             continue
         for e in spine.events:
-            if re.search(fam, e, re.IGNORECASE):
+            if not re.search(rf"\b{re.escape(fam)}\b", e, re.IGNORECASE):
+                continue
+            if any(kw in e.lower() for kw in RESTRICTION_KEYWORDS):
                 conflicts.append((fam, e))
+            else:
+                parallels.append((fam, e))
     if conflicts:
         print(
-            "[WARN] 可用行與事件衝突（基準＝as-of 可用行；事件行待人工複核"
-            "——判斷腿，本 evaluator 不裁決）:"
+            "[WARN] 可用行與事件衝突（family＋限制詞〔禁派/耗盡/reset/1308/"
+            "429〕同行共現；基準＝as-of 可用行，事件行待人工複核——判斷腿，"
+            "本 evaluator 不裁決）:"
         )
         for fam, e in conflicts:
+            print(f"  {fam} × {e}")
+    if parallels:
+        print(
+            "[WARN] 並列複核（事件行含 family 名但無限制詞共現——中性並列，"
+            "判讀須讀 spine 原文）:"
+        )
+        for fam, e in parallels:
             print(f"  {fam} × {e}")
     if spine.events:
         print("[WARN] 額度事件（歷史行，人工複核是否已折入 as-of 基準）:")
