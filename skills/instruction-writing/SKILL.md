@@ -1,6 +1,6 @@
 ---
 name: instruction-writing
-description: "新增或修改 instruction 檔（AGENTS.md / CLAUDE.md / rules / SKILL.md）前載入——撰寫與編輯規範單一源：雙檔模式命名、YAML frontmatter、章節組織、High Signal / Low Noise 內容分類、導航優先（概念→符號種子）、標準段落標題、Class→檔案映射表禁令、引用語法選擇、導航 Decoder Test、元資訊禁止（行為表＋自檢清單＋第一性原理論證）、文檔自洽五維檢查、single-source drift 防護。觸發詞：AGENTS.md、CLAUDE.md、instruction、雙檔模式、wrapper、High Signal、導航種子、模組導航、Capabilities 段、instruction-clean、元資訊清理、版本號／統計／更新日期禁止、文檔自洽、single-source drift、desc 1024、skill 被 drop、when_to_use、desc 契約、跨 harness 消費。"
+description: "新增或修改 instruction 檔（AGENTS.md / CLAUDE.md / rules / SKILL.md）——或為 AI 撰寫任何操作指南／說明文件／agent 讀的規範文檔——之前載入：撰寫與編輯規範單一源：雙檔模式命名、YAML frontmatter、章節組織、High Signal / Low Noise 內容分類、導航優先（概念→符號種子）、標準段落標題、Class→檔案映射表禁令、引用語法選擇、導航 Decoder Test、元資訊禁止（行為表＋自檢清單＋第一性原理論證）、文檔自洽五維檢查、single-source drift 防護。觸發詞：AGENTS.md、CLAUDE.md、instruction、操作指南、說明文件、給 AI 讀的文檔、雙檔模式、wrapper、High Signal、導航種子、模組導航、Capabilities 段、instruction-clean、元資訊清理、版本號／統計／更新日期禁止、文檔自洽、single-source drift、desc 1024、skill 被 drop、when_to_use、desc 契約、跨 harness 消費。"
 when_to_use: "Fires when creating or editing instruction files — AGENTS.md、CLAUDE.md、rules/、SKILL.md、commands、agent 定義. Load BEFORE the first edit of any such file in the session."
 ---
 
