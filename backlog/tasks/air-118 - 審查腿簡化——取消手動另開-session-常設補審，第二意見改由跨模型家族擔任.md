@@ -1,10 +1,10 @@
 ---
 id: AIR-118
 title: 審查腿簡化——取消手動另開 session 常設補審，第二意見改由跨模型家族擔任
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 06:41'
-updated_date: '2026-09-17 11:03'
+updated_date: '2026-09-17 12:53'
 labels: []
 dependencies: []
 ordinal: 103000
@@ -41,4 +41,6 @@ ordinal: 103000
 
 <!-- SECTION:NOTES:BEGIN -->
 實作完成（agent_6d678929，主 session 獨立抽查綠）：7 檔——review-engine 點7獨立性階梯四件＋點4③改跨家族＋分離理由措辭；AGENTS.md 三層表/review鏈行/命令分類表；ep-review:14；implement 五處；handoff 跨家族入口；blueprint:441；guide:44。bi 外審 job-mu55o7p5/mu55o7qb 附條件同意全吸收。殘留：index.html 投影 stale（已知情，另卡處理）；AGENTS.md:24 同檔 drift sync 經裁准。AC#4 落地閘（跨家族審查腿＋deploy＋fresh session）收線前執行
+
+結算（final）：獨立性階梯落地並部署驗證。審查鏈＝bi 設計審（mu55o7p5/7qb 條件全吸收）＋muse intent accept（mu5hiviv）＋fresh 腿（F1 followup 層標矛盾已修、F2-F6 已處置）＋fresh session 驗證（新教義 VERIFIED；spawn-vs-session 殘留 3 處已清 e668435）。部署 3/3 harness。殘留移交：index.html 投影 stale→AIR-122 域；AC#1 結算判準限定 live 指令面（muse F1 採納）。
 <!-- SECTION:NOTES:END -->
