@@ -1,10 +1,10 @@
 ---
 id: AIR-121
 title: 機械面寫入驗收閘——審查帳本格式 lint＋解析器正規化＋寫入權準則正典化
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 08:58'
-updated_date: '2026-09-17 08:59'
+updated_date: '2026-09-17 11:04'
 labels: []
 dependencies: []
 ordinal: 106000
@@ -36,3 +36,9 @@ AI 手寫的審查帳本格式一直漂（9 份歷史帳本 4 種格式），機
 明示不動：bridge ledger、backlog CLI、spine（frontmatter 閘另卡）、serializer（顯性觸發才做）、AIR-118（審查腿簡化，範圍正交）。
 掃描法：rg「status 寫入|append-notes|Finding Record」找齊消費面指針點；codex 需原文驗證項＝quality-constraints 是否已有更近 invariant（實查後併）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+實作完成（agent_a5731351，主 session 獨立抽查綠）：review_ledger.py lint/parse 雙子命令 TDD 20 案例 RED→GREEN；9 帳本回歸全分類；air-91 核心斷言 resolved 5/未決 0（POC 語義錯誤修復）；prose 計數禁用；exit 四態。五檔條文：quality-constraints 兩句 core（先實查無更近 invariant）、memory-audit 寫入權軸、workflow-review-pattern 指針＋canonical 宣告、judge-review 指針、kanban 窗期寫入分流。bi 外審 job-mu5ai4dl/mu5ai4ew。deferred：post-build SKILL 掛接（air-119 撞檔，收線 rebase 後補）；lint 接 commit gate（同）；compiler 卡指針（卡未建）
+<!-- SECTION:NOTES:END -->

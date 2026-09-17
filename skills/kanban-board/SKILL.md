@@ -79,6 +79,8 @@ backlog task edit <id> --ref "<開工既有 EP 相對路徑>[,<shell 相對路�
 **收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
 **結案 metadata commit 特赦（user 09-11，條件授權鏈；autonomous 適用性 09-13 user 裁定收回）**：結案兩步＋其 commit（僅 `backlog/`＋結算搬移檔、**同 commit**）在 **precheck 綠（跨線掃描 exit 0）** 時免逐次確認——機械守門替代人確認（例外條款③，**限互動 session**；autonomous session 所有 commit 一律待用戶確認）；條件不滿足 → 走確認 gate。註：precheck 在此是特赦的守門條件，非結案兩步本身的新要求（「結案兩步不需 precheck」現狀不變）。
 
+**窗期寫入分流（卡檔不可見時——AIR-121）**：卡檔在 main 而工作樹停在弧 branch（branch 尚未含建卡 commit——persistent card WT／並行建卡常態）→ `task edit` 觸不到卡檔，此時**緩衝制為預設**：verdict／狀態更新先落工單輸出檔＋EP notes（**顯性降級記錄**——明標「卡面更新緩衝中，待卡檔可見補落」），branch 吸收建卡 commit（rebase/ff）後隨**開工②／結案③既有特赦 commit 補落**卡面；**禁為此擴 commit 特赦**——補落僅走既有②③條件與授權，不新開 commit 理由（09-13 AI 自主 commit 禁紅線不變）。
+
 **弧結案蒸餾（第三動，同時機）**：owning session 將本弧 project_/feedback_ memory 條目重寫為終態 facts——刪日期/session id/進度流水與 git 可推導內容，留決策教訓與終態結論，敘事指向 repo 檔案（EP/卡）；無相關條目明示無。規則細節＝[memory-audit](../memory-audit/SKILL.md)「寫入端紀律」（含 desc 三不）。
 
 結案後**卡留 board Done 欄**（官方預設工作流——Done 欄可見＝完成工作可見）；`task complete <id>`（搬 `completed/`）是清場動作，延後到 board 清理批次（maintain 週期）或 user 指示，不隨結案當場執行。**清理批次自動腿**：ai-guide／mosaic 每日排程跑 `deploy/scripts/run-backlog-cleanup.sh`（時刻/plist 見 ai-guide ai-analysis/schedule-registry.md——launchd 表＋反查表 A3）——`Done` 且 `updated_date`>30d 的卡逐卡 precheck → `task complete` → commit（`BACKLOG_CLEANUP_AGE_DAYS` 可覆寫；多 worktree 全展開，跨線訊號卡保守跳過）。CLI 原生 `backlog cleanup` 是互動式 TUI（stdin 關閉時假成功 no-op），不可用於無人值守。

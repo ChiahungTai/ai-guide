@@ -153,6 +153,8 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 - **decision → status 映射**(judge-review):✅ → `adopted`、❌ → `rejected`、⚠️ → `needs-confirmation`
 - commit 階段 2.6（optional）列出殘留 `open` finding 提醒（不阻擋；status 靠 LLM 更新會漏，僅作提醒線索非機械閘門，最終把關靠人對照 diff）
 
+> **status 寫入責任（AIR-121）**：帳本 header identity／`decision`／terminal `status`（`resolved|verified|closed`）是實際被 parse/join/count 的機械契約欄位——落盤須通過 consumer-equivalent 機械驗證（`skills/post-build/scripts/review_ledger.py` lint/parse，fail-closed）；寫入保障必須至少匹配下游讀取契約，準則單一源＝[quality-constraints](../../rules/quality-constraints.md)「數據完整性優先」寫入保障段，分類軸（機械／記錄／混合面）＝[memory-audit](../memory-audit/SKILL.md)「載體統一定義表」寫入權軸。
+
 ### closure lens 分工（修正驗證雙腿——AIR-61 標準化）
 
 > 修正驗收的 lens 配置規則；執行面接線（同 session 續接形態、cost 判準、守衛處置）單一源＝[followup-review](../followup-review/SKILL.md)「muse reviewer 續接驗收」＋[model-routing](../model-routing/SKILL.md)「session 定向接續」，本節不重抄。

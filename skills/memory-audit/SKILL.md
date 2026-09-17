@@ -160,6 +160,8 @@ last_index_chars: <n> # 上次 --check chars——lite 流入率監控基線
 | git repo | 可推導事實（log/程式碼/commit 訊息） | 零 context（rg/git 查詢） | commit 紀律；可推導的不重複記憶 |
 | hook（機制載體） | 機械閘門——承載執行不承載知識 | 零 context（執行時觸發） | 三判準（純機械＋單一入口＋無語義例外）**三者皆是**才選——資格論證與對照組見 [instruction-writing](../instruction-writing/SKILL.md) |
 
+**寫入權軸（AIR-121——與上表正交）**：資料面按下游讀取者分三類——機械讀取面（機械依賴的欄位／join／count／gate）→ 程式落盤，或 LLM 寫入但成為 authoritative state 前須過 consumer-equivalent 機械驗證（fail-closed）；記錄面（人／LLM-only 敘事記錄）→ LLM 可寫，不因此 schema 化；混合面（敘事內嵌指針／計數）→ 取嚴拆分（機械面抽欄、記錄面留散文）。準則單一源＝[quality-constraints](../../rules/quality-constraints.md)「數據完整性優先」寫入保障段。
+
 ### 該寫哪（一行流）
 
 **知識產生時**：先套層級硬閘 → 任務終態/進度/承諾 → 卡 notes／EP 進度節（永不進 memory）→ repo 可推導 → 不寫 → user-level 方法論套 rule 資格公式：首個有後果決策前必須在場**且**屬 verified calibration／user 裁定／trigger-bootstrap → 最小 rule；有可靠 trigger 且可在首個有害行為前載入 → skill；CC 檔案讀取型條件內容可依條件載入層處置 → 模組層約束 → 模組 AGENTS.md → 跨 session user/專案綁定事實（事故證據／偏好例外／pointer，確定才寫）→ memory 條目 → 暫存/草稿 → scratch。
