@@ -1,12 +1,16 @@
 ---
 id: AIR-116
-title: ai-guide 統一安裝包——單一 plugin/套件覆蓋 muse/CC/ZCode/codex（rules+skills+hooks+agents+memory 防線）
-status: To Do
+title: >-
+  ai-guide 統一安裝包——單一 plugin/套件覆蓋
+  muse/CC/ZCode/codex（rules+skills+hooks+agents+memory 防線）
+status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 07:30'
+updated_date: '2026-09-17 03:27'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/0917-air116-unified-governance/ep.md
 ordinal: 101000
 ---
 
