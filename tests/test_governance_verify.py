@@ -1,7 +1,7 @@
 """governance install.py verify probe 測試（AIR-116 S3——AC-3.3 negative 腿）。
 
-oracle 獨立性：muse probe 判定語義對標 scripts/muse_approve_monitor.py evaluate()
-（fail-closed 先例），非待測實作自證；pipe probe 以真 hook subprocess 實跑＋
+oracle 獨立性：muse probe 判定語義對標 AIR-100 S-E monitor evaluate()
+（已吸收——scripts/muse_approve_monitor.py 已退役），非待測實作自證；pipe probe 以真 hook subprocess 實跑＋
 放行場景（exit 0）必報 FAIL 防恆綠。codex L1/L2/L3 live 驗收歸 AC-3.2/3.4
 receipt（host-level fixture 需真 codex runtime，不入單元測試）。
 """
@@ -63,6 +63,11 @@ def test_muse_probe_missing_key_fail_closed(monkeypatch):
 
 def test_muse_probe_bad_json_fail_closed(monkeypatch):
     _patch_run(monkeypatch, stdout="not-json")
+    assert mod.probe_muse("x")[0] == "FAIL"
+
+
+def test_muse_probe_non_dict_payload_fail_closed(monkeypatch):
+    _patch_run(monkeypatch, stdout='[1, 2]')
     assert mod.probe_muse("x")[0] == "FAIL"
 
 
@@ -178,6 +183,20 @@ def test_codex_trust_diagnostics_multi_handler_keys():
     assert "pre_tool_use:0:0" in lines[0]
     assert "pre_tool_use:0:1" in lines[1]
     assert all("Untrusted" in ln for ln in lines)
+
+
+def test_probe_codex_cli_absent_guard_with_l1(tmp_path, monkeypatch):
+    """launchd PATH 無 codex 場（live 實證）：GUARD 非 crash，L1 仍如實報告。"""
+    tmpl = mod.render((mod.MANIFEST_PATH.parent / "registrations/codex.toml").read_text())
+    target = tmp_path / "config.toml"
+    target.write_text("[hooks.state]\n\n" + tmpl)
+    manifest = {"registrations": {"codex": {"target": str(target),
+                                            "template": "registrations/codex.toml"}}}
+    monkeypatch.setattr(mod.shutil, "which", lambda n: None)
+    status, _detail, lines = mod.probe_codex(manifest)
+    assert status == "GUARD"
+    assert any("[L1] 在場" in ln for ln in lines)
+    assert any("[L3] GUARD" in ln for ln in lines)
 
 
 # ── cmd_verify surface 映射與退出碼 ────────────────────────────────

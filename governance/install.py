@@ -144,7 +144,8 @@ def backup_target(real: Path) -> Path:
 # ── 原子寫（temp＋parse 驗證＋preimage 對比＋os.replace）──────────
 
 
-def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False) -> str:
+def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False,
+                      plist_validate: bool = False) -> str:
     """唯一寫入 chokepoint。回 "noop"（byte-equal 零寫入零備份）或 "written"。
 
     通用 preimage 防線：寫入前 live 若變（codex runtime 寫 [hooks.state]、
@@ -155,12 +156,20 @@ def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False)
     current = real.read_text()
     if current == new_text:
         return "noop"
+    import plistlib
     if toml_validate:
         try:
             tomllib.loads(current)  # live 可解析才護得起
         except tomllib.TOMLDecodeError as exc:
             raise GovernanceError(
                 f"malformed config，拒寫 fail-loud：{real}\n{exc}"
+            ) from exc
+    if plist_validate:
+        try:
+            plistlib.loads(current.encode())
+        except plistlib.InvalidFileException as exc:
+            raise GovernanceError(
+                f"malformed plist，拒寫 fail-loud：{real}\n{exc}"
             ) from exc
     backup_target(real)
     tmp = real.with_name(f".{real.name}.tmp-{os.getpid()}")
@@ -171,6 +180,12 @@ def apply_text_change(real: Path, new_text: str, *, toml_validate: bool = False)
         except tomllib.TOMLDecodeError as exc:
             tmp.unlink(missing_ok=True)
             raise GovernanceError(f"新全文 parse 驗證失敗（未寫入）：{real}\n{exc}") from exc
+    if plist_validate:
+        try:
+            plistlib.loads(tmp.read_text().encode())
+        except plistlib.InvalidFileException as exc:
+            tmp.unlink(missing_ok=True)
+            raise GovernanceError(f"新 plist parse 驗證失敗（未寫入）：{real}\n{exc}") from exc
     if real.read_text() != current:
         tmp.unlink(missing_ok=True)
         raise GovernanceError(
@@ -441,6 +456,15 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
                             "action": "remove" if mode == "uninstall" else "merge"})
     if surface == "memory" and mode == "uninstall":
         targets.append({"kind": "muse-disable", "action": "remove"})
+    if surface == "monitor":
+        mon = manifest["surfaces"]["monitor"]
+        targets.append({
+            "kind": "launchd-plist",
+            "target": f"{mon['install_root']}/{mon['label']}.plist",
+            "source": mon["plist_source"],
+            "label": mon["label"],
+            "action": "remove" if mode == "uninstall" else "merge",
+        })
     return {"ts": datetime.datetime.now().isoformat(timespec="seconds"),
             "surface": surface, "mode": mode, "targets": targets}
 
@@ -465,6 +489,9 @@ def print_plan(plan: dict) -> None:
     if plan["surface"] in ("agents", "all"):
         extra = " --check" if plan["mode"] in ("dry-run", "check") else ""
         print(f"  [wrap] uv run python scripts/sync_agents.py{extra}")
+    if plan["surface"] == "monitor":
+        print("  [launchd] 裝載＝copy＋bootstrap；卸載＝bootout＋刪本地副本"
+              "（五面 health＝消費 install.py --verify＋--check，日頻）")
 
 
 def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
@@ -536,7 +563,58 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         if proc.returncode != 0:
             raise GovernanceError(f"muse disable 失敗：{proc.stderr.strip()}")
         return "disabled（CLI 無 remove——cache 殘留 leave-and-report）"
+    if t["kind"] == "launchd-plist":
+        return _apply_launchd_plist(t)
     raise GovernanceError(f"unknown target kind: {t['kind']}")
+
+
+def _launchctl(*argv: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["launchctl", *argv], capture_output=True, text=True)
+
+
+def _apply_launchd_plist(t: dict) -> str:
+    """S5：plist 裝載（copy＋bootstrap；冪等）／卸載（bootout＋刪本地副本）。
+
+    launchd 目標面 machine-local；bootout 失敗（未載入）於 uninstall 靜默容忍
+    （冪等），bootstrap 失敗 fail-loud。內容變更且已載入→bootout＋bootstrap
+    重載（launchd 不熱讀 plist）。
+    """
+    label, inst = t["label"], real_target(home_path(t["target"]))
+    gui = f"gui/{os.getuid()}"
+    if t["action"] == "remove":
+        _launchctl("bootout", f"{gui}/{label}")  # 未載入＝rc 非零，容忍（冪等）
+        if inst.exists():
+            inst.unlink()
+            return "unloaded＋removed（版控源留 repo——dead but harmless）"
+        return "not-loaded（leave）"
+    src = REPO_ROOT / t["source"]
+    new_text = src.read_text()
+    import plistlib
+    try:  # 源內容驗證——create 路徑同樣禁帶病寫入（XML 註解含雙連字號事故實證）
+        plistlib.loads(new_text.encode())
+    except plistlib.InvalidFileException as exc:
+        raise GovernanceError(f"版控源非合法 plist，拒裝載 fail-loud：{src}\n{exc}") from exc
+    if not inst.exists():
+        inst.parent.mkdir(parents=True, exist_ok=True)
+        tmp = inst.with_name(f".{inst.name}.tmp-{os.getpid()}")
+        tmp.write_text(new_text)
+        os.replace(tmp, inst)
+        outcome = "created"
+    else:
+        outcome = apply_text_change(inst, new_text, plist_validate=True)
+    loaded = _launchctl("print", f"{gui}/{label}").returncode == 0
+    if not loaded:
+        r = _launchctl("bootstrap", gui, str(inst))
+        if r.returncode != 0:
+            raise GovernanceError(f"launchctl bootstrap 失敗：{label}\n{r.stderr.strip()}")
+        return f"{outcome}＋bootstrapped"
+    if outcome in ("written", "created"):  # 新寫內容且 launchd 仍載舊版（stale）——重載
+        _launchctl("bootout", f"{gui}/{label}")
+        r = _launchctl("bootstrap", gui, str(inst))
+        if r.returncode != 0:
+            raise GovernanceError(f"launchctl 重載失敗：{label}\n{r.stderr.strip()}")
+        return f"{outcome}＋re-loaded"
+    return "noop（版控源與安裝副本等值且已載入）"
 
 
 def print_manual_steps(surface: str) -> None:
@@ -585,10 +663,7 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
             print(f"[pool-topology] {proc.stdout.strip() or proc.stderr.strip()}")
             if proc.returncode != 0:
                 return EXIT_EXEC
-    if surface == "monitor":
-        print("[stub] monitor 面 S5 實裝——not implemented", file=sys.stderr)
-        return EXIT_NOT_IMPL
-    if surface in ("hooks", "skills", "all", "memory"):
+    if surface in ("hooks", "skills", "all", "memory", "monitor"):
         plan = build_plan(manifest, surface, mode)
         rc = apply_plan(manifest, plan)
         if rc != EXIT_OK:
@@ -839,8 +914,8 @@ def cmd_check(manifest: dict, surface: str) -> int:
 def probe_muse(plugin_id: str) -> tuple[str, str]:
     """muse-inspect：runtime_capabilities 全 trusted_enabled（fail-closed）。
 
-    判定語義先例＝scripts/muse_approve_monitor.py evaluate()——清單空／鍵缺失／
-    任一非 trusted_enabled／輸出不可判定一律 FAIL（「無法證明 trusted」即 FAIL）。
+    判定語義＝AIR-100 S-E monitor evaluate()（已吸收為本 probe——清單空／
+    鍵缺失／payload 非 dict／任一非 trusted_enabled／輸出不可判定一律 FAIL）。
     """
     if shutil.which("muse") is None:
         return "GUARD", "muse CLI 缺席（環境守衛）"
@@ -852,6 +927,8 @@ def probe_muse(plugin_id: str) -> tuple[str, str]:
         doc = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
         return "FAIL", f"inspect 輸出不可判定（fail-closed）：{exc}"
+    if not isinstance(doc, dict):
+        return "FAIL", "inspect payload 非 dict（fail-closed）"
     caps = doc.get("runtime_capabilities")
     if not isinstance(caps, list) or not caps:
         return "FAIL", "runtime_capabilities 空或缺（fail-closed）"
@@ -961,9 +1038,11 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
     live_text = target.read_text()
     template_text = render((MANIFEST_PATH.parent / reg["template"]).read_text())
     lines: list[str] = []
-    v = subprocess.run(["codex", "--version"], capture_output=True, text=True)
-    if v.returncode == 0:
-        lines.append(f"  [diag] {v.stdout.strip()}（state key 公式與 trust 行為隨版本可能變）")
+    has_cli = shutil.which("codex") is not None
+    if has_cli:  # 版本診斷（codex ⑧）——CLI 缺席時跳過不 crash（launchd PATH 場實證）
+        v = subprocess.run(["codex", "--version"], capture_output=True, text=True)
+        if v.returncode == 0:
+            lines.append(f"  [diag] {v.stdout.strip()}（state key 公式與 trust 行為隨版本可能變）")
     owned = [_codex_group_identity(u["text"]) for u in codex_group_units(template_text)[1]
              if u["kind"] == "group"]
     live_idents = [_codex_group_identity(u["text"]) for u in codex_group_units(live_text)[1]
@@ -985,6 +1064,9 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
     if untrusted:
         lines.append("  [L2] Untrusted＝install 直後預期態非 FAIL——手動 approve：新 session "
                      "startup review 或 /hooks TUI（文案單一源＝README「approve 分欄」節）")
+    if not has_cli:  # L3 需 CLI；L1/L2 為 config/state 檔面——CLI 缺席仍如實報告
+        lines.append("  [L3] GUARD——codex CLI 缺席（檢查 PATH；launchd 環境需 plist PATH 涵蓋）")
+        return "GUARD", "L1/L2 已報告；L3 host-level 需 codex CLI", lines
     s, d = codex_host_level_fixture()
     lines.append(f"  [L3] {s}——{d}")
     if s == "FAIL":

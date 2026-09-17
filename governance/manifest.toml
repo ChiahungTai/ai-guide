@@ -59,6 +59,15 @@ plugin_path = "muse-plugins/memory-governance"
 pool_setup = "hooks/setup-memory-symlinks.sh"
 pool_setup_apply_args = ["--apply"]
 
+[surfaces.monitor]
+# S5 收編：五面 health 排程（消費 install.py --verify＋--check 的 launchd 日頻）。
+# plist 版控源；--surface monitor 裝載（copy 至 LaunchAgents＋bootstrap）。
+# 已知限制：plist 內 repo/log 路徑為機器絕對路徑（AIR-100 S-E 先例）——跨機器
+# 安裝需先改 plist（AIR-110 bootstrap 承接範圍）。
+plist_source = "deploy/governance-health-monitor.plist"
+label = "com.ai-guide.governance-health-monitor"
+install_root = "~/Library/LaunchAgents"
+
 # ── per-harness 註冊（模板＝生成期望唯一定義） ─────────────────
 
 [registrations.cc]

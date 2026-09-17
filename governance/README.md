@@ -44,12 +44,12 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 ## 健康檢查
 
 - 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面，見下節）。
-- 排程：`com.ai-guide.muse-approve-monitor` launchd（日頻）——消費 install.py `--verify`＋`--check`，log 與 hook log 同域；任一 FAIL 非零 exit＋告警行。
+- 排程：`com.ai-guide.governance-health-monitor` launchd（日頻；AIR-100 S-E muse approve monitor 已收編）——`scripts/governance_health_monitor.py` 消費 install.py `--verify`＋`--check --surface all`，輸出透傳落 log；任一 FAIL 非零 exit＋告警行（fail-loud）。裝載／卸載＝`--surface monitor`。
 - codex mixed representation：`--check` 掃同 semantic hook 是否另有 `~/.codex/hooks.json` copy／重複 inline copy（同 layer 混載＝warning＋雙 fire）。
 
 ### `--verify` probe 面（S3）
 
-逐家執行 manifest `[probes]`；exit 0 全 PASS／1 FAIL／2 GUARD（probe 工具缺席）。**fail-closed**：muse inspect 輸出不可判定、`runtime_capabilities` 空或缺＝FAIL（「無法證明 trusted」即 FAIL，先例 `scripts/muse_approve_monitor.py`）。
+逐家執行 manifest `[probes]`；exit 0 全 PASS／1 FAIL／2 GUARD（probe 工具缺席）。**fail-closed**：muse inspect 輸出不可判定、payload 非 dict、`runtime_capabilities` 空或缺＝FAIL（「無法證明 trusted」即 FAIL，語義源＝AIR-100 S-E monitor，已吸收為本 probe）。
 
 | probe | 機制 | PASS 判準 |
 |---|---|---|
@@ -93,4 +93,4 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 4. 手動 approve：CC `/hooks`、codex trust review、ZCode 重開 session（見分欄表）。
 5. 驗證：`--verify`——muse PASS、CC/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
 6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）。
-7. 排程：`--surface monitor` 後 `launchctl start com.ai-guide.muse-approve-monitor` 觸發一輪，log 出現五面執行紀錄。
+7. 排程：`--surface monitor` 後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄。

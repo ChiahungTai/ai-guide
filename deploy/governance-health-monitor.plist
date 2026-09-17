@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- governance health monitor 排程（日頻；AIR-116 S5 收編 AIR-100 S-E 前形，
+     版控於 deploy/）。裝載／卸載＝installer 面（user 機器操作，非 agent 執行）：
+       governance/install.py surface=monitor（裝載）；加 uninstall flag（卸載）。
+     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制——flag 字面會讓
+     嚴格 parser 拒讀；launchd 寬容不等於合法）。
+     行為：五面 health（install.py 的 verify＋check 兩模式）任一非零 exit 時
+     告警行落 StandardOutPath/StandardErrorPath 日志；launchd 非零 exit 不觸發
+     重跑（StartInterval 節流）。
+     回復＝uninstall surface monitor（bootout＋刪 ~/Library/LaunchAgents/ 副本；
+     版控源與 script 保留——dead but harmless）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.governance-health-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/ctai/.local/bin/uv</string>
+        <string>run</string>
+        <string>python</string>
+        <string>scripts/governance_health_monitor.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/ctai/Github/ai-guide</string>
+
+    <key>StartInterval</key>
+    <integer>86400</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-governance-health.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/ctai/.mosaic/logs/ops/launchagent-ai-guide-governance-health-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/ctai</string>
+        <key>PATH</key>
+        <string>/Users/ctai/.local/bin:/Users/ctai/.npm-global/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

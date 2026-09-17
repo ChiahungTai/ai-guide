@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 06:29'
+updated_date: '2026-09-17 06:50'
 labels: []
 dependencies: []
 references:
@@ -43,4 +43,6 @@ ordinal: 101000
 09-17 S3 完成：--verify stub 轉正——四家 probe（muse inspect fail-closed／CC+ZCode 自含 fixture pipe payload exit 2／codex 三層 L1 註冊在場+L2 trust 診斷+L3 真codex exec canary）＋mixed-rep 報告腿＋單元測試 21 tests（AC-3.3 negative＋防恆綠）。live --verify --surface all 全 PASS exit 0：codex L2 五 handlers 全 Trusted 與 P0-1 十二條吻合；L3 bypass flag=per-invocation 正當用途（不寫 state、非模擬 approve）。live 首跑抓到 S2 死碼 codex_trust_diagnostics 兩 bug：HANDLER_HEADER 缺 MULTILINE（L2 整段消失）＋state key event 段 .lower() 應為 snake_case（誤報 Untrusted）——皆修復＋回歸測試守衛。附帶：manifest [bootstrap_cli.exit_codes] 補 4=執行錯誤（S2 實裝漏投影）。receipt＝references/s3-verify-receipt.md。待續：S4（--check 五面 parity）→S5→S6 收尾→live uninstall round-trip（AC-2.5）。
 
 09-17 S4 完成：--check stub 轉正——五面 parity（JSON 語義 diff 缺/多/內容差＋symlink 健康腿／codex Modified 獨立 class＋mixed-rep／muse R6 source↔cache 逐檔 byte 腿（複用 probe_muse，S3/S4 同一實作）／rules=唯讀 import deploy_agents.expected_bundle_for()／agents=sync_agents --check 退出碼串接／skills 母鏈）＋單元測試 21 tests。live：AC-4.1 乾淨態 exit 0；AC-4.2 CC 刪條目→exit 1 命中該條→復原 sha 逐字等→exit 0（附帶實證：mutation heredoc 被 block-python-file-write 即時攔，治理閘在 authoring session 自身生效）；AC-4.5 弄髒生成 registry→透傳 rc=1→復原 exit 0。receipt＝references/s4-check-receipt.md。待續：S5（monitor 對帳）→S6 收尾→live uninstall round-trip（AC-2.5）。
+
+09-17 S5 完成：monitor 對帳收編——AIR-100 S-E muse approve monitor 吸收（舊 script＋測試刪、probe_muse 補 non-dict 腿、plist git mv 改名 governance-health-monitor），五面 health 上線（governance_health_monitor.py 消費 install.py verify+check，薄編排零重寫）。--surface monitor 裝載/卸載入 installer（manifest [surfaces.monitor]）。live：直跑 exit 0、launchctl start 觸發 log 五面行 PASS（含 codex L3 於 launchd 環境）、冪等 noop、殘留掃描零命中（AC-5.5）。途中三事故結構性修復：launchd PATH 無 codex 裸 crash（probe_codex 加 has_cli 守衛，L1/L2 照報+L3 GUARD）／XML 註解含雙連字號被嚴格解析拒讀（create 路徑補 plistlib 源驗證——帶病寫入 chokepoint 堵死；R7 fail-loud 攔截 reload 實證有效）／stale-loaded 誤報 noop（重載分支涵蓋 created）。單元測試 5 支（TC-7）。receipt＝references/s5-monitor-receipt.md。待續：S6 收尾（110 對齊＋instruction 同步＋live uninstall round-trip＋全段補跑 post-build）。
 <!-- SECTION:NOTES:END -->
