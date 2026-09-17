@@ -54,7 +54,7 @@ scope 極大（50+ 檔）才用 Agent（free-text 產出，主 session 組報告
 | # | 判準（用戶 viewport） | 機械查證 | 既有引用（不重寫） |
 |---|---|---|---|
 | 1 | **YAGNI 嚴格**（沒用就刪） | LSP `findReferences` + rg 確認零消費者；filter trap 區分（YAGNI 往刪 / 驗證不能刪）；**arch-thinking 觀：是否 connected dead cluster / 重用缺口**（不只零 caller）；**新舊並存**（enum/property/alias 兩套寫法同時在場）＝重構未完成訊號——`git log -S` 找引入 commit＋查消費點是否已切換 | [collaboration-constraints](../../rules/collaboration-constraints.md) YAGNI check + [acceptance-evidence skill](../acceptance-evidence/SKILL.md) filter trap |
-| 2 | **測試要有實際價值** | 隱含覆蓋查證（收窄：production wrapper 重複測試，見下方編排段）；不為覆蓋率寫 | 委外 [audit-test](../audit-test/SKILL.md)（角度 1/6：反模式、過時與其餘冗餘） |
+| 2 | **測試要有實際價值** | 隱含覆蓋查證（收窄：production wrapper 重複測試，見下方編排段）；不為覆蓋率寫 | 委外 [audit-test](../audit-test/SKILL.md)（Semantic Integrity 域：反模式、過時與其餘冗餘） |
 | 3 | **嚴格不放水** | 機械查證不靠善意；對抗性自查（挑戰自己判斷） | [collaboration-constraints](../../rules/collaboration-constraints.md) 反 Sycophancy + [review-engine](../review-engine/SKILL.md) 審查者自證 |
 | 4 | **質疑命名/設計** | 命名碰撞（LSP）/ domain 一致 / phantom API（rg + LSP 確認符號存在）；**arch-thinking 觀：bounded context 邊界 / dep weight / 設計 pattern** | **本 mode 自帶**（分散承載 → 封裝即價值；詳見 Domain 層） |
 | 5 | **scope 釐清** | mixed-tree 分組（`git status`）+ 結論 framing 對應 scope | **本 mode 自帶**（完全無既有承載；詳見 Domain 層） |
@@ -169,7 +169,7 @@ AI 寫 code 時犯三類命名/設計錯誤，zoom **預設質疑**（不假設 
 
 docstring / 註解 / 範例引用不存在的 method / class（AI 文檔幻覺）。
 
-- **scope**：限 **source 側** docstring 幻覺；**test 側** docstring/assert 幻覺走 [audit-test](../audit-test/SKILL.md) 角度 1
+- **scope**：限 **source 側** docstring 幻覺；**test 側** docstring/assert 幻覺走 [audit-test](../audit-test/SKILL.md) Semantic Integrity 域
 - 機械：rg / LSP 確認 docstring 提及的符號真實存在（定義點 + import 鏈）
 - 範例：`__init__.py` docstring 引用 `throttle_request()`（不存在的方法，AI 幻覺）
 - 判定：docstring 提及符號不存在 → finding（建議修正 docstring）
@@ -213,9 +213,9 @@ zoom 的 test 段聚焦**判準 2（收窄：production wrapper 重複測試）*
 
 | zoom test 段做（判準 2 收窄） | 委外 audit-test |
 |---|---|
-| **production wrapper 重複測試**（測 thin wrapper，但 wrapper 本體已被別處測；**且 wrapper 無獨立 production 入口**）| 反模式（幽靈斷言 / 同義反覆 / 空殼）— 角度 1 |
-| test 與 production 脫節（docstring 語意誤導）| 過時 / 死測試 — 角度 6 |
-| —（其餘隱含覆蓋場景：同行為不同入口重複測等） | 反模式 / 過時死測試 / 測試必要性 — 角度 1 / 角度 6 |
+| **production wrapper 重複測試**（測 thin wrapper，但 wrapper 本體已被別處測；**且 wrapper 無獨立 production 入口**）| 反模式（幽靈斷言 / 同義反覆 / 空殼）— Semantic Integrity 域 |
+| test 與 production 脫節（docstring 語意誤導）| 過時 / 死測試 — Semantic Integrity 域（測試必要性） |
+| —（其餘隱含覆蓋場景：同行為不同入口重複測等） | 反模式 / 過時死測試 / 測試必要性 — Semantic Integrity 域 |
 
 **判準 2 收窄理由**：audit-test 域 1（反模式＋測試必要性）已覆蓋多數隱含覆蓋場景。zoom 判準 2 **真正獨有**的是「**production wrapper 重複測試**」判斷——測 wrapper 時要查 wrapper 是否有**獨立 production 入口**：
 

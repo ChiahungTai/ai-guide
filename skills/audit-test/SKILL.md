@@ -79,15 +79,16 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
    - 檢查是否有 `@skip`、`pass`、`...`
 3. 讀取對應的 source file，比對 hardcoded 值
 
-#### vacuous-green（條件式斷言）
+#### vacuous-green（綠燈但零驗證）
 
-**核心原則**：守衛斷言若無 else-fail，條件不成立時測試**靜默通過**——綠燈但零驗證。
+**核心原則**：綠燈但**不可能紅**的測試——green 不承載任何證偽力。問「這個 green 在什麼輸入變化下會變紅？」答不出具體變化 → vacuous-green。與 oracle 分級強相關：**N oracle（無 oracle）測試是 vacuous-green 高風險群**——兩偵測器獨立跑、findings 互相引用。
 
-| 反模式 | 偵測方式 | 嚴重程度 | 判斷標準 |
+| 訊號 | 偵測方式 | 嚴重程度 | 判斷標準 |
 |--------|---------|---------|---------|
-| **vacuous-green** | 掃描守衛斷言形態 | **Important** | assert 包在 `if` / `try` / `with` 守衛內且**無 else-fail**：條件不成立時斷言從未執行 |
-
-**形態案例（test_accounting 形態）**：`if hasattr(strategy, "qty"): assert strategy.qty > 0`——`strategy` 無 `qty` 屬性時整段斷言從未執行，測試綠燈但什麼都沒驗證。`try: ... except Exception: pass` 包斷言同型。判定＝找到守衛＋確認無 else-fail／fallthrough assert。
+| **條件式斷言（守衛無 else-fail）** | 掃 test body 的 if/try/with 包 assert 結構，核對 else／fail 路徑存在 | **Important** | 條件不成立時斷言從未執行、測試靜默通過（test_accounting 形態：`if hasattr(strategy, "qty"): assert strategy.qty > 0`——無 `qty` 屬性時整段斷言零驗證；`try: ... except: pass` 包斷言同型） |
+| 禁用斷言路徑 | 讀完整 test body 控制流 | **Important** | try/except 吞掉 assert 區、`pytest.raises` 後無後續狀態驗證 |
+| skip／xfail 計入「通過」面 | 掃 marker 與 runner 設定 | **Important** | 無 reason、xfail 非 strict、TODO 型 skip 無追蹤 |
+| 測試與 impl 共享同一組典型數字 | 邊界值盤點（0、1、空集、極值、域特定邊界如 price<1） | **Important** | happy path 斷言具體、邊界值系統性缺席（mutation 抽查的靜態前兆） |
 
 #### Mock 危險形態
 
@@ -454,13 +455,13 @@ EP 含凍結 TC 時（觸發輸入見域 2），按七項對帳表逐一執行�
 ### 執行契約 10 條
 
 1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots；**禁 P1 findings 決定 P2 targets**（獨立性污染）
-2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）
+2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）；**工單須要求 reviewer 如實申報讀了什麼**（申報進 receipts）
 3. **delta identity**：canonical key＝target/module＋behavior/predicate＋oracle anchor；交集定義＝**support-count ≥2**（寫死）；**零交集→全差集進裁決隊列、禁自動 P4**。delta 三選一歸類表：spec 歧義→修 spec／單邊漏→取聯集／兩可→user 裁決（晨間）
 4. **mutation baseline**：P4 前獨立機械 pre-run 產 survivor set（P1 不跑 mutation）；P5 以**同 scope／operator／config** rerun 得可比 delta
 5. **P4 admission**：finding 須具 **S/H oracle authority**（[acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」——I/N 禁 autonomous 補強授權）＋**三證據鏈缺一即拒**（非降級放行）：①spec/invariant oracle ②property/metamorphic/differential 測試形態 ③mutation challenge；**survivor 只可指出 probe 位置、禁決定 expected value**（封閉迴圈防護——oracle 可不變而 test 被 survivor steering 的繞道封死）
 6. **P4 exit**：補強測試驗收＝canonical baseline **GREEN** ＋ targeted mutant/negative-control **RED**；**baseline RED＝抓到 production defect→pending-decisions**（夜間禁改 production code）
 7. **per-stage availability**：P1/P2/P3/P4/P5 **各自** resolve AvailabilitySnapshot（非管線級一次判定）；GLM 撞 1308（家族級）→flash 掃描腿預設不存活（除非 flash 有獨立 fresh snapshot＝available）；P3 無 decision-qualified judge→stop-before-P4；**兩家 reviewer 全缺→stop＋degradation receipt**
-8. **degradation receipt**：降級顯式記錄——`panel=single` ＋ same-family 退化標注（`explicit_same_family_degradation` 是 independence 欄狀態非 panel token）；禁靜默降級
+8. **degradation receipt**：降級顯式記錄——`panel=single` ＋ same-family 退化標注（`explicit_same_family_degradation` 是 independence 欄狀態非 panel token——panel token 詞彙＝[model-routing](../model-routing/SKILL.md)、degradation token 詞彙＝[review-engine](../review-engine/SKILL.md)／[agent-review-cycle](../_common/agent-review-cycle.md)，複用不改）；禁靜默降級
 9. **sink resolver**：durable sink＝**repo adapter**（mosaic inbox 慣例；無 inbox repo fallback＝daily-report 或 `.agent-tmp/`＋晨間報告）；**adapter 缺席→fail-closed＋degradation receipt＋零靜默寫入**（禁止無 sink 時把 findings 寫進未約定位置）
 10. **readout owner**：morning readout 由 **P5 completion aggregator 唯一生產**，從 immutable ledgers＋P3 決策記錄＋P5 receipts 組裝（**禁 reviewer 自述摘要**）
 

@@ -473,7 +473,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 ### 4. /audit-test
 
 - 執行 `/audit-test` 對新增/修改的測試進行品質稽核
-- 確認無反模式、覆蓋對稱性合理、mock 健康度良好
+- 確認五證據域無 Critical：無反模式（含 vacuous-green）、行為覆蓋與 evidence depth 合理、mock 健康良好
 - 稽核結果附於 `/implement` 完成報告
 
 **simple 變更**（bug fix）：僅執行 /audit-test，跳過 UC 和 instruction 檔更新。
