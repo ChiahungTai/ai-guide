@@ -1,0 +1,120 @@
+# ai-guide governance manifest — 五部署面單一源（AIR-116）
+#
+# 邊界：本套件只收斂「安裝/註冊面」——閘行為本體（hooks scripts、muse plugin、
+# bundle 內容、registry 生成邏輯）零改動。消費端＝governance/install.py（只消費
+# 不擴 schema）、--check（模板＝生成期望唯一定義）、S5 health、[bootstrap_cli]
+# （AIR-110 穩定契約投影）。
+#
+# 術語紅線：本套件動詞＝install/uninstall（安裝到 machine-local 消費點）；
+# rules bundle 部署（deploy_agents.py）是另一條線——wrap 不擁有。
+
+[package]
+name = "ai-guide-governance"
+version = "0.1.0"
+
+# ── 五面安裝語義 ──────────────────────────────────────────────
+
+[surfaces.hooks]
+# 共享腳本（repo 相對路徑）——四家註冊面指向這些檔；識別鍵＝
+# command 含 "/ai-guide/hooks/" 或 "/ai-guide/muse-plugins/"（窄鍵，F-5）。
+scripts = [
+    "hooks/block-memory-index-write.py",
+    "hooks/block-python-c-comment.py",
+    "hooks/block-python-file-write.py",
+    "hooks/codex_memory_path_deny.py",
+    "hooks/compact-tail-inject.py",
+    "hooks/memory-dirty-sensor.py",
+    "hooks/memory-index-regen.py",
+    "hooks/memory-watch-seed.py",
+    "hooks/memory-write-sensor.py",
+    "hooks/notification.sh",
+    "hooks/stop-notification.sh",
+    "hooks/zcode_agent_background_gate.py",
+]
+
+[surfaces.rules]
+# wrap（Q2）：installer 子進程呼叫既有權威工具，輸出透傳＋退出碼串接；
+# 禁重寫/修改工具本體。drift 檢查＝import 其 build_bundle 比對部署檔（唯讀）。
+tool = "scripts/deploy_agents.py"
+argv = ["uv", "run", "python", "scripts/deploy_agents.py"]
+deployed_targets = ["~/.zcode/AGENTS.md", "~/.codex/AGENTS.md", "~/.config/muse/AGENTS.md"]
+
+[surfaces.skills]
+# 單一母鏈 symlink（P0-8 實證形態）；已存在且 resolve 正確＝零動作（冪等）；
+# 指錯＝fail-loud 報告不自動改（零遷移原則）。
+symlinks = [
+    { link = "~/.agents/skills", target = "{{REPO}}/skills" },
+    { link = "~/.claude/skills", target = "{{REPO}}/skills" },
+]
+
+[surfaces.agents]
+tool = "scripts/sync_agents.py"
+argv = ["uv", "run", "python", "scripts/sync_agents.py"]
+check_args = ["--check"]
+
+[surfaces.memory]
+plugin_id = "muse-memory-governance"
+plugin_path = "muse-plugins/memory-governance"
+# 池拓撲腿（SM-11）：新機器 pool 轉移後重建 harness 端 symlink（dry-run 預設）。
+pool_setup = "hooks/setup-memory-symlinks.sh"
+pool_setup_apply_args = ["--apply"]
+
+# ── per-harness 註冊（模板＝生成期望唯一定義） ─────────────────
+
+[registrations.cc]
+template = "registrations/cc.json"
+target = "~/.claude/settings.json"
+merge = "json-subtree"
+merge_root = "hooks"
+target_is_symlink = true   # P0-3：寫前必 Path.resolve()，原子寫禁打 symlink 路徑
+
+[registrations.zcode]
+template = "registrations/zcode.json"
+target = "~/.zcode/cli/config.json"
+merge = "json-subtree"
+merge_root = "hooks"
+target_is_symlink = false  # 整檔覆蓋鐵律：只動 hooks 子樹，mcp/plugins 區塊逐鍵不變
+
+[registrations.codex]
+template = "registrations/codex.toml"
+target = "~/.codex/config.toml"
+merge = "toml-groups"      # group 級文字片段（註解標記）；TOML transaction（Q3）
+target_is_symlink = false
+
+# ── approve 分欄（Q4）─────────────────────────────────────────
+
+[approve]
+muse = "auto"            # muse plugins approve <id>——install 流程內含
+claude = "manual"        # /hooks UI（無 CLI 替代，P0-5）
+zcode = "new-session"    # per-session 快照，新 session 生效
+codex = "manual"         # /hooks TUI／startup review；installer 禁代寫 [hooks.state]
+
+# ── verify probe 定義（S3）────────────────────────────────────
+
+[probes.muse]
+type = "muse-inspect"          # runtime_capabilities[].status 全部 == trusted_enabled（fail-closed）
+plugin_id = "muse-memory-governance"
+
+[probes.claude]
+type = "pipe-payload"          # 合成 deny payload → hook script → 預期 exit 2
+script = "hooks/block-memory-index-write.py"
+
+[probes.zcode]
+type = "pipe-payload"
+script = "hooks/block-memory-index-write.py"
+
+[probes.codex]
+type = "codex-three-layer"     # 層一 discovery/state 診斷；層二 user 手動 approve；層三 host-level fixture
+
+# ── bootstrap 穩定 CLI 契約（S6；AIR-110 消費）────────────────
+
+[bootstrap_cli]
+command = "uv run python governance/install.py"
+surfaces = ["rules", "skills", "hooks", "agents", "memory", "monitor", "all"]
+flags = ["--dry-run", "--uninstall", "--check", "--verify"]  # 四 flag 兩兩互斥（F-11）
+
+[bootstrap_cli.exit_codes]
+"0" = "成功/綠"
+"1" = "drift／verify FAIL"
+"2" = "環境守衛（Python 地板／工具缺席／flag 衝突）"
+"3" = "子命令未實裝（stub）"

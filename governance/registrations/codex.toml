@@ -1,0 +1,38 @@
+# ai-guide hooks — migrated from ~/.codex/hooks.json 2026-09-16 (single-representation convergence)
+[[hooks.PreToolUse]]
+matcher = "Bash"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 {{REPO}}/hooks/block-python-c-comment.py"
+timeout = 10
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 {{REPO}}/hooks/block-python-file-write.py"
+timeout = 10
+
+[[hooks.SessionEnd]]
+matcher = ""
+
+[[hooks.SessionEnd.hooks]]
+type = "command"
+command = "{{REPO}}/hooks/stop-notification.sh"
+
+[[hooks.Stop]]
+
+[[hooks.Stop.hooks]]
+type = "command"
+command = "{{REPO}}/hooks/stop-notification.sh"
+
+# ai-guide memory path-deny (AIR-100 S-A): codex 對 memory 主體唯讀——apply_patch
+# 寫入 .agents/{memory,memory-inbox,memory-auto} 即 deny（admission 門 fail-closed）。
+# 語義源＝ref-docs/harness/codex/hooks.md（matcher 套 canonical tool 名 apply_patch；
+# deny＝exit 2＋stderr）。回復＝移除本段（hooks/codex_memory_path_deny.py 留 repo 無接線）。
+[[hooks.PreToolUse]]
+matcher = "apply_patch"
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 {{REPO}}/hooks/codex_memory_path_deny.py"
+timeout = 10

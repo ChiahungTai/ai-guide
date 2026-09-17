@@ -1,0 +1,108 @@
+{
+  "Notification": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "{{REPO}}/hooks/notification.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "{{REPO}}/hooks/stop-notification.sh",
+          "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/memory-index-regen.py",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "{{REPO}}/hooks/stop-notification.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "compact",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/compact-tail-inject.py"
+        }
+      ]
+    },
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/memory-watch-seed.py"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/block-python-c-comment.py"
+        },
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/block-python-file-write.py"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/block-memory-index-write.py",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/memory-write-sensor.py --source claude"
+        }
+      ]
+    }
+  ],
+  "FileChanged": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/memory-dirty-sensor.py"
+        }
+      ]
+    }
+  ]
+}

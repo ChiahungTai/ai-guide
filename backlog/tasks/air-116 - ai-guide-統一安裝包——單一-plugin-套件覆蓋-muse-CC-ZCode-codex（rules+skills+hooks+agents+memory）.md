@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-16 22:09'
-updated_date: '2026-09-17 03:37'
+updated_date: '2026-09-17 04:56'
 labels: []
 dependencies: []
 references:
@@ -35,4 +35,8 @@ ordinal: 101000
 0917 user cross-ref：AIR-113 domain-skills 遷出後的「ZCode 端 skills desc 注入」缺口，未來解法＝ZCode plugin 打包（marketplace 本地目錄源）——本卡擴範圍後 skills 分發面已在 scope 內，該場景為本卡用例之一（決策記錄仍在 AIR-113）。
 
 09-17 Segment 0 完成——十探針（P0-1~P0-10）全數執行，三致命先驗全數解除、零翻案，架構凍結。凍結值：①序列化參數＝json.dumps(indent=2, ensure_ascii=False)＋尾換行（CC/ZCode live config 逐字重現實證）；②CC 寫入鐵律＝Path.resolve() 後才 os.replace（實證 os.replace 直打 symlink 路徑會斷鏈換普通檔）；③skills 面＝兩家皆單一母鏈 symlink（建 2 條即成，零遷移）；④deploy_agents 冪等重跑實證（[SKIP] identical×3、exit 0、dry-run 透傳形態）。新事實：codex pre_tool_use:1:0 已 trusted（user 已 approve——EP AC-3.2 括號陳述過時）；CC/ZCode hooks 子樹結構不同家（CC event→groups map vs ZCode {enabled,events}）；muse plugins hook test --fixture 內建命令（S3 probe 候選）；codex 面非 ai-guide groups 初盤＝Interrupt(chatgpt-web)＋SessionStart/SubagentStart(codebase-memory-mcp)。證據單一源＝references/probe-results.md（file:line 錨點＋逐字輸出）。下一步＝S1（manifest＋registrations 模板，逆抽取基準 P0-6 快照在手）；probe-results.md 尚未 commit（air-116 branch working tree）。
+
+09-17 S1＋S2 核心完成：S1＝manifest＋registrations 三模板（live 逐字逆抽取，AC-1.2/1.3 receipt 全 PASS，references/s1-template-parity.md）＋README；S2＝install.py 核心（真機 TC-1 冪等兩跑全 noop／TC-3 dry-run 零寫入／TC-14 3.9 守衛 exit 2／F-11 flag 互斥 exit 2 全 PASS）。1201 事故（references/incident-20260917-dryrun-write.md）：dry-run mode 字串 bug＋merge 未走 merge_root→真寫入 CC/ZCode config；已全額復原（兩檔 shasum 逐字回事故前值；codex 未觸——parse 防線攔下）；複合故障＝prune 誤刪自家新 bak（檔名排序＋他弧備份入額度）。四 bug 全以結構固化修復（mode 歸一化／merge_root 子樹／codex group 級切塊＋註解搬移截斷／bak -gov 後綴＋mtime prune／通用 preimage 防線——ZCode runtime 併發重寫 config 為本事故新實證／dry-run 寫入 chokepoint 結構性斷言）。新增事實：muse CLI 無 plugin remove（uninstall=disable+leave-and-report，EP Q6 措辭與現實有差，記卡）。待續：S3（--verify）→S4（--check）→S5（monitor 對帳）→S6（契約已落 manifest/README，收尾 110 對齊）→單元測試→live uninstall round-trip（AC-2.5）。
+
+0917 Stop-hook POC（機械閘方案 B 查證，用戶指示）：POC hook 已註冊 live config（擋 2 次放行第 3 次；backup=config.json.bak-20260917-124149-stop-poc），firings 落 .agent-tmp/stop-poc/。自動觸發兩路皆不通——①automation 投遞 append 進「綁定 session」（=建立 automation 的 session，AIR-82 拓撲重演），hook 快照在註冊前→不觸發；②subagent session 結束不觸發 Stop hook（實測 agent 完成、firings 空）。逆向：桌面 bundle（asar/out/host）僅含 hook 事件 schema（Stop 在 enum）但無 stop_hook_active/decision payload 實作——agent 迴圈疑似遠端（coding plan backend），本地 RE 無法閉合。結論：Stop hook block 語義只有官方文檔（明確：decision block+reason 續跑、exit 2 快捷、連續 3 次上限）＋schema 證據，runtime 驗證需要「註冊後啟動的新 main session」——只能由 user 開。附帶新證據：ZCode hook 機械在 main session 確認運作（本 session 內 PreToolUse hook 即時擋下 heredoc 寫入）。
 <!-- SECTION:NOTES:END -->

@@ -1,0 +1,93 @@
+{
+  "enabled": true,
+  "events": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/zcode_agent_background_gate.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/block-python-c-comment.py"
+            ],
+            "timeoutMs": 10000
+          },
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/block-python-file-write.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/block-memory-index-write.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+              "{{REPO}}/hooks/stop-notification.sh"
+            ],
+            "timeoutMs": 10000
+          },
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/memory-index-regen.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/memory-write-sensor.py",
+              "--source",
+              "zcode"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
+      }
+    ]
+  }
+}
