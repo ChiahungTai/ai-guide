@@ -83,7 +83,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
 
    三 tripwire（不經計分直升 Hot，各帶可判條件）：①大審抓到日常 machinery 沒攔的 systemic Critical——**限 escaped**（定義＝review 開始前已存在＋日常機制沒升格為 Critical；reviewer 新標準首次套用抓到不計，見 EP §2-2）②authoritative semantics 互斥定義——**限 manifest/registry 級權威源**（catalog/frontmatter/單一源條文）出現互斥③≥2 獨立 consumer dry-run 同因失敗——**獨立＝相異 repo 或相異 harness；同因＝同一判準可歸因的設計問題**。
 
-   判讀：Heat 行填「態＋觸發 family＋感測器數值」；**Warm 時輸出必附 delete/merge/rewrite 候選**（禁只加閘——治理自放大防護）。三問/usage/Critical 逃逸等人工欄無當週資料時標「未採樣」，不計入 family 計數。
+   判讀：Heat 行填「態＋觸發 family＋感測器數值」；**Warm 時輸出必附 delete/merge/rewrite 候選**（禁只加閘——治理自放大防護）。三問/usage/Critical 逃逸等人工欄無當週資料時標「未採樣」，不計入 family 計數。弧止損（INVALIDATED，execution-plan 弧終態條款）不計為失敗糾正——止損＝不可行被證偽，是驗證的成功。
 
 5. **判讀產出**（報告尾一行）：本月累積趨勢是否支持「某規則在衰減、該修」或「negative-claim/rename preflight 覆蓋率下滑、該接線」的具體建議——沒有就寫「無需動作」（不硬擠結論）。
 
