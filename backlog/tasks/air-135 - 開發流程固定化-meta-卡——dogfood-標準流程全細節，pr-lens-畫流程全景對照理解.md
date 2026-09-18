@@ -1,7 +1,7 @@
 ---
 id: AIR-135
 title: 開發流程固定化 meta 卡——dogfood 標準流程全細節，pr-lens 畫流程全景對照理解
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
 updated_date: '2026-09-18 07:15'
@@ -32,3 +32,9 @@ ordinal: 117000
 
 範圍：S1＝標準開發流程 graph document（規劃／開卡開工／實作審查／收尾結案／跨 session／viewport 六 lane，每個細節）＋validate＋render 交 user 對照；S2＝依對照差異清單修圖或修理解，收斂後產出差異清單文件；S3＝收斂版餵下游（AIR-134 S1 contract、DRAFT-12 promote 的條文工作另走各卡）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【開工 0918】起手式：①In Progress✓ ②③讀卡知形態——standard 卡（card Planning Contract，無 standalone EP）④baseline 開工時重確認⑤refs 暫緩——第一產物為 .agent-tmp 暫存（看完即棄，卡面 plan 已聲明），產出 durable 對照文件後補掛——顯式偏離非遺漏。⑥wt-open persistent card WT（後續 S3 條文工作觸控制面）。user 拍板源：「我在想 開個 meta card，然後 dogfood 這次的問題，然後先直接用看看 pr lens…」（0918 本 session）。
+<!-- SECTION:NOTES:END -->
