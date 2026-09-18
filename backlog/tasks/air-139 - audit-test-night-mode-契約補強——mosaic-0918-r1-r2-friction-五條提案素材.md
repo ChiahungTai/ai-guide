@@ -4,7 +4,7 @@ title: audit-test night-mode 契約補強——mosaic 0918 r1/r2 friction 五條
 status: In Progress
 assignee: []
 created_date: '2026-09-18 19:25'
-updated_date: '2026-09-18 20:16'
+updated_date: '2026-09-18 20:29'
 labels: []
 dependencies: []
 ordinal: 125000
@@ -37,4 +37,6 @@ mosaic audit-test --night 首跑（night-mode-0918，r1 中止＋r2 完成）的
 【0919 mosaic 補充三條提案（素材待裁決；同源 night-mode-0918-r2，與已落地 1-5 同批摩擦面）】6. 契約 1 manifest 來源補「事故面」軸：過去 incident 測試面納入輪選（r2 實證：UI 出口 double-÷＝事故 F-B 同面，因不在 AGENTS 標記面漏出射程）→建議 ✅（契約 1 輪選來源加一行）。7. 域 2 制式步驟「載體對帳」：manifest source 須驗 production caller——被測物≠生產路徑時 invariant 零證偽力（r2 T4 實證：16 tests 全綠釘零-caller 載體）→建議 ✅（域 2 Traceability 加制式步驟）。8. 慣例輸出擇一（tests/AGENTS vs python-standards）：比較式驗證對非有限值 fail-open（IEEE 754）——gate 慣用法 not (x > 0)＋finite 驗證 helper 化（mosaic 已落地 86dd5279c＋MOS-111；ai-guide 端為慣例條文固化）→建議 ✅ 擇 python-standards rule（全域 *.py；一句話條文：比較式 gate 對 NaN/inf fail-open——用 not (x > 0) 形＋finite 前置驗證）。數字更新：393 mutants／survived 26→17／49.2%（修復後口徑）。
 
 【0919 五條落地（D1 user 全准）】契約 1 verbatim＋來源錨點／契約 2 sandbox 聲明＋工單逐字封堵／契約 4 rerun 全清（pwd 斷言）＋timeout 口徑（分母零 n/a）／open item 回填（＋sink adapter 關係）——全部經落地閘雙腿審查＋judge 修正（muse F1-F7＋codex F1-F4 全數處理）。6/7/8 雙腿一致 ✅ 待 user 最終拍板後落地（素材在 0919 notes）。
+
+【0919 6/7/8 落地（user「ＯＫ拉」拍板）】契約 1 補事故面軸、域 2 載體對帳制式步驟（production caller 驗證，零-caller 載體全綠不計覆蓋）、python-standards IEEE 754 fail-open 防護節。post-build followup closure 11/11 rg 綠（雙腿 findings 全修正＋三提案全落地）。85c23cd7。
 <!-- SECTION:NOTES:END -->
