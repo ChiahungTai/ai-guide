@@ -12,6 +12,19 @@ bash "$(dirname "$0")/control-plane-guard.sh" || exit 1
 while IFS= read -r v; do
   unset "$v"
 done < <(git rev-parse --local-env-vars)
+# backlog fast path（AIR-125 AC#1）：staged diff 全屬 backlog/（特赦①②③場景的
+# 機械對應）→ 跳 pytest 腿；control-plane-guard 與 py_compile 腿照跑。
+# quotePath=false：卡檔名含非 ASCII，預設 octal-escape 會讓 prefix 判準失配
+# （control-plane-guard.sh 同款教訓）。空 staged（手動直跑）採保守走全量。
+staged="$(git -c core.quotePath=false diff --cached --name-only)"
+if [ -n "$staged" ] && ! printf '%s\n' "$staged" | grep -qv '^backlog/'; then
+  echo "[fast-path] staged 全屬 backlog/——跳過測試腿（guard＋py_compile 照跑）"
+  python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py || exit 1
+  exit 0
+fi
+# commit gate 模式標記（AIR-125 AC#2）：live drift 偵測測試據此 skip——
+# 職責歸位：live drift 單一歸宿＝installer --check＋launchd monitor 日頻，不在 commit gate
+export PRE_COMMIT=1
 uv run pytest tests/ -q || exit 1
 # hook runtime 是系統 python3（3.9）——機械擋 3.10+ 語法於 generator/hooks 部署面
 python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py || exit 1

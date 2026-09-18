@@ -16,11 +16,18 @@ worktree 天生缺席** → skip＋標記 `live-config-absent`）、ZCode live c
 """
 
 import json
+import os
 import re
 from pathlib import Path
 
 import pytest
 from conftest import REPO_ROOT
+
+# AIR-125 AC#2 hook 模式隔離：live drift 偵測的單一歸宿＝installer --check
+# （launchd monitor 日頻調用），不在 commit gate——hook 執行 pytest 腿前
+# export PRE_COMMIT=1，live 面測試在該模式下 skip，commit gate 對機器 live
+# config 維持確定性（不讀真實環境 → 同 commit 結果可重現）。
+_IN_PRE_COMMIT = os.environ.get("PRE_COMMIT") == "1"
 
 TEMPLATE = REPO_ROOT / "governance" / "registrations" / "zcode.json"
 CC_SETTINGS = REPO_ROOT / "settings.json"
@@ -86,8 +93,17 @@ def test_handler_branches_extracted_nonempty():
     assert branches == {"Write", "Edit"}, branches
 
 
+@pytest.mark.skipif(
+    _IN_PRE_COMMIT,
+    reason="PRE_COMMIT=1（commit gate）：live drift 偵測單一歸宿＝installer --check＋"
+           "launchd monitor 日頻，不在 commit gate（AIR-125 AC#2 職責歸位）",
+)
 def test_matcher_lives_within_handler_branches():
-    """TC-5 P5-1：三來源 matcher 字面集合 ⊆ handler 分支集合。"""
+    """TC-5 P5-1：三來源 matcher 字面集合 ⊆ handler 分支集合。
+
+    live 面（讀 ~/.zcode/cli/config.json＋repo settings.json 真實環境）——
+    PRE_COMMIT=1（hook 模式）時 skip：commit gate 須確定性，live drift 偵測
+    職責歸 installer --check＋launchd monitor 日頻（AIR-125 AC#2）。"""
     handled = handler_branches()
     sources = {"template": TEMPLATE, "cc-settings": CC_SETTINGS, "zcode-live": ZCODE_LIVE}
     collected = collect_memory_hook_matchers(sources)

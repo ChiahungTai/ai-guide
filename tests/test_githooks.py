@@ -5,6 +5,7 @@ guard 是行為閘門核心——regression 直接改變隔離面：
 誤傷 = backlog／一般檔在 main 的合法 commit（例外①–④）被擋。
 """
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -162,3 +163,126 @@ def test_precommit_blocks_via_git_commit(tmp_path):
     assert r.returncode == 1
     assert "控制面路徑禁落 canonical main" in r.stderr
     assert "pytest" not in r.stdout + r.stderr
+
+
+# ---------------------------------------------------------------------------
+# backlog fast path（AIR-125 AC#1）：staged 全屬 backlog/ → 跳 pytest 腿
+# （guard＋py_compile 照跑）。沙箱＝hook 副本＋可編譯空 .py（py_compile 腿真跑通）；
+# 沙箱無測試環境——pytest 腿一旦被觸發必失敗，故「exit 0」即短路證據。
+# ---------------------------------------------------------------------------
+
+
+def _hook_sandbox(tmp_path: Path) -> Path:
+    repo = _init_repo(tmp_path)
+    hooks_dir = repo / ".githooks"
+    hooks_dir.mkdir()
+    (hooks_dir / "control-plane-guard.sh").write_text(GUARD.read_text())
+    (hooks_dir / "pre-commit").write_text(PRE_COMMIT.read_text())
+    hooks_dir.chmod(0o755)
+    (hooks_dir / "control-plane-guard.sh").chmod(0o755)
+    (hooks_dir / "pre-commit").chmod(0o755)
+    # py_compile 腿的真實 glob 目標（空可編譯檔——腿通但不涉及測試環境）
+    (repo / "hooks").mkdir()
+    (repo / "hooks" / "keep.py").write_text("")
+    (repo / "skills" / "memory-audit" / "scripts").mkdir(parents=True)
+    (repo / "skills" / "memory-audit" / "scripts" / "keep.py").write_text("")
+    return repo
+
+
+def _run_precommit(repo: Path) -> subprocess.CompletedProcess:
+    env = {k: v for k, v in os.environ.items() if k != "PRE_COMMIT"}
+    return subprocess.run(
+        ["bash", str(repo / ".githooks" / "pre-commit")],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+
+
+def test_fastpath_backlog_only_skips_pytest(tmp_path):
+    """staged 全屬 backlog/ → hook 短路 exit 0＋[fast-path] 訊息、無 pytest 痕跡。
+    含非 ASCII 卡檔名腿（quotePath=false 判準——control-plane-guard 同款教訓）。
+    冪等：同一 staged 態連跑兩次同結果（AC#1 冪等驗證）。"""
+    repo = _hook_sandbox(tmp_path)
+    _stage(repo, "backlog/tasks/air-9 - 中文卡名.md")
+    for _ in range(2):
+        r = _run_precommit(repo)
+        assert r.returncode == 0, r.stdout + r.stderr
+        assert "[fast-path]" in r.stdout, r.stdout
+        assert "pytest" not in r.stdout + r.stderr
+
+
+def test_fastpath_not_triggered_for_non_backlog(tmp_path):
+    repo = _hook_sandbox(tmp_path)
+    _stage(repo, "scripts/util.py")
+    r = _run_precommit(repo)
+    assert r.returncode != 0  # 沙箱無測試環境——pytest 腿被觸發即非 0
+    assert "[fast-path]" not in r.stdout
+
+
+def test_fastpath_not_triggered_for_mixed_staged(tmp_path):
+    repo = _hook_sandbox(tmp_path)
+    _stage(repo, "backlog/tasks/air-9 - x.md")
+    _stage(repo, "scripts/util.py")
+    r = _run_precommit(repo)
+    assert r.returncode != 0
+    assert "[fast-path]" not in r.stdout
+
+
+def test_fastpath_empty_staged_not_triggered(tmp_path):
+    """空 staged（手動直跑 hook 場）不判 fast path——「全屬」對空集採保守走全量。"""
+    repo = _hook_sandbox(tmp_path)
+    r = _run_precommit(repo)
+    assert r.returncode != 0
+    assert "[fast-path]" not in r.stdout
+
+
+# ---------------------------------------------------------------------------
+# live-reading 隔離（AIR-125 AC#2）：hook 設 PRE_COMMIT=1 → live 面測試 skip。
+# 職責歸位：live drift 偵測單一歸宿＝installer --check＋launchd monitor 日頻，
+# 不在 commit gate——commit gate 對機器 live config 維持確定性。
+# ---------------------------------------------------------------------------
+
+
+REPO_ROOT = PRE_COMMIT.parent.parent
+LIVE_TEST_FILE = "tests/test_matcher_parity.py"
+
+
+def _pytest_rs_output(pre_commit_env: str | None) -> str:
+    """以 subprocess 跑 live 面測試檔（-rs 顯示 skip reason），回傳合併輸出。"""
+    env = {k: v for k, v in os.environ.items() if k != "PRE_COMMIT"}
+    if pre_commit_env is not None:
+        env["PRE_COMMIT"] = pre_commit_env
+    r = subprocess.run(
+        ["uv", "run", "pytest", LIVE_TEST_FILE, "-rs", "-q", "--no-header"],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=REPO_ROOT,
+        check=False,
+    )
+    return r.stdout + r.stderr
+
+
+def test_precommit_exports_pre_commit_env_before_pytest():
+    """hook 側錨：export PRE_COMMIT=1 須先於 pytest 腿（live 面才能辨識 hook 模式）。"""
+    text = PRE_COMMIT.read_text(encoding="utf-8")
+    export_idx = text.index("export PRE_COMMIT=1")
+    pytest_idx = text.index("uv run pytest")
+    assert export_idx < pytest_idx
+
+
+def test_live_face_skipped_when_pre_commit_env_set():
+    """帶 PRE_COMMIT=1 → live 面測試被 skip，skip reason 帶 hook 模式標記（-rs 可見）。"""
+    out = _pytest_rs_output("1")
+    assert "skipped" in out.lower(), out
+    assert "PRE_COMMIT" in out, out
+
+
+def test_live_face_not_pre_commit_skipped_without_env():
+    """對照腿：不帶 PRE_COMMIT → 無 hook 模式 skip（pass 或 live-config-absent skip
+    ——card WT 缺 gitignored settings.json 屬後者，reason 不含 PRE_COMMIT）。"""
+    out = _pytest_rs_output(None)
+    assert "PRE_COMMIT" not in out, out
