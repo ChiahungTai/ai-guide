@@ -3,12 +3,14 @@ id: AIR-131
 title: >-
   review 系統演化——雙迴路（內圈快證偽/外圈定期解凍）＋Heat state machine＋跨卡 context 掃描＋kill
   criteria＋dry-run corpus
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 22:52'
-updated_date: '2026-09-17 22:52'
+updated_date: '2026-09-18 03:29'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/0918-air131-review-system-evolution/ep.md
 ordinal: 112000
 ---
 
