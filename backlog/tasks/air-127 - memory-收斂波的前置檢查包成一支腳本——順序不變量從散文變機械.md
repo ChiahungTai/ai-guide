@@ -1,10 +1,10 @@
 ---
 id: AIR-127
 title: memory 收斂波的前置檢查包成一支腳本——順序不變量從散文變機械
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-18 04:14'
+updated_date: '2026-09-18 04:22'
 labels: []
 dependencies: []
 references:
@@ -33,4 +33,12 @@ AIR-93 的對帳順序約束（快照提交前必須先跑異常篩，否則繞�
 
 <!-- SECTION:NOTES:BEGIN -->
 審查 disposition（bi）：muse 通過 5 low（F1 input-validation 例外＝意圖性 delta 已認列／F5 invocation root 註記：波只在 owning canonical workspace 跑）＋codex high 修入（deleted delta 無 mtime 保守計入活躍 writer——安全語義，deleted-only dirty 不得流入快照）；known edge：card WT symlink 池＝verdict 1 fail-closed（已文件化於 skill）。
+
+S 結算 Receipt（AIR-105 四欄）：classification=standard（機械化既有散文協議）｜review=bi——muse 通過 5 low（job-mu6fgjj0）＋codex NO-GO 修入（deleted delta 無 mtime 保守計活躍＝安全語義；WT symlink 邊界文件化；job-mu6fgjle）｜session-freshness=fresh｜deployment-surfaces=healthy（memory-audit 落 main 即生效）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+波前 tri-state preflight 機械化（0 clean/1 fail-closed/2 dirty 附清單）＋skill 波前段瘦身（人裁保留）；deleted delta 保守計活躍
+<!-- SECTION:FINAL_SUMMARY:END -->
