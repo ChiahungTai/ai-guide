@@ -861,7 +861,7 @@ def hooks_path_value(repo_root: Path) -> str | None:
     """repo 的 core.hooksPath 設定值（唯讀探針；bootstrap G3 同語義）。
 
     回傳：設定值（未設＝空字串）；None＝無法判定（非 git repo／git 失敗——
-    非 clone 場景不警示，零噪音）。"""
+    呼叫端顯性警示不靜默，fail-visible）。"""
     try:
         proc = subprocess.run(
             ("git", "-C", str(repo_root), "config", "--get", "core.hooksPath"),
@@ -874,13 +874,19 @@ def hooks_path_value(repo_root: Path) -> str | None:
 
 
 def guard_failopen_lines(repo_root: Path) -> list[str]:
-    """hooksPath 未設／非 .githooks＝控制面 guard fail-open——顯性警示行。
+    """hooksPath 未設／非 .githooks／無法判定＝控制面 guard fail-open——顯性警示行。
 
     bootstrap preflight WARN＋修復指令（G3）的安裝器投影：install/check 結尾
-    主動偵測（偵測非驗證——面歸屬仍照 README bootstrap 清單）。"""
+    主動偵測（偵測非驗證——面歸屬仍照 README bootstrap 清單）。查詢失敗不靜默
+    （fail-visible 與 G3 對齊——「把看不見的 fail-open 變看得見」是本卡論題；
+    codex review 補抓 None-靜默洞）。"""
     value = hooks_path_value(repo_root)
-    if value is None or value == ".githooks":
+    if value == ".githooks":
         return []
+    if value is None:
+        return [f"[WARN] guard 狀態無法判定：core.hooksPath 查詢失敗（{repo_root}）"
+                "——無法確認控制面 guard 是否啟用（fail-open 可能）。修復："
+                f"git -C {repo_root} config core.hooksPath .githooks（per-clone）"]
     shown = value or "（未設）"
     return [f"[WARN] guard 未啟用：core.hooksPath={shown}≠.githooks——本 checkout 的"
             " pre-commit 控制面 guard（.githooks/）不 fire（fail-open：控制面路徑"

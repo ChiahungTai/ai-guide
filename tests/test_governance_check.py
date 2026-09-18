@@ -817,10 +817,14 @@ def test_air126_guard_custom_value_warns(tmp_path, monkeypatch):
     assert len(lines) == 1 and "custom-hooks" in lines[0]
 
 
-def test_air126_guard_undeterminable_silent(tmp_path, monkeypatch):
-    """非 git repo／git 失敗（rc 128）＝無法判定——不警示（非 clone 場景零噪音）。"""
+def test_air126_guard_undeterminable_warns(tmp_path, monkeypatch):
+    """非 git repo／git 失敗（rc 128）＝無法判定——顯性警示不靜默
+    （fail-visible 與 bootstrap G3 對齊；codex review 補抓 None-靜默洞）。"""
     monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(128, "")))
-    assert mod.guard_failopen_lines(tmp_path) == []
+    lines = mod.guard_failopen_lines(tmp_path)
+    assert len(lines) == 1
+    assert "無法判定" in lines[0]
+    assert "core.hooksPath" in lines[0]
 
 
 def test_air126_monitor_absent_warns(tmp_path):
