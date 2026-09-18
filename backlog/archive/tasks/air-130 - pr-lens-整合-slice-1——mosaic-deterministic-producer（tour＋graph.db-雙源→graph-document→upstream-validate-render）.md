@@ -15,6 +15,8 @@ ordinal: 111000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
+**〔superseded 2026-09-19 → AIR-135.4，退休不實作〕**user 裁決吸收：pr-lens deterministic producer 是 AIR-135.4 Code Lens（canonical fact layer→derived view）的首個 implementation slice，即「視圖禁手抄、必須機械生成」的具體化。本卡 plan 全文（tri 三腿定案＋slice-0 POC＋範圍 AC）已移轉 135.4 Implementation Plan 節；本卡 archive 留檔。
+
 把 mosaic 弧收尾的 SA viewport 自動化：deterministic producer 從 delta tour（變動面）＋graph.db（模組關係）雙源產 pr-lens graph document，經 upstream validate/render 出動畫 SVG。slice 0 POC 已驗（CJK PASS/determinism byte-identical/strictObject 拒 extension→provenance 走 sidecar/成本 30min+160 行）。tri 三腿設計定案：零 fork 消費 upstream、LLM 退出 document 路徑、.tour 凍結面不動。
 <!-- SECTION:DESCRIPTION:END -->
 
