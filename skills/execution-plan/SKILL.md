@@ -243,6 +243,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 4. **風險假設識別**：列出高風險技術假設（外部 API、SDK 行為、架構假設），標注由哪個段落的驗證策略 POC 驗證（吸收舊 `/spec` Phase 3 前期 POC 職責）
    - **致命先驗**：標注為「致命」等級的假設（假設錯了整個 EP 要重寫，等級定義見 [/ep-validate](../ep-validate/SKILL.md)）—— 先跑 `poc/poc_*.py` 驗證可行性再繼續設計段落，避免寫完整 EP 才發現方向死掉；高等級與中等級保留在各段落驗證策略
    - **框架行為 bug**：渲染／race／client-server 狀態同步類根因假設常錯——規劃層禁寫死修法，根因標『推測，需 L4/POC 驗證』、修法段標『待確認根因』（純邏輯 bug 才可規劃層寫死）
+   - **kill criteria（AIR-131）**：全 EP 挑 **1-3 個** load-bearing assumptions（只列真的會讓方案死亡的；其餘高風險假設留在本風險清單），各配四欄可否證格式寫進 EP——**Assumption**（必須為真的前提）／**Probe**（最便宜的判別性證偽方法——cost-to-disproof 最小化）／**Kill observation**（看到哪個客觀結果就停，預先承諾的停止閾值）／**Action**（預先決定的 kill／pivot／research arc）。不可否證句式不合格——判準：無可觀察的客觀結果、無預先承諾的停止閾值，任何結果都能事後解釋（反例：「實作太複雜就重新評估」）；合格例：「若 target harness 無法在 real runtime 提供所需 interception point、且唯一替代需 second authoritative state，停止此 approach」。kill criteria 必須在投入大量 implementation 前寫，否則變事後合理化
 
 **產出研究摘要**（放在 EP top-level，段落之前）：
 - 可複用基礎設施清單（附 `ClassName`，路徑選用）
@@ -297,6 +298,10 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 ### 4. 驗證策略
 
 **前期 POC**（高風險假設可行性驗證，吸收舊 `/spec` Phase 3）：段落 0 全域研究識別的高風險技術假設（外部 API、SDK 行為、從未用過的函式庫），在此段落以 `poc/poc_*.py` 驗證可行性（能不能做）；深度驗證（效能、邊界、壓力）由 `/ep-validate` 於 EP 後執行。**致命等級假設已在段落 0 致命先驗驗證，此處驗證高等級與中等級**。POC 檔頭格式見 [/ep-validate](../ep-validate/SKILL.md)。
+
+**spike evidence budget（AIR-131）**：一個 load-bearing assumption → 一個 disposable spike → 最多 2-3 個判別性 probes（驗證性工作——環境搭建、既有測試回歸——不計入 probe 額度）。三不：**不做 production refactor、不順便把東西做好、不以 wall-clock timebox 計**（AI 對時間不是好的控制單位）。budget 耗盡仍不能證明可行性＝**UNKNOWN——hypothesis/spike 層的合法結果**：顯性裁決（加 probe／升級討論／棄），禁 UNKNOWN 自動滑入 implementation（「都研究這麼多了不如直接做」＝sunk-cost transition）。UNKNOWN 不是弧終態——弧仍須裁決到下述三態之一。
+
+**弧終態（AIR-131）**：DELIVERED／INVALIDATED／SUPERSEDED 三態（弧的 terminal outcomes；UNKNOWN 見上，不在三態內）。**INVALIDATED＝成功終態**（uncertainty retired）——成功條件＝原假設→falsifying evidence→kill decision→可重用 learning→**沒有留下半套 production mechanism**。結案走**既有 Done 結案語義**（`Done`＋final-summary 記 falsifying evidence／kill decision／可重用 learning），不是 archive（archive＝廢棄/方向錯；止損＝不可行被證偽）；追蹤 **cost-to-disproof**：會死的方案死得越來越早＝健康。
 
 POC/demo 設計 + 測試計畫 + 完成檢查 + 整合測試。**測試類型選擇紀律見 [validation-strategy](../validation-strategy/SKILL.md)**（e2e 優先 > 單元隔離 / 交易 replay >>> live / 放 scripts/ / 不重驗 package NT·bokeh·panel）+ 結構視角見 [arch-thinking](../arch-thinking/SKILL.md)。
 
