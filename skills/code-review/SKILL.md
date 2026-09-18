@@ -133,6 +133,24 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 ---
 
+## --reheat mode（升溫弧審查——AIR-131）
+
+> 觸發：deep-work 劇本的 arc-risk threshold（見 [deep-work](../deep-work/SKILL.md) 劇本指針；Heat Warm/Hot、escaped Critical——聚合源見 [corrections-weekly](../corrections-weekly/SKILL.md) Heat 段）。**與 [state-review](../state-review/SKILL.md) 邊界**：--reheat 審「歷史弧把系統改成什麼」（committed 行為變更），state-review 審「現在整體狀態對不對」——兩個問題、cadence 各自獨立，不合併。**與上方任務弧模式（`<hash>`）的區別**：任務弧＝單一 EP 的 `<hash>..HEAD` diff 通盤審查；--reheat＝多弧歷史區間的升溫複審（治理觸發、非任務觸發）。
+
+**scope**：committed `baseline..tip`（baseline＝觸發時指定的歷史起點；tip＝審查當下 main HEAD）＋**final-state invariants**（弧聲稱的終態不變量逐條機械驗證——枚舉承接 Finding Record header 的 scope UC/invariant 清單契約，見 [workflow-review-pattern](../_common/workflow-review-pattern.md)）＋EP/卡 AC 的行為 predicate 逐條。uncommitted 不審（那是一般 code-review 的 diff 面）。
+
+**multi-leg evidence：risk-driven lanes＋convergence stop 取代固定腿數（legs 不寫死）。**三量：**unique findings/leg**（新腿產出中未被既有腿覆蓋的比例）、**severity-weighted coverage**、**overlap**（腿間重疊率）。**convergence stop**：新腿 findings ⊆ 既有 finding 集（零 unique）→ 停止加腿；判等與去重規則沿用單一源 [workflow-review-pattern](../_common/workflow-review-pattern.md)「findings 去重與復用判準」。收斂止損：evidence budget 耗盡仍未收斂＝收斂失敗如實報告（禁無限加腿）。lanes 形態從既有載體（A Workflow／B 雙 context）與六軸衍生——非新 ontology。
+
+**convergence judge**：合併 findings 交 [/judge-review](../judge-review/SKILL.md) 裁決；腿間矛盾標 `conflict` 不裁決（同 B 段合併規則）。
+
+**consumer probes**：boundary profile 的 instruction 變更弧（判準見 [review-engine](../review-engine/SKILL.md) 審查模式判定規則）加跑 [consumer-dry-run corpus](../_common/consumer-dryrun-corpus.md) 四型任務（cold navigation／normal／ambiguous-conflict／resume；prompt 禁提示 instruction topology）。控制面變更弧必跑＋每季保底（觸發掛 deep-work 劇本）。
+
+**cadence（§2-2 數字；初值非真理——歷史回測可修訂，走 EP amendment）**：full review 間隔以 **12 治理 arcs** ceiling 起始；escaped Critical（定義收緊：review 開始前已存在＋日常機制沒升格；reviewer 新標準首次套用抓到不算）→ `next_interval = max(6, interval × 0.5)`；連續兩輪零逃逸＋coverage 沒降＋**Heat 維持 Cool** → `min(24, interval × 1.5)`；其他不變——慢降快升。**review-power guard（四項全可比才配降頻）**：scope 可比／review taxonomy 可比／fresh-context independence 可比／異構 reviewer 覆蓋沒有縮水。**Critical escape 是 thermostat sensor 不是 KPI**——禁設「Critical=0」目標。修復 cooldown：前輪 Critical 修復與 acceptance 完成前不排下一輪。每季 state-review sanity ceiling 不因零逃逸取消。
+
+**輸出**：findings（同 schema）＋coverage 三量報告＋**finding-profile 成熟度**（逐輪 findings 分類分佈——edge-case／stale-docs／YAGNI／輕量清理佔比；profile 收斂＝弧審查趨成熟的縱向訊號）＋cadence 調整建議（arc interval 新值＋依據）。修復走 [/implement](../implement/SKILL.md)。
+
+---
+
 ## 六軸審查 + 深層思考
 
 > **六軸定義**（Correctness / Readability & Simplicity / Architecture / Security / Performance / Capability Coverage）見 [code-quality profile](../review-engine/code-quality-profile.md) — **單一真相源**（完整定義沉 skill）。本命令：上方啟用軸表的「審查項目」是 agent-prompt 啟用條件 + 摘要（agent 看的），非定義重複；另定義執行方式（top-down、axis 3 接線、Capability Coverage 審查細節、深層思考）。
