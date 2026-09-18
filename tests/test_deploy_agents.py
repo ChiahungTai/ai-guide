@@ -7,10 +7,11 @@
 import dataclasses
 import os
 import pathlib
+import subprocess
 import sys
 
 import pytest
-from conftest import load_module
+from conftest import REPO_ROOT, load_module
 
 da = load_module("scripts/deploy_agents.py")
 
@@ -838,3 +839,65 @@ def test_main_rule_meta_error_readable_not_traceback(tmp_path, monkeypatch, caps
     assert "unknown bundle-projection" in err
     assert "Traceback" not in err
     assert not (home / ".zcode").exists()  # fail 在任何 target write 之前
+
+
+# --- 子進程級退出碼契約（AIR-132：--dry-run FAIL 輸出 ⇔ exit 非零）----------
+# in-process 測試（monkeypatch Path.home）驗 main() 回傳值；這裡以真子進程
+# + fake HOME env 驗完整接線（env → Path.home() → preflight → SystemExit →
+# process returncode）——AIR-126 新 clone 模擬（fake HOME 實查）的觀測形態。
+
+
+def _run_dry_run_subprocess(home: pathlib.Path) -> subprocess.CompletedProcess:
+    """fake HOME 下以子進程跑 scripts/deploy_agents.py --dry-run（唯讀模擬）。"""
+    return subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "deploy_agents.py"), "--dry-run"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HOME": str(home)},
+        check=False,  # 刻意取 returncode 斷言（非零＝fail-loud 契約本身）
+        timeout=120,  # muse review：子進程卡住不拖垮整個 suite
+    )
+
+
+def test_dry_run_subprocess_fails_loud_without_skills_chain(tmp_path):
+    # AC#1：未裝 skills 母鏈的新 clone（fake HOME 無 ~/.agents/skills）跑
+    # --dry-run：pointer preflight 印 [FAIL] 時 process 退出碼必非零（fail-loud）。
+    # preflight 與真跑共用且在任何 target write 之前 abort（零寫入）。
+    assert _repo_pointer_targets(), "no pointer rules left; AC#1 vacuous（muse F1）"
+    home = tmp_path / "home"
+    home.mkdir()
+    proc = _run_dry_run_subprocess(home)
+    assert proc.returncode != 0
+    assert "[FAIL]" in proc.stderr and "pointer preflight" in proc.stderr
+    assert not list(home.rglob("AGENTS.md*"))
+    assert not (home / ".zcode").exists() and not (home / ".codex").exists()
+
+
+def _repo_pointer_targets() -> list[str]:
+    """repo 現行 neutral pointer rule 的 target 清單（fake runtime 母鏈組裝用）。"""
+    targets = []
+    for p in da.discover_rules(da.RULES_DIR, {"neutral"}):
+        meta = da.read_rule_meta(p)
+        if meta.projection == "pointer" and meta.pointer_target:
+            targets.append(meta.pointer_target)
+    return targets
+
+
+def test_dry_run_subprocess_exits_zero_when_runtime_reachable(tmp_path):
+    # AC#2 regression：skills 母鏈在場（repo source＋fake HOME runtime 可達）
+    # → --dry-run 仍 exit 0、印 [DRY-RUN] 收尾、零 target 寫出（不安裝語義不變）。
+    home = tmp_path / "home"
+    for target in _repo_pointer_targets():
+        d = home / ".agents" / "skills" / target
+        d.mkdir(parents=True)
+        (d / "SKILL.md").write_text("runtime skill\n", encoding="utf-8")
+    proc = _run_dry_run_subprocess(home)
+    if proc.returncode != 0:
+        # muse F2：repo 全局閘紅（size gate/purity/refs）≠ 退出碼契約回歸——分流
+        global_gates = ("size gate", "purity", "broken refs", "No rules")
+        if any(g in proc.stderr for g in global_gates):
+            pytest.skip(f"repo 全局閘紅（非退出碼契約）: {proc.stderr.strip()[:150]}")
+        pytest.fail(f"runtime 可達應 exit 0: {proc.stderr.strip()[:200]}")
+    assert "[DRY-RUN] skipping deploy" in proc.stdout
+    assert not list(home.rglob("AGENTS.md*"))  # 只檢查不安裝
+    assert not (home / ".zcode").exists() and not (home / ".codex").exists()

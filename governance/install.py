@@ -778,12 +778,15 @@ def print_manual_steps(surface: str) -> None:
 def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
     if mode == "dry-run":
         print_plan(build_plan(manifest, surface, mode))
+        # AIR-132 codex finding：wrap 面非零＝真 FAIL（README「退出碼串接」＋
+        # AIR-116 TC-11「子工具非零 → installer 非零」）——禁吞碼假綠。
+        rc = EXIT_OK
         if surface in ("rules", "all"):
-            run_wrap(manifest["surfaces"]["rules"]["argv"], ["--dry-run"])
+            rc = run_wrap(manifest["surfaces"]["rules"]["argv"], ["--dry-run"]) or rc
         if surface in ("agents", "all"):
-            run_wrap(manifest["surfaces"]["agents"]["argv"],
-                     manifest["surfaces"]["agents"].get("check_args"))
-        return EXIT_OK  # TC-3：dry-run 零寫入（wrap 面--dry-run/--check 亦唯讀）
+            rc = run_wrap(manifest["surfaces"]["agents"]["argv"],
+                          manifest["surfaces"]["agents"].get("check_args")) or rc
+        return rc  # TC-3：dry-run 零寫入（wrap 面--dry-run/--check 亦唯讀）
     if mode == "uninstall":
         if surface in ("rules", "agents", "all"):
             print("[uninstall] rules/agents 面不受影響（wrap 不反部署——"

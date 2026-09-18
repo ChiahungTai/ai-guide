@@ -1077,3 +1077,28 @@ def test_air133_muse_inspect_fail_has_fix_hint(tmp_path, monkeypatch):
     mod.check_muse_face(_muse_face_manifest(tmp_path, tmp_path / "cache"), drifts2)
     assert any("daemon" in m for _, m in drifts2)
     assert not any("升級" in m for _, m in drifts2)
+
+
+def test_air132_dry_run_wrap_failure_propagates(monkeypatch):
+    """AIR-116 TC-11／README 退出碼串接：wrap 面 dry-run 非零 → installer 非零
+    （codex finding：吞碼＝false-green——AIR-126 原始觀測的另一候選根因）。"""
+    manifest = {"surfaces": {
+        "rules": {"argv": ["true", "rules-argv"]},
+        "agents": {"argv": ["true", "agents-argv"], "check_args": ["--check"]},
+    }}
+    monkeypatch.setattr(mod, "build_plan",
+                        lambda m, s, mode: {"surface": s, "mode": mode})
+    monkeypatch.setattr(mod, "print_plan", lambda plan: None)
+    calls: list[tuple[list, list | None]] = []
+
+    def fake_wrap(argv, extra=None):
+        calls.append((argv, extra))
+        return 1
+
+    monkeypatch.setattr(mod, "run_wrap", fake_wrap)
+    rc = mod.cmd_install_uninstall(manifest, "all", "dry-run")
+    assert rc != 0
+    assert len(calls) == 2
+
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
+    assert mod.cmd_install_uninstall(manifest, "all", "dry-run") == mod.EXIT_OK
