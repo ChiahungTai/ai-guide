@@ -9,13 +9,13 @@
 1. **消費面存在**：有進行中或已承諾的弧在消費該 harness 的官方契約（跨 harness adapter 設計、harness-neutral 規則撰寫、[contracts.md](contracts.md) 對照分析）——「以後可能有用」不算
 2. **值得離線鏡像**：官方文檔有穩定可抓取端點（`llms.txt`／SSR nav），且離線查證需求真實（契約對照高頻、或站點結構變動會破壞既有引用）
 
-操作序：`crawl.py` `SOURCES` 註冊 source → smoke（`--source <name> --limit 3`）→ 全量抓取 → README 來源表＋目錄結構補行 → `contracts.md` 補對照欄 → repo AGENTS.md 的 ref-docs 條目鏡像清單更新。
+操作序：`crawl.py` `SOURCES` 註冊 source → smoke（`--source <name> --limit 3`）→ 全量抓取 → README 來源表＋目錄結構補行 → `contracts.md` 補對照欄 → repo AGENTS.md 的 ref-docs 條目鏡像清單更新 → [control-plane-matrix.md](control-plane-matrix.md) onboarding checklist 強制引用（新 harness 進場 triage 照附錄逐維結算，AIR-138）。
 
 ## 更新（既有鏡像）
 
 - **時點**：消費弧開工前、或 runtime 行為與鏡像文檔疑似漂移時。refresh 是增量（sha256 不變不寫檔），隨時可跑、不付全量成本
 - **操作**：`uv run python ref-docs/harness/crawl.py [--source <name>]`——不要手動逐頁鏡像（discovery／增量／manifest 都在 crawl.py 內）
-- **contracts.md 同步義務**：refresh 揭露契約面變化（API 改名、行為反轉、機制增刪）→ 對照分析欄**當場同步**，防「鏡像新、對照舊」drift（contracts.md 的價值就在對照，單側更新＝半套）
+- **contracts.md 同步義務**：refresh 揭露契約面變化（API 改名、行為反轉、機制增刪）→ 對照分析欄**當場同步**，防「鏡像新、對照舊」drift（contracts.md 的價值就在對照，單側更新＝半套）；[control-plane-matrix.md](control-plane-matrix.md) 的 A 層 file:line 斷言同批同步——契約變化即矩陣 stale（AIR-138）
 
 ## 退役（何時刪鏡像）
 
@@ -33,6 +33,7 @@
 | 3 | crawl.py | 刪 `SOURCES` 註冊（含該 source 的 discover／fetch 函式與 import） |
 | 4 | AGENTS.md | ref-docs 條目的鏡像清單除名 |
 | 5 | contracts.md | 對照欄／對照表刪列（AIR-102 實例：原稱「四處連動」，對照欄是實作時補的第五處） |
+| 6 | control-plane-matrix.md | 該 harness 的矩陣列／snapshot 行／gap register 條目刪除（AIR-138） |
 
 README 來源表與目錄結構同步刪行。
 
@@ -42,7 +43,7 @@ README 來源表與目錄結構同步刪行。
 # 活消費面掃描（歷史面除外——歸檔歷史不回改）
 rg -il "<name>" --glob '!backlog/**' --glob '!ai-analysis/**' --glob '!.agent-tmp/**' --glob '!.git/**' --glob '!ref-docs/harness/**' .
 # 五處連動點逐一複掃
-rg -in "<name>" ref-docs/harness/manifest.json ref-docs/harness/crawl.py ref-docs/harness/README.md ref-docs/harness/contracts.md AGENTS.md
+rg -in "<name>" ref-docs/harness/manifest.json ref-docs/harness/crawl.py ref-docs/harness/README.md ref-docs/harness/contracts.md ref-docs/harness/control-plane-matrix.md AGENTS.md
 ```
 
 第一條命中活面檔案、或第二條任一連動點殘留＝清掃未完；命中 `backlog/`／`ai-analysis/` 歷史記錄不算殘留（退役當下的卡與報告是事實記錄，不回改）。
