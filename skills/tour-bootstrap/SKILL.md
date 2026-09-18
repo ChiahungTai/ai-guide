@@ -78,5 +78,5 @@ allowed-tools: ["Read", "Bash", "Write", "Edit", "Grep", "Glob"]
 
 ## 已驗證案例
 
-- **mosaic**（chain 前門型——地圖層經重複度盤點退役：雙版間 10/12 錨點逐字重複；前門＝chain_tour `--primary`＋目錄數字前綴群序）：規格源 EP `~/Github/mosaic_alpha_offline_backtesting/ai-analysis/execution-plans/ep-mosaic-tour-bootstrap.md`（B2 雙版規格已被 dogfood 退役裁決取代——ab63887c）；M1 fresh 重產驗證（mosaic b10e4a95）：策展族 byte-identical 重現、全量 16 族 97 條、validate 0 fails
+- **mosaic**（chain 前門型——地圖層經重複度盤點退役：雙版間 10/12 錨點逐字重複；前門＝chain_tour `--primary`＋目錄數字前綴群序）：規格源 EP（**歷史溯源**——原路徑 `~/Github/mosaic_alpha_offline_backtesting/ai-analysis/execution-plans/` 已於 2026-09-01 清除、WT 於 2026-09-18 退役；spec 內容以 dogfood 退役裁決 ab63887c 為準）；M1 fresh 重產驗證（mosaic b10e4a95）：策展族 byte-identical 重現、全量 16 族 97 條、validate 0 fails
 - **codetour**（overview-only 最小形態）：`~/Github/codetour/.tours/00 - codetour 總覽.tour`

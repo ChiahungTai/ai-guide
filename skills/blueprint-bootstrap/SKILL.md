@@ -60,7 +60,7 @@ allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
 
 ## 已驗證案例
 
-- **mosaic**（blueprint 演化源＋callstack-v1 golden sample——骨架模板與生成程序的反推來源）：`~/Github/mosaic_alpha_offline_backtesting/ai-analysis/blueprint/`。skill 程序本身未經完整 fresh-run 執行——首個 dogfood＝mosaic audit run
+- **mosaic**（blueprint 演化源＋callstack-v1 golden sample——骨架模板與生成程序的反推來源）：`~/Github/mosaic_alpha/ai-analysis/blueprint/`（2026-09-18 mosaic 兩線 WT offline_backtesting／trading_lab 退役後，blueprint 現居主 repo）。skill 程序本身未經完整 fresh-run 執行——首個 dogfood＝mosaic audit run
 
 ## 機械驗證（產出時）
 
