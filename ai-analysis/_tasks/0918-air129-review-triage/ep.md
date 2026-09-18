@@ -12,6 +12,8 @@
 
 **本 EP 真身＝三件事**：①把既有 static-only 豁免**收緊為機械 predicate**（deterministic 白名單，可程式化判定）②把 no-candidate pending 的記帳**標準化為 deferred 回執**（顯式欄位＋SLA）③dogfood 驗證。不是新增 fast-track，不是拆落地閘。
 
+> **〔Amendment 2026-09-18——A1 兩輪 dogfood 裁定後，user 選 B〕**：吞吐痛點主解重定位＝deferred 回執鏈（②，已落地驗證）；fast-track（①）保留已收斂的窄機械 predicate（含 scope 條款），服務面重定位為 whitespace／literal-typo 級——真實控制面編輯幾乎無此形態（d4000e36 錨點 24 hunks 零入場實證），「typo 級修正被全套卡住」的日常痛點由 deferred SLA 承接而非免審。退出後 profile 歸屬發散（ordinary vs boundary）劃回 review-engine 分級層既有性質（判定表有保護分支 fallback，方向 fail-safe），本卡不追。
+
 ## 2. 設計
 
 ### 2-1 static-only 機械判準（收緊既有豁免）
@@ -40,7 +42,7 @@
 
 | Assumption | Probe | Kill observation | Action |
 |---|---|---|---|
-| A1：機械判準對真實歷史 diff 可判定、分類無歧義 | dogfood 兩錨點（存在性已驗）逐 hunk 套 §2-3 表：d4000e36（五處文檔修正）——每 hunk 唯一合法 grade 應皆 static-only；e1aba87a（governance Critical 修復）——應落 boundary 全套。predicate 無法求值的 hunk→boundary 記錄 | **獨立二人（或同人間隔複驗）分類不一致 ≥1 案例**（機械計數） | 判準**收窄**（白名單縮小），不擴表——收窄兩輪後仍不一致 → INVALIDATED fast-track 機械化（保留 deferred 記帳段；既有豁免條文回滾原文） |
+| A1：機械判準對真實歷史 diff 可判定、分類無歧義 | dogfood 兩錨點（存在性已驗）逐 hunk 套 §2-3 表：d4000e36（五處文檔修正）——每 hunk 唯一合法 grade 應皆 static-only；e1aba87a（governance Critical 修復）——應落 boundary 全套。predicate 無法求值的 hunk→boundary 記錄 | **獨立二人（或同人間隔複驗）分類不一致 ≥1 案例**（機械計數） | 判準**收窄**（白名單縮小），不擴表——收窄兩輪後仍不一致 → INVALIDATED fast-track 機械化（保留 deferred 記帳段；既有豁免條文回滾原文） **〔結局 2026-09-18：兩輪後 predicate 層收斂、Type 1 歸屬層 §2-1 不可達；依 user amendment 裁定不 INVALIDATE 不回滾——保留收斂形態（含 scope 條款）、主解重定位 deferred，詳見 §7〕** |
 
 ## 4. 工作分段
 
@@ -54,3 +56,19 @@
 - 不動 `rules/outward-action-consent.md`（card Plan 明示）
 - 不拆 boundary baseline／跨家族加腿條款；deferred 不開落地許可（分級≠降級）
 - 不與 AIR-131 合併（檔案零交疊、可平行）
+
+## 6. S1 結算（2026-09-18）
+
+- 實作：impl-lite（glm-5.3-flash）card WT 三觸點轉錄；review＝muse xhigh＋codex web/high 雙 cross-family（job-mu6jhk36-j1iewz／job-mu6jhlp0-qt0s0o，verdict 均 needs-fix）→ judge（GLM-5.3）合併 8 findings 全採納落地＋1 conflict note。帳本＝`.review/air-129.md`（lint canonical）。
+- 判準收窄（EP §3 A1 授權路徑）：②加 word-level Levenshtein 定義＋封閉負面表；①改義務式＋限 markdown body；codex「EP amendment／correction-pair allowlist」立場不以裁決消滅——S2 dogfood A1 分類不一致觸發時走既有升級路徑。
+- 伴隨 drift sync：rules/instruction-writing.md:7 pointer 尾句同步（F1）。
+- S2 未開工（待 S1 落地後）。
+
+## 7. S2 dogfood 結算（2026-09-18；A1 kill criteria 實證）
+
+- **Round 1**（判準 v1）：rater A＝GLM-5.3 full fresh、rater B＝muse xhigh（job-mu6k2hvb-ixryvv），純 diff 無錨定 brief。P1-P3 一致；逐 hunk 不一致 8 案例 → A1 觸發。根因二層：Type 2＝scope 缺口（code/config/test hunk 無處置條款，6 案例）；Type 1＝退出後 profile 歸屬（ordinary vs boundary，2 案例）。
+- **Round-1 收窄**：第 4 款加「本判準僅適用 instruction 條文（markdown）之 hunk——code／config／test 等其他檔型 hunk 一律不入場，逕依第 1 款分類」；round-2 brief 補 review-engine 判定表三行＋雙腿等量約束（禁讀 repo）。
+- **Round 2**：rater A2＝GLM-5.3 full fresh、rater B2＝muse xhigh。P1-P3 一致；Type 2 全收斂 ✓；Type 1 仍不一致 3 案例（AGENTS.md、acceptance-evidence、execution-plan——muse 恒 ordinary、A2 恒 boundary/保護分支）。
+- **Judge 判定**：predicate 層（白名單求值／scope／fail-closed／退出決策）兩輪 100% 收斂——機械化工程成立。殘留發散全在 review-engine 分級層（§2-1 收窄不可達；強制 binary collapse 會把真路徑小修全套化，違背卡目的）——收窄路徑實質耗盡，提前進 amendment 裁決（偏離 EP「兩輪」字面，user 在場知情）。
+- **服務面發現**：EP canonical 錨點 d4000e36 兩輪 24 hunks 零入場 static-only（實質＝句子級改寫非錯字）——fast-track 真實服務面遠小於 §1 預期；吞吐痛點主解事實上由 deferred 回執鏈（已落地驗證）承擔。
+- 待 user 裁決：EP 字面 INVALIDATE（回滾豁免原文）vs amendment（保留已收斂窄 predicate＋吞吐主解重定位 deferred）——arch-thinking 摘要見 session 報告。
