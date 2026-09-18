@@ -1,10 +1,10 @@
 ---
 id: AIR-128
 title: 文件與目錄的防漂移對帳擴面——model 名、hook 判準、紅線表的單一源查核
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-18 00:32'
+updated_date: '2026-09-18 02:29'
 labels: []
 dependencies: []
 references:
@@ -28,3 +28,15 @@ corpus 宣稱多處單一源，但一半有第二副本且無查核：model-rout
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：main@f892c344〕〔已決策勿重辯：①跟既有 checker 家族（sync_agents --check／check_single_source 模式）加 lint，不建新框架②(a) model 詞彙 lint：skill prose 內 model token 必須命中 catalog id/token 集合（源=muse I-5，18 處實證）③(b) pointer 化：hook 三判準（I-3，三檔）與 outward 紅線枚舉（I-4，skill 14 處 vs rule 2 處）各留單一正典＋他處縮 pointer；正典歸宿＝memory-audit 統一定義表／outward rule④L1-L6 循環 deferral（A1-F3）已由 0917 審查弧直接修復，不入本卡⑤語義搬移屬 instruction-writing 落地閘面——實作時走審查腿〕範圍——改：skills/model-routing/SKILL.md、skills/instruction-writing/SKILL.md、skills/autonomous-execution/SKILL.md、rules/outward-action-consent.md；新增 lint 掛 sync_agents 或獨立 checker。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Receipt（AIR-105 四欄）：classification=boundary（instruction 條文面——AGENTS/CLAUDE pointer 化）｜review=bi——muse needs-attention 3 findings（2 反證 1 已修）＋codex finding 已修 b993e695（连字號 chatgpt-web 擴抓＋_catalog_tokens 接線釘住＋真樹常態測試）｜session-freshness=fresh｜deployment-surfaces=healthy（rules/ 零變更免 bundle deploy；parity gate --check 常態釘住）
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+parity lint 三組對帳上線 sync_agents --check（真樹植入漂移實測可抓）＋三判準/紅線正典 pointer 化；五個語義判斷點 marshal 裁決記錄於弧
+<!-- SECTION:FINAL_SUMMARY:END -->
