@@ -4,7 +4,7 @@ title: static-only／deferred 首個真實落地閘案例 live 復核（AIR-129 
 status: In Progress
 assignee: []
 created_date: '2026-09-18 08:00'
-updated_date: '2026-09-18 23:24'
+updated_date: '2026-09-18 23:39'
 labels:
   - instruction-writing
   - dogfood-後續
@@ -30,4 +30,6 @@ AIR-129 的兩輪 dogfood 全是歷史 diff replay，測不到兩件事（EP §4
 【0919 live 案例#1 紀錄】案例＝AIR-139 audit-test 五條＋AIR-136 判定示例行的落地閘歸級：author（5.3）提案 boundary→雙腿（muse/codex）各自分類五格全 boundary（10/10，歷史分歧 muse 恆 ordinary 消除）→跨家族 findings 11 條→5.3 judge 全採修正。gate 運作正常：fail-safe 方向維持、無腿配置不確定。本案例同時完成 AIR-136 AC#2 dogfood。
 
 【0919 live 案例#2】probe 誤報更正弧（hook_registration）：bi 雙腿諮詢（muse job-mu7kwxyj＋codex job-mu7kwxzl 零分歧）→修法（cc.json 補面，降權不採——muse 論證：降權零收益純增漏報）→TDD RED→GREEN 71 tests→非 main checkout 實地重跑 critical 0。歸級：腳本修復非條文語義——code 鏈普通審查（bi 即審查腿）。
+
+【0919 live 案例#2 收口】tri 腿 fresh code-reviewer（in-harness 獨立 context）：5 findings（1🟡4🟢）全 confirmed——F1 claude_only 契約矛盾✅（清空＋合成 inv 釘機制＋模板面迴歸鎖）、F2 fixture 真實形✅、F3 匹配器對齊 _wiring✅（負向測試）、F5 docstring✅；F4 claude parity invariant 記後續弧。73 tests 綠。tri 鏈完成：muse＋codex＋GLM-fresh。
 <!-- SECTION:NOTES:END -->
