@@ -51,14 +51,26 @@ S3 / AIR-135.1：Arc compiler／Marshal automation。從 card tree 投影 ArcSpe
 S4 / AIR-135.4：Code Lens。統一 code tour + pr-lens，定 canonical facts vs derived views、on-demand rendering、entry/exit Align 用法；原 S1 pr-lens graph 成為本 workstream 的 dogfood evidence，不再等同整張 AIR-135。
 S5 / AIR-135.5：cross-repo contract。定 ai-guide↔SouthChariot ownership、shared arc identity、projection/action contract、何時在 SC 開對應 implementation card；禁止 SC 成第二 workflow DB。
 S6 / AIR-135.6：Context Continuity。把 card-first state、artifact/runtime facts、event-driven checkpoint、thin continuation packet、adaptive rehydration 與 compact boundary 組成跨弧可靠性機制；不自製 summarizer、不把 /compact 時機從 user 手上拿走。
-S7：整體 dogfood／對照：用 AIR-135 family 本身跑一輪，驗證 user 只給方向也能正確走流程；包含 context pressure/compact/restart recovery，再固化條文、rename/deprecate 舊 lifecycle/EP/viewport/compact-prep 名稱與入口。
+S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 family 本身跑一輪，驗證 user 只給方向也能正確走流程；包含 context pressure/compact/restart recovery；dogfood 驗收度量＝user correction 計數、dispatch receipt 追溯率、residue 留存三欄（防結論淪為自評）；之後固化條文、rename/deprecate 舊 lifecycle/EP/viewport/compact-prep 名稱與入口，最終方向裁決以 human viewport 呈現交 user。
 
 〔決策原則〕
 - human/LLM shared understanding 優先於 command completeness。
 - canonical state 少且明確；視圖按需產生。
-- Plan 可變；變更必有 reason/evidence/superseded trace。
+- Plan 可變；變更必有 reason/evidence/supersedes trace。
 - 同 repo orchestration 隱藏在 Marshal；cross-repo 才用 explicit contract/boundary。
 - 子卡可以平行研究，但跨 repo implementation 不在 contract 未定前搶跑。
+- 各卡實質裁決統一以〔已決策勿重辯〕節標記（格式同 135.6），禁散落 Notes 無標籤。
+
+〔術語釘住（家族統一；各卡細節擴充歸各卡）〕
+- Marshal＝runtime 責任主體：包覆全弧的 orchestration，執行 dispatch/collection/recovery，擁有 WT/session/model/retry mechanics。
+- Arc compiler（135.1）＝card tree→ArcSpec→ArcPlan→DispatchSlice 的純函式投影器，無 runtime 權；Marshal 消費其產物。
+- Planning Contract＝standard 卡開工時的計畫契約（現行 guide 規模分級）；PlanSource/TaskRef（135.2）＝consumer 端對 card tree 的邏輯引用抽象，ArcSpec 是其 compiler 投影。
+- continuation packet（135.6）＝context 恢復用 thin 投影，其 schema 由 135.6 擁有；與 DispatchSlice 的 context-delivery budget 對接（135.1 AC#11）。
+- Align＝human shared-understanding obligation（定義在 135.3）；entry/exit alignment moment 指其排程時點，viewport 呈現（135.4）是其服務面。
+
+〔執行序與計畫時點〕
+- 子卡 ordinal＝建卡序非執行序；執行序依 dependencies DAG：135.2／135.3 無 deps 可即開，135.6 次之，135.1／135.4／135.5 依 deps；「平行研究」僅限唯讀對方卡，未定介面前禁寫對方擁有的面。
+- 子卡 Plan 節於各卡開工時依 card Planning Contract 補齊；現階段 Description＋AC 即其 current plan，135.2 AC#2 的 fresh-session 還原宣稱以已開工卡為驗收對象。
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
