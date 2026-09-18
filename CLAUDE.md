@@ -21,4 +21,4 @@
 
 > 判準單一源＝instruction-writing skill「載體選擇」＋memory-audit skill「載體統一定義表」；本表為快查投影，衝突時以單一源為準。
 
-**判斷原則**（等價摘要——判準以單一源為準）：純機械＋單一入口＋無語義例外 → Hook；須在首個有後果決策前在場 → Rule；on-demand 方法論 → Skill；獨立 context 專家 → Agent（repo `agents/` 定義，symlink 部署）。
+**判斷原則**（等價摘要——判準以單一源為準）：hook 資格三判準**三者皆是**才選 → Hook（三判準內容見上單一源指針，禁於本投影重抄）；須在首個有後果決策前在場 → Rule；on-demand 方法論 → Skill；獨立 context 專家 → Agent（repo `agents/` 定義，symlink 部署）。

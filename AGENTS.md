@@ -121,7 +121,7 @@
 新增 rule/skill/command 時遵守：
 
 1. **先修剪測試**：這行知識從程式碼推導得出嗎？是 → 不寫
-2. **選對載體**：Hook？Rule？Skill？Prompt/LLM 流程？判準——hook＝純機械＋單一入口＋無語義例外**三者皆是**（缺一即退 LLM 流程，假確定性比真語義危險）；rule＝須在首個有後果決策前在場的最小核心/bootstrap（always-on 預算稀缺；資格公式見 memory-audit 統一定義表）；skill＝on-demand 方法論（理論深掘、失敗案例群、撰寫規範細則＝reference 分層）；語義判斷（有「看情況」例外）＝prompt/LLM 流程。「該寫哪」統一定義表（載體職責×常駐-按需×寫入預設）單一源見 memory-audit skill；hook 資格論證與對照組見 instruction-writing skill「載體選擇」；`deploy_agents.py` 的 90KiB gate 撞線時以此為處方
+2. **選對載體**：Hook？Rule？Skill？Prompt/LLM 流程？判準——hook 資格三判準**三者皆是**才選、缺一即退 LLM 流程（假確定性比真語義危險；三判準內容單一源＝[memory-audit](skills/memory-audit/SKILL.md)「載體統一定義表」，資格論證與對照組見 [instruction-writing](skills/instruction-writing/SKILL.md)「載體選擇」）；rule＝須在首個有後果決策前在場的最小核心/bootstrap（always-on 預算稀缺；資格公式見 memory-audit 統一定義表）；skill＝on-demand 方法論（理論深掘、失敗案例群、撰寫規範細則＝reference 分層）；語義判斷（有「看情況」例外）＝prompt/LLM 流程。「該寫哪」統一定義表（載體職責×常駐-按需×寫入預設）單一源見 memory-audit skill；`deploy_agents.py` 的 90KiB gate 撞線時以此為處方
 3. **驗證附著**：rule/command 是否包含可驗證的標準？沒有驗證的規則是噪音
 4. **長度預算**：CLAUDE.md 越長，AI 越容易忽略重要規則。一條規則一行能說完最好
 5. **部署同步**：編輯 `rules/` 後的部署與驗證紀律見 [rules/AGENTS.md](rules/AGENTS.md)「部署紀律」（含 `/sync-sources` 機械新鮮度檢查）

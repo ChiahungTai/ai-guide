@@ -1040,6 +1040,199 @@ def render_map(
     return "\n".join(rows)
 
 
+# ------------------------------------------------------------------
+# AIR-128：文件面 parity lint（--check 面承載；skills/rules 單一源對帳）。
+# 三組：①model token 對帳 catalog id/token 集合（candidate 家族 pattern
+# 抓取 → 對照，case-insensitive canonicalize——bridge native ID 註明不分
+# 大小寫）②hook 三判準（載體選擇）正典外同檔 ≥2 種 token＝重抄 ③outward
+# 紅線操作枚舉正典外同檔 ≥2 種＝枚舉表重抄（單一 token 技術語境不抓——
+# 例：rebase 安全欄杆論證的 force push、CLI --force flag）。豁免面走
+# allowlist 附理由；正典檔自身排除。唯讀——違規只列清單不改檔。
+# ------------------------------------------------------------------
+
+_LINT_SCAN_ROOT_FILES: tuple[str, ...] = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ai-development-guide.md",
+)
+
+# 組1 model token：candidate 家族 pattern（抓齊 glm-<數字>／gpt-<數字>／
+# claude-<alias 組合>／muse-spark／chatgpt-web/ 與 harness alias 詞），命中後
+# 對照 catalog id/token 集合（case-insensitive canonicalize——bridge native
+# ID 註明不分大小寫）。glm- 限後接數字（排 glm-bridge surface 名）、
+# claude- 限 alias 組合（排 claude-code harness 名／flag 檔名等非 model 詞）。
+_MODEL_TOKEN_RE = re.compile(
+    r"glm-\d[\w.-]*|gpt-\d[\w./-]*|chatgpt-web/[\w*-]+"
+    r"|claude-(?:opus|sonnet|haiku)(?:-[\w*]+)*"
+    r"|muse-spark[\w.-]*|\b(?:opus|sonnet|haiku|fabel)\b",
+    re.IGNORECASE,
+)
+
+_HOOK_CRITERIA_TOKENS: tuple[str, ...] = ("純機械", "單一入口", "無語義例外")
+_HOOK_CRITERIA_CANON = "skills/memory-audit/SKILL.md"
+
+_REDLINE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("rm -rf", re.compile(r"rm\s+-rf", re.IGNORECASE)),
+    ("force push", re.compile(r"force[ -]push|push\s+--force", re.IGNORECASE)),
+    ("DB DROP", re.compile(r"\bdb\s+drop\b|drop\s+(?:schema|table)", re.IGNORECASE)),
+    ("付費", re.compile(r"付費")),
+    ("刪共享資料", re.compile(r"刪(?:除)?共享")),
+)
+_OUTWARD_REDLINE_CANON = "rules/outward-action-consent.md"
+
+# 豁免面：(path, group, token｜None＝該組整檔豁免, 理由)。新增豁免必附理由；
+# token 級豁免保留同檔其他 token 的對帳（未來 drift 仍可抓）。
+_LINT_ALLOWLIST: tuple[tuple[str, str, str | None, str], ...] = (
+    (
+        "skills/model-routing/SKILL.md",
+        "model-token",
+        "gpt-5.6-terra",
+        "family 表政策敘述具名（「日常」檔）——catalog 無此 binding，補登記"
+        "與否＝語義判斷（AIR-128 標記回報主 session）",
+    ),
+    (
+        "skills/model-routing/SKILL.md",
+        "model-token",
+        "gpt-5.6-luna",
+        "family 表政策敘述具名（「基本不用」檔）——同上標記回報",
+    ),
+    (
+        "skills/model-routing/SKILL.md",
+        "model-token",
+        "chatgpt-web/medium",
+        "web 形態 slug 政策敘述——catalog 僅登記 chatgpt-web/high，補登記與否標記回報",
+    ),
+    (
+        "skills/agent-workflow/SKILL.md",
+        "model-token",
+        "claude-sonnet",
+        "CC 系統提示詞 model 字串格式枚舉（tier 偵測輸入），非 wire token"
+        "主張——catalog 補登記與否標記回報",
+    ),
+    (
+        "skills/agent-workflow/SKILL.md",
+        "model-token",
+        "claude-haiku",
+        "同 claude-sonnet——格式枚舉非 wire token",
+    ),
+    (
+        "skills/model-routing/SKILL.md",
+        "model-token",
+        "gpt-5-4-prompting",
+        "OpenAI 官方 prompting guide 文檔名（退役 companion 歷史實證參照）"
+        "——非 model token",
+    ),
+    (
+        "skills/instruction-writing/SKILL.md",
+        "hook-criteria",
+        None,
+        "memory-audit 正典（統一定義表 hook 列）明載的「資格論證與對照組」"
+        "承接面——分工非漂移",
+    ),
+    (
+        "skills/autonomous-execution/SKILL.md",
+        "outward-redline",
+        None,
+        "rules/outward-action-consent.md「Autonomous shortcut」明載的合法快查子集",
+    ),
+)
+
+
+def _lint_scan_files(repo: Path) -> list[tuple[str, Path]]:
+    """掃描集合＝skills/**/*.md＋rules/*.md＋根層 instruction 檔（存在才掃）。"""
+    entries: list[tuple[str, Path]] = []
+    for rel in _LINT_SCAN_ROOT_FILES:
+        path = repo / rel
+        if path.is_file():
+            entries.append((rel, path))
+    skills = repo / "skills"
+    if skills.is_dir():
+        for path in sorted(skills.rglob("*.md")):
+            entries.append((path.relative_to(repo).as_posix(), path))
+    rules = repo / "rules"
+    if rules.is_dir():
+        for path in sorted(rules.glob("*.md")):
+            entries.append((path.relative_to(repo).as_posix(), path))
+    return entries
+
+
+def _lint_allowlisted(rel: str, group: str, token: str | None) -> bool:
+    return any(
+        path == rel
+        and allow_group == group
+        and (allow_token is None or allow_token == token)
+        for path, allow_group, allow_token, _reason in _LINT_ALLOWLIST
+    )
+
+
+def _lint_model_tokens(
+    rel: str, lines: list[str], catalog_tokens: frozenset[str]
+) -> list[str]:
+    known = {token.lower() for token in catalog_tokens}
+    found: list[str] = []
+    for no, line in enumerate(lines, start=1):
+        for match in _MODEL_TOKEN_RE.finditer(line):
+            raw = match.group(0).lower()
+            if raw.endswith("/*"):
+                continue  # 萬用族指稱（chatgpt-web/*），非具名 token
+            token = raw.rstrip(".-*")
+            if token in known:
+                continue
+            if _lint_allowlisted(rel, "model-token", token):
+                continue
+            found.append(
+                f"[parity-lint] model-token {rel}:{no} 未知 model token"
+                f" {match.group(0)!r}——不在 catalog id/token 集合"
+                "（skills/model-routing/catalog.toml）；改引用或補 allowlist 附理由"
+            )
+    return found
+
+
+def _lint_hook_criteria(rel: str, lines: list[str]) -> list[str]:
+    if rel == _HOOK_CRITERIA_CANON or _lint_allowlisted(rel, "hook-criteria", None):
+        return []
+    first_line: dict[str, int] = {}
+    for no, line in enumerate(lines, start=1):
+        for token in _HOOK_CRITERIA_TOKENS:
+            if token in line and token not in first_line:
+                first_line[token] = no
+    if len(first_line) < 2:
+        return []
+    where = ", ".join(f"{token}@{first_line[token]}" for token in sorted(first_line))
+    return [
+        f"[parity-lint] hook-criteria {rel} 三判準重抄（{where}）——正典＝"
+        f"{_HOOK_CRITERIA_CANON}「載體統一定義表」，他處改 pointer"
+    ]
+
+
+def _lint_outward_redline(rel: str, lines: list[str]) -> list[str]:
+    if rel == _OUTWARD_REDLINE_CANON or _lint_allowlisted(rel, "outward-redline", None):
+        return []
+    first_line: dict[str, int] = {}
+    for no, line in enumerate(lines, start=1):
+        for label, pattern in _REDLINE_PATTERNS:
+            if label not in first_line and pattern.search(line):
+                first_line[label] = no
+    if len(first_line) < 2:
+        return []
+    where = ", ".join(f"{label}@{first_line[label]}" for label in sorted(first_line))
+    return [
+        f"[parity-lint] outward-redline {rel} 紅線操作枚舉重抄（{where}）——正典＝"
+        f"{_OUTWARD_REDLINE_CANON}，他處改 pointer 或申請 allowlist 附理由"
+    ]
+
+
+def run_parity_lint(repo: Path, catalog_tokens: frozenset[str]) -> list[str]:
+    """AIR-128 三組單一源對帳（唯讀）。回違規清單（空＝綠）。"""
+    violations: list[str] = []
+    for rel, path in _lint_scan_files(repo):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        violations.extend(_lint_model_tokens(rel, lines, catalog_tokens))
+        violations.extend(_lint_hook_criteria(rel, lines))
+        violations.extend(_lint_outward_redline(rel, lines))
+    return violations
+
+
 _MODES = {"check", "map", "sync", "adopt-legacy"}
 
 
@@ -1050,7 +1243,8 @@ def main(
     legacy_paths: set[str] | None = None,
     verbose: bool = False,
 ) -> int:
-    """exit 語義：0=綠、1=drift（生成物 vs 源，重跑 sync 可修）、2=fatal
+    """exit 語義：0=綠、1=drift（生成物 vs 源，重跑 sync 可修）或 parity
+    lint 違規（文件面單一源對帳——AIR-128，修文件或補 allowlist）、2=fatal
     （presets／catalog 缺席或 schema 違規／roles-preset mismatch／binding
     不相容——修源重跑，sync 修不了）。"""
     assert mode in _MODES, f"unknown mode: {mode}（合法：{sorted(_MODES)}）"
@@ -1073,7 +1267,15 @@ def main(
     if mode == "check":
         for path in drift:
             print(path)
-        return 1 if drift else 0
+        catalog_tokens = frozenset(
+            {identity.lower() for identity in catalog.identities}
+            | {binding.token.lower() for binding in catalog.bindings.values()}
+            | {token.lower() for token in catalog.harness_alias_tokens}
+        )
+        violations = run_parity_lint(repo, catalog_tokens)
+        for violation in violations:
+            print(violation)
+        return 1 if (drift or violations) else 0
     if mode == "map":
         resolved = resolve_deployment(catalog, presets)
         print(
