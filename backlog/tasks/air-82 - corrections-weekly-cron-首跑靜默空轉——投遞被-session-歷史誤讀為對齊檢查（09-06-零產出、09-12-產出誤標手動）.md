@@ -4,7 +4,7 @@ title: corrections-weekly cron 首跑靜默空轉——投遞被 session 歷史�
 status: In Progress
 assignee: []
 created_date: '2026-09-12 21:35'
-updated_date: '2026-09-17 03:25'
+updated_date: '2026-09-18 20:10'
 labels: []
 dependencies: []
 references:
@@ -31,4 +31,6 @@ ordinal: 68000
 調查結論（09-13，證據＝ZCode db.sqlite session/message/part 表）：①09-05 23:10:15 首跑投遞進建 cron 的原 session sess_9fe48e77（T3-1 糾正挖掘 spike），model reasoning 逐字「The user pasted an updated cron prompt…」→ 只做 prompt/skill 對齊檢查回「三面全部對齊，無需動作」，零執行——fallback 條款（skill 清單不可見）從未觸發，失敗發生在執行前的語義誤讀。②09-12 23:10:20 二跑 sourceCommandId=automation-370fafc5:1789225800000 實證為排程投遞非手貼；誤判「手動觸發」但正確執行 skill，產 weekly-20260912.json＋corrections-2026-09.md（23:15:48）——報告標頭「手動觸發」係 run 自身誤標，調查 session 已更正標頭存查。③拓撲通案：cron 投遞 append 進綁定 session——nightly 收斂 cron 10 run 全落 sess_07836405（含 154 則互動對話仍正確執行）→ 判別因子＝prompt 祈使框架，非 session 乾淨度。④工作目錄提示：查證入口 sqlite3 -readonly ~/.zcode/cli/db/db.sqlite（頂層 ~/.zcode/cli/db.sqlite 是 0-byte 殘檔）。
 
 09-17 AC#1 完成——cron prompt 祈使化重寫已 CronUpdate 落地（automation-c52d4574，automationId/cron/下次 fire 2026-09-19 23:10 不變）；schedule-registry.md 條 3＋更新時點已同步（branch air-82）。prompt 四要素齊：🔴排程頭＋「autonomous 執行 session」角色指派＋步驟編號＋禁止事項（禁當對齊檢查處理、禁自稱手動觸發、report-only）——對照 nightly 收斂 cron 十跑實證形態。AC#2 待 09-19 fire 實證；AC#3（per-run fresh session 可配置性查證）未做。
+
+【0919 查證（AIR-136-139 盤點時的 stale 嫌疑排查看證）】非 stale——本卡在等 AC#2 實證：CronList 機械確認 automation-c52d4574 enabled/active/runCount=0、nextRunAt=2026-09-19 23:10（今晚首發；祈使化 prompt 已在場）。registry 同步已落 main（daf36172，branch air-82 已合併刪除——卡 notes 舊稱「branch air-82」僅歷史）。下一步：明晨讀 corrections-2026-09 報告驗 AC#2（實際執行＋標記「排程觸發」）→ AC#3（per-run fresh session 可配置性查證）→ 結算。
 <!-- SECTION:NOTES:END -->
