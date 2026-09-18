@@ -107,7 +107,10 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 |------|----------|-------------------|
 | 無邊界觸發的一般變更（typo、樣式、一般跨檔 feature） | **ordinary** | **一個獨立 context**：依序 source/diff → 正確性與驗證 → 需求對照；同一 reviewer 必覆蓋 profile 各軸（見執行預設點 4）。**這不是 fresh/primed 雙 context 的等價品**——單 context 只保證 Writer/Reviewer 分離，不宣稱等同多 context |
 | 邊界變更：**public API、跨 context invariant、money/risk/security、控制面 authority/gate** 改動 | **boundary** | **分離 fresh＋intent 視角**（各自獨立 context，錨定差異見點 4/6）＋必要專項（correctness 或點 5 extras 視角）；資格升級由各 workflow WorkUnitContract 承接 |
+| 示例：控制面 instruction 實質語義編輯——判定表、gate 條件、authority／authorization 面、actionable 條文新增或修改（skills／rules／commands 條文） | **boundary** | 同上分離 fresh＋intent（＋correctness 或 extras 專項）；條文落地前審查閘依 [instruction-writing](../instruction-writing/SKILL.md) |
 | 條件不明／無法判定變更語義 | **取更保護分支** | 按 boundary 配置 |
+
+> **已知歸級發散（evidence/history pointer——0918 AIR-129 S2 dogfood 歷史記錄，非 profile 規則本體；收斂裁決＝AIR-136 選①）**：控制面 instruction 實質語義編輯曾現跨家族歸級分歧——muse 恆 ordinary、GLM-5.3 恆 boundary（R2 三案例同向：AGENTS.md 作用域例外、acceptance-evidence 單一源指派、execution-plan 產物路徑；R1 同向發散 2 案例；方向恆 fail-safe）。上列示例行後此類變更歸 boundary 為正典；判定表未列的新案例型態照「條件不明→更保護分支」＋author 提案/judge 複核。
 
 判定結果決定讀哪個執行範本的 schema/腳本 —— 這是**依賴方向**（判定 → schema），不是耦合。本 skill 只放判定規則，**不重複** schema/腳本（在 workflow-review-pattern）。
 

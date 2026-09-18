@@ -437,7 +437,7 @@ EP 含凍結 TC 時（觸發輸入見域 2），按七項對帳表逐一執行�
 
 **rationale**：夜間補強的 stage→家族分配軸＝**獨立性需求 × 判斷密度 × 成本**（掃描要便宜、盲審要跨家族、裁決要 decision-qualified）；夜間可用性以 spine 事件＋三訊號判定（見 [model-routing](../model-routing/SKILL.md) AvailabilitySnapshot），**不預設任一家族充裕**。panel 詞彙（tri／bi／single）定義源＝[model-routing](../model-routing/SKILL.md)「審查陪審團」段——本節引用不重定義。
 
-> 執行主體 repo 歸屬（管線跑在哪 repo／派工面、P4 branch 落點、autonomous 紅線適用哪套）＝EP open item，首次實跑前由 user 拍板回填。
+> 執行主體 repo 歸屬（user 0918 拍板回填，原 EP open item 結案）：**專用弧 worktree（detached @ main SHA，零 branch 污染）跑管線；main WT 唯一寫入＝readout append；隔離形態由 manifest 明記**——跨 WT 寫入是明示而非靜默（契約 9「零靜默寫入」的字面張力以此解；0918 r1 首跑實證形態）。readout 落點即契約 9 durable sink adapter 的解析路徑。
 
 ### 五段管線
 
@@ -454,10 +454,10 @@ EP 含凍結 TC 時（觸發輸入見域 2），按七項對帳表逐一執行�
 
 ### 執行契約 10 條
 
-1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots；**禁 P1 findings 決定 P2 targets**（獨立性污染）
-2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）；**工單須要求 reviewer 如實申報讀了什麼**（申報進 receipts）
+1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots；**禁 P1 findings 決定 P2 targets**（獨立性污染）；**manifest invariant 條款逐字引用來源原文、禁壓縮措辭，並附來源錨點（owner 文件／段落）——壓縮＝改 oracle**（0918 r1 偽陽性根因：工單轉述 invariant 觸發偽陽性，r2 逐字後零復發）
+2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）；**工單須要求 reviewer 如實申報讀了什麼**（申報進 receipts）；**工單預先聲明 carrier sandbox 限制**（例示非正典，以工單生成時的當前實測為準——muse：`uv run` 拒寫 cache→直接指定 `.venv/bin/python -m pytest`；0918 實證 reviewer 自行繞道成本）；**工單 invariant 逐字引用契約 1 manifest 原文、禁轉述壓縮**（r1 根因路徑的工單面封堵）
 3. **delta identity**：canonical key＝target/module＋behavior/predicate＋oracle anchor；交集定義＝**support-count ≥2**（寫死）；**零交集→全差集進裁決隊列、禁自動 P4**。delta 三選一歸類表：spec 歧義→修 spec／單邊漏→取聯集／兩可→user 裁決（晨間）
-4. **mutation baseline**：P4 前獨立機械 pre-run 產 survivor set（P1 不跑 mutation）；P5 以**同 scope／operator／config** rerun 得可比 delta
+4. **mutation baseline**：P4 前獨立機械 pre-run 產 survivor set（P1 不跑 mutation）；P5 以**同 scope／operator／config** rerun 得可比 delta。**rerun invariant（零 commit 紅線）**：P5 rerun 前必須全清 mutants/ 後重跑、增量 rerun 語義不可用——mutmut git-change-detection 對未提交變更（config 與 test 皆）不失效快取（0918 r1+r2 實證）；清除前先 `pwd` 斷言在弧工作樹根，僅清該樹 `mutants/`。**口徑 invariant**：timeout 類單獨列示、不入 kill-rate 分母——kill-rate＝killed／(total−timeout)，分母為零記 n/a 並視同疑號升級；timeout 數量穩定性另軌觀察、突增＝疑號（0918 r1「timeout=config artifact」假設被 r2 證偽——60× 穩定不變）
 5. **P4 admission**：finding 須具 **S/H oracle authority**（[acceptance-evidence](../../rules/acceptance-evidence.md)「oracle authority 分級」——I/N 禁 autonomous 補強授權）＋**三證據鏈缺一即拒**（非降級放行）：①spec/invariant oracle ②property/metamorphic/differential 測試形態 ③mutation challenge；**survivor 只可指出 probe 位置、禁決定 expected value**（封閉迴圈防護——oracle 可不變而 test 被 survivor steering 的繞道封死）
 6. **P4 exit**：補強測試驗收＝canonical baseline **GREEN** ＋ targeted mutant/negative-control **RED**；**baseline RED＝抓到 production defect→pending-decisions**（夜間禁改 production code）
 7. **per-stage availability**：P1/P2/P3/P4/P5 **各自** resolve AvailabilitySnapshot（非管線級一次判定）；GLM 撞 1308（家族級）→flash 掃描腿預設不存活（除非 flash 有獨立 fresh snapshot＝available）；P3 無 decision-qualified judge→stop-before-P4；**兩家 reviewer 全缺→stop＋degradation receipt**
