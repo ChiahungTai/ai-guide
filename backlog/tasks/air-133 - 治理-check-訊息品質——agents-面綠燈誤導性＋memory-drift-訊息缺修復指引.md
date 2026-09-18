@@ -1,10 +1,10 @@
 ---
 id: AIR-133
 title: 治理 --check 訊息品質——agents 面綠燈誤導性＋memory drift 訊息缺修復指引
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-18 02:34'
-updated_date: '2026-09-18 03:29'
+updated_date: '2026-09-18 04:22'
 labels: []
 dependencies: []
 references:
@@ -30,3 +30,15 @@ ordinal: 115000
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：/Users/ctai/Github/ai-guide main@0f6035c8〕〔已決策勿重辯：①agents 面補機器活 symlink 存在性探針——檢查面非安裝面；缺席→顯性訊號（drift 或明示未驗，fail-loud 形態照 AIR-126 guard/monitor 警示先例）②memory drift 訊息補一行修復指引（對齊同款警示形態）③退出碼契約照 AIR-126 先例：警示不改退出碼、drift 仍 exit 1④兩者皆有測試修前紅修後綠⑤來源＝AIR-126 新 clone 模擬 fake HOME 實查〕範圍——改：governance/install.py（check 訊息面）、tests/test_governance_check.py；不動 bootstrap 編排。AC 見卡面。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S 結算 Receipt（AIR-105 四欄）：classification=standard（警示信息面——退出碼契約凍結）｜review=bi——muse 通過 4 low（job-mu6ezgy7）＋codex 需修正 2 條修入（probe 斷鏈/錯位硬化＋測試契約鎖定；job-mu6ezh15）｜session-freshness=fresh｜deployment-surfaces=healthy（README＋install.py 落 main 即生效）
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+agents 活視圖探針（斷鏈/錯位/不可達硬化）＋memory 修復指引分流＋README ③ 行
+<!-- SECTION:FINAL_SUMMARY:END -->
