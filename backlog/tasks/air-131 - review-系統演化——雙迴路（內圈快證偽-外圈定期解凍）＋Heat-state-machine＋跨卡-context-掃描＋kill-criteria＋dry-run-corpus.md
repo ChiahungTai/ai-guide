@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-17 22:52'
-updated_date: '2026-09-18 03:29'
+updated_date: '2026-09-18 04:22'
 labels: []
 dependencies: []
 references:
@@ -31,3 +31,9 @@ local opt 不是回饋距離問題是目標函數從未重新開放——逐弧�
 明示不動：AIR-126/128（已結案）；AIR-129 獨立平行薄 EP、AIR-127 獨立平行卡直行——對帳已定（EP §5：127 掛點 memory-audit 與本 EP 變更檔零交疊，muse ep-review 機械核查通過）；既有 corrections 分類/parity 機制本體。
 AC：①corrections-weekly 週報含 Heat 態行②execution-plan kill criteria 四欄格式表在場③code-review --arc 段在場（scope/lanes/stop/cadence 含 review-power guard）④跨卡掃描掛點+兩問在審查準備⑤dry-run corpus 檔在場（四型+禁 topology 提示+friction 三行）⑥instruction-writing 審查閘（boundary 跨家族）⑦與 AIR-126~131 對帳表（127 重疊處置、優先序）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S1 結算 Receipt：classification=boundary（Heat 升溫規則）｜review=bi——muse 5 findings＋codex 3 findings 全修入（job-mu6en3ro/job-mu6en3ud）｜fresh｜healthy。S2 結算 Receipt：classification=boundary（EP 條文）｜review=bi——muse ACCEPT＋codex 5 處方全修入（job-mu6ezh4a/job-mu6ezh76；UNKNOWN 限定 hypothesis 層、1-3 cap、decoder rule、INVALIDATED 接 Done、止損 carrier 落 corrections-weekly）｜fresh｜healthy
+<!-- SECTION:NOTES:END -->
