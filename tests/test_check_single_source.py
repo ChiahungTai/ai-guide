@@ -308,6 +308,58 @@ def test_hook_registration_codex_toml_zero_orphan(tmp_path, monkeypatch):
     assert css.check_hook_registration(_hook_inv()) == []
 
 
+def test_hook_registration_inv_includes_cc_face():
+    """0919 誤報更正：registrations 需含 Claude 端 repo 模板（cc.json）。
+
+    settings.json 是 gitignored local-only（只在 main checkout）——非 main
+    checkout 唯一可驗的 Claude 註冊證據＝cc.json（bi 雙腿 0919：加面即足，
+    non-main 降權不採——降權把真孤兒一起靜默）。
+    """
+    regs = _hook_inv()["registrations"]
+    assert "governance/registrations/cc.json" in regs
+
+
+def test_hook_registration_cc_tpl_zero_orphan_non_main_checkout(tmp_path, monkeypatch):
+    """0919 誤報更正主測試：settings.json 缺場＋cc.json 在場→零孤兒 findings。
+
+    重現 0919 誤報形態：memory-dirty-sensor.py／memory-watch-seed.py 只註冊於
+    CC 面（settings.json gitignored，非 main checkout 缺場）——cc.json 補面後
+    任何 checkout 零 findings。fixture 用真實模板形（{{REPO}} 佔位符）——
+    basename word-boundary 收斂正是要測的行為。
+    """
+    (tmp_path / "hooks").mkdir()
+    reg_dir = tmp_path / "governance" / "registrations"
+    reg_dir.mkdir(parents=True)
+    for name in ("memory-dirty-sensor.py", "memory-watch-seed.py"):
+        (tmp_path / "hooks" / name).write_text("pass")
+    (reg_dir / "cc.json").write_text(
+        '{"hooks": {"SessionStart": [{"type": "command", '
+        '"command": "python3 {{REPO}}/hooks/memory-watch-seed.py"}]}, '
+        '"FileChanged": [{"type": "command", '
+        '"command": "python3 {{REPO}}/hooks/memory-dirty-sensor.py"}]}',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))  # live 面全缺場
+    assert css.check_hook_registration(_hook_inv()) == []
+
+
+def test_hook_registration_claude_only_is_absence_guard(tmp_path, monkeypatch):
+    """claude_only＝缺席-證據 guard 非 allowlist：settings.json 在場但全模板
+    面缺席的 claude_only 成員仍報 critical（豁免只在 Claude 面缺場時生效；
+    bi 雙腿 0919——收緊契約文字防「懶得接線」蒙混）。"""
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "compact-tail-inject.py").write_text("pass")
+    (tmp_path / "settings.json").write_text(
+        '{"hooks": {"PostToolUse": [{"command": "python3 /x/hooks/other.py"}]}}',
+        encoding="utf-8",
+    )  # Claude 面在場但無本 hook 條目
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    out = css.check_hook_registration(_hook_inv())
+    assert any("compact-tail-inject.py" in msg for _, _, msg in out)
+
+
 def test_hook_registration_live_tilde_face_counts(tmp_path, monkeypatch):
     """registrations 的 ~ 路徑（live config）在場時其文字也進註冊池。"""
     (tmp_path / "hooks").mkdir()

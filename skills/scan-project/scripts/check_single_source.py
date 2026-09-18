@@ -116,6 +116,11 @@ INVARIANTS = [
         "type": "hook_registration",
         "registrations": [
             "settings.json",
+            # 0919 誤報更正（bi 雙腿一致）：cc.json＝Claude 端 repo 模板
+            # （tracked，任何 checkout 在場）——settings.json 是 gitignored
+            # local-only，非 main checkout 缺場時 CC-only hooks（memory-*）
+            # 全被誤判孤兒；cc.json 進場後證據池不含 checkout-dependent 檔案
+            "governance/registrations/cc.json",
             "governance/registrations/zcode.json",
             # AIR-120：codex 第三面（誤報實例 codex_memory_path_deny.py 已註冊
             # 於 codex.toml 卻被報孤兒 CRITICAL）；~ 開頭 = live 絕對路徑，
@@ -125,16 +130,21 @@ INVARIANTS = [
         ],
         # 僅接 Claude 端的 hook：settings.json 是 local-only（gitignored），
         # fresh clone 上缺場 → 這些 hook 豁免（註冊事實存在於本機設定，
-        # repo 內不可驗證）；settings.json 在場時仍照常檢查
+        # repo 內不可驗證）；settings.json 在場時仍照常檢查。
+        # 豁免＝缺席-證據 guard 非 allowlist（0919 bi 雙腿收緊）：加名於此＝
+        # 宣稱該 hook 有意缺席所有 repo 模板面；已收編進 cc.json 等模板者
+        # 禁列——防「懶得接線」蒙混（豁免成員在 Claude 面在場時仍報 critical）
         "claude_only": ["compact-tail-inject.py"],
         # 非 entry 的共用庫（被 sensor import，自身不是 hook 入口）——
         # 任何機器都不該要求註冊（註冊它反而是錯的接線）
         "exempt": ["memory_hook_common.py"],
         "note": "hooks/*.py 是「code 在、接線不在」的孤兒溫床（真實案例 "
         "2026-08-29 F8：compact-tail-inject.py 兩處註冊面皆無、從未生效——"
-        "防線看起來存在，實際從未攔截）。每個 hook 腳本至少要出現在一個註冊處"
-        "（settings.json = Claude 端、governance/registrations/zcode.json = "
-        "ZCode 端模板、governance/registrations/codex.toml 與 live "
+        "防線看起來存在，實際從未攔截；0919 第二例：CC hooks 在非 main "
+        "checkout 誤報——settings.json 缺場所致，cc.json 補面後治本）。每個 "
+        "hook 腳本至少要出現在一個註冊處（settings.json 與 cc.json = Claude "
+        "端 live＋repo 模板、governance/registrations/zcode.json = ZCode 端"
+        "模板、governance/registrations/codex.toml 與 live "
         "~/.codex/config.toml = codex 端），否則 critical",
     },
     {
