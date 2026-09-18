@@ -1,12 +1,14 @@
 ---
 id: AIR-126
 title: 治理安裝後防護預設在線——hooksPath 檢查補面＋monitor 未裝顯性警示
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-17 15:09'
+updated_date: '2026-09-18 00:32'
 labels: []
 dependencies: []
+references:
+  - governance/install.py
 ordinal: 110000
 ---
 
