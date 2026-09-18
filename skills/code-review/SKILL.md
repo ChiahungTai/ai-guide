@@ -143,7 +143,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 results → �
 
 **convergence judge**：合併 findings 交 [/judge-review](../judge-review/SKILL.md) 裁決；腿間矛盾標 `conflict` 不裁決（同 B 段合併規則）。
 
-**consumer probes**：boundary profile 的 instruction 變更弧（判準見 [review-engine](../review-engine/SKILL.md) 審查模式判定規則）加跑 [consumer-dry-run corpus](../_common/consumer-dryrun-corpus.md) 四型任務（cold navigation／normal／ambiguous-conflict／resume；prompt 禁提示 instruction topology）。控制面變更弧必跑＋每季保底（觸發掛 deep-work 劇本）。
+**consumer probes**：boundary profile 的 instruction 變更弧（判準見 [review-engine](../review-engine/SKILL.md) 審查模式判定規則）加跑 [consumer-dry-run corpus](../_common/consumer-dryrun-corpus.md) 四型任務（cold navigation／normal task／ambiguous-conflict task／resume task；prompt 禁提示 instruction topology）。控制面變更弧必跑＋每季保底（觸發掛 deep-work 劇本）。
 
 **cadence（§2-2 數字；初值非真理——歷史回測可修訂，走 EP amendment）**：full review 間隔以 **12 治理 arcs** ceiling 起始；escaped Critical（定義收緊：review 開始前已存在＋日常機制沒升格；reviewer 新標準首次套用抓到不算）→ `next_interval = max(6, interval × 0.5)`；連續兩輪零逃逸＋coverage 沒降＋**Heat 維持 Cool** → `min(24, interval × 1.5)`；其他不變——慢降快升。**review-power guard（四項全可比才配降頻）**：scope 可比／review taxonomy 可比／fresh-context independence 可比／異構 reviewer 覆蓋沒有縮水。**Critical escape 是 thermostat sensor 不是 KPI**——禁設「Critical=0」目標。修復 cooldown：前輪 Critical 修復與 acceptance 完成前不排下一輪。每季 state-review sanity ceiling 不因零逃逸取消。
 
