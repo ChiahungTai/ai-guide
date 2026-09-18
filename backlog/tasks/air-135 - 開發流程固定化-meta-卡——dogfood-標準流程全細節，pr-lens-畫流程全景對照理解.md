@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-18 13:10'
+updated_date: '2026-09-18 13:18'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -89,4 +89,6 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0918 context continuity 補充】研究 09-15 compact architecture／controlled strategy／direction handoff、memory §6 與 09-08 compact feedback 後，新增 AIR-135.6。定位不是新增 lifecycle node，也不是自製 compact：把 context preservation 升成 Marshal cross-cutting reliability mechanic——card/artifact 平時持續 checkpoint，壓力來時只產 thin continuation delta，compact/new session 後 adaptive rehydrate 並驗實物。user 仍保留 /compact／換 session 時機裁決。
 
 【0918 跨家族審查＋judge】muse fresh-eyes 審查（job-mu6yvfsr-qb10ze，只憑卡檔還原實測）：16 findings＝✅14（採納項隨 b5cf2b10 落地：術語釘住、S7 owner=parent＋度量三欄、135.3 authority 邊界、135.6 介面 ownership、full_trigger 回接等）／❌1（F12 SC-15/16 存在性——user 逐字為能力源＋AC#4 gate 已管）／⚠️1（F5 135.1 十一條 AC 是否拆卡——留 user 裁決，建議卡內標 MVP/stretch 線）。還原測試 (b)(e) fail 已由 plan 補齊時點＋執行序兩節修復；帳本 .review/air-135.md（lint discovery 綠）。
+
+【0918 user 裁決＋收線】F5＝拆卡（orchestration 可靠性重發 AIR-135.7，135.1 保留 compiler 本體 6 AC；90e51931）；收線授權＝rebase onto main＋ff-only merge（branch/WT 保留——arc 續行中，7 子卡 To Do）；DB 修復由 user 另 session（sess_2f4d6ea5）進行中。帳本 F5 已閉（✅16 條全收斂：✅15/❌1）。
 <!-- SECTION:NOTES:END -->
