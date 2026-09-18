@@ -3,12 +3,14 @@ id: AIR-125
 title: >-
   pre-commit hook 合理化——backlog fast path＋live-reading 測試 hook 模式隔離＋card-WT path
   錨定修復（併 AIR-116 follow-up）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 14:48'
-updated_date: '2026-09-17 22:06'
+updated_date: '2026-09-18 00:32'
 labels: []
 dependencies: []
+references:
+  - .githooks/pre-commit
 ordinal: 110000
 ---
 
