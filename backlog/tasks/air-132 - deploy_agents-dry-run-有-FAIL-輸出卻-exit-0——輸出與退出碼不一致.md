@@ -1,10 +1,10 @@
 ---
 id: AIR-132
 title: deploy_agents --dry-run 有 FAIL 輸出卻 exit 0——輸出與退出碼不一致
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-18 02:34'
-updated_date: '2026-09-18 04:14'
+updated_date: '2026-09-18 04:22'
 labels: []
 dependencies: []
 references:
@@ -35,4 +35,12 @@ ordinal: 114000
 
 <!-- SECTION:NOTES:BEGIN -->
 審查 disposition（bi）：症狀根因改寫——deploy_agents 本體已 fail-loud（AIR-105 S7，10/10 FAIL 印點有非零出口，muse 逐點核對）；原觀測「FAIL＋exit 0」根因＝caller 層 installer dry-run 吞碼（codex high，已修＋回歸測試）與/或 shell pipe 遮蔽（機制重現證實；當時命令 transcript 未保留，muse F5 如實記）。交付＝零 source 改動於 deploy_agents＋subprocess 契約測試＋caller 修復。
+
+S 結算 Receipt（AIR-105 四欄）：classification=boundary（installer 退出碼契約＋TC-11 串接）｜review=bi——muse 通過 5 low（job-mu6fimgo）＋codex NO-GO 修入（caller 吞碼 high／AC 對齊／vacuous guard；job-mu6fimjh）｜session-freshness=fresh｜deployment-surfaces=healthy（install.py 落 main 即生效）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+症狀根因改寫：本體已 fail-loud，真缺陷＝installer dry-run 吞碼（已修＋回歸測試）；subprocess 契約測試釘死
+<!-- SECTION:FINAL_SUMMARY:END -->
