@@ -1,12 +1,14 @@
 ---
 id: AIR-133
 title: 治理 --check 訊息品質——agents 面綠燈誤導性＋memory drift 訊息缺修復指引
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-18 02:34'
-updated_date: '2026-09-18 02:34'
+updated_date: '2026-09-18 03:29'
 labels: []
 dependencies: []
+references:
+  - governance/install.py
 ordinal: 115000
 ---
 
