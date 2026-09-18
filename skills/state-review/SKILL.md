@@ -20,7 +20,7 @@ allowed-tools: ["Read", "Bash", "Glob", "Grep", "Agent"]
 2. **scope manifest**：審查範圍逐 path 分類——**core**（逐檔讀 source 與 failure branch）／**leaf**（機械全量掃＋異常深讀）／**generated**（驗投影與 hash parity，不當源）／**mirror**（驗 manifest 帳與回源）。每個 target path 恰屬一 bucket、exclusions 明列——沒進 manifest 的 path＝未審，不得自稱 full-repo
 3. **深審派發**：external family、[work-order review variant](../_common/work-order.md)。family 解析＝[model-routing 跨家族解析表](../model-routing/SKILL.md)（**與 caller 相異**是派發理由本身）：未指定 → GLM/ZCode 與 codex/glm caller→muse；**muse caller→fail-loud**（無合法相異家族可自動選——**停下要求 user 選擇**：顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review〔caller-harness decision-grade dual-context 承接＋記錄〕，禁解析層自選降級）；顯式指定與 caller 同 family → fail-loud。派發內容＝凍結資料＋scope manifest＋輸出格式要求（見下）。**派發形態現況**：muse 腿經 bridge 自動化已實戰；codex 腿本弧為 user-relay——自動派發未驗證〔first-real-usage-pending〕（唯一一次派發被 user 中止：dispatch prompt 是薄清單而非 work-order、context 不自足，user 判斷後改 relay 直跑——非 run 失敗）；自動派發前必須逐節填滿 review variant 工單，首跑實測後回報
 4. **in-family 裁決**（[/judge-review](../judge-review/SKILL.md)）：每項機械重現（不沿用宣稱）、防全採否證至少一項
-5. **gate 候選提案**：每個採納項標注「同類 finding 是否第二次出現？」——是 → 列入報告的 **gate 候選清單**（proposal——建卡/做閘門由 user 拍板後續弧執行；有進有出：findings 是流入、gates 是流出）
+5. **gate 候選提案**：每個採納項標注「同類 finding 是否第二次出現？」——是 → 列入報告的 **gate 候選清單**（proposal——建卡/做閘門由 user 拍板後續弧執行；有進有出：findings 是流入、gates 是流出）。gate 候選清單同步為 [corrections-weekly](../corrections-weekly/SKILL.md) Heat 段（AIR-131）的升溫觸發輸入（R family——「同類 finding 第二次出現」即 recurrence 計數）
 6. **修復**走 /implement；驗收走 /followup-review
 
 ## 深審 work-order 的輸出格式要求（review variant findings schema）

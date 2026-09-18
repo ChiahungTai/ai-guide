@@ -53,6 +53,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
    - Top 引述（≤3，session id＋200 字內摘錄）
    - vs 前週：一句趨勢（哪類升降）
    - 訊號：有無新湧現模式（如新規則繞道形態）——有則明列，無則寫「無新形態」
+   - Heat（AIR-131）：Cool｜Warm（families: …）｜Hot（tripwire: …）｜Cooldown（回遷中）——觸發 family＋感測器數值一行
    ### CR 使用（R5 換軌後形態）
    - 健康診斷：CR skill（cr-query＋code-reality）N sessions（總計）；CR MCP top 3 工具各 N sessions；對照 Bash rg：N
    - KPI（有 negative-claim/rename-delete 弧的週才填）：negative-claim CR 覆蓋 N/M；rename-delete preflight 覆蓋 N/M；retry 成功率；silent fallback 數
@@ -60,6 +61,29 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
    ### Memory 寫入（AIR-40）
    - successful N（errors N／unmatched N／folded N／ambiguous N）；top actors ≤3（session 短 id＋次數×chars）；top entries ≤3；index_delta（vs 前輪 baseline，首輪標 baseline 已建；partial 標記多 pool 部分和）；unknown actor sessions；evidence 路徑一行
    ```
+
+4b. **Heat 態聚合（AIR-131——雙迴路外圈感測）**：五 signal family 七感測器 → 態行（月檔模板 Heat 行）。規則表（**初值、非真理**——A2 歷史回測可驅動修訂；變更走 parent EP amendment：`ai-analysis/_tasks/0918-air131-review-system-evolution/ep.md` §2-1）：
+
+   | 狀態 | Trigger（window＝最近 8 治理 arcs） | 動作 |
+   |---|---|---|
+   | Cool | 0–1 family active | 正常逐弧 |
+   | Warm | ≥2 families；或同一 family 連續兩 window | 該區 reheat review；**禁 additive repair、必同時產 delete/merge/rewrite 候選** |
+   | Hot | ≥3 families；或任一 tripwire | full review（`code-review --arc`／state-review） |
+   | Cooldown | review 後連續一段 arcs 無 tripwire 且 <2 signals | 回 Cool |
+
+   感測器映射（機械三支＋人工四支——單 harness 可產＝人工欄，不觸 kill）：
+
+   | family | 感測器 | 來源 |
+   |---|---|---|
+   | R recurrence | corrections 七類週趨勢（本 skill 步驟 1/3——方向錯↑＝上游失效；**ZCode 面機械、他面未採樣**）＋gate 候選二次出現（state-review 步驟 5 餵入，人工） | 機械：`uv run python skills/corrections-weekly/scripts/mine_corrections.py --days 7` |
+   | V vocabulary divergence | parity 殘留計數 | `uv run python skills/scan-project/scripts/check_single_source.py`（機械） |
+   | G ritual growth | 儀式成本三問（季度重跑） | overhead 盤點附問（人工） |
+   | U consumer friction | usage 零消費清單 delta | usage-fit audit 形態季跑（人工） |
+   | B boundary compounding | Critical 逃逸率（arc review 分類，兼 cadence thermostat）＋activation 健康 | `governance/install.py --check --surface all`／`--verify`（機械）＋人工 |
+
+   三 tripwire（不經計分直升 Hot，各帶可判條件）：①大審抓到日常 machinery 沒攔的 systemic Critical——**限 escaped**（定義＝review 開始前已存在＋日常機制沒升格為 Critical；reviewer 新標準首次套用抓到不計，見 EP §2-2）②authoritative semantics 互斥定義——**限 manifest/registry 級權威源**（catalog/frontmatter/單一源條文）出現互斥③≥2 獨立 consumer dry-run 同因失敗——**獨立＝相異 repo 或相異 harness；同因＝同一判準可歸因的設計問題**。
+
+   判讀：Heat 行填「態＋觸發 family＋感測器數值」；**Warm 時輸出必附 delete/merge/rewrite 候選**（禁只加閘——治理自放大防護）。三問/usage/Critical 逃逸等人工欄無當週資料時標「未採樣」，不計入 family 計數。
 
 5. **判讀產出**（報告尾一行）：本月累積趨勢是否支持「某規則在衰減、該修」或「negative-claim/rename preflight 覆蓋率下滑、該接線」的具體建議——沒有就寫「無需動作」（不硬擠結論）。
 
