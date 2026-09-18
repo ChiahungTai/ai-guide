@@ -71,4 +71,4 @@
 - **Round 2**：rater A2＝GLM-5.3 full fresh、rater B2＝muse xhigh。P1-P3 一致；Type 2 全收斂 ✓；Type 1 仍不一致 3 案例（AGENTS.md、acceptance-evidence、execution-plan——muse 恒 ordinary、A2 恒 boundary/保護分支）。
 - **Judge 判定**：predicate 層（白名單求值／scope／fail-closed／退出決策）兩輪 100% 收斂——機械化工程成立。殘留發散全在 review-engine 分級層（§2-1 收窄不可達；強制 binary collapse 會把真路徑小修全套化，違背卡目的）——收窄路徑實質耗盡，提前進 amendment 裁決（偏離 EP「兩輪」字面，user 在場知情）。
 - **服務面發現**：EP canonical 錨點 d4000e36 兩輪 24 hunks 零入場 static-only（實質＝句子級改寫非錯字）——fast-track 真實服務面遠小於 §1 預期；吞吐痛點主解事實上由 deferred 回執鏈（已落地驗證）承擔。
-- 待 user 裁決：EP 字面 INVALIDATE（回滾豁免原文）vs amendment（保留已收斂窄 predicate＋吞吐主解重定位 deferred）——arch-thinking 摘要見 session 報告。
+- 裁決完成（user 選 B＝amendment，2026-09-18）。§7 兩項觀察已開卡承接：AIR-136（review-engine 歸級發散收斂）、AIR-137（static-only／deferred 首個真實落地閘案例 live 復核）——本 EP 終局，後續隨卡走。
