@@ -1,6 +1,7 @@
 """check_single_source 的 invariant 檢查單元測試（T1-2/T1-3）。"""
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -333,8 +334,8 @@ def test_hook_registration_cc_tpl_zero_orphan_non_main_checkout(tmp_path, monkey
     for name in ("memory-dirty-sensor.py", "memory-watch-seed.py"):
         (tmp_path / "hooks" / name).write_text("pass")
     (reg_dir / "cc.json").write_text(
-        '{"hooks": {"SessionStart": [{"type": "command", '
-        '"command": "python3 {{REPO}}/hooks/memory-watch-seed.py"}]}, '
+        '{"SessionStart": [{"type": "command", '
+        '"command": "python3 {{REPO}}/hooks/memory-watch-seed.py"}], '
         '"FileChanged": [{"type": "command", '
         '"command": "python3 {{REPO}}/hooks/memory-dirty-sensor.py"}]}',
         encoding="utf-8",
@@ -347,17 +348,52 @@ def test_hook_registration_cc_tpl_zero_orphan_non_main_checkout(tmp_path, monkey
 def test_hook_registration_claude_only_is_absence_guard(tmp_path, monkeypatch):
     """claude_only＝缺席-證據 guard 非 allowlist：settings.json 在場但全模板
     面缺席的 claude_only 成員仍報 critical（豁免只在 Claude 面缺場時生效；
-    bi 雙腿 0919——收緊契約文字防「懶得接線」蒙混）。"""
+    bi 雙腿 0919——收緊契約文字防「懶得接線」蒙混）。以合成 inv 釘機制
+    （REGISTRY 現名單已清空——tri F1）。"""
     (tmp_path / "hooks").mkdir()
     (tmp_path / "hooks" / "compact-tail-inject.py").write_text("pass")
     (tmp_path / "settings.json").write_text(
         '{"hooks": {"PostToolUse": [{"command": "python3 /x/hooks/other.py"}]}}',
         encoding="utf-8",
     )  # Claude 面在場但無本 hook 條目
+    inv = dict(_hook_inv())
+    inv["claude_only"] = ["compact-tail-inject.py"]  # 合成成員釘豁免機制
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    out = css.check_hook_registration(inv)
+    assert any("compact-tail-inject.py" in msg for _, _, msg in out)
+
+
+def test_hook_registration_claude_only_members_absent_from_templates():
+    """tri F1 迴歸鎖：claude_only 成員不得出現在任何 tracked 模板面——
+    名單與「已收編者禁列」契約自洽。"""
+    inv = _hook_inv()
+    template_texts = ""
+    for rel in inv["registrations"]:
+        if rel.startswith("~"):
+            continue  # live 面非模板
+        p = css.REPO_ROOT / rel
+        if p.exists():
+            template_texts += p.read_text(encoding="utf-8")
+    for name in inv["claude_only"]:
+        assert not re.search(rf"(?<![\w.-]){re.escape(name)}(?![\w.-])", template_texts), (
+            f"claude_only 成員 {name} 已出現在 tracked 模板面——應移出豁免名單"
+        )
+
+
+def test_hook_registration_basename_edge_negative(tmp_path, monkeypatch):
+    """tri F3：匹配器後緣防殘字樣——ok.py.bak／xa.py 殘形不算已註冊。"""
+    (tmp_path / "hooks").mkdir()
+    (tmp_path / "hooks" / "ok.py").write_text("pass")
+    (tmp_path / "settings.json").write_text(
+        '{"hooks": {"x": ["python3 /x/hooks/ok.py.bak", '
+        '"python3 /x/hooks/xa.py"]}}',
+        encoding="utf-8",
+    )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
     out = css.check_hook_registration(_hook_inv())
-    assert any("compact-tail-inject.py" in msg for _, _, msg in out)
+    assert any("ok.py" in msg for _, _, msg in out)
 
 
 def test_hook_registration_live_tilde_face_counts(tmp_path, monkeypatch):

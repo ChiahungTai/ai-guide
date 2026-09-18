@@ -128,13 +128,12 @@ INVARIANTS = [
             "governance/registrations/codex.toml",
             "~/.codex/config.toml",
         ],
-        # 僅接 Claude 端的 hook：settings.json 是 local-only（gitignored），
-        # fresh clone 上缺場 → 這些 hook 豁免（註冊事實存在於本機設定，
-        # repo 內不可驗證）；settings.json 在場時仍照常檢查。
         # 豁免＝缺席-證據 guard 非 allowlist（0919 bi 雙腿收緊）：加名於此＝
         # 宣稱該 hook 有意缺席所有 repo 模板面；已收編進 cc.json 等模板者
-        # 禁列——防「懶得接線」蒙混（豁免成員在 Claude 面在場時仍報 critical）
-        "claude_only": ["compact-tail-inject.py"],
+        # 禁列——防「懶得接線」蒙混（豁免成員在 Claude 面在場時仍報 critical）。
+        # 0919 tri：compact-tail-inject.py 已收編 cc.json，依契約移出——
+        # 現為空名單；未來 global-only hook（有意不進模板）才可加回
+        "claude_only": [],
         # 非 entry 的共用庫（被 sensor import，自身不是 hook 入口）——
         # 任何機器都不該要求註冊（註冊它反而是錯的接線）
         "exempt": ["memory_hook_common.py"],
@@ -648,6 +647,9 @@ def check_hook_registration(inv: dict) -> list[tuple[str, str, str]]:
     註冊處由 inv['registrations'] 列（相對 REPO_ROOT 的文字檔，或 ~ 開頭的
     live 絕對路徑——AIR-120 codex 面；不存在者 skip 不 false positive）。
     以檔名子字串比對——註冊處以絕對路徑引用 hook 腳本，檔名是穩定鍵。
+    豁免語義（claude_only/exempt）：缺席-證據 guard 非 allowlist——
+    claude_only 成員宣稱有意缺席所有 repo 模板面（豁免僅在 Claude 面缺場時
+    生效），exempt 成員是非入口共用庫；兩者定義細節住 REGISTRY 條目註解。
     """
     if inv.get("type") != "hook_registration":
         return []
@@ -666,8 +668,9 @@ def check_hook_registration(inv: dict) -> list[tuple[str, str, str]]:
     exempt = set(inv.get("exempt", []))
     out = []
     for hf in hook_files:
-        # word-boundary 比對——純子字串會讓 a.py 被 xa.py 的註冊行誤判
-        if re.search(rf"\b{re.escape(hf.name)}\b", registered):
+        # 匹配器與 _wiring 對齊（tri F3：純 \b 對 ok.py.bak 後緣誤判 True——
+        # .py.bak/.py.txt 殘字樣不算已註冊；前緣 (?<![\w.-]) 防 xa.py 誤配）
+        if re.search(rf"(?<![\w.-]){re.escape(hf.name)}(?![\w.-])", registered):
             continue
         if hf.name in exempt:
             continue  # 共用庫非 hook 入口（exempt 清單＝invariant 定義顯式列舉）
