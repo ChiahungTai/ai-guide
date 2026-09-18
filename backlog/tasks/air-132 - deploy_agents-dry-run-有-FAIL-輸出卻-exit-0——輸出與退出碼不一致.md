@@ -1,12 +1,14 @@
 ---
 id: AIR-132
 title: deploy_agents --dry-run 有 FAIL 輸出卻 exit 0——輸出與退出碼不一致
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-18 02:34'
-updated_date: '2026-09-18 02:34'
+updated_date: '2026-09-18 03:29'
 labels: []
 dependencies: []
+references:
+  - scripts/deploy_agents.py
 ordinal: 114000
 ---
 
