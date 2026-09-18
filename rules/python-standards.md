@@ -31,6 +31,10 @@ Facade 只對外部消費者有價值；內部共同重構，收益不足抵銷 
 - 禁 List/Dict/Set/Tuple/Optional/Union 舊 typing——改內建泛型與 T | None / T1 | T2；typing 只 import Callable、Protocol、TypeVar、ParamSpec、Self、Any。
 - Any 限 JSON/第三方外部邊界並註明理由——先查 venv 套件 py.typed 與 source 型別，確認無法推導才用，禁猜。
 
+## 比較式驗證 gate（IEEE 754 fail-open 防護）
+
+比較式 gate 對非有限值 fail-open（IEEE 754：NaN 的任何比較恆 False，`x > 0` 對 NaN 靜默放行）——正 gate 用 `not (x > 0)` 形（NaN→擋），非有限輸入以前置 finite 驗證擋（`math.isfinite`，專案多處使用時 helper 化）。真實案例：RiskGuard `price=nan` 任意名目 entry 全放行＋daily-loss breaker 被靜默解除（mosaic 0918 audit 實證，修復 86dd5279c）。
+
 ## Python 命令執行
 
 Python 命令執行（uv run 強制、pytest 背景跑、PYTHONPATH 禁令、timeout 禁令）單一源＝[tool-discipline.md](tool-discipline.md)。

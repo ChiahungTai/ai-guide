@@ -218,6 +218,10 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 
 消費端驗證模式定義見 [quality-constraints](../../rules/quality-constraints.md) 的「消費端驗證模式」段。
 
+#### 載體對帳（production caller 驗證）
+
+**制式步驟（night-mode manifest 與本域稽核共用）**：manifest source 須驗 production caller——被測物≠生產路徑時 invariant 零證偽力。機械式：對 manifest 每個 target 查 caller（`rg "<symbol>" <非測試目錄>` 或 code-reality callers）——零 production caller 的測試載體列 finding（Important），其全綠結果不計入覆蓋證據（0918 r2 T4 實證：16 tests 全綠釘零-caller 載體）。
+
 #### 出生證明查核
 
 **核心原則**：存量測試無 TC 對帳來源時**標注追蹤、非跳過**——測試無出生證明（無 EP 凍結 TC 涵蓋、無 provenance 標注）→ 標 `provenance:unknown` 列 finding（Important：oracle 來源不可追溯，證據權威無法分級）。出生證明接口（新測試側）見 [test-driven-development](../test-driven-development/SKILL.md) 出生證明段——新測試寫入 provenance 鍵（值域 S/H/I/N/unknown），audit 對讀到的鍵做一致性查核（宣稱 S/H 須能出示 anchor，否則降標）。
@@ -454,7 +458,7 @@ EP 含凍結 TC 時（觸發輸入見域 2），按七項對帳表逐一執行�
 
 ### 執行契約 10 條
 
-1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots；**禁 P1 findings 決定 P2 targets**（獨立性污染）；**manifest invariant 條款逐字引用來源原文、禁壓縮措辭，並附來源錨點（owner 文件／段落）——壓縮＝改 oracle**（0918 r1 偽陽性根因：工單轉述 invariant 觸發偽陽性，r2 逐字後零復發）
+1. **target manifest**：P1 前凍結；兩 blind reviewer 用**同一份** targets；來源＝Adversarial 域 critical-path 輪選清單（域 3 週期輪抽查）＋dependency-graph hotspots＋**事故面（過去 incident 的測試面——0918 r2 實證：UI 出口 double-÷＝事故 F-B 同面，因不在 AGENTS 標記面漏出射程）**；**禁 P1 findings 決定 P2 targets**（獨立性污染）；**manifest invariant 條款逐字引用來源原文、禁壓縮措辭，並附來源錨點（owner 文件／段落）——壓縮＝改 oracle**（0918 r1 偽陽性根因：工單轉述 invariant 觸發偽陽性，r2 逐字後零復發）
 2. **blind input contract**：P2 工單明示**禁讀清單**——P1 `.partial.md`／daily report／另一 reviewer output；如實標注＝**procedural blindness** 非 hard isolation（hard 隔離待實作期 sandbox 驗證）；**工單須要求 reviewer 如實申報讀了什麼**（申報進 receipts）；**工單預先聲明 carrier sandbox 限制**（例示非正典，以工單生成時的當前實測為準——muse：`uv run` 拒寫 cache→直接指定 `.venv/bin/python -m pytest`；0918 實證 reviewer 自行繞道成本）；**工單 invariant 逐字引用契約 1 manifest 原文、禁轉述壓縮**（r1 根因路徑的工單面封堵）
 3. **delta identity**：canonical key＝target/module＋behavior/predicate＋oracle anchor；交集定義＝**support-count ≥2**（寫死）；**零交集→全差集進裁決隊列、禁自動 P4**。delta 三選一歸類表：spec 歧義→修 spec／單邊漏→取聯集／兩可→user 裁決（晨間）
 4. **mutation baseline**：P4 前獨立機械 pre-run 產 survivor set（P1 不跑 mutation）；P5 以**同 scope／operator／config** rerun 得可比 delta。**rerun invariant（零 commit 紅線）**：P5 rerun 前必須全清 mutants/ 後重跑、增量 rerun 語義不可用——mutmut git-change-detection 對未提交變更（config 與 test 皆）不失效快取（0918 r1+r2 實證）；清除前先 `pwd` 斷言在弧工作樹根，僅清該樹 `mutants/`。**口徑 invariant**：timeout 類單獨列示、不入 kill-rate 分母——kill-rate＝killed／(total−timeout)，分母為零記 n/a 並視同疑號升級；timeout 數量穩定性另軌觀察、突增＝疑號（0918 r1「timeout=config artifact」假設被 r2 證偽——60× 穩定不變）
