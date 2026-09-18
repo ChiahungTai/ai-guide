@@ -909,9 +909,54 @@ def monitor_absent_lines(manifest: dict) -> list[str]:
             " 無日頻告警（fail-open）。裝法：跑 install --surface monitor"]
 
 
+def agents_view_absent_lines(manifest: dict) -> list[str]:
+    """agents 機器活視圖（home symlink）缺席＝[WARN] 警示（AIR-133）。
+
+    agents 面只擁有 repo 生成物 parity（sync_agents --check）——機器端消費點
+    （skills 母鏈 ~/.agents/skills、CC／ZCode agents registry symlink；安裝歸
+    skills 面）缺席時 parity 仍綠＝綠燈誤導「已防護」。存在性探針（指對性
+    歸 skills 面 drift）；只探 agents 相關條目（母鏈＋target 含 /agents/）。
+    警示只加資訊不改退出碼（同 AIR-126 契約）。"""
+    symlinks = manifest.get("surfaces", {}).get("skills", {}).get("symlinks", [])
+    missing = []
+    for sl in symlinks:
+        if not isinstance(sl, dict):
+            continue
+        link = sl.get("link")
+        target = sl.get("target")
+        if not isinstance(link, str):
+            continue
+        is_agents = link == "~/.agents/skills" or (
+            isinstance(target, str) and "/agents/" in target)
+        if not is_agents:
+            continue
+        path = home_path(link)
+        if not path.is_symlink():
+            missing.append(link)
+            continue
+        # AIR-133 codex finding：inode 在場≠視圖可達——斷鏈/錯位 symlink 同樣沉默綠燈
+        if not isinstance(target, str):
+            missing.append(link)  # 畸形 manifest 無法驗指對性——保守計入
+            continue
+        expected = Path(render(target))
+        try:
+            pointed = path.resolve()
+        except OSError:
+            pointed = None
+        if pointed != expected or not expected.is_dir():
+            missing.append(link)
+    if not missing:
+        return []
+    return [f"[WARN] agents 機器活視圖缺席或不可達：{'、'.join(missing)}——"
+            "sync_agents 生成物 parity 綠≠機器端 subagent 視圖可達（fail-open）。"
+            "裝法：跑 install --surface skills"]
+
+
 def _print_default_state_warnings(manifest: dict, surface: str) -> None:
     """完成輸出結尾的投放預設態警示彙整；monitor 提示限 --surface all。"""
     lines = guard_failopen_lines(REPO_ROOT)
+    if surface in ("agents", "all"):
+        lines += agents_view_absent_lines(manifest)  # AIR-133：agents 活視圖探針
     if surface == "all":
         lines += monitor_absent_lines(manifest)
     for line in lines:
@@ -1034,7 +1079,13 @@ def check_muse_face(manifest: dict, drifts: list[tuple[str, str]]) -> None:
     proc = subprocess.run(["muse", "plugins", "inspect", pid, "--json"],
                           capture_output=True, text=True, timeout=60)
     if proc.returncode != 0:
-        drifts.append(("muse", f"inspect 不可判定（fail-closed）：{proc.stderr.strip()[:150]}"))
+        stderr = proc.stderr.strip()[:150]
+        if "unrecognized subcommand" in stderr or "unknown command" in stderr:
+            hint = ("。修復：muse CLI build 不支援 plugins 子命令——升級"
+                    " muse CLI 至含 plugins 的 build 後重跑 --check")
+        else:
+            hint = "。修復：查 muse CLI／plugin 安裝與 daemon 狀態後重跑 --check"
+        drifts.append(("muse", f"inspect 不可判定（fail-closed）：{stderr}{hint}"))
         return
     try:
         doc = json.loads(proc.stdout)
@@ -1181,7 +1232,8 @@ def cmd_check(manifest: dict, surface: str) -> int:
     （與 install 不對稱同理——排程面顯式操作）。
 
     AIR-126：完成輸出結尾印投放預設態警示（guard fail-open／--surface all 時
-    monitor 缺席）——只加資訊不改退出碼。
+    monitor 缺席）——只加資訊不改退出碼。AIR-133：agents 機器活視圖探針
+    （--surface agents/all）同契約。
     """
     faces = ("rules", "skills", "hooks", "agents", "memory") if surface == "all" \
         else (surface,)

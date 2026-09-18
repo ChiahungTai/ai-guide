@@ -15,7 +15,7 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 四 flag（`--dry-run`／`--uninstall`／`--check`／`--verify`）**兩兩互斥**，違規組合 exit 2。退出碼：`0` 成功；`1` drift／verify FAIL；`2` 環境守衛（Python 地板／工具缺席／flag 衝突）；`3` 子命令未實裝；`4` 執行錯誤（malformed／lost-update／子進程失敗——plan journal 有線索）。
 
-**投放預設態警示（AIR-126）**：`install`／`check` 完成輸出結尾主動偵測兩道防護並顯性警示（`[WARN]` 行，只加資訊不改退出碼）：① `core.hooksPath` 未設／非 `.githooks`＝控制面 guard 未啟用（行內附修復指令）；② `--surface all` 完成時 monitor 安裝副本缺席＝健康警鈴未開（行內附 `--surface monitor` 裝法；all 不含 monitor 屬設計，見 uninstall 節對稱性註記）。dry-run／uninstall 不印。
+**投放預設態警示（AIR-126＋AIR-133）**：`install`／`check` 完成輸出結尾主動偵測防護並顯性警示（`[WARN]` 行，只加資訊不改退出碼）：① `core.hooksPath` 未設／非 `.githooks`＝控制面 guard 未啟用（行內附修復指令）；② `--surface all` 完成時 monitor 安裝副本缺席＝健康警鈴未開（行內附 `--surface monitor` 裝法；all 不含 monitor 屬設計，見 uninstall 節對稱性註記）；③（AIR-133）agents 機器活視圖 symlink 缺席／斷鏈／錯位＝subagent 視圖 fail-open（`--surface agents`／`all` 偵測；行內附 `install --surface skills` 裝法）。dry-run／uninstall 不印。
 
 ## 五面對照
 

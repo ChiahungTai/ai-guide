@@ -944,3 +944,136 @@ def test_air126_readme_documents_default_failopen():
     assert "新 clone 預設態" in text
     assert "fail-open" in text
     assert "config core.hooksPath .githooks" in text  # guard 修復指令在場
+
+
+# ── AIR-133：agents 面機器活視圖探針＋memory drift 修復指引 ──────────
+# agents 面只驗 repo 生成物 parity（sync_agents --check），機器活視圖（home
+# symlink：~/.agents/skills 母鏈＋~/.claude/agents／~/.zcode/agents registry）
+# 缺席時仍綠燈＝誤導「已防護」——補 [WARN] 存在性探針（警示不改退出碼，同
+# AIR-126 契約；指對性歸 skills 面 drift）。memory 面「muse CLI 在但 plugins
+# build 不支援」（inspect 非零）drift 訊息補一行修復指引（同 126 一行後果＋
+# 裝法形態）。
+
+
+def _air133_agents_manifest() -> dict:
+    return {"surfaces": {
+        "agents": {"argv": ["true"], "check_args": ["--check"]},
+        "skills": {"symlinks": [
+            {"link": "~/.agents/skills", "target": "{{REPO}}/skills"},
+            {"link": "~/.claude/agents", "target": "{{REPO}}/agents/claude"},
+            {"link": "~/.zcode/agents", "target": "{{REPO}}/agents/zcode"},
+        ]}}}
+
+
+def test_air133_agents_view_absent_warns(tmp_path, monkeypatch):
+    """無 symlink 機器＝活視圖全缺→單行 [WARN]（路徑＋後果＋裝法在場）。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    lines = mod.agents_view_absent_lines(_air133_agents_manifest())
+    assert len(lines) == 1
+    assert "[WARN]" in lines[0]
+    assert "~/.agents/skills" in lines[0] and "~/.zcode/agents" in lines[0]
+    assert "install --surface skills" in lines[0]  # 裝法在場
+    assert "parity 綠" in lines[0]  # 一行後果在場
+
+
+def test_air133_agents_view_present_silent(tmp_path, monkeypatch):
+    """三條 symlink 在場且指對 render(target)＋target 可達＝靜默。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    home = tmp_path / "home"
+    for rel, token in ((".agents/skills", "{{REPO}}/skills"),
+                       (".claude/agents", "{{REPO}}/agents/claude"),
+                       (".zcode/agents", "{{REPO}}/agents/zcode")):
+        link = home / rel
+        link.parent.mkdir(parents=True, exist_ok=True)
+        link.symlink_to(Path(mod.render(token)))
+    assert mod.agents_view_absent_lines(_air133_agents_manifest()) == []
+
+
+def test_air133_agents_dangling_symlink_warns(tmp_path, monkeypatch):
+    """斷鏈 symlink（inode 在、target 不存在）＝不可達→WARN（codex finding：
+    is_symlink() 單查會讓斷鏈靜默綠燈）。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    link = tmp_path / "home" / ".agents/skills"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(tmp_path / "nowhere")
+    lines = mod.agents_view_absent_lines(_air133_agents_manifest())
+    assert len(lines) == 1
+
+
+def test_air133_agents_mispointed_symlink_warns(tmp_path, monkeypatch):
+    """錯位 symlink（指對存在目錄但非 render(target)）→WARN。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    wrong = tmp_path / "home" / "wrong-dir"
+    wrong.mkdir(parents=True)
+    link = tmp_path / "home" / ".agents/skills"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(wrong)
+    lines = mod.agents_view_absent_lines(_air133_agents_manifest())
+    assert len(lines) == 1
+
+
+def test_air133_agents_view_manifest_without_skills_no_warn():
+    """manifest 無 skills 面（partial fixture）＝不警示（.get 鏈不崩）。"""
+    assert mod.agents_view_absent_lines(
+        {"surfaces": {"agents": {"argv": ["true"]}}}) == []
+
+
+def test_air133_cmd_check_agents_surface_warns_but_exit_ok(tmp_path, monkeypatch, capsys):
+    """AC#1 核心：--surface agents 綠燈但有顯性警示（警示不改退出碼，Plan ③）。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
+    monkeypatch.setattr(mod, "subprocess",
+                        SimpleNamespace(run=_git_hooks_probe(0, ".githooks\n")))
+    assert mod.cmd_check(_air133_agents_manifest(), "agents") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "agents 機器活視圖缺席" in out
+    assert "install --surface skills" in out
+
+
+def test_air133_agents_warning_surface_gate(tmp_path, monkeypatch, capsys):
+    """agents 警示閘門：all/agents 印、skills/memory/hooks 不印（閘門覆蓋釘）。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    manifest = _air133_agents_manifest()
+    for face in ("agents", "all"):
+        mod._print_default_state_warnings(manifest, face)
+        assert "agents 機器活視圖缺席" in capsys.readouterr().out
+    for face in ("skills", "memory", "hooks"):
+        mod._print_default_state_warnings(manifest, face)
+        assert "agents 機器活視圖缺席" not in capsys.readouterr().out
+
+
+def test_air133_cmd_check_true_drift_still_exit_1(tmp_path, monkeypatch, capsys):
+    """真 drift（sync_agents --check 非零）仍 exit 1；警示並列不改退出碼契約。"""
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 1)
+    monkeypatch.setattr(mod, "subprocess",
+                        SimpleNamespace(run=_git_hooks_probe(0, ".githooks\n")))
+    assert mod.cmd_check(_air133_agents_manifest(), "agents") == mod.EXIT_DRIFT
+    out = capsys.readouterr().out
+    assert "agents 機器活視圖缺席" in out  # 警示與 drift 並列
+    assert "sync_agents --check 非零" in out
+
+
+def test_air133_muse_inspect_fail_has_fix_hint(tmp_path, monkeypatch):
+    """AC#2：plugins build 不支援（inspect 非零）＝drift 訊息含修復指引——
+    分流契約：unrecognized subcommand→升級指引；其他 stderr→通用指引（muse
+    review finding：inspect 非零另有 plugin 未裝／daemon 異常常見成因）。"""
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/muse"))
+
+    def _probe(stderr):
+        return SimpleNamespace(run=lambda *a, **k: SimpleNamespace(
+            returncode=2, stdout="", stderr=stderr))
+
+    monkeypatch.setattr(mod, "subprocess",
+                        _probe("error: unrecognized subcommand 'plugins'"))
+    drifts: list = []
+    mod.check_muse_face(_muse_face_manifest(tmp_path, tmp_path / "cache"), drifts)
+    assert any("inspect 不可判定" in m and "修復" in m for _, m in drifts)
+    assert any("升級" in m and "plugins 子命令" in m and "重跑 --check" in m
+               for _, m in drifts)
+
+    monkeypatch.setattr(mod, "subprocess", _probe("permission denied"))
+    drifts2: list = []
+    mod.check_muse_face(_muse_face_manifest(tmp_path, tmp_path / "cache"), drifts2)
+    assert any("daemon" in m for _, m in drifts2)
+    assert not any("升級" in m for _, m in drifts2)
