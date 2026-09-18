@@ -1,12 +1,14 @@
 ---
 id: AIR-128
 title: 文件與目錄的防漂移對帳擴面——model 名、hook 判準、紅線表的單一源查核
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-17 15:09'
+updated_date: '2026-09-18 00:32'
 labels: []
 dependencies: []
+references:
+  - skills/model-routing/SKILL.md
 ordinal: 112000
 ---
 
