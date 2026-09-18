@@ -47,9 +47,9 @@ EP 加 1-3 個 load-bearing assumptions，四欄可否證格式（Assumption/Pro
 
 審查準備步四掃：相關卡池／近期同域落地（`git log --since`）／平行在飛 worktree+branch／drafts 向前。兩問（全文）：「近期落地與既有①②③決策重複/衝突嗎？」「④最可能相交的卡，本卡設計讓它更易還是更難？」機械產出 related-work 塊進審查 brief。
 
-### 2-6 code-review --arc mode
+### 2-6 code-review --reheat mode（原命名 --arc；S3 審查更名——與既有 `<hash>` 任務弧模式名稱衝突調和，機制不變）
 
-method ownership=code-review：scope＝committed baseline..tip＋final-state invariants；multi-leg evidence＋convergence judge＋consumer probes；**risk-driven lanes＋convergence stop 取代固定腿數**——三量＝unique findings/leg＋severity-weighted＋overlap，新腿連續只產已知 finding 即停；不與 state-review 合併（歷史弧「系統被改成什麼」vs 現在態「整體對不對」，兩個問題、cadence 各自獨立）。orchestration 歸 deep-work 劇本。
+method ownership=code-review：scope＝committed baseline..tip＋final-state invariants（枚舉承接 Finding Record header 的 scope UC/invariant 清單契約）；multi-leg evidence＋convergence judge＋consumer probes；**risk-driven lanes＋convergence stop 取代固定腿數**——三量＝unique findings/leg＋severity-weighted＋overlap，新腿 findings ⊆ 既有集即停；不與 state-review 合併（歷史弧「系統被改成什麼」vs 現在態「整體對不對」，兩個問題、cadence 各自獨立）。orchestration 歸 deep-work 劇本。
 
 ## 3. Load-bearing assumptions / kill criteria（自我套用 §2-3）
 
