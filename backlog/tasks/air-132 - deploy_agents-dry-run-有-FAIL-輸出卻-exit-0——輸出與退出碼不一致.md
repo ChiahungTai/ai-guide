@@ -4,7 +4,7 @@ title: deploy_agents --dry-run 有 FAIL 輸出卻 exit 0——輸出與退出碼
 status: In Progress
 assignee: []
 created_date: '2026-09-18 02:34'
-updated_date: '2026-09-18 03:29'
+updated_date: '2026-09-18 04:14'
 labels: []
 dependencies: []
 references:
@@ -30,3 +30,9 @@ ordinal: 114000
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：/Users/ctai/Github/ai-guide main@0f6035c8〕〔已決策勿重辯：①fail-loud——preflight 有 FAIL 乾貨就非零退出（dry-run 不安裝、只檢查的語義不變，只修退出碼契約）②輸出契約不動（FAIL 行照印）③範圍限 scripts/deploy_agents.py 的 dry-run 路徑與其測試④來源＝AIR-126 新 clone 模擬實查（既存 TC-3 行為）〕範圍——改：scripts/deploy_agents.py（dry-run 退出碼）、tests/（dry-run 測試）；文檔若有描述同步。AC 見卡面。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+審查 disposition（bi）：症狀根因改寫——deploy_agents 本體已 fail-loud（AIR-105 S7，10/10 FAIL 印點有非零出口，muse 逐點核對）；原觀測「FAIL＋exit 0」根因＝caller 層 installer dry-run 吞碼（codex high，已修＋回歸測試）與/或 shell pipe 遮蔽（機制重現證實；當時命令 transcript 未保留，muse F5 如實記）。交付＝零 source 改動於 deploy_agents＋subprocess 契約測試＋caller 修復。
+<!-- SECTION:NOTES:END -->

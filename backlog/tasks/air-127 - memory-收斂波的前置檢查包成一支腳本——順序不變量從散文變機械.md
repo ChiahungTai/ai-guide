@@ -4,7 +4,7 @@ title: memory 收斂波的前置檢查包成一支腳本——順序不變量從
 status: In Progress
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-18 03:29'
+updated_date: '2026-09-18 04:14'
 labels: []
 dependencies: []
 references:
@@ -28,3 +28,9 @@ AIR-93 的對帳順序約束（快照提交前必須先跑異常篩，否則繞�
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：main@f892c344〕〔已決策勿重辯：①腳本唯讀 tri-state（exit 0=clean 開波／1=無法判定停波／2=dirty 附清單）包既有 reconcile_memory_pool＋inbox age＋wave marker 檢查，不加新偵測邏輯②波次①後段（decay/觸發/regen/差異處置）仍是散文＋人裁③skill 端 memory-audit:73 巨段瘦身為「跑 preflight→按 verdict 分支」＋僅保留人裁判斷散文④源證據＝muse I-7＋memory-audit:73 實讀（單段 2000+ 字承載排序不變量）〕範圍——新增：scripts/consolidation_preflight.py；改：skills/memory-audit/SKILL.md 波前二分段。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+審查 disposition（bi）：muse 通過 5 low（F1 input-validation 例外＝意圖性 delta 已認列／F5 invocation root 註記：波只在 owning canonical workspace 跑）＋codex high 修入（deleted delta 無 mtime 保守計入活躍 writer——安全語義，deleted-only dirty 不得流入快照）；known edge：card WT symlink 池＝verdict 1 fail-closed（已文件化於 skill）。
+<!-- SECTION:NOTES:END -->
