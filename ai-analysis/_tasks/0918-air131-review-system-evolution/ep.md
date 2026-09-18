@@ -59,7 +59,7 @@ method ownership=code-review：scope＝committed baseline..tip＋final-state inv
 | A2：Heat 閾值初值在真實歷史資料上不會常態 Hot（常態＝回測窗口內 ≥2 週處於 Warm 以上） | 用既有 corrections 月檔回測聚合一次（S1 驗證段） | 回測常態 Hot | S1 內閉環：重訂閾值一次→再回測；仍常態 Hot → INVALIDATED 聚合面（保留感測器原始輸出），閾值重訂本身走 EP amendment 非棄案 |
 | A3：--arc mode 塞得進 code-review skill 現有結構（第五件禁令具體化） | 一版 --arc 段大綱＋一次對照 code-review skill 現有節的套入演練（evidence＝大綱能映射到現有節；不計時） | 映射需要新 top-level 節或新 skill 承載 | **kill/pivot --arc 方案或縮 scope**（如 lanes 進 --arc、invariants 留 state-review）——「新 skill 承載」＝第五件禁令的**重新開放決策，須 user 裁決**，非既定 fallback；禁硬塞出第二 drift 源 |
 
-各 assumption：evidence budget 耗盡且 Kill observation 未觸發＝**UNKNOWN**——顯性裁決（加 probe／升級討論／棄），禁 UNKNOWN 自動滑入 implementation（§2-3 已載 UNKNOWN 是合法終態；滑入＝sunk-cost transition）。
+各 assumption：evidence budget 耗盡且 Kill observation 未觸發＝**UNKNOWN——hypothesis/spike 層的合法結果（非弧終態）**——顯性裁決（加 probe／升級討論／棄），禁 UNKNOWN 自動滑入 implementation（§2-3 已載；滑入＝sunk-cost transition；弧仍須裁決到三態之一）。
 
 ## 4. 工作分段（一段一 session 可結算；段落 self-contained）
 
