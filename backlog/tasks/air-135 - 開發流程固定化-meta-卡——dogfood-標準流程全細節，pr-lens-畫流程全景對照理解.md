@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-18 13:18'
+updated_date: '2026-09-18 13:56'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -91,4 +91,6 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0918 跨家族審查＋judge】muse fresh-eyes 審查（job-mu6yvfsr-qb10ze，只憑卡檔還原實測）：16 findings＝✅14（採納項隨 b5cf2b10 落地：術語釘住、S7 owner=parent＋度量三欄、135.3 authority 邊界、135.6 介面 ownership、full_trigger 回接等）／❌1（F12 SC-15/16 存在性——user 逐字為能力源＋AC#4 gate 已管）／⚠️1（F5 135.1 十一條 AC 是否拆卡——留 user 裁決，建議卡內標 MVP/stretch 線）。還原測試 (b)(e) fail 已由 plan 補齊時點＋執行序兩節修復；帳本 .review/air-135.md（lint discovery 綠）。
 
 【0918 user 裁決＋收線】F5＝拆卡（orchestration 可靠性重發 AIR-135.7，135.1 保留 compiler 本體 6 AC；90e51931）；收線授權＝rebase onto main＋ff-only merge（branch/WT 保留——arc 續行中，7 子卡 To Do）；DB 修復由 user 另 session（sess_2f4d6ea5）進行中。帳本 F5 已閉（✅16 條全收斂：✅15/❌1）。
+
+【0918 POC 前期實驗（deep-work）】9 線：8 綠＋1 deferred（P5 等 DB）。P1 還原 v2 五格 4 pass＋1 partial（v1 兩 fail→歸零）；P3/P4/P12 ArcSpec→DispatchSlice→work-order 全鏈機械可行（fail-loud 反證觸發、窗口 JIT 斷言綠、政策值自 spine 09-16 行）；P6 packet fresh-agent 四問全對——schema 修正：packet 須拆 per-WT git state；P2 EP retrospective＝7 EP/122 section/71% consumed（嚴格 52%），0/7 儀式塊五個＋Scenario Matrix 57%——135.2 verdict 實證證據；P9 v1 手抄視圖 FAIL→機械生成 v2 機械驗證綠（手工視圖必漂移實證）；P10 search token 正向全命中；P11 decision entity roundtrip＋首筆真裁決 decision-1；P8 六 node 全必要、Align＝可重入 obligation（非同步 receipt 實證）。產物與判定標準：.agent-tmp/air-135-poc/（journal.md）。
 <!-- SECTION:NOTES:END -->
