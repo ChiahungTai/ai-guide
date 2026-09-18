@@ -3,10 +3,10 @@ id: AIR-131
 title: >-
   review 系統演化——雙迴路（內圈快證偽/外圈定期解凍）＋Heat state machine＋跨卡 context 掃描＋kill
   criteria＋dry-run corpus
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 22:52'
-updated_date: '2026-09-18 04:22'
+updated_date: '2026-09-18 05:20'
 labels: []
 dependencies: []
 references:
@@ -36,4 +36,12 @@ AC：①corrections-weekly 週報含 Heat 態行②execution-plan kill criteria 
 
 <!-- SECTION:NOTES:BEGIN -->
 S1 結算 Receipt：classification=boundary（Heat 升溫規則）｜review=bi——muse 5 findings＋codex 3 findings 全修入（job-mu6en3ro/job-mu6en3ud）｜fresh｜healthy。S2 結算 Receipt：classification=boundary（EP 條文）｜review=bi——muse ACCEPT＋codex 5 處方全修入（job-mu6ezh4a/job-mu6ezh76；UNKNOWN 限定 hypothesis 層、1-3 cap、decoder rule、INVALIDATED 接 Done、止損 carrier 落 corrections-weekly）｜fresh｜healthy
+
+S3 結算 Receipt：classification=boundary｜review=bi——muse 有條件通過 5 findings＋codex NO-GO 5 條全修入（jobs job-mu6ghl2w/job-mu6ghl5b）；--arc 更名 --reheat（名稱衝突調和）。S4/S5 結算 Receipt：classification=boundary｜review=bi——muse 不通過（F1 high deep-work 缺交付＝作者執行漏失被抓）＋codex NO-GO 1h3m 全修入（provenance／升格條件還原／掃描 3+5／deep-work 收尾前觸發檢查；jobs job-mu6h8c3o）｜fresh｜healthy
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+review 系統演化 S1-S5 全落地——Heat 態聚合、kill criteria＋弧終態三態、--reheat 升溫弧審查（原 --arc 更名）、跨卡 context 掃描、consumer corpus＋friction 三行入口；每段 boundary 審查閘 bi 腿全走、findings 全消費
+<!-- SECTION:FINAL_SUMMARY:END -->
