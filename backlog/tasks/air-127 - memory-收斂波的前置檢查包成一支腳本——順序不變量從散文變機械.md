@@ -1,12 +1,14 @@
 ---
 id: AIR-127
 title: memory 收斂波的前置檢查包成一支腳本——順序不變量從散文變機械
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-17 15:08'
-updated_date: '2026-09-17 15:09'
+updated_date: '2026-09-18 03:29'
 labels: []
 dependencies: []
+references:
+  - skills/memory-audit/SKILL.md
 ordinal: 111000
 ---
 
