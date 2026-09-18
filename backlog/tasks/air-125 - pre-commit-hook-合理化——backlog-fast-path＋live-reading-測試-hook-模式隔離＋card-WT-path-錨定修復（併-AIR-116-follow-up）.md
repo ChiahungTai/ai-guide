@@ -3,10 +3,10 @@ id: AIR-125
 title: >-
   pre-commit hook 合理化——backlog fast path＋live-reading 測試 hook 模式隔離＋card-WT path
   錨定修復（併 AIR-116 follow-up）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 14:48'
-updated_date: '2026-09-18 00:32'
+updated_date: '2026-09-18 02:29'
 labels: []
 dependencies: []
 references:
@@ -44,4 +44,12 @@ AC 見卡面四條。
 
 <!-- SECTION:NOTES:BEGIN -->
 0918 擴卡（air-124 衝突事故吸訥）：④owning-line 單調性條文進 root AGENTS.md git 慣例（他人 merge 已進 owning line＝既成事實，平行 session 禁 reset/revert/stash-restore 移除；衝突停寫交裁決、forward commit 收斂——codex collision verdict 條文級一句）⑤雙層機械防線：.git/card-leases/<卡id> durable claim（wt-open 原子認領、已有 active lease 硬擋）＋pre-commit lease guard（wt-identity 對不上 active lease 拒 commit——抓手建 WT 繞道）⑥③（card-WT path 錨定）大部分已由 air-110 branch 的 F-5 修復解決（_group_scripts REPO_ROOT 化、904 passed 零假漂移）——air-110 收線後本項轉為驗證殘留（monitor live 面等）。
+
+Receipt（AIR-105 四欄）：classification=boundary（commit gate 行為面）｜review=bi——muse approve（job-mu69k37a-7vdnif）＋codex finding 已修 331b620e（重發腿 finding 裁 discharge：替代防線＝air-110 既有 main 面，錨點 --check --surface monitor＋bootstrap phase4 測試）｜session-freshness=fresh｜deployment-surfaces=healthy（hooks per-clone 即生效）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+pre-commit fast path（backlog-only 0.1s 過閘，原 26s）＋PRE_COMMIT live-reading 隔離＋card-WT 錨定殘留驗證綠；bi 審查 findings 全消費
+<!-- SECTION:FINAL_SUMMARY:END -->
