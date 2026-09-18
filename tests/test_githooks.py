@@ -281,6 +281,12 @@ def test_live_face_skipped_when_pre_commit_env_set():
     assert "PRE_COMMIT" in out, out
 
 
+@pytest.mark.skipif(
+    os.environ.get("PRE_COMMIT") == "1",
+    reason="對照腿須移除 PRE_COMMIT 巢跑——在 commit gate 內執行＝gate 內重開"
+           " live 面（有 live config 的機器上破壞 AC#2 確定性，codex review"
+           " 補抓）；對照驗證歸常規（無標記）pytest 場",
+)
 def test_live_face_not_pre_commit_skipped_without_env():
     """對照腿：不帶 PRE_COMMIT → 無 hook 模式 skip（pass 或 live-config-absent skip
     ——card WT 缺 gitignored settings.json 屬後者，reason 不含 PRE_COMMIT）。"""
