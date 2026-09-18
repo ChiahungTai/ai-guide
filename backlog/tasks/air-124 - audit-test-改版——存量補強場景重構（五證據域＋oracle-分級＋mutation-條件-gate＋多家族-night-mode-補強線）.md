@@ -4,7 +4,7 @@ title: audit-test 改版——存量補強場景重構（五證據域＋oracle �
 status: Done
 assignee: []
 created_date: '2026-09-17 14:02'
-updated_date: '2026-09-17 22:05'
+updated_date: '2026-09-18 14:11'
 labels: []
 dependencies: []
 references:
@@ -50,4 +50,6 @@ AC：①五域結構＋精華段歸宿（角度 8 七項表/PropertyMock/Registr
 0917 22:2X 前置查證產物收編回填：South Chariot main 已 commit playwright.config.ts retries+trace-on-first-retry（7222e62，southchariot repo）——本卡 probe 發現的 debuggability 缺口已補。
 
 結算（final——衝突裁決版）：落地 main fd1cdc04（A 線實作+drift 同步+吸收 B 四項）＋部署 3/3。審查鏈全程：EP review 雙腿→落地 muse/codex 雙 accept+5.3 judge→衝突裁決 muse（keep-A）+codex（forward recovery）。事故：平行 session（B 線 air-124-impl）同卡雙實作＋回滾 main——完整紀錄＝EP S5（單一 narrator）＋.agent-tmp/air124-incident/；防再犯（owning-line 單調性+card lease）進 AIR-125。B branch 保留為 provenance 未 merge。Deferred：night-mode 首跑（待 mosaic 彈藥卡）、_common 抽離（promotion trigger）。
+
+SC 腿承接落地（2026-09-18）：southchariot SC-113 測試防線補強完成落 main——首 commit 17d82e2（review 裁決尾 commit 99a1078）：webview↔host protocol 行為契約五面（completeness ledger 機械匯出＋unknown fail-soft＋duplicate 冪等＋亂序 correlation＋cancel，49 測）＋flake census（scripts/flake-census.mjs，首跑 first-pass=469 flaky=0）＋selector 漸進慣例（AGENTS.md 一行）＋test:cov（baseline 85.45% lines）。code-reviewer fresh-eyes verdict approve（4 findings：1 採納隨結算、1 不採納 telemetry 現況、2 註解修正）。SC 指針項（protocol contract 首位＋薄改清單）audit-test nightly 可消費。卡 SC-113 留 In Progress 等收案兩步。
 <!-- SECTION:NOTES:END -->
