@@ -4,7 +4,7 @@ title: audit-test 改版——存量補強場景重構（五證據域＋oracle �
 status: Done
 assignee: []
 created_date: '2026-09-17 14:02'
-updated_date: '2026-09-18 20:08'
+updated_date: '2026-09-18 23:13'
 labels: []
 dependencies: []
 references:
@@ -56,4 +56,6 @@ SC 腿承接落地（2026-09-18）：southchariot SC-113 測試防線補強完�
 【mosaic night-mode-0918 readout 回填（0918 跨 repo 通知；mosaic 側自報＋素材檔已驗在）】r1 中止（偽陽性：工單壓縮 invariant——verbatim 條款修正）→ r2 完成零復發。verdict：管線機制全通——三腿盲審 12 條全過 admission；P4 產 6 RED defect 證據（RiskGuard NaN fail-open／CashTracker inf 靜默污染／parse_i128 負值雙重校正等）＋7 GREEN 補強（249 迴歸綠）；mutation 首輪基線 T1 400 mutants（survived 26→23、covered kill-rate 47.1%→48.3%、timeout 112 為穩定 artifact 類）。四項待裁決（RED 修法／T5 quantity gate／T2 dead code／docstring 修授權）在 mosaic 主 repo ai-analysis/_inbox/pending-decisions.md〔night-mode-0918-r2〕節——注意：readout 落 mosaic 主 repo，弧 WT（mosaic_alpha-audit @415d128bf）同路徑檔為空（跨 repo 指針未標 WT 的 drift 實例）。ledgers＝弧 WT .agent-tmp/night-mode-0918/（p3-decisions.md／receipts/p5-acceptance.md／receipts/mut-baseline-T1.md／friction.log）；provenance muse job-mu6yzg11-m5pm16＋codex job-mu6yzg4f-plwh5a。ai-guide 側固化＝skill 改進卡另開（friction 五條）。查證層級：素材檔存在性已驗；audit 內容重跑歸 mosaic 弧。
 
 【mosaic readout 補充（0919——取代前條數字）】mosaic 側 item 1 已裁決（修）並完成：三 defect（RiskGuard NaN/inf fail-open、CashTracker inf 污染、parse_i128 負值雙重校正）修復轉正進 mosaic main（86dd5279c）＋6 RED 測轉正＋294/152 全綠；mutation 基線更新＝393 mutants、survived 26→17、covered kill-rate 47.1%→49.2%（前條 400／26→23／48.3% 為修復前口徑）。MOS-111 已建卡（37e83720c：invariant registry＋PBT＋hash gate＋mutation gate）。剩三項待裁決：T5 quantity gate／T2 dead code／docstring 修授權（mosaic queue）。skill 改進提案追加 6/7/8 三條→已入 AIR-139 素材。
+
+【0919 迴路閉環】AIR-139 回執經 mosaic session 確認（8/8 全採納）；mosaic 側 drift 修正完成（readout sink 行改弧 WT 絕對路徑＋MOS-111 卡同步）。本卡指針的弧 WT 保留狀態由 user/mosaic 裁定——清除前關鍵數字已內聯不損裁決面。
 <!-- SECTION:NOTES:END -->

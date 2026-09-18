@@ -1,10 +1,10 @@
 ---
 id: AIR-139
 title: audit-test night-mode 契約補強——mosaic 0918 r1/r2 friction 五條提案素材
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-18 19:25'
-updated_date: '2026-09-18 20:29'
+updated_date: '2026-09-18 23:13'
 labels: []
 dependencies: []
 ordinal: 125000
@@ -39,4 +39,6 @@ mosaic audit-test --night 首跑（night-mode-0918，r1 中止＋r2 完成）的
 【0919 五條落地（D1 user 全准）】契約 1 verbatim＋來源錨點／契約 2 sandbox 聲明＋工單逐字封堵／契約 4 rerun 全清（pwd 斷言）＋timeout 口徑（分母零 n/a）／open item 回填（＋sink adapter 關係）——全部經落地閘雙腿審查＋judge 修正（muse F1-F7＋codex F1-F4 全數處理）。6/7/8 雙腿一致 ✅ 待 user 最終拍板後落地（素材在 0919 notes）。
 
 【0919 6/7/8 落地（user「ＯＫ拉」拍板）】契約 1 補事故面軸、域 2 載體對帳制式步驟（production caller 驗證，零-caller 載體全綠不計覆蓋）、python-standards IEEE 754 fail-open 防護節。post-build followup closure 11/11 rg 綠（雙腿 findings 全修正＋三提案全落地）。85c23cd7。
+
+【0919 結案】回執已交 user 轉發，mosaic session 確認收訊：「AIR-139 回執——8/8 全採納落地，這條回饋迴路正式閉環」。AC#1 回執達成（mosaic 側 drift 修正：readout sink 行＋MOS-111 卡改弧 WT 絕對路徑＋標注 gitignored 隨 WT 生命週期、關鍵數字已內聯）。AC#2 八條全落地（skill 條文＋python-standards；skill 無獨立測試面——驗證＝落地閘審查＋followup rg 11/11）。AC#3 open item 回填完成。附註：本卡與 AIR-124 notes 的弧 WT 絕對路徑指針（friction.log／ledgers）在 mosaic 弧 WT 清除後失效——關鍵數字已內聯於 mosaic readout 與本卡，指針屆時標 historical。
 <!-- SECTION:NOTES:END -->
