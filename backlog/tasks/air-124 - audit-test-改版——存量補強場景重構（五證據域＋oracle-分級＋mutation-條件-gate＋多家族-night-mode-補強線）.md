@@ -4,7 +4,7 @@ title: audit-test 改版——存量補強場景重構（五證據域＋oracle �
 status: Done
 assignee: []
 created_date: '2026-09-17 14:02'
-updated_date: '2026-09-18 14:11'
+updated_date: '2026-09-18 19:25'
 labels: []
 dependencies: []
 references:
@@ -52,4 +52,6 @@ AC：①五域結構＋精華段歸宿（角度 8 七項表/PropertyMock/Registr
 結算（final——衝突裁決版）：落地 main fd1cdc04（A 線實作+drift 同步+吸收 B 四項）＋部署 3/3。審查鏈全程：EP review 雙腿→落地 muse/codex 雙 accept+5.3 judge→衝突裁決 muse（keep-A）+codex（forward recovery）。事故：平行 session（B 線 air-124-impl）同卡雙實作＋回滾 main——完整紀錄＝EP S5（單一 narrator）＋.agent-tmp/air124-incident/；防再犯（owning-line 單調性+card lease）進 AIR-125。B branch 保留為 provenance 未 merge。Deferred：night-mode 首跑（待 mosaic 彈藥卡）、_common 抽離（promotion trigger）。
 
 SC 腿承接落地（2026-09-18）：southchariot SC-113 測試防線補強完成落 main——首 commit 17d82e2（review 裁決尾 commit 99a1078）：webview↔host protocol 行為契約五面（completeness ledger 機械匯出＋unknown fail-soft＋duplicate 冪等＋亂序 correlation＋cancel，49 測）＋flake census（scripts/flake-census.mjs，首跑 first-pass=469 flaky=0）＋selector 漸進慣例（AGENTS.md 一行）＋test:cov（baseline 85.45% lines）。code-reviewer fresh-eyes verdict approve（4 findings：1 採納隨結算、1 不採納 telemetry 現況、2 註解修正）。SC 指針項（protocol contract 首位＋薄改清單）audit-test nightly 可消費。卡 SC-113 留 In Progress 等收案兩步。
+
+【mosaic night-mode-0918 readout 回填（0918 跨 repo 通知；mosaic 側自報＋素材檔已驗在）】r1 中止（偽陽性：工單壓縮 invariant——verbatim 條款修正）→ r2 完成零復發。verdict：管線機制全通——三腿盲審 12 條全過 admission；P4 產 6 RED defect 證據（RiskGuard NaN fail-open／CashTracker inf 靜默污染／parse_i128 負值雙重校正等）＋7 GREEN 補強（249 迴歸綠）；mutation 首輪基線 T1 400 mutants（survived 26→23、covered kill-rate 47.1%→48.3%、timeout 112 為穩定 artifact 類）。四項待裁決（RED 修法／T5 quantity gate／T2 dead code／docstring 修授權）在 mosaic 主 repo ai-analysis/_inbox/pending-decisions.md〔night-mode-0918-r2〕節——注意：readout 落 mosaic 主 repo，弧 WT（mosaic_alpha-audit @415d128bf）同路徑檔為空（跨 repo 指針未標 WT 的 drift 實例）。ledgers＝弧 WT .agent-tmp/night-mode-0918/（p3-decisions.md／receipts/p5-acceptance.md／receipts/mut-baseline-T1.md／friction.log）；provenance muse job-mu6yzg11-m5pm16＋codex job-mu6yzg4f-plwh5a。ai-guide 側固化＝skill 改進卡另開（friction 五條）。查證層級：素材檔存在性已驗；audit 內容重跑歸 mosaic 弧。
 <!-- SECTION:NOTES:END -->
