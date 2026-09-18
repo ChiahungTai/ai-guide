@@ -1062,7 +1062,7 @@ _LINT_SCAN_ROOT_FILES: tuple[str, ...] = (
 # ID 註明不分大小寫）。glm- 限後接數字（排 glm-bridge surface 名）、
 # claude- 限 alias 組合（排 claude-code harness 名／flag 檔名等非 model 詞）。
 _MODEL_TOKEN_RE = re.compile(
-    r"glm-\d[\w.-]*|gpt-\d[\w./-]*|chatgpt-web/[\w*-]+"
+    r"glm-\d[\w.-]*|gpt-\d[\w./-]*|chatgpt-web[/-][\w*-]+"
     r"|claude-(?:opus|sonnet|haiku)(?:-[\w*]+)*"
     r"|muse-spark[\w.-]*|\b(?:opus|sonnet|haiku|fabel)\b",
     re.IGNORECASE,
@@ -1123,6 +1123,13 @@ _LINT_ALLOWLIST: tuple[tuple[str, str, str | None, str], ...] = (
         "——非 model token",
     ),
     (
+        "skills/model-routing/SKILL.md",
+        "model-token",
+        "chatgpt-web-models",
+        "repo 檔名（codex-chatgpt-web 的 chatgpt-web-models.ts）非 model "
+        "token——连字號面擴抓（codex review 補抓形）的附帶命中",
+    ),
+    (
         "skills/instruction-writing/SKILL.md",
         "hook-criteria",
         None,
@@ -1173,8 +1180,8 @@ def _lint_model_tokens(
     for no, line in enumerate(lines, start=1):
         for match in _MODEL_TOKEN_RE.finditer(line):
             raw = match.group(0).lower()
-            if raw.endswith("/*"):
-                continue  # 萬用族指稱（chatgpt-web/*），非具名 token
+            if raw.endswith("/*") or raw.endswith("-*"):
+                continue  # 萬用族指稱（chatgpt-web/*、chatgpt-web-*），非具名 token
             token = raw.rstrip(".-*")
             if token in known:
                 continue
@@ -1233,6 +1240,17 @@ def run_parity_lint(repo: Path, catalog_tokens: frozenset[str]) -> list[str]:
     return violations
 
 
+def _catalog_tokens(catalog: ModelCatalog) -> frozenset[str]:
+    """main(check) 的 model token 集合推導——identities＋binding tokens＋
+    harness aliases（lowercase canonicalize）。抽函式釘住接線：catalog
+    attribute 變更時整合測試先紅，不在 --check runtime 才 fatal。"""
+    return frozenset(
+        {identity.lower() for identity in catalog.identities}
+        | {binding.token.lower() for binding in catalog.bindings.values()}
+        | {token.lower() for token in catalog.harness_alias_tokens}
+    )
+
+
 _MODES = {"check", "map", "sync", "adopt-legacy"}
 
 
@@ -1267,11 +1285,7 @@ def main(
     if mode == "check":
         for path in drift:
             print(path)
-        catalog_tokens = frozenset(
-            {identity.lower() for identity in catalog.identities}
-            | {binding.token.lower() for binding in catalog.bindings.values()}
-            | {token.lower() for token in catalog.harness_alias_tokens}
-        )
+        catalog_tokens = _catalog_tokens(catalog)
         violations = run_parity_lint(repo, catalog_tokens)
         for violation in violations:
             print(violation)

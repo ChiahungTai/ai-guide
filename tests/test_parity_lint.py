@@ -213,3 +213,47 @@ def test_lint_output_contract_prefix(tmp_path: Path):
     violations = run_parity_lint(repo, CATALOG_TOKENS)
     assert violations, "植入漂移應被抓"
     assert all(v.startswith("[parity-lint]") for v in violations), violations
+
+
+# --- review 處置補釘（muse：wiring 未釘住／codex：连字號 chatgpt-web 漏抓） ---
+
+
+def test_model_token_hyphenated_chatgpt_web_unknown_fails(tmp_path: Path):
+    """连字號形 chatgpt-web-<slug> 納入對帳——未知 alias 不再靜默過閘。"""
+    repo = make_repo(tmp_path)
+    write(repo, "skills/foo/SKILL.md", "web 形態＝chatgpt-web-medium。\n")
+    violations = run_parity_lint(repo, CATALOG_TOKENS)
+    assert any(
+        "model-token" in v and "chatgpt-web-medium" in v for v in violations
+    ), violations
+
+
+def test_model_token_hyphenated_chatgpt_web_known_passes(tmp_path: Path):
+    repo = make_repo(tmp_path)
+    write(repo, "skills/foo/SKILL.md", "identity 面＝chatgpt-web-high。\n")
+    assert run_parity_lint(repo, CATALOG_TOKENS) == []
+
+
+def test_model_token_hyphenated_wildcard_passes(tmp_path: Path):
+    repo = make_repo(tmp_path)
+    write(repo, "skills/foo/SKILL.md", "web 池＝chatgpt-web-*（萬用族指稱）。\n")
+    assert run_parity_lint(repo, CATALOG_TOKENS) == []
+
+
+def test_real_catalog_wiring_and_clean_tree():
+    """main(check) 接線釘住＋真樹現況綠：_catalog_tokens 對真 catalog 推導
+    （catalog attribute 變更時此測試先紅，不在 --check runtime 才 fatal）；
+    run_parity_lint 對真 repo 零違規＝「閘門對現況樹通過」的常態釘住。"""
+    repo = Path(__file__).resolve().parents[1]
+    catalog = sync.load_catalog(repo)
+    tokens = sync._catalog_tokens(catalog)
+    assert {
+        "glm-5.3",
+        "glm-5.3-flash",
+        "fabel",
+        "chatgpt-web-high",
+        "opus",
+        "sonnet",
+        "haiku",
+    } <= tokens
+    assert run_parity_lint(repo, tokens) == []
