@@ -131,6 +131,21 @@ review finding 可經多層驗證，**各層都可能錯**：
 
 ---
 
+## 跨卡 context 掃描（審查準備步——AIR-131）
+
+> 解決「卡級審查時間軸盲目」：單卡 diff 審查看不到跨卡時間軸的重複/衝突——每個 diff 各自過審、跨卡累積互相踩踏。審查 brief 準備時機械產出 related-work 塊，審查者據此審跨卡一致性，非只審單卡 diff。
+
+**四掃＋一**（機械，逐項記錄命中）：
+1. 相關卡池：`rg -i "<域名關鍵詞>" backlog/tasks/`
+2. 近期同域落地：`git log --since="30 days" --oneline -- <相關路徑>`（30 天＝初值，可修訂）
+3. 平行在飛：`git worktree list`＋`git branch --list`——**對命中的線讀 owning card/EP/notes＋該 WT 未提交變更範圍概覽（`git -C <wt> status --porcelain`）**（codex finding：只知道「有線」不知道「在改什麼」＝漏最關鍵的未落地衝突）
+4. drafts 向前：`rg -i "<關鍵詞>" backlog/drafts/`
+5. 設計細節承載面：`rg -i "<關鍵詞>" ai-analysis/_tasks/`（EP/設計文檔——僅搜 tasks/ 與 drafts/ 會漏已開工設計）
+
+**兩問**（逐命中判讀）：①近期落地與本卡既有決策重複/衝突嗎？②最可能相交的卡，本卡設計讓它更易還是更難？
+
+**產出**：related-work 塊（命中清單＋兩問答案）併入審查 brief。
+
 ## review 執行預設（單一源 — 各 review 命令引用）
 
 > 各 review 命令（ep-review / code-review / audit-test / execution-plan EP Review / build Agent Review）的**執行層預設**集中於此 —— 消除「預設行為跨命令重複定義且 drift」。各命令保留自己的 profile（維度）+ 產出動作，執行預設（force 獨立 / 風險 profile 配置 / model / 視角 / 獨立性階梯）引用本段。

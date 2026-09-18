@@ -230,6 +230,10 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 **後續**：`/commit`（等 user 確認——自主模式不豁免 commit consent）→ `/instruction-sync`
 **接續/換手**：`/at`（跨 session reset 接續）、`/handoff`（跨 provider 交接）
 
+**收尾前觸發檢查（AIR-131——在 commit 判定前執行，codex finding：宣告式掛點不構成 orchestration）**：
+1. **控制面變更弧**：consumer-dry-run corpus 四型必跑（契約見 [consumer-dryrun-corpus](../_common/consumer-dryrun-corpus.md)）；每季保底 due-check＝查季內弧結算有無 dry-run 記錄（last-run evidence＝弧結算紀錄），無 → 本弧補跑 fresh-agent 演練；跳過＝弧結算顯式記降級
+2. **arc-risk threshold 命中**（Heat Warm/Hot、escaped Critical——聚合源 [corrections-weekly](../corrections-weekly/SKILL.md) Heat 段）→ `/code-review --reheat`（升溫弧審查：scope/lanes/cadence 見 code-review --reheat 段）
+
 > **Agent Review Cycle 已完成。** 可直接 `/commit`；如需額外審查可跑獨立 `/code-review`。
 
-**搭配 `/goal`**：`/goal all TaskCreate tasks completed, uv run pytest exits 0, ruff clean, mypy clean, all demos run`
+**搭配 `/goal`**：`/goal all TaskCreate tasks completed, uv run pytest exits 0, ruff clean, mypy clean, all demos run`（收尾前觸發檢查見上——AIR-131）

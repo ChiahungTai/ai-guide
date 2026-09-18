@@ -21,10 +21,12 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash"]
 ### 1. glob 回饋
 `ai-analysis/flow-feedback/*.md`（或 `--since <date>` 限定）。若空 → 本期無素材可審——素材以手寫 `ai-analysis/flow-feedback/*.md` 進池（前收集器 skill `/flow-feedback` 已退役）。
 
+**friction 三行入口（AIR-131——append-only 低儀式）**：繞閘/workaround 當下手寫一筆進 `ai-analysis/flow-feedback/`，三行——**時間＋哪條規則＋怎麼繞的（附 context：repo/harness——兩獨立 contexts 判定必需的 provenance）**（免 type 分類、免 counterfactual——高儀式入口是零消費的病因之一；分類由本 skill 聚合時判）。同一 workaround 在**兩個獨立 consumer contexts 再現→ 自動升 type-2 候選**（設計 smell）；跨 repo/harness 重現＝更強證據（非必要條件——同 repo/harness 的兩個獨立 context 也算，codex finding：禁收窄）。
+
 ### 2. 聚合分析
 - **重複摩擦**：同一 command/skill 跨多筆反覆出現 → **系統性問題**（單次 = 偶然，重複 = 該改）
 - **type-2 聚合**：跨筆的設計缺陷候選合併、強化
-- **摩擦 heatmap**：哪個 command/skill 最多摩擦（tags 聚合）
+- **摩擦 heatmap**：哪個 command/skill 最多摩擦（tags 聚合——三行入口未帶 tags 時，由聚合時推斷補標）
 
 ### 3. memory-routing 判定（教訓→記憶去向）
 
