@@ -759,3 +759,184 @@ def test_g5_install_form_listed_in_readme():
     assert "deploy/backlog-cleanup.plist" in text
     assert "com.ai-guide.backlog-cleanup" in text
     assert "launchctl bootstrap" in text  # 手動裝載形態在場
+
+
+# ── AIR-126：投放預設態顯性化（guard fail-open／monitor 缺席警示）──────
+# 新 clone 預設態＝兩道防護 fail-open：hooksPath 未設（控制面 guard 不 fire）、
+# --surface all 不含 monitor（健康警鈴未開）。install/check 結尾主動偵測並顯性
+# 警示（非沉默）；警示只加資訊不改退出碼（README 退出碼契約凍結）。
+
+
+def _git_hooks_probe(rc: int, out: str):
+    """fake subprocess.run：hooksPath 探針回 (rc, out)；其他呼叫（muse 等）回 0。"""
+
+    def _run(argv, *a, **k):
+        if any("hooksPath" in str(a) for a in argv):
+            return SimpleNamespace(returncode=rc, stdout=out, stderr="")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    return _run
+
+
+def _air126_monitor_manifest(tmp_path: Path) -> dict:
+    return {"surfaces": {"monitor": {
+        "plist_source": "deploy/nope.plist", "label": "test.label",
+        "install_root": str(tmp_path / "LaunchAgents")}}}
+
+
+def test_air126_hooks_path_value_real_git(tmp_path):
+    """探針契約：新 clone 未設＝空字串；已設＝值；非 git repo＝None（不警示）。"""
+    import subprocess as sp
+
+    sp.run(("git", "init", "-q", str(tmp_path)), check=True)
+    assert mod.hooks_path_value(tmp_path) == ""  # 未設
+    sp.run(("git", "-C", str(tmp_path), "config", "core.hooksPath", ".githooks"),
+           check=True)
+    assert mod.hooks_path_value(tmp_path) == ".githooks"
+    assert mod.hooks_path_value(tmp_path / "nope") is None  # 非 git repo
+
+
+def test_air126_guard_unset_warns(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    lines = mod.guard_failopen_lines(tmp_path)
+    assert len(lines) == 1
+    assert "guard 未啟用" in lines[0] and "core.hooksPath" in lines[0]
+    assert "config core.hooksPath .githooks" in lines[0]  # 修復指令在場
+
+
+def test_air126_guard_set_githooks_silent(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "subprocess",
+                        SimpleNamespace(run=_git_hooks_probe(0, ".githooks\n")))
+    assert mod.guard_failopen_lines(tmp_path) == []
+
+
+def test_air126_guard_custom_value_warns(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(0, "custom-hooks\n")))
+    lines = mod.guard_failopen_lines(tmp_path)
+    assert len(lines) == 1 and "custom-hooks" in lines[0]
+
+
+def test_air126_guard_undeterminable_silent(tmp_path, monkeypatch):
+    """非 git repo／git 失敗（rc 128）＝無法判定——不警示（非 clone 場景零噪音）。"""
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(128, "")))
+    assert mod.guard_failopen_lines(tmp_path) == []
+
+
+def test_air126_monitor_absent_warns(tmp_path):
+    lines = mod.monitor_absent_lines(_air126_monitor_manifest(tmp_path))
+    assert len(lines) == 1
+    assert "偵測網缺席" in lines[0]
+    assert "install --surface monitor" in lines[0]  # 裝法在場
+    assert "告警" in lines[0]  # 一行後果在場
+
+
+def test_air126_monitor_present_silent(tmp_path):
+    m = _air126_monitor_manifest(tmp_path)
+    inst = tmp_path / "LaunchAgents" / "test.label.plist"
+    inst.parent.mkdir(parents=True)
+    inst.write_text("<plist/>")
+    assert mod.monitor_absent_lines(m) == []
+
+
+def test_air126_monitor_face_untouched_manifest_no_warn(tmp_path):
+    assert mod.monitor_absent_lines({}) == []
+
+
+def test_air126_cmd_check_all_prints_both_warnings(tmp_path, monkeypatch, capsys):
+    for fn in ("check_rules_face", "check_skills_face", "check_hooks_scripts",
+               "check_json_face", "check_codex_face", "check_agents_face",
+               "check_muse_face"):
+        monkeypatch.setattr(mod, fn, lambda *a, **k: None)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    assert mod.cmd_check(_air126_monitor_manifest(tmp_path), "all") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "guard 未啟用" in out
+    assert "偵測網缺席" in out
+
+
+def test_air126_cmd_check_single_surface_no_monitor_line(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(mod, "check_rules_face", lambda m, d: None)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    assert mod.cmd_check(_air126_monitor_manifest(tmp_path), "rules") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "guard 未啟用" in out
+    assert "偵測網缺席" not in out  # monitor 提示限 --surface all
+
+
+def test_air126_cmd_check_drift_branch_still_warns(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(
+        mod, "check_rules_face",
+        lambda m, d: d.append(("rules", "部署檔缺席：x")))
+    monkeypatch.setattr(mod, "check_skills_face", lambda m, d: None)
+    monkeypatch.setattr(mod, "check_hooks_scripts", lambda m, d: None)
+    monkeypatch.setattr(mod, "check_json_face", lambda m, h, d: None)
+    monkeypatch.setattr(mod, "check_codex_face", lambda m, d, **k: None)
+    monkeypatch.setattr(mod, "check_agents_face", lambda m, d: None)
+    monkeypatch.setattr(mod, "check_muse_face", lambda m, d: None)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    m = _air126_monitor_manifest(tmp_path)
+    assert mod.cmd_check(m, "all") == mod.EXIT_DRIFT
+    out = capsys.readouterr().out
+    assert "guard 未啟用" in out and "偵測網缺席" in out
+
+
+def test_air126_install_all_completion_prints_warnings(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    monkeypatch.setattr(mod, "build_plan",
+                        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []})
+    monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
+    monkeypatch.setattr(mod, "_require_muse_cli", lambda: None)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    m = _air126_monitor_manifest(tmp_path)
+    m["surfaces"]["rules"] = {"argv": ["true"]}
+    m["surfaces"]["agents"] = {"argv": ["true"]}
+    m["surfaces"]["memory"] = {"plugin_path": "nope/plugin", "plugin_id": "x",
+                               "pool_setup": "nope.sh"}
+    m["registrations"] = {}
+    assert mod.cmd_install_uninstall(m, "all", "install") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "guard 未啟用" in out
+    assert "偵測網缺席" in out
+
+
+def test_air126_install_single_surface_no_monitor_line(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    monkeypatch.setattr(mod, "build_plan",
+                        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []})
+    monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    m = _air126_monitor_manifest(tmp_path)
+    m["registrations"] = {"cc": {}, "zcode": {}, "codex": {}}
+    assert mod.cmd_install_uninstall(m, "hooks", "install") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "guard 未啟用" in out
+    assert "偵測網缺席" not in out
+
+
+def test_air126_uninstall_and_dryrun_no_warnings(tmp_path, monkeypatch, capsys):
+    """警示面限 install/check 完成輸出——uninstall／dry-run 不印。"""
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    monkeypatch.setattr(mod, "build_plan",
+                        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []})
+    monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
+    monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
+    m = _air126_monitor_manifest(tmp_path)
+    m["surfaces"]["rules"] = {"argv": ["true"]}
+    m["surfaces"]["agents"] = {"argv": ["true"]}
+    m["registrations"] = {"cc": {}, "zcode": {}, "codex": {}}
+    assert mod.cmd_install_uninstall(m, "all", "uninstall") == mod.EXIT_OK
+    assert mod.cmd_install_uninstall(m, "all", "dry-run") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "guard 未啟用" not in out
+    assert "偵測網缺席" not in out
+
+
+def test_air126_readme_documents_default_failopen():
+    """AC#4：README 同步——新 clone 預設態 fail-open 明示＋兩道警示語義。"""
+    text = (mod.REPO_ROOT / "governance/README.md").read_text()
+    assert "新 clone 預設態" in text
+    assert "fail-open" in text
+    assert "config core.hooksPath .githooks" in text  # guard 修復指令在場

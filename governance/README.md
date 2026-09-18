@@ -15,6 +15,8 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 四 flag（`--dry-run`／`--uninstall`／`--check`／`--verify`）**兩兩互斥**，違規組合 exit 2。退出碼：`0` 成功；`1` drift／verify FAIL；`2` 環境守衛（Python 地板／工具缺席／flag 衝突）；`3` 子命令未實裝；`4` 執行錯誤（malformed／lost-update／子進程失敗——plan journal 有線索）。
 
+**投放預設態警示（AIR-126）**：`install`／`check` 完成輸出結尾主動偵測兩道防護並顯性警示（`[WARN]` 行，只加資訊不改退出碼）：① `core.hooksPath` 未設／非 `.githooks`＝控制面 guard 未啟用（行內附修復指令）；② `--surface all` 完成時 monitor 安裝副本缺席＝健康警鈴未開（行內附 `--surface monitor` 裝法；all 不含 monitor 屬設計，見 uninstall 節對稱性註記）。dry-run／uninstall 不印。
+
 ## 五面對照
 
 | surface | 動作 | 機制 |
@@ -95,6 +97,8 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 前提：uv 在場、repo 已 clone 本機（先決條件歸 bootstrap 執行器＝AIR-110）
 ```
 
+**新 clone 預設態＝fail-open（AIR-126 明示）**：安裝前兩道防護預設關閉——控制面 guard（`core.hooksPath` 未設，pre-commit 不 fire；修復＝`git config core.hooksPath .githooks`，per-clone）與健康警鈴（monitor 未裝，drift/fail 無日頻告警）。installer `install`／`check` 完成輸出會以 `[WARN]` 行顯性列出——看到警示不是安裝失敗，是預設態的如實揭露；照行內修復指令／裝法收斂即關閉 fail-open。
+
 新機器逐面檢查清單（「全綠」＝各項 PASS；機器可讀投影＝`manifest.toml [bootstrap_cli]`）：
 
 1. 前提：`uv --version` 在場；repo 在本機路徑。
@@ -102,5 +106,5 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 3. 安裝：`uv run python governance/install.py --surface all`（machine-local config 生成 `.bak-*`）。
 4. 手動 approve：CC `/hooks`、codex trust review、ZCode 重開 session（見分欄表）。
 5. 驗證：`--verify`——muse PASS、CC/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
-6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）。
+6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）——install/check 結尾另有 guard fail-open 顯性警示（AIR-126，偵測非驗證；修復指令見警示行）。
 7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄；`--check --surface monitor` 驗排程面 parity（live plist＝render 期望）。bootstrap 編排器已自動跑此兩步（Phase 2 `all` 成功後接 `--surface monitor`；Phase 4 `--check --surface monitor`）——手動逐面操作時照本清單。

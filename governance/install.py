@@ -842,11 +842,74 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
         if rc != EXIT_OK:
             return rc
     print_manual_steps(surface)
+    if mode == "install":
+        _print_default_state_warnings(manifest, surface)
     if mode == "install" and face_failures:
         print(f"[install] 部分面失敗：{'、'.join(face_failures)}"
               "（其他面已就位——修復後重跑失敗面）", file=sys.stderr)
         return EXIT_EXEC
     return EXIT_OK
+
+
+# ── 投放預設態顯性化（AIR-126）───────────────────────────────────
+# 新 clone 預設態＝兩道防護 fail-open：hooksPath 未設（控制面 guard 不 fire）、
+# monitor 未裝（健康警鈴未開）。install/check 完成輸出主動偵測並顯性警示——
+# 把看不見的 fail-open 變看得見；警示只加資訊不改退出碼（退出碼契約凍結）。
+
+
+def hooks_path_value(repo_root: Path) -> str | None:
+    """repo 的 core.hooksPath 設定值（唯讀探針；bootstrap G3 同語義）。
+
+    回傳：設定值（未設＝空字串）；None＝無法判定（非 git repo／git 失敗——
+    非 clone 場景不警示，零噪音）。"""
+    try:
+        proc = subprocess.run(
+            ("git", "-C", str(repo_root), "config", "--get", "core.hooksPath"),
+            capture_output=True, text=True, timeout=10, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode not in (0, 1):
+        return None
+    return proc.stdout.strip()
+
+
+def guard_failopen_lines(repo_root: Path) -> list[str]:
+    """hooksPath 未設／非 .githooks＝控制面 guard fail-open——顯性警示行。
+
+    bootstrap preflight WARN＋修復指令（G3）的安裝器投影：install/check 結尾
+    主動偵測（偵測非驗證——面歸屬仍照 README bootstrap 清單）。"""
+    value = hooks_path_value(repo_root)
+    if value is None or value == ".githooks":
+        return []
+    shown = value or "（未設）"
+    return [f"[WARN] guard 未啟用：core.hooksPath={shown}≠.githooks——本 checkout 的"
+            " pre-commit 控制面 guard（.githooks/）不 fire（fail-open：控制面路徑"
+            f" commit 無防線）。修復：git -C {repo_root} config core.hooksPath"
+            " .githooks（per-clone）"]
+
+
+def monitor_absent_lines(manifest: dict) -> list[str]:
+    """--surface all 不含 monitor（顯式排程面，設計如此）——安裝副本缺席＝
+    健康警鈴未開（drift/fail 無日頻告警，fail-open）。完成輸出顯性列出
+    一行後果＋裝法。"""
+    mon = manifest.get("surfaces", {}).get("monitor") if isinstance(manifest, dict) \
+        else None
+    if not mon:
+        return []
+    inst = real_target(home_path(f"{mon['install_root']}/{mon['label']}.plist"))
+    if inst.exists():
+        return []
+    return [f"[WARN] 偵測網缺席：monitor 未裝（{inst} 不在場）——五面 drift/fail"
+            " 無日頻告警（fail-open）。裝法：跑 install --surface monitor"]
+
+
+def _print_default_state_warnings(manifest: dict, surface: str) -> None:
+    """完成輸出結尾的投放預設態警示彙整；monitor 提示限 --surface all。"""
+    lines = guard_failopen_lines(REPO_ROOT)
+    if surface == "all":
+        lines += monitor_absent_lines(manifest)
+    for line in lines:
+        print(line)
 
 
 # ── drift gate（S4：五面 vs manifest 生成期望；唯讀，drift exit 1）──────
@@ -1110,6 +1173,9 @@ def cmd_check(manifest: dict, surface: str) -> int:
 
     monitor＝顯式面（AIR-110 G4 轉正）：`--surface monitor` 專用，all 不含
     （與 install 不對稱同理——排程面顯式操作）。
+
+    AIR-126：完成輸出結尾印投放預設態警示（guard fail-open／--surface all 時
+    monitor 缺席）——只加資訊不改退出碼。
     """
     faces = ("rules", "skills", "hooks", "agents", "memory") if surface == "all" \
         else (surface,)
@@ -1136,8 +1202,10 @@ def cmd_check(manifest: dict, surface: str) -> int:
             print(f"  - [{label}] {msg}")
         print("修復：uv run python governance/install.py --surface <面>；"
               "approve 類（Modified／未 approve）見 README「approve 分欄」節")
+        _print_default_state_warnings(manifest, surface)
         return EXIT_DRIFT
     print("[check] 五面 parity 綠（唯讀）")
+    _print_default_state_warnings(manifest, surface)
     return EXIT_OK
 
 
