@@ -76,7 +76,7 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 backlog task edit <id> -s Done --final-summary "<一句>"
 backlog task edit <id> --ref "<開工既有 EP 相對路徑>[,<shell 相對路徑>]"   # --ref 整組替換；路徑不變時可略過第二步
 ```
-**收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
+**收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。**含委派腿（bridge job／external agent）的卡**，收 Done 前逐腿過 receipt 驗收——`completed` 終態不證交付；程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節（本 skill 指針引用，不重述準則）。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
 **結案 metadata commit 特赦（user 09-11，條件授權鏈；autonomous 適用性 09-13 user 裁定收回）**：結案兩步＋其 commit（僅 `backlog/`＋結算搬移檔、**同 commit**）在 **precheck 綠（跨線掃描 exit 0）** 時免逐次確認——機械守門替代人確認（例外條款③，**限互動 session**；autonomous session 所有 commit 一律待用戶確認）；條件不滿足 → 走確認 gate。註：precheck 在此是特赦的守門條件，非結案兩步本身的新要求（「結案兩步不需 precheck」現狀不變）。
 
 **窗期寫入分流（卡檔不可見時——AIR-121）**：卡檔在 main 而工作樹停在弧 branch（branch 尚未含建卡 commit——persistent card WT／並行建卡常態）→ `task edit` 觸不到卡檔，此時**緩衝制為預設**：verdict／狀態更新先落工單輸出檔＋EP notes（**顯性降級記錄**——明標「卡面更新緩衝中，待卡檔可見補落」），branch 吸收建卡 commit（rebase/ff）後隨**開工②／結案③既有特赦 commit 補落**卡面；**禁為此擴 commit 特赦**——補落僅走既有②③條件與授權，不新開 commit 理由（09-13 AI 自主 commit 禁紅線不變）。

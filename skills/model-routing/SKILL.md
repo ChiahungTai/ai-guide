@@ -221,9 +221,9 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | `personalization preflight exceeded its readiness deadline` | ChatGPT UI／登入狀態未就緒 | 查 UI／登入狀態，修因後重派 |
 | `You've hit your usage limit ... try again at <time>` | web 池訊息額度耗盡（同約束 2） | 解析 `<time>` 排程重派（`/at`）；禁立即重試 |
 | `Selected model is at capacity` | web 池模型容量拒絕 turn-0（與上行 usage-limit 屬不同失敗分類——signature 辨識 failure class，非帳號額度證明） | bounded 序列化重試（實證可成功）；持續不退 → 換 alternate carrier；禁並發盲重派 |
-| `turn token is invalid, expired, or revoked` | 工具呼叫層 turn token／continuation state 失效（任務側誠實棄審、零編造） | 禁帶同一失效 token 原樣重試（失效的是 token 非 payload）；現行可用 recovery＝換 carrier（實證：muse 承接） |
+| `turn token is invalid, expired, or revoked` | 工具呼叫層 turn token／continuation state 失效（任務側誠實棄審、零編造）；**原始訊號只在 daemon stderr（`broker claim ... valid=false`）——rollout 事件流乾淨收尾、此形態 error surface 無文可配（片語表攔不到；09-12 有拒絕文的形態才可配）** | 禁帶同一失效 token 原樣重試（失效的是 token 非 payload）；現行可用 recovery＝換 carrier（實證：muse 承接）；**bridge ledger 會誤判 completed（fail-closed 拒絕以 `turn.completed` 乾淨收尾＝上游契約缺口，修正建議歸 codex-chatgpt-web repo）——收法必須 L1/L2 receipt 檢查（程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節）** |
 
-> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
+> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
 
 ### glm（bridge）委派契約
 
@@ -325,6 +325,8 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 > **晚收陷阱（Muse 諮詢收編——決策樹尾注）**：`wait` 用有界 timeout 迴圈、勿單一大 block；`stop`/清理前先 `show`／`export`（ledger GC 會吃證據；`export` 對 codex job fail-loud——codex 無 trajectory export 等價物，AIR-47 R8）；委派工單設計成冪等（timeout 後可能重 wait 重收）；jobId 持久化在 workspace ledger（`.delegate-bridge/`），不依賴提交 session 的 context——認領 session 只需 jobId＋同 workspace。
 >
 > **診斷手段（非收法）**：`.delegate-bridge/jobs.json`／`show <jobId> --json`／`ps` 進程核對——懷疑 job 狀態時用它們查證，不當等待機制。
+>
+> **收法 ≠ 驗收**：`wait`／`show` 回 `completed` 只證 transport 終態，不證工作交付——檔案承載腿收法後按工單具名 receipt 驗收（L1 在場→L2 錨點→L3 人工；tripwire 不翻案），程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節（0919 bridge noop-completion 教訓）。
 
 > 工單模板見 `skills/_common/work-order.md`（foreign runtime 共用；prompt 為任務本文，禁含委派語言）。
 
