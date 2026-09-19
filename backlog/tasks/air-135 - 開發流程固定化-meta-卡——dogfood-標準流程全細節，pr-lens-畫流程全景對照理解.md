@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-19 05:24'
+updated_date: '2026-09-19 06:00'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -103,4 +103,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0919 commit 委任細化＋plugin 授權（user 親述→canonical 落 decision entity）】①自動化弧 gate 順序＝bi/tri 審查過關→post-build 過關→自動 commit；post-build 沒跑＝禁 commit、補救＝補跑（非跳過）②commit skill 最後確認加嚴（staged 逐檔核對／verdict＋receipt 機驗／message 對帳）③plugin：cc/codex 直裝免問、zcode 僅 user 手動。canonical＝decision-2／decision-3（accepted）；本條為指針。rule/skill 面收編（outward-action-consent＋commit skill）走落地前審查閘，歸 135 條文收編批。
 
 【0919 v2 全案驗收（user OK）】旅程①納前期 alignment viewport 觸發規範（機械錨：pending decision ≥2 選項含 tradeoff／理解 delta；user opt-out 恆在）；S7 close gate 節點 owner＝本卡。deps 拓撲定著：L0 135.2‖135.3→L1 135.4‖135.6‖135.5→L2 135.7→L3 1351。提案溯源＝.agent-tmp/air-135/dogfood/proposal-v2.md＋codelens-poc-proposal.html（tri：muse job-mu7xaeki／codex job-mu7xbsv5／GLM-fresh）。
+
+【0919 user 裁決：main-seat delegate-default＝預設開發模式（非僅 135.7 未來契約，即日生效）】做事＝預設開 sub（背景、artifact-first 落盤、回 bounded receipt）；main agent 留 discussion/steering 座席——討論、判斷、審查整合、liveness 盯場。實作腿、查證腿、機械腿全走 sub；user 在場時 main seat 不親手做可委派的工作。135.7 實作時以此為 baseline 契約，skill/條文面落地走審查閘。
+
+【0919 v3 總修（gap-mining 四腿：muse job-mu7z2ayf/mu7z2b0e＋flash×2；user deep-work 授權）】C8 建真卡 AIR-135.8（618f6a36，deps 135.2/135.7）——correction 迴路；G1 升格＝135.1 新增 AC#7 使用規劃 artifact（含 spine 保鮮承接）；G3 mode taxonomy pending（decisions-pending 台帳）；小 gap 各歸屬（135.4 裁決清單視圖、135.7 信任畢業＋方向探針、135.2 影子禁升格）。拓撲更新：L2 後段加 135.8。
 <!-- SECTION:NOTES:END -->
