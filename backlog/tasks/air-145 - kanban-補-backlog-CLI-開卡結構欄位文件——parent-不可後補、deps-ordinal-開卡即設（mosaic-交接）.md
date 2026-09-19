@@ -1,7 +1,7 @@
 ---
 id: AIR-145
 title: kanban 補 backlog CLI 開卡結構欄位文件——parent 不可後補、deps/ordinal 開卡即設（mosaic 交接）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 23:19'
 updated_date: '2026-09-19 23:19'
@@ -37,3 +37,9 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 ①baseline：mosaic_alpha 70bbc12a（提案檔 ai-analysis/_inbox/ai-guide-patch-kanban-card-fields.md）；ai-guide main 對時 ②已決策勿重辯：條文落點＝kanban 建卡段 code block（mosaic 提案＋instruction-writing 規範潤稿）；meta 詞根/playbook 不在範圍 ③scope：動＝skills/kanban-board/SKILL.md 建卡段；不動＝其他 skills/rules ④scenarios：agent 開子卡→用 -p/--dep/--ordinal；漏設→create -p 重開＋superseded 歸檔 ⑤integration：deploy_agents.py 部署鏈；mosaic 端 symlink 同源 ⑥驗證式：rg parent 命中建卡段＋sync_agents --check 綠＋提案檔刪除
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【結案】kanban 建卡段結構欄位文檔落地（-p/--dep/--ordinal/-m＋edit 無 --parent 限制）；codex 確認腿 FIX-THEN-PASS 三修正已併（--dep 整組替換／-m 分列／optionality 釋義）；deploy 3/3＋sync 綠＋mosaic 提案檔刪除；lint_card_markers 94 卡 damaged=0。
+<!-- SECTION:NOTES:END -->
