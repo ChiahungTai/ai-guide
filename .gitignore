@@ -66,3 +66,4 @@ ref-docs/*.pdf
 # probe scratch 備份（F5：T20 運行副產不應進庫）
 *.bak
 *.bak-*
+DECISIONS-PENDING.md
