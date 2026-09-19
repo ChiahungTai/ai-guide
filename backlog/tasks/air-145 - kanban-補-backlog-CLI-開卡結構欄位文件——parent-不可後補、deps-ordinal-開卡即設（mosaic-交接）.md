@@ -27,9 +27,9 @@ flowchart LR
 ## Acceptance Criteria
 
 <!-- AC:BEGIN -->
-- [ ] #1 skills/kanban-board/SKILL.md 建卡段含 -p／--dep／--ordinal／-m 旗標行為文檔，含「edit 無 --parent——漏設只能 create -p 重開」限制（rg 命中）
-- [ ] #2 uv run python scripts/sync_agents.py --check 綠；scripts/deploy_agents.py regenerate 完成
-- [ ] #3 mosaic 端提案檔 ai-analysis/_inbox/ai-guide-patch-kanban-card-fields.md 已刪（commit 在）
+- [x] #1 skills/kanban-board/SKILL.md 建卡段含 -p／--dep／--ordinal／-m 旗標行為文檔，含「edit 無 --parent——漏設只能 create -p 重開」限制（rg 命中）
+- [x] #2 uv run python scripts/sync_agents.py --check 綠；scripts/deploy_agents.py regenerate 完成
+- [x] #3 mosaic 端提案檔 ai-analysis/_inbox/ai-guide-patch-kanban-card-fields.md 已刪（commit 在）
 <!-- AC:END -->
 
 ## Implementation Plan
