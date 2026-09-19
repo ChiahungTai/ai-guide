@@ -31,10 +31,10 @@ for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do
 # 聚合判讀 b)：本行輸出＝porcelain 面歸屬表——各 WT 未 commit 卡檔逐一列出（誰該協調、卡何時進 ref）
 # 盲區聲明：兩掃母體皆為 `git worktree list --porcelain`——未註冊 WT 目錄（plain directory copy、pruned 殘留）不在掃描內
 backlog task create "<標題>" -l <labels> -p <母卡id> --ordinal <n> --dep <前置id,前置id> -d "<人話 Description＋一張 mermaid 圖——user SC ext 點卡確認後才落>"   # CLI id=本 WT max+1，無 --id 可指定；desc 走「開卡 Description 先行」（見下），禁 --ac 隨初始 create（AC 屬後補段）；standalone 卡免 -p/--dep
-# 結構欄位開卡即設（缺一＝下個 session 看不見關係——MOS-115-123 教訓：關係只寫進 Plan 文字不算數，次日被迫重開 8 卡）：
+# 結構欄位有該語義時開卡即設（缺了＝下個 session 看不見關係——MOS-115-123 教訓：關係只寫進 Plan 文字不算數，次日被迫重開 8 卡）：
 #   -p 母卡：SC hierarchy／母卡 Subtasks 顯示依賴此欄；CLI 自動編號 母卡.1/.2…；⚠ edit 無 --parent——漏設後補掛唯一法＝create -p 重開（舊卡 superseded 歸檔）
-#   --dep 前置卡（依賴方向＝「我的前置」；清板 precheck 消費；edit 可 --dep/--clear-deps 追加清理）
-#   --ordinal 家族連號（板面排序；edit 可改）；-m/--clear-milestone 分期（語義 user 定）
+#   --dep 前置卡（依賴方向＝「我的前置」；清板 precheck 消費）；edit --dep＝整組替換——改單一 dep 前必帶回完整集合，--clear-deps 清空
+#   --ordinal 家族連號（板面排序；edit 可改）；-m 分期（edit 另有 --clear-milestone 清除；語義 user 定）
 backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"   # desc 留人話、spec 住 Plan（詳「欄位分工」；`task create --plan` 限 active status，To Do 建卡後以 edit 補）
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
 ```
