@@ -21,10 +21,23 @@ from __future__ import annotations
 import argparse
 import datetime
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-LEDGER = Path(__file__).resolve().parent.parent / "DECISIONS-PENDING.md"
+# 台帳固定住主 checkout（git common dir 的父目錄）——任何 worktree 跑都寫同一檔，
+# 防 per-WT 台帳 split-brain；gitignored（活過 commit 與夜清，但單一副本）
+LEDGER = (
+    Path(
+        subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            cwd=Path(__file__).resolve().parent,
+        ).stdout.strip()
+    ).parent
+    / "DECISIONS-PENDING.md"
+)
 ROW = re.compile(
     r"^\| (D-\d+) \| (\d{4}-\d{2}-\d{2}) \| ([^|]+) \| ([^|]+) \| ([^|]+) \| (\S+)(?: \|([^|]*))?\|?\s*$"
 )
