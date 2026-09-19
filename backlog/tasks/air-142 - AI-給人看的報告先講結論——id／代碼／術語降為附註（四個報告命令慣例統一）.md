@@ -4,7 +4,7 @@ title: AI 給人看的報告先講結論——id／代碼／術語降為附註�
 status: In Progress
 assignee: []
 created_date: '2026-09-19 21:15'
-updated_date: '2026-09-19 21:19'
+updated_date: '2026-09-19 21:33'
 labels: []
 dependencies: []
 references:
@@ -43,7 +43,7 @@ tier: standard
 <!-- AC:BEGIN -->
 - [ ] #1 skills/_common/conclusion-first.md 存在，含原則句「人類可讀產出先結論／先人話」與 id／代碼／術語附註語義＋❌/✅ 實例（rg 驗證）
 - [ ] #2 debrief／illustrate／smell-detector／deep-work 四 SKILL.md 各含 conclusion-first.md 指針（rg -c ≥1 且相對路徑可解析）
-- [ ] #3 原則句逐字僅住 conclusion-first.md：rg -F「人類可讀產出先結論／先人話，id／代碼／術語降為附註」全 repo 命中=1（禁多檔重刻）
+- [ ] #3 原則句逐字僅住 conclusion-first.md：rg -F「人類可讀產出先結論／先人話，id／代碼／術語降為附註」skills/ rules/ 命中=1（禁多檔重刻；治理記錄〔卡檔〕自引不在謂詞域——intent 腿 Important finding 修正）
 - [ ] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
 <!-- AC:END -->
 
@@ -55,11 +55,15 @@ tier: standard
 ③scope：動＝skills/_common/conclusion-first.md（新）＋debrief/illustrate/smell-detector/deep-work 四 SKILL.md 各一行指針；不動＝其他 skills/rules/命令介面；安裝面（governance manifest surfaces.skills symlink 母鏈）零變動
 ④scenarios：AI 產人類面報告（完成報告/viewport 簡報）→首句先結論、id/代碼為附註；邊界＝LLM 執行鏈產出（EP/findings/code）不適用；fail＝指針路徑斷鏈（rg 攔）
 ⑤integration：消費端＝四命令輸出段；上游＝corrections 週報 Warm 動作②；安裝面＝~/.agents/skills＋~/.claude/skills symlink 母鏈隨檔送達
-⑥驗證式：rg -F "人類可讀產出先結論／先人話" 全 repo 命中=1；四 SKILL.md rg -c "conclusion-first" ≥1；lint_card_markers exit 0；receipt 四欄在卡 notes
+⑥驗證式：rg -F "人類可讀產出先結論／先人話" skills/ rules/ 命中=1；四 SKILL.md rg -c "conclusion-first" ≥1；lint_card_markers exit 0；receipt 四欄在卡 notes
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 【authoring receipt】accepted c0087da3f8b59198 2026-09-20
+
+【review receipt】classification=boundary／review=in-harness full 雙 context PASS（fresh：零 Critical/Important；intent：C1-C3 PASS，AC#3 謂詞 Important 已修正為限域 skills/ rules/ 命中=1 實跑 PASS）＋external cross-family deferred:.review/air-142.md#open-pending（muse 429 failed-usage job-mu8wfgky-ue0mrb，retryable 2026-09-21T00:00Z，due 2026-09-27——landing-ineligible 至補審通過）／session-freshness=fresh（outward-action-consent 0920 新版已重讀）／deployment-surfaces=pending（skills symlink 隨 merge 生效，禁靜默落地）
+
+【findings 裁決】A1 untracked 檔 commit 風險→採納（結案 commit 具名 add 必含 conclusion-first.md）；B1 desc 同步尾巴→不採納（觸發文案，plan⑤ 已記錄）；B2 現有/既有異字→不採納（凍結契約原文）；A2 報告稱呼不一→既有問題只標不清（未來候選）；A3 雙向互指→可接受；A4/B3 inferred 低風險→不採納（reviewed diff 凍結）；B4 judge-review 相鄰無引用→不動；corrections-weekly 接結論先行＝契約外未來候選
 <!-- SECTION:NOTES:END -->
