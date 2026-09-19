@@ -15,9 +15,19 @@ ordinal: 117000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-把「開發流程固定化」提升成 AI Development Arc program：核心不是固定一串 command，而是定義必要的 semantic obligations，讓人與 LLM 在關鍵時點保持同一張圖，同時把可委派的流程／model／WT／session 細節交給 Marshal 自動化。主鏈為 entry Align（user 六欄交代）→ Shape/Plan → Build/Verify（自動）→ exit Align（終場六塊）→ Settle（批量收線）；Marshal 包覆全弧，不是 lifecycle node，同 repo handoff 只是 orchestration 細節。工作狀態採 card-first：Backlog parent/sub-card tree 是唯一 durable planning/control plane，Plan 是可修訂 working hypothesis（改案必留 supersedes＋reason）；standalone EP 是否退役由 AIR-135.2 實證收尾。human viewport 是 projection 而非第二真相源；跨 repo 採 owner/consumer contract——ai-guide 擁 lifecycle semantics，SouthChariot 擁人機 control surface、不另建 lifecycle truth。開卡一律 Description 先行（人話＋一張 mermaid 圖），user 在 SC ext 點卡確認後才建卡、再補 AC/Plan。
+把「開發流程固定化」提升成 **AI Development Arc program**。
 
-**Program 拓撲（deps 分層）**：
+**核心思維**
+
+- 定義必要的 semantic obligations，讓人與 LLM 在關鍵時點保持同一張圖——不是固定一串 command
+- 可委派的流程／model／WT／session 細節交給 Marshal 自動化；Marshal 包覆全弧，不是 lifecycle node
+- 工作狀態採 card-first：Backlog parent/sub-card tree 是唯一 durable planning/control plane；standalone EP 是否退役由 AIR-135.2 實證收尾
+- human viewport 是 projection 而非第二真相源；跨 repo 採 owner/consumer contract——ai-guide 擁 lifecycle semantics，SouthChariot 擁人機 control surface、不另建 lifecycle truth
+- 開卡一律 **Description 先行**（人話＋一張 mermaid 圖），user 在 SC ext 點卡確認後才建卡、再補 AC/Plan
+
+**主鏈**：entry Align（user 六欄交代）→ Shape/Plan → Build/Verify（自動）→ exit Align（終場六塊）→ Settle（批量收線）；同 repo handoff 只是 orchestration 細節。
+
+**Program 拓撲（deps 分層）**
 
 ```mermaid
 flowchart TB
@@ -51,7 +61,7 @@ flowchart TB
   A7 --> A1
 ```
 
-**Two-Touch 旅程**：
+**Two-Touch 旅程**
 
 ```mermaid
 flowchart LR
