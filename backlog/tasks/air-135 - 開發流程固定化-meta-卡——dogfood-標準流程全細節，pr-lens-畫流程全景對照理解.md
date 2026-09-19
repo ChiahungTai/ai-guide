@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-18 13:56'
+updated_date: '2026-09-19 01:10'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -93,4 +93,6 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0918 user 裁決＋收線】F5＝拆卡（orchestration 可靠性重發 AIR-135.7，135.1 保留 compiler 本體 6 AC；90e51931）；收線授權＝rebase onto main＋ff-only merge（branch/WT 保留——arc 續行中，7 子卡 To Do）；DB 修復由 user 另 session（sess_2f4d6ea5）進行中。帳本 F5 已閉（✅16 條全收斂：✅15/❌1）。
 
 【0918 POC 前期實驗（deep-work）】9 線：8 綠＋1 deferred（P5 等 DB）。P1 還原 v2 五格 4 pass＋1 partial（v1 兩 fail→歸零）；P3/P4/P12 ArcSpec→DispatchSlice→work-order 全鏈機械可行（fail-loud 反證觸發、窗口 JIT 斷言綠、政策值自 spine 09-16 行）；P6 packet fresh-agent 四問全對——schema 修正：packet 須拆 per-WT git state；P2 EP retrospective＝7 EP/122 section/71% consumed（嚴格 52%），0/7 儀式塊五個＋Scenario Matrix 57%——135.2 verdict 實證證據；P9 v1 手抄視圖 FAIL→機械生成 v2 機械驗證綠（手工視圖必漂移實證）；P10 search token 正向全命中；P11 decision entity roundtrip＋首筆真裁決 decision-1；P8 六 node 全必要、Align＝可重入 obligation（非同步 receipt 實證）。產物與判定標準：.agent-tmp/air-135-poc/（journal.md）。
+
+【0919 北極星定案（tri：muse＋GLM-fresh＋5.3；codex 三連死憑證過期記環境事故）】**Two-Touch Execution（priced autonomy 版）**＝本 program 終態：任務＝開頭交代（六欄：intent verbatim／non-goals／revert 預算／預授權類／假設台帳四欄／成功謂詞）→ 不打擾的可觀察性執行 → 終場呈現六塊（comprehension receipt／intent-diff 防拉伸／決策紀錄含被拒選項／可逆點＋成本標注／no-impact 機械證據／否決介面——否決必須比批准便宜）。核心不變式：①**無正當理由的打斷＝0**（打斷合法性＝強 outward／真分岔／自我擴權／預算超支；「次數＝2」非 invariant）②**priced autonomy**：「能 revert 就不問」錯——「revert 便宜才不問」；revert 成本連續，開頭定預算、自治決策扣款、超支即停 ③門裝對位置：行動面（commit/outward/破壞性）憲法停；判斷面自治記錄理由（0919 自我檢舉：十幾次打斷多數違規——W1-W8 清單見 tri 檔）④方向漂移複利對策：早期方向探針（artifact 不提問）＋bounded slices checkpoint＋假設台帳 slice 邊界審計 ⑤信任畢業制：首批小額預算＋可不看的 checkpoint，否決率低→升級。viewport 層（135.4）＝終場呈現＋可觀察性的工具：圖替你看（沉默是成功）、新鮮度錨（stale 自稱 stale）、注意力送到 AI 最可能誤解處、無問題可問的視圖不存在。設計全文：.agent-tmp/air-135/twotouch-{muse,glm}.md＋northstar-{muse,glm}.md（codex 腿三連死：環境事故記錄）。
 <!-- SECTION:NOTES:END -->
