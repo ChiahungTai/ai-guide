@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-19 03:24'
+updated_date: '2026-09-19 05:24'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -101,4 +101,6 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0919 Two-Touch 落地旅程（user 親述，取代抽象北極星）】①開頭交代任務→②卡內容討論：Code Lens 即時產生幫 user 理解的視圖，顯示於 SC（VSCode 整合瀏覽器）→③討論確定 SPEC 好了：SC Code Lens 呈現→LLM 研究→EP 寫在卡上→SC Code Lens 再呈現→④guide 依時間窗口＋coding plan 訂閱資訊＋memory spine 產生 LLM 使用規劃與開發流程（＝135.1 DispatchSlice）→⑤自動化執行（135.7）→⑥完成：Code Lens 終場呈現（產出＋最終架構＋待裁定事項；有 UI／可呈現物一併開好不用 user 說）→⑦經 bi/tri＋post-build 過關→**直接 commit（user 0919 授權：審查通過的弧 commit consent 委任）**→⑧收尾（user 裁定修好整理好）→關卡可批量（半夜／不在場跑，依次處理多卡）。
 
 【0919 commit 委任細化＋plugin 授權（user 親述→canonical 落 decision entity）】①自動化弧 gate 順序＝bi/tri 審查過關→post-build 過關→自動 commit；post-build 沒跑＝禁 commit、補救＝補跑（非跳過）②commit skill 最後確認加嚴（staged 逐檔核對／verdict＋receipt 機驗／message 對帳）③plugin：cc/codex 直裝免問、zcode 僅 user 手動。canonical＝decision-2／decision-3（accepted）；本條為指針。rule/skill 面收編（outward-action-consent＋commit skill）走落地前審查閘，歸 135 條文收編批。
+
+【0919 v2 全案驗收（user OK）】旅程①納前期 alignment viewport 觸發規範（機械錨：pending decision ≥2 選項含 tradeoff／理解 delta；user opt-out 恆在）；S7 close gate 節點 owner＝本卡。deps 拓撲定著：L0 135.2‖135.3→L1 135.4‖135.6‖135.5→L2 135.7→L3 1351。提案溯源＝.agent-tmp/air-135/dogfood/proposal-v2.md＋codelens-poc-proposal.html（tri：muse job-mu7xaeki／codex job-mu7xbsv5／GLM-fresh）。
 <!-- SECTION:NOTES:END -->
