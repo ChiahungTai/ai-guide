@@ -50,10 +50,12 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 
 **開卡 Description 先行（0919 v4 終版——user 裁決「簡單不要有太多規則」）**：開卡（含 program 拆卡批量）第一產物＝**Description：人話（這卡解什麼／定什麼／不做什麼）＋恰好一張 mermaid 圖**（parent／program 卡至多兩張：拓撲＋旅程）。流程：①AI 起草 `task create` 落卡（**未 commit**——board 掃磁碟檔，SC ext 已可點卡預覽）②user 點卡看 Description＋圖，OK 前修改或刪卡 ③確認後才 commit（例外①僅及新增卡檔），AI 再補 AC／Plan（走既有②開工 metadata commit 或弧結算 commit 進版控，建卡 spec gate 於補齊時滿足）；**AC/Plan 補齊前該卡禁派工／禁 handoff**（跨 session 久停＝先補齊 spec gate 再離手）。無平行 render、無 marker、無 digest 機制；既有卡 Description 的 semantic 修改＝改完請 user 點卡再算數。`.agent-tmp` 提案文件不承擔 acceptance identity——核准對象＝canonical 卡本身（0918 影子核可事故教訓）。
 
-**Description 寫法**（0919 v4——禁散文牆；SC card detail＝純 md 渲染）：
+**Description 寫法——鐵律：寫給人看，圖為主體**（0919 v4；SC card detail＝純 md 渲染）：
 
-- 結構：一句開場定位 → `**粗體小節**`（做什麼／不做什麼／規矩…按卡自然分節）＋ bullets——一節一概念，禁整段長文；SC card detail 支援 headings/bullets/bold（raw HTML 會字面顯示；CJK 段禁硬折行——`breaks:true` 單換行即斷行）
-- 圖＝各卡自然形狀一張（流程→`flowchart LR`；拓撲→`TB`＋subgraph 分層；迴圈標回邊）
+- **每卡必畫圖**：先畫圖、再補文字——圖是 user 30 秒看懂這卡的手段，無圖＝卡不合格；parent／program 卡至多兩張（拓撲＋旅程）
+- **人看得懂的檢驗**：user 不讀 AC/Notes，只看 Description＋圖——能否講出這卡做什麼／不做什麼／現在如何？講不出＝重寫
+- 結構：一句開場定位 → `**粗體小節**`（做什麼／不做什麼／規矩…按卡自然分節）＋ bullets——一節一概念，禁整段散文牆；raw HTML 會字面顯示、CJK 段禁硬折行（`breaks:true`）
+- 圖＝各卡自然形狀（流程→`flowchart LR`；拓撲→`TB`＋subgraph 分層；迴圈標回邊）
 - mermaid safe subset：node 與 subgraph id 全 ASCII 穩定字串（id＝identity，label＝引號內自由文本）、label 全用引號、禁 `#`／click／raw HTML／directive／inline style（**本 subset 優先——不套 mermaid skill 的 `#rrggbb` 配色規範**）、複雜度上限 ≤12 nodes／≤16 edges（超限拆圖，補充語義下沉 Plan 或 references 所指文件）；語法細節與陷阱＝[mermaid skill](../mermaid/SKILL.md)
 - **SC card detail 的 mermaid 渲染＝進行中需求**（handoff 已組裝待 SC 施工）——完成前 fence 顯示為 code block，不影響 GitHub/其他 md 渲染器
 
