@@ -15,7 +15,15 @@ ordinal: 127000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-cc.json 進場成為 Claude 端權威模板面後（0919 hook_registration 誤報更正），缺對應的 template→live parity：cc.json 加接線、live settings.json 忘 merge → hook 從未 fire（F8 形狀）無人抓——zcode_live_parity／codex_live_parity 皆有此防線，CC 面缺。tri F4 列為後續弧候選。本卡新增 `cc_live_parity` invariant（複用 _wiring 三元組語義：event＋matcher＋script basename；{{REPO}} 模板與 live 絕對路徑由 basename 收斂；live 缺場〔非本機或 symlink 斷〕skip 不 false positive；單向 template→live）。
+cc.json 進場成為 Claude 端權威模板面後（0919 hook_registration 誤報更正），缺對應的 **template→live parity 防線**：cc.json 加接線、live settings.json 忘 merge → hook 從未 fire（F8 形狀）無人抓——zcode_live_parity／codex_live_parity 皆有此防線，CC 面缺（tri F4 列為後續弧候選）。本卡新增 `cc_live_parity` invariant：複用 _wiring 三元組語義（event＋matcher＋script basename）；{{REPO}} 模板與 live 絕對路徑由 basename 收斂；live 缺場（非本機或 symlink 斷）skip 不 false positive；單向 template→live。
+
+```mermaid
+flowchart LR
+  T["cc.json<br/>hooks 模板"] -->|"parity 檢查<br/>basename 收斂"| L["~/.claude/settings.json<br/>live"]
+  L -->|"hook 從未 fire"| MISS["finding（F8 形狀）"]
+  T -->|"兩面同步"| OK["零 finding"]
+  L -.->|"live 缺場／symlink 斷"| SKIP["skip 不誤報"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

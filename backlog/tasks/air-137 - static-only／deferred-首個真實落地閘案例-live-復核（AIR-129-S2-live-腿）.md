@@ -15,7 +15,23 @@ ordinal: 119000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-AIR-129 的兩輪 dogfood 全是歷史 diff replay，測不到兩件事（EP §4 S2 live 腿規定）：①static-only 判準對真實 staged diff 的求值順暢度——含「作者證明渲染輸出 byte 等價」這個義務的實際操作成本；②deferred 回執在真實 no-candidate 情境的可用性（若下次弧剛好撞額度緊，直接實測 P4）。觸發條件：下次任何控制面 instruction 條文變更弧，實走落地閘時順手復核，結果回寫判準（微調走既有 amendment 路徑；PASS 則記錄即可）。判準現行條文：skills/instruction-writing/SKILL.md 落地前審查閘節第 4/5 款。
+驗證落地閘判準在**真實案例**的可用性——AIR-129 兩輪 dogfood 全是歷史 diff replay，測不到兩件事（EP §4 S2 live 腿規定）：
+
+- ①static-only 判準對真實 staged diff 的求值順暢度——含「作者證明渲染輸出 byte 等價」義務的實際操作成本
+- ②deferred 回執在真實 no-candidate 情境（額度緊弧）的可用性
+
+**觸發與回寫**：下次任何控制面 instruction 條文變更弧，實走落地閘時順手復核；結果回寫判準（微調走既有 amendment 路徑；PASS 記錄即可）。判準現行條文：skills/instruction-writing/SKILL.md 落地前審查閘節第 4／5 款。
+
+```mermaid
+flowchart LR
+  N["下一個控制面<br/>條文變更弧"] --> G["實走落地閘"]
+  G --> C1["live 復核①<br/>static-only 求值順暢度"]
+  G --> C2["live 復核②<br/>deferred 回執可用性"]
+  C1 --> W{"判準有待修？"}
+  C2 --> W
+  W -->|"是"| AM["amendment 微調"]
+  W -->|"否"| PASS["PASS 記錄落卡 notes"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

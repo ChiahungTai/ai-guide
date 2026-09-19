@@ -13,7 +13,21 @@ ordinal: 120000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-把四個 AI coding harness（Claude Code／ZCode／Codex／Muse）各自的掌控面——skills、rules、hooks、權限確認、排程等 harness 本身支援到哪——加上 ai-guide 目前實際接了哪些，整理成一份單一導航矩陣。之後分配工作或新增 harness 時照表查，不用再考古散落各處的實測紀錄。
+把四個 AI coding harness（Claude Code／ZCode／Codex／Muse）的掌控面整理成**單一導航矩陣**——harness 本身支援到哪＋ai-guide 實際接了哪些。之後分配工作或新增 harness 照表查，不用再考古散落各處的實測紀錄。
+
+**矩陣結構**
+
+- ~15 capability rows × 4 harness：A 層＝native 能力（官方契約，附鏡像 file:line＋版本斷言）；B 層＝ai-guide 結論狀態（wired/partial/unwired/n-a/unknown）＋authority pointer
+- 雙檔制：contracts.md 管「harness 能做什麼」（A 層詳細單一源）；矩陣新檔 ref-docs/harness/control-plane-matrix.md 管「這台這版本實際掌控到哪層、證據到哪層」
+- gap register 在場（harness 有未接／要但缺）；新 harness onboarding checklist 附錄＋LIFECYCLE 新增/更新/退役流程掛引用
+
+```mermaid
+flowchart LR
+  CM["contracts.md<br/>A 層官方契約單一源"] --> MX["control-plane-matrix.md<br/>~15 rows × 4 harness"]
+  MX --> GAP["gap register<br/>未接／要但缺"]
+  MX --> OB["onboarding checklist<br/>新 harness 進場"]
+  LC["LIFECYCLE<br/>新增/更新/退役"] -.掛點.-> MX
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

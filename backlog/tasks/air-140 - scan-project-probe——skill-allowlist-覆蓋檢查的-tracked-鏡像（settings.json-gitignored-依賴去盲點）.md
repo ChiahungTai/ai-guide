@@ -15,7 +15,16 @@ ordinal: 126000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-check_single_source.py 的 `skill_allowlist_coverage` invariant 以 `settings.json`（gitignored local-only）為唯一證據源——非 main checkout 缺場時 `check_coverage` 靜默 `return []`（muse 0919 全表掃描：REGISTRY 唯一同型殘留，方向＝false negative，非 main checkout 上 skill rename drift 全不可見）。修法＝tracked 鏡像：`governance/registrations/cc-allowlist.json` 收納 permissions.allow 投影，probe 改讀「settings.json 優先、缺場落鏡像」，兩面都在場時比對 drift。
+check_single_source.py 的 `skill_allowlist_coverage` invariant 有個盲點：證據源只有 `settings.json`（gitignored local-only）——非 main checkout 缺場時 `check_coverage` 靜默 `return []`（方向＝false negative，skill rename drift 全不可見；muse 0919 全表掃描：REGISTRY 唯一同型殘留）。修法＝**tracked 鏡像**：`governance/registrations/cc-allowlist.json` 收納 permissions.allow 投影，probe 改讀「settings.json 優先、缺場落鏡像」，兩面都在場時比對 drift。
+
+```mermaid
+flowchart LR
+  S["settings.json<br/>（gitignored local）"] --> P["check_coverage"]
+  M["governance/registrations/<br/>cc-allowlist.json（tracked 鏡像）"] --> P
+  P -->|"缺 settings.json"| FB["落鏡像照驗<br/>drift 可見"]
+  P -->|"兩面都在場"| DR{"比對"}
+  DR -->|"不一致"| IMP["important（stale 鏡像）"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

@@ -15,7 +15,27 @@ ordinal: 118000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-AIR-129 S2 兩輪 dogfood 實證（EP：ai-analysis/_tasks/0918-air129-review-triage/ep.md §7）：退出 static-only 豁免後的 review-engine profile 歸屬跨家族結構性分歧——muse 恆判 ordinary、GLM-5.3 恆判 boundary/保護分支（AGENTS.md 作用域例外、acceptance-evidence 單一源指派、execution-plan 產物路徑三案例兩輪同向）。方向恆 fail-safe（判定表保護分支兜底）但審查腿配置不確定，每次落地都要 author 提案/judge 複核。候選處置：①判定表加示例行（控制面 instruction 實質語義編輯→boundary 預設）②條文記載已知發散＋最低複核機制③接受現狀僅歸檔觀察。若動判定表＝gate 面條文變更，走 instruction-writing 落地前審查閘。
+退出 static-only 豁免後，review-engine profile 歸屬在跨家族 AI 間**結構性分歧**：muse 恆判 ordinary、GLM-5.3 恆判 boundary／保護分支（AGENTS.md 作用域例外、acceptance-evidence 單一源指派、execution-plan 產物路徑三案例兩輪同向）。
+
+**現象**
+
+- 方向恆 fail-safe（判定表保護分支兜底），但審查腿配置不確定——每次落地都要 author 提案／judge 複核
+
+**候選處置**
+
+- ①判定表加示例行（控制面 instruction 實質語義編輯→boundary 預設）
+- ②條文記載已知發散＋最低複核機制
+- ③接受現狀，僅歸檔觀察
+- 若動判定表＝gate 面條文變更，走 instruction-writing 落地前審查閘
+
+```mermaid
+flowchart LR
+  D["同一條文 diff"] --> M["muse 歸級<br/>恆 ordinary"]
+  D --> G["GLM 歸級<br/>恆 boundary"]
+  M --> FS["fail-safe 兜底<br/>但腿配置不確定"]
+  G --> FS
+  FS --> FIX["候選：判定表加示例行<br/>（控制面實質語義編輯→boundary）"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
