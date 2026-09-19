@@ -1,10 +1,12 @@
 ---
 id: AIR-140
-title: scan-project probe——skill allowlist 覆蓋檢查的 tracked 鏡像（settings.json gitignored 依賴去盲點）
-status: In Progress
+title: >-
+  scan-project probe——skill allowlist 覆蓋檢查的 tracked 鏡像（settings.json gitignored
+  依賴去盲點）
+status: Done
 assignee: []
 created_date: '2026-09-19 05:05'
-updated_date: '2026-09-19 05:05'
+updated_date: '2026-09-19 00:22'
 labels: []
 dependencies: []
 ordinal: 126000
@@ -28,4 +30,6 @@ check_single_source.py 的 `skill_allowlist_coverage` invariant 以 `settings.js
 
 <!-- SECTION:NOTES:BEGIN -->
 【0919 開卡】源＝muse 全表掃描（probe-fix-muse.md Q5：REGISTRY 唯一同型殘留）＋修復弧實測（非 main checkout 跑 probe 的 skip 行為）。鏡像同步紀律：settings.json permissions 變更時人工同步鏡像（drift 檢查兜底防忘）。
+
+【0919 結案】flash impl-lite TDD 實作＋fresh review 通過（鏡像 274=274 identical 實證、coverage 三態測試、drift→important）。AC#1-4 全數達成。
 <!-- SECTION:NOTES:END -->

@@ -1,10 +1,12 @@
 ---
 id: AIR-141
-title: governance——cc_live_parity invariant（cc.json hooks 模板→live settings.json 對帳，補 CC 面缺的 template→live 防線）
-status: In Progress
+title: >-
+  governance——cc_live_parity invariant（cc.json hooks 模板→live settings.json 對帳，補
+  CC 面缺的 template→live 防線）
+status: Done
 assignee: []
 created_date: '2026-09-19 05:05'
-updated_date: '2026-09-19 05:05'
+updated_date: '2026-09-19 00:22'
 labels: []
 dependencies: []
 ordinal: 127000
@@ -27,4 +29,6 @@ cc.json 進場成為 Claude 端權威模板面後（0919 hook_registration 誤�
 
 <!-- SECTION:NOTES:BEGIN -->
 【0919 開卡】源＝tri F4（probe fix 弧 fresh reviewer）＋muse/codex Q3 共識（live parity 另立 invariant，不混入 hook_registration）。CC 部署＝symlink 型（settings.json 直連 live），drift 形態與 zcode/codex 的 merge 型不同——live 缺場判準＝檔案不存在或 symlink 斷。muse 0919 註：若將來 CC 改 merge 部署，再評估 installer drift gate 整合。
+
+【0919 結案】cc_live_parity 落地（REGISTRY＋check 函式＋wiring 三元組 basename 收斂）；fresh review F1 修正——live 改 ~/.claude/settings.json 走 HOME hop（repo 相對路徑會在 symlink 斷鏈時盲綠）；實機 12=12 missing=0。AC#1-3 達成。
 <!-- SECTION:NOTES:END -->
