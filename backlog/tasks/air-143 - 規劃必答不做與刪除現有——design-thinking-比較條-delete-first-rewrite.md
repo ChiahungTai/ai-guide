@@ -23,6 +23,14 @@ ordinal: 130000
 - 不新增審查 gate／hook；不改「決策分級」「架構三視角」段；實作面砍 code 的既有 edit-discipline 不動（規劃面與執行面分離）
 
 證據＝ai-analysis/reports/corrections-2026-09.md:45-46 訊號3＋Warm 動作③「規劃段落把『不做/delete 選項』列必答」。
+
+```mermaid
+flowchart LR
+  P["規劃方案比較"] --> Q1{"不做<br/>行嗎？"}
+  Q1 -->|"必答"| Q2{"現有的<br/>砍得嗎？"}
+  Q2 -->|"必答"| ALT["再比其餘<br/>可行替代"]
+  P -.->|"跳過必答"| BAD["過度工程<br/>做出來再被砍"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

@@ -23,6 +23,14 @@ AI 給人看的報告要先用一句話講「做了什麼、結論是什麼」�
 - 落地閘：boundary 歸級（控制面 instruction 語義變更）；不碰 harness 系統提示、不新增 hook／gate（corrections 週報 Warm 動作「禁 additive」）
 
 證據＝ai-analysis/reports/corrections-2026-09.md:46 Warm 動作②「rewrite 產出慣例：人類面報告先結論後 id（溝通糾正群 3 件）」。debrief 已有倒金字塔但僅該命令；illustrate／smell-detector／deep-work 完成報告無此慣例。
+
+```mermaid
+flowchart LR
+  R["AI 人類面報告<br/>debrief／illustrate／<br/>smell-detector／deep-work"] --> C["① 先結論<br/>做了什麼＋結果"]
+  C --> P["② 正文人話展開"]
+  P --> A["③ id／代碼／術語<br/>降為附註"]
+  X["LLM 執行鏈產出<br/>EP／findings／code"] -.->|"不適用"| R
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

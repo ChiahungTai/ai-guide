@@ -18,6 +18,14 @@ ordinal: 131000
 打開 ai-guide 的人（或 AI）看不出 skills 裝到哪、rules 怎麼部署——在專案結構補一行安裝拓撲指針：skills 經 governance/manifest.toml〔surfaces.skills〕symlink 母鏈（~/.agents/skills＋~/.claude/skills → repo skills/）送達各 harness；rules 經 scripts/deploy_agents.py bundle（~/.zcode／~/.codex／~/.config/muse 三面）。純導航指針零行為語義（審查閘分類＝ordinary：僅新增可發現性，不改變 agent 可觀察行為）；不動 model-routing skill 條文、不改 governance manifest 本體、不新增檔案。
 
 源＝AIR-142/143 弧附帶發現（user 插問 plugin 安裝面角度）；user 0920 對提案原文拍板「OK 開好後直接做」。
+
+```mermaid
+flowchart LR
+  S["repo skills/"] -->|"symlink 母鏈<br/>governance/manifest.toml"| H1["~/.agents/skills"]
+  S --> H2["~/.claude/skills"]
+  RU["rules＋guide<br/>scripts/deploy_agents.py bundle"] --> H3["~/.zcode／~/.codex／<br/>~/.config/muse"]
+  RU --> CC["~/.claude/rules/<br/>auto-load"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
