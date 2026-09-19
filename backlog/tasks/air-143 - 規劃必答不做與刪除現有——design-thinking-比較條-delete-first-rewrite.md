@@ -1,10 +1,10 @@
 ---
 id: AIR-143
 title: 規劃必答不做與刪除現有——design-thinking 比較條 delete-first rewrite
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-19 21:15'
-updated_date: '2026-09-19 21:33'
+updated_date: '2026-09-19 21:59'
 labels: []
 dependencies: []
 references:
@@ -40,10 +40,10 @@ tier: standard
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 rules/design-thinking.md 比較條含「不做／刪除現有」必答語義且仍單行（rg 命中）
-- [ ] #2 skills/deep-thinking/SKILL.md 比較步驟含「刪除既有」基準選項（rg 命中）
-- [ ] #3 deploy 三面 bundle 後 check_single_source.py deploy_bundle_freshness 0 CRITICAL
-- [ ] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
+- [x] #1 rules/design-thinking.md 比較條含「不做／刪除現有」必答語義且仍單行（rg 命中）
+- [x] #2 skills/deep-thinking/SKILL.md 比較步驟含「刪除既有」基準選項（rg 命中）
+- [x] #3 deploy 三面 bundle 後 check_single_source.py deploy_bundle_freshness 0 CRITICAL
+- [x] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -66,3 +66,9 @@ tier: standard
 
 【findings 裁決】B1 desc 同步尾巴→不採納（plan⑤ 已記錄不動）；B2 現有/既有異字→不採納（凍結契約原文，ledger 驗證式掃雙詞）；B3 必含 vs 不湊選項張力→不採納（可自洽解讀，reviewed diff 凍結）；B4 judge-review 相鄰無引用→不動；C3 終驗待補審後 deploy 後於 main checkout 跑 check_single_source
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+design-thinking 比較條 delete-first 必答＋deep-thinking 同步；boundary 腿收斂，codex Important 修正＝刪除既有補 N/A 逃逸口（必答不跳過）；merge fc5fe841＋feafa283，bundle 已部署 check 0 CRITICAL
+<!-- SECTION:FINAL_SUMMARY:END -->

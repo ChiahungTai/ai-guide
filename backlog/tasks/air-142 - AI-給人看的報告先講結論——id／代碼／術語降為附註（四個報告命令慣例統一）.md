@@ -1,10 +1,10 @@
 ---
 id: AIR-142
 title: AI 給人看的報告先講結論——id／代碼／術語降為附註（四個報告命令慣例統一）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-19 21:15'
-updated_date: '2026-09-19 21:33'
+updated_date: '2026-09-19 21:59'
 labels: []
 dependencies: []
 references:
@@ -41,10 +41,10 @@ tier: standard
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 skills/_common/conclusion-first.md 存在，含原則句「人類可讀產出先結論／先人話」與 id／代碼／術語附註語義＋❌/✅ 實例（rg 驗證）
-- [ ] #2 debrief／illustrate／smell-detector／deep-work 四 SKILL.md 各含 conclusion-first.md 指針（rg -c ≥1 且相對路徑可解析）
-- [ ] #3 原則句逐字僅住 conclusion-first.md：rg -F「人類可讀產出先結論／先人話，id／代碼／術語降為附註」skills/ rules/ 命中=1（禁多檔重刻；治理記錄〔卡檔〕自引不在謂詞域——intent 腿 Important finding 修正）
-- [ ] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
+- [x] #1 skills/_common/conclusion-first.md 存在，含原則句「人類可讀產出先結論／先人話」與 id／代碼／術語附註語義＋❌/✅ 實例（rg 驗證）
+- [x] #2 debrief／illustrate／smell-detector／deep-work 四 SKILL.md 各含 conclusion-first.md 指針（rg -c ≥1 且相對路徑可解析）
+- [x] #3 原則句逐字僅住 conclusion-first.md：rg -F「人類可讀產出先結論／先人話，id／代碼／術語降為附註」skills/ rules/ 命中=1（禁多檔重刻；治理記錄〔卡檔〕自引不在謂詞域——intent 腿 Important finding 修正）
+- [x] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -67,3 +67,9 @@ tier: standard
 
 【findings 裁決】A1 untracked 檔 commit 風險→採納（結案 commit 具名 add 必含 conclusion-first.md）；B1 desc 同步尾巴→不採納（觸發文案，plan⑤ 已記錄）；B2 現有/既有異字→不採納（凍結契約原文）；A2 報告稱呼不一→既有問題只標不清（未來候選）；A3 雙向互指→可接受；A4/B3 inferred 低風險→不採納（reviewed diff 凍結）；B4 judge-review 相鄰無引用→不動；corrections-weekly 接結論先行＝契約外未來候選
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+結論先行原則落地：skills/_common/conclusion-first.md＋四命令指針；boundary 腿（fresh/intent/codex/GLM-5.3）收斂，codex Important 修正＝id 主語限縮開頭摘要段；merge a729f5bb＋94eaa2b5，bundle 已部署 check 0 CRITICAL
+<!-- SECTION:FINAL_SUMMARY:END -->
