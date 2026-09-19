@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-19 06:00'
+updated_date: '2026-09-19 06:54'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -71,7 +71,7 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 - liveness 台帳（135.7，dispatch 期望登記六欄）≠ 跨 repo 通知草案八欄（135.5 AC#6，發送 payload）——目的正交禁混用（135.7 Notes 辨義升格為 family 術語）。
 
 〔執行序與計畫時點〕
-- 子卡 ordinal＝建卡序非執行序；執行序依 dependencies DAG：135.2／135.3 無 deps 可即開，135.6 次之，135.7 依 135.6，135.1／135.4／135.5 依 deps；「平行研究」僅限唯讀對方卡，未定介面前禁寫對方擁有的面。
+- 子卡 ordinal＝建卡序非執行序；執行序依 dependencies DAG（0919 v3 定著）：L0 135.2‖135.3 無 deps 可即開（co-first）→L1 135.4／135.6／135.5→L2 135.7→L3 135.1；135.8（correction 迴路）依 135.2＋135.7 屬 L2 後段；「平行研究」僅限唯讀對方卡，未定介面前禁寫對方擁有的面。
 - 子卡 Plan 節於各卡開工時依 card Planning Contract 補齊；現階段 Description＋AC 即其 current plan，135.2 AC#2 的 fresh-session 還原宣稱以已開工卡為驗收對象。
 <!-- SECTION:PLAN:END -->
 
@@ -107,4 +107,14 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0919 user 裁決：main-seat delegate-default＝預設開發模式（非僅 135.7 未來契約，即日生效）】做事＝預設開 sub（背景、artifact-first 落盤、回 bounded receipt）；main agent 留 discussion/steering 座席——討論、判斷、審查整合、liveness 盯場。實作腿、查證腿、機械腿全走 sub；user 在場時 main seat 不親手做可委派的工作。135.7 實作時以此為 baseline 契約，skill/條文面落地走審查閘。
 
 【0919 v3 總修（gap-mining 四腿：muse job-mu7z2ayf/mu7z2b0e＋flash×2；user deep-work 授權）】C8 建真卡 AIR-135.8（618f6a36，deps 135.2/135.7）——correction 迴路；G1 升格＝135.1 新增 AC#7 使用規劃 artifact（含 spine 保鮮承接）；G3 mode taxonomy pending（decisions-pending 台帳）；小 gap 各歸屬（135.4 裁決清單視圖、135.7 信任畢業＋方向探針、135.2 影子禁升格）。拓撲更新：L2 後段加 135.8。
+
+白話：program 總卡——固定開發流程（Two-Touch）＋收線裁決。它是地圖，你不在這裡做事。
 <!-- SECTION:NOTES:END -->
+
+<!-- PROJECTION:BEGIN -->
+白話：program 總卡——固定開發流程（Two-Touch）＋收線裁決。它是地圖，你不在這裡做事。
+要等：無——起點
+擋誰：無
+現況：In Progress；AC 0/8
+源 hash：163d31973ae7（卡面減投影段；不符即 stale）
+<!-- PROJECTION:END -->
