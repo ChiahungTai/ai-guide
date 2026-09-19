@@ -50,6 +50,12 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 
 **開卡 Description 先行（0919 v4 終版——user 裁決「簡單不要有太多規則」）**：開卡（含 program 拆卡批量）第一產物＝**Description：人話（這卡解什麼／定什麼／不做什麼）＋恰好一張 mermaid 圖**。起草後 user 在 SC ext 點卡看過確認，才 `task create` 建卡——卡本身即投影（SC card 預覽渲染），無平行 render、無 marker、無 digest 機制；確認後 AI 再補 AC／Plan（走既有②開工 metadata commit 或弧結算 commit 進版控，建卡 spec gate 於補齊時滿足），建卡 commit 走例外①僅及新增卡檔。既有卡 Description 的 semantic 修改＝改完請 user 點卡再算數。`.agent-tmp` 提案文件不承擔 acceptance identity——核准對象＝canonical 卡本身（0918 影子核可事故教訓）。
 
+**Description 寫法**（0919 v4——禁散文牆；SC card detail＝純 md 渲染）：
+
+- 結構：一句開場定位 → `**粗體小節**`（做什麼／不做什麼／規矩…按卡自然分節）＋ bullets——一節一概念，禁整段長文；SC card detail 支援 headings/bullets/bold（raw HTML 會字面顯示；CJK 段禁硬折行——`breaks:true` 單換行即斷行）
+- 圖＝各卡自然形狀一張（流程→`flowchart LR`；拓撲→`TB`＋subgraph 分層；迴圈標回邊）；parent／program 卡可兩張（拓撲＋旅程）
+- mermaid safe subset：node label 全用引號、禁 `#`／click／raw HTML／directive、node id 用 ASCII 穩定字串、複雜度上限 ≤12 nodes／≤16 edges（超限拆圖或下沉 AC/Notes）；語法細節與陷阱＝[mermaid skill](../mermaid/SKILL.md)
+
 **開工——起手式五步**（凡要動某卡的 session——implement 階段 1 是標準入口；automation／監控／report 等衍生 session 見下方「board single-writer 例外分工」——①⑤ 由 board-control 代行，衍生 session 本身不寫卡 metadata）：
 ```bash
 # ① 第一動——平行 session 可見
