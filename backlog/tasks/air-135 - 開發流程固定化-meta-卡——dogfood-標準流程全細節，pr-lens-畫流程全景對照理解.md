@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-19 01:15'
+updated_date: '2026-09-19 03:24'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -22,6 +22,8 @@ ordinal: 117000
 human viewport 是 projection 而非第二真相源：Report Shell、/illustrate、Code Lens 等由 card tree + repo/code facts 按需產生。Code Lens 擬整合 code tours（narrative/sequence）＋pr-lens（topology/relationships/impact）成同一上位 viewport。跨 repo 採 owner/consumer contract：ai-guide 擁有 lifecycle semantics/policy/orchestration contract；SouthChariot 擁有人機 control surface；SC 不另建 lifecycle truth。跨 repo implementation card 要等 contract 收斂後在各 repo 自己開卡並以 shared arc/contract identity 關聯，不用跨 repo parent_task_id。
 <!-- SECTION:DESCRIPTION:END -->
 
+## Acceptance Criteria
+<!-- AC:BEGIN -->
 - [ ] #1 Development Arc 的 semantic nodes／transition obligations 收斂：human alignment moments 明確，Marshal-owned WT/session/model/retry 等 mechanics 不被誤當 lifecycle nodes；node 拓撲須標 Two-Touch 八階段覆蓋與 human-present／Marshal-automated 旗標（135.3 AC#1），transition obligations 含⑦ commit 條件委任（bi/tri＋post-build 過關即授權——0919 裁決，135.3 AC#6）
 - [ ] #2 card-first contract 經 AIR-135 family 真實 dogfood：parent/sub-card 可讓 fresh session 還原 135.2 AC#2 清單所列全部欄位（該清單為 family 單一源，parent 不另列防 drift），含 Two-Touch 開頭六欄、exit 終場 receipt pointer 與 priced-autonomy 契約欄位；EP 是否退役有實證裁決
 - [ ] #3 user 不需重複指定 model／review／WT/session／handoff procedure：AIR-135.1 可從 canonical card state＋runtime facts 產生可追溯 dispatch/transition obligations；obligations 含 priced-autonomy 記帳（revert 預算餘額／預授權類；超支即停為 JIT 重算與停機觸發——135.1 AC#1-#3）
@@ -97,4 +99,6 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0919 北極星定案（tri：muse＋GLM-fresh＋5.3；codex 三連死憑證過期記環境事故）】**Two-Touch Execution（priced autonomy 版）**＝本 program 終態：任務＝開頭交代（六欄：intent verbatim／non-goals／revert 預算／預授權類／假設台帳四欄／成功謂詞）→ 不打擾的可觀察性執行 → 終場呈現六塊（comprehension receipt／intent-diff 防拉伸／決策紀錄含被拒選項／可逆點＋成本標注／no-impact 機械證據／否決介面——否決必須比批准便宜）。核心不變式：①**無正當理由的打斷＝0**（打斷合法性＝強 outward／真分岔／自我擴權／預算超支；「次數＝2」非 invariant）②**priced autonomy**：「能 revert 就不問」錯——「revert 便宜才不問」；revert 成本連續，開頭定預算、自治決策扣款、超支即停 ③門裝對位置：行動面（commit/outward/破壞性）憲法停；判斷面自治記錄理由（0919 自我檢舉：十幾次打斷多數違規——W1-W8 清單見 tri 檔）④方向漂移複利對策：早期方向探針（artifact 不提問）＋bounded slices checkpoint＋假設台帳 slice 邊界審計 ⑤信任畢業制：首批小額預算＋可不看的 checkpoint，否決率低→升級。viewport 層（135.4）＝終場呈現＋可觀察性的工具：圖替你看（沉默是成功）、新鮮度錨（stale 自稱 stale）、注意力送到 AI 最可能誤解處、無問題可問的視圖不存在。設計全文：.agent-tmp/air-135/twotouch-{muse,glm}.md＋northstar-{muse,glm}.md（codex 腿三連死：環境事故記錄）。
 
 【0919 Two-Touch 落地旅程（user 親述，取代抽象北極星）】①開頭交代任務→②卡內容討論：Code Lens 即時產生幫 user 理解的視圖，顯示於 SC（VSCode 整合瀏覽器）→③討論確定 SPEC 好了：SC Code Lens 呈現→LLM 研究→EP 寫在卡上→SC Code Lens 再呈現→④guide 依時間窗口＋coding plan 訂閱資訊＋memory spine 產生 LLM 使用規劃與開發流程（＝135.1 DispatchSlice）→⑤自動化執行（135.7）→⑥完成：Code Lens 終場呈現（產出＋最終架構＋待裁定事項；有 UI／可呈現物一併開好不用 user 說）→⑦經 bi/tri＋post-build 過關→**直接 commit（user 0919 授權：審查通過的弧 commit consent 委任）**→⑧收尾（user 裁定修好整理好）→關卡可批量（半夜／不在場跑，依次處理多卡）。
+
+【0919 commit 委任細化＋plugin 授權（user 親述→canonical 落 decision entity）】①自動化弧 gate 順序＝bi/tri 審查過關→post-build 過關→自動 commit；post-build 沒跑＝禁 commit、補救＝補跑（非跳過）②commit skill 最後確認加嚴（staged 逐檔核對／verdict＋receipt 機驗／message 對帳）③plugin：cc/codex 直裝免問、zcode 僅 user 手動。canonical＝decision-2／decision-3（accepted）；本條為指針。rule/skill 面收編（outward-action-consent＋commit skill）走落地前審查閘，歸 135 條文收編批。
 <!-- SECTION:NOTES:END -->
