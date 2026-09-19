@@ -15,28 +15,14 @@ ordinal: 129000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-<!-- INTENT:BEGIN -->
-白話：AI 給人看的報告要先用一句話講「做了什麼、結論是什麼」——卡 id／代碼／術語降為附註。本週三件溝通糾正「要講做啥，不要只有id」「講人話」「不要一堆代碼」的慣例 rewrite。
-tier: standard
-<!-- INTENT:END -->
-<!-- SA:CONTRACT:BEGIN -->
-- [C1] 單一源＝skills/_common/conclusion-first.md（新共用子範本）：原則一句「人類可讀產出先結論／先人話，id／代碼／術語降為附註」＋why＋❌/✅ 實例；原則句逐字只住此檔
-- [C2] rewrite 非新增：debrief 七段輸出合約（倒金字塔）標記為本原則既有正典實例；illustrate／smell-detector／deep-work 完成報告各補一行指針接上同一原則，不另造第二套輸出規格、禁多檔重刻
-- [C3] 適用域＝人類 viewport 產出（debrief／illustrate／smell-detector／deep-work 完成報告）；LLM 執行鏈產出（EP／findings／code）不適用——命令受眾二分不變
-- [C4] 落地閘：boundary 歸級（控制面 instruction 語義變更）——fresh＋intent 分離腿＋跨家族加腿；receipt 四欄入卡 notes
-<!-- SA:CONTRACT:END -->
-<!-- SA:BOUNDARY:BEGIN -->
-- [B1] 不碰 harness 系統提示／LLM 執行鏈產物格式；不新增 hook／gate（純條文慣例 rewrite，corrections 週報 Warm 動作「禁 additive」）
-- consumes: 無——standalone rewrite 卡
-<!-- SA:BOUNDARY:END -->
-<!-- SA:EXPORT:BEGIN -->
-- 無（四個 SKILL.md 是行為面消費端，非卡面消費者）
-<!-- SA:EXPORT:END -->
-<!-- SA:PENDING:BEGIN -->
-- 無
-<!-- SA:PENDING:END -->
+AI 給人看的報告要先用一句話講「做了什麼、結論是什麼」——卡 id／代碼／術語降為附註（本週三件溝通糾正「要講做啥，不要只有 id」「講人話」「不要一堆代碼」的慣例 rewrite）。
 
-〔背景（detail，不上圖）〕證據＝ai-analysis/reports/corrections-2026-09.md:46 Warm 動作②「rewrite 產出慣例：人類面報告先結論後 id（溝通糾正群 3 件，改既有 viewport 慣例）」。debrief 已有倒金字塔但僅該命令；illustrate／smell-detector／deep-work 完成報告無此慣例。
+- 單一源＝skills/_common/conclusion-first.md（新共用子範本）：原則句「人類可讀產出先結論／先人話，id／代碼／術語降為附註」逐字只住此檔，附 why＋❌/✅ 實例
+- rewrite 非新增：debrief 七段輸出合約（倒金字塔）標記為既有正典實例；illustrate／smell-detector／deep-work 完成報告各補一行指針接上同一原則，不另造第二套輸出規格
+- 適用域＝人類 viewport 產出（debrief／illustrate／smell-detector／deep-work 完成報告）；LLM 執行鏈產出（EP／findings／code）不適用——命令受眾二分不變
+- 落地閘：boundary 歸級（控制面 instruction 語義變更）；不碰 harness 系統提示、不新增 hook／gate（corrections 週報 Warm 動作「禁 additive」）
+
+證據＝ai-analysis/reports/corrections-2026-09.md:46 Warm 動作②「rewrite 產出慣例：人類面報告先結論後 id（溝通糾正群 3 件）」。debrief 已有倒金字塔但僅該命令；illustrate／smell-detector／deep-work 完成報告無此慣例。
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

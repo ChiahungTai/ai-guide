@@ -15,11 +15,54 @@ ordinal: 117000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-把「開發流程固定化」提升成 AI Development Arc program：核心不是固定一串 command，而是定義必要的 semantic obligations，讓人與 LLM 在關鍵時點保持同一張圖，同時把可委派的流程／model／WT／session 細節交給 Marshal 自動化。候選主鏈為 entry Align → Shape/Plan → Build → Verify → exit Align → Settle；Marshal 包覆全弧，不是 lifecycle node，同 repo handoff 退回 orchestration implementation detail，跨 repo 才保留 boundary 意義。
+把「開發流程固定化」提升成 AI Development Arc program：核心不是固定一串 command，而是定義必要的 semantic obligations，讓人與 LLM 在關鍵時點保持同一張圖，同時把可委派的流程／model／WT／session 細節交給 Marshal 自動化。主鏈為 entry Align（user 六欄交代）→ Shape/Plan → Build/Verify（自動）→ exit Align（終場六塊）→ Settle（批量收線）；Marshal 包覆全弧，不是 lifecycle node，同 repo handoff 只是 orchestration 細節。工作狀態採 card-first：Backlog parent/sub-card tree 是唯一 durable planning/control plane，Plan 是可修訂 working hypothesis（改案必留 supersedes＋reason）；standalone EP 是否退役由 AIR-135.2 實證收尾。human viewport 是 projection 而非第二真相源；跨 repo 採 owner/consumer contract——ai-guide 擁 lifecycle semantics，SouthChariot 擁人機 control surface、不另建 lifecycle truth。開卡一律 Description 先行（人話＋一張 mermaid 圖），user 在 SC ext 點卡確認後才建卡、再補 AC/Plan。
 
-工作狀態改採 card-first：Backlog parent/sub-card tree 是 durable planning/control plane；Plan 是可修訂的 working hypothesis，不假設穩定，實作證據迫使改案時必須留下 superseded + reason/evidence，而不是另外維持一份「穩定 EP」。standalone EP 不再視為 semantic primitive，是否全面退役由 AIR-135.2 dogfood＋consumer migration 實證收尾。
+**Program 拓撲（deps 分層）**：
 
-human viewport 是 projection 而非第二真相源：Report Shell、/illustrate、Code Lens 等由 card tree + repo/code facts 按需產生。Code Lens 擬整合 code tours（narrative/sequence）＋pr-lens（topology/relationships/impact）成同一上位 viewport。跨 repo 採 owner/consumer contract：ai-guide 擁有 lifecycle semantics/policy/orchestration contract；SouthChariot 擁有人機 control surface；SC 不另建 lifecycle truth。跨 repo implementation card 要等 contract 收斂後在各 repo 自己開卡並以 shared arc/contract identity 關聯，不用跨 repo parent_task_id。
+```mermaid
+flowchart TB
+  subgraph L0["L0 起點（co-first）"]
+    A2["AIR-135.2<br/>card-first 契約"]
+    A3["AIR-135.3<br/>semantic model"]
+  end
+  subgraph L1["L1"]
+    A4["AIR-135.4<br/>Code Lens"]
+    A5["AIR-135.5<br/>cross-repo contract"]
+    A6["AIR-135.6<br/>Context Continuity"]
+  end
+  subgraph L2["L2"]
+    A7["AIR-135.7<br/>orchestration reliability"]
+  end
+  subgraph L3["L3"]
+    A1["AIR-135.1<br/>Arc compiler"]
+    A8["AIR-135.8<br/>correction 迴路"]
+  end
+  A2 --> A4
+  A2 --> A5
+  A2 --> A6
+  A2 --> A8
+  A2 --> A1
+  A3 --> A4
+  A3 --> A5
+  A3 --> A7
+  A3 --> A1
+  A6 --> A7
+  A7 --> A8
+  A7 --> A1
+```
+
+**Two-Touch 旅程**：
+
+```mermaid
+flowchart LR
+  U["user ①六欄交代"] --> A["entry Align<br/>135.3"]
+  A --> SP["Shape/Plan<br/>135.2×135.4"]
+  SP --> BV["Build/Verify 自動<br/>135.1 編譯·135.7 執行"]
+  BV --> EX["exit Align<br/>終場六塊 135.3×135.4"]
+  EX -->|"⑦ 過關直行 commit"| ST["Settle 批量收線<br/>135.7"]
+  ST --> S7["S7 收線裁決<br/>parent AC6"]
+  S7 -.residue.-> E8["135.8 correction"]
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
@@ -32,6 +75,7 @@ human viewport 是 projection 而非第二真相源：Report Shell、/illustrate
 - [ ] #6 AIR-135 family 完整跑一輪後，產出現行流程→新 Arc 的 rename/deprecation/migration 清單，且 user 可用 human viewport 對照「系統理解 vs 真實意圖」完成最後方向裁決。「完整跑一輪」的驗收度量＝S7 三欄＋Two-Touch 不變式計數（無正當理由打斷＝0、自治決策預算記帳完整——與 135.1 AC#4 dogfood 謂詞同軸）
 - [ ] #7 AIR-135.7 dogfood 證明互動中 main agent 可持續留在 human discussion／steering seat，適合的工作自動 delegate/background；大／可恢復 worker 產出自動 artifact-first 落盤並回 bounded receipt，user 不需再提醒「開 sub／主 agent 待命／寫 .agent-tmp」。背景 job 的 liveness/collection 由 Marshal 主動維護，user 不需輪詢「做完了沒」（135.7 AC#3/#6）
 - [ ] #8 Context Continuity 經 AIR-135.6 dogfood：長弧在 context 壓力／compact／session restart 前後，可由 card-first canonical state＋artifact/runtime facts＋薄 continuation packet 恢復 current plan、已驗/未驗、active jobs 與下一動；不要求 user 重述，也不以 harness 自動 /compact 當主要狀態保存機制
+- [ ] #9 開卡簡則（0919 v4 終版）：所有新開卡（含拆卡）Description 先行——人話（這卡解什麼／定什麼／不做什麼）＋恰好一張 mermaid 圖；user 在 SC ext 點卡看過確認後才建卡，AC/Plan 於確認後補齊；既有 9 卡的確認＝user 對本輪改寫的點頭（reconciliation）。S7 保留終場驗收
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -110,13 +154,5 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 
 【0919 外部討論收割（ChatGPT 四層缺口框架×討論腿 muse job-mu88oodq／GLM-5.3 job-mu88osjx，雙腿收斂）】對表 Two-Touch 後收四條——①Epistemic Merge 最小閉環（假設台帳穩定 id＋狀態機 unverified/verified/invalidated＋decision entity 選填 invalidates/affected/confidence；schema 歸 135.2 AC#3、觸發歸 135.7、時序歸 135.3）②Intent Review 獨立腿＝exit intent 雙證（自報 intent-diff＋fresh 腿排除中間鏈；語義 135.3 AC#7、編排 135.7、read-set 排除 135.1）③reviewer／tester read-set 刻意差異化（role-dependent、禁逐字繼承 implementer reasoning——135.1 AC#2）④pending 台帳兩新批量浮出類 evidence-contradicts-intent／assumption-invalidated（135.3 AC#6）。已覆蓋勿加：entry 補第七欄（UNCERTAINTIES＝假設台帳未驗證列、TRADE-OFF＝priced autonomy——補欄即第二住處）、Attention Gate 機制本體（dw 承諾制即「resolved 不上浮」）、HumanInterruptions/ValuableOutcome KPI 公式（ValuableOutcome 無機械判準拒收；可測核心已在不變式①計數＋S7 三欄）、L0/L1/L2 制度化（viewport 已事實分層——135.4 選型指南補理解層一問）。禁新開卡；禁擴 135.8 scope（KPI 語義 user correction 專屬，model finding 未經裁決非信念）。findings：.agent-tmp/air-135/align-gate-{muse,glm}.md＋align-gate-brief.md（外部原文）。
 
-白話：program 總卡——固定開發流程（Two-Touch）＋收線裁決。它是地圖，你不在這裡做事。
+【0919 v4 終版（user 裁決「簡單不要有太多規則」）】開卡＝Description 先行（人話＋一張 mermaid 圖），user 在 SC ext 點卡確認後建卡、再補 AC/Plan；marker 體系（INTENT／SA:*）與 digest/receipt 機制、HTML 生成器全數移除——卡本身就是投影，SC card 預覽即確認介面；卡尾 PROJECTION 段一併退役（user OK）。歷程：0918 批量開卡影子核可事故→v4 marker schema→同日依 user 簡化裁決收斂為本形態（SC 開法實證＝flash sc-previewer-flash.md：card detail 純 md 渲染，mermaid fence 為 repo 讀者/GitHub 服務）。
 <!-- SECTION:NOTES:END -->
-
-<!-- PROJECTION:BEGIN -->
-白話：program 總卡——固定開發流程（Two-Touch）＋收線裁決。它是地圖，你不在這裡做事。
-要等：無——起點
-擋誰：無
-現況：In Progress；AC 0/8
-源 hash：a7e49a5dc98a（卡面減投影段；不符即 stale）
-<!-- PROJECTION:END -->
