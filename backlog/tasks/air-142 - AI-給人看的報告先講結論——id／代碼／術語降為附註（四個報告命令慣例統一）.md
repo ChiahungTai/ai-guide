@@ -1,12 +1,14 @@
 ---
 id: AIR-142
 title: AI 給人看的報告先講結論——id／代碼／術語降為附註（四個報告命令慣例統一）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-19 21:15'
-updated_date: '2026-09-19 21:18'
+updated_date: '2026-09-19 21:19'
 labels: []
 dependencies: []
+references:
+  - skills/_common/conclusion-first.md
 ordinal: 129000
 ---
 
@@ -36,6 +38,25 @@ tier: standard
 
 〔背景（detail，不上圖）〕證據＝ai-analysis/reports/corrections-2026-09.md:46 Warm 動作②「rewrite 產出慣例：人類面報告先結論後 id（溝通糾正群 3 件，改既有 viewport 慣例）」。debrief 已有倒金字塔但僅該命令；illustrate／smell-detector／deep-work 完成報告無此慣例。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 skills/_common/conclusion-first.md 存在，含原則句「人類可讀產出先結論／先人話」與 id／代碼／術語附註語義＋❌/✅ 實例（rg 驗證）
+- [ ] #2 debrief／illustrate／smell-detector／deep-work 四 SKILL.md 各含 conclusion-first.md 指針（rg -c ≥1 且相對路徑可解析）
+- [ ] #3 原則句逐字僅住 conclusion-first.md：rg -F「人類可讀產出先結論／先人話，id／代碼／術語降為附註」全 repo 命中=1（禁多檔重刻）
+- [ ] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+①baseline：skills/_common/ 無共用輸出慣例檔；debrief SKILL.md:32 已有倒金字塔七段（僅該命令）；illustrate SKILL.md:14 輸出模式無結論先行條；smell-detector SKILL.md:21 兩 mode 分工無輸出慣例；deep-work SKILL.md:151 階段5生成摘要報告無格式約束
+②已決策勿重辯：rewrite 非新增（user 0920 prompt＋corrections:46 Warm 動作禁 additive）；單一源落 skills/_common/conclusion-first.md＋四消費端一行指針（payload C1/C2，digest c0087da3f8b59198）；boundary 歸級（review-engine 判定表示例行：skills 條文新增或修改）
+③scope：動＝skills/_common/conclusion-first.md（新）＋debrief/illustrate/smell-detector/deep-work 四 SKILL.md 各一行指針；不動＝其他 skills/rules/命令介面；安裝面（governance manifest surfaces.skills symlink 母鏈）零變動
+④scenarios：AI 產人類面報告（完成報告/viewport 簡報）→首句先結論、id/代碼為附註；邊界＝LLM 執行鏈產出（EP/findings/code）不適用；fail＝指針路徑斷鏈（rg 攔）
+⑤integration：消費端＝四命令輸出段；上游＝corrections 週報 Warm 動作②；安裝面＝~/.agents/skills＋~/.claude/skills symlink 母鏈隨檔送達
+⑥驗證式：rg -F "人類可讀產出先結論／先人話" 全 repo 命中=1；四 SKILL.md rg -c "conclusion-first" ≥1；lint_card_markers exit 0；receipt 四欄在卡 notes
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 

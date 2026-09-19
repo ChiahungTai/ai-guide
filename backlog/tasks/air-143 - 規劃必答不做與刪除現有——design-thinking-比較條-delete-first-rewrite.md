@@ -1,12 +1,14 @@
 ---
 id: AIR-143
 title: 規劃必答不做與刪除現有——design-thinking 比較條 delete-first rewrite
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-19 21:15'
-updated_date: '2026-09-19 21:18'
+updated_date: '2026-09-19 21:19'
 labels: []
 dependencies: []
+references:
+  - rules/design-thinking.md
 ordinal: 130000
 ---
 
@@ -35,6 +37,25 @@ tier: standard
 
 〔背景（detail，不上圖）〕證據＝ai-analysis/reports/corrections-2026-09.md:45-46 訊號3＋Warm 動作③「規劃段落把『不做/delete 選項』列必答（rewrite 既有 planning 慣例）」。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 rules/design-thinking.md 比較條含「不做／刪除現有」必答語義且仍單行（rg 命中）
+- [ ] #2 skills/deep-thinking/SKILL.md 比較步驟含「刪除既有」基準選項（rg 命中）
+- [ ] #3 deploy 三面 bundle 後 check_single_source.py deploy_bundle_freshness 0 CRITICAL
+- [ ] #4 審查腿 receipt 四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+①baseline：rules/design-thinking.md:9「比較現況及可行選項」；skills/deep-thinking/SKILL.md:22「比較可行選項：包含維持現況，以及最接近的可行替代」
+②已決策勿重辯：rewrite 該既有條非新增 gate/rule（user 0920 prompt＋corrections:46 動作③禁 additive）；deep-thinking 為深層參照隨改同步（payload C2，digest 114c7acca5f50620）；boundary 歸級（review-engine 判定表示例行：rules 條文修改；AIR-129 收斂正典）
+③scope：動＝rules/design-thinking.md:9 一句＋skills/deep-thinking/SKILL.md:22 一句；不動＝兩檔其餘條文、決策分級/架構三視角段、其他 rules、edit-discipline（實作面砍 code 紀律）
+④scenarios：規劃比較時必列「不做（維持現況）」「刪除現有」兩基準選項再比替代；邊界＝規劃面與執行面分離；fail＝bundle 部署後 check 出現新 drift
+⑤integration：下游＝deploy bundle 三面（zcode/codex/muse）經 deploy_agents.py＋~/.claude/rules auto-load；deep-thinking desc「比較現況及選項」屬觸發文案不動（回報記錄）
+⑥驗證式：rg "不做／刪除現有" rules/design-thinking.md 命中；rg "刪除既有" skills/deep-thinking/SKILL.md 命中；check_single_source.py 0 CRITICAL；receipt 四欄在卡 notes
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
