@@ -314,6 +314,16 @@ status = "qualified"
 evidence_source = "repo_observed"
 binding_scope = ["zcode-registry-glm-5.3-flash"]
 
+# implement 預設反轉（user 裁決 2026-09-20）播種：bridge 腿 conditional＋
+# pending_first_use（execution floor 可過、誠實標記未實證）——首次 bridge
+# 實測 PASS 後升 qualified；模型面實證＝southchariot 六卡弧，非 bridge binding
+[[qualification]]
+workload = "implement_from_accepted_ep"
+model_identity = "glm-5.3-flash"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-glm-5.3-flash"]
+
 [[qualification]]
 workload = "implement_from_accepted_ep"
 model_identity = "muse-spark-1.3"
