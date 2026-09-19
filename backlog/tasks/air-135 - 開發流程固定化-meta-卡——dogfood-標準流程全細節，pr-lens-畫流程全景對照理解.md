@@ -108,6 +108,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 
 【0919 v3 總修（gap-mining 四腿：muse job-mu7z2ayf/mu7z2b0e＋flash×2；user deep-work 授權）】C8 建真卡 AIR-135.8（618f6a36，deps 135.2/135.7）——correction 迴路；G1 升格＝135.1 新增 AC#7 使用規劃 artifact（含 spine 保鮮承接）；G3 mode taxonomy pending（decisions-pending 台帳）；小 gap 各歸屬（135.4 裁決清單視圖、135.7 信任畢業＋方向探針、135.2 影子禁升格）。拓撲更新：L2 後段加 135.8。
 
+【0919 外部討論收割（ChatGPT 四層缺口框架×討論腿 muse job-mu88oodq／GLM-5.3 job-mu88osjx，雙腿收斂）】對表 Two-Touch 後收四條——①Epistemic Merge 最小閉環（假設台帳穩定 id＋狀態機 unverified/verified/invalidated＋decision entity 選填 invalidates/affected/confidence；schema 歸 135.2 AC#3、觸發歸 135.7、時序歸 135.3）②Intent Review 獨立腿＝exit intent 雙證（自報 intent-diff＋fresh 腿排除中間鏈；語義 135.3 AC#7、編排 135.7、read-set 排除 135.1）③reviewer／tester read-set 刻意差異化（role-dependent、禁逐字繼承 implementer reasoning——135.1 AC#2）④pending 台帳兩新批量浮出類 evidence-contradicts-intent／assumption-invalidated（135.3 AC#6）。已覆蓋勿加：entry 補第七欄（UNCERTAINTIES＝假設台帳未驗證列、TRADE-OFF＝priced autonomy——補欄即第二住處）、Attention Gate 機制本體（dw 承諾制即「resolved 不上浮」）、HumanInterruptions/ValuableOutcome KPI 公式（ValuableOutcome 無機械判準拒收；可測核心已在不變式①計數＋S7 三欄）、L0/L1/L2 制度化（viewport 已事實分層——135.4 選型指南補理解層一問）。禁新開卡；禁擴 135.8 scope（KPI 語義 user correction 專屬，model finding 未經裁決非信念）。findings：.agent-tmp/air-135/align-gate-{muse,glm}.md＋align-gate-brief.md（外部原文）。
+
 白話：program 總卡——固定開發流程（Two-Touch）＋收線裁決。它是地圖，你不在這裡做事。
 <!-- SECTION:NOTES:END -->
 
@@ -116,5 +118,5 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 要等：無——起點
 擋誰：無
 現況：In Progress；AC 0/8
-源 hash：163d31973ae7（卡面減投影段；不符即 stale）
+源 hash：a7e49a5dc98a（卡面減投影段；不符即 stale）
 <!-- PROJECTION:END -->
