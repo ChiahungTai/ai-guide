@@ -29,11 +29,13 @@ AIR-91 結案後的五個殘項一次收（user 09-15「都做吧」）：
 5. **pre-commit hook 環境隔離**：`.githooks/pre-commit` 跑 pytest 時繼承 GIT_DIR 等環境變數污染臨時 git repo（`core.bare=true` 汙染今日二度發生）——hook 內機械清環境變數（codex 弧 wrapper 的永久化）。
 
 ## Acceptance Criteria
+<!-- AC:BEGIN -->
 - [ ] #1 三處 effort 值域任一改動、餘兩處未同步 → 機械驗證紅燈（測試釘住）
 - [ ] #2 SKILL carrier adapter 段有 inherit 正式語義；無第二處雙寫
 - [ ] #3 部署後 muse bundle ≤ gate 80%；deploy 前 target diff 攤 user AUTH；fresh session 驗證
 - [ ] #4 診斷報告落 delegate-bridge repo 或 handoff 附件，含修復規格（file:line 級）
 - [ ] #5 hook 在污染環境（GIT_DIR 注入）下跑全套 tests 綠且不再改動主 repo config
+<!-- AC:END -->
 
 ## Implementation Notes
 
