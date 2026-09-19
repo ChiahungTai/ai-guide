@@ -13,6 +13,8 @@ when_to_use: "Illustrate technical concepts, architecture, or processes. Also st
 
 ## 輸出模式
 
+輸出給人判讀的章節遵循[結論先行原則](../_common/conclusion-first.md)——先結論後 id／代碼。
+
 | 模式 | 圖表 | 風格 | 適用 |
 |------|------|------|------|
 | **Console**（預設） | ASCII | 精簡（3-5 章，每章 3-5 點） | 即時討論、快速查詢 |

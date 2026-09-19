@@ -27,6 +27,8 @@ allowed-tools: ["Read", "Edit", "Write", "Bash", "Agent", "LSP", "WebFetch", "mc
 
 **選擇**：針對性懷疑（典型：懷疑 AI 亂加）→ zoom；onboarding / 週期盤點 / 首次全面審 → baseline。重機制（4 檔+狀態）是顯式 opt-in——誤觸 4 檔重機制的代價遠高於誤觸 console 報告。
 
+報告輸出遵循[結論先行原則](../_common/conclusion-first.md)——先結論後 id／代碼。
+
 ## 測試 smell 三類（兩 mode 共用段；grounded 於真實案例）
 
 > 邊界：`/audit-test` 管測試**內容**正確性反模式（同義反覆/mock/幽靈斷言）；本 skill 管測試**套件地形**的成本與結構。正交。

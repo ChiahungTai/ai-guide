@@ -148,7 +148,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 8. **任務級整合路徑檢查**（非 `/implement` 任務；若變更含新 callable 參數/注入點 → `rg "<新參數>=" tests/` → 0 hits 必須補消費端整合測試，見 [build.md](../implement/SKILL.md) 階段 2）
 9. **紅線跳過覆盤**：盤點任務過程中跳過的紅線操作（見 [autonomous-execution](../autonomous-execution/SKILL.md) Don't-Self-Decide Boundaries 🔴 紅線段），寫入 completion report「🔴 紅線跳過清單」段。半夜自主跑時不阻塞、不語音通知——早上靠此覆盤段判讀任務是否因紅線而半完成。
 10. **寫 STATE.md Last session 觀察**：**若本 session 有轉向 / 卡點觀察**，把卡點 / 轉向 / 下次起手點寫入 repo root `STATE.md`（覆寫非累積；寫入步驟 + A↔C negative guidance 見 [state-md-write](../_common/state-md-write.md)）。
-11. 生成摘要報告
+11. 生成摘要報告——遵循[結論先行原則](../_common/conclusion-first.md)：先講做成了什麼與下一步，id／代碼為附註
 
 #### Agent Review Cycle
 
