@@ -22,15 +22,13 @@ ordinal: 117000
 human viewport 是 projection 而非第二真相源：Report Shell、/illustrate、Code Lens 等由 card tree + repo/code facts 按需產生。Code Lens 擬整合 code tours（narrative/sequence）＋pr-lens（topology/relationships/impact）成同一上位 viewport。跨 repo 採 owner/consumer contract：ai-guide 擁有 lifecycle semantics/policy/orchestration contract；SouthChariot 擁有人機 control surface；SC 不另建 lifecycle truth。跨 repo implementation card 要等 contract 收斂後在各 repo 自己開卡並以 shared arc/contract identity 關聯，不用跨 repo parent_task_id。
 <!-- SECTION:DESCRIPTION:END -->
 
-## Acceptance Criteria
-<!-- AC:BEGIN -->
-- [ ] #1 Development Arc 的 semantic nodes／transition obligations 收斂：human alignment moments 明確，Marshal-owned WT/session/model/retry 等 mechanics 不被誤當 lifecycle nodes
-- [ ] #2 card-first contract 經 AIR-135 family 真實 dogfood：parent/sub-card 可讓 fresh session 還原 intent、current plan、plan revision rationale、evidence、verification 與 outcome；EP 是否退役有實證裁決
-- [ ] #3 user 不需重複指定 model／review／WT/session／handoff procedure：AIR-135.1 可從 canonical card state＋runtime facts 產生可追溯 dispatch/transition obligations
-- [ ] #4 Code Lens contract 收斂並以 code tour + pr-lens dogfood 證明 narrative/topology/impact 可由同一 code facts 投影；Report Shell／illustrate／Code Lens 都不成第二 truth source
-- [ ] #5 ai-guide↔SouthChariot cross-repo ownership／identity／projection/action contract 收斂；SC implementation card 的開卡條件與回寫 canonical state 規則明確，SC 不另建 lifecycle truth
-- [ ] #6 AIR-135 family 完整跑一輪後，產出現行流程→新 Arc 的 rename/deprecation/migration 清單，且 user 可用 human viewport 對照「系統理解 vs 真實意圖」完成最後方向裁決
-- [ ] #7 AIR-135.7 dogfood 證明互動中 main agent 可持續留在 human discussion／steering seat，適合的工作自動 delegate/background；大／可恢復 worker 產出自動 artifact-first 落盤並回 bounded receipt，user 不需再提醒「開 sub／主 agent 待命／寫 .agent-tmp」
+- [ ] #1 Development Arc 的 semantic nodes／transition obligations 收斂：human alignment moments 明確，Marshal-owned WT/session/model/retry 等 mechanics 不被誤當 lifecycle nodes；node 拓撲須標 Two-Touch 八階段覆蓋與 human-present／Marshal-automated 旗標（135.3 AC#1），transition obligations 含⑦ commit 條件委任（bi/tri＋post-build 過關即授權——0919 裁決，135.3 AC#6）
+- [ ] #2 card-first contract 經 AIR-135 family 真實 dogfood：parent/sub-card 可讓 fresh session 還原 135.2 AC#2 清單所列全部欄位（該清單為 family 單一源，parent 不另列防 drift），含 Two-Touch 開頭六欄、exit 終場 receipt pointer 與 priced-autonomy 契約欄位；EP 是否退役有實證裁決
+- [ ] #3 user 不需重複指定 model／review／WT/session／handoff procedure：AIR-135.1 可從 canonical card state＋runtime facts 產生可追溯 dispatch/transition obligations；obligations 含 priced-autonomy 記帳（revert 預算餘額／預授權類；超支即停為 JIT 重算與停機觸發——135.1 AC#1-#3）
+- [ ] #4 Code Lens contract 收斂並以 code tour + pr-lens dogfood 證明 narrative/topology/impact 可由同一 canonical facts（card tree＋repo/code facts）投影；視圖須覆蓋旅程②卡面討論投影、③SPEC 呈現、⑥終場呈現三時刻（135.4 AC#2 view mapping）；EP 退場 verdict 以 Code Lens POC 承載（135.2 AC#5×135.4 AC#4 聯合 dogfood）；Report Shell／illustrate／Code Lens 都不成第二 truth source
+- [ ] #5 ai-guide↔SouthChariot cross-repo ownership／identity／projection/action contract 收斂；SC implementation card 的開卡條件與回寫 canonical state 規則明確，SC 不另建 lifecycle truth。**跨 repo 發送＝outward 逐次授權（確認 gate 憲法級——135.5 AC#6 草案八欄＋三路 transport 分流）；⑦直接 commit 委任僅及本 repo 審查通過弧，跨 repo 寫恆停（135.5 AC#4）——此邊界為 program 級 invariant，四張子卡引用本條不重刻**
+- [ ] #6 AIR-135 family 完整跑一輪後，產出現行流程→新 Arc 的 rename/deprecation/migration 清單，且 user 可用 human viewport 對照「系統理解 vs 真實意圖」完成最後方向裁決。「完整跑一輪」的驗收度量＝S7 三欄＋Two-Touch 不變式計數（無正當理由打斷＝0、自治決策預算記帳完整——與 135.1 AC#4 dogfood 謂詞同軸）
+- [ ] #7 AIR-135.7 dogfood 證明互動中 main agent 可持續留在 human discussion／steering seat，適合的工作自動 delegate/background；大／可恢復 worker 產出自動 artifact-first 落盤並回 bounded receipt，user 不需再提醒「開 sub／主 agent 待命／寫 .agent-tmp」。背景 job 的 liveness/collection 由 Marshal 主動維護，user 不需輪詢「做完了沒」（135.7 AC#3/#6）
 - [ ] #8 Context Continuity 經 AIR-135.6 dogfood：長弧在 context 壓力／compact／session restart 前後，可由 card-first canonical state＋artifact/runtime facts＋薄 continuation packet 恢復 current plan、已驗/未驗、active jobs 與下一動；不要求 user 重述，也不以 harness 自動 /compact 當主要狀態保存機制
 <!-- AC:END -->
 
@@ -67,6 +65,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 - Planning Contract＝standard 卡開工時的計畫契約（現行 guide 規模分級）；PlanSource/TaskRef（135.2）＝consumer 端對 card tree 的邏輯引用抽象，ArcSpec 是其 compiler 投影。
 - continuation packet（135.6）＝context 恢復用 thin 投影，其 schema 由 135.6 擁有；與 DispatchSlice 的 context-delivery budget 對接（135.7 AC#5）。
 - Align＝human shared-understanding obligation（定義在 135.3）；entry/exit alignment moment 指其排程時點，viewport 呈現（135.4）是其服務面。
+- pending-decision 台帳＝未決人類裁決的唯一住處：仲裁語義 135.3（AC#6/#7）、surfacing 欄位 135.7（AC#2）、跨 repo 投影 135.5（AC#7）；晨間批量裁決清單視圖歸 135.4。
+- liveness 台帳（135.7，dispatch 期望登記六欄）≠ 跨 repo 通知草案八欄（135.5 AC#6，發送 payload）——目的正交禁混用（135.7 Notes 辨義升格為 family 術語）。
 
 〔執行序與計畫時點〕
 - 子卡 ordinal＝建卡序非執行序；執行序依 dependencies DAG：135.2／135.3 無 deps 可即開，135.6 次之，135.7 依 135.6，135.1／135.4／135.5 依 deps；「平行研究」僅限唯讀對方卡，未定介面前禁寫對方擁有的面。
