@@ -121,7 +121,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
    - **自動建卡**（EP 產出後執行）：
      1. 收集 EP 中所有「新增 UC」（UC 盤點 → 新增 UC 表格中的 📋 項目）
      2. 對照既有卡，篩出**缺少卡的能力**（已含去重命中 → 跳過）
-     3. 逐能力 `backlog task create "<標題>" -l <labels> -d "<目標一句人話>"` → `backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"`（desc 人話、spec 住 Plan——spec gate 三必有，見 [kanban-board](../kanban-board/SKILL.md)「欄位分工」）；為 EP 整體另建一張追蹤卡（命令合約與**開工雙 ref 規則**見 [kanban-board](../kanban-board/SKILL.md)——卡 references 只掛 repo 相對路徑（EP 必備，有殼並列 shell 路徑），不掛 http URL）
+     3. 逐能力開卡＝**kanban-board「開卡 Description 先行」**（0919 v4 終版：人話＋一張 mermaid 圖，user SC ext 點卡確認後建卡）→ `backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"`（spec 住 Plan——spec gate 三必有，見 [kanban-board](../kanban-board/SKILL.md)「欄位分工」）；為 EP 整體另建一張追蹤卡（命令合約與**開工雙 ref 規則**見 [kanban-board](../kanban-board/SKILL.md)——卡 references 只掛 repo 相對路徑（EP 必備，有殼並列 shell 路徑），不掛 http URL）
      - Plan「已決策」段可含風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）——後續 handoff「建議執行 tier」的輸入
      4. **建卡（批次）即 commit**：`git add backlog/ && git commit -m "chore(backlog): <卡id…>"`——跨 WT id 防撞靠卡及時進 branch ref；此形態 user 已裁定免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」；命令合約見 [kanban-board](../kanban-board/SKILL.md)）
    - 無 `backlog/` 目錄時：提醒 user `backlog init --agent-instructions none`（**禁**再教 `mkdir .kanban/`——`.kanban/` 舊制已退役；`--agent-instructions none` 避免注入與本 repo AGENTS.md 治理衝突的 CRITICAL_INSTRUCTION 區塊）；repo 不採 board 制 → 卡片動作整項跳過

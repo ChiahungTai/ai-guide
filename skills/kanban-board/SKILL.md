@@ -30,7 +30,7 @@ for wt in $(git worktree list --porcelain | rg "^worktree " | cut -d" " -f2); do
 # 聚合判讀 a)：上行輸出＝filesystem 面 max-id 一行——全域最高卡號（涵蓋他 WT untracked/staged 卡）
 # 聚合判讀 b)：本行輸出＝porcelain 面歸屬表——各 WT 未 commit 卡檔逐一列出（誰該協調、卡何時進 ref）
 # 盲區聲明：兩掃母體皆為 `git worktree list --porcelain`——未註冊 WT 目錄（plain directory copy、pruned 殘留）不在掃描內
-backlog task create "<標題>" -l <labels> -d <目標一句> [--ac "<驗收條件>"]   # CLI id=本 WT max+1，無 --id 可指定
+backlog task create "<標題>" -l <labels> -d "<人話 Description＋一張 mermaid 圖——user SC ext 點卡確認後才落>"   # CLI id=本 WT max+1，無 --id 可指定；desc 走「開卡 Description 先行」（見下），禁 --ac 隨初始 create（AC 屬後補段）
 backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"   # desc 留人話、spec 住 Plan（詳「欄位分工」；`task create --plan` 限 active status，To Do 建卡後以 edit 補）
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
 ```
@@ -44,9 +44,11 @@ git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡�
 
 **共享 WT 建卡 id 佔用查驗三面**（多 session 共享單 WT、撞號反覆發生後強化——working copy 單一真相不豁免）：①本 WT `ls backlog/tasks/`＋`git status --porcelain backlog/tasks/`（untracked／staged 新建——porcelain 面抓平行 session 未 commit 卡檔，`??`＝untracked、`A `＝staged）；②`git ls-tree <各未 merge branch> backlog/tasks/`（他 branch 上的卡本 WT 看不到）；③`git log --all -- 'backlog/tasks/<prefix>-*'`（卡 id 不可重用——歷史重用同樣撞）。撞號修復先例＝owning branch 上 `git mv`＋frontmatter id 改（任務保留不廢棄）。
 **建卡 spec gate**（跨 session To Do 卡必過；session 內即辦豁免）：工單三必有住 `Implementation Plan`——①`baseline`（`〔baseline：<repo> <hash>〕`）②`已決策勿重辯`（`〔已決策勿重辯：①…〕`）——驗收條款（③）住 AC；語義在場即可，標記形式不限。軟自查：`rg -c "baseline|已決策|驗收" backlog/tasks/<卡>.md` 應 ≥3（豁免卡除外）。風險面屬性標註（「寫入契約首改」「跨文件交叉推導」「無保護面新能力」）是「已決策」段的合法內容形態。
-**欄位分工（desc 人話／Plan 工單）**（user 拍板——board 不只是 AI 工單池，也是 user 的主視圖；09-15 改制取代舊〔human-summary〕desc 頂部標記慣例）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels 承載（人話 triage 靠 desc、spec 檢索靠 Plan），title 不背 AI 檢索職責。②`desc` **全段人話**（1-3 句）：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；AI 工單內容不進 desc。③`Implementation Plan`＝AI 工單 spec（baseline／已決策勿重辯／範圍）——原生欄位零 hack、工具寫回永不重排（檔案段落 canonical 順序＝Description→Plan→AC→Notes→Final Summary，round-trip 實證）；spec 禁放 Notes（Notes 是 `--append-notes` 的 append 目標，spec 會被進度筆記同段堆疊掩埋）。④`AC`=驗收 checklist、`Notes`=append 進度、`Final Summary`=結算。建卡流程＝`task create`（To Do，帶人話 desc）→ `task edit --plan` 補 spec。既有卡下次觸及時順手搬，不專門回填。
+**欄位分工（desc 人話／Plan 工單）**（user 拍板——board 不只是 AI 工單池，也是 user 的主視圖；09-15 改制取代舊〔human-summary〕desc 頂部標記慣例；0919 v4 終版：desc＝人話＋一張 mermaid 圖）：①`title` 用人話——避免 AI 術語壓縮堆疊（治理黑話/多技術名並列），判準＝非本 repo 的開發者一眼知道這卡在幹嘛；機器檢索面靠 id＋labels 承載，title 不背 AI 檢索職責。②`desc`＝人話＋一張 mermaid 圖：這卡在幹嘛/現在到哪/等 user 什麼——建卡寫初版、開工/結算/結案時更新；AI 工單內容不進 desc（細則住 Plan）。③`Implementation Plan`＝AI 工單 spec（baseline／已決策勿重辯／範圍）——原生欄位零 hack、工具寫回永不重排（檔案段落 canonical 順序＝Description→Plan→AC→Notes→Final Summary，round-trip 實證）；spec 禁放 Notes（Notes 是 `--append-notes` 的 append 目標，spec 會被進度筆記同段堆疊掩埋）。④`AC`=驗收 checklist、`Notes`=append 進度、`Final Summary`=結算。建卡流程＝Description 先行（user 點卡確認）→ `task edit --plan` 補 spec。既有卡下次觸及時順手搬，不專門回填。
 
 **建卡前去重**（中）：`backlog search <關鍵詞>` + 查 `backlog/drafts/`（未承諾草稿歸宿；與同域 `open-items.md`，例：mosaic 側 `marking/open-items.md`）待處理段，命中則復用/連結既有指針，不重複承諾（一行指針 ≠ 承諾，`backlog` 卡 = 承諾）。
+
+**開卡 Description 先行（0919 v4 終版——user 裁決「簡單不要有太多規則」）**：開卡（含 program 拆卡批量）第一產物＝**Description：人話（這卡解什麼／定什麼／不做什麼）＋恰好一張 mermaid 圖**。起草後 user 在 SC ext 點卡看過確認，才 `task create` 建卡——卡本身即投影（SC card 預覽渲染），無平行 render、無 marker、無 digest 機制；確認後 AI 再補 AC／Plan（走既有②開工 metadata commit 或弧結算 commit 進版控，建卡 spec gate 於補齊時滿足），建卡 commit 走例外①僅及新增卡檔。既有卡 Description 的 semantic 修改＝改完請 user 點卡再算數。`.agent-tmp` 提案文件不承擔 acceptance identity——核准對象＝canonical 卡本身（0918 影子核可事故教訓）。
 
 **開工——起手式五步**（凡要動某卡的 session——implement 階段 1 是標準入口；automation／監控／report 等衍生 session 見下方「board single-writer 例外分工」——①⑤ 由 board-control 代行，衍生 session 本身不寫卡 metadata）：
 ```bash
@@ -76,7 +78,7 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 backlog task edit <id> -s Done --final-summary "<一句>"
 backlog task edit <id> --ref "<開工既有 EP 相對路徑>[,<shell 相對路徑>]"   # --ref 整組替換；路徑不變時可略過第二步
 ```
-**收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。**含委派腿（bridge job／external agent）的卡**，收 Done 前逐腿過 receipt 驗收——`completed` 終態不證交付；程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節（本 skill 指針引用，不重述準則）。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
+**收 Done 條件（板面反映「工作做完沒」，不反映「驗證做沒做」）**：有 review／judge 弧的卡，以其通過為收 Done 條件；simple 卡（無弧直行）以實作 commit 為條件。實機／實跑驗證項目（acceptance-evidence 證據階層的實證層）不擋 Done——集中掛該 repo 的總驗卡（board-control 建一張專責驗收清單卡維護），總驗發現問題由 board-control 重開卡（Done→In Progress）。**「待驗」不是停留 To Do 的理由**——卡停 To Do 只在 Notes 記待驗＝板面狀態失實（下個 session 會把已完成卡當新工重派），禁止。實例見 AIR-104 卡 notes。
 **結案 metadata commit 特赦（user 09-11，條件授權鏈；autonomous 適用性 09-13 user 裁定收回）**：結案兩步＋其 commit（僅 `backlog/`＋結算搬移檔、**同 commit**）在 **precheck 綠（跨線掃描 exit 0）** 時免逐次確認——機械守門替代人確認（例外條款③，**限互動 session**；autonomous session 所有 commit 一律待用戶確認）；條件不滿足 → 走確認 gate。註：precheck 在此是特赦的守門條件，非結案兩步本身的新要求（「結案兩步不需 precheck」現狀不變）。
 
 **窗期寫入分流（卡檔不可見時——AIR-121）**：卡檔在 main 而工作樹停在弧 branch（branch 尚未含建卡 commit——persistent card WT／並行建卡常態）→ `task edit` 觸不到卡檔，此時**緩衝制為預設**：verdict／狀態更新先落工單輸出檔＋EP notes（**顯性降級記錄**——明標「卡面更新緩衝中，待卡檔可見補落」），branch 吸收建卡 commit（rebase/ff）後隨**開工②／結案③既有特赦 commit 補落**卡面；**禁為此擴 commit 特赦**——補落僅走既有②③條件與授權，不新開 commit 理由（09-13 AI 自主 commit 禁紅線不變）。

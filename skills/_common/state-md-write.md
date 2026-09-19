@@ -52,4 +52,4 @@ repo root `STATE.md`，**覆寫**（非累積）。三要素：
 
 ## Open failures 不寫此處
 
-跨 session 未結案的 bug/failure（含 repro）→ **走 backlog**（`backlog task create` failure 卡；無 `backlog/` 的 repo 走該 repo 慣例的 pending 家），**不進 STATE.md**（board/pending 已是跨 session 未結案追蹤）。
+跨 session 未結案的 bug/failure（含 repro）→ **走 backlog**（`backlog task create` failure 卡——開卡形態依 kanban-board「開卡 Description 先行」〔0919 v4：人話＋一張 mermaid 圖，user SC ext 點卡確認；lightweight failure 卡至少 desc 標 draft-unconfirmed〕；無 `backlog/` 的 repo 走該 repo 慣例的 pending 家），**不進 STATE.md**（board/pending 已是跨 session 未結案追蹤）。
