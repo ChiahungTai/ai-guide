@@ -853,7 +853,9 @@ def test_tc3_artifact_progress_keeps_fresh(tmp_path):
     assert isinstance(results[0], _mod.PollFresh)
 
 
-def test_tc3_exec_lease_exempts_long_silent_call(tmp_path):
+def test_tc3_exec_lease_does_not_exempt_silence(tmp_path):
+    # Amendment（TC-4 活體證偽）：fd lease 不再豁免凍結——阻塞命令恆持 call-log fd，
+    # 豁免會使 watcher 對靜默 agent 永遠報 fresh（TC-4 實證的誤判活著）
     def setup(layout):
         write_metadata(layout, "sess_p1", AGENT)
         touch_rollout(layout, TASK, mtime=T0 - timedelta(hours=2))
@@ -864,7 +866,7 @@ def test_tc3_exec_lease_exempts_long_silent_call(tmp_path):
     results, *_ = _poll_seq_with_setup(
         tmp_path, reg_entry(), [T0], setup, prober=lambda paths: list(paths)
     )
-    assert isinstance(results[0], _mod.PollFresh)  # SM-2：長工具呼叫豁免
+    assert isinstance(results[0], _mod.PollFrozen)  # lease 不豁免：2h 靜默照樣凍結
 
 
 def test_tc3_frozen_beyond_threshold(tmp_path):

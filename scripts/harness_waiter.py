@@ -33,13 +33,18 @@ fail-loud（frozen 擴充）：錨點缺失、JSON 不可解析／半寫 torn re
 義、lsof 不可判定——一律 `unknown(原因)`，禁 crash 禁猜禁誤報。時鐘回撥
 （elapsed<0）＝視為 Fresh＋telemetry `clock-rollback`。
 
-凍結判準（frozen；research.md §三）
+凍結判準（frozen；research.md §三＋TC-4 活體證偽 amendment）
 ------------------------------------
-rollout＋artifact 無推進＋無 exec fd lease（lsof）＋無 terminal，連續 20m
-（預設；registry entry `silenceBudget`〔分鐘〕可覆寫）。poll gap 異常（機器
-睡眠）→該段扣除（單一語義：異常 gap 只記一個 poll interval，F9 裁決擇扣除
-不重置）。靜默量取 `min(輪詢累積, 表面 mtime 齡期)`——前者承擔睡眠扣除、後
-者承擔 watcher 啟動前已存在的靜默（殭屍 corpus 面）。
+rollout＋artifact 無推進＋無 terminal，連續 20m（預設；registry entry
+`silenceBudget`〔分鐘〕可覆寫）。poll gap 異常（機器睡眠）→該段扣除（單一語義：
+異常 gap 只記一個 poll interval，F9 裁決擇扣除不重置）。靜默量取
+`min(輪詢累積, 表面 mtime 齡期)`——前者承擔睡眠扣除、後者承擔 watcher 啟動前已
+存在的靜默（殭屍 corpus 面）。
+**Amendment（TC-4 活體證偽）**：原判準含「無 exec fd lease」豁免——活體證明阻塞
+命令（sleep）本身恆持 call-log fd，豁免使 watcher 對靜默中的 agent 永遠報 fresh
+（誤判活著，永不凍結）。fd lease 降級為 telemetry＋STOP_INCOMPLETE 的
+survivingHandles 面（--verify 偵測倖存寫入者），不再豁免凍結計數。20m 門檻本身
+即長工具呼叫的保護線（<20m 的安靜編譯不觸發；>20m 零輸出＝user 裁決的 bug 處理）。
 
 狀態機（frozen spec 轉移表——EP S1 節逐字；S 級 oracle，TC-1 對照本表；
 實作者不得改表，改表走 EP amendment）
@@ -583,7 +588,7 @@ def _parse_iso(value: str) -> datetime | None:
 
 
 class FreezeDetector:
-    """凍結判準：三面 stat＋fd lease（lsof）＋poll-gap 扣除（frozen 判準表）."""
+    """凍結判準：三面 stat＋poll-gap 扣除（frozen 判準表；fd lease＝telemetry 不豁免——TC-4 amendment）."""
 
     def __init__(
         self,
@@ -653,8 +658,6 @@ class FreezeDetector:
             acc = 0.0
         elif state.last_cursors is not None and st.cursors != state.last_cursors:
             acc = 0.0  # T2：三面任一推進——計數歸零續走
-        elif st.exec_lease:
-            acc = 0.0  # SM-2：open fd lease＝長工具呼叫豁免
         elif gap is None:
             acc = max(direct, 0.0)  # 首輪：表面 mtime 齡期即已存在的靜默
         elif gap > self._poll_interval_s * POLL_GAP_FACTOR:
@@ -663,6 +666,9 @@ class FreezeDetector:
             acc = state.silent_acc_s + min(gap, self._poll_interval_s)
         else:
             acc = state.silent_acc_s + gap
+        if st.exec_lease:
+            # Amendment：lease＝telemetry，不豁免凍結
+            telemetry.append("exec-lease-held")
 
         new_state = WatchState(
             last_cursors=st.cursors,
