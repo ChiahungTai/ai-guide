@@ -1,104 +1,143 @@
 #!/usr/bin/env python3
-"""harness_waiter — ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1＋S2）.
+"""harness_waiter — ZCode 子 agent timebox 監視＋收割＋停止協議（AIR-149 S1＋S2；frozen spec v2）.
 
-一句話：ZCode Task-tool subagent 沒有獨立 process 可監看——本 watcher 以檔案
-系統四觀察面偵測「全面靜默」，凍結即先收割後喚醒主 session 處置（砍歸主
-session）；「無訊號 ≠ 死亡」，判死不走 liveness inference（user 裁決 0920：
-20 分鐘全面零輸出＝bug 處理）。
+一句話：ZCode Task-tool subagent 無獨立 process 可監看，且 per-task 活動面
+不可觀測（K1 活體證偽：running 中的真 subagent 於四觀察面全數靜默/缺席）——
+本 watcher **不做任何活/死宣稱**，只機械回報兩個事實：terminal transition
+（權威狀態訊號）與 running 超 timebox（時間盒事實；user 裁決 0920：20 分鐘
+不落地＝bug 處理）。timebox 到期＝先收割後喚醒（exit 3，advisory——不 stop
+不重派；砍與重派歸主 session／deepwork 授權鏈）。
+
+v2 Pivot（K1 amendment 淵源）
+------
+v1 以「rollout＋artifact＋exec 三面推進靜默計數」判凍結；TC-4 round 2 活體
+證明 running 中的真 subagent 於四觀察面全數靜默/缺席（rollout 檔不存在——
+子 agent model I/O 折疊進 parent session 層，per-task 不可分；exec 僅 fd
+存在性無進度訊號；metadata 反指標；artifacts 無）→「三面觀察判定靜默」前提
+證偽，凍結偵測（靜默計數）整體移除，改 timebox 模型。fd lease／表面 mtime
+／cursors 推進全數降級 telemetry（不進判準）：exec lease 記
+`exec-lease-held`；時鐘回撥記 `clock-rollback`（回撥輪禁判——視為 Fresh）。
 
 契約源
 ------
-- EP：ai-analysis/_tasks/2026-09/09-20-harness-liveness-watcher/ep.md（S1 節）
+- EP：ai-analysis/_tasks/2026-09/09-20-harness-liveness-watcher/ep.md
+  （S1 節 frozen spec 轉移表 v2——S 級 oracle，本檔表格逐字搬入）
 - 設計裁決：同任務 references/research.md（AIR-148 probe＋codex 兩輪攻防）
-- 兄弟形態參考：bridge_waiter.py（**AIR-146 已落本 branch**——bridge 側兄弟，結構
-  參考、代碼不共用）
+- 兄弟形態參考：bridge_waiter.py（bridge 側兄弟，結構參考、代碼不共用）
 
-觀察面（frozen 定義；路徑常數集中 ZCodeLayout，禁散落）
+觀察面（v2；路徑常數集中 ZCodeLayout，禁散落）
 --------------------------------------------------------
-- rollout＝`<cli>/rollout/model-io-<taskId>.jsonl`（最佳 liveness 檔——每次
-  model I/O 即時 append）
-- exec＝`<cli>/exec/<taskId>/`（工具執行中 zsh 持 fd 直寫；完成後目錄清空）
-- artifact＝`<cli>/artifacts/<taskId>/`
 - metadata＝`<cli>/agents/sess_<parent>/agent_<id>/metadata.json`
-  （registry 存 taskId＝childSessionId `sess_subagent_agent_<id>`；adapter
-  以 glob 解析 parent；agentId 由 taskId 機械映射）
-- terminal 面＝metadata `status`（running/completed/failed/stopped；spawn 與
-  terminal 兩點寫入，run 期間 mtime 零推進——反指標，禁當 liveness）
+  （status：running/completed/failed/stopped——spawn 與 terminal 兩點寫入；
+  **terminal transition＝唯一權威狀態訊號**）
+- exec＝`<cli>/exec/<taskId>/`（fd 存在性→lease probe；telemetry＋`--verify`
+  surviving-writer 面，不進判準）
+- artifact＝`<cli>/artifacts/<taskId>/`（telemetry＋verify cursors 面）
+- rollout 面（v1）**整段移除**——K1 證偽：子 agent 無 per-task rollout；
+  harvest 的 rollout tail 降為「存在才收」（缺席記 manifest `absent`，非
+  fail-loud）
+- daily log jsonl 的 `subagent.background.completed/.failed` 事件為輔助
+  terminal 觀察面（未接線——frozen v2 T1 輪詢只查 metadata status＋registry
+  對照）
 
 `taskId` 慣例（機器實證 2026-09-20）：childSessionId 全形
-`sess_subagent_agent_<uuid>`；rollout 檔名與 exec/artifact 目錄名皆直接使用
-該全形 id（EP 條文 `sess_<taskId>` 前綴記法以機器佈局為準——偏差記錄見卡）。
+`sess_subagent_agent_<uuid>`；exec/artifact 目錄名直接使用該全形 id；adapter
+以 glob 解析 parent，agentId 由 taskId 機械映射。
 
-fail-loud（frozen 擴充）：錨點缺失、JSON 不可解析／半寫 torn read、glob 歧
-義、lsof 不可判定——一律 `unknown(原因)`，禁 crash 禁猜禁誤報。時鐘回撥
-（elapsed<0）＝視為 Fresh＋telemetry `clock-rollback`。
+fail-loud（frozen 擴充）：metadata 錨點缺失（running 期消失＝T5 hard-death）、
+JSON 不可解析／半寫 torn read、glob 歧義——一律 `unknown(原因)`，禁 crash
+禁猜禁誤報。時鐘回撥（elapsed<0）＝視為 Fresh＋telemetry `clock-rollback`。
 
-凍結判準（frozen；research.md §三＋TC-4 活體證偽 amendment）
-------------------------------------
-rollout＋artifact 無推進＋無 terminal，連續 20m（預設；registry entry
-`silenceBudget`〔分鐘〕可覆寫）。poll gap 異常（機器睡眠）→該段扣除（單一語義：
-異常 gap 只記一個 poll interval，F9 裁決擇扣除不重置）。靜默量取
-`min(輪詢累積, 表面 mtime 齡期)`——前者承擔睡眠扣除、後者承擔 watcher 啟動前已
-存在的靜默（殭屍 corpus 面）。
-**Amendment（TC-4 活體證偽）**：原判準含「無 exec fd lease」豁免——活體證明阻塞
-命令（sleep）本身恆持 call-log fd，豁免使 watcher 對靜默中的 agent 永遠報 fresh
-（誤判活著，永不凍結）。fd lease 降級為 telemetry＋STOP_INCOMPLETE 的
-survivingHandles 面（--verify 偵測倖存寫入者），不再豁免凍結計數。20m 門檻本身
-即長工具呼叫的保護線（<20m 的安靜編譯不觸發；>20m 零輸出＝user 裁決的 bug 處理）。
+timebox 判準（v2 frozen）
+------------------------
+effective = now − entry.createdAt − poll gap 異常段（gap > interval×2 只記
+一個 interval，餘額扣除；SM-7 機器睡眠不誤觸）。effective ≥ timebox（預設
+20m；registry entry `silenceBudget`〔分鐘——v2 重解釋為 timebox，EP amendment
+已載〕覆寫；`HARNESS_WAITER_FREEZE_MIN` env 覆寫〔v1 名保留——改名相容〕）
+＝到期。表面推進／exec lease 不重置不豁免（timebox＝牆鐘年齡，非靜默量——
+禁 liveness inference 回滲）。
 
-狀態機（frozen spec 轉移表——EP S1 節逐字；S 級 oracle，TC-1 對照本表；
-實作者不得改表，改表走 EP amendment）
+狀態機（frozen spec 轉移表 v2——EP S1 節逐字；S 級 oracle，TC-1 對照本表；
+實作者不得改表，改表走 EP amendment。v1 的「三面靜默計數」路徑整體移除——
+per-task 活動不可觀測（K1 活體證偽）；timebox 取代靜默閾值）
 ------------------------------------------------------------------
 
 | # | 來源態 | 事件 | 條件 | 到達態 | watcher 動作 |
 |---|---|---|---|---|---|
-| T1 | （註冊） | S2 registry entry 建立 | — | MONITORED | 開始輪詢 |
-| T2 | MONITORED | 輪詢 | 三面任一推進 | MONITORED | 計數續走（poll gap 異常→扣除間隔） |
-| T3 | MONITORED | 輪詢 | 全面靜默 ≥20m | HARVESTED | bounded 收割（partial 標記）→寫 pending intervention receipt（dedup：已有 pending 不重發）→exit 3 喚醒 |
-| T4 | MONITORED/HARVESTED | quarantine 期活動恢復 | 任一面推進 | （記 `resumed_during_quarantine=true` telemetry） | **仍照砍**——主 session TaskStop 不因恢復取消（user 裁決） |
-| T5 | MONITORED | generation mismatch／registry entry 消失 | metadata 異動對照 | （hard-death fast path） | **立即 wake**（exit 2），不等 20m——禁 retry |
-| T6 | 任意 | 佈局錨點缺失／registry 缺 entry | adapter 查證失敗 | UNKNOWN | fail-loud 診斷，零誤報 |
-| T7 | （主 session） | TaskStop 下達 | — | STOP_REQUESTED | 主 session 執行（非 watcher） |
-| T8 | STOP_REQUESTED | verification | grace 內 metadata terminal＋cursors 靜止 | STOP_CONFIRMED | harvest B/delta（主 session 以 `--harvest-delta` 呼叫本 script）→主 session 決定 RETRY_SAFE |
+| T1 | （註冊） | S2 registry entry 建立 | — | MONITORED | 開始輪詢（只查 metadata status＋registry 對照） |
+| T2 | MONITORED | 輪詢 | metadata/status 出現 terminal transition | ALL_TERMINAL | 恰一次 collect（有 sink 時）→stdout 尾 CollectionReceipt→exit 0 |
+| T3 | MONITORED | 輪詢 | status 仍 running 且 timebox（20m 預設；entry `silenceBudget` 覆寫）未到 | MONITORED | 續輪詢（零喚醒） |
+| T4 | MONITORED | 輪詢 | status 仍 running 且 timebox 到 | HARVESTED | bounded 收割（partial 標記）→pending receipt（dedup）→exit 3 喚醒——**advisory，不 stop 不重派** |
+| T5 | MONITORED | generation mismatch／registry entry 消失 | metadata 異動對照 | （hard-death fast path） | **立即 wake**（exit 2），不等 timebox——禁 retry |
+| T6 | 任意 | 佈局錨點缺失／registry 缺 entry／JSON 不可解析 | adapter 查證失敗 | UNKNOWN | fail-loud 診斷（exit 1），零誤報 |
+| T7 | （wake 後） | 主 session 處置 | TaskStop→verify→RETRY_SAFE 三問 | — | **互動 session**：主 session 介入判斷重派；**deepwork／無人在場**：收割→TaskStop→**自動重派一次**（新 attempt_id），二連失敗停止弧線留報告（autonomous-execution 授權，user 0920 裁決） |
+| T8 | STOP_REQUESTED | verification | grace 內 metadata terminal＋cursors 靜止 | STOP_CONFIRMED | harvest B/delta（主 session 以 `--harvest-delta` 呼叫）→RETRY_SAFE 判定 |
 | T9 | STOP_REQUESTED | verification | 仍有寫入者 | STOP_INCOMPLETE | 禁重派＋detached child 處置清單 |
 
-不變量：watcher 永不 stop／重派（TaskStop 歸主 session）；「無訊號≠死亡」；
-EXECUTION_DEAD 語義由 STOP 鏈承載、RETRY_SAFE 獨立判定；wake 對「第一個凍
-結」收割即 exit——其餘 entry 中止監視，主 session 處置後重啟 watcher 續監
-（v1 從簡）。
+不變量：watcher 代碼面零 stop／重派路徑（TaskStop／重派＝主 session 或
+deepwork 授權的自動鏈，歸 S3 doctrine）；watcher 不做活/死宣稱；fd lease／
+表面推進＝telemetry（不進判準）；terminal transition＝唯一權威狀態訊號。
+wake 對「第一個到期」收割即 exit——其餘 entry 中止監視，主 session 處置後
+重啟 watcher 續監（v1 從簡）。
 
-偏差 ledger（fresh review round 1——結案時補卡面 ledger；本表為 in-file 對照）
+偏差 ledger（v2 pivot 增補；v1 項隨移除面註銷——結案時補卡面 ledger）
 ------------------------------------------------------------------------------
 1. 觀察面路徑記法：EP `sess_<taskId>` 前綴 vs 機器實證目錄名＝taskId 全形
-   ——以機器佈局為準（見上「taskId 慣例」）。
+   ——以機器佈局為準（v1 項保留）。
 2. registry 存 taskId（S2 schema）非 EP S1 文句的 agentId——adapter 以
-   `sess_subagent_<rest>→<rest>` 機械映射推 agentId 再 glob。
-3. terminal 判定先於 rollout 錨點要求——terminal 後 rollout 清理＝機器合法
-   行為（completed agent 實證）；running＋rollout 缺仍 unknown fail-loud。
+   `sess_subagent_<rest>→<rest>` 機械映射推 agentId 再 glob（v1 項保留）。
+3.〔v2〕lease probe 失敗＝`exec_lease_checked=False` telemetry gap（v1 對
+   running 報 unknown fail-loud）——lease 降 telemetry 後不再構成查證失敗；
+   `--verify` 對 checked=False 維持 fail-closed STOP_INCOMPLETE（F-1/F-11
+   保留）。
 4. verify 模式 exit 延伸面（0=CONFIRMED／4=INCOMPLETE）——frozen exit 表為
-   主迴圈 wake 語義，INCOMPLETE 以 stdout 尾行 `state` 機判（EP review F2）。
-5. 靜默量雙源取小 min(輪詢累積〔含 gap 扣除〕, mtime 齡期)——後者承擔
-   watcher 啟動前已存在的靜默（EP 未明定；corpus 面需要）。
+   主迴圈 wake 語義，INCOMPLETE 以 stdout 尾行 `state` 機判（EP review F2；
+   v1 項保留）。
+5.〔v2〕harvest rollout tail 存在才收（subagent 無 rollout——K1）；manifest
+   `tails.rollout.absent` 標記；transcript/task.output tail 未納入（未來
+   工作——「收割器不變」約束下的最小變更）。
 6. registry 監視集異動分流（F-4）：減項／attempt 變更＝exit 2；純增項＝
-   吸納續 watch（增項非死亡訊號，防正常追加註冊假喚醒）。
-7. lsof exit 1 歧義（F-2）：stderr 非空＝錯誤→None；空＝無命中→[]。
-8. lease 路徑 realpath 正規化（F-3）：/tmp vs /private/tmp symlink 實證。
-9. TaskStatus.exec_lease_checked（F-11）：terminal＋prober 不可判定＝
-   checked=False 短路（freeze 迴圈不誤醒）；verify 對未查成 fail-closed
-   STOP_INCOMPLETE（F-1 禁假確認——terminal 仍列舉 exec/artifact＋probe）。
-10. timestamp 不可解析＝fail-loud（F-6）：registry createdAt→registry-schema；
-    metadata createdAt 對稱→metadata-corrupt（禁靜默跳過 T5 對照）。
+   吸納續 watch（v1 項保留）。
+7. lsof exit 1 歧義（F-2）：stderr 非空＝錯誤→None；空＝無命中→[]（v1 項
+   保留——probe 仍服務 telemetry＋verify 面）。
+8. lease 路徑 realpath 正規化（F-3）：/tmp vs /private/tmp symlink 實證
+   （v1 項保留）。
+9. timestamp 不可解析＝fail-loud（F-6）：registry createdAt→registry-schema；
+   metadata createdAt 對稱→metadata-corrupt（v1 項保留——createdAt 兼任
+   timebox 起點，解析失敗＝禁判）。
+10.〔v2〕wake 語彙改名：stdout 尾 JSON `state`＝`timebox-wake`（v1
+   `freeze-wake`）、elapsed 欄＝`timeboxElapsedMin`——v2 語義誠實面；exit
+   契約（0/2/3/1）與 dedup key（taskId＋attemptId）不變。
+11.〔v2〕T2 all-terminal 新增 sink collect（CollectionReceipt——EP v2 表逐字
+   要求，v1 無此步）；sink 相對路徑以 workspace 根（registry 上層目錄）解析。
+12.〔D-A〕registry `interventionPolicy` 讀寫面不對稱：寫面明確給錯＝fail-loud、
+   讀面缺省/未知值＝fail-safe coerce interactive（codex amendment ③——保守
+   方向：誤判 autonomous 觸發自動鏈比多一次人工介入危險）。
+13.〔D-B〕retryBudget ledger 以 taskId 為 logicalJobId（跨 attempt 續計——
+   F4「同 task 換 attempt＝重派」語義的對偶）；帳損壞不 fail-loud 整個 wake
+   而 fail-safe budgetRemaining=0（wake 本身仍發——收割證據不因帳壞而失）。
+14.〔D-C〕watcher 端 TOCTOU recheck 落在收割 re-status（harvest 內建第二讀）
+   ——controller 端 TaskStop 前的 recheck 走 `--verify`（receipt suggestedAction
+   明列順序）；兩層 recheck 讀同一權威訊號（metadata status）。
+15.〔codex amendment 未納入面〕① `silenceBudget`→`timeboxMinutes` 改名、
+   ⑦ timebox 時間源改 eligible_elapsed（只計 observed-running 段）——EP v2
+   POTION 已載，非本輪 D-A..D-D 範圍，隨 impl follow-up；④ STOP_INCOMPLETE
+   deepwork bounded remediation 歸 S3 doctrine（非代碼面）。
+   定性更名（EP amendment）：本物＝**timeboxed attempt supervisor**（三結果
+   TERMINAL／TIMEBOX_EXPIRED／UNKNOWN-HARD_DEATH；所有 stop/retry 歸
+   controller policy）。
 
 exit 契約（frozen——watcher 主迴圈）
 -------------------------------------
-- 0＝正常收場（含空 registry、全 terminal）
+- 0＝正常收場（含空 registry、全 terminal〔stdout 尾附 CollectionReceipt〕）
 - 2＝hard-death wake（generation mismatch／metadata 消失／registry entry 異動）
-- 3＝freeze wake（stdout 尾附 harvest receipt JSON＋pending intervention）
+- 3＝timebox wake（stdout 尾附 harvest receipt JSON＋pending intervention；
+  advisory——不 stop 不重派）
 - 其他非零＝內部錯／fail-loud（診斷至 stderr＋stdout 尾行狀態 JSON；本檔
   用 1）
-- verification 模式延伸面（`--verify`，EP review F2 增補——frozen 表為主迴
-  圈 wake 語義，verify 以 stdout 尾行 `state` 欄為機械判準）：0＝
-  STOP_CONFIRMED、4＝STOP_INCOMPLETE（禁重派）、1＝fail-loud
+- verification 模式延伸面（`--verify`——frozen 表為主迴圈 wake 語義，verify
+  以 stdout 尾行 `state` 欄為機械判準）：0＝STOP_CONFIRMED、4＝
+  STOP_INCOMPLETE（禁重派）、1＝fail-loud
 - 註冊模式延伸面（`--register`，S2）：0＝registered、1＝fail-loud（欄位
   無效／schema 不符／重註冊；stdout 尾行 `state`＝registered／unknown）
 
@@ -108,7 +147,7 @@ stderr＝診斷。
 用法
 ----
     uv run python scripts/harness_waiter.py <registry>
-        [--poll-interval SEC] [--freeze-threshold MIN] [--max-cycles N]
+        [--poll-interval SEC] [--timebox-min MIN] [--max-cycles N]
     uv run python scripts/harness_waiter.py <registry> --verify <taskId>
         [--grace SEC]
     uv run python scripts/harness_waiter.py <registry> --harvest-delta \
@@ -116,25 +155,57 @@ stderr＝診斷。
     uv run python scripts/harness_waiter.py <registry> --register <taskId>
         --attempt-id <id> --sink <path> [--expected <json>]
         [--surviving-handle HANDLE]... [--silence-budget-min MIN]
+        [--intervention-policy interactive|autonomous_once]
 
 registry＝workspace-local `.agent-tmp/liveness-registry.json`（寫入面＝
 `--register`；atomic write 契約——watcher 逐輪重讀偵測 entry 異動）。schema：
 `{"entries": [{taskId, attemptId, createdAt, sink, expected,
-survivingHandles[], silenceBudget?}]}`；watcher 讀面：檔缺席＝fail-loud；
-entries 空＝exit 0（等待語義：無可監視物）。register 寫面：同 taskId 重註冊
-＝fail-loud（新 attempt 前先移除舊 entry）；既有檔損壞／schema 不符＝
-fail-loud 禁覆蓋；`createdAt`＝generation anchor，由 register 自 agent
-metadata 機械讀取（**非牆鐘**——T5 以此對照 metadata，寫牆鐘＝每次輪詢
-hard-death）；`sink`/`expected`＝AIR-135.7 AC#2 bounded receipt 欄位
-投影；`survivingHandles`＝dispatch 前已知 detached job 的 ownership handle
-（in-harness brief 禁未登記 long-lived/daemonized child）；`silenceBudget`
-＝有期限 silence lease（缺席＝20m 標準門檻）。
+survivingHandles[], silenceBudget?, interventionPolicy?}]}`；watcher 讀面：
+檔缺席＝fail-loud；entries 空＝exit 0（等待語義：無可監視物）。register 寫
+面：同 taskId 重註冊＝fail-loud（新 attempt 前先移除舊 entry）；既有檔損壞
+／schema 不符＝fail-loud 禁覆蓋；`createdAt`＝generation anchor，由 register
+自 agent metadata 機械讀取（**非牆鐘**——T5 對照基準＋v2 timebox 起點，寫牆
+鐘＝每次輪詢 hard-death）；`sink`/`expected`＝AIR-135.7 AC#2 bounded receipt
+欄位投影；`survivingHandles`＝dispatch 前已知 detached job 的 ownership
+handle（in-harness brief 禁未登記 long-lived/daemonized child；--verify 面
+＝correctness boundary）；`silenceBudget`＝timebox 分鐘（v2 重解釋；缺席＝
+20m 標準）；`interventionPolicy`（D-A）＝`interactive｜autonomous_once`——
+invoking session 當下寫入、watcher 只 echo 進 receipt（**兩軸分離**：policy
+管「誰處置」、retry_safe 管「可否重派」）；缺省不寫欄位、讀面缺省/未知值
+fail-safe＝interactive、寫面明確給錯＝fail-loud。
 
-收割（bounded）：metadata copy→表面 manifest（檔數上限）→rollout raw tail
-（位元組上限；JSONL 收 raw bytes——append 中末行半截合法，kill 後再解析）；
-超限 `harvestPartial=true` 照樣標。pending intervention receipt＝
+收割（bounded）：metadata copy→表面 manifest（exec/artifact＋rollout 存在
+才列；檔數上限）→rollout raw tail（位元組上限；存在才收；JSONL 收 raw
+bytes——append 中末行半截合法，kill 後再解析）；超限 `harvestPartial=true`
+照樣標。pending intervention receipt＝
 `<workspace>/.agent-tmp/liveness/pending/<taskId>.json`，dedup key＝
 taskId＋attemptId，已存在同 attempt 不重發。
+
+retry budget（D-B）：同一 logical job（taskId 跨 attempt——F4 語義）
+`AUTO_RETRY_BUDGET＝1`——attempt-1 timebox expiry 經 STOP_CONFIRMED＋
+RETRY_SAFE 後消耗 budget 派 attempt-2（新 attemptId，**全新 timebox**）；
+attempt-2 再 expiry→收割/stop/verify 後 terminal report、budget=0、無
+attempt-3。帳檔＝`<liveness>/budget/<taskId>.json`（watcher 於 T4 wake 記
+帳；同 attempt 重跑 dedup 不重複消耗；帳損壞＝fail-safe budgetRemaining=0
+＋自癒重寫）。terminal failure／UNKNOWN／generation mismatch／
+STOP_INCOMPLETE／terminal-race 各有 disposition，**不消耗 budget**。
+
+pre-TaskStop terminal recheck（D-C）：expiry receipt 的 `suggestedAction`＝
+明列處置順序——`harvest A → wake → fresh terminal recheck（--verify 重讀
+metadata status：唯一允許的權威 terminal 訊號，TOCTOU 關閉——非 liveness
+inference 偷渡）→〔terminal：final collect 不 stop 不 retry／running：
+TaskStop → STOP verify → harvest B＋sink validation〕→ RETRY_SAFE &&
+budgetRemaining>0 ? 新 attempt : halt`。收割 re-status 即 watcher 端的
+recheck：命中 terminal（terminal-race）＝wake receipt 附 finalCollection、
+零 stop 零 retry。
+
+STOP fencing oracle（D-D，`--verify`）：STOP_CONFIRMED＝三項同時成立——
+① metadata terminal；② 所有已註冊 owned handles quiescent（grace 觀察窗
+前後 stat 不變）/collected（窗內消失）；③ authoritative sink grace 內無
+writer（窗前後 stat 不變）。無法歸屬 handle（存在非普通檔/不可讀）→
+STOP_INCOMPLETE；survivingHandles＝correctness boundary 非 telemetry。
+exec lease probe＝寫入者面保留（active lease／probe 不可判定→
+STOP_INCOMPLETE fail-closed）。
 """
 
 import argparse
@@ -157,6 +228,7 @@ WAKE_RECEIPT_SCHEMA = "liveness-wake-receipt/1"
 PENDING_RECEIPT_SCHEMA = "liveness-pending-intervention/1"
 HARVEST_MANIFEST_SCHEMA = "harness-harvest-manifest/1"
 HARVEST_DELTA_SCHEMA = "harness-harvest-delta/1"
+COLLECTION_RECEIPT_SCHEMA = "harness-collection-receipt/1"
 
 EXIT_OK = 0
 EXIT_FAILLOUD = 1
@@ -164,16 +236,24 @@ EXIT_HARD_DEATH = 2
 EXIT_FREEZE = 3
 EXIT_VERIFY_INCOMPLETE = 4
 
-DEFAULT_FREEZE_THRESHOLD_MIN = 20.0
-# rig/測試用覆寫（TC-4 dogfood）——env 設定時連同 argparse default 一併調整
-FREEZE_THRESHOLD_MIN = float(
-    os.environ.get("HARNESS_WAITER_FREEZE_MIN", DEFAULT_FREEZE_THRESHOLD_MIN)
-)
+DEFAULT_TIMEBOX_MIN = 20.0
+# rig/測試用覆寫（TC-4 dogfood）——env 設定時連同 argparse default 一併調整；
+# env 名保留 v1 `HARNESS_WAITER_FREEZE_MIN`（改名相容）
+TIMEBOX_MIN = float(os.environ.get("HARNESS_WAITER_FREEZE_MIN", DEFAULT_TIMEBOX_MIN))
 DEFAULT_POLL_INTERVAL_S = 60.0
 DEFAULT_VERIFICATION_GRACE_S = 30.0
 POLL_GAP_FACTOR = 2.0  # gap > interval×此倍數＝異常（機器睡眠）→扣除間隔
 
 TERMINAL_STATES = frozenset({"completed", "failed", "stopped"})
+
+# D-A：interventionPolicy 兩軸分離——policy 管「誰處置」（watcher 只 echo）、
+# retry_safe 管「可否重派」（S3 doctrine 三問）；缺省/未知值 fail-safe＝interactive
+INTERVENTION_POLICIES = frozenset({"interactive", "autonomous_once"})
+# D-B：同一 logical job 的自動重派預算（attempt-1 expiry 經 STOP_CONFIRMED＋
+# RETRY_SAFE 後消耗、派 attempt-2 全新 timebox；attempt-2 expiry＝terminal
+# report 無 attempt-3）；terminal failure／UNKNOWN／generation mismatch／
+# STOP_INCOMPLETE 各有 disposition，不消耗 budget
+AUTO_RETRY_BUDGET = 1
 
 MAX_TAIL_BYTES = 65_536
 MAX_MANIFEST_FILES = 2_000
@@ -237,10 +317,12 @@ def agent_id_from_task(task_id: str) -> str | None:
 
 @dataclass(frozen=True)
 class Cursors:
-    """四表面 cursor 快照（進度比對用；None＝該面目錄缺席＝合法）。"""
+    """寫入者面 cursor 快照（verify 靜止比對＋harvest resumed 判定用）.
 
-    rollout_size: int | None
-    rollout_mtime_ns: int | None
+    v2：rollout 欄位移除（K1 證偽——子 agent 無 per-task rollout）；只剩
+    artifact＋exec 兩面；None＝該面目錄缺席＝合法。
+    """
+
     artifact_mtime_ns: int | None
     artifact_size: int | None
     exec_mtime_ns: int | None
@@ -251,9 +333,10 @@ class Cursors:
 class TaskStatus:
     """`status(taskId)` 的可判讀結果（EP S1 欄位集）.
 
-    exec_lease_checked＝False 表示 lease 面未查成（prober 不可判定；僅
-    terminal 容許——F-11 terminal 短路 probe 失敗，freeze 迴圈不誤醒）；
-    verify 對未查成 fail-closed STOP_INCOMPLETE（F-1 禁假確認）。
+    exec_lease_checked＝False 表示 lease 面未查成（prober 不可判定）——v2
+    lease 僅 telemetry＋verify 面，probe 失敗不再 fail-loud 判準面；verify
+    對未查成 fail-closed STOP_INCOMPLETE（F-1 禁假確認）。last_activity/
+    output_cursor 為 exec＋artifact 聚合 telemetry，不進判準。
     """
 
     task_id: str
@@ -377,6 +460,12 @@ class ZCodeLivenessSource:
         return meta
 
     def status(self, task_id: str) -> TaskStatus | UnknownFace:
+        """v2 觀察面：metadata status＋exec/artifact telemetry（rollout 移除）.
+
+        K1 證偽後 running 期不要求任何表面錨點——可判讀性只依 metadata（含
+        createdAt：timebox 起點）。lease probe 失敗＝checked=False（telemetry
+        gap，不 fail-loud）；verify 端另行 fail-closed。
+        """
         agent_id = agent_id_from_task(task_id)
         if agent_id is None:
             return UnknownFace("invalid-task-id", task_id)
@@ -387,53 +476,23 @@ class ZCodeLivenessSource:
         if isinstance(meta, UnknownFace):
             return meta
         state = meta["status"]
-        terminal = state in TERMINAL_STATES
-        rollout = self._layout.rollout_file(task_id)
-        # F-10：stat 包 OSError——rollout 是必要錨點面，讀撞＝unknown 禁猜
-        r_stat: os.stat_result | None = None
-        if rollout.is_file():
-            try:
-                r_stat = rollout.stat()
-            except OSError as exc:
-                return UnknownFace("rollout-stat-failed", str(exc))
-        if r_stat is None and not terminal:
-            # running 而無 rollout＝liveness 錨點缺失——fail-loud 禁誤報
-            # （terminal 後 rollout 清理＝機器合法行為，2026-09-20 實機實證）
-            return UnknownFace("rollout-anchor-missing", str(rollout))
         a_mtime, a_size = _newest_in_dir(self._layout.artifact_dir(task_id))
         e_mtime, e_size = _newest_in_dir(self._layout.exec_dir(task_id))
         cursors = Cursors(
-            rollout_size=r_stat.st_size if r_stat is not None else None,
-            rollout_mtime_ns=r_stat.st_mtime_ns if r_stat is not None else None,
             artifact_mtime_ns=a_mtime,
             artifact_size=a_size,
             exec_mtime_ns=e_mtime,
             exec_size=e_size,
         )
-        # 寫入者面（F-1）：terminal 亦列舉 exec/artifact 並 probe lease——
-        # verify 的 STOP_CONFIRMED 不得跳過 detached writer 檢查
+        # 寫入者面（F-1）：terminal 亦列舉 exec 並 probe lease——verify 的
+        # STOP_CONFIRMED 不得跳過 detached writer 檢查。v2：lease＝telemetry
+        # ＋verify 面，probe 失敗＝checked=False（不進判準，不 fail-loud）
         exec_files = _files_in_dir(self._layout.exec_dir(task_id))
         raw_lease = self._prober(exec_files) if exec_files else []
-        if raw_lease is None:
-            if terminal:
-                # F-11：terminal 短路 probe 失敗——freeze 迴圈不因 lsof 壞
-                # 誤醒；以 checked=False 交 verify fail-closed（禁假確認）
-                return TaskStatus(
-                    task_id=task_id,
-                    state=state,
-                    generation=(meta["childSessionId"], meta["createdAt"]),
-                    created_at=meta["createdAt"],
-                    last_activity=None,
-                    output_cursor=r_stat.st_size if r_stat is not None else 0,
-                    exec_lease=(),
-                    exec_lease_checked=False,
-                    cursors=cursors,
-                )
-            return UnknownFace(
-                "lease-prober-failed", "lsof 不可用或非預期 exit——禁猜 lease 面"
-            )
-        mtimes = [r_stat.st_mtime_ns] if r_stat is not None else []
-        mtimes += [v for v in (a_mtime, e_mtime) if v is not None]
+        checked = raw_lease is not None
+        lease = tuple(str(p) for p in raw_lease) if checked else ()
+        sizes = [v for v in (a_size, e_size) if v is not None]
+        mtimes = [v for v in (a_mtime, e_mtime) if v is not None]
         return TaskStatus(
             task_id=task_id,
             state=state,
@@ -442,9 +501,9 @@ class ZCodeLivenessSource:
             last_activity=(
                 datetime.fromtimestamp(max(mtimes) / 1e9, tz=UTC) if mtimes else None
             ),
-            output_cursor=r_stat.st_size if r_stat is not None else 0,
-            exec_lease=tuple(str(p) for p in raw_lease),
-            exec_lease_checked=True,
+            output_cursor=sum(sizes),
+            exec_lease=lease,
+            exec_lease_checked=checked,
             cursors=cursors,
         )
 
@@ -463,6 +522,7 @@ class RegistryEntry:
     expected: object
     surviving_handles: tuple[str, ...]
     silence_budget_min: float | None
+    intervention_policy: str = "interactive"
 
 
 def _require_str(entry: dict, key: str) -> str | None:
@@ -518,6 +578,10 @@ def load_registry(path: Path) -> list[RegistryEntry] | UnknownFace:
                     "registry-schema", f"entries[{i}] silenceBudget 需正數"
                 )
             budget = float(budget_raw)
+        # D-A：interventionPolicy 缺席/未知值 fail-safe＝interactive（保守方向
+        # ——interactive＝主 session 介入，禁誤判 autonomous 觸發自動鏈）
+        policy_raw = raw.get("interventionPolicy")
+        policy = policy_raw if policy_raw in INTERVENTION_POLICIES else "interactive"
         entries.append(
             RegistryEntry(
                 task_id=task_id,
@@ -527,6 +591,7 @@ def load_registry(path: Path) -> list[RegistryEntry] | UnknownFace:
                 expected=raw.get("expected"),
                 surviving_handles=tuple(handles_raw),
                 silence_budget_min=budget,
+                intervention_policy=policy,
             )
         )
     return entries
@@ -539,10 +604,13 @@ def load_registry(path: Path) -> list[RegistryEntry] | UnknownFace:
 
 @dataclass
 class WatchState:
-    """單 entry 的輪詢累積狀態（T2 計數續走／T5 generation 對照）."""
+    """單 entry 的輪詢累積狀態（poll gap 扣除累積／T5 generation 對照）.
 
-    last_cursors: Cursors | None = None
-    silent_acc_s: float = 0.0
+    v2：無靜默累積（timebox＝牆鐘年齡，非輪詢計數）——只累積「異常 gap 扣
+    除額」；deducted_s 自 createdAt 年齡中扣除。
+    """
+
+    deducted_s: float = 0.0
     prev_poll_at: datetime | None = None
     generation: tuple[str, str] | None = None
     telemetry: tuple[str, ...] = ()
@@ -588,13 +656,18 @@ def _parse_iso(value: str) -> datetime | None:
 
 
 class FreezeDetector:
-    """凍結判準：三面 stat＋poll-gap 扣除（frozen 判準表；fd lease＝telemetry 不豁免——TC-4 amendment）."""
+    """timebox 判準（v2 frozen）：effective = now − createdAt − 異常 gap 扣除.
+
+    不做活/死宣稱、不做靜默計數——表面推進／exec lease 不重置不豁免（只記
+    telemetry）；時鐘回撥（gap<0 或 effective<0）＝該輪禁判，視為 Fresh＋
+    telemetry `clock-rollback`。
+    """
 
     def __init__(
         self,
         source: ZCodeLivenessSource,
         *,
-        threshold_min: float = FREEZE_THRESHOLD_MIN,
+        threshold_min: float = TIMEBOX_MIN,
         poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
     ) -> None:
         self._source = source
@@ -631,54 +704,48 @@ class FreezeDetector:
 
         threshold_s = self.threshold_for(entry) * 60.0
         if st.state in TERMINAL_STATES:
-            reset = WatchState(
-                last_cursors=st.cursors,
-                prev_poll_at=now,
-                generation=st.generation,
-            )
+            # T2：terminal transition＝唯一權威狀態訊號，先於 timebox 判定
+            reset = WatchState(prev_poll_at=now, generation=st.generation)
             return PollTerminal(st.state), reset
 
+        # T3/T4：timebox——effective = now − createdAt − 異常 gap 扣除
         gap = (
             None
             if state.prev_poll_at is None
             else (now - state.prev_poll_at).total_seconds()
         )
-        direct = (
-            0.0
-            if st.last_activity is None
-            else (now - st.last_activity).total_seconds()
-        )
         telemetry: list[str] = []
-        if direct < 0:
-            # F-7：表面 mtime 在未來（時鐘回撥）——記 telemetry，acc 依自身規則
-            telemetry.append("clock-rollback")
+        deducted = state.deducted_s
+        rollback = False
         if gap is not None and gap < 0:
-            # 時鐘回撥：elapsed<0 → Fresh＋telemetry（frozen 條款）
+            # 時鐘回撥：elapsed<0 → Fresh＋telemetry（frozen 條款；禁判）
             telemetry.append("clock-rollback")
-            acc = 0.0
-        elif state.last_cursors is not None and st.cursors != state.last_cursors:
-            acc = 0.0  # T2：三面任一推進——計數歸零續走
-        elif gap is None:
-            acc = max(direct, 0.0)  # 首輪：表面 mtime 齡期即已存在的靜默
-        elif gap > self._poll_interval_s * POLL_GAP_FACTOR:
-            # SM-7：poll gap 異常（機器睡眠）→扣除間隔（只記一個 interval）
+            rollback = True
+        elif gap is not None and gap > self._poll_interval_s * POLL_GAP_FACTOR:
+            # SM-7：poll gap 異常（機器睡眠）→扣除異常段（只記一個 interval）
             telemetry.append("poll-gap-deducted")
-            acc = state.silent_acc_s + min(gap, self._poll_interval_s)
-        else:
-            acc = state.silent_acc_s + gap
+            deducted = state.deducted_s + (gap - self._poll_interval_s)
         if st.exec_lease:
-            # Amendment：lease＝telemetry，不豁免凍結
+            # v2：lease＝telemetry `exec-lease-held`——不豁免 timebox
             telemetry.append("exec-lease-held")
 
+        raw_age = (now - meta_created).total_seconds() if meta_created else 0.0
+        effective = raw_age - deducted
+        if effective < 0:
+            # createdAt 在未來／扣除越界＝時鐘不可信——禁判，Fresh＋telemetry
+            telemetry.append("clock-rollback")
+            rollback = True
+
         new_state = WatchState(
-            last_cursors=st.cursors,
-            silent_acc_s=acc,
+            deducted_s=deducted,
             prev_poll_at=now,
             generation=st.generation,
             telemetry=tuple(telemetry),
         )
-        effective = min(acc, max(direct, 0.0))
+        if rollback:
+            return PollFresh(max(effective, 0.0), tuple(telemetry)), new_state
         if effective >= threshold_s:
+            # T4：timebox 到——PollFrozen.cursors 供 harvest resumed 判定
             return PollFrozen(effective, st.cursors), new_state
         return PollFresh(effective, tuple(telemetry)), new_state
 
@@ -695,8 +762,6 @@ def _sanitize(component: str) -> str:
 
 def cursors_to_dict(c: Cursors) -> dict:
     return {
-        "rolloutSize": c.rollout_size,
-        "rolloutMtimeNs": c.rollout_mtime_ns,
         "artifactMtimeNs": c.artifact_mtime_ns,
         "artifactSize": c.artifact_size,
         "execMtimeNs": c.exec_mtime_ns,
@@ -723,9 +788,11 @@ class Harvester:
         self._max_manifest_files = max_manifest_files
 
     def _surface_files(self, task_id: str) -> list[tuple[str, Path]]:
-        pairs: list[tuple[str, Path]] = [
-            ("rollout", self._layout.rollout_file(task_id))
-        ]
+        # v2：rollout 存在才列（K1——subagent 無 rollout；缺席非 fail-loud）
+        pairs: list[tuple[str, Path]] = []
+        rollout = self._layout.rollout_file(task_id)
+        if rollout.is_file():
+            pairs.append(("rollout", rollout))
         pairs += [
             ("artifact", p) for p in _files_in_dir(self._layout.artifact_dir(task_id))
         ]
@@ -777,17 +844,22 @@ class Harvester:
                     "mtimeNs": stat.st_mtime_ns,
                 }
             )
+        # v2：rollout tail 存在才收（K1——subagent 無 rollout；缺席記 absent）
         rollout_path = self._layout.rollout_file(entry.task_id)
-        try:
-            # F-8：seek-based tail——殭屍 rollout 可達數百 MB，禁全檔載入
-            size = rollout_path.stat().st_size
-            with rollout_path.open("rb") as fh:
-                fh.seek(max(0, size - self._max_tail_bytes))
-                tail = fh.read()
-        except OSError as exc:
-            return UnknownFace("harvest-rollout-read-failed", str(exc))
-        (bundle / "rollout.tail.jsonl").write_bytes(tail)
-        tail_partial = size > len(tail)
+        tail = b""
+        tail_absent = not rollout_path.is_file()
+        tail_partial = False
+        if not tail_absent:
+            try:
+                # F-8：seek-based tail——殭屍 rollout 可達數百 MB，禁全檔載入
+                size = rollout_path.stat().st_size
+                with rollout_path.open("rb") as fh:
+                    fh.seek(max(0, size - self._max_tail_bytes))
+                    tail = fh.read()
+            except OSError as exc:
+                return UnknownFace("harvest-rollout-read-failed", str(exc))
+            tail_partial = size > len(tail)
+            (bundle / "rollout.tail.jsonl").write_bytes(tail)
         resumed: bool | None = None
         if freeze_cursors is not None:
             resumed = st.cursors != freeze_cursors
@@ -808,6 +880,7 @@ class Harvester:
                     "bytes": len(tail),
                     "sha256": hashlib.sha256(tail).hexdigest(),
                     "partial": tail_partial,
+                    "absent": tail_absent,
                 }
             },
             "metadata": {
@@ -897,6 +970,130 @@ class Harvester:
         return delta, bundle
 
 
+def consume_retry_budget(liveness_root: Path, entry: RegistryEntry) -> dict:
+    """D-B retry budget 記帳（T4 timebox expiry 專屬——其他路徑不消耗）.
+
+    帳檔＝`<liveness>/budget/<taskId>.json`（logical job 跨 attempt 續計——
+    同 taskId 新 attemptId＝重派，F4 語義）。同 attempt 重跑＝dedup 回報現
+    值不重複消耗（對齊 pending receipt dedup 語義）；帳損壞＝fail-safe
+    `budgetRemaining=0`（halt 方向安全——autonomous 過額外重派比漏重派危險）
+    ＋帳檔自癒重寫。
+    """
+    path = liveness_root / "budget" / f"{_sanitize(entry.task_id)}.json"
+    used = 0
+    corrupt = False
+    last_attempt: str | None = None
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text())
+            raw = data.get("attemptsUsed")
+            if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
+                raise ValueError("attemptsUsed 需非負整數")
+            used = raw
+            la = data.get("lastAttemptId")
+            last_attempt = la if isinstance(la, str) else None
+        except (OSError, ValueError, json.JSONDecodeError, AttributeError):
+            corrupt = True
+            used = 0
+            last_attempt = None
+    if not corrupt and last_attempt == entry.attempt_id:
+        return {
+            "logicalJobId": entry.task_id,
+            "attemptsUsed": used,
+            "budgetRemaining": max(0, AUTO_RETRY_BUDGET - (used - 1)),
+        }
+    new_used = used + 1
+    remaining = max(0, AUTO_RETRY_BUDGET - (new_used - 1))
+    if corrupt:
+        remaining = 0  # fail-safe：帳不可信＝禁自動重派
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "logicalJobId": entry.task_id,
+                "attemptsUsed": new_used,
+                "lastAttemptId": entry.attempt_id,
+                "updatedAt": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n"
+    )
+    budget: dict = {
+        "logicalJobId": entry.task_id,
+        "attemptsUsed": new_used,
+        "budgetRemaining": remaining,
+    }
+    if corrupt:
+        budget["corrupt"] = True
+    return budget
+
+
+def _stop_chain_suggestion(entry: RegistryEntry, bundle: Path) -> dict:
+    """D-C：timebox expiry receipt 的 suggestedAction＝明列處置順序.
+
+    順序＝controller（主 session／deepwork 授權鏈）執行面；watcher 只建議。
+    兩軸分離：interventionPolicy 管「誰處置」、retry_safe 管「可否重派」。
+    TOCTOU 關閉＝TaskStop 前重讀 metadata status（唯一允許的權威 terminal
+    訊號——非 liveness inference 偷渡）。
+    """
+    return {
+        "policy": entry.intervention_policy,
+        "sequence": [
+            {
+                "step": "harvest-A",
+                "status": "done",
+                "manifestPath": str(bundle / "manifest.json"),
+            },
+            {"step": "wake", "status": "done"},
+            {
+                "step": "terminal-recheck",
+                "status": "pending",
+                "how": f"--verify {entry.task_id}——TaskStop 前重讀 metadata "
+                "status（唯一權威 terminal 訊號，TOCTOU 關閉）",
+            },
+            {
+                "step": "branch",
+                "status": "pending",
+                "terminal": "final collect（不 stop 不 retry）",
+                "running": f"TaskStop {entry.task_id} → STOP verify → harvest B"
+                "（--harvest-delta）＋sink validation",
+            },
+            {
+                "step": "retry-gate",
+                "status": "pending",
+                "rule": "RETRY_SAFE && retryBudget.budgetRemaining>0 → 派新 "
+                "attempt（新 attemptId，全新 timebox）；否則 halt 留報告",
+            },
+        ],
+    }
+
+
+def _final_collect_suggestion(
+    entry: RegistryEntry, collection: dict, bundle: Path
+) -> dict:
+    """D-C terminal-race 分支：收割時已 terminal——final collect，不 stop 不 retry."""
+    return {
+        "policy": entry.intervention_policy,
+        "sequence": [
+            {
+                "step": "harvest-A",
+                "status": "done",
+                "manifestPath": str(bundle / "manifest.json"),
+            },
+            {"step": "wake", "status": "done"},
+            {
+                "step": "terminal-recheck",
+                "status": "terminal-at-harvest",
+                "detail": "收割時重讀 metadata 即 terminal——TOCTOU 命中，TaskStop 免除",
+            },
+            {"step": "final-collect", "status": "done", "collection": collection},
+            {"step": "halt", "status": "job terminal——不 stop 不 retry"},
+        ],
+    }
+
+
 def write_pending_receipt(
     liveness_root: Path,
     entry: RegistryEntry,
@@ -905,6 +1102,8 @@ def write_pending_receipt(
     *,
     elapsed_s: float,
     resumed: bool,
+    retry_budget: dict | None = None,
+    suggested: dict | None = None,
 ) -> Path:
     """pending intervention receipt——dedup key＝taskId＋attemptId，同 attempt 不重發."""
     pending_dir = liveness_root / "pending"
@@ -923,12 +1122,14 @@ def write_pending_receipt(
         "taskId": entry.task_id,
         "attemptId": entry.attempt_id,
         "dedupKey": f"{entry.task_id}+{entry.attempt_id}",
+        "interventionPolicy": entry.intervention_policy,
         "harvestDir": str(harvest_dir),
         "manifestPath": str(manifest_path),
         "survivingHandles": list(entry.surviving_handles),
-        "frozenElapsedMin": round(elapsed_s / 60.0, 2),
+        "timeboxElapsedMin": round(elapsed_s / 60.0, 2),
         "resumedDuringQuarantine": resumed,
-        "suggestedAction": f"TaskStop {entry.task_id}",
+        "retryBudget": retry_budget,
+        "suggestedAction": suggested,
         "createdAt": datetime.now(tz=UTC).isoformat(timespec="seconds"),
     }
     path.write_text(json.dumps(receipt, ensure_ascii=False, indent=2) + "\n")
@@ -984,6 +1185,64 @@ def _system_now() -> datetime:
     return datetime.now(tz=UTC)
 
 
+def _anchors_from_expected(expected: object) -> list[str]:
+    """expected 遞迴收字串為錨點清單（dispatcher 顯式給定，不過濾長度）."""
+    if isinstance(expected, str):
+        return [expected] if expected else []
+    if isinstance(expected, dict):
+        out: list[str] = []
+        for v in expected.values():
+            out.extend(_anchors_from_expected(v))
+        return out
+    if isinstance(expected, (list, tuple)):
+        out = []
+        for v in expected:
+            out.extend(_anchors_from_expected(v))
+        return out
+    return []
+
+
+def collect_sink(entry: RegistryEntry, sink_base: Path) -> dict:
+    """sink 三步機驗（存在→非空→錨點）——T2 CollectionReceipt 的 row 面.
+
+    AIR-135.7 AC#2 bounded receipt 投影：sink 相對路徑以 sink_base（workspace
+    根）解析。delivery verdict 只是資訊面——terminal transition 才是權威，
+    verdict 不影響 exit 0。
+    """
+    sink = Path(entry.sink)
+    path = sink if sink.is_absolute() else sink_base / sink
+    row: dict = {
+        "taskId": entry.task_id,
+        "sink": entry.sink,
+        "expected": entry.expected,
+        "l1Present": False,
+        "l2NonEmpty": False,
+        "anchorHits": [],
+        "verdict": "sink-missing",
+    }
+    if not path.is_file():
+        return row
+    row["l1Present"] = True
+    try:
+        size = path.stat().st_size
+        content = path.read_text(errors="replace")[:200_000] if size else ""
+    except OSError:
+        row["verdict"] = "sink-unreadable"
+        return row
+    row["l2NonEmpty"] = size > 0
+    if size == 0:
+        row["verdict"] = "sink-empty"
+        return row
+    anchors = _anchors_from_expected(entry.expected)
+    if not anchors:
+        row["verdict"] = "delivered"  # 無錨點條件＝存在＋非空即收
+        return row
+    hits = [a for a in anchors if a in content]
+    row["anchorHits"] = hits
+    row["verdict"] = "delivered" if hits else "anchor-missing"
+    return row
+
+
 # ---------------------------------------------------------------------------
 # 主迴圈（T1-T6；狀態機實作對應 module docstring frozen spec）
 # ---------------------------------------------------------------------------
@@ -994,7 +1253,7 @@ def run_watcher(
     registry_path: Path,
     liveness_root: Path | None = None,
     *,
-    threshold_min: float = DEFAULT_FREEZE_THRESHOLD_MIN,
+    threshold_min: float = DEFAULT_TIMEBOX_MIN,
     poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
     max_cycles: int | None = None,
     now_fn: Callable[[], datetime] | None = None,
@@ -1127,7 +1386,8 @@ def run_watcher(
             )
 
         if frozen is not None:
-            # T3／wake 後生命週期：對第一個凍結收割＋exit 3——其餘 entry 中止監視
+            # T4／wake 後生命週期：對第一個到期 entry 收割＋exit 3（advisory，
+            # 不 stop 不重派）——其餘 entry 中止監視，主 session 處置後重啟
             entry, verdict = frozen
             harvest = harvester.harvest(entry, freeze_cursors=verdict.cursors)
             if isinstance(harvest, UnknownFace):
@@ -1135,6 +1395,20 @@ def run_watcher(
                     out, err, "unknown", task_id=entry.task_id, face=harvest
                 )
             manifest, bundle = harvest
+            # D-C TOCTOU：收割 re-status 即 fresh terminal recheck——freeze 輪
+            # 與處置間自然完成＝terminal race，TaskStop 免除、不消耗 budget
+            harvest_status = manifest.get("metadata", {}).get("status")
+            terminal_race = harvest_status in TERMINAL_STATES
+            if terminal_race:
+                collection = collect_sink(
+                    entry, registry_path.parent.parent
+                )  # workspace 根
+                budget = None
+                suggested = _final_collect_suggestion(entry, collection, bundle)
+            else:
+                collection = None
+                budget = consume_retry_budget(liveness, entry)
+                suggested = _stop_chain_suggestion(entry, bundle)
             pending = write_pending_receipt(
                 liveness,
                 entry,
@@ -1142,43 +1416,62 @@ def run_watcher(
                 bundle,
                 elapsed_s=verdict.elapsed_s,
                 resumed=bool(manifest.get("resumedDuringQuarantine")),
+                retry_budget=budget,
+                suggested=suggested,
             )
             wake = {
-                "state": "freeze-wake",
+                "state": "timebox-wake",
                 "schema": WAKE_RECEIPT_SCHEMA,
                 "taskId": entry.task_id,
                 "attemptId": entry.attempt_id,
-                "frozenElapsedMin": round(verdict.elapsed_s / 60.0, 2),
+                "interventionPolicy": entry.intervention_policy,
+                "timeboxElapsedMin": round(verdict.elapsed_s / 60.0, 2),
                 "resumedDuringQuarantine": manifest.get("resumedDuringQuarantine"),
+                "terminalRace": terminal_race,
+                "finalCollection": collection,
+                "retryBudget": budget,
                 "harvestDir": str(bundle),
                 "manifestPath": str(bundle / "manifest.json"),
                 "pendingReceiptPath": str(pending),
                 "survivingHandles": list(entry.surviving_handles),
-                "suggestedAction": f"TaskStop {entry.task_id}",
+                "suggestedAction": suggested,
                 "manifest": manifest,
             }
             _emit(out, _dumps(wake))
-            _emit(
-                err,
-                f"[{WATCHER_NAME}] freeze: {entry.task_id} "
-                f"{verdict.elapsed_s:.0f}s 靜默——已收割，喚醒主 session 處置",
-            )
+            if terminal_race:
+                _emit(
+                    err,
+                    f"[{WATCHER_NAME}] terminal-race: {entry.task_id} 於收割時"
+                    "已 terminal——final collect，不 stop 不 retry",
+                )
+            else:
+                _emit(
+                    err,
+                    f"[{WATCHER_NAME}] timebox: {entry.task_id} "
+                    f"running {verdict.elapsed_s:.0f}s（超 box）——已收割，"
+                    "advisory wake（不 stop 不重派）",
+                )
             return EXIT_FREEZE
 
         terminal_states = [v.state for _e, v in results if isinstance(v, PollTerminal)]
         if len(terminal_states) == len(results):
-            _emit(
-                out,
-                _dumps(
-                    {
-                        "state": "all-terminal",
-                        "summary": {
-                            "entries": len(results),
-                            "terminal": sorted(set(terminal_states)),
-                        },
-                    }
-                ),
-            )
+            # T2：全 terminal＝恰一次 collect（有 sink 時）→CollectionReceipt
+            sink_base = registry_path.parent.parent  # workspace 根（registry 慣例）
+            deliveries = [collect_sink(e, sink_base) for e in current]
+            delivered = sum(1 for d in deliveries if d["verdict"] == "delivered")
+            receipt = {
+                "schema": COLLECTION_RECEIPT_SCHEMA,
+                "watcher": WATCHER_NAME,
+                "state": "all-terminal",
+                "exitState": "all-terminal",
+                "summary": {
+                    "entries": len(results),
+                    "terminal": sorted(set(terminal_states)),
+                    "delivered": delivered,
+                },
+                "deliveries": deliveries,
+            }
+            _emit(out, _dumps(receipt))
             return EXIT_OK
 
         do_sleep(poll_interval_s)
@@ -1187,6 +1480,26 @@ def run_watcher(
 # ---------------------------------------------------------------------------
 # STOP verification（T8/T9）與 harvest delta invocation
 # ---------------------------------------------------------------------------
+
+
+def _ws_path(sink_base: Path, raw: str) -> Path:
+    """workspace 相對路徑解析（sink／owned handles 共用；絕對路徑原樣）。"""
+    p = Path(raw)
+    return p if p.is_absolute() else sink_base / p
+
+
+def _fence_snap(p: Path) -> str | tuple[int, int] | None:
+    """fencing stat 快照：None＝缺席；"not-file"/"unreadable"＝無法歸屬；
+    (size, mtime_ns)＝普通檔."""
+    try:
+        if not p.exists():
+            return None
+        if not p.is_file():
+            return "not-file"
+        st = p.stat()
+    except OSError:
+        return "unreadable"
+    return (st.st_size, st.st_mtime_ns)
 
 
 def run_verify(
@@ -1200,10 +1513,19 @@ def run_verify(
     stdout: _Writable | None = None,
     stderr: _Writable | None = None,
 ) -> int:
-    """--verify <taskId>：metadata terminal＋cursors grace 靜止→STOP_CONFIRMED.
+    """--verify <taskId>：STOP fencing oracle（明列三項）→ STOP_CONFIRMED.
 
-    fail-closed：任何面無法確認（含 metadata 消失、lsof 不可判定）＝
-    STOP_INCOMPLETE（禁重派歸主 session 判定）。
+    D-D——三項缺一即 STOP_INCOMPLETE：
+    1. metadata terminal（唯一權威狀態訊號）
+    2. 所有已註冊 owned handles quiescent/collected——grace 觀察窗前後 stat
+       不變＝quiescent；窗內消失＝collected；窗內出現/成長＝writer；存在非
+       普通檔／不可讀＝無法歸屬（→ STOP_INCOMPLETE）
+    3. authoritative sink grace 內無 writer——窗前後 stat 不變（缺席＝無
+       writer；窗內新出現/成長＝writer）
+    另 exec lease probe＝寫入者面：active lease 或 probe 不可判定＝
+    STOP_INCOMPLETE（F-1/F-11 fail-closed 禁假確認）。survivingHandles＝
+    correctness boundary（禁重派判定面）非 telemetry。fail-closed：任何面
+    無法確認（含 metadata 消失）＝STOP_INCOMPLETE。
     """
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
@@ -1222,18 +1544,20 @@ def run_verify(
             face=UnknownFace("registry-entry-missing-for-verify", str(registry_path)),
         )
 
+    sink_base = registry_path.parent.parent  # workspace 根（registry 慣例）
     surviving = list(entry.surviving_handles)
     reasons: list[str] = []
 
     def _face_reason(face: UnknownFace) -> str:
         return f"{face.reason}: {face.detail}".rstrip(": ")
 
+    sink_path = _ws_path(sink_base, entry.sink)
+    sink_before = _fence_snap(sink_path)
+    handle_before = {h: _fence_snap(_ws_path(sink_base, h)) for h in surviving}
+
     first = src.status(task_id)
-    cursors_before: Cursors | None = None
     if isinstance(first, UnknownFace):
         reasons.append(_face_reason(first))
-    else:
-        cursors_before = first.cursors
     do_sleep(grace_s)
     st2 = src.status(task_id)
     terminal_state: str | None = None
@@ -1241,10 +1565,30 @@ def run_verify(
         reasons.append(_face_reason(st2))
     else:
         terminal_state = st2.state
+        # fence 1：metadata terminal
         if st2.state not in TERMINAL_STATES:
             reasons.append(f"metadata-not-terminal:{st2.state}")
-        if cursors_before is not None and st2.cursors != cursors_before:
-            reasons.append("cursors-moved-during-grace")
+        # fence 2：registered owned handles quiescent/collected
+        for h in surviving:
+            after = _fence_snap(_ws_path(sink_base, h))
+            before = handle_before[h]
+            if after in ("not-file", "unreadable"):
+                reasons.append(f"owned-handle-unattributable:{h}")
+            elif after is None:
+                pass  # collected（窗內消失或本就缺席）
+            elif before is None or before != after:
+                # 窗內新出現或成長＝writer
+                reasons.append(f"owned-handle-writer-active:{h}")
+            # before == after（存在且穩定）＝quiescent
+        # fence 3：authoritative sink grace 內無 writer
+        sink_after = _fence_snap(sink_path)
+        if sink_after in ("not-file", "unreadable"):
+            reasons.append("sink-unattributable")
+        elif sink_before is None and sink_after is not None:
+            reasons.append("sink-writer-active")  # 窗內新出現
+        elif sink_before is not None and sink_after != sink_before:
+            reasons.append("sink-writer-active")  # 窗內成長
+        # 寫入者面（F-1/F-11 保留）
         if not st2.exec_lease_checked:
             # F-11 面：probe 不可判定——verify 端 fail-closed 禁假確認
             reasons.append("lease-unknown:prober-undecidable")
@@ -1259,7 +1603,11 @@ def run_verify(
                     "state": "STOP_CONFIRMED",
                     "taskId": task_id,
                     "terminal": terminal_state,
-                    "cursorsStable": True,
+                    "fences": {
+                        "metadataTerminal": True,
+                        "ownedHandlesQuiescent": True,
+                        "sinkNoWriter": True,
+                    },
                     "survivingHandles": surviving,
                 }
             ),
@@ -1365,6 +1713,7 @@ def run_register(
     expected_raw: str | None = None,
     surviving_handles: Sequence[str] = (),
     silence_budget_min: float | None = None,
+    intervention_policy: str | None = None,
     source: ZCodeLivenessSource | None = None,
     stdout: _Writable | None = None,
     stderr: _Writable | None = None,
@@ -1372,7 +1721,10 @@ def run_register(
     """--register <taskId>：dispatch 當下寫入 registry entry（S2 寫入端）.
 
     `createdAt` 由 agent metadata 機械讀取（generation anchor——T5 對照
-    基準，禁寫牆鐘）；metadata 不可解析／childSessionId 不符＝fail-loud。
+    基準＋timebox 起點，禁寫牆鐘）；metadata 不可解析／childSessionId 不符＝
+    fail-loud。`interventionPolicy`（D-A）＝invoking session 當下寫入——
+    缺席不寫欄位（讀面 fail-safe＝interactive）；明確給錯值＝fail-loud
+    （寫面驗證與其他欄位一致；讀面的未知值才走 fail-safe coerce）。
     其餘 fail-loud 面：欄位無效（task 非 subagent 形／attempt/sink 空／
     expected 非 JSON／silenceBudget 非正數）、同 taskId 重註冊、既有
     registry 損壞或 schema 不符（禁覆蓋——損壞比缺失危險）。失敗一律不
@@ -1405,6 +1757,10 @@ def run_register(
         and silence_budget_min > 0
     ):
         return fail("silence-budget-invalid", "需正數（分鐘）")
+    if intervention_policy is not None and intervention_policy not in (
+        INTERVENTION_POLICIES
+    ):
+        return fail("invalid-intervention-policy", "需 interactive｜autonomous_once")
     handles = tuple(h.strip() for h in surviving_handles)
     if any(not h for h in handles):
         return fail("invalid-surviving-handle", "handle 需非空白（--surviving-handle）")
@@ -1449,6 +1805,8 @@ def run_register(
     }
     if silence_budget_min is not None:
         entry["silenceBudget"] = float(silence_budget_min)
+    if intervention_policy is not None:
+        entry["interventionPolicy"] = intervention_policy
     raw_entries.append(entry)
     _atomic_write_json(registry_path, {"entries": raw_entries})
     _emit(
@@ -1476,11 +1834,12 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
     parser = argparse.ArgumentParser(
         prog=WATCHER_NAME,
         description=(
-            "ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1＋S2）——"
-            "watcher 永不 stop／重派，wake 歸主 session 處置"
+            "ZCode 子 agent timebox 監視＋收割＋停止協議（AIR-149 S1＋S2；"
+            "frozen spec v2）——watcher 永不 stop／重派，wake 歸主 session／"
+            "deepwork 授權鏈處置"
         ),
-        epilog="契約：EP 09-20-harness-liveness-watcher S1＋S2；"
-        "狀態機 frozen spec 見 module docstring。",
+        epilog="契約：EP 09-20-harness-liveness-watcher S1（frozen spec v2）"
+        "＋S2；狀態機 frozen spec 見 module docstring。",
     )
     parser.add_argument(
         "registry",
@@ -1493,7 +1852,8 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         "--verify",
         metavar="taskId",
         default=None,
-        help="STOP verification：metadata terminal＋cursors grace 靜止→"
+        help="STOP fencing verification（明列三項）：metadata terminal＋"
+        "registered handles quiescent/collected＋sink grace 內無 writer→"
         "STOP_CONFIRMED（exit 0）／STOP_INCOMPLETE（exit 4）",
     )
     mode.add_argument(
@@ -1537,7 +1897,14 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         type=float,
         default=None,
         metavar="MIN",
-        help="--register 選帶：silence lease 分鐘（缺席＝20m 標準門檻）",
+        help="--register 選帶：timebox 分鐘（v2 重解釋 silenceBudget；缺席＝20m 標準）",
+    )
+    parser.add_argument(
+        "--intervention-policy",
+        default=None,
+        metavar="POLICY",
+        help="--register 選帶：interactive｜autonomous_once（D-A 兩軸分離——"
+        "誰處置；缺省 fail-safe＝interactive；可否重派歸 RETRY_SAFE）",
     )
     parser.add_argument(
         "--poll-interval",
@@ -1546,17 +1913,20 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         help=f"輪詢間隔秒（預設 {DEFAULT_POLL_INTERVAL_S:.0f}）",
     )
     parser.add_argument(
+        "--timebox-min",
         "--freeze-threshold",
+        dest="timebox_min",
         type=float,
-        default=FREEZE_THRESHOLD_MIN,
-        help=f"凍結門檻分鐘（預設 {DEFAULT_FREEZE_THRESHOLD_MIN:.0f}；"
-        "entry silenceBudget 可逐案覆寫）",
+        default=TIMEBOX_MIN,
+        help=f"timebox 分鐘（預設 {DEFAULT_TIMEBOX_MIN:.0f}；entry "
+        "silenceBudget 可逐案覆寫；--freeze-threshold 為 v1 名相容別名）",
     )
     parser.add_argument(
         "--grace",
         type=float,
         default=DEFAULT_VERIFICATION_GRACE_S,
-        help=f"--verify cursors 靜止觀察窗秒（預設 {DEFAULT_VERIFICATION_GRACE_S:.0f}）",
+        help=f"--verify fencing 觀察窗秒（handles/sink 窗前後 stat 比對；預設 "
+        f"{DEFAULT_VERIFICATION_GRACE_S:.0f}）",
     )
     parser.add_argument(
         "--max-cycles",
@@ -1583,12 +1953,13 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
             expected_raw=args.expected,
             surviving_handles=tuple(args.surviving_handle or ()),
             silence_budget_min=args.silence_budget_min,
+            intervention_policy=args.intervention_policy,
         )
     return run_watcher(
         layout,
         args.registry,
         liveness,
-        threshold_min=args.freeze_threshold,
+        threshold_min=args.timebox_min,
         poll_interval_s=args.poll_interval,
         max_cycles=args.max_cycles,
     )
