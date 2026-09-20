@@ -160,6 +160,10 @@ EXIT_FREEZE = 3
 EXIT_VERIFY_INCOMPLETE = 4
 
 DEFAULT_FREEZE_THRESHOLD_MIN = 20.0
+# rig/測試用覆寫（TC-4 dogfood）——env 設定時連同 argparse default 一併調整
+FREEZE_THRESHOLD_MIN = float(
+    os.environ.get("HARNESS_WAITER_FREEZE_MIN", DEFAULT_FREEZE_THRESHOLD_MIN)
+)
 DEFAULT_POLL_INTERVAL_S = 60.0
 DEFAULT_VERIFICATION_GRACE_S = 30.0
 POLL_GAP_FACTOR = 2.0  # gap > interval×此倍數＝異常（機器睡眠）→扣除間隔
@@ -585,7 +589,7 @@ class FreezeDetector:
         self,
         source: ZCodeLivenessSource,
         *,
-        threshold_min: float = DEFAULT_FREEZE_THRESHOLD_MIN,
+        threshold_min: float = FREEZE_THRESHOLD_MIN,
         poll_interval_s: float = DEFAULT_POLL_INTERVAL_S,
     ) -> None:
         self._source = source
@@ -1538,7 +1542,7 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
     parser.add_argument(
         "--freeze-threshold",
         type=float,
-        default=DEFAULT_FREEZE_THRESHOLD_MIN,
+        default=FREEZE_THRESHOLD_MIN,
         help=f"凍結門檻分鐘（預設 {DEFAULT_FREEZE_THRESHOLD_MIN:.0f}；"
         "entry silenceBudget 可逐案覆寫）",
     )
