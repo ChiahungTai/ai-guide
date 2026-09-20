@@ -30,3 +30,12 @@ cycle 1-5 的 fresh＋cycle 6 all-terminal：**全程無 rollout 依賴**（本 
 ## 殘留
 - STOP verifier 放寬（上述）→ AIR-149 follow-up 小卡候補
 - K3 註冊率 dogfood、24h 觀察 → S4 賸餘
+
+## Round 3（post-pivot 修復後）——T4 timebox 全鏈活體驗證 ✓
+
+真 dummy `agent_80943c91`（sleep 300 靜默阻塞）＋乾淨 registry＋`HARNESS_WAITER_FREEZE_MIN=2`：
+- cycle 1-2 fresh（9.6s→69.6s，**exec-lease-held telemetry 正確顯示不豁免**——amendment 生效）
+- cycle 3 **frozen 129.9s→timebox-wake exit 3**：receipt 含 policy=interactive（fail-safe 預設✓）、retryBudget{attemptsUsed:1}、harvestPartial=false、survivingHandles=[]、五步 suggestedAction
+- **K1 pivot 活體再驗證**：rollout tail `absent:true` 正確處理（無 rollout 不妨礙 timebox）——有/無 rollout 兩形態都正確工作
+- wake 後主 session TaskStop（真 task 級停止✓）→ --verify → STOP_INCOMPLETE（已知 quirk：TaskStop 重寫 metadata 掉 createdAt——verifier fail-closed 正確，修法方向見上節）
+- 對照修復前：同場景 lease 豁免使 acc 每輪歸零、watcher 永遠 fresh——**amendment 的直接活體證據**
