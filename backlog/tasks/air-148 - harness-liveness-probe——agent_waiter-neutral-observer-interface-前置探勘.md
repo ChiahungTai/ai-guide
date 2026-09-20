@@ -1,11 +1,14 @@
 ---
 id: AIR-148
 title: harness liveness probe——agent_waiter neutral observer interface 前置探勘
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-20 08:12'
+updated_date: '2026-09-20 12:43'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/2026-09/09-20-harness-liveness-watcher/ep.md
 ordinal: 135000
 ---
 
@@ -31,7 +34,17 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ZCode 觀察源清單（task registry／transcript／process 三面各附 file:line 或路徑錨點與穩定性評級）
-- [ ] #2 reconcile 觸發語義草案（generation 變化偵測面）落盤
-- [ ] #3 full EP 立案建議（go/no-go＋材料指針）交付
+- [x] #1 ZCode 觀察源清單（task registry／transcript／process 三面各附 file:line 或路徑錨點與穩定性評級）
+- [x] #2 reconcile 觸發語義草案（generation 變化偵測面）落盤
+- [x] #3 full EP 立案建議（go/no-go＋材料指針）交付
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+probe GO——SC 與 ZCode desktop 共享 session store（lsof 同 inode實證）、desktop tasks-index 不收 Task-tool subagent、39 殭屍 stale-running 證明「無訊號≠死亡」；範圍縮為檔案系統優先唯讀 watcher；報告轉錄 EP references/research.md，full EP 立案＝AIR-149（S1/S2/S3 已落地）
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+<!-- SECTION:NOTES:BEGIN -->
+【0920 probe 結算】GO——立案 full EP，範圍縮為「檔案系統優先的唯讀 watcher」。四欄位（state/generation/lastActivity/outputCursor）全可唯讀湊齊：state＝metadata.json .status（running 不可信須交叉驗證）、lastActivity＝rollout/model-io-<taskId>.jsonl mtime+size（最佳 liveness 檔；metadata mtime 是反指標禁用）、generation 無原生欄位（EP 端自建 baseline）、outputCursor＝rollout byte size。reconcile 主信號＝rollout 凍結偵測（零成本）。最大風險＝耦合未承諾內部佈局——observer 必須 fail-loud（錨點缺失＝unknown 非誤報 dead；39 個 running orphan 實證「無訊號當死亡」是 harness 自身失敗模式）。報告全文＝.agent-tmp/air-135/watcher/harness-probe-report.md（probe 產物暫存，full EP 立案時吸收後清）。
+<!-- SECTION:NOTES:END -->
