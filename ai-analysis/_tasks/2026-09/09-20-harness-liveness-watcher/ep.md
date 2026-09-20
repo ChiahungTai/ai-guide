@@ -104,7 +104,7 @@ S1（觀測核心，code）→ S2（註冊契約，code-lite＋doctrine）→ S3
 - **wake 後生命週期**：watcher 對「第一個凍結」harvest＋exit(3)——**其餘 entry 中止監視**，主 session 處置後重啟 watcher 續監（v1 從簡；pending receipt 路徑＝`.agent-tmp/liveness/pending/<taskId>.json`，dedup key＝taskId＋attemptId）
 - **STOP verification invocation**：`harness_waiter.py --verify <taskId>`（主 session TaskStop 後呼叫）——回 STOP_CONFIRMED/STOP_INCOMPLETE
 - **收割 B**：`harness_waiter.py --harvest-delta <taskId> <manifest>`（主 session 於 STOP_CONFIRMED 後呼叫）
-- 凍結判準（research.md §三）：rollout＋artifact 無推進＋無 exec fd lease＋無 terminal，連續 20m（可設定）；poll gap 異常→**該段時間扣除**（單一語義，不重置整個計數）
+- 凍結判準（research.md §三）：rollout＋artifact 無推進＋無 exec fd lease＋無 terminal，連續 20m（可設定）；poll gap 異常→**該段時間扣除**（單一語義，不重置整個計數）。**Amendment（TC-4 活體證偽，97114424）**：fd lease 不再豁免凍結計數——阻塞命令恆持 call-log fd，豁免使 watcher 對靜默 agent 永遠報 fresh；lease 降級 telemetry＋STOP_INCOMPLETE survivingHandles 面
 - 收割器：bounded（先 metadata/cursor/raw tail/manifest，超限 partial）；JSONL raw bytes；**corpus 於 S1 開工時快照入 `references/fixtures/`（TC-2 引快照時點計數，不綁固定數字）**
 - 輸出：wake receipt（pending intervention dedup）——內容＝attempt_id/harvest 路徑/manifest/surviving_handles（自 S2 registry）/建議動作（TaskStop id）
 - **exit 契約（frozen）**：0＝正常收場（含空 registry）／2＝hard-death wake（generation mismatch）／3＝freeze wake（附收割 receipt）／其他非零＝內部錯（fail-loud 診斷至 stderr＋stdout 尾行狀態 JSON 標記）——沿兄弟 bridge_waiter T-contract 形態
