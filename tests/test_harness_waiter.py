@@ -1352,3 +1352,329 @@ def test_f12_main_watcher_mode_missing_registry_fail_loud(tmp_path, capsys):
     assert code == 1
     tail = last_json(capsys.readouterr().out)
     assert tail["reason"] == "registry-missing"
+
+
+# ---------------------------------------------------------------------------
+# S2：dispatch 註冊（--register 寫入端；schema 逐欄對齊 S1 讀取面）
+# ---------------------------------------------------------------------------
+
+
+def run_register(
+    tmp_path,
+    task=TASK,
+    *,
+    attempt="att-1",
+    sink="out.md",
+    expected=None,
+    handles=(),
+    budget=None,
+    created=CREATED,
+    metadata_absent=False,
+    source=None,
+):
+    # register 讀 metadata 取 generation anchor（createdAt）——先佈建觀察面
+    layout = make_layout(tmp_path)
+    agent_id = _mod.agent_id_from_task(task)
+    if agent_id is not None and not metadata_absent:
+        write_metadata(layout, "sess_p1", agent_id, created=created)
+        touch_rollout(layout, task, mtime=T0 - timedelta(seconds=10))
+    rp = reg_path(tmp_path)
+    out, err = io.StringIO(), io.StringIO()
+    code = _mod.run_register(
+        layout,
+        rp,
+        task,
+        attempt_id=attempt,
+        sink=sink,
+        expected_raw=expected,
+        surviving_handles=tuple(handles),
+        silence_budget_min=budget,
+        source=source,
+        stdout=out,
+        stderr=err,
+    )
+    return code, out.getvalue(), rp
+
+
+def test_s2_register_roundtrip_visible_to_reader(tmp_path):
+    code, out, rp = run_register(
+        tmp_path,
+        expected='{"anchor": "DONE"}',
+        handles=("exec/sess_x/call_1-stdout.log",),
+        budget=45.5,
+    )
+    assert code == 0
+    tail = last_json(out)
+    assert tail["state"] == "registered"
+    entries = _mod.load_registry(rp)
+    assert not isinstance(entries, _mod.UnknownFace)
+    assert len(entries) == 1
+    e = entries[0]
+    assert e.task_id == TASK
+    assert e.attempt_id == "att-1"
+    # createdAt＝generation anchor（自 metadata 機械讀取，非牆鐘——T5 對照基準）
+    assert e.created_at == CREATED
+    assert e.sink == "out.md"
+    assert e.expected == {"anchor": "DONE"}
+    assert e.surviving_handles == ("exec/sess_x/call_1-stdout.log",)
+    assert e.silence_budget_min == 45.5
+    assert _mod._parse_iso(e.created_at) is not None
+
+
+def test_s2_register_metadata_missing_fail_loud(tmp_path):
+    # spawn 未落地／taskId 打錯——註冊當下 fail-loud，禁拖到輪詢才爆
+    code, out, rp = run_register(tmp_path, metadata_absent=True)
+    assert code == 1
+    tail = last_json(out)
+    assert tail["state"] == "unknown"
+    assert tail["reason"] == "metadata-anchor-missing"
+    assert not rp.exists()
+
+
+def test_s2_register_entry_matches_frozen_schema_key_set(tmp_path):
+    code, _out, rp = run_register(tmp_path)
+    assert code == 0
+    raw = json.loads(rp.read_text())["entries"][0]
+    # frozen schema：{taskId, attemptId, createdAt, sink, expected,
+    # survivingHandles[], silenceBudget?}——可省欄位以缺席表達
+    assert set(raw) == {
+        "taskId",
+        "attemptId",
+        "createdAt",
+        "sink",
+        "expected",
+        "survivingHandles",
+    }
+    entries = _mod.load_registry(rp)
+    e = entries[0]
+    assert e.expected is None
+    assert e.surviving_handles == ()
+    assert e.silence_budget_min is None
+
+
+def test_s2_register_second_task_appends(tmp_path):
+    run_register(tmp_path)
+    other = "sess_subagent_agent_bbb2"
+    code, _out, rp = run_register(tmp_path, task=other, attempt="att-2")
+    assert code == 0
+    entries = _mod.load_registry(rp)
+    assert [e.task_id for e in entries] == [TASK, other]
+
+
+def test_s2_register_duplicate_task_fail_loud_entry_unchanged(tmp_path):
+    run_register(tmp_path)
+    code, out, rp = run_register(tmp_path, attempt="att-2")
+    assert code == 1
+    tail = last_json(out)
+    assert tail["state"] == "unknown"
+    assert tail["reason"] == "duplicate-registration"
+    entries = _mod.load_registry(rp)
+    assert len(entries) == 1
+    assert entries[0].attempt_id == "att-1"  # 拒絕不落地
+
+
+def test_s2_register_corrupt_existing_registry_fail_loud_no_clobber(tmp_path):
+    rp = reg_path(tmp_path)
+    rp.parent.mkdir(parents=True, exist_ok=True)
+    cases = [
+        '{"entries": [{"taskId": "x"',  # 半寫 torn JSON
+        '{"entries": {"bad": 1}}',  # schema 形狀錯
+        json.dumps({"entries": [{"taskId": "t"}]}),  # entry 缺必要欄位
+    ]
+    for bad in cases:
+        rp.write_text(bad)
+        code, out, rp2 = run_register(tmp_path)
+        assert code == 1
+        tail = last_json(out)
+        assert tail["state"] == "unknown"
+        assert tail["reason"].startswith("registry-")
+        assert rp2.read_text() == bad  # 禁覆蓋損壞 registry
+
+
+def test_s2_register_invalid_inputs_fail_loud(tmp_path):
+    cases = [
+        ({"expected": "{oops"}, "expected-unparseable"),
+        ({"budget": 0}, "silence-budget-invalid"),
+        ({"budget": -5.0}, "silence-budget-invalid"),
+        ({"task": "sess_plain"}, "invalid-task-id"),
+        ({"attempt": ""}, "invalid-attempt-id"),
+        ({"sink": ""}, "invalid-sink"),
+        ({"handles": ("   ",)}, "invalid-surviving-handle"),
+    ]
+    for kw, reason in cases:
+        code, out, rp = run_register(tmp_path, **kw)
+        assert code == 1, f"{kw} 應 fail-loud"
+        assert last_json(out)["reason"] == reason
+        assert not rp.exists(), f"{kw} 失敗不得落地半套 registry"
+
+
+def test_s2_register_missing_required_flags_fail_loud(tmp_path):
+    layout = make_layout(tmp_path)
+    rp = reg_path(tmp_path)
+    out, err = io.StringIO(), io.StringIO()
+    code = _mod.run_register(
+        layout,
+        rp,
+        TASK,
+        attempt_id=None,
+        sink=None,
+        expected_raw=None,
+        surviving_handles=(),
+        silence_budget_min=None,
+        stdout=out,
+        stderr=err,
+    )
+    assert code == 1
+    assert last_json(out.getvalue())["reason"] == "invalid-attempt-id"
+
+
+def test_s2_register_atomic_no_temp_residue(tmp_path):
+    code, _out, rp = run_register(tmp_path)
+    assert code == 0
+    assert sorted(p.name for p in rp.parent.iterdir()) == ["liveness-registry.json"]
+
+
+def test_s2_register_then_watcher_monitors(tmp_path):
+    # 寫入端→S1 讀取端全鏈：register（anchor 取自 metadata）→watcher
+    # 對 completed task 立即 all-terminal（T5 對照通過＝anchor 語義正確）
+    run_register(tmp_path)
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT, status="completed")
+    out, err = io.StringIO(), io.StringIO()
+    code = _mod.run_watcher(
+        layout,
+        reg_path(tmp_path),
+        liveness_root=tmp_path / ".agent-tmp" / "liveness",
+        now_fn=clock(T0),
+        sleep_fn=lambda s: None,
+        stdout=out,
+        stderr=err,
+    )
+    assert code == 0
+    assert last_json(out.getvalue())["state"] == "all-terminal"
+
+
+def test_s2_register_childsession_mismatch_fail_loud(tmp_path):
+    # F4（fresh 審查）：childSessionId 與 taskId 不符 → metadata-generation-mismatch
+    # fail-loud、registry 不落地
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    mp = next((layout.agents_root / "sess_p1" / AGENT).glob("metadata.json"))
+    mp.write_text(
+        mp.read_text().replace("sess_subagent_agent_aaa1", "sess_subagent_OTHER")
+    )
+    rp = reg_path(tmp_path)
+    out, err = io.StringIO(), io.StringIO()
+    code = _mod.run_register(
+        layout, rp, TASK, attempt_id="att-1", sink="out.md", stdout=out, stderr=err
+    )
+    assert code == 1
+    assert "metadata-generation-mismatch" in err.getvalue()
+    assert not rp.exists()
+
+
+def test_s2_cli_register_flags_roundtrip(tmp_path, capsys):
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    rp = reg_path(tmp_path)
+    code = _mod.main(
+        [
+            str(rp),
+            "--register",
+            TASK,
+            "--attempt-id",
+            "att-9",
+            "--sink",
+            "reports/out.md",
+            "--expected",
+            '{"anchor": "DONE"}',
+            "--surviving-handle",
+            "h1",
+            "--surviving-handle",
+            "h2",
+            "--silence-budget-min",
+            "30",
+        ],
+        layout=make_layout(tmp_path),
+    )
+    assert code == 0
+    tail = last_json(capsys.readouterr().out)
+    assert tail["state"] == "registered"
+    e = _mod.load_registry(rp)[0]
+    assert e.attempt_id == "att-9"
+    assert e.sink == "reports/out.md"
+    assert e.expected == {"anchor": "DONE"}
+    assert e.surviving_handles == ("h1", "h2")
+    assert e.silence_budget_min == 30.0
+
+
+def test_s2_cli_register_duplicate_exit_nonzero(tmp_path, capsys):
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    rp = reg_path(tmp_path)
+    base = [str(rp), "--register", TASK, "--attempt-id", "a", "--sink", "s"]
+    assert _mod.main(base, layout=layout) == 0
+    capsys.readouterr()
+    assert (
+        _mod.main([*base[:-4], "--attempt-id", "b", "--sink", "s2"], layout=layout) == 1
+    )
+
+
+def test_s2_usage_documents_register():
+    doc = _mod.__doc__ or ""
+    assert "--register" in doc
+    assert "--surviving-handle" in doc
+
+
+def test_cli_help_shows_register():
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "--help"],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    assert proc.returncode == 0
+    assert "--register" in proc.stdout
+
+
+def test_cli_register_e2e_roundtrip(tmp_path):
+    # e2e：$HOME 指向 fake home——ZCodeLayout.default() 解析到佈建的 metadata
+    home = tmp_path / "home"
+    agents = home / ".zcode" / "cli" / "agents" / "sess_p1" / AGENT
+    agents.mkdir(parents=True)
+    (agents / "metadata.json").write_text(
+        json.dumps(
+            {
+                "agentId": AGENT,
+                "childSessionId": TASK,
+                "createdAt": CREATED,
+                "status": "running",
+                "parentSessionId": "sess_p1",
+            }
+        )
+    )
+    rp = tmp_path / "ws" / ".agent-tmp" / "liveness-registry.json"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            str(rp),
+            "--register",
+            TASK,
+            "--attempt-id",
+            "att-1",
+            "--sink",
+            "out.md",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+        env={**os.environ, "HOME": str(home)},
+    )
+    assert proc.returncode == 0
+    entries = _mod.load_registry(rp)
+    assert not isinstance(entries, _mod.UnknownFace)
+    assert entries[0].task_id == TASK
+    assert entries[0].created_at == CREATED

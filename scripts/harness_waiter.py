@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""harness_waiter — ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1）.
+"""harness_waiter — ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1＋S2）.
 
 一句話：ZCode Task-tool subagent 沒有獨立 process 可監看——本 watcher 以檔案
 系統四觀察面偵測「全面靜默」，凍結即先收割後喚醒主 session 處置（砍歸主
@@ -10,9 +10,8 @@ session）；「無訊號 ≠ 死亡」，判死不走 liveness inference（user
 ------
 - EP：ai-analysis/_tasks/2026-09/09-20-harness-liveness-watcher/ep.md（S1 節）
 - 設計裁決：同任務 references/research.md（AIR-148 probe＋codex 兩輪攻防）
-- 兄弟形態參考：bridge_waiter.py（**AIR-146 計畫中**——bridge 側兄弟，結構
-  參考、代碼不共用；該檔未落 main、本 baseline 無此檔，實作時另引自其卡
-  worktree）
+- 兄弟形態參考：bridge_waiter.py（**AIR-146 已落本 branch**——bridge 側兄弟，結構
+  參考、代碼不共用）
 
 觀察面（frozen 定義；路徑常數集中 ZCodeLayout，禁散落）
 --------------------------------------------------------
@@ -95,6 +94,8 @@ exit 契約（frozen——watcher 主迴圈）
 - verification 模式延伸面（`--verify`，EP review F2 增補——frozen 表為主迴
   圈 wake 語義，verify 以 stdout 尾行 `state` 欄為機械判準）：0＝
   STOP_CONFIRMED、4＝STOP_INCOMPLETE（禁重派）、1＝fail-loud
+- 註冊模式延伸面（`--register`，S2）：0＝registered、1＝fail-loud（欄位
+  無效／schema 不符／重註冊；stdout 尾行 `state`＝registered／unknown）
 
 stdout：compact progress log＋尾行狀態／receipt JSON（單行，機械可判）；
 stderr＝診斷。
@@ -107,12 +108,22 @@ stderr＝診斷。
         [--grace SEC]
     uv run python scripts/harness_waiter.py <registry> --harvest-delta \
         <taskId> <manifestPath>
+    uv run python scripts/harness_waiter.py <registry> --register <taskId>
+        --attempt-id <id> --sink <path> [--expected <json>]
+        [--surviving-handle HANDLE]... [--silence-budget-min MIN]
 
-registry＝workspace-local `.agent-tmp/liveness-registry.json`（S2 寫入；
-atomic write 契約——watcher 逐輪重讀偵測 entry 異動）。schema：
+registry＝workspace-local `.agent-tmp/liveness-registry.json`（寫入面＝
+`--register`；atomic write 契約——watcher 逐輪重讀偵測 entry 異動）。schema：
 `{"entries": [{taskId, attemptId, createdAt, sink, expected,
-survivingHandles[], silenceBudget?}]}`；檔缺席＝fail-loud；entries 空＝exit 0
-（等待語義：無可監視物）。
+survivingHandles[], silenceBudget?}]}`；watcher 讀面：檔缺席＝fail-loud；
+entries 空＝exit 0（等待語義：無可監視物）。register 寫面：同 taskId 重註冊
+＝fail-loud（新 attempt 前先移除舊 entry）；既有檔損壞／schema 不符＝
+fail-loud 禁覆蓋；`createdAt`＝generation anchor，由 register 自 agent
+metadata 機械讀取（**非牆鐘**——T5 以此對照 metadata，寫牆鐘＝每次輪詢
+hard-death）；`sink`/`expected`＝AIR-135.7 AC#2 bounded receipt 欄位
+投影；`survivingHandles`＝dispatch 前已知 detached job 的 ownership handle
+（in-harness brief 禁未登記 long-lived/daemonized child）；`silenceBudget`
+＝有期限 silence lease（缺席＝20m 標準門檻）。
 
 收割（bounded）：metadata copy→表面 manifest（檔數上限）→rollout raw tail
 （位元組上限；JSONL 收 raw bytes——append 中末行半截合法，kill 後再解析）；
@@ -1318,18 +1329,147 @@ def run_harvest_delta(
 
 
 # ---------------------------------------------------------------------------
+# dispatch 註冊（S2 寫入端——schema 逐欄對齊 load_registry 讀取面）
+# ---------------------------------------------------------------------------
+
+
+def _atomic_write_json(path: Path, payload: dict) -> None:
+    """atomic write：同目錄隱名 tmp＋os.replace（讀面永見完整檔，無半寫）."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    try:
+        tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def run_register(
+    layout: ZCodeLayout,
+    registry_path: Path,
+    task_id: str,
+    *,
+    attempt_id: str | None,
+    sink: str | None,
+    expected_raw: str | None = None,
+    surviving_handles: Sequence[str] = (),
+    silence_budget_min: float | None = None,
+    source: ZCodeLivenessSource | None = None,
+    stdout: _Writable | None = None,
+    stderr: _Writable | None = None,
+) -> int:
+    """--register <taskId>：dispatch 當下寫入 registry entry（S2 寫入端）.
+
+    `createdAt` 由 agent metadata 機械讀取（generation anchor——T5 對照
+    基準，禁寫牆鐘）；metadata 不可解析／childSessionId 不符＝fail-loud。
+    其餘 fail-loud 面：欄位無效（task 非 subagent 形／attempt/sink 空／
+    expected 非 JSON／silenceBudget 非正數）、同 taskId 重註冊、既有
+    registry 損壞或 schema 不符（禁覆蓋——損壞比缺失危險）。失敗一律不
+    落地半套檔；成功以 atomic write 全檔替換。
+    """
+    out = stdout if stdout is not None else sys.stdout
+    err = stderr if stderr is not None else sys.stderr
+
+    def fail(reason: str, detail: str) -> int:
+        return _emit_face(
+            out, err, "unknown", task_id=task_id, face=UnknownFace(reason, detail)
+        )
+
+    agent_id = agent_id_from_task(task_id)
+    if agent_id is None:
+        return fail("invalid-task-id", f"需 {_SUBAGENT_PREFIX} 前綴：{task_id}")
+    if not isinstance(attempt_id, str) or not attempt_id.strip():
+        return fail("invalid-attempt-id", "需非空字串（--attempt-id）")
+    if not isinstance(sink, str) or not sink.strip():
+        return fail("invalid-sink", "需非空字串（--sink）")
+    expected: object = None
+    if expected_raw is not None:
+        try:
+            expected = json.loads(expected_raw)
+        except json.JSONDecodeError as exc:
+            return fail("expected-unparseable", f"需 JSON 字串：{exc}")
+    if silence_budget_min is not None and not (
+        isinstance(silence_budget_min, (int, float))
+        and not isinstance(silence_budget_min, bool)
+        and silence_budget_min > 0
+    ):
+        return fail("silence-budget-invalid", "需正數（分鐘）")
+    handles = tuple(h.strip() for h in surviving_handles)
+    if any(not h for h in handles):
+        return fail("invalid-surviving-handle", "handle 需非空白（--surviving-handle）")
+
+    src = source or ZCodeLivenessSource(layout)
+    meta_path = src.resolve_metadata(agent_id)
+    if isinstance(meta_path, UnknownFace):
+        # spawn 未落地／taskId 打錯——註冊當下就可判，禁猜禁拖到輪詢
+        return fail(meta_path.reason, meta_path.detail)
+    meta = src.read_metadata(meta_path)
+    if isinstance(meta, UnknownFace):
+        return fail(meta.reason, meta.detail)
+    if meta["childSessionId"] != task_id:
+        return fail(
+            "metadata-generation-mismatch",
+            f"childSessionId 不符：{meta['childSessionId']}",
+        )
+
+    entries = load_registry(registry_path)
+    if isinstance(entries, UnknownFace):
+        if entries.reason != "registry-missing":
+            return fail(entries.reason, entries.detail)  # 禁覆蓋損壞 registry
+        raw_entries: list = []
+    else:
+        try:
+            payload = json.loads(registry_path.read_text())
+        except (OSError, ValueError) as e:
+            return fail("registry-read-failed", f"第二次讀取失敗：{e}")
+        raw_entries = payload["entries"]
+        if any(e.task_id == task_id for e in entries):
+            return fail(
+                "duplicate-registration",
+                f"taskId 已註冊：{task_id}——新 attempt 前先移除舊 entry",
+            )
+    entry: dict = {
+        "taskId": task_id,
+        "attemptId": attempt_id,
+        "createdAt": meta["createdAt"],
+        "sink": sink,
+        "expected": expected,
+        "survivingHandles": list(handles),
+    }
+    if silence_budget_min is not None:
+        entry["silenceBudget"] = float(silence_budget_min)
+    raw_entries.append(entry)
+    _atomic_write_json(registry_path, {"entries": raw_entries})
+    _emit(
+        out,
+        _dumps(
+            {
+                "state": "registered",
+                "taskId": task_id,
+                "attemptId": attempt_id,
+                "registryPath": str(registry_path),
+                "entry": entry,
+            }
+        ),
+    )
+    _emit(err, f"[{WATCHER_NAME}] registered: {task_id} attempt={attempt_id}")
+    return EXIT_OK
+
+
+# ---------------------------------------------------------------------------
 # CLI 入口
 # ---------------------------------------------------------------------------
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog=WATCHER_NAME,
         description=(
-            "ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1）——"
+            "ZCode 子 agent 凍結偵測＋收割＋停止協議（AIR-149 S1＋S2）——"
             "watcher 永不 stop／重派，wake 歸主 session 處置"
         ),
-        epilog="契約：EP 09-20-harness-liveness-watcher S1；"
+        epilog="契約：EP 09-20-harness-liveness-watcher S1＋S2；"
         "狀態機 frozen spec 見 module docstring。",
     )
     parser.add_argument(
@@ -1352,6 +1492,42 @@ def main(argv: list[str] | None = None) -> int:
         metavar=("taskId", "manifest"),
         default=None,
         help="STOP_CONFIRMED 後增量收割（harvest B）",
+    )
+    mode.add_argument(
+        "--register",
+        metavar="taskId",
+        default=None,
+        help="dispatch 註冊：寫入 registry entry（S2）——需 --attempt-id/--sink；"
+        "同 taskId 重註冊＝fail-loud",
+    )
+    parser.add_argument(
+        "--attempt-id",
+        default=None,
+        help="--register 必帶：本 attempt 唯一識別",
+    )
+    parser.add_argument(
+        "--sink",
+        default=None,
+        help="--register 必帶：bounded receipt sink（AIR-135.7 AC#2 投影）",
+    )
+    parser.add_argument(
+        "--expected",
+        default=None,
+        help="--register 選帶：sink 驗收條件（JSON 字串）",
+    )
+    parser.add_argument(
+        "--surviving-handle",
+        action="append",
+        default=None,
+        metavar="HANDLE",
+        help="--register 選帶：dispatch 前已知 detached job ownership handle（可多次）",
+    )
+    parser.add_argument(
+        "--silence-budget-min",
+        type=float,
+        default=None,
+        metavar="MIN",
+        help="--register 選帶：silence lease 分鐘（缺席＝20m 標準門檻）",
     )
     parser.add_argument(
         "--poll-interval",
@@ -1380,13 +1556,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    layout = ZCodeLayout.default()
+    layout = layout or ZCodeLayout.default()
     liveness = args.registry.parent / "liveness"
     if args.verify is not None:
         return run_verify(layout, args.registry, args.verify, grace_s=args.grace)
     if args.harvest_delta is not None:
         task_id, manifest = args.harvest_delta
         return run_harvest_delta(layout, liveness, task_id, Path(manifest))
+    if args.register is not None:
+        return run_register(
+            layout,
+            args.registry,
+            args.register,
+            attempt_id=args.attempt_id,
+            sink=args.sink,
+            expected_raw=args.expected,
+            surviving_handles=tuple(args.surviving_handle or ()),
+            silence_budget_min=args.silence_budget_min,
+        )
     return run_watcher(
         layout,
         args.registry,
