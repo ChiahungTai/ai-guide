@@ -43,6 +43,10 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 一人＋AI、無團隊/CI；一 EP＝一 session（bounded child 卡各自一 session，繼承 parent EP 已定決策），段落自含、可結算接續。model 退化先結算再 handoff 新 session；Writer/Reviewer 分離，review 支援跨 context／跨家族 findings 回貼。
 
+## Marshal 姿勢（互動 session 預設）
+
+需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解 → 派工依 model-routing resolver → 機械閘照跑 → 一般工程取捨自判、批次回報，檢查點照 quality-constraints。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外（含互動 commit 機械例外）恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution，不適用本節。
+
 ## 架構設計紀律
 
 spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 [design-thinking.md](rules/design-thinking.md)，SOLID 見 [edit-discipline.md](rules/edit-discipline.md)；結構查證用 arch-thinking，介面合約設計（API／模組邊界／公開介面）用 arch-thinking 的 interface-design 側檔。
