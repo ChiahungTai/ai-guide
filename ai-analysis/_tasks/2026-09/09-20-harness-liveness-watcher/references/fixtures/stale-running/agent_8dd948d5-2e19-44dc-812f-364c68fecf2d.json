@@ -1,0 +1,21 @@
+{
+  "agentId": "agent_8dd948d5-2e19-44dc-812f-364c68fecf2d",
+  "childSessionId": "sess_subagent_agent_8dd948d5-2e19-44dc-812f-364c68fecf2d",
+  "createdAt": "2026-08-29T04:22:59.347Z",
+  "cwd": "/Users/ctai/Github/mosaic_alpha_offline_backtesting",
+  "description": "vision-review 驗證 6533 圖",
+  "metadataFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_8dd948d5-2e19-44dc-812f-364c68fecf2d/metadata.json",
+  "outputFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_8dd948d5-2e19-44dc-812f-364c68fecf2d/output.txt",
+  "parentSessionId": "sess_d9956c75-f28a-44cc-993e-a04e16984689",
+  "parentToolUseId": "call_126575813358454eb46bb338",
+  "profileId": "vision-review",
+  "profileSnapshot": {
+    "name": "vision-review"
+  },
+  "prompt": "任務：查驗一張 matplotlib 產生的多 panel 財務分析圖（本地 PNG），對照預期回報所見與差異。\n\n## 圖檔\n\n絕對路徑：`/Users/ctai/Github/mosaic_alpha_offline_backtesting/ai-analysis/_archive/ps_rerating_ip/p…[truncated]",
+  "status": "running",
+  "taskOutputFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_8dd948d5-2e19-44dc-812f-364c68fecf2d/task.output",
+  "transcriptFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_8dd948d5-2e19-44dc-812f-364c68fecf2d/transcript.jsonl",
+  "updatedAt": "2026-08-29T04:22:59.347Z",
+  "workspaceRoot": "/Users/ctai/Github/mosaic_alpha_offline_backtesting"
+}

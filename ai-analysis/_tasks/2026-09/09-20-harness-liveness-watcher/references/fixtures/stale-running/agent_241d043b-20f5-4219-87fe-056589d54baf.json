@@ -1,0 +1,21 @@
+{
+  "agentId": "agent_241d043b-20f5-4219-87fe-056589d54baf",
+  "childSessionId": "sess_subagent_agent_241d043b-20f5-4219-87fe-056589d54baf",
+  "createdAt": "2026-08-29T04:22:59.347Z",
+  "cwd": "/Users/ctai/Github/mosaic_alpha_offline_backtesting",
+  "description": "vision-review TA 圖判讀",
+  "metadataFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_241d043b-20f5-4219-87fe-056589d54baf/metadata.json",
+  "outputFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_241d043b-20f5-4219-87fe-056589d54baf/output.txt",
+  "parentSessionId": "sess_d9956c75-f28a-44cc-993e-a04e16984689",
+  "parentToolUseId": "call_06eff175c90740f5918a2f94",
+  "profileId": "vision-review",
+  "profileSnapshot": {
+    "name": "vision-review"
+  },
+  "prompt": "任務：逐張讀取兩張台股日 K 蠟燭圖（本地 PNG），轉錄文字、描述視覺元素、做型態判讀。\n\n## 圖檔（兩張都要查驗）\n\n1. `/Users/ctai/Github/mosaic_alpha_offline_backtesting/.agent-tmp/ta_case_1236.png`\n2. `/Users/ct…[truncated]",
+  "status": "running",
+  "taskOutputFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_241d043b-20f5-4219-87fe-056589d54baf/task.output",
+  "transcriptFile": "/Users/ctai/.zcode/cli/agents/sess_d9956c75-f28a-44cc-993e-a04e16984689/agent_241d043b-20f5-4219-87fe-056589d54baf/transcript.jsonl",
+  "updatedAt": "2026-08-29T04:22:59.347Z",
+  "workspaceRoot": "/Users/ctai/Github/mosaic_alpha_offline_backtesting"
+}

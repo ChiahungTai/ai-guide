@@ -1,0 +1,21 @@
+{
+  "agentId": "agent_729b3469-0ac1-4834-a546-2cd049fc7edf",
+  "childSessionId": "sess_subagent_agent_729b3469-0ac1-4834-a546-2cd049fc7edf",
+  "createdAt": "2026-08-29T14:47:59.618Z",
+  "cwd": "/Users/ctai/Github/code-reality/.agent-tmp/projection-poc",
+  "description": "EP 審查 A：完整性+一致性+架構",
+  "metadataFile": "/Users/ctai/.zcode/cli/agents/sess_2fe1ad7c-047a-4a54-9cd4-131cb363507c/agent_729b3469-0ac1-4834-a546-2cd049fc7edf/metadata.json",
+  "outputFile": "/Users/ctai/.zcode/cli/agents/sess_2fe1ad7c-047a-4a54-9cd4-131cb363507c/agent_729b3469-0ac1-4834-a546-2cd049fc7edf/output.txt",
+  "parentSessionId": "sess_2fe1ad7c-047a-4a54-9cd4-131cb363507c",
+  "parentToolUseId": "call_af9e30e9db2e4bd9b6a46491",
+  "profileId": "Explore",
+  "profileSnapshot": {
+    "name": "Explore"
+  },
+  "prompt": "你是 EP 審查 agent（read-only）。審查對象：/Users/ctai/Github/code-reality/ai-analysis/execution-plans/ep-projected-graph-overlay.md（先完整讀它）。Repo：/Users/ctai/Github/code-rea…[truncated]",
+  "status": "running",
+  "taskOutputFile": "/Users/ctai/.zcode/cli/agents/sess_2fe1ad7c-047a-4a54-9cd4-131cb363507c/agent_729b3469-0ac1-4834-a546-2cd049fc7edf/task.output",
+  "transcriptFile": "/Users/ctai/.zcode/cli/agents/sess_2fe1ad7c-047a-4a54-9cd4-131cb363507c/agent_729b3469-0ac1-4834-a546-2cd049fc7edf/transcript.jsonl",
+  "updatedAt": "2026-08-29T14:47:59.618Z",
+  "workspaceRoot": "/Users/ctai/Github/code-reality"
+}

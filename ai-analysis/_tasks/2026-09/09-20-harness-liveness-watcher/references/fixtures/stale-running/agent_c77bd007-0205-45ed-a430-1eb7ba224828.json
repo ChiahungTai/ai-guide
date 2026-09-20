@@ -1,0 +1,21 @@
+{
+  "agentId": "agent_c77bd007-0205-45ed-a430-1eb7ba224828",
+  "childSessionId": "sess_subagent_agent_c77bd007-0205-45ed-a430-1eb7ba224828",
+  "createdAt": "2026-08-26T05:11:33.716Z",
+  "cwd": "/Users/ctai/Github/mosaic_alpha",
+  "description": "fresh-eyes 審兩 EP diff",
+  "metadataFile": "/Users/ctai/.zcode/cli/agents/sess_fc27ccc1-1668-4d98-8e34-9b84b60fa4b0/agent_c77bd007-0205-45ed-a430-1eb7ba224828/metadata.json",
+  "outputFile": "/Users/ctai/.zcode/cli/agents/sess_fc27ccc1-1668-4d98-8e34-9b84b60fa4b0/agent_c77bd007-0205-45ed-a430-1eb7ba224828/output.txt",
+  "parentSessionId": "sess_fc27ccc1-1668-4d98-8e34-9b84b60fa4b0",
+  "parentToolUseId": "call_1c4fc14ecccb4333aa541810",
+  "profileId": "code-reviewer",
+  "profileSnapshot": {
+    "name": "code-reviewer"
+  },
+  "prompt": "你是獨立 code reviewer（fresh eyes——只看 diff 與程式碼真相，不受作者意圖合理化）。工作目錄 /Users/ctai/Github/mosaic_alpha。用 rg/fd + Read + Bash 查證。\n\n## 審查對象\n\nuncommitted diff（`git diff` + …[truncated]",
+  "status": "running",
+  "taskOutputFile": "/Users/ctai/.zcode/cli/agents/sess_fc27ccc1-1668-4d98-8e34-9b84b60fa4b0/agent_c77bd007-0205-45ed-a430-1eb7ba224828/task.output",
+  "transcriptFile": "/Users/ctai/.zcode/cli/agents/sess_fc27ccc1-1668-4d98-8e34-9b84b60fa4b0/agent_c77bd007-0205-45ed-a430-1eb7ba224828/transcript.jsonl",
+  "updatedAt": "2026-08-26T05:11:33.716Z",
+  "workspaceRoot": "/Users/ctai/Github/mosaic_alpha"
+}
