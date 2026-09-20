@@ -77,7 +77,10 @@ fresh progress T×1.5 cap 20m；無前進 T=min(T, 剩至 floor/2) 最低 1m。
 卡死判準（§1.5）：worker 軸（heartbeatAt）／runtime 軸（lastEventAt）獨立，
 fresh worker 不掩蓋 silent runtime（D1-01）；runtime silence floor
 codex/glm 10m、research 25m（codex 裁量 20-30m 帶中值）；worker hard-liveness
-5m；stalled 永遠 advisory。
+5m；stalled 永遠 advisory。無可計齊 stamp（兩軸皆無 ageable data）＝非
+staleness 不報 stalled（0921 對齊 task.rs canonical——codex 腿 drift finding；
+codex web 長生成期 heartbeat 滯後屬常態，worker 5m floor 對高強度研究工單
+偏緊，誤報 advisory 容忍或 --kind research 抬 runtime floor）。
 """
 
 import argparse
@@ -290,18 +293,19 @@ def parse_iso_ts(value: object) -> datetime | None:
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        # naive 時間戳不做本地時區假設——fail-closed（None → crossed_floor True → advisory）
+        # naive 時間戳不做本地時區假設——不可計齊＝axis 無資料（canonical：非 staleness）
         return None
     return parsed.astimezone()
 
 
 def crossed_floor(silence: float | None, floor_min: float) -> bool:
-    """fail-closed：None（無 stamp）與 NaN 都視為跨線。
-
+    """對齊 bridge producer canonical（task.rs：no ageable data is never reported——
+    單一實作聲明，0921 codex 腿 drift finding）：None（兩軸皆無可計齊 stamp）＝非
+    staleness，不報 stalled；terminal/124/not-found 路徑照常 wake，不賴此軸。
     IEEE 754 比較 fail-open 防護：正 gate 用 not (x <= floor) 形，NaN → 擋。
     """
     if silence is None:
-        return True
+        return False
     return not (silence <= floor_min)
 
 
@@ -962,6 +966,16 @@ def main(argv: list[str] | None = None) -> int:
         )
     except UsageError as exc:
         print(f"bridge_waiter: usage 錯誤：{exc}", file=sys.stderr)
+        return 2
+    except FileNotFoundError as exc:
+        # bin 路徑失效（bare shell 未帶 DELEGATE_BRIDGE_BIN／pin 漂移）＝clean fail-loud，
+        # 禁 silent exit 0 也禁 traceback——caller 須收到可操作的修法指引（0921 dogfood 實證）
+        print(
+            f"bridge_waiter: bridge binary 不可達（fail-loud）：{exc}\n"
+            "  修法：--bridge-bin <絕對路徑> 或 export DELEGATE_BRIDGE_BIN——路徑由\n"
+            "  installed_plugins.json registry pin 解析（禁手拼版本化 cache 路徑）。",
+            file=sys.stderr,
+        )
         return 2
 
 

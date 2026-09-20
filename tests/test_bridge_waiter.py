@@ -181,10 +181,11 @@ def test_next_arm_timeout_grow_cap_shrink_floor() -> None:
     assert _mod.next_arm_timeout(8.0, False, None) == pytest.approx(1.0)
 
 
-def test_crossed_floor_fail_closed_on_none_and_nan() -> None:
+def test_crossed_floor_none_not_staleness_nan_blocked() -> None:
+    # 0921 對齊 bridge producer canonical（task.rs：no ageable data is never reported）
     assert _mod.crossed_floor(5.0, 5.0) is False  # 恰在 floor 未跨
     assert _mod.crossed_floor(5.1, 5.0) is True
-    assert _mod.crossed_floor(None, 5.0) is True  # 無 stamp → fail-closed
+    assert _mod.crossed_floor(None, 5.0) is False  # 無可計齊 stamp ≠ staleness——不報 stalled
     assert _mod.crossed_floor(float("nan"), 5.0) is True  # IEEE 754 fail-open 防護
 
 
