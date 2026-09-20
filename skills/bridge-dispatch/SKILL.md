@@ -1,11 +1,11 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（turn body 計算含整個 turn、session 歷史計入；大材料寫進 repo 檔案只派路徑；失敗勿原樣重派——carrier 自動重試同 payload 放大限流；觀測值與失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知、waiter exit 即通知；單顆短工前景 shell vs N 顆平行 --background＋fan-in wait 場景；wait exit 124 re-arm 禁重派；--stuck-after family 起跳值；重啟後恢復 playbook——runs 禁盲重派、show --json 收完成、重掛 wait；綠 runs 不證健康）。always-on 核心（registry pin 唯一源、caller surface→合法路徑對照表、禁造第二 pin）在 rules/bridge-dispatch.md；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收。"
+description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（turn body 計算含整個 turn、session 歷史計入；大材料寫進 repo 檔案只派路徑；失敗勿原樣重派——carrier 自動重試同 payload 放大限流；觀測值與失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知、waiter exit 即通知；單顆短工前景 shell vs N 顆平行 --background＋fan-in wait 場景；wait exit 124 re-arm 禁重派；--stuck-after family 起跳值；重啟後恢復 playbook——runs 禁盲重派、show --json 收完成、重掛 wait；綠 runs 不證健康）。always-on 核心（registry pin 唯一源、caller surface→合法路徑對照表、禁造第二 pin、glm provision 前置／resume model-match 契約）在 rules/bridge-dispatch.md；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收。"
 ---
 
 # bridge-dispatch — delegate-bridge 委派深層
 
-> 本 skill 是 `rules/bridge-dispatch.md` 的 on-demand 深層載體：rule 端保留 always-on 核心（registry pin 唯一真相源、caller surface→合法路徑對照表、禁造第二 pin、webgpt 序列化一句、dispatch⇄collection 配對一句）；本檔承載 webgpt 大內容段與 dispatch⇄collection 完整模式。事故脈絡與權威細節在 delegate-bridge repo（各節附路徑）。
+> 本 skill 是 `rules/bridge-dispatch.md` 的 on-demand 深層載體：rule 端保留 always-on 核心（registry pin 唯一真相源、caller surface→合法路徑對照表、禁造第二 pin、glm provision 前置＋resume model-match 兩條、webgpt 序列化一句、dispatch⇄collection 配對一句）；本檔承載 webgpt 大內容段與 dispatch⇄collection 完整模式。事故脈絡與權威細節在 delegate-bridge repo（各節附路徑）。
 
 手拼版本化 cache 路徑事故（rule 端禁手拼的 why）：反覆 GLM 派工摸到 stale 舊版 binary，`Model creation failed` 連敗且被誤分類為額度問題，診斷燒掉一輪——修好的新版就在同一個 cache。「第二 pin」的常見形態另有 `ls | sort -V | tail` 猜最大版。
 

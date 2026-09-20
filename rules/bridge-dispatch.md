@@ -4,7 +4,7 @@ harness-scope: neutral
 
 # Bridge Dispatch 紀律（delegate-bridge 委派）
 
-跨 repo 呼叫 delegate-bridge（`task`/`review`/`usage`）時：registry pin＝安裝位置**唯一真相源**，**禁手拼版本化 cache 絕對路徑**（`.../delegate/<version>/bin/...`——版本號寫進筆記即腐爛）。合法入口**按 caller surface 對號入座**：
+跨 repo 呼叫 delegate-bridge（`task`/`review`/`usage`/`provision`）時：registry pin＝安裝位置**唯一真相源**，**禁手拼版本化 cache 絕對路徑**（`.../delegate/<version>/bin/...`——版本號寫進筆記即腐爛）。合法入口**按 caller surface 對號入座**：
 
 | Caller surface | 合法路徑 |
 |---|---|
@@ -16,6 +16,8 @@ harness-scope: neutral
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
 
 - **禁造第二 pin**（stable symlink、「latest」 shim）——第二真相源必漂移；殘留靠 prune，讓 stale 路徑大聲失敗。
+- **glm provision 前置**：glm family 於 workspace 首次委派前必跑一次 `delegate-bridge provision --family glm`（user-invoked；delegate-bridge 面**唯一 sanctioned config write**——stage per-model read-only configs＋sha256 manifest，憑證輪替＝重跑 provision）。每次 `task` spawn verify-only：缺漏／未 provision 的 model／drift＝fail-loud 附指引，不自動補、禁 derive credential。
+- **glm resume model-match**：定向接續 glm session 必帶**建立時**的 `--model <id>`（建立 job 的 ledger row 有記；不帶＝落 manifest `defaultModel`）；model 與建立時不符＝carrier `Select a model` fail-closed，錯誤附 actionable hint。此兩條之定義源＝delegate-bridge repo `AGENTS.md`「Build loop」節 glm provisioning 段＋`docs/ep.md` S1「語義約束」glm credential transport／`provision` 子命令條（本兩行僅指針）。
 - **webgpt 大內容**：turn body 過大（整 turn＋session 歷史計入）被 web edge 拒——大材料序列化進 repo 檔案只派**檔案路徑**；失敗勿原樣重派。
 - **Dispatch⇄collection 配對**：派工必配回收——背景 detach 完成不通知，**waiter exit 即通知**；`wait` exit 124＝re-arm 非失敗、禁重派。terminal ≠ complete：有 sink 登記者以 artifact 機驗（存在＋非空＋錨點）為完成，無登記者以 bounded receipt 非空為完成；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
 - **長輸出任務形狀（dispatch-side）**：預期輸出逼近 catalog 上限的交接任務→交付一律檔案承載（sink 工單指定；單檔或分塊＋checkpoint 續寫），禁純文字回傳長文。定義源＝delegate-bridge repo `AGENTS.md`「Caller dispatch discipline」Long-output task shape 段（DB 弧 e115664；本行僅指針）。
