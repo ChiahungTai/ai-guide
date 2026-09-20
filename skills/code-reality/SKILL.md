@@ -8,7 +8,7 @@ allowed-tools: ["Read", "Bash"]
 
 # code-reality 工具鏈（meta 層，Rust carrier）
 
-> **受眾邊界（雙源分治）**：CR plugin skill（`~/Github/code-reality/plugin/skills/code-reality/SKILL.md`，隨發版）＝**工具事實與坑的 standalone 真相源**（刷鏈時序、refs 密度語義、fallback 坑、profile schema＋authoring、口徑限制、boundary 假設）；本檔＝**生態操作真相源**（何時跑、接線、紀律、生態教訓收編）。同名 skill 並存時：操作依據本檔，工具細節以 plugin 版為準。
+> **受眾邊界（雙源分治）**：CR plugin skill（`~/Github/code-reality/plugin/skills/code-reality-tools/SKILL.md`，隨發版；skill id＝`code-reality-tools`，與本檔不同名並存載入）＝**工具事實與坑的 standalone 真相源**（刷鏈時序、refs 密度語義、fallback 坑、profile schema＋authoring、口徑限制、boundary 假設）；本檔＝**生態操作真相源**（何時跑、接線、紀律、生態教訓收編）。兩份並存時：操作依據本檔，工具細節以 plugin 版為準。
 
 工具住獨立 repo `~/Github/code-reality`（Rust carrier；repos 之上的 meta 層——**repo 事實歸 repo**，工具層不內建任何 repo 特例；binary 安裝見存在性偵測）。**呼叫形態**（從任意 repo cwd）：
 
