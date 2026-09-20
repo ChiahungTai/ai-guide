@@ -3,9 +3,10 @@ id: AIR-146
 title: >-
   bridge wait watcher——fan-in 包 wait、124 內部 re-arm、CollectionReceipt（AIR-135.7
   工具化承接）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-20 08:12'
+updated_date: '2026-09-20 13:52'
 labels: []
 dependencies:
   - AIR-135.7
@@ -49,3 +50,9 @@ flowchart LR
 - [ ] #5 restart／generation mismatch → unknown/reconcile 喚醒，禁自動 retry；missing/corrupt status fail-loud
 - [ ] #6 watcher 無 stop/judge/commit 路徑（代碼面保證）；bridge CLI 版本不符 fail-loud 附升級指引
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bridge wait watcher 落地——fan-in 包 wait、exit 124 內部 re-arm 零 LLM 喚醒、動態 T、heartbeatAt/lastEventAt 雙軸 advisory、exit 2 四面貌重探分流、CollectionReceipt（AIR-135.7 AC#2 投影）、bridge CLI 版本 pin。AC#1 證據：T4 advisory 節制＋T5 collect 各 H 級真 job 實證（round 3 advisory 攔截後 job 自行完成＝節制價值活體驗證）；124-re-arm 面 I 級如實記錄（glm 靜默>10m 即 advisory 攔截，自然不可達）。fresh 審查 7 findings（1 Critical single-id 零 collect）＋followup 驗收 pass＋N1 gap 帶併修，44 測試＋全套 1075 綠
+<!-- SECTION:FINAL_SUMMARY:END -->
