@@ -31,4 +31,34 @@
 
 ---
 
-**判讀**：本月首週——兩個具體建議：①mine_corrections.py 排除清單擴 cron prompt/續讀特徵（噪音 91% 虛胖判讀負擔，一處 regex 修正）；②memory 寫入端精簡（糾正群＋telemetry 實證同向）已在 AIR-40 軌道，下週看 top_entries 收斂。其餘無需動作。
+## 09-13 ~ 09-19 週報（2026-09-19 23:10 排程觸發 run 產出）
+
+- 計數：方向錯 27／過度工程 16／其他（溝通、流程、bug、治理）22／遺漏 11／重複 4／驗推用戶 2／修了仍壞 1／疑似 16（候選 166、真糾正 ~83、噪音 ~67＝40%）
+- Top 引述：
+  - [09-18 14:05] sess_0990d02e「問題是在根本不需要這麼多欄位啊，你是不是解錯問題」——解錯問題（problem-model blind spot；方向>>品質正典實例）
+  - [09-18 16:10] sess_22964f70「四個重複？認真？你這不是可以真的撈資料然後自己判斷嗎？認真點」——可機械自證卻拋回用戶（驗證責任）
+  - [09-17 19:37] sess_7ee5e230「你不要外推，真的問ＴＲＩ」——外推代替查證（事實查證原則）
+- vs 前週：方向錯 7→27 大幅上升居首（多線施工峰：SC UI 波＋AIR-135 投影弧＋AIR-94 rename，UI/mockup 域集中 ~10 件）；**噪音佔比 91%→40%——上週訊號①排除清單擴充落地實證**
+- 訊號：
+  1. 上週兩訊號皆閉環：①mine_corrections.py 排除清單（🔴/cron/at 喚醒頭、TodoWrite、續讀摘要、task-notification）已生效，噪音 91%→40%；②memory 寫入錘擊（13×97K）消失、top actor payload 74K→17K 級（見 Memory 段），AIR-40 軌道收斂實證
+  2. 新形態：stale relay／範圍過寬群（stale 工單差點重做、跨 workspace 可見性、處理範圍超出本 workspace）3+ 件——與既有 memory 條目 relay-claims-verify-current-state 同向，暫無新動作
+  3. 過度工程 16 件呈「做出來再被砍」模式（git 工具、tab 條、上下鍵、SC13、週末抓取、閒置 WT）——規劃面 delete-first 未內化（見 Heat 候選③）
+- Heat（AIR-131）：**Warm**（families: R recurrence＋V vocabulary divergence）——R＝方向錯 7→27（七類週趨勢，ZCode 面）；V＝check_single_source 3 CRITICAL（~/.zcode、~/.codex、~/.config/muse 三面 bundle stale）。B activation 健康（drift 由日常感測器抓到＝非逃逸）；G／U 季跑未採樣。Warm 動作（禁 additive，delete/merge/rewrite 候選）：① V 修復＝`uv run python scripts/deploy_agents.py` 同步三面（sync 既有機制非新閘）② rewrite 產出慣例：人類面報告先結論後 id（溝通糾正群 3 件，改既有 viewport 慣例）③ 規劃段落把「不做/delete 選項」列必答（rewrite 既有 planning 慣例）
+
+### CR 使用（R5 換軌後形態）
+
+- 健康診斷：CR skill（cr-query＋code-reality skill 調用）0 sessions（前週 1）；CR MCP distinct sessions：snapshot 3／build 2／callers 2／refs 2／hub_nodes 1／lsp_status 1／affected_flows 1；對照 Bash rg 17,499 parts。bridge 面 1,071 jobs 中 call-evidence 僅 4 jobs（CR CLI 5 次、寫入面 0），evidence-bearing 382（unverified marker 373 為大宗）
+- KPI：略——本週窗內 AIR-94 rename 弧目錄 rg 無 preflight 命中，分母不可考不硬造；留弧側附卡補
+- 事件觸發註記：無 CR wiring 變更
+
+### Memory 寫入（AIR-40）
+
+- successful 133（**errors 24 如實報**，前週 58→24／unmatched 0／folded 1／ambiguous 0／aliases 1）；unknown actors 0
+- top actors：sess_subagent_agent_997d4b83 61 次×17.4K chars（subagent 大戶，總量已自上週 74K 級收斂）、sess_f315a82c 47×4.9K、sess_1f53a0c4 11×3.3K
+- top entries：reference_muse-plugin-probe-facts 4×5.5K、reference_zcode-cron-workspace-scoping 3×2.5K、project_role-vocabulary-terminal 1×1.5K——**上週 13×97K 錘擊條目消失＝寫入精簡收斂實證**；池內 zz-probe-* 三件為 AIR-100 機械閘探針產物（預期）
+- index_delta：本 pool 路徑首輪 baseline 建立（`baselines/_Users_ctai_Github_ai-guide_.agents_memory.json`；前週 baseline 未涵蓋本 pool 路徑）
+- evidence：ai-analysis/memory-telemetry/weekly-20260919.json
+
+---
+
+**判讀**（09-19 更新，涵蓋兩週）：上週兩建議皆收斂（噪音 91%→40%；memory 寫入量降一個量級），無需追加。本週新訊號＝方向錯回升主導（27 件，UI/mockup 域集中）＋Heat 升 **Warm**（R＋V 兩 family）——首要動作：三面 bundle stale 跑 `deploy_agents.py` 同步（V 修復，機械 sync，屬治理動作留 user／下一弧執行）；下週看方向錯回落與三面 bundle 回 fresh，連續兩 window 未收斂再升 Hot 檢討。

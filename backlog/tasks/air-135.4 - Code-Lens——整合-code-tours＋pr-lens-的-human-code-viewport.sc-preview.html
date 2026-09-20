@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<title>AIR-135.4 — card detail</title><style>
+body{font-family:-apple-system,"PingFang TC",sans-serif;max-width:760px;margin:2rem auto;padding:0 1.5rem;color:#1c2733;line-height:1.6;background:#fff}
+h1{font-size:1.25rem;margin-bottom:.3rem}
+.meta{color:#5b6b7b;font-size:.78rem;border-bottom:1px solid #e3eaf0;padding-bottom:.5rem;margin-bottom:.8rem}
+.sec{font-size:.8rem;margin:.5rem 0} .ref{color:#0b66c3}
+.ac{font-size:.82rem;margin:.2rem 0} .ac.done{color:#1c6e40} .ac.open{color:#5b6b7b}
+.mermaid{margin:.6rem 0;background:#fbfdff;border:1px solid #e3eaf0;border-radius:4px;padding:.6rem;display:flex;justify-content:center}
+p{margin:.45rem 0;font-size:.9rem} ul{margin:.4rem 0;padding-left:1.3rem} li{font-size:.9rem;margin:.2rem 0}
+.note{background:#f4f7fa;border-radius:4px;padding:.4rem .7rem;font-size:.72rem;color:#5b6b7b;margin-top:1.5rem}
+</style></head><body>
+<h1>AIR-135.4｜air-135.4 - Code-Lens——整合-code-tours＋pr-</h1>
+<div class="meta">status：To Do　·　created：2026-09-18 10:04　·　updated：2026-09-19 06:54</div>
+<div class="sec"><b>References</b><div class="ref">AIR-135.2</div><div class="ref">AIR-135.3</div></div>
+<p>畫圖給人看的工具——canonical facts（card tree＋repo/code facts）按需投影成人類視圖。不是 lifecycle node、不是第二 truth source。</p>
+<p><b>確認介面</b></p>
+<ul><li>開卡確認＝<b>SC ext 點卡預覽</b>（卡本身即投影，ai-guide 側零平行 render）</li><li>mermaid 圖表化呈現面＝SC report viewer（`.html` artifact：srcdoc＋UMD mermaid@11＋pre.mermaid——離線渲染＋點擊 zoom）；`.md` 在 SC 兩面皆無 mermaid，卡面 fence 服務 repo 讀者/GitHub</li></ul>
+<p><b>視圖規矩</b></p>
+<ul><li>M1 卡內容視圖五塊：解什麼／定什麼契約／不做什麼＋承接上游（direct deps 深度=1，transitive 只計數）／影響＋現況（機械算）／待裁決（pending pointers）</li><li>generator 機械投影禁手抄（P9 實證）；帶新鮮度錨，stale 自稱 stale</li><li>選型 manual-first，門禁句：渲染前自問消費者是誰、時刻是哪個、理解層在哪——答不出就不跑</li><li>執行中沉默（liveness 歸 135.7）；批量只一張汇总 receipt；SC 只消費 view contract</li><li>pr-lens＝code 弧視圖主場（walkthrough／architecture delta／impact），卡投影與其為 Code Lens family 兄弟（slice-1＝原 AIR-130 producer，mosaic tools/prlens）</li></ul>
+<div class="mermaid">
+flowchart LR
+  CF[&quot;canonical facts&lt;br/&gt;card tree＋repo facts&quot;] --&gt; G[&quot;generator&lt;br/&gt;機械投影·禁手抄&quot;]
+  G --&gt; V1[&quot;分層圖&lt;br/&gt;program topology&quot;]
+  G --&gt; V2[&quot;payload 確認視圖&lt;br/&gt;confirmation digest 綁定&quot;]
+  G --&gt; V3[&quot;終場 receipt&lt;br/&gt;否決介面&quot;]
+  V2 --&gt; SCV[&quot;SC 整合瀏覽器&quot;]
+  CF -.-&gt;|&quot;code 弧（非 card 語義）&quot;| PL[&quot;pr-lens&lt;br/&gt;topology/impact/tour&quot;]
+</div>
+<h2 style="font-size:1rem">Acceptance Criteria</h2><div class="ac open">☐ #1 定義 canonical fact layer 與 derived view layer：任何 Code Lens 輸出都可追溯 card/repo facts，view 本身不成 authoritative planning/workflow state。**視圖須由 generator 從 canonical facts 機械投影（禁手抄——P9 v1 漂移實證），每份輸出帶 provenance sidecar＋新鮮度錨（stale 自稱 stale）**</div><div class="ac open">☐ #2 code tour 與 pr-lens 共用一份最小 projection contract；同一 change 可切 narrative 與 topology/impact 視角，不重算／複製彼此已有的 core facts。**M1 卡內容視圖（0919 v4 終版）＝SC ext 點卡預覽：卡本身即投影（Description 人話＋一張 mermaid 圖）；視圖五塊語義——解什麼／定什麼契約／不做什麼＋承接上游（direct deps 深度=1、transitive 只計數＋drill-down）／影響＋現況（機械算）／待裁決（pending pointers）——全部由 canonical 卡面機械可達（禁手抄、禁爬 transitive 鏈、禁 projection-on-projection）。事實協商中禁 code-fact 圖。Code Lens view mapping 須標 Development Arc node 與觸發時刻：entry Align 顯示卡內容；Shape exit 顯示 SPEC／計畫；exit Align 顯示終場 receipt、intent-diff、decision、否決介面**</div><div class="ac open">☐ #3 viewport 選型＝manual-first：先交付生命週期手冊式選型指南（①開工前 Impact／Architecture 預判——改動未發生即可查 ②計畫討論不用 pr-lens：口述＋輕量 mermaid，事實協商中 ③執行中不產 Lens 視圖：活的面歸 135.7 liveness 台帳 ④驗收 Walkthrough＋Architecture delta ⑤除錯原生全套 ⑥結案 Walkthrough 一步一弧＋M3 delta；user override 永遠可用）。**門禁句：渲染前自問消費者是誰、時刻是哪個、理解層在哪（0919 外部收割——L0 實作／L1 架構／L2 問題模型；user 注意力 L2↑、L1＝人機溝通 vocabulary 不全外包）——答不出就不跑。**自動化選型須待 AC#4 dogfood 帶回誤選成本證據後另行評估</div><div class="ac open">☐ #4 AIR-135 自身至少 dogfood 一次 entry 或 exit Align，驗證 human 能快速指出「AI 理解與我的意圖哪裡不同」而非只看漂亮圖。**聯合 dogfood**：與 135.2 AC#5 共用同一投影產物（同一 artifact 同時滿足本 AC entry／exit Align 驗收與 135.2 verdict 裁決呈現）；dogfood 驗證含 exit evidence→view 的可追溯鏈——每個 exit evidence 必能指向對應 Code Lens 呈現物或明確標註不需呈現；**entry Align checksum 一問（0919 外部收割）：六欄視圖一屏可掃（低信心假設高亮＋預算數字行），user 30–60 秒內能答「AI 誤解我了嗎」——human/AI checksum 的視圖形態，載體即 M1／entry 視圖不另建文件**</div><div class="ac open">☐ #5 與 Report Shell、/illustrate 的 ownership/embedding 邊界明確，未來 SouthChariot 可消費同一 projection contract 而不需理解 producer internals。**邊界三句**：①執行中沉默——liveness 台帳歸 135.7，Lens 在 Build 期預設不產視圖 ②否決介面渲染（135.3 AC#7 終場六塊之一，否決須比批准便宜）由本卡視圖面承載、SC control 面承接（135.5 contract）③批量只一張多卡汇总 receipt 視圖（節點語義 135.3 AC#8、載體 135.2 AC#7），逐卡不斷言視圖</div><div class="ac open">☐ #6 確認介面與圖表呈現（0919 v4 終版）：①確認介面＝SC ext 點卡預覽（卡本身即投影）②圖表化輸出＝SC report viewer 慣例的 `.html` artifact（srcdoc＋UMD mermaid@11 精確路徑＋pre.mermaid——離線渲染＋點擊 zoom overlay；SC 剝 CSP 重注入）掛 references[]（workspace 相對路徑）③卡面 mermaid fence 服務 repo 讀者；SC card detail 現無 mermaid 為已知限制（SC 側補 gem 走 135.5 reverse-first）④top-level ESM 形態渲染但無 zoom——確認視圖等一次性小物可接受，要 zoom 的殼不用。驗收＝9 卡 reconciliation 的圖在 SC report viewer 實開 zoom PASS</div>
+<div class="note">模擬範圍：SC card detail 補上 mermaid fence 渲染後的樣子（fence → svg；點開放大由 SC zoom overlay 提供，本頁不模擬 zoom）。header/References 版面為近似。</div>
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({start:true});</script>
+</body></html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<title>AIR-135.5 — card detail</title><style>
+body{font-family:-apple-system,"PingFang TC",sans-serif;max-width:760px;margin:2rem auto;padding:0 1.5rem;color:#1c2733;line-height:1.6;background:#fff}
+h1{font-size:1.25rem;margin-bottom:.3rem}
+.meta{color:#5b6b7b;font-size:.78rem;border-bottom:1px solid #e3eaf0;padding-bottom:.5rem;margin-bottom:.8rem}
+.sec{font-size:.8rem;margin:.5rem 0} .ref{color:#0b66c3}
+.ac{font-size:.82rem;margin:.2rem 0} .ac.done{color:#1c6e40} .ac.open{color:#5b6b7b}
+.mermaid{margin:.6rem 0;background:#fbfdff;border:1px solid #e3eaf0;border-radius:4px;padding:.6rem;display:flex;justify-content:center}
+p{margin:.45rem 0;font-size:.9rem} ul{margin:.4rem 0;padding-left:1.3rem} li{font-size:.9rem;margin:.2rem 0}
+.note{background:#f4f7fa;border-radius:4px;padding:.4rem .7rem;font-size:.72rem;color:#5b6b7b;margin-top:1.5rem}
+</style></head><body>
+<h1>AIR-135.5｜air-135.5 - Cross-repo-Arc-contract——ai-</h1>
+<div class="meta">status：To Do　·　created：2026-09-18 10:04　·　updated：2026-09-19 06:54</div>
+<div class="sec"><b>References</b><div class="ref">AIR-135.2</div><div class="ref">AIR-135.3</div></div>
+<p>跟別的 repo 握手的規矩——mosaic／SC／bridge 多方，誰擁有真相、跨 repo 送東西必經你點頭。</p>
+<p><b>identity 與 ownership</b></p>
+<ul><li>qualified text identity：每 repo 保有 canonical card tree；對應卡用 references[]＋Description 逐字 token 對應（https 僅可點捷徑）；parentTaskId／dependencies 維持 repo-local</li><li>ai-guide 擁 semantics／policy／Marshal obligations／projection contract；SC 擁人機 control surface（唯讀 canonical、產 derived projection/cache），不另存第二套 lifecycle truth</li></ul>
+<p><b>開卡與發送</b></p>
+<ul><li>reverse-first：contract 固定後 SC 先建卡寫 reverse token，再回 ai-guide 補 forward token；絕對本地路徑禁作 identity</li><li>跨 repo 發送＝outward 憲法級逐次授權（0919 commit 委任不及於此）：草案八欄組裝→transport 三路分流——活人看且時效→SC-16 router、durable 留檔→卡面 token 回寫、要對端幹活→bridge task</li><li>單一發送路徑、草案可排隊禁批量發送；禁自建跨 repo session 目錄</li><li>parties：本側 ai-guide＋delegate-bridge，對端 mosaic＋SC</li></ul>
+<div class="mermaid">
+flowchart TB
+  AG[&quot;ai-guide&lt;br/&gt;semantics/policy/orchestration owner&quot;] &lt;--&gt;|&quot;x-arc token&lt;br/&gt;reverse-first 開卡&quot;| SCS[&quot;SouthChariot&lt;br/&gt;control surface（唯讀 canonical）&quot;]
+  AG --&gt;|&quot;草案八欄組裝&quot;| UG{&quot;user 逐次授權&lt;br/&gt;（憲法級 gate）&quot;}
+  UG --&gt;|&quot;活人看且時效&quot;| R[&quot;SC-16 router&lt;br/&gt;四態 receipt&quot;]
+  UG --&gt;|&quot;durable 留檔／對端死&quot;| CW[&quot;卡面 token 回寫&quot;]
+  UG --&gt;|&quot;要對端幹活&quot;| BT[&quot;bridge task&lt;br/&gt;派工非通知&quot;]
+</div>
+<h2 style="font-size:1rem">Acceptance Criteria</h2><div class="ac open">☐ #1 定義 stable repo id 與 cross-repo token schema，例如 x-arc: ai-guide:AIR-135.5 &lt;-&gt; southchariot:SC-N (contract v1)；雙端 references[] 存 token、Description 同步 token 供 search；禁止跨 repo parentTaskId/dependencies。schema v1 含 **session-level target token 格式（harness:sessionId pair；workspace fs 絕對路徑禁入）**——a-bar 卡 A「Copy target token」之拍板依據。</div><div class="ac open">☐ #2 定義 ownership matrix：ai-guide / Backlog card tree / code-fact producers / Code Lens / SouthChariot / Marshal 各自可讀、可寫、authoritative 的範圍；SC 只能持有 canonical identity/link 與 derived projection/cache。</div><div class="ac open">☐ #3 定義 projection/action contract：SC 可讀哪些 canonical/derived state、哪些 human actions 必須回寫哪個 owner、衝突/stale 如何 fail-loud；https/blob URL 只作 convenience，不作 canonical identity。</div><div class="ac open">☐ #4 SouthChariot implementation card readiness gate：本卡 contract 固定後先在 SC 建 repo-local card，SC card 先寫 reverse token 指回 AIR-135.5，再回 ai-guide 補 forward token；不得使用絕對本地路徑作 identity。委任邊界（0919）：⑦直接 commit 委任僅覆蓋本 repo 審查通過弧的 commit；寫對端 repo 卡（token／comment 回寫）＝跨 repo 寫入，Marshal 恆停＋逐次授權，本側 forward token 補寫是本 repo 寫。SC 側卡（含 a-bar A＝v1 選單、B＝v2 pin＋手勢 gated 於 SC-16 router 落地）同走 reverse-first 協議。</div><div class="ac open">☐ #5 跨 repo dogfood：fresh session 僅憑 card 內 qualified token + repo-local 搜尋即可重建關係；任一 repo 暫時不可達時仍能辨識對端 identity，不需要人工 handoff 文件維持持久狀態。雙寫一致性（references[] 與 Description token 逐字一致）納入 dogfood 對帳，drift 即 fail-loud。MVP 分期：router 落地＋升級信號（一次 verdict 丟失事故或連兩週手動搬運成常態）出現前，雙寫對帳＝人工 dogfood 行，不做對帳／草案工具</div><div class="ac open">☐ #6 cross-repo handoff 的 Arc/card/artifact/session identity 與 current verdict/context 由 Marshal 從 canonical state 自動組裝；SouthChariot SC-15/SC-16 的 messaging/router/receipt 能力負責 transport/delivery，AIR-135 不重造 courier protocol。user 不需複製 session id、verdict 或重新口述 context，transport identity 也不得成第二 lifecycle truth。**確認 gate（憲法級）**：跨 repo 發送＝outward，須逐次 user 授權，0919 直接 commit 委任不及於此——UX 首選 SC-15 result card＋手動 Continue（只填 composer 不自動送）；CLI 等價＝草案全文＋SEND to &lt;target&gt;? [y/N]＋AUTH line 入 sent-record（住發起卡 notes）；發送逐條確認，草案可排隊、禁批量發送。**草案八欄 schema**：target identity（對端 session ref：harness:sessionId［＋WS 尾名］＋對端 x-arc token 若有對應卡）、source identity（本側 x-arc token）、verdict 摘要＋卡座標、artifact pointers＋hash、expected response type、correlation id、context delta、expiry。**transport 三路分流**：活人看且時效→SC-16 router（四態 receipt）；durable 留檔／對端已死或唯讀→卡面 token 回寫；要對端幹活→bridge task（派工非通知，計費落對方 lane，禁拿 task 當 courier）。提議＋組裝＝LLM；target 確定＋發送＝user；禁自建跨 repo session 目錄（target 解析程序細節與 carrier 限制住 Notes）</div><div class="ac open">☐ #7 projection/action contract 必能呈現 derived active-work/liveness/terminal status 與 pending-human-decision projection，且每項可追溯 authoritative owner；SC 可顯示與觸發 action，但不得靠 user 手動輪詢或在 SC 另存一套 arc state。owner pointer：pending-human-decision 的仲裁語義**歸 AIR-135.3**（AC#6 pending-decision 台帳＋AC#7 否決介面）；跨 repo 投影的產出可由 AIR-135.7 Settle 迴圈驅動，本卡不另建仲裁語義。SC-18 catalog 落地前，跨 repo liveness 投影＝發送當下四態 receipt＋卡面註記，不建常駐顯示（與 AC#5 MVP 分期同軸）</div>
+<div class="note">模擬範圍：SC card detail 補上 mermaid fence 渲染後的樣子（fence → svg；點開放大由 SC zoom overlay 提供，本頁不模擬 zoom）。header/References 版面為近似。</div>
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({start:true});</script>
+</body></html>

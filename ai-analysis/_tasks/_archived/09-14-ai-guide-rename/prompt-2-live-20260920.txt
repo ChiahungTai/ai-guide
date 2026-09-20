@@ -1,0 +1,35 @@
+每週治理看照（bundle 組成＋memory lite 稽核＋排程 registry/卡 ref＋卡結構標記一致性＋watchdog 雙檢查＋池對帳網唯讀 report，advisory）——工作目錄 /Users/ctai/Github/ai-guide。四段執行後印統一報告。
+
+## 段 1：AGENTS.md bundle 組成看照
+1. `git -C /Users/ctai/Github/ai-guide rev-parse --short HEAD` 與 `git -C /Users/ctai/Github/ai-guide log -1 --format=%ci` 記錄報告頭
+2. 動態讀 gate（勿寫死數字）：`rg \"BUNDLE_MAX_BYTES = |MUSE_USER_BUDGET = \" /Users/ctai/Github/ai-guide/scripts/deploy_agents.py`——zcode/codex 對 BUNDLE_MAX_BYTES、muse 對 MUSE_USER_BUDGET
+3. 部署檔量測＋一致性：`wc -c ~/.zcode/AGENTS.md ~/.codex/AGENTS.md ~/.config/muse/AGENTS.md`；`cmp ~/.zcode/AGENTS.md ~/.codex/AGENTS.md` 驗 byte-identical；`~/.config/muse/AGENTS.md` 確認在場並記大小（muse 口徑獨立——量在場與大小，不比對內容）
+4. per-rule 組成：`rg -n '^<!-- rules/' ~/.zcode/AGENTS.md` 找段落標記行，用 python3 按標記切分計算每段 bytes（含 guide+header 段），降冪印出
+5. 趨勢：讀 /Users/ctai/Github/ai-guide/ai-analysis/bundle-watch-state.json（存在→對比 per-rule delta；不存在→本次為基線），寫回新 state（working tree，不 commit）
+6. 判讀：🔴 zcode/codex 任一 ≥ BUNDLE_MAX_BYTES 或兩份不一致；muse 缺檔或 ≥ MUSE_USER_BUDGET；🟡 總量 ≥85% 對應 gate 或單 rule 較上次成長 >+500B；🟢 其他。advisory——不修改 rules 內容，瘦身候選只列名單＋bytes 證據。**若總量 ≥93% 對應 gate：提示 backlog「rules audit × bundle 減量聯合弧」draft 觸發（memory-audit skill 開場段姊妹弧）**
+
+## 段 2：memory lite 稽核（配方＝memory-audit skill Lite audit 節）
+memory 主體：/Users/ctai/Github/ai-guide/.agents/memory/（AIR-54 遷移後主體；CC/ZCode 舊徑皆 symlink 指此）
+1. 層 1：`cmp /Users/ctai/Github/ai-guide/skills/memory-audit/scripts/generate_index.py <池>/_generate_index.py`；`python3 <池>/_generate_index.py --check`——gate 一律動態讀：`rg \"GATE_CHARS|GATE_BYTES|GATE_LINES\" /Users/ctai/Github/ai-guide/skills/memory-audit/scripts/generate_index.py`，`--check` 輸出 chars/bytes/lines 對照動態值判讀（bytes>24,000 印 [INFO] 屬縱深預警非 FAIL）；檢查 <池>/ 無 `_regen-failed` 標記（在場＝前一晚收斂未收斂，列入報告）
+2. 層 2'：讀 <池>/_audit-state.md 的 base_commit → `git -C /Users/ctai/Github/ai-guide log --oneline <base>..HEAD` → 提取 commit 主題詞 → `rg -il <關鍵詞> <池>/` 掃條目 → 命中條目抽核 load-bearing claims 是否與 repo 現況一致（優先抓「description 過時但 body 已更新」drift——description 投影為索引行，session 只看得到它）
+3. 結束寫回 <池>/_audit-state.md：last_lite_audit=<本日>、base_commit=<本次 HEAD>、coverage=<核實數/總數>
+4. 判讀：🔴 gate fail（chars/lines）或 _regen-failed 在場；🟡 命中條目有 stale claim；🟢 乾淨。advisory——條目修改列清單待人工核可，不自動改（動手是每晚 23:40 收斂 cron 的職責，本稽核保持審計獨立）
+
+## 段 3：排程 registry 比對＋卡 ref 一致性＋卡結構標記（AIR-14 設計 L8，advisory）
+0. 卡結構標記 lint：`uv run python /Users/ctai/Github/ai-guide/scripts/lint_card_markers.py`——scanned/damaged 兩數入報告；任何 DAMAGE 行＝🔴（backlog CLI 對該卡 fail-closed 拒寫、AC 機械可投影面破損），逐檔列檔名＋問題行
+1. registry：CronList 各條 automationId 對 /Users/ctai/Github/ai-guide/ai-analysis/schedule-registry.md 逐字比對（`rg automationId` 抽兩側），drift（條目不一致／職責描述過時／cron 時間漂移）列入報告
+2. 卡 ref lint：掃 /Users/ctai/Github/ai-guide/backlog/tasks/*.md 的 references——**卡 refs 契約＝repo 相對路徑制（kanban-board 雙 ref 合約，09-11 新制）**：http 連結（含 raw `.md` 直連與 `/viewer/_md-viewer.html` viewer 形態）皆列卡 id 清單；正確形態＝repo 相對路徑
+3. 不動手修——ref 與標記修正歸 owning session，本稽核保持審計獨立
+
+## 段 4：watchdog 雙檢查＋池對帳網（AIR-54 P5 定案 2026-09-10 併入；AIR-93 唯讀腿；與每晚 23:40 收斂波不同故障域——波次自檢看不出波次自己停擺；advisory 只列報告不動手；行為契約單一源＝skills/daily-maintain/SKILL.md Phase 0）
+1. **inbox age（雙池）**：`ls -la /Users/ctai/Github/ai-guide/.agents/memory-inbox/` 與 `/Users/ctai/Github/mosaic_alpha/.agents/memory-inbox/`——root `*.json` 最舊 mtime >48h＝🟡 列報告（consolidation 停擺警訊）；`processing/` 殘留＝**立即 🔴**（中斷證據）；**age 訊號連續兩個排程週期命中→🔴 升級**（僅 age 訊號；手動補跑不推進計數——與上週報告對照判連續性）
+2. **porcelain-vs-receipt（雙池）**：`git -C /Users/ctai/Github/ai-guide/.agents/memory status --porcelain` 與 `git -C /Users/ctai/Github/mosaic_alpha/.agents/memory status --porcelain`（local-only 池 git，命令必帶 -C）——無對應 inbox receipt 的非 CC/ZCode provenance 變更（muse hook 故障直寫形態：無 receipt 且零 frontmatter 條目）→ **立即 🔴** quarantine 清單（無 streak）
+3. **池對帳網唯讀 report（AIR-93）**：`uv run python /Users/ctai/Github/ai-guide/scripts/reconcile_memory_pool.py /Users/ctai/Github/ai-guide` 與 `uv run python /Users/ctai/Github/ai-guide/scripts/reconcile_memory_pool.py /Users/ctai/Github/mosaic_alpha`（參數＝repo root 非 pool 路徑）——exit 0＝clean、exit 2＝dirty（working tree 有未收編寫入，列清單進報告）、exit 1＝fail-closed 無法判定（列報告）；唯讀偵測**禁修復動作**
+4. 判讀註：本段為獨立看照腿；排程節奏下檢出延遲上達一個檢查週期——報告不得宣稱每日/即時偵測
+
+## 禁止
+- 不修改 rules/ 與 memory 條目內容（bundle-watch-state.json 與 _audit-state.md 戳記除外）
+- 不建立任何新排程、不 commit
+- 每段最多 2 次失敗重試；失敗如實標 FAIL 附 stderr 摘要，不硬撐
+
+完成後印四段統一報告（verdict 行＋關鍵數字＋瘦身/stale/registry drift/卡 ref 違規/卡標記損傷/watchdog＋池對帳網清單）。時序註：本稽核排在週日 23:00——報告數字為該時點快照屬預期。

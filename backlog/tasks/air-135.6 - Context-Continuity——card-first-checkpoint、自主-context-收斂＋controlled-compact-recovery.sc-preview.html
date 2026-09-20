@@ -1,0 +1,41 @@
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8">
+<title>AIR-135.6 — card detail</title><style>
+body{font-family:-apple-system,"PingFang TC",sans-serif;max-width:760px;margin:2rem auto;padding:0 1.5rem;color:#1c2733;line-height:1.6;background:#fff}
+h1{font-size:1.25rem;margin-bottom:.3rem}
+.meta{color:#5b6b7b;font-size:.78rem;border-bottom:1px solid #e3eaf0;padding-bottom:.5rem;margin-bottom:.8rem}
+.sec{font-size:.8rem;margin:.5rem 0} .ref{color:#0b66c3}
+.ac{font-size:.82rem;margin:.2rem 0} .ac.done{color:#1c6e40} .ac.open{color:#5b6b7b}
+.mermaid{margin:.6rem 0;background:#fbfdff;border:1px solid #e3eaf0;border-radius:4px;padding:.6rem;display:flex;justify-content:center}
+p{margin:.45rem 0;font-size:.9rem} ul{margin:.4rem 0;padding-left:1.3rem} li{font-size:.9rem;margin:.2rem 0}
+.note{background:#f4f7fa;border-radius:4px;padding:.4rem .7rem;font-size:.72rem;color:#5b6b7b;margin-top:1.5rem}
+</style></head><body>
+<h1>AIR-135.6｜Context Continuity——card-first checkpoint、自主 context 收斂＋controlled compact/recovery</h1>
+<div class="meta">status：To Do　·　created：2026-09-18 11:42　·　updated：2026-09-19 06:54</div>
+<div class="sec"><b>References</b><div class="ref">AIR-135.2</div></div>
+<p>斷了怎麼接——把 context 管理變成 Development Arc 的持續可靠性機制，不是「快滿了才 compact-prep」。</p>
+<p><b>平常</b></p>
+<ul><li>semantic boundary 回寫 durable state：accepted decision／plan revision／phase transition／commit/settle／job terminal／failure——禁逐工具流水帳</li><li>checkpoint 足以答：current phase／verified-unverified／pending jobs-decisions／next action</li></ul>
+<p><b>壓力時</b></p>
+<ul><li>只投影 thin continuation packet：identity＋per-WT git state＋artifact paths＋last verified checkpoint＋delta＋pending 決策（引台帳）＋active jobs（引 135.7 台帳）＋next action＋minimal read-set</li><li>delta 非 history；綁 parent 狀態 hash——錨不符 fail-closed 從卡樹重建</li></ul>
+<p><b>恢復</b></p>
+<ul><li>adaptive rehydration：先驗實物（WT/git/runtime/artifacts）再相信 checkpoint；缺口只擴受影響 read-set、不重灌整卷</li><li>compact summary 只當 hint；不自製 summarizer；/compact 與 fresh-session 時機裁決留在 user</li><li>packet 不可當跨 repo 發送草案（外發即升格 outward，走 135.5 gate）</li></ul>
+<div class="mermaid">
+flowchart LR
+  CK[&quot;semantic boundary&lt;br/&gt;checkpoint 回寫卡/artifact&quot;] --&gt; PR[&quot;context 壓力／&lt;br/&gt;compact／session 死&quot;]
+  PR --&gt; PK[&quot;thin continuation packet&lt;br/&gt;delta＋per-WT git state＋hash 錨&quot;]
+  PK --&gt; RH[&quot;adaptive rehydrate&lt;br/&gt;先驗實物再相信 checkpoint&quot;]
+  RH --&gt; RS[&quot;resume 下一動&lt;br/&gt;不重做已完成 work&quot;]
+  RS -.-&gt;|&quot;下一個 boundary&quot;| CK
+</div>
+<div class="mermaid">
+flowchart LR
+  CK[&quot;semantic boundary&lt;br/&gt;checkpoint 回寫卡/artifact&quot;] --&gt; PR[&quot;context 壓力／&lt;br/&gt;compact／session 死&quot;]
+  PR --&gt; PK[&quot;thin continuation packet&lt;br/&gt;delta＋per-WT git state＋hash 錨&quot;]
+  PK --&gt; RH[&quot;adaptive rehydrate&lt;br/&gt;先驗實物再相信 checkpoint&quot;]
+  RH --&gt; RS[&quot;resume 下一動&lt;br/&gt;不重做已完成 work&quot;]
+  RS -.-&gt;|&quot;下一個 boundary&quot;| CK
+</div>
+<h2 style="font-size:1rem">Acceptance Criteria</h2><div class="ac open">☐ #1 定義 Context Continuity contract：區分 durable task state、ephemeral continuation packet、harness compact 三層；不開發自製 summarizer／token GC，不把 /compact 或 fresh-session decision 從 user 手上拿走；Marshal 可主動保存狀態與報告 context pressure，但無既有授權不得自行觸發 compact/new session</div><div class="ac open">☐ #2 card-first canonical owner：intent／AC／current plan／revision rationale／accepted decisions 住 parent/sub-card；WT/git、tests、review、artifacts、job receipts 由各自 owner 持有。continuation packet 只存 identity＋pointer＋必要 delta／verbatim residue，不複製整份 truth，也不要求 standalone EP</div><div class="ac open">☐ #3 建立 event-driven checkpoint policy：至少在 accepted decision/correction、non-trivial plan revision、phase transition、**commit/settle（⑦ 審查過關直接 commit 後——弧內最大 git-state 轉換）**、background job terminal collection（**對帳 AIR-135.7 liveness 台帳列**）、重要 failure/root-cause、長/高輸出 work-unit 邊界更新 durable state；禁止每個 tool call 都寫流水帳。checkpoint 必須足以回答 current phase、verified/unverified、pending jobs/decisions、next executable action。**弧執行中 Marshal 按本政策回寫 card／artifact checkpoint 屬任務授權內含，不逐次打斷請示（Two-Touch 不變式①；可逆＋人可見）——除外：跨 repo sent-record 的寫入（發送痕）走 AIR-135.5 AC#6 確認 gate，不在此預授權內**。job terminal／active job 面的 liveness 真相以 AIR-135.7 台帳為準，本卡只消費其 contract，不另存 job 狀態</div><div class="ac open">☐ #4 context 壓力或即將中斷時，Marshal 從最新 canonical state 產 thin continuation packet：task/arc identity、**per-WT git state（owning WT 與 primary/canonical WT 的 branch/HEAD/working-tree 狀態分列；uncommitted 檔與決策檔逐項標明落點 WT，禁單一 WT 混寫敘述）**、**artifact paths（列實際路徑或既定檔名約定，禁只寫目錄）**、last verified checkpoint、since-checkpoint delta、**pending human decision（引用決策台帳列，含已套 safe-default 的例外登記列）**、**active job/collector（引用 135.7 liveness 台帳列）**、next action、minimal read-set、unrecovered scope；優先引用 card/artifact 而非掃全 transcript，只有 canonical state 明顯缺口才 fallback 做全-session preserve extraction——**fallback 產物只當 hint／routing aid（與 AC#7 compact summary 同級），採用前須按 AC#5 先驗 WT／git／runtime／artifacts 實物**。**continuation packet 與 AIR-135.5 AC#6 通知草案禁混用**：packet 屬弧內恢復投影，永不直接作為跨 repo 發送草案；需通知時須重走 135.5 組裝＋逐次確認 gate。欄位映射：packet 專有＝owning WT（含 per-WT git state）／minimal read-set／unrecovered scope；draft 專有＝target／expected response type／correlation id／expiry；共享＝identity／artifact pointers＋hash／context delta（引用同一 owner，不複製）</div><div class="ac open">☐ #5 恢復採 adaptive rehydration：先 card/TaskRef → 核對實際 WT/git/runtime/artifacts/jobs → active findings/evidence → 只讀下一動所需 guidance；先驗實物再相信 checkpoint。缺口只擴大受影響 read-set，不為『恢復完整記憶』重灌整卷或重跑已完成工作</div><div class="ac open">☐ #6 context-budget discipline 與 AIR-135.1 接軌：大輸出 artifact-first、探索/廣域查證優先 delegated bounded slices、回主座席只收 bounded receipt；重複穩定材料以 pointer/read-set 消費，不在每次 dispatch 重貼。這些降低未來 context 增長，但不宣稱模型能自行刪除已進 window 的 token</div><div class="ac open">☐ #7 compact boundary 可追溯：continuation/checkpoint 有 generation 或 previous-checkpoint pointer；若 harness 自動 compact、手動 /compact、quota death、session restart 任一發生，都能從同一 durable owner 恢復；compact summary 只當 hint/routing aid，不當 completion/decision/evidence 真相源。恢復所需未回收清單的閱讀面由 AIR-135.7 sweep／主 session 派生（卡面只放指針）</div><div class="ac open">☐ #8 遷移現行 compact-prep／task-recovery：compact-prep 從『每次先掃全 session 造主摘要』降為 boundary adapter/fallback；task-recovery 的 durable owner 優先序改成 card-first（EP 僅 legacy/exception consumer）；保留 verbatim error/finding residue 與 hook 可用時的 raw-tail 補充，不新增 active-pointer registry</div><div class="ac open">☐ #9 dogfood 至少一條 AIR-135 長弧：在累積大量 context 後做 checkpoint，再用 fresh context/模擬 compact 後只給 TaskRef＋continuation pointer，能正確辨識 current plan、owning WT、已驗/未驗、active jobs、下一動且不重做已完成 work；記錄所需 read-set 與失敗 residue。MVP 定序：先手動跑 schema＋慣例（checkpoint 四問＋packet 欄位＋135.7 liveness MVP 登記／sink 驗收），工具化（掃描／組裝輔助）須待本 AC dogfood 出現重複手工負載或恢復失敗證據後再議</div>
+<div class="note">模擬範圍：SC card detail 補上 mermaid fence 渲染後的樣子（fence → svg；點開放大由 SC zoom overlay 提供，本頁不模擬 zoom）。header/References 版面為近似。</div>
+<script type="module">import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';mermaid.initialize({start:true});</script>
+</body></html>
