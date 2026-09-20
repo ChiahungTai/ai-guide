@@ -19,7 +19,7 @@ delegated job 完成時**不會通知任何人**——`task --background` detach
 
 完整模式（場景表＋sh 範例＋family 起跳值＋重啟後恢復 playbook：先 `runs` 禁盲重派、`show <id> --json` 收完成、running 重掛 `wait <id> --stuck-after`——綠 runs 不證健康）→ delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Dispatch ⇄ collection discipline」節。
 
-watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄collection 配對——完整模式」段；watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝delegate-run-output「Receipt acceptance」節，本檔引用不自創）。
+watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄collection 配對——完整模式」段；watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；bare shell 呼叫 watcher 須帶 `DELEGATE_BRIDGE_BIN=<bridge 絕對路徑>`（watcher 預設只查 PATH，找不到即 crash——路徑由 installed_plugins.json registry pin 解析，見 rules caller surface 表；0921 dogfood 實證）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝delegate-run-output「Receipt acceptance」節，本檔引用不自創）。
 
 ## 下沉細節（自 rules 精煉遷入——on-demand 參考）
 
