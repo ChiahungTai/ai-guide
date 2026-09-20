@@ -173,6 +173,9 @@ Error Self-Healing（上）是 per-error（單一錯誤重試 ceiling）。**缺
 ### 🔴 紅線跳過清單
 - [紅線操作 / 跳過理由 / 影響範圍]（半夜自主跑時不阻塞，供早上判讀；定義見 Don't-Self-Decide Boundaries 紅線段）
 
+### 旗艦裁決摘要（非空時必帶——deep-work「旗艦裁決授權」形態）
+- verdict 摘要＋PENDING 殘留（verdict 物四欄全文記卡 Notes，此處只帶摘要供晨間判讀）
+
 ### ⚠️ 未解決問題
 - [技術失敗或無法降級的問題]
 ```
