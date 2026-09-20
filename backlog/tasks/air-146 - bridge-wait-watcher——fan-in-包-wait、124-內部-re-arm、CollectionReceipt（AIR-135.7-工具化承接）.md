@@ -15,7 +15,29 @@ ordinal: 133000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-bridge 派工回收現況＝背景 shell fan-in wait，exit 124 每 arm 喚醒 caller LLM 重掛，正常長跑主 session 被迫反覆醒來（0920 批量實證）。SC 弧 codex 設計報告（job-mu9hmdar）轉交＋marshal 裁決（.agent-tmp/air-135/watcher/adjudication.md）落地：scripts/bridge_waiter.py 單顆 fan-in watcher——124 內部消化 re-arm（零 LLM 喚醒）、動態 T（T0=clamp(P50_prior/3,5m,15m)、fresh×1.5 cap 20m、stall 減半；prior 表 family×work-kind 內嵌常數）、卡死判準＝heartbeatAt/lastEventAt 雙軸（jsonl mtime fallback）、CollectionReceipt＝AIR-135.7 AC#2 bounded receipt 欄位投影（sink 驗收程序引用 bridge repo delegate-run-output「Receipt acceptance」節）、bridge CLI 版本 pin（啟動 probe fail-loud）、狀態機 running-fresh|stalled-advisory|terminal|unknown/reconcile 為 frozen spec（轉移表進卡，S 級 oracle）。generation 變＝reconcile 禁 retry；watcher 永不 stop/judge/commit。UX 北極星：正常長跑主 session 完全不醒；完成才醒、明確 stall 才醒、124 永遠不醒。
+**一句話**：寫一支值班程式（watcher），盯著背景 worker 做完事才叫醒 AI——中間不管跑多久，AI 都不用被吵醒。
+
+**現在的痛**：AI 派長工給背景 worker 之後，系統每幾分鐘就把 AI 叫醒一次「還沒好、繼續等」——一小時的工被吵醒十幾次，每次都燒 token；夜間批量也照樣被折騰（0920 實證）。
+
+**做完之後**：AI 派完工就去睡。值班程式接手盯場——worker 做完了，叫醒 AI 收結果；worker 疑似卡住，只通知、不亂殺不重派（處置權留在 AI）；其他時間靜悄悄。
+
+```mermaid
+flowchart LR
+  subgraph 現況
+    A1[AI 派工] --> B1[傻等迴圈]
+    B1 -->|每隔幾分鐘| W1[叫醒 AI 問進度]
+    W1 --> B1
+    W1 -.-> F1[token 燒掉·工沒多做]
+  end
+  subgraph 落地後
+    A2[AI 派工] --> W2[值班程式接手]
+    W2 -->|做完| U2[叫醒 AI 收結果]
+    W2 -.->|疑似卡住| S2[只通知·不殺不重派]
+    W2 -.->|沒事| Z2[(AI 安穩睡覺)]
+  end
+```
+
+**附註**（實作細節，不影響上面理解）：設計源＝SC 弧 codex 報告 job-mu9hmdar 轉交＋marshal 裁決；形態＝`scripts/bridge_waiter.py` 單顆包多工、動態等隔、worker／runtime 雙軸卡死判準、收工回執欄位沿用 AIR-135.7 AC#2、bridge CLI 版本 pin；狀態機四態為 frozen spec（轉移表見 AC）。
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

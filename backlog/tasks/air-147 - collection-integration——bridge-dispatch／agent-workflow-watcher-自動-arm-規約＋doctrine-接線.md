@@ -15,7 +15,24 @@ ordinal: 134000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-AIR-146 watcher 落地後的 doctrine 整線（digest §3 D1-D5）：rules/bridge-dispatch.md Dispatch⇄collection 配對句改寫（waiter 主路徑、裸 wait 降 fallback）；skills/bridge-dispatch/SKILL.md 完整模式段＋frontmatter desc 觸發詞＋完整模式指針補 CollectionReceipt 落點；agent-workflow watcher 工具化指涉（:84 主 session 持有 watcher 可指名工具形態）；stalled-advisory 處置 doctrine；fan-in 消費者測試。
+**一句話**：值班程式（AIR-146）做好後，把 AI 的操作手册全部改成教新做法——以後每次派工自動用值班，沒有 AI 再學舊的傻等迴圈。
+
+**為什麼需要**：手册不改，下一個 AI 打開規則還是照舊方法傻等——值班程式等於白做。
+
+**改哪些**：三份文件——bridge-dispatch 規則、bridge-dispatch skill、agent-workflow skill（監工那段），共四處改寫＋一輪多工測試。
+
+```mermaid
+flowchart LR
+  W[AIR-146 值班程式] --> M[手冊改寫]
+  M --> R1[bridge-dispatch 規則]
+  M --> R2[bridge-dispatch skill]
+  M --> R3[agent-workflow skill]
+  R1 --> F[以後派工自動值班]
+  R2 --> F
+  R3 --> F
+```
+
+**附註**：改寫點逐處對照 codex 報告 job-mu9hmdar 的 doctrine 節；本卡 AC 即四處改寫的驗收。
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
