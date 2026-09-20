@@ -1,0 +1,24 @@
+== AC#1 replay round2: sleep 950 ==
+[delegate-bridge] background job job-mu9ra7yi-nzyws5 started (running)
+job-mu9ra7yi-nzyws5
+jobId=job-mu9ra7yi-nzyws5
+== waiter start T0=15m ==
+[watcher] arm round=1 T=15.0m running=1/1 kind=discussion
+Job: job-mu9ra7yi-nzyws5
+Status: completed
+Model: GLM-5.3-Flash
+EffectiveModel: GLM-5.3-Flash
+Steps: -
+Effort: -
+Session: sess_3c51a0ce-4c4d-4ccd-98f9-13e6bf238e82
+Exit: 0
+PID: n/a
+Summary: `sleep 950` 已在背景啟動（task ID `exec_5c591f6f`），預計約 15 分 50 秒後結束。跑完後我會回報 DONE 與 exit code。
+Timestamp: 2026-09-20T11:52:10.441Z
+JSONL: .delegate-bridge/jobs/job-mu9ra7yi-nzyws5.jsonl
+Family: glm
+
+`sleep 950` 已在背景啟動（task ID `exec_5c591f6f`），預計約 15 分 50 秒後結束。跑完後我會回報 DONE 與 exit code。
+{"schema":"collection-receipt/1","watcher":"bridge_waiter","bridgeCliVersion":"2.0.22","kind":"discussion","arms":1,"exitState":"completed","summary":{"total":1,"completed":1,"nonCompleted":0,"undelivered":0,"manualAnchor":0},"jobs":[{"jobId":"job-mu9ra7yi-nzyws5","status":"completed","family":"glm","delivery":{"mode":"receipt-only","sink":null,"l1_present":true,"l1_detail":"response 非空 OK","l2_anchor":null,"anchor_hits":[],"verdict":"delivered"},"boundedReceiptProjection":{"finalTextNonEmpty":true,"note":"AIR-135.7 AC#2 bounded receipt 欄位集投影；語義欄（top findings／blockers／unverified／pending-human-decision）判定歸 caller"}}]}
+waiter exit=0
+== round2 done ==

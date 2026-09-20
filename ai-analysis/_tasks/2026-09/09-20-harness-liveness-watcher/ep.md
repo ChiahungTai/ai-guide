@@ -6,6 +6,16 @@
 
 ## 實作總覽
 
+> **⚠️ v2 POTION IN EFFECT（codex job-mu9vqpyt 審查 10 findings 全 ✅ 後的 amendment——v1 靜默語句以下列 amendment 為準，逐段清理隨 impl follow-up）**：
+> ①**EP 全文 de-v1**：SM/TC/pseudo/S2/S4 的三面靜默、fd lease、silenceBudget 語句以本 amendment 為準——`silenceBudget` 改名 `timeboxMinutes`；「freeze wake」改「timebox expiry intervention wake」；S4 的「24h 正常長工不誤殺」刪除（與 timebox 語義直接衝突）
+> ②**retry 契約**：同一 logical job `auto_retry_budget=1`——attempt-1 timebox expiry 經 STOP_CONFIRMED＋RETRY_SAFE 後消耗 budget 派 attempt-2（**全新 timebox**）；attempt-2 再 expiry → 收割/stop/verify → **terminal report，無 attempt-3**。terminal failure／UNKNOWN／generation mismatch／STOP_INCOMPLETE 各有 disposition，不算「第二次失敗」
+> ③**兩軸分離**：`interventionPolicy = interactive | autonomous_once`（誰處置——registry 欄位，dispatch 當下 invoking session 寫入、watcher 只 echo、缺省 fail-safe＝interactive）× `retry_safe`（可否重派——deepwork≠retry-safe）
+> ④**STOP_INCOMPLETE 無 deepwork 特赦**：deepwork 可做一次 bounded remediation（collect 已知 owned handles→再 verify），仍 INCOMPLETE → halt arc＋report，禁 risk-flag 重派
+> ⑤**TOCTOU 關閉**：controller 收 expiry receipt → TaskStop **前**重讀 authoritative metadata——已 terminal → final collect（不 stop 不 retry）；仍 running → TaskStop→verify→harvest B＋sink validation
+> ⑥**STOP fencing oracle（明列）**：`metadata terminal`＋所有**已註冊 owned handles** quiescent/collected＋authoritative sink grace 內無 writer；無法歸屬 handle → STOP_INCOMPLETE/UNKNOWN（survivingHandles＝correctness boundary 非 telemetry）
+> ⑦**timebox 時間源＝eligible_elapsed**：watcher 觀測到同 generation running 時才累積；異常 poll gap 不計入（機器睡眠不觸發 expiry）；K1 收據＝`references/k1-receipt.md`＋`k1-replay2.log`（舊 poc-results「rollout 軸有效」結論標 superseded）
+> 定性更名：本物＝**timeboxed attempt supervisor**（三結果：TERMINAL／TIMEBOX_EXPIRED／UNKNOWN-HARD_DEATH；所有 stop/retry 歸 controller policy）
+
 背景 worker 卡住的觀測面由 AIR-146（bridge 側）承接；本 EP 承接 **in-harness 子 agent**（ZCode Task-tool subagent）的凍結偵測。核心語義（user 裁決 0920）：**「20 分鐘全面零輸出＝bug 處理」——收割屍體再砍，不需要判斷死亡**。判死在可接受成本下不可觀測（凍結四態長相相同：深推理/長工具/楔死/崩潰），因此設計不偵測死亡，只機械偵測「全面靜默」，並用「先收割後砍」把誤殺成本壓到工具重跑等級。
 
 設計裁決（已定案勿重辯）：`references/research.md`（含 codex 內外攻防 job-mu9lcidp／job-mu9lxzsj 兩輪結論＋AIR-148 probe 實證）。
@@ -104,27 +114,30 @@ S1（觀測核心，code）→ S2（註冊契約，code-lite＋doctrine）→ S3
 - **wake 後生命週期**：watcher 對「第一個凍結」harvest＋exit(3)——**其餘 entry 中止監視**，主 session 處置後重啟 watcher 續監（v1 從簡；pending receipt 路徑＝`.agent-tmp/liveness/pending/<taskId>.json`，dedup key＝taskId＋attemptId）
 - **STOP verification invocation**：`harness_waiter.py --verify <taskId>`（主 session TaskStop 後呼叫）——回 STOP_CONFIRMED/STOP_INCOMPLETE
 - **收割 B**：`harness_waiter.py --harvest-delta <taskId> <manifest>`（主 session 於 STOP_CONFIRMED 後呼叫）
-- 凍結判準（research.md §三）：rollout＋artifact 無推進＋無 exec fd lease＋無 terminal，連續 20m（可設定）；poll gap 異常→**該段時間扣除**（單一語義，不重置整個計數）。**Amendment（TC-4 活體證偽，97114424）**：fd lease 不再豁免凍結計數——阻塞命令恆持 call-log fd，豁免使 watcher 對靜默 agent 永遠報 fresh；lease 降級 telemetry＋STOP_INCOMPLETE survivingHandles 面
+- 凍結判準（research.md §三）：rollout＋artifact 無推進＋無 exec fd lease＋無 terminal，連續 20m（可設定）；poll gap 異常→**該段時間扣除**（單一語義，不重置整個計數）。**Amendment（TC-4 活體證偽，97114424）**：fd lease 不再豁免凍結計數——阻塞命令恆持 call-log fd，豁免使 watcher 對靜默 agent 永遠報 fresh；lease 降級 telemetry＋STOP_INCOMPLETE survivingHandles 面。**K1 觸發（TC-4 round 2 活體——判準整體 INVALIDATED）**：running 中的真 subagent 於四觀察面全數靜默/缺席（rollout 檔不存在——子 agent model I/O 折疊進 parent session 層，per-task 不可分；exec 僅 fd 存在性無進度訊號；metadata 反指標；artifacts 無）→「三面觀察判定靜默」前提證偽。**Pivot（user 裁決 0920 晚）**：凍結偵測（靜默計數）整體移除，改 **timebox 模型**（frozen spec v2，見下）——不做任何活/死宣稱，只報兩個事實：terminal transition（權威）與 running 超 timebox（時間盒事實）。fd lease／表面推進全數降級 telemetry。上游 B path：user 裁決等 ZCode 開源再動（不派研究）。**處置協議 v2（user 裁決）**：互動 session→喚醒主 session 介入；deepwork／無人在場→收割後自動 TaskStop＋**自動重派一次**（新 attempt_id），二連失敗停止留報告
 - 收割器：bounded（先 metadata/cursor/raw tail/manifest，超限 partial）；JSONL raw bytes；**corpus 於 S1 開工時快照入 `references/fixtures/`（TC-2 引快照時點計數，不綁固定數字）**
 - 輸出：wake receipt（pending intervention dedup）——內容＝attempt_id/harvest 路徑/manifest/surviving_handles（自 S2 registry）/建議動作（TaskStop id）
 - **exit 契約（frozen）**：0＝正常收場（含空 registry）／2＝hard-death wake（generation mismatch）／3＝freeze wake（附收割 receipt）／其他非零＝內部錯（fail-loud 診斷至 stderr＋stdout 尾行狀態 JSON 標記）——沿兄弟 bridge_waiter T-contract 形態
-- 狀態機：**frozen spec 轉移表（S 級 oracle——TC-1 對照本表，實作者不得改表，改表走 amendment）**：
+- 狀態機：**frozen spec 轉移表 v2（S 級 oracle——TC-1 對照本表，實作者不得改表，改表走 amendment）**。**v2 Amendment（K1 觸發後 pivot）**：v1 的「三面靜默計數」路徑（原 T2/T3/T4 的推進偵測與靜默累積）整體移除——per-task 活動不可觀測（K1 活體證偽）；timebox 取代靜默閾值：
 
 | # | 來源態 | 事件 | 條件 | 到達態 | watcher 動作 |
 |---|---|---|---|---|---|
-| T1 | （註冊） | S2 registry entry 建立 | — | MONITORED | 開始輪詢 |
-| T2 | MONITORED | 輪詢 | 三面任一推進 | MONITORED | 計數續走（poll gap 異常→扣除間隔） |
-| T3 | MONITORED | 輪詢 | 全面靜默 ≥20m | HARVESTED | bounded 收割（partial 標記）→寫 pending intervention receipt（**dedup：已有 pending 不重發**）→exit 3 喚醒 |
-| T4 | MONITORED/HARVESTED | quarantine 期活動恢復 | 任一面推進 | （記 `resumed_during_quarantine=true` telemetry） | **仍照砍**——主 session TaskStop 不因恢復取消（user 裁決） |
-| T5 | MONITORED | generation mismatch／registry entry 消失 | metadata 異動對照 | （hard-death fast path） | **立即 wake**（exit 2），不等 20m——禁 retry |
-| T6 | 任意 | 佈局錨點缺失／registry 缺 entry | adapter 查證失敗 | UNKNOWN | fail-loud 診斷，零誤報 |
-| T7 | （主 session） | TaskStop 下達 | — | STOP_REQUESTED | 主 session 執行（非 watcher） |
-| T8 | STOP_REQUESTED | verification | grace 內 metadata terminal＋cursors 靜止 | STOP_CONFIRMED | harvest B/delta（主 session 以 `--harvest-delta` 呼叫本 script）→主 session 決定 RETRY_SAFE |
+| T1 | （註冊） | S2 registry entry 建立 | — | MONITORED | 開始輪詢（只查 metadata status＋registry 對照） |
+| T2 | MONITORED | 輪詢 | metadata/status 出現 terminal transition | ALL_TERMINAL | 恰一次 collect（有 sink 時）→stdout 尾 CollectionReceipt→exit 0 |
+| T3 | MONITORED | 輪詢 | status 仍 running 且 timebox（20m 預設；entry `silenceBudget` 覆寫）未到 | MONITORED | 續輪詢（零喚醒） |
+| T4 | MONITORED | 輪詢 | status 仍 running 且 timebox 到 | HARVESTED | bounded 收割（partial 標記）→pending receipt（dedup）→exit 3 喚醒——**advisory，不 stop 不重派** |
+| T5 | MONITORED | generation mismatch／registry entry 消失 | metadata 異動對照 | （hard-death fast path） | **立即 wake**（exit 2），不等 timebox——禁 retry |
+| T6 | 任意 | 佈局錨點缺失／registry 缺 entry／JSON 不可解析 | adapter 查證失敗 | UNKNOWN | fail-loud 診斷（exit 1），零誤報 |
+| T7 | （wake 後） | 主 session 處置 | TaskStop→verify→RETRY_SAFE 三問 | — | **互動 session**：主 session 介入判斷重派；**deepwork／無人在場**：收割→TaskStop→**自動重派一次**（新 attempt_id），二連失敗停止弧線留報告（autonomous-execution 授權，user 0920 裁決） |
+| T8 | STOP_REQUESTED | verification | grace 內 metadata terminal＋cursors 靜止 | STOP_CONFIRMED | harvest B/delta（主 session 以 `--harvest-delta` 呼叫）→RETRY_SAFE 判定 |
 | T9 | STOP_REQUESTED | verification | 仍有寫入者 | STOP_INCOMPLETE | 禁重派＋detached child 處置清單 |
 
-不變量：watcher 永不 stop/重派（TaskStop 歸主 session）；「無訊號≠死亡」；EXECUTION_DEAD 語義由 STOP 鏈承載、RETRY_SAFE 獨立判定。
+不變量：watcher 永不 stop/重派（TaskStop/重派＝主 session 或 deepwork 授權的自動鏈——watcher 代碼面零此路徑）；「無訊號≠死亡」；fd lease／表面推進＝telemetry（不進判準）；terminal transition＝唯一權威狀態訊號。v1 移除面：三面靜默計數、rollout cursor、exec fd lease 豁免、mtime 齡期——全部 K1 證偽或降級 telemetry。
 
 ### Pseudo Code
+
+> **⚠️ v2 pivot**：本段為 v1 靜默模型遺跡——實作以上方 frozen spec 轉移表 v2 為準（timebox：無靜默計數、無 lease 豁免、無表面推進偵測；terminal transition＋timebox 到期＝僅有的兩個事件源）。FreezeDetector 語義＝TimeboxWatch（每輪查 metadata status；running 且 timebox 到→收割喚醒）。
+
 ```
 class ZCodeLivenessSource:
     def status(task_id) -> Status | Unknown(原因)
