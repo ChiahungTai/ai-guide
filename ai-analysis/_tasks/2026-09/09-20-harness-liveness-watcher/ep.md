@@ -217,3 +217,13 @@ fresh 腿 11 findings（5 Important＋6 Suggestion）——judge 裁決全數 �
 | F11 | Suggestion | 「前兩者」指涉歧義 | 具名 AIR-148＋AIR-135.7 |
 
 **Review ledger：全 terminal（intent 10＋fresh 11 全 ✅ 回寫完成）→ EP accepted，S1 可進 /implement。**
+
+## Settle（build 終局——2026-09-21）
+
+**落地**：S1 bridge_waiter＝`scripts/bridge_waiter.py`（c9a62804，AIR-146 Done）；S2-S4 harness_waiter＝`scripts/harness_waiter.py`（28f34e93，AIR-149 Done）；S5 doctrine 接線＝AIR-147（ab4ae0cc 實體落地＋95c4621d Muse gate 精煉——b039db2c 為誤掃 commit：帶 doctrine 主題訊息但實際掃進 canonical WT 無關 pending、四檔漏網，已由 ab4ae0cc 補正）；AIR-148 probe 前置完成（Done）。
+
+**K1 amendment（本弧最重要裁決）**：TC-4 round 2 實測觸發 kill criteria——執行中子代理四觀察面（rollout／exec fd／metadata／artifacts）全靜默，凍結偵測前提 INVALIDATED → **timebox 模型（frozen spec v2）**：watcher 不判活死，terminal transition（metadata status）＝唯一權威訊號；超 timebox 僅報事實（harvest→wake receipt state=timebox-wake），stop／重派恆歸主 session。20 分鐘政策（user 0920）隨之入 doctrine。
+
+**驗證**：全套 1204 passed＋2 skipped；TC-3 timebox 矩陣 17 測試；TC-2 殭屍 corpus；TC-4 round 3 乾淨輪真機端到端（timebox fire→harvest→wake）；bridge_waiter 44 測試含真實歷史 job replay（T4/T5 H 級）。deploy 三端同步＋check_single_source critical 0。
+
+**已知缺口（不擋結案）**：TaskStop 後 metadata 失 createdAt（harness 怪癖——verifier 寬鬆處理，歸檔 references）；AIR-149 卡 desc 圖仍繪凍結偵測（開卡時協議①定稿，pivot 後以卡結案修訂＋本節為終態）。

@@ -1,9 +1,10 @@
 ---
 id: AIR-149
 title: harness liveness watcher——EP 追蹤卡（凍結偵測＋收割＋停止協議）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-20 09:33'
+updated_date: '2026-09-21 06:25'
 labels: []
 dependencies:
   - AIR-148
@@ -26,4 +27,12 @@ flowchart LR
 ```
 
 **附註**：EP＝`ai-analysis/_tasks/2026-09/09-20-harness-liveness-watcher/ep.md`（baseline 308f9a71）；設計全文與裁決史見同目錄 references/research.md。三面靜默判準、exec lease 豁免、bounded 收割等實作細節全在 EP。
+
+**結案修訂（K1 pivot）**：三面靜默判準經 kill criteria 實測 INVALIDATED（執行中子代理四觀察面全靜默）→ pivot timebox 模型（frozen spec v2）；終態見 Final Summary＋EP Settle 節。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+harness liveness watcher 落地（`scripts/harness_waiter.py`）——K1 kill criteria 實測觸發（TC-4 round 2：執行中子代理 rollout 不存在＋exec fd 持有零寫入＋metadata 凍結＋無 artifacts）→ 凍結偵測 INVALIDATED → timebox 模型：watcher 不判活死，terminal transition（metadata status）＝唯一權威訊號，超 timebox 僅報事實（harvest→wake），stop／重派恆歸主 session。frozen spec v2 T1-T9 落碼與 EP byte-identical；--register／--verify（STOP fencing oracle）／--harvest-delta；interventionPolicy interactive|autonomous_once（預設 fail-safe interactive）、AUTO_RETRY_BUDGET=1、watcher 零 stop／重派路徑（AST 驗證）。TC-3 timebox 矩陣 17 測試＋TC-2 殭屍 corpus＋全套 1204 綠；TC-4 round 3 乾淨輪真機端到端（receipt state=timebox-wake）。落地 28f34e93；已知缺口：TaskStop 後 metadata 失 createdAt（harness 怪癖，verifier 寬鬆處理，歸檔 references）
+<!-- SECTION:FINAL_SUMMARY:END -->
