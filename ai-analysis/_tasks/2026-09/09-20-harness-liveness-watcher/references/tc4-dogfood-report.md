@@ -39,3 +39,12 @@ cycle 1-5 的 fresh＋cycle 6 all-terminal：**全程無 rollout 依賴**（本 
 - **K1 pivot 活體再驗證**：rollout tail `absent:true` 正確處理（無 rollout 不妨礙 timebox）——有/無 rollout 兩形態都正確工作
 - wake 後主 session TaskStop（真 task 級停止✓）→ --verify → STOP_INCOMPLETE（已知 quirk：TaskStop 重寫 metadata 掉 createdAt——verifier fail-closed 正確，修法方向見上節）
 - 對照修復前：同場景 lease 豁免使 acc 每輪歸零、watcher 永遠 fresh——**amendment 的直接活體證據**
+
+## 乾淨輪（無污染 registry）——T4 定版 ✓
+
+乾淨 registry＋post-pivot watcher＋真 dummy（sleep 300 靜默）：
+- cycle 1-2 fresh（12s→72.3s，exec-lease-held telemetry）
+- cycle 3 **frozen 132.6s→timebox-wake exit 3**：receipt 全欄正確（policy fail-safe interactive、retryBudget、bounded harvest、rollout absent=true）
+- 主 session TaskStop 成功→--verify＝STOP_INCOMPLETE（reasons：metadata-corrupt 缺 createdAt×2——TaskStop 重寫掉 createdAt 的已知 quirk 重現，fail-closed 一致）
+
+**TC-4 定版**：T4 timebox fire＋TaskStop＋verify 全鏈活體走完；STOP_CONFIRMED 的到達依已知 quirk（harness TaskStop 掉 createdAt）待 verifier 放寬或上游保留——已入 follow-up 清單。
