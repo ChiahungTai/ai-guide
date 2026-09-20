@@ -13,6 +13,7 @@ import pytest
 
 GUARD = Path(__file__).resolve().parent.parent / ".githooks" / "control-plane-guard.sh"
 PRE_COMMIT = Path(__file__).resolve().parent.parent / ".githooks" / "pre-commit"
+CARD_DIAGRAM_GUARD = Path(__file__).resolve().parent.parent / ".githooks" / "card-diagram-guard.py"
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
@@ -47,7 +48,17 @@ def _run_guard(repo: Path) -> subprocess.CompletedProcess:
 def _stage(repo: Path, rel: str) -> None:
     f = repo / rel
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text("x\n")
+    if rel.startswith("backlog/tasks/"):
+        # card-diagram guard v2：backlog 卡須合法 SECTION markers＋mermaid 圖（135.5 協議①）
+        f.write_text(
+            "## Description\n"
+            "<!-- SECTION:DESCRIPTION:BEGIN -->\n"
+            "desc\n\n"
+            "```mermaid\nflowchart LR\n  A --> B\n```\n"
+            "<!-- SECTION:DESCRIPTION:END -->\n"
+        )
+    else:
+        f.write_text("x\n")
     _git(repo, "add", rel)
 
 
@@ -178,6 +189,7 @@ def _hook_sandbox(tmp_path: Path) -> Path:
     hooks_dir.mkdir()
     (hooks_dir / "control-plane-guard.sh").write_text(GUARD.read_text())
     (hooks_dir / "pre-commit").write_text(PRE_COMMIT.read_text())
+    (hooks_dir / "card-diagram-guard.py").write_text(CARD_DIAGRAM_GUARD.read_text())
     hooks_dir.chmod(0o755)
     (hooks_dir / "control-plane-guard.sh").chmod(0o755)
     (hooks_dir / "pre-commit").chmod(0o755)

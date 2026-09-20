@@ -4,6 +4,8 @@
 cd "$(dirname "$0")/.." || exit 1
 # 控制面 canonical 隔離閘（AIR-106）——先於測試閘：main 上控制面路徑 commit 直接擋
 bash "$(dirname "$0")/control-plane-guard.sh" || exit 1
+# 開卡協議①機械閘 v2（135.5）——staged blob／rename-aware baseline／marker fail-closed（backlog fast-path 亦照跑）
+python3 "$(dirname "$0")/card-diagram-guard.py" || exit 1
 # 環境隔離：hook 由 git 執行時繼承 GIT_DIR/GIT_WORK_TREE 等 git 注入變數，
 # 會把測試內的 git init 臨時 repo 導向錯誤位置——兩次 core.bare=true 污染
 # 外層 repo 實證＋codex 弧 29 failed "must be run in a work tree"。
@@ -19,7 +21,7 @@ done < <(git rev-parse --local-env-vars)
 staged="$(git -c core.quotePath=false diff --cached --name-only)"
 if [ -n "$staged" ] && ! printf '%s\n' "$staged" | grep -qv '^backlog/'; then
   echo "[fast-path] staged 全屬 backlog/——跳過測試腿（guard＋py_compile 照跑）"
-  python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py || exit 1
+  python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py .githooks/card-diagram-guard.py || exit 1
   exit 0
 fi
 # commit gate 模式標記（AIR-125 AC#2）：live drift 偵測測試據此 skip——
@@ -27,4 +29,4 @@ fi
 export PRE_COMMIT=1
 uv run pytest tests/ -q || exit 1
 # hook runtime 是系統 python3（3.9）——機械擋 3.10+ 語法於 generator/hooks 部署面
-python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py || exit 1
+python3 -m py_compile hooks/*.py skills/memory-audit/scripts/*.py .githooks/card-diagram-guard.py || exit 1
