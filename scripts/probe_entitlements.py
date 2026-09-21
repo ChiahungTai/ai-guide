@@ -4,9 +4,8 @@
 探測四腿、每腿落地一份 JSON 到 `~/.agents/probe-entitlements/`：
 - glm（pool=glm-native）：delegate-bridge `usage --json`（ok 態帶 plan＋limits）。
 - codex（pool=codex-native）：同一聚合輸出；error（如未登入）＝fail-loud 示範。
-  bridge 2.0.23 codex 腿 default-path bug（CODEX_HOME 未設時讀
-  $HOME/auth.json、缺 .join(".codex")）由本 script 呼叫 env 注入
-  CODEX_HOME=<home>/.codex 暫解（AIR-150；bridge 2.0.24 修復後可移除）。
+  （bridge 2.0.24 b913b41 已修復 codex.rs default branch；probe 端
+  CODEX_HOME 注入 workaround 0921 撤除——AIR-150。）
 - muse（pool=unknown）：bridge 聚合自帶 unsupported＋reason——usage-probe
   allow-list 僅 {codex, glm}，muse 禁任何 usage 假造（A4）；現值
   provenance 只能是 event/429（P3 後）。
@@ -139,25 +138,14 @@ def run_bridge_usage(
     *,
     runner: Any = None,
 ) -> dict[str, Any]:
-    """跑 `usage --json`（憑證零經手：只消費 stdout）。
-
-    CODEX_HOME 注入＝bridge 2.0.23 bug workaround：bridge codex.rs:566-570
-    default branch（CODEX_HOME 未設時）讀 `$HOME/auth.json`——缺
-    `.join(".codex")`，auth 檔恆不存在 → codex 腿恆報 "codex not logged
-    in"。呼叫環境未設 CODEX_HOME 時注入 `CODEX_HOME=<home>/.codex`；
-    bridge 2.0.24 修復後可移除（AIR-150，bridge 側正解歸對端 repo 工單）。
-    """
+    """跑 `usage --json`（憑證零經手：只消費 stdout）。"""
     run = runner if runner is not None else subprocess.run
-    env = dict(os.environ)
-    if not env.get("CODEX_HOME"):
-        env["CODEX_HOME"] = str(Path.home() / ".codex")
     try:
         done = run(
             [str(binary), "usage", "--json"],
             capture_output=True,
             text=True,
             timeout=timeout_s,
-            env=env,
         )
     except subprocess.TimeoutExpired as exc:
         raise TransportTimeout(f"bridge usage timed out after {timeout_s}s") from exc

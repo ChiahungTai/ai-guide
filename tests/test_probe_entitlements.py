@@ -309,55 +309,6 @@ def test_run_bridge_usage_bad_json_maps_to_parse_error(tmp_path: Path) -> None:
         run_bridge_usage(binary, timeout_s=60.0, runner=lambda *a, **k: done)
 
 
-# ---- CODEX_HOME 注入（bridge 2.0.23 codex.rs default-branch bug workaround）----
-
-
-def _capture_env_runner(captured: dict[str, Any]) -> Any:
-    def fake_runner(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess:
-        captured["env"] = kwargs.get("env")
-        return subprocess.CompletedProcess(
-            args=cmd,
-            returncode=0,
-            stdout=json.dumps({"families": [GLM_OK_ENTRY]}),
-            stderr="",
-        )
-
-    return fake_runner
-
-
-def test_run_bridge_usage_injects_codex_home_when_unset(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """呼叫環境未設 CODEX_HOME → 注入 CODEX_HOME=<home>/.codex。
-
-    bridge codex.rs:566-570 default branch 讀 $HOME/auth.json（缺
-    .join(".codex")）恆報 not logged in——probe 端 env 注入暫解，
-    bridge 2.0.24 修復後本 workaround 可移除。
-    """
-    captured: dict[str, Any] = {}
-    monkeypatch.delenv("CODEX_HOME", raising=False)
-    run_bridge_usage(
-        tmp_path / "bridge", timeout_s=60.0, runner=_capture_env_runner(captured)
-    )
-    env = captured["env"]
-    assert env is not None
-    assert env["CODEX_HOME"] == str(Path.home() / ".codex")
-
-
-def test_run_bridge_usage_preserves_existing_codex_home(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """呼叫環境已設 CODEX_HOME → 原值透傳，禁覆蓋。"""
-    captured: dict[str, Any] = {}
-    monkeypatch.setenv("CODEX_HOME", "/custom/codex-home")
-    run_bridge_usage(
-        tmp_path / "bridge", timeout_s=60.0, runner=_capture_env_runner(captured)
-    )
-    env = captured["env"]
-    assert env is not None
-    assert env["CODEX_HOME"] == "/custom/codex-home"
-
-
 # ---- webgpt 兩訊號 ----
 
 
