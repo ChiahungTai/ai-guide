@@ -27,3 +27,5 @@ context 揮發且 quota 可能突然耗盡。
 ## Memory 生命周期規範（pointer）
 
 寫前載 memory-audit skill「寫入端紀律/載體統一定義表」：一句話提煉不出或歸因未定就不寫；六問/rank/尺寸/body/desc 依 skill。**任務終態／進度流水不入池**（歸卡/EP/report；勿依賴 guard 攔）；**desc ≤100 chars、禁 hash/日期流水/session id**。MEMORY.md 是 frontmatter 投影禁手寫，條目檔是唯一寫入點；弧結案蒸餾終態 facts（結案兩步第三動）。
+
+**Memory spine 位置**：跨池共享記憶 spine＝`~/.agents/memory-spine/`（條目由 ai-guide 側 session 寫入、各池唯讀；`index.md`＝位置決議＋各池 routing 認養表——找 spine 條目（如 `model-runtime-entitlements`、slug glossary）先查該索引）。
