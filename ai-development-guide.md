@@ -35,7 +35,7 @@
 
 UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
-規模：simple（單檔小 tweak/bug）→card AC 直行不寫 EP；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→建立或更新 owning 卡＋**card Planning Contract**（六欄，定義見 execution-plan skill 流程規模分級節）；full（架構/跨模組/🔴高風險/新 boundary：state ownership、public contract、跨 context invariant、控制面 authority）→execution-plan standalone EP；accepted EP 的 bounded child→引用 parent EP＋card Planning Contract。實作中發現新 boundary 決策→升 EP amendment/子 EP（promotion）。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
+規模：simple（單檔小 tweak/bug）→card AC 直行不寫 EP；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→建立或更新 owning 卡＋**card Planning Contract**（六欄，定義見 execution-plan skill 流程規模分級節）；full（架構/跨模組/🔴高風險/新 boundary：state ownership、public contract、跨 context invariant、控制面 authority）→execution-plan standalone EP；accepted EP 的 bounded child→引用 parent EP＋card Planning Contract。實作中發現新 boundary 決策→升 EP amendment/子 EP（promotion）。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。public contract 契約面新增／變更（含 additive/backward-compatible）屬 full；既有已錨定 contract 的純實作修復不因此升級（判定在開卡時，詳＝execution-plan skill 規模分級節）。
 
 動卡第一動設 In Progress；銜接機制（建卡即 commit 防 id 撞、結案兩步、precheck）單一源 kanban-board skill。
 

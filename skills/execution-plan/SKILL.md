@@ -66,6 +66,8 @@ ep_type（implementation/blueprint）是「**寫哪種 EP**」；本段是「**�
 
 > 評估順序＝simple→standard→full，依序命中即止；architecture／boundary 判準命中即 full，優先於『跨檔歸 standard』。
 
+> **public contract 判準的時點與 additive 邊界（tier 判定在開卡時，事後不追認降級）**：public contract 的**新增或契約語義變更**屬 full，**即使 additive／backward-compatible 亦不降級**（新增 optional flag／新子命令／新公開 method 仍是新增 contract surface——compatibility 好壞不是 tier 判準）；既有已錨定 contract 的**純實作修復**（恢復已定 contract，無新 boundary decision）與非語義碰觸（typo/註解）不因觸及 public surface 自動升 full。判準＝「開卡時是否需要新增或改變外部 consumer 可依賴的 contract decision」，與行數無關。
+
 > blueprint 衍生子 EP（上行〔ep_type 節〕）與 parent-EP bounded child（本表第四列）是兩個機制：前者＝EP 底下再開 EP（綱要層），後者＝EP 底下開卡（卡層實作）。用後者的判準是 decision-ownership：本卡所需的 boundary／architecture 決策**全部**已由 parent EP 定案且可逐項 anchor；任一決策 parent 未定案→不是 bounded child，走 full（amendment／子 EP）。
 
 ### card Planning Contract（standard／parent-EP child 的規劃載體）
