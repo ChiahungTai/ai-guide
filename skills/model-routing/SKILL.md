@@ -219,11 +219,11 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | `stopped responding after the task started` | launcher 側 ChatGPT 分頁失聯，非任務本身失敗 | 先查 launcher 分頁健康再判；盲目重派＝雙跑風險 |
 | `connector menu ... no row named "Codex Native2"` | connector 環境缺損 | 環境修復（建 connector）後再派；重派無效 |
 | `personalization preflight exceeded its readiness deadline` | ChatGPT UI／登入狀態未就緒 | 查 UI／登入狀態，修因後重派 |
-| `You've hit your usage limit ... try again at <time>` | web 池訊息額度耗盡（同約束 2） | 解析 `<time>` 排程重派（`/at`）；禁立即重試 |
+| `You've hit your usage limit ... try again at <time>` | **native 訂閱池**訊號——codex CLI exec-approval 層查 native 訂閱額度，**非 web 池耗盡**（web 池無額度閘；09-16 實證：同 job 模型回應照常走完、同日重派成功） | 判讀＝native 面限制（影響 exec approval，不影響 web 派工）；**單次重派驗證無效再考慮排程**；解析 `<time>` 僅約束 native 面派工 |
 | `Selected model is at capacity` | web 池模型容量拒絕 turn-0（與上行 usage-limit 屬不同失敗分類——signature 辨識 failure class，非帳號額度證明） | bounded 序列化重試（實證可成功）；持續不退 → 換 alternate carrier；禁並發盲重派 |
 | `turn token is invalid, expired, or revoked` | 工具呼叫層 turn token／continuation state 失效（任務側誠實棄審、零編造）；**原始訊號只在 daemon stderr（`broker claim ... valid=false`）——rollout 事件流乾淨收尾、此形態 error surface 無文可配（片語表攔不到；09-12 有拒絕文的形態才可配）** | 禁帶同一失效 token 原樣重試（失效的是 token 非 payload）；現行可用 recovery＝換 carrier（實證：muse 承接）；**bridge ledger 會誤判 completed（fail-closed 拒絕以 `turn.completed` 乾淨收尾＝上游契約缺口，修正建議歸 codex-chatgpt-web repo）——收法必須 L1/L2 receipt 檢查（程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節）** |
 
-> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
+> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 6 類歸因修訂（0921）實證源＝AIR-123 決策⑤＋`tests/fixtures/availability_spine_fresh.md`:13；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
 
 ### glm（bridge）委派契約
 
