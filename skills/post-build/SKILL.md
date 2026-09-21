@@ -176,6 +176,23 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 **分工邊界（互補不重複——時點前移）**：本腿＝build 後收尾時點的主動處置；[commit 階段 2.8](../commit/SKILL.md)＝commit 時點的機械防漏對帳（三分歸屬＋in-flight 不動）；結案蒸餾（[kanban-board](../kanban-board/SKILL.md) 結案兩步第三動）＝弧收案時的終態一次性重寫。本腿蒸餾掉的 → 2.8 零命中、結案蒸餾清單變短；標 terminal 的 → 成為後兩者的輸入。
 
+## Improvement 收斂（quota-constrained discovery——AIR-151）
+
+> 掛點：Settle 前最後一腿（結案段之前）。訊號掃描機械免費常駐、語義判讀搭本鏈既有 completion pass 便車——**普通弧 0 新增 LLM invocation 為硬約束**；discovery 不得阻塞 originating arc，候選一律 nonblocking 落帳。
+
+**條件閘（先機械後語義）**：跑 `uv run python scripts/improvement_signals.py --repo . --since 7`（四類訊號：review 殘留／liveness 異常／跨弧重現／預算超支；JSON、每類 top-20 指針＋計數）；同行把 `uv run python scripts/arc_behavior_audit.py --repo .`（AIR-152）的單行 JSON 併入結算輸出（直改／spawn／委派／modelID 四流——挖掘線索非違規判定）。**`any_signal=false`（四類全 0）＝improvement 收斂段整段跳過**——不進語義判讀、不產候選；有訊號才判 admission（actionable residue OR recurrence OR known reliability anomaly），判不 actionable 也跳過（計數照列收尾報告）。跳過不是失敗——靜默加候選才是。
+
+**收斂（≤3 條硬 cap）**：把掃描輸出的 capped 訊號指針收斂為 ≤3 條候選，每條必備：一行人話描述／source（review_residue｜liveness_anomaly｜cross_arc_recurrence｜budget_overspend）／evidence 指針（直接引用掃描 pointers 欄——檔案:行／job id，禁貼全文）／class＋cost（S/M/L）。逐條落帳：
+
+```
+uv run python scripts/decisions_pending.py add-improvement <owning卡id或-> "<一行人話>" \
+    --source <source> --evidence-ref "<指針>" --class <class> --cost S|M|L
+```
+
+寫入 `kind=improvement`＋`gate=nonblocking` pending row（不擋本弧 lint/Settle/Done；KPI `reviewed` 自動記數）。四欄全必填（--source 為四值 enum）——缺欄候選會污染 source-segmented KPI，CLI 拒收。
+
+**Settle 尾機械 dedupe/TTL（晨間裁決的輸入）**：①**dedupe**——同 source＋近似問題的重現訊號**不新建 row**，用 `decisions_pending.py update <D-id> --evidence-ref "<新指針>"`（recurrence+1＋lastSeen 更新）；`ls --open` 已帶 date／src／ev／rec 欄位供機械比對。②**TTL**——`decisions_pending.py ls --open --stale-days 14` 列超齡 open improvement＝晨報 obsolete 候選。晨間裁決去處：user 點頭 → v4 Description 開卡＋`decisions_pending.py promote <D-id> "<新卡id>"`（KPI `opened`；原 row 凍結單向，更新只在卡上）；不點 → `close <D-id> "…" --obsolete`（KPI **`dismissed`**——與 opened 互斥的終態，非 settled）；promoted row 收線後 `close <D-id> "<settle 指針>"` ＝ KPI `settled`。轉化記數消費端＝`improvement_signals.py --kpi <kpi.jsonl>`（reviewed→opened→settled／dismissed per source；只記數不砍源，砍源＝晨間人裁決）。
+
 ## 結案（收斂點——invoke metadata-sync 結案段）
 
 修正迴圈收斂（followup 全 verified）→ 本 skill 是**呼叫端**，invoke [metadata-sync](../metadata-sync/SKILL.md)「收斂後結案」mode：backlog 結案兩步＋SYSTEM-MAP 升級＋EP 歸檔＋flow-feedback 歸檔（命令合約見 [kanban-board](../kanban-board/SKILL.md)「結案兩步」；掛點全貌見 [illustrate html-mode](../_common/illustrate-html-mode.md)「殼生命週期掛點」）＋badge ✅。未收斂 → 不結案（見階段 3 上限處置）。code 鏈未跑弧（triage code=no——純修飾快道／資料文檔）→ 以 docs 鏈收斂（consistency 綠＋metadata 結算面完成）視為收斂，走同結案段。無 post-build 弧時此結案由 `/implement` 階段 6 fallback 承接（並列主路徑）。
