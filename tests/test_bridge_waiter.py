@@ -95,13 +95,21 @@ class FakeBridge:
         return self._version
 
     def wait(
-        self, job_ids: list[str], timeout_ms: int, stuck_after_ms: int
+        self,
+        job_ids: list[str],
+        timeout_ms: int,
+        stuck_after_ms: int,
+        *,
+        wake_on_stuck: bool = False,
+        wake_axis: str = "runtime",
     ) -> tuple[int, str, str]:
         self.wait_calls.append(
             {
                 "ids": list(job_ids),
                 "timeout_ms": timeout_ms,
                 "stuck_after_ms": stuck_after_ms,
+                "wake_on_stuck": wake_on_stuck,
+                "wake_axis": wake_axis,
             }
         )
         step = self._waits.pop(0) if self._waits else {"exit": 0}
@@ -694,6 +702,166 @@ def test_usage_duplicate_or_unknown_sink_ids() -> None:
 
 
 # ---------------------------------------------------------------------------
+# 0921 wake-on-stuck 消費同步：版本閘控雙模（native ≥2.0.23／legacy <2.0.23）
+# ---------------------------------------------------------------------------
+
+WAKE_JSON = (
+    '{"wake":"stuck","jobId":"job-a","axes":["runtime"],'
+    '"silenceMinutes":{"worker":6.1,"runtime":11.2}}'
+)
+
+
+def test_native_wake_feature_gate_semver_and_failsafe() -> None:
+    assert _mod.native_wake_supported("2.0.23") is True
+    assert _mod.native_wake_supported("2.1.0") is True
+    assert _mod.native_wake_supported("2.0.22") is False, (
+        "MIN gate 維持 2.0.22——不隨 feature 閘拉高"
+    )
+    assert _mod.native_wake_supported("garbage") is False, "怪值 fail-safe 落 legacy"
+
+
+def test_bridge_client_wait_args_wake_flags() -> None:
+    """BridgeClient.wait 的 flag 面翻譯：native 三 flag（--wake-on-stuck／
+    --stuck-after／--wake-axis runtime）；legacy 無新 flag。"""
+    captured: list[list[str]] = []
+
+    def runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+        captured.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    client = _mod.BridgeClient("/fake/bin", runner=runner)
+    client.wait(
+        ["job-a"],
+        timeout_ms=60_000,
+        stuck_after_ms=600_000,
+        wake_on_stuck=True,
+        wake_axis="runtime",
+    )
+    assert captured[0][1:] == [
+        "wait",
+        "job-a",
+        "--timeout",
+        "60000",
+        "--stuck-after",
+        "600000",
+        "--wake-on-stuck",
+        "--wake-axis",
+        "runtime",
+    ]
+    client.wait(["job-a"], timeout_ms=60_000, stuck_after_ms=600_000)
+    assert "--wake-on-stuck" not in captured[1]
+    assert "--wake-axis" not in captured[1]
+
+
+def test_native_2_0_23_wake_flags_attached() -> None:
+    fake = FakeBridge(
+        version="2.0.23",
+        waits=[{"exit": 3, "stdout": WAKE_JSON, "stderr": ""}],
+        shows={"job-a": show_payload()},
+    )
+    code, _, _ = run(fake, ["job-a"])
+    assert code == 3
+    assert len(fake.wait_calls) == 1
+    call = fake.wait_calls[0]
+    assert call["wake_on_stuck"] is True
+    assert call["wake_axis"] == "runtime"
+    assert call["stuck_after_ms"] == 600000, "stuck-after 鏡射 runtime floor（10m）"
+
+
+def test_native_exit3_wake_json_becomes_stalled_advisory() -> None:
+    fake = FakeBridge(
+        version="2.0.23",
+        waits=[{"exit": 3, "stdout": WAKE_JSON, "stderr": ""}],
+        shows={"job-a": show_payload()},
+    )
+    code, out, err = run(fake, ["job-a"])
+    assert code == 3
+    marker = last_state_json(out)
+    assert marker["state"] == "stalled-advisory"
+    assert marker["source"] == "native"
+    assert marker["jobId"] == "job-a"
+    assert marker["axes"] == ["runtime"]
+    assert marker["silenceMinutes"] == {"worker": 6.1, "runtime": 11.2}
+    assert "不處置" in err
+    assert len(fake.wait_calls) == 1, "wake 後不 re-arm 不重派（處置權歸 caller）"
+
+
+def test_native_wake_json_malformed_advisory_still_emitted() -> None:
+    for broken in ("<html>gateway timeout</html>", ""):
+        fake = FakeBridge(
+            version="2.0.23",
+            waits=[{"exit": 3, "stdout": broken, "stderr": ""}],
+            shows={"job-a": show_payload()},
+        )
+        code, out, err = run(fake, ["job-a"])
+        assert code == 3, "wake JSON 爛掉仍須 advisory 喚醒——fail-safe 不靜默"
+        marker = last_state_json(out)
+        assert marker["state"] == "stalled-advisory"
+        assert marker["jobId"] == "unknown"
+        assert marker["axes"] == "unknown"
+        assert marker["silenceMinutes"] == "unknown"
+        assert "不可解析" in err, "解析失敗必須說出口（不靜默）"
+
+
+def test_native_124_still_rearms_and_stale_stamps_no_advisory() -> None:
+    """native 模式 124 re-arm 保留；自算雙軸退役——stale stamp 不觸發 advisory。"""
+    fake = FakeBridge(
+        version="2.0.23",
+        waits=[{"exit": 124}, {"exit": 0}],
+        shows={
+            "job-a": [
+                # 兩次快照同為 15m stale——legacy 會報 advisory，native 不自算
+                show_payload(hb=OLD_TS, ev=OLD_TS, ts=OLD_TS),
+                show_payload(hb=OLD_TS, ev=OLD_TS, ts=OLD_TS),
+                completed_payload(),
+            ]
+        },
+    )
+    code, out, _ = run(fake, ["job-a"], kind="discussion")
+    assert code == 0, "124 恆內部消化，native 模式不自算 stalled"
+    assert len(fake.wait_calls) == 2, "124 後內部 re-arm 一次"
+    assert "stalled-advisory" not in out
+    assert all(c["wake_on_stuck"] is True for c in fake.wait_calls)
+
+
+def test_native_terminal_still_receipts() -> None:
+    fake = FakeBridge(
+        version="2.0.23",
+        waits=[{"exit": 0}],
+        shows={"job-a": completed_payload("job-a", "done")},
+    )
+    code, out, _ = run(fake, ["job-a"])
+    assert code == 0
+    receipt = json.loads(out.strip().splitlines()[-1])
+    assert receipt["schema"] == _mod.RECEIPT_SCHEMA
+    assert receipt["bridgeCliVersion"] == "2.0.23"
+    assert receipt["exitState"] == "completed"
+
+
+def test_native_exit2_reconcile_dispatch_preserved() -> None:
+    fake = FakeBridge(
+        version="2.0.23",
+        waits=[{"exit": 2, "stderr": "Job not found: job-a", "stdout": ""}],
+        shows={"job-a": show_payload()},
+    )
+    code, out, _ = run(fake, ["job-a"])
+    assert code == 2
+    assert last_state_json(out)["state"] == "unknown/reconcile"
+
+
+def test_legacy_2_0_22_no_wake_flags_and_exit3_fail_loud() -> None:
+    fake = FakeBridge(
+        version="2.0.22",
+        waits=[{"exit": 3, "stdout": WAKE_JSON, "stderr": ""}],
+        shows={"job-a": show_payload()},
+    )
+    code, out, _ = run(fake, ["job-a"])
+    assert fake.wait_calls[0]["wake_on_stuck"] is False, "legacy 不得附加 wake flag"
+    assert code == 2, "legacy wait exit 3 屬非預期——T8 fail-loud"
+    assert last_state_json(out)["state"] == "error"
+
+
+# ---------------------------------------------------------------------------
 # E2E：subprocess 打 tests/fixtures/fake_bridge.py（仍不打真 bridge）
 # ---------------------------------------------------------------------------
 
@@ -777,6 +945,30 @@ def test_e2e_version_pin_fail_loud(tmp_path: Path) -> None:
     marker = json.loads(proc.stdout.strip().splitlines()[-1])
     assert marker["state"] == "error"
     assert "2.0.22" in marker["reason"]
+
+
+def test_e2e_native_wake_exit3_advisory(tmp_path: Path) -> None:
+    """e2e：真 BridgeClient subprocess 面——native wake exit 3 → advisory JSON 尾行。"""
+    scenario = {
+        "version": "2.0.23",
+        "waits": [{"exit": 3, "stdout": WAKE_JSON, "stderr": ""}],
+        "shows": {"job-a": show_payload()},
+    }
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "job-a", "--bridge-bin", str(STUB)],
+        capture_output=True,
+        text=True,
+        env=_e2e_env(tmp_path, scenario),
+        timeout=120,
+        check=False,
+    )
+    assert proc.returncode == 3, proc.stderr
+    marker = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert marker["state"] == "stalled-advisory"
+    assert marker["source"] == "native"
+    assert marker["jobId"] == "job-a"
+    assert marker["axes"] == ["runtime"]
+    assert WAKE_JSON in proc.stdout, "bridge 原始 wake JSON 須轉印保留"
 
 
 def test_e2e_help_runs() -> None:

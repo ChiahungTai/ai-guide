@@ -17,6 +17,11 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   （0＝全 completed／1＝任一非 completed／124＝timeout／2＝usage）；
   `show <id> --json`＝`{job, finalText}`；running row 的 `extra` 攜
   `heartbeatAt`（worker 軸）／`lastEventAt`（runtime 軸），terminal row strip 兩軸。
+- wake-on-stuck 契約（bridge 2.0.23）：delegate-bridge repo `docs/ep.md` S1
+  「wake-on-stuck 增補」——`wait --wake-on-stuck --wake-axis <axis>` 首次
+  selected 軸超齡的 poll → stdout 尾行 wake JSON
+  （`{"wake":"stuck","jobId","axes":[...],"silenceMinutes":{...}}`）→ exit 3
+  （與 0/1/2/124 正交；單 id 與批次同語義，wake JSON 恆為 stdout 最後一行）。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
 --------------------------------------------------------------------------------
@@ -35,6 +40,19 @@ States: RUNNING_FRESH | STALLED_ADVISORY | TERMINAL | UNKNOWN_RECONCILE
 | T8 | 任意          | JSON 不可解析／status 缺失／wait 非預期 exit | ledger 缺損                 | （fail-loud）    | 診斷至 stderr＋stdout 尾行標記             | 2    |
 | T9 | （啟動）      | 版本 probe                                   | < MIN 或不可判定            | （fail-loud）    | 升級指引（stderr＋stdout 尾行標記）        | 2    |
 
+T8 amendment（0921 wake-on-stuck 消費同步——frozen spec 增補，卡 AIR-146）：
+bridge ≥ 2.0.23（feature 閘 `native_wake_supported`，怪值 fail-safe 落 legacy；
+MIN gate 維持 2.0.22 不變——舊 binary 環境 watcher 續用）時，arm 帶
+`--wake-on-stuck --wake-axis runtime`：wait exit 3＝producer 代行 stuck 偵測
+（stdout 尾行 wake JSON）——watcher 轉譯為現行 stalled-advisory 狀態 JSON
+（附 native 欄位 axes／silenceMinutes；解析失敗＝advisory 照發、欄位標
+unknown——fail-safe 不靜默）後 exit 3 喚醒。native 分支退役自算雙軸：不做
+_job_stalled 輪詢／show 重探 stalled（124 re-arm、terminal collect/receipt、
+exit 2 reconcile 分流保留；處置權照舊歸 caller——advisory 不 stop 不重派）。
+`--wake-axis runtime` 理由＝worker 軸 heartbeat 滯後誤報實證×3（見「卡死判準」
+段——選軸即誤報消化，watcher 端不選 worker 軸）。< 2.0.23 legacy 模式行為
+逐字不變（此時 exit 3 屬非預期、落 T8 fail-loud）。
+
 不變量（代碼面保證）：124 恆內部消化；無 stop／judge／commit 代碼路徑
 （AC#6）；stalled/reconcile 只喚醒不處置（偵測與處置分離）；每 job 恰一次
 collect（terminal 相的 show＋receipt 驗收 pass 只跑一遍，AC#3）；
@@ -45,7 +63,8 @@ exit 契約（adjudication Q4）
 - 0＝全 terminal completed（含 delivery 機驗過；manual-anchor 視同過、receipt 標記）
 - 1＝任一 terminal 非 completed（含 completed 但 sink 三步驗收不過的
   terminal-sink-missing 面——AIR-135.7 AC#2 判定句）
-- 3＝stalled-advisory（compact progress log；僅通知不處置）
+- 3＝stalled-advisory（compact progress log；僅通知不處置；native wake 轉譯
+  或 legacy 自算——見 T8 amendment）
 - 124 恆內部消化不外洩
 - 2＝fail-loud 面，三種面貌分流（F1/F2 修）：①wait stderr 帶
   「disappeared mid-wait」或「Job not found」（rust 正典字串）→
@@ -98,6 +117,9 @@ from pathlib import Path
 from typing import Protocol
 
 MIN_BRIDGE_VERSION = "2.0.22"
+# native wake-on-stuck feature 閘（bridge 2.0.23 出貨——docs/ep.md S1 增補）；
+# MIN gate 不隨之拉高：舊 binary 環境 watcher 落 legacy 自算輪詢續用
+NATIVE_WAKE_MIN_VERSION = "2.0.23"
 
 RECEIPT_SCHEMA = "collection-receipt/1"
 WATCHER_NAME = "bridge_waiter"
@@ -159,7 +181,13 @@ class BridgeCli(Protocol):
     def version(self) -> str | None: ...
 
     def wait(
-        self, job_ids: list[str], timeout_ms: int, stuck_after_ms: int
+        self,
+        job_ids: list[str],
+        timeout_ms: int,
+        stuck_after_ms: int,
+        *,
+        wake_on_stuck: bool = False,
+        wake_axis: str = "runtime",
     ) -> tuple[int, str, str]: ...
 
     def show(self, job_id: str) -> dict: ...
@@ -192,18 +220,27 @@ class BridgeClient:
         return proc.stdout.strip() if proc.returncode == 0 else None
 
     def wait(
-        self, job_ids: list[str], timeout_ms: int, stuck_after_ms: int
+        self,
+        job_ids: list[str],
+        timeout_ms: int,
+        stuck_after_ms: int,
+        *,
+        wake_on_stuck: bool = False,
+        wake_axis: str = "runtime",
     ) -> tuple[int, str, str]:
-        proc = self._run(
-            [
-                "wait",
-                *job_ids,
-                "--timeout",
-                str(int(timeout_ms)),
-                "--stuck-after",
-                str(int(stuck_after_ms)),
-            ]
-        )
+        args = [
+            "wait",
+            *job_ids,
+            "--timeout",
+            str(int(timeout_ms)),
+            "--stuck-after",
+            str(int(stuck_after_ms)),
+        ]
+        if wake_on_stuck:
+            # native wake（bridge ≥2.0.23）：producer 代行 stuck 偵測，
+            # 首次 selected 軸超齡的 poll → stdout 尾行 wake JSON → exit 3
+            args += ["--wake-on-stuck", "--wake-axis", wake_axis]
+        proc = self._run(args)
         return proc.returncode, proc.stdout, proc.stderr
 
     def show(self, job_id: str) -> dict:
@@ -278,6 +315,20 @@ def ensure_bridge_version(client: BridgeCli) -> str:
             f"升級：zcode plugins update delegate 後重跑"
         )
     return version
+
+
+def native_wake_supported(version: str) -> bool:
+    """feature 閘：bridge ≥ 2.0.23（`--wake-on-stuck` 出貨版）→ True。
+
+    與 MIN gate 分離：2.0.22 仍可用（legacy 自算輪詢），不做硬拉——
+    舊 binary 環境 watcher 必須續用。fail-safe：版本字串怪值（semver
+    不可解析）一律落 legacy——wake flag 送進不支援的 CLI 會 exit 2 usage，
+    寧可退回已驗證的輪詢路徑。
+    """
+    try:
+        return compare_semver(version, NATIVE_WAKE_MIN_VERSION) >= 0
+    except VersionGateError:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -602,6 +653,59 @@ def _emit_advisory(
     return 3
 
 
+def _emit_native_advisory(out: TextIOBase, err: TextIOBase, wait_stdout: str) -> int:
+    """native wake 分支（bridge ≥2.0.23，T8 amendment）：wake JSON → stalled-advisory。
+
+    bridge 已代行 stuck 偵測（--wake-on-stuck --wake-axis runtime）——watcher
+    只轉譯 stdout 尾行 wake JSON，不自算雙軸。JSON 解析失敗＝advisory 照發、
+    native 欄位標 unknown——fail-safe 不靜默。處置權照舊歸 caller（不 stop 不重派）。
+    """
+    wake: dict | None = None
+    stripped = wait_stdout.strip()
+    if stripped:
+        try:
+            parsed = json.loads(stripped.splitlines()[-1])
+            if isinstance(parsed, dict) and parsed.get("wake") == "stuck":
+                wake = parsed
+        except json.JSONDecodeError:
+            wake = None
+    if wake is None:
+        _emit(
+            err,
+            "[watcher] native wake JSON 不可解析或非 stuck 面——advisory 照發"
+            "（fail-safe），native 欄位標 unknown",
+        )
+        payload: dict = {
+            "state": "stalled-advisory",
+            "source": "native",
+            "jobId": "unknown",
+            "axes": "unknown",
+            "silenceMinutes": "unknown",
+        }
+    else:
+        job_id = wake.get("jobId")
+        axes = wake.get("axes")
+        silence = wake.get("silenceMinutes")
+        payload = {
+            "state": "stalled-advisory",
+            "source": "native",
+            "jobId": job_id if isinstance(job_id, str) else "unknown",
+            "axes": axes if isinstance(axes, list) else "unknown",
+            "silenceMinutes": silence if isinstance(silence, dict) else "unknown",
+        }
+        _emit(
+            out,
+            f"[watcher] stalled: {payload['jobId']} axes={payload['axes']} "
+            f"silence={_dumps(payload['silenceMinutes'])} (native wake-on-stuck)",
+        )
+    _emit(out, _dumps(payload))
+    _emit(
+        err,
+        "[watcher] stalled-advisory——僅通知不處置（不 stop 不重派；處置權在 caller）",
+    )
+    return 3
+
+
 def _reconcile_or_error(
     out: TextIOBase, err: TextIOBase, job_id: str, exc: BridgeError
 ) -> int:
@@ -696,6 +800,8 @@ def run_watcher(
         return _emit_state(
             out, err, "error", {"reason": f"bridge CLI probe 失敗：{exc}"}
         )
+    # 0921 wake-on-stuck 消費同步：雙模版本閘控（T8 amendment）
+    native_wake = native_wake_supported(bridge_version)
 
     # T1 初始快照
     snapshots: dict[str, JobSnapshot] = {}
@@ -709,8 +815,11 @@ def run_watcher(
 
     running_ids = [j for j in job_ids if snapshots[j].status == RUNNING]
     if running_ids:
-        # T4 arm 前檢查
-        if any(_job_stalled(snapshots[j], kind, now_fn()) for j in running_ids):
+        # T4 arm 前檢查（legacy 自算；native 交 bridge --wake-on-stuck——
+        # 已 stuck 時首個 poll 即 exit 3，無偵測空窗）
+        if not native_wake and any(
+            _job_stalled(snapshots[j], kind, now_fn()) for j in running_ids
+        ):
             return _emit_advisory(out, err, snapshots, running_ids, kind, now_fn())
         t_min = max(compute_t0(snapshots[j].family, kind) for j in running_ids)
     else:
@@ -731,6 +840,8 @@ def run_watcher(
                 running_ids,
                 timeout_ms=int(t_min * 60_000),
                 stuck_after_ms=stuck_ms,
+                wake_on_stuck=native_wake,
+                wake_axis="runtime",
             )
         except BridgeError as exc:
             return _emit_state(out, err, "error", {"reason": f"wait 執行失敗：{exc}"})
@@ -741,6 +852,13 @@ def run_watcher(
 
         if code in (0, 1):
             break  # T5/T6：批次已全 terminal
+
+        if code == 3 and native_wake:
+            # T8 amendment：native wake（bridge 代行 stuck 偵測，stdout 尾行
+            # wake JSON）——轉譯為現行 stalled-advisory 後 exit 3 喚醒
+            # （不 stop 不重派；處置權歸 caller）。legacy 模式的 exit 3 屬
+            # 非預期，落下方 T8 fail-loud。
+            return _emit_native_advisory(out, err, wait_out)
 
         if code == 2:
             # exit 2 三面貌（F1/F2）：①「disappeared mid-wait」／「Job not found」
@@ -832,8 +950,9 @@ def run_watcher(
                     },
                 )
             snapshots[job_id] = current
-            if _job_stalled(current, kind, now_round):
-                # T4：跨 floor——stalled 永遠 advisory（不 stop 不重派）
+            if not native_wake and _job_stalled(current, kind, now_round):
+                # T4（legacy）：跨 floor——stalled 永遠 advisory（不 stop 不重派）；
+                # native 模式此判定退役——bridge --wake-on-stuck 代行
                 still_ids = [*still_running, job_id]
                 return _emit_advisory(out, err, snapshots, still_ids, kind, now_round)
             if (

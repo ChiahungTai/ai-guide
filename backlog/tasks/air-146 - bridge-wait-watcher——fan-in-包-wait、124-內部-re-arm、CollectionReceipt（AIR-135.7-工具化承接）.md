@@ -59,5 +59,7 @@ bridge wait watcher 落地——fan-in 包 wait、exit 124 內部 re-arm 零 LLM
 **0921 frozen spec amendment（雙模型調查 drift finding 修復）**：①stalled 判準對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」）——`crossed_floor(None)＝False` 取代原 fail-closed True（兩套判準在缺 stamp 時行為相反＝現行 drift；terminal/124/not-found wake 路徑不受影響）②binary 不可達＝clean fail-loud exit 2 附修法指引（取代 traceback 崩潰；bare shell 忘帶 DELEGATE_BRIDGE_BIN dogfood 實證）③實證附帶：codex web 長生成期 heartbeat 滯後→worker 5m floor 常態性誤報（×3），`--kind research` 緩解。調查源＝glm job-muafjfcl＋codex job-muafppoe（bridge 原生 wait 已有 N-job batch＋雙軸 stuck＋reconcile——watcher 增量定位＝124 透明 re-arm／advisory wake／receipt 機驗；長期 liveness 語義下沉回 producer）。
 
 **0921 消費同步排程（bridge 端 wake-on-stuck ship 後）**：delegate-bridge 2.0.23 新增 `--wake-on-stuck`／`--wake-axis`（exit 3＋stdout wake JSON；對端 session sess_0fdfeb50 實作中，工單＝.agent-tmp/air-135/bridge-handoff-prompt.md 項目二）——ship 後 bridge_waiter.py 退役自算雙軸（crossed_floor／_job_stalled），改消費原生 wake 訊號＋版本 gate 升 2.0.23；「liveness 語義下沉 producer」閉環。
+
+**0921 消費同步落地**——雙模版本閘控（≥2.0.23 native wake／<2.0.23 legacy 輪詢；MIN pin 維持 2.0.22，feature 閘 `native_wake_supported` 另立——排程段「gate 升 2.0.23」修正為 feature 閘，舊 binary 環境 watcher 續用）；`--wake-axis runtime`（worker 誤報消化）；ZCode pin 翻轉後自動走 native。bridge 端 ship＝f325e63（2.0.23）。
 <!-- SECTION:FINAL_SUMMARY:END -->
 <!-- SECTION:FINAL_SUMMARY:END -->
