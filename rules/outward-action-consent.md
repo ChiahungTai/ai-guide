@@ -26,7 +26,7 @@ AUTH: user said "<their exact words>"
 
 ### documentation ≠ authorization
 
-README/workflow/skill 的 outward 要求與「完成任務」都不是授權；只有 user 對話原話可作 AUTH。**明示豁免類**：autonomous session 的 conditional commit delegation（見 Commit 專屬段）——其 standing 根據＝0921 user 原話修訂，成立與否以 canonical arc evidence＋post-build receipt 為證，非本次對話重述。
+README/workflow/skill 的 outward 要求與「完成任務」都不是授權；只有 user 對話原話可作 AUTH。**明示豁免類**：autonomous 的 conditional commit delegation（見 Commit 專屬段）——standing 根據＝0921 user 原話，以 arc evidence＋receipt 為證。
 
 ## Commit 專屬段（最嚴格等級）
 
@@ -34,12 +34,12 @@ README/workflow/skill 的 outward 要求與「完成任務」都不是授權；�
 
 互動 session 機械例外（board 細節單一源＝kanban-board skill）：
 
-- ① backlog 建卡：**Description 經 user 確認（SC ext 點卡預覽——kanban-board skill「開卡 Description 先行」）後**即 commit 僅新增卡檔，message 帶 id，供跨 WT 可見並防 id 撞——例外①只及該初始 commit，不自動涵蓋後補 AC/Plan（走②或弧結算）；共享 WT 停在活躍弧 branch 時，建卡 commit 走暫時 worktree 直進 main（全程 `git -C` 禁 cd，形態＝kanban-board skill「共享 WT 活躍 branch 落點分流」）——該暫時 worktree 操作屬①豁免範圍。
+- ① backlog 建卡：**Description 經 user 確認（SC ext 點卡預覽——kanban-board skill「開卡 Description 先行」）後**即 commit 僅新增卡檔，message 帶 id，供跨 WT 可見並防 id 撞——例外①只及該初始 commit，不自動涵蓋後補 AC/Plan（走②或弧結算）；共享 WT 停活躍弧 branch 時走暫時 worktree 直進 main（形態＝kanban-board skill「共享 WT 活躍 branch 落點分流」）。
 - ② 開工 metadata（user 拍板）：In Progress＋refs 後即 commit 僅 backlog/；結算物不隨此。
 - ③ 結案兩步（user 拍板）：precheck 綠且結算物＋卡狀態同 commit 才豁免，否則走確認 gate。
 - ④ 純 ruff format/check --fix style 可 commit；混語義改動走確認 gate。
 
-autonomous session commit gate（0921 user 修訂，取代 09-13 全禁裁定——當時單一 glm 環境＋model 能力未明的保守面，跨家族 review 實證後放寬）：**conditional commit delegation＝單一入口**——active arc＋當次有效 post-build receipt（required review profile 完成且 judge/followup 收斂＋identity fresh：receipt 後 code revision 未變，變更即補 delta review）→ 該次 commit 授權成立；**每次 commit 重新驗 gate，一 receipt 一 commit、跨弧不延伸**（「一次授權≠永久授權」正典不變）。無有效 receipt 的散 commit 仍待用戶確認；機械特赦①–④互動 session 照舊。**放寬僅及 git commit——push／deploy／跨 repo 寫／其他 outward 恆停不變**；旗艦 verdict 解 judgment blocker、非 commit authority。晨間否決→revert（預算內）＋下游依賴傳播（135.3 AC#8）；首次否決鏈真實事故＝暫停本機制回審。predicate 細節與驗收程序＝commit skill；其他 consumer repo 首次啟用前由該 repo user 確認。
+autonomous session commit gate（0921 user 修訂，取代 09-13 全禁——跨家族 review 實證後放寬）：**conditional commit delegation**＝active arc＋當次有效 post-build receipt（review profile 完成＋judge 收斂＋revision 未變）→ 該次 commit 授權成立；**每次 commit 重新驗 gate、一 receipt 一 commit、跨弧不延伸**（「一次授權≠永久授權」正典不變）。無有效 receipt 的散 commit 仍待確認；特赦①–④互動照舊。**僅及 git commit——push／deploy／跨 repo 寫恆停不變**；旗艦 verdict 非 commit authority。晨間否決→revert＋依賴傳播（135.3 AC#8）；首例否決鏈事故＝暫停回審。predicate 細節＝commit skill；其他 repo 啟用前自決確認。
 
 ## Autonomous shortcut（deep-work / 排程場景）
 
