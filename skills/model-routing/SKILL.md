@@ -365,9 +365,11 @@ GLM / 非 Claude harness 的 safety classifier 可能**間歇 unavailable**（sp
 
 ### spawn 失敗態辨識（處置相反，禁混用）
 
+> **rate limit ≠ usage limit（概念分流，處置相反）**：rate limit＝**短期 request-frequency／throughput throttling**（spawn 場景常見誘因＝同時派工過多）→ 先 bounded backoff，**持續 429 才降並發**（429 處置正典＝agent-workflow skill）；usage limit＝**訂閱額度窗口耗盡** → 只能等重置，降並發無效——誤判＝白等或白撞。家族形態（as-of 2026-09-22 源碼查證）：GLM spawn＝1308（usage）與 429（rate-path）**兩碼分流，禁互換判讀**；codex native 429 依 structured body 分類——`error_type=usage_limit_reached` → UsageLimitReached（usage；可附 primary/secondary 窗口 snapshot，屬 optional metadata 非分類依據）、`insufficient_quota`／credit／spend 類 → QuotaExceeded（額度面，非 retryable rate）、其餘 429 → RetryLimit（retryable）——錨：codex OSS `codex-api/src/api_bridge.rs` 429 分支（`UsageErrorResponse`）；codex web 池「Too many requests」dialog＝retryable rate signal，非 usage exhaustion——錨：codex-chatgpt-web `throwIfChatGptRateLimitDialog`。窗口/週期數字正典＝本 skill「窗口語義」節，本節禁重刻數字。
+
 | 症狀 | 機制 | 處置 |
 |------|------|------|
 | 收 note、無 findings、無錯誤碼 | classifier 間歇 unavailable（服務端暫態） | 重試 spawn ≤2 次（上段正解） |
 | 錯誤碼 **1301**（content filter） | 內容審查攔截——prompt 用詞觸發 provider 端關鍵詞過濾；**同 prompt 重試必再撞** | **禁原 prompt 重試**——改寫用詞後再 spawn；仍撞 → 換任務表述或升 full 層 |
 | 錯誤碼 **1308**（usage limit） | 額度窗口耗盡（錯誤內含重置時間戳；~2 秒即敗＝根本沒跑） | 等窗口重置再派（重置前重派無效）；中途陣亡 ≠ 沒跑——先查產物判進度；不用預先降級 |
-| 錯誤碼 **1302**（spawn 即敗／agent 中途陣亡） | 帳號級暫態（rate limit／spawn 通道）——**非模型專屬**（full 亦撞；晨間 full reviewer 連續兩案例） | 重試 spawn ≤2；仍撞 → **顯式降級記錄**（序列延後／in-harness 自做），禁靜默棄審 |
+| 錯誤碼 **1302**（spawn 即敗／agent 中途陣亡） | 帳號級暫態（spawn 通道暫態，含 rate 相關）——**非模型專屬**（full 亦撞；晨間 full reviewer 連續兩案例） | 重試 spawn ≤2；仍撞 → **顯式降級記錄**（序列延後／in-harness 自做），禁靜默棄審 |
