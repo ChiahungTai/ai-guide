@@ -12,7 +12,7 @@ demo 用 demo_，禁 test_；測試用 test_。demo 暫存到 commit 時移 scri
 
 ## `__init__.py` 禁止 re-export
 
-只放 docstring/註解/__version__，禁 `from .submodule import Symbol` re-export（含 __all__）；消費端用 `from package.module import Class`。每個例外內容都須回答為何不放子模組，handy function/註冊初始化衡量全消費者代價，不以行數判。判準＝消費者是否外部：內部共同重構收益不足抵銷 import/循環/IDE 代價；真實案例（重型 re-export 拖慢輕量 import＋循環 import）見 git 歷史本節。
+只放 docstring/註解/__version__，禁 `from .submodule import Symbol` re-export（含 __all__）；消費端用 `from package.module import Class`。每個例外內容都須回答為何不放子模組，handy function/註冊初始化衡量全消費者代價，不以行數判。判準＝消費者是否外部：內部共同重構收益不足抵銷 import/循環/IDE 代價；真實案例見 git 歷史本節。
 
 ### 遷移既有 re-export
 

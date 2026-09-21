@@ -6,7 +6,7 @@ harness-scope: neutral
 
 ## 核心原則
 
-語法正確不代表邏輯正確；建立/修改每個可執行 Python/script/demo/POC/example 後，必須 uv run python <file> 實跑，不能只讀碼、ast.parse 或說理論可行就報完成——psycopg COPY、轉型/FK、循環 import 這類錯誤都需實跑揭露。
+語法正確不代表邏輯正確；建立/修改每個可執行 Python/script/demo/POC/example 後，必須 uv run python <file> 實跑，不能只讀碼、ast.parse 或說理論可行就報完成——轉型/FK、循環 import 等錯誤需實跑揭露。
 
 ## 強制規則
 

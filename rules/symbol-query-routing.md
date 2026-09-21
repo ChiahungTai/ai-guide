@@ -14,4 +14,4 @@ harness-scope: neutral
 
 ## fallback 與 zero-hit 紀律
 
-index 缺/過期且不可重建→LSP；LSP 亦缺才 rg；工單工具/唯讀限制優先。降級須標「未 index 驗證」，**禁把未查到斷言為不存在**——rg 會漏符號/local import（truncation、display masking、命名差異，反例見 skill），引用可疑少先查 index/workspace 新鮮度。
+index 缺/過期且不可重建→LSP；LSP 亦缺才 rg；工單工具/唯讀限制優先。降級須標「未 index 驗證」，**禁把未查到斷言為不存在**——rg 會漏符號/local import（反例見 skill），引用可疑少先查 index/workspace 新鮮度。
