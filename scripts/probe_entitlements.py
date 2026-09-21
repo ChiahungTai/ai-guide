@@ -4,6 +4,9 @@
 探測四腿、每腿落地一份 JSON 到 `~/.agents/probe-entitlements/`：
 - glm（pool=glm-native）：delegate-bridge `usage --json`（ok 態帶 plan＋limits）。
 - codex（pool=codex-native）：同一聚合輸出；error（如未登入）＝fail-loud 示範。
+  bridge 2.0.23 codex 腿 default-path bug（CODEX_HOME 未設時讀
+  $HOME/auth.json、缺 .join(".codex")）由本 script 呼叫 env 注入
+  CODEX_HOME=<home>/.codex 暫解（AIR-150；bridge 2.0.24 修復後可移除）。
 - muse（pool=unknown）：bridge 聚合自帶 unsupported＋reason——usage-probe
   allow-list 僅 {codex, glm}，muse 禁任何 usage 假造（A4）；現值
   provenance 只能是 event/429（P3 後）。
@@ -136,14 +139,25 @@ def run_bridge_usage(
     *,
     runner: Any = None,
 ) -> dict[str, Any]:
-    """跑 `usage --json`（憑證零經手：只消費 stdout）。"""
+    """跑 `usage --json`（憑證零經手：只消費 stdout）。
+
+    CODEX_HOME 注入＝bridge 2.0.23 bug workaround：bridge codex.rs:566-570
+    default branch（CODEX_HOME 未設時）讀 `$HOME/auth.json`——缺
+    `.join(".codex")`，auth 檔恆不存在 → codex 腿恆報 "codex not logged
+    in"。呼叫環境未設 CODEX_HOME 時注入 `CODEX_HOME=<home>/.codex`；
+    bridge 2.0.24 修復後可移除（AIR-150，bridge 側正解歸對端 repo 工單）。
+    """
     run = runner if runner is not None else subprocess.run
+    env = dict(os.environ)
+    if not env.get("CODEX_HOME"):
+        env["CODEX_HOME"] = str(Path.home() / ".codex")
     try:
         done = run(
             [str(binary), "usage", "--json"],
             capture_output=True,
             text=True,
             timeout=timeout_s,
+            env=env,
         )
     except subprocess.TimeoutExpired as exc:
         raise TransportTimeout(f"bridge usage timed out after {timeout_s}s") from exc
@@ -482,7 +496,10 @@ _RESET_CONTEXT_RE = re.compile(
 )
 _SIG_1308 = re.compile(r"\b1308\b")
 _SIG_429 = re.compile(r"\b429\b")
-_SIG_WEB_USAGE = re.compile(r"you've hit your usage limit")
+# usage limit 簽名＝native 訂閱池訊號（codex CLI exec-approval 層查 native
+# 訂閱額度，非 web edge——0921 歸因修訂 AIR-150/F1，同 model-routing webgpt
+# 失敗態表第 6 類）。
+_SIG_NATIVE_USAGE = re.compile(r"you've hit your usage limit")
 # 額度事件 family 白名單（typo/偽造 family 禁透傳進事件行）
 QUOTA_EVENT_FAMILIES = frozenset(CAPABILITY_MATRIX)
 
@@ -492,11 +509,14 @@ def capture_quota_event(
 ) -> QuotaEvent | None:
     """辨識額度事件簽名 → QuotaEvent；回 None＝未識別，非無事件。
 
-    三簽名（AIR-98 A3，優先序 1308＞web usage＞429 釘死在測試）：
+    三簽名（AIR-98 A3，優先序 1308＞usage limit＞429 釘死在測試）：
     ①原生 429——訊息含明確 reset 語境時間戳（resets at／try again at／重置…
     緊鄰其後）亦採用，無 reset 語境時間戳 → retryable-at=unknown
-    ②GLM 1308（錯誤含重置時間戳，解析之）③web usage limit（"You've hit your
-    usage limit ... try again at <time>"，解析 <time>）。
+    ②GLM 1308（錯誤含重置時間戳，解析之）③usage limit（"You've hit your
+    usage limit ... try again at <time>"，解析 <time>）——歸因＝native 訂閱池
+    （usage limit 訊號＝native 訂閱池耗盡，非 web edge；
+    failure_class=usage_limit_native，同 model-routing webgpt 失敗態表
+    第 6 類歸因修訂）。
 
     retryable-at 擷取限定 reset 語境：時間戳須緊鄰 reset 語境詞；訊息含多個
     ISO 時間戳且無法判定（reset 語境零命中或多個互斥）→ retryable-at=
@@ -526,8 +546,8 @@ def capture_quota_event(
     lowered = message.lower()
     if _SIG_1308.search(lowered):
         failure_class = "usage_limit_1308"
-    elif _SIG_WEB_USAGE.search(lowered):
-        failure_class = "usage_limit_web"
+    elif _SIG_NATIVE_USAGE.search(lowered):
+        failure_class = "usage_limit_native"
     elif _SIG_429.search(lowered):
         failure_class = "rate_limit_429"
     else:

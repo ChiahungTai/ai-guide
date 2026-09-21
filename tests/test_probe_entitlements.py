@@ -309,6 +309,55 @@ def test_run_bridge_usage_bad_json_maps_to_parse_error(tmp_path: Path) -> None:
         run_bridge_usage(binary, timeout_s=60.0, runner=lambda *a, **k: done)
 
 
+# ---- CODEX_HOME 注入（bridge 2.0.23 codex.rs default-branch bug workaround）----
+
+
+def _capture_env_runner(captured: dict[str, Any]) -> Any:
+    def fake_runner(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess:
+        captured["env"] = kwargs.get("env")
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=0,
+            stdout=json.dumps({"families": [GLM_OK_ENTRY]}),
+            stderr="",
+        )
+
+    return fake_runner
+
+
+def test_run_bridge_usage_injects_codex_home_when_unset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """呼叫環境未設 CODEX_HOME → 注入 CODEX_HOME=<home>/.codex。
+
+    bridge codex.rs:566-570 default branch 讀 $HOME/auth.json（缺
+    .join(".codex")）恆報 not logged in——probe 端 env 注入暫解，
+    bridge 2.0.24 修復後本 workaround 可移除。
+    """
+    captured: dict[str, Any] = {}
+    monkeypatch.delenv("CODEX_HOME", raising=False)
+    run_bridge_usage(
+        tmp_path / "bridge", timeout_s=60.0, runner=_capture_env_runner(captured)
+    )
+    env = captured["env"]
+    assert env is not None
+    assert env["CODEX_HOME"] == str(Path.home() / ".codex")
+
+
+def test_run_bridge_usage_preserves_existing_codex_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """呼叫環境已設 CODEX_HOME → 原值透傳，禁覆蓋。"""
+    captured: dict[str, Any] = {}
+    monkeypatch.setenv("CODEX_HOME", "/custom/codex-home")
+    run_bridge_usage(
+        tmp_path / "bridge", timeout_s=60.0, runner=_capture_env_runner(captured)
+    )
+    env = captured["env"]
+    assert env is not None
+    assert env["CODEX_HOME"] == "/custom/codex-home"
+
+
 # ---- webgpt 兩訊號 ----
 
 
@@ -574,7 +623,7 @@ spine_event_line = _mod.spine_event_line
 reminder_log_line = _mod.reminder_log_line
 
 # 三種簽名的合成 fixture——合成非真實報文樣本（單元測試輸入，未經 provider
-# live 驗證；真實 web 報文多為人類可讀本地時間如 "try again at 3:30pm"，
+# live 驗證；真實 native 報文多為人類可讀本地時間如 "try again at 3:30pm"，
 # 解析器對非 ISO reset 一律 unknown——形態契約釘在解析器，首次 live 命中再校準）
 NATIVE_429_MESSAGE = "codex-native request failed: HTTP 429 rate limit exceeded"
 NATIVE_429_WITH_RESET_MESSAGE = (
@@ -593,11 +642,11 @@ DUAL_SIGNATURE_MESSAGE = (
     "GLM API error 1308: you've hit your usage limit, "
     "resets at 2026-09-15T18:00:00Z"
 )
-WEB_USAGE_LIMIT_MESSAGE = (
+NATIVE_USAGE_LIMIT_MESSAGE = (
     "You've hit your usage limit for this plan, "
     "try again at 2026-09-15T19:30:00Z"
 )
-WEB_USAGE_LIMIT_NON_ISO_MESSAGE = (
+NATIVE_USAGE_LIMIT_NON_ISO_MESSAGE = (
     "You've hit your usage limit for this plan, try again at 3:30pm"
 )
 
@@ -627,10 +676,10 @@ def test_capture_glm_1308_parses_reset_timestamp() -> None:
     assert event.retryable_at_utc == "2026-09-15T18:00:00Z"
 
 
-def test_capture_web_usage_limit_parses_retry_time() -> None:
-    event = capture_quota_event("codex", WEB_USAGE_LIMIT_MESSAGE, NOW_ISO)
+def test_capture_native_usage_limit_parses_retry_time() -> None:
+    event = capture_quota_event("codex", NATIVE_USAGE_LIMIT_MESSAGE, NOW_ISO)
     assert event is not None
-    assert event.failure_class == "usage_limit_web"
+    assert event.failure_class == "usage_limit_native"
     assert event.retryable_at_utc == "2026-09-15T19:30:00Z"
 
 
@@ -648,7 +697,7 @@ def test_capture_input_validation_fails_loud() -> None:
 
 
 def test_capture_dual_signature_priority_is_1308() -> None:
-    """雙簽名共存：優先序 1308＞web usage＞429（確定性釘死，禁飄移）。"""
+    """雙簽名共存：優先序 1308＞usage limit＞429（確定性釘死，禁飄移）。"""
     event = capture_quota_event("glm", DUAL_SIGNATURE_MESSAGE, NOW_ISO)
     assert event is not None
     assert event.failure_class == "usage_limit_1308"
@@ -670,9 +719,9 @@ def test_capture_multi_timestamp_ambiguous_is_unknown_with_log(
 
 def test_capture_non_iso_reset_time_is_unknown() -> None:
     """非 ISO reset（人類可讀本地時間）→ unknown，禁把本地時間偽裝成 ISO。"""
-    event = capture_quota_event("codex", WEB_USAGE_LIMIT_NON_ISO_MESSAGE, NOW_ISO)
+    event = capture_quota_event("codex", NATIVE_USAGE_LIMIT_NON_ISO_MESSAGE, NOW_ISO)
     assert event is not None
-    assert event.failure_class == "usage_limit_web"
+    assert event.failure_class == "usage_limit_native"
     assert event.retryable_at_utc == "unknown"
 
 
