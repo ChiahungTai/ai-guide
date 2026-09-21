@@ -37,7 +37,7 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 > 表主體單一源：[agents/AGENTS.md](../../agents/AGENTS.md)「全生命週期 execution contract」（每段一行，欄位 schema 以該表為準）。本節是**怎麼查表 dispatch** 的消費規範；各生命週期命令（deep-work／execution-plan／implement／post-build／commit）的一行形態註記指向本節，不重抄表。
 
-1. **開段先查表**：當前 stage 的執行主體＝「主 session 直做」→ 不 spawn（判斷密集段——EP 規劃／judge 裁決／post-build 編排／commit consent，AIR-24 分工律）；spawn 類 → 取 registry name＋tier 欄
+1. **開段先查表**：當前 stage 的執行主體＝「主 session 直做」→ 不 spawn（判斷密集段——EP 規劃／judge 裁決／post-build 編排／commit consent，AIR-24 分工律）；spawn 類 → 取 registry name＋tier 欄。**implementation work unit 判定 role-based**：改變 behavior-bearing artifact 或其驗證物者一律 spawn（一行也算；purely editorial＋Marshal 本職豁免；「小範圍／單檔」不是豁免條件）——定義源＝[agents/AGENTS.md](../../agents/AGENTS.md)「全生命週期 execution contract」註 b
 2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 解析＝DispatchPlan（WorkUnitContract → model-routing resolver 七步 → candidate 四元組，[model-routing](../model-routing/SKILL.md)——catalog/presets 供給事實，不在此材料化值）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝旗艦燒機械段；唯讀探察／EP Review 形態用內建 Explore 承接（繼承主 session 旗艦＝正確）
 3. **failure fallback 照表走**：重試 ≤2（classifier unavailable／1302）→ 顯式降級記錄（見下「spawn 失敗階梯」）；commit consent 行的 fallback 恆為「等用戶」，不可降級繞過
 4. **模型歸因抽查**（tier 欄落地驗證）：registry pin 是否真達 wire 用 per-message modelID 對帳（ZCode db.sqlite），不信 session 自述（[model-routing](../model-routing/SKILL.md) 歸因紀律）
@@ -141,13 +141,13 @@ Pre-flight 檢查：
 **安全不變量**（path-in-root / symlink-escape 偵測 / 優先 EnterWorktree）定義見 [autonomous-execution](../autonomous-execution/SKILL.md)「機械空間不變量」段；此處僅為 worktree 用法，不重述安全不變量定義（single-source）。
 
 何時用 `isolation: "worktree"`：PoC 驗證、平行實作、風險操作。
-何時不用：純研究（background Agent 即可）、單檔案修改、改動少時不用 isolation 更簡單。
+何時不用：純研究（background Agent 即可）。（isolation 取捨與 execution ownership 正交——implementation work unit 一律 spawn、單檔小改不是豁免，契約單一源＝[agents/AGENTS.md](../../agents/AGENTS.md) execution contract 註 b）
 
 ### PoC → Implement 流程
 
 1. Agent 跑 PoC（worktree）→ 失敗自動清理 / 成功讀取結果
 2. **審查 Agent 產出**（不要假設正確）→ 跑測試、code-review、修正設計瑕疵
-3. 確認方向後實作 → 小範圍主 session 做，大範圍再 spawn Agent
+3. 確認方向後實作 → implementation work unit spawn Agent（範圍大小不改變 ownership——「小範圍主 session 做」已退役，契約單一源＝[agents/AGENTS.md](../../agents/AGENTS.md) execution contract 註 b）
 
 **品質預期**：核心邏輯 ~80% 正確，細節（邊界條件、錯誤處理、命名）常需修正。
 

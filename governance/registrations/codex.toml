@@ -29,10 +29,19 @@ command = "{{REPO}}/hooks/stop-notification.sh"
 # 寫入 .agents/{memory,memory-inbox,memory-auto} 即 deny（admission 門 fail-closed）。
 # 語義源＝ref-docs/harness/codex/hooks.md（matcher 套 canonical tool 名 apply_patch；
 # deny＝exit 2＋stderr）。回復＝移除本段（hooks/codex_memory_path_deny.py 留 repo 無接線）。
+# marshal admission guard (AIR-135.10)：控制面路徑 × canonical 主樹 → deny——
+# policy 與 CC/ZCode 共用（.githooks/control-plane-guard.sh --match-path），
+# payload adapter 在 hook 內分開（apply_patch 標頭抽取；多檔 patch 任一命中即整 call deny）。
+# 回復＝移除下方 marshal_admission_guard.py 條目（script 留 repo 無接線）。
 [[hooks.PreToolUse]]
 matcher = "apply_patch"
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
 command = "python3 {{REPO}}/hooks/codex_memory_path_deny.py"
+timeout = 10
+
+[[hooks.PreToolUse.hooks]]
+type = "command"
+command = "python3 {{REPO}}/hooks/marshal_admission_guard.py"
 timeout = 10

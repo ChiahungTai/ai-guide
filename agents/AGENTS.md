@@ -36,7 +36,7 @@ agents/
 
 ## 全生命週期 execution contract
 
-> 每個生命週期段必有一行 contract：stage → owning orchestrator → registry preset（default binding 指針）→ artifact → failure fallback（AIR-28；AIR-91 S2 起 tier 欄改為 preset／binding 指針——judgment／capability demand 的正式表達是 workflow 自有的 work-unit rows〔S3 各 skill 擁有〕，本表只做導航投影）。**「dispatch 給適合的執行者」含主 session**——判斷密集段（EP 規劃／judge 裁決／post-build 編排／commit consent）依 AIR-24 分工律由主 session（decision work unit）執行，不 agent 化。消費側規範（各命令怎麼查表 dispatch、spawn 形態）單一源在 `skills/agent-workflow/SKILL.md`，本表是主體。
+> 每個生命週期段必有一行 contract：stage → owning orchestrator → registry preset（default binding 指針）→ artifact → failure fallback（AIR-28；AIR-91 S2 起 tier 欄改為 preset／binding 指針——judgment／capability demand 的正式表達是 workflow 自有的 work-unit rows〔S3 各 skill 擁有〕，本表只做導航投影）。**「dispatch 給適合的執行者」含主 session**——判斷密集段（EP 規劃／judge 裁決／post-build 編排／commit consent）依 AIR-24 分工律由主 session（decision work unit）執行，不 agent 化。**implementation work unit 一律 spawn（role-based 定義＝註 b——一行也算；purely editorial 與 Marshal 本職豁免）**。消費側規範（各命令怎麼查表 dispatch、spawn 形態）單一源在 `skills/agent-workflow/SKILL.md`，本表是主體。
 
 | stage | owning orchestrator | registry preset（default binding） | artifact（輸入→輸出） | failure fallback |
 |-------|--------------------|-----------------------------------|----------------------|------------------|
@@ -44,7 +44,7 @@ agents/
 | 研究（EP 段落 0／規格挖掘） | spawn | **cr-research（zcode→`glm-5.3`——decision／global-research，AIR-76 v3.1 裁升）**；spec-miner（zcode→`glm-5.3-flash`——execution） | 問題→file:line 錨點＋逐字引用 | 重試≤2（1302）→主 session 自做 |
 | EP 規劃 | 主 session 直做（判斷密集） | —（decision work unit） | 需求→ep.md（含 EP review 迴圈） | — |
 | EP review（雙家族） | 主 session 編排：GLM 側 spawn code-reviewer×2；muse 側**`task` 形態＝`--background` fire-and-forget 提交＋`wait`／`show` 晚收（不佔 agent 並發、不佔 caller session，可跨 session 認領）；`review` 形態仍背景 Bash 阻塞（`review` 無 `--background`）** | code-reviewer（fresh）＋code-reviewer-primed（primed）——preset default＝execution binding（`glm-5.3-flash`）；高保護面／跨邊界語義面＝spawn override 換 decision binding（同 WorkUnitContract 只換 binding／載體——carrier adapter 三路，見 model-routing skill）；muse review（bridge 工單） | diff＋EP→findings→judge 處置表 | classifier／1302 重試≤2→顯式降級記錄；muse 額度不足→in-harness 雙 context（顯式記錄） |
-| build 實作段 | 主 session 編排；機械可規格化段 spawn | impl-lite（zcode→`glm-5.3-flash`——execution） | EP 段→code＋測試＋驗證證據 | 失敗家系處置（註 a）→主 session 直做該段；lite 測試＝規格陳述→驗收證據 full 複驗 |
+| build 實作段 | 主 session 編排；implementation work unit 一律 spawn（role-based 定義＝註 b——「機械可規格化段」舊門檻退役，一行也算） | impl-lite（zcode→`glm-5.3-flash`——execution） | EP 段→code＋測試＋驗證證據 | 失敗家系處置（註 a）→alternate qualified carrier／等待 availability／declared no-candidate（**禁主 session 直做**——no-silent-downgrade）；lite 測試＝規格陳述→驗收證據 full 複驗 |
 | build 內 Agent Review | spawn（審查配置由風險 profile 推導——單一源＝[review-engine](../skills/review-engine/SKILL.md)「review 執行預設」，掛點＝[implement](../skills/implement/SKILL.md) Agent Review） | 腿組合依 profile（ordinary 單 reviewer／boundary fresh＋intent 分離——見 implement Agent Review rows；可用 preset＝code-reviewer／code-reviewer-primed，高保護面換 decision binding）；錨點驗證＝lite-verify（execution） | diff→findings（錨點驗證後浮出） | 失敗家系處置（註 a）→主 session 自審＋fallback 標記 |
 | judge 裁決 | 主 session 直做（判斷密集；不派 agent） | —（decision work unit；seat 非 full 時升級外派 bridge，禁 in-session 降級自判） | findings→✅/❌/⚠️ 處置表 | — |
 | post-build 編排 | 主 session 直做（判斷密集） | —（decision work unit；Reviewer legs 依保護面選 execution／decision binding——authority 固定 findings） | 收尾鏈：code-review（審查配置由風險 profile 推導——掛點＝[post-build](../skills/post-build/SKILL.md)）→judge-review→修正→consistency→metadata-sync→殼 refresh | — |
@@ -57,6 +57,7 @@ agents/
 
 - **commit 拆兩半**：preparation（finalization 對帳、訊息草擬——agent 可做）＋consent gate（主 session 互動——永遠，contract 表其他行不覆蓋此行）
 - **註 a（spawn 失敗態家系——重試語義單一源）**：見 model-routing skill「spawn 失敗態辨識」——1302／classifier unavailable 重試≤2；1301 禁同 prompt 重試；1308 等窗口重置（重置前重派無效）；429 走 backoff／降並發。**禁把「重試≤2」泛化到全失敗類**（實例：1308 重派只會再敗）
+- **註 b（implementation work unit 定義——AIR-135.10，role-based 非 LOC）**：acceptance outcome 需要改變 **behavior-bearing artifact 或其驗證物**的 work unit 即 implementation——code、tests，與控制面行為（rules／skills／hooks／agents／scripts／deploy/config）；**一行也算**（一行 bug fix、一行 rule 語義都是 implementation；review 後補刀同屬 implementation，回 worker work unit，不由主 session 代做）。豁免＝purely editorial（錯字／格式等零行為變更）＋Marshal 本職（規格、卡面、dispatch／collection、judge、機械驗收、commit consent）。Build row 無「spawn failure → 主 session 直做」分支——fallback 只有 alternate qualified carrier／等待 availability／declared no-candidate。canonical 控制面直寫另有 admission guard 機械擋（`hooks/marshal_admission_guard.py`——控制面×canonical 主樹 deny、crash fail-open、無 bypass env）
 - **test-gen（第三家族測試寫手——非常設，P0 最後手段）**：不生成 registry 定義檔、不佔上表 stage 行；啟用條件預寫死＝MVP 實證 pre-RED challenge＋軸B review 擋不住 fixture fidelity 級穿透才啟用（v3.1 測試契約定案——AIR-70 幽靈角色答案反轉）；條件未滿足前，測試寫手委派→拒
 - **CC dispatch**：本表 preset 名的全名在兩 registry 皆生成在場——CC `--agent <name>` 全 9 名可用；未知名稱仍立即退出（反向守衛）
 

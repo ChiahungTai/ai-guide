@@ -46,6 +46,14 @@
               "{{REPO}}/hooks/block-memory-index-write.py"
             ],
             "timeoutMs": 10000
+          },
+          {
+            "type": "process",
+            "command": "python3",
+            "args": [
+              "{{REPO}}/hooks/marshal_admission_guard.py"
+            ],
+            "timeoutMs": 10000
           }
         ]
       }

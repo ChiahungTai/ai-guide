@@ -25,6 +25,7 @@ scripts = [
     "hooks/block-python-file-write.py",
     "hooks/codex_memory_path_deny.py",
     "hooks/compact-tail-inject.py",
+    "hooks/marshal_admission_guard.py",
     "hooks/memory-dirty-sensor.py",
     "hooks/memory-index-regen.py",
     "hooks/memory-watch-seed.py",

@@ -90,6 +90,11 @@
           "type": "command",
           "command": "python3 {{REPO}}/hooks/block-memory-index-write.py",
           "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/marshal_admission_guard.py",
+          "timeout": 10
         }
       ]
     }

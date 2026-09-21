@@ -18,6 +18,12 @@
 - 實證（2026-09-12）：新 session 省略參數派發 → log `rewrite_from_absent`、主對話零阻塞、agent 以背景完成通知收尾
 - `zcode_agent_probe.py` 已刪——取證功能由 gate 的旁錄 log 吸收
 
+## marshal admission guard（AIR-135.10，ZCode/CC/codex 三面）
+
+- `marshal_admission_guard.py`（PreToolUse；ZCode/CC matcher `Edit|Write`——`tool_input.file_path`，codex matcher `apply_patch`——patch 標頭抽取 adapter 照 `codex_memory_path_deny.py` 形態、多檔 patch 任一命中即整 call deny）：控制面路徑 × canonical 主樹 → deny＋指路卡 WT——AIR-106 隔離閘從 commit 時點前移到編輯當下。canonical 判定＝git-common-dir→PRIMARY（`scripts/wt-open.sh` 同款拓撲錨，棄 wt-identity 存在性判據）；patterns 單一源＝`.githooks/control-plane-guard.sh --match-path` 子入口（Python 側零複製 regex）；repo self-gate（common dir 比對）防 user-level hook 殺其他 repo 同名路徑；crash fail-open（exit 0＋stderr 診斷）；**無 bypass env**——break-glass＝human 停 registration（本節上半「註冊維護語義」的 merge/approve 流程）
+- 覆蓋邊界：Bash redirect／MCP write 不在 hook 面（定位＝Marshal admission guard 非防惡意 sandbox——提高違規成本＋留審計跡，禁宣稱完整 write security boundary）；subagent 寫入不觸發本 hook 家族（同下方 memory sensor 同款 ZCode 實證）——spawned worker 在卡 WT 的寫入（理想形態）本就不經此閘
+- rollout：註冊／改 script 後須**新 session 生效**（per-session 啟動快照，同下方「限制」條）；安裝唯一入口＝`uv run python governance/install.py --surface hooks`；Muse 側 registration 模板不在本 repo——coverage 未驗證項，啟用前須實測
+
 ## memory sensors（AIR-56，CC-only）
 
 - `memory-write-sensor.py`（PostToolUse，matcher `Edit|Write`）：成功後才記 actor 證據→ `$MEMORY_HOOK_LOG`（預設 `~/.local/share/ai-guide/memory-hook-events.jsonl`）。池判定＝父目錄含 MEMORY.md。
