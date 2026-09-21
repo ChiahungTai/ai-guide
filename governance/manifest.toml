@@ -33,6 +33,7 @@ scripts = [
     "hooks/notification.sh",
     "hooks/post-build-gate.py",
     "hooks/stop-notification.sh",
+    "hooks/watcher_pairing_nag.py",
     "hooks/zcode_agent_background_gate.py",
 ]
 

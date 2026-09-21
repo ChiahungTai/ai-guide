@@ -1,9 +1,14 @@
-"""marshal admission guard 契約測試（AIR-135.10——AC#6 矩陣）。
+"""marshal admission guard 契約測試（AIR-135.10——AC#6 矩陣；AIR-152 marker 泛化擴充）。
 
-沙箱形態：tmp「canonical repo」內放**拷貝的 hook＋guard**（self-gate 錨與
+沙箱形態：tmp「canonical repo」內放**拷貝的 hook＋guard＋marker**（self-gate 錨與
 guard sibling 隨拷貝落沙箱內——deny 腿得以真實 subprocess 全鏈驗證：
 hook → /bin/bash control-plane-guard.sh --match-path），外加 linked
-worktree（非 canonical 放行腿）與他 repo（self-gate 腿）。
+worktree（非 canonical 放行腿）與他 repo（marker absent 腿）。
+
+AIR-152 marker 三態契約：
+- wt 級（ai-guide 現行等價）——canonical×控制面命中 deny（原 AC#6 矩陣全保留）
+- branch 級——canonical∧branch==trunk∧sourceRoots 命中才 deny（branch 級沙箱）
+- malformed——fail-closed deny＋指路修 marker；marker 檔本身恆豁免（修復出口）
 
 deny 輸出契約＝exit 2＋stderr 指路＋stdout hookSpecificOutput JSON 說明；
 fail-open 契約＝malformed payload／非轄面工具 → exit 0。
@@ -28,9 +33,28 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     )
 
 
+# ai-guide 自身 marker 形態（wt 級——patterns 單一源仍走 control-plane-guard.sh，
+# sourceRoots 空＝現行行為等價；.agents/marshal-governance.json 同款）
+WT_MARKER = {
+    "protocol": 1,
+    "trunk": "main",
+    "invariantLevel": "wt",
+    "sourceRoots": [],
+    "allowlist": ["^\\.agents/marshal-governance\\.json$"],
+}
+
+
+def _write_marker(repo: Path, profile: dict) -> None:
+    agents = repo / ".agents"
+    agents.mkdir(exist_ok=True)
+    (agents / "marshal-governance.json").write_text(
+        json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 @pytest.fixture(scope="module")
 def sandbox(tmp_path_factory):
-    """canonical repo（main）＋卡 worktree（air-1）＋他 repo（同名 rules/）。"""
+    """canonical repo（main）＋卡 worktree（air-1）＋他 repo（無 marker——absent 腿）。"""
     tmp_path = tmp_path_factory.mktemp("marshal-guard")
     canon = tmp_path / "canon"
     canon.mkdir()
@@ -45,6 +69,7 @@ def sandbox(tmp_path_factory):
     (canon / "hooks" / "marshal_admission_guard.py").write_text(
         HOOK.read_text(encoding="utf-8"), encoding="utf-8"
     )
+    _write_marker(canon, WT_MARKER)
     (canon / "rules").mkdir()
     (canon / "rules" / "tool-discipline.md").write_text("x\n", encoding="utf-8")
     (canon / "notes").mkdir()
@@ -66,6 +91,46 @@ def sandbox(tmp_path_factory):
     _git(other, "add", "-A")
     _git(other, "commit", "-q", "-m", "seed")
     return {"canon": canon, "wt": wt, "other": other}
+
+
+@pytest.fixture(scope="module")
+def branch_sandbox(tmp_path_factory):
+    """branch 級 invariant repo（自帶 hook 拷貝——self repo 語音；sourceRoots
+    ^src/、allowlist ^src/legacy/）。模擬「收編 repo 的 canonical main 改
+    sourceRoots 檔案→deny」probe 情境（工單任務 2——temp repo，不碰真 canonical）。"""
+    tmp_path = tmp_path_factory.mktemp("marshal-branch")
+    repo = tmp_path / "repo2"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    _git(repo, "config", "user.email", "t@t")
+    _git(repo, "config", "user.name", "t")
+    (repo / ".githooks").mkdir()
+    (repo / "hooks").mkdir()
+    (repo / ".githooks" / "control-plane-guard.sh").write_text(
+        GUARD.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (repo / "hooks" / "marshal_admission_guard.py").write_text(
+        HOOK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    _write_marker(
+        repo,
+        {
+            "protocol": 1,
+            "trunk": "main",
+            "invariantLevel": "branch",
+            "sourceRoots": ["^src/"],
+            "allowlist": ["^src/legacy/"],
+        },
+    )
+    (repo / "src" / "legacy").mkdir(parents=True)
+    (repo / "src" / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "src" / "legacy" / "old.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "docs").mkdir()
+    (repo / "docs" / "a.md").write_text("x\n", encoding="utf-8")
+    (repo / "README.md").write_text("seed\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "seed")
+    return {"repo": repo}
 
 
 def _run_hook(
@@ -105,6 +170,180 @@ def _assert_deny(r: subprocess.CompletedProcess, context: str) -> None:
 
 def _assert_allow(r: subprocess.CompletedProcess, context: str) -> None:
     assert r.returncode == 0, f"{context}：應放行卻擋\n{r.stdout}\n{r.stderr}"
+
+
+# ---------------------------------------------------------------------------
+# branch 級 invariant（AIR-152 marker 泛化）：canonical∧branch==trunk∧sourceRoots
+# ---------------------------------------------------------------------------
+
+
+def _run_branch_hook(
+    branch_sandbox: dict, payload, cwd: Path | None = None
+) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(branch_sandbox["repo"] / "hooks" / "marshal_admission_guard.py"),
+        ],
+        input=payload if isinstance(payload, str) else json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(cwd) if cwd is not None else None,
+    )
+
+
+def _assert_branch_deny(r: subprocess.CompletedProcess, context: str) -> None:
+    assert r.returncode == 2, f"{context}：應 deny（exit 2）未擋\n{r.stderr}"
+    assert "branch 級 invariant" in r.stderr, context
+    assert "wt-open" in r.stderr, f"{context}：deny 須指路卡 WT\n{r.stderr}"
+    assert "--base main" in r.stderr, f"{context}：指路須帶 marker trunk\n{r.stderr}"
+    assert "--ephemeral" in r.stderr, f"{context}：指路須含 ephemeral 出路\n{r.stderr}"
+    out = json.loads(r.stdout)
+    assert out["hookSpecificOutput"]["permissionDecision"] == "deny", context
+
+
+def test_branch_level_canonical_trunk_hit_deny(branch_sandbox):
+    """probe 情境：canonical main（==trunk）改 sourceRoots 檔案 → deny。"""
+    repo = branch_sandbox["repo"]
+    r = _run_branch_hook(branch_sandbox, _edit_payload(str(repo / "src" / "app.py")))
+    _assert_branch_deny(r, "canonical trunk × src/ 命中")
+
+
+def test_branch_level_new_file_nearest_parent_deny(branch_sandbox):
+    repo = branch_sandbox["repo"]
+    r = _run_branch_hook(
+        branch_sandbox, _edit_payload(str(repo / "src" / "sub" / "new.py"))
+    )
+    _assert_branch_deny(r, "canonical trunk 新檔（nearest parent=src/）")
+
+
+def test_branch_level_non_trunk_branch_allow(branch_sandbox):
+    """branch 級豁免主腿：canonical checkout 切到非 trunk branch → 放行。"""
+    repo = branch_sandbox["repo"]
+    _git(repo, "checkout", "-q", "-b", "feature-x")
+    try:
+        r = _run_branch_hook(
+            branch_sandbox, _edit_payload(str(repo / "src" / "app.py"))
+        )
+        _assert_allow(r, "canonical 非 trunk branch")
+    finally:
+        _git(repo, "checkout", "-q", "main")
+
+
+def test_branch_level_detached_head_allow(branch_sandbox):
+    """detached HEAD（--abbrev-ref 回 HEAD）≠ trunk → 豁免（封閉 predicate 不確定不擋）。"""
+    repo = branch_sandbox["repo"]
+    _git(repo, "checkout", "-q", "--detach")
+    try:
+        r = _run_branch_hook(
+            branch_sandbox, _edit_payload(str(repo / "src" / "app.py"))
+        )
+        _assert_allow(r, "detached HEAD")
+    finally:
+        _git(repo, "checkout", "-q", "main")
+
+
+def test_branch_level_allowlist_allow(branch_sandbox):
+    repo = branch_sandbox["repo"]
+    r = _run_branch_hook(
+        branch_sandbox, _edit_payload(str(repo / "src" / "legacy" / "old.py"))
+    )
+    _assert_allow(r, "allowlist ^src/legacy/ 豁免")
+
+
+def test_branch_level_non_source_path_allow(branch_sandbox):
+    repo = branch_sandbox["repo"]
+    r = _run_branch_hook(branch_sandbox, _edit_payload(str(repo / "docs" / "a.md")))
+    _assert_allow(r, "sourceRoots 未命中路徑")
+
+
+def test_branch_level_worktree_allow(branch_sandbox):
+    """非 canonical 卡 WT 寫 sourceRoots 檔 → 放行（正當出路）。"""
+    repo = branch_sandbox["repo"]
+    wt = branch_sandbox["repo"].parent / "repo2-wt"
+    r = _git(repo, "worktree", "add", "-b", "card-1", str(wt))
+    assert r.returncode == 0, r.stderr
+    r = _run_branch_hook(branch_sandbox, _edit_payload(str(wt / "src" / "app.py")))
+    _assert_allow(r, "卡 WT 寫 src/")
+
+
+def test_marker_file_itself_exempt(sandbox):
+    """marker 檔恆豁免——valid profile 下仍可直接編輯（改 profile 的入口）。"""
+    canon = sandbox["canon"]
+    r = _run_hook(
+        sandbox, _edit_payload(str(canon / ".agents" / "marshal-governance.json"))
+    )
+    _assert_allow(r, "marker 檔自身")
+
+
+# ---------------------------------------------------------------------------
+# marker 三態：malformed fail-closed（禁 fail-open）——deny＋指路修復
+# ---------------------------------------------------------------------------
+
+
+def test_malformed_marker_deny_with_repair_guidance(sandbox):
+    """JSON 壞 → 本 repo 寫入 deny（fail-closed）；訊息指路修 marker。"""
+    canon = sandbox["canon"]
+    marker = canon / ".agents" / "marshal-governance.json"
+    original = marker.read_text(encoding="utf-8")
+    marker.write_text("{not-json", encoding="utf-8")
+    try:
+        r = _run_hook(sandbox, _edit_payload(str(canon / "notes" / "idea.md")))
+        assert r.returncode == 2, f"malformed marker 應 deny\n{r.stderr}"
+        assert "marker 損毀" in r.stderr
+        assert "marshal-governance.json" in r.stderr, "須指到 marker 檔路徑"
+        out = json.loads(r.stdout)
+        assert out["hookSpecificOutput"]["permissionDecision"] == "deny"
+        # 修復出口：marker 檔本身仍可編輯
+        r_fix = _run_hook(
+            sandbox, _edit_payload(str(marker))
+        )
+        _assert_allow(r_fix, "malformed 下修 marker 自身")
+    finally:
+        marker.write_text(original, encoding="utf-8")
+
+
+def test_malformed_marker_schema_deny(sandbox):
+    """JSON 可解析但 schema 不符（protocol 錯／level 非法）＝malformed → deny。"""
+    canon = sandbox["canon"]
+    marker = canon / ".agents" / "marshal-governance.json"
+    original = marker.read_text(encoding="utf-8")
+    for bad in (
+        {"protocol": 2, "trunk": "main", "invariantLevel": "wt"},
+        {"protocol": 1, "trunk": "main", "invariantLevel": "repo"},
+        {"protocol": 1, "invariantLevel": "wt"},
+        {"protocol": 1, "trunk": "main", "invariantLevel": "wt", "sourceRoots": "src/"},
+    ):
+        marker.write_text(json.dumps(bad), encoding="utf-8")
+        try:
+            r = _run_hook(sandbox, _edit_payload(str(canon / "notes" / "idea.md")))
+            assert r.returncode == 2, f"{bad} 應 malformed deny\n{r.stderr}"
+        finally:
+            marker.write_text(original, encoding="utf-8")
+
+
+def test_malformed_marker_deny_extends_to_card_worktree(sandbox):
+    """marker 以 canonical 為準讀——canonical 上壞 marker，卡 WT 寫入也 fail-closed。"""
+    canon = sandbox["canon"]
+    marker = canon / ".agents" / "marshal-governance.json"
+    original = marker.read_text(encoding="utf-8")
+    marker.write_text("[broken", encoding="utf-8")
+    try:
+        r = _run_hook(
+            sandbox, _edit_payload(str(sandbox["wt"] / "notes" / "idea.md"))
+        )
+        assert r.returncode == 2, f"壞 marker 下卡 WT 寫入應 deny\n{r.stderr}"
+        assert "marker 損毀" in r.stderr
+    finally:
+        marker.write_text(original, encoding="utf-8")
+
+
+def test_absent_marker_other_repo_allow(sandbox):
+    """三態之一 absent：無 marker repo 全放行（opt-in 向下相容）。"""
+    other = sandbox["other"]
+    r = _run_hook(sandbox, _edit_payload(str(other / "rules" / "tool-discipline.md")))
+    _assert_allow(r, "無 marker repo（absent）")
 
 
 # ---------------------------------------------------------------------------
@@ -392,3 +631,22 @@ def test_real_repo_hook_runs_allow_on_repo_external_target():
         cwd=str(REPO),
     )
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_malformed_marker_invalid_regex_deny(sandbox):
+    """sourceRoots／allowlist 任一 regex 語法錯＝malformed deny（152-C2：靜默
+    失效即假保護——enrollment 也不得對 non-enforcing profile 回報成功）。"""
+    canon = sandbox["canon"]
+    marker = canon / ".agents" / "marshal-governance.json"
+    original = marker.read_text(encoding="utf-8")
+    for bad in (
+        {"protocol": 1, "trunk": "main", "invariantLevel": "branch", "sourceRoots": ["["]},
+        {"protocol": 1, "trunk": "main", "invariantLevel": "branch",
+         "sourceRoots": ["src/"], "allowlist": ["(unclosed"]},
+    ):
+        marker.write_text(json.dumps(bad), encoding="utf-8")
+        try:
+            r = _run_hook(sandbox, _edit_payload(str(canon / "notes" / "idea.md")))
+            assert r.returncode == 2, f"{bad} 壞 regex 應 malformed deny\n{r.stderr}"
+        finally:
+            marker.write_text(original, encoding="utf-8")

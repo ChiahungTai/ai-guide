@@ -84,6 +84,9 @@
 > **具名 receipt（派發前必填——空欄禁派）**：逐 work unit／腿宣告 **sink 路徑＋錨點行**——artifact 預期路徑（無 artifact 的收斂型查證填 `receipt-only`）＋機器可查的錨點（section 標題／固定 header 行，收法時以 file:line 機驗）。期望在派發時宣告，收法才有機械可比對主鍵（真實案例：0919 bridge noop-completion 四 job——模板無必填 receipt 欄、收法端無機械主鍵與驗收門，道歉文收尾照樣誤判完成）；驗收程序（L1 在場→L2 錨點；terminal≠complete）唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節，本模板不重述。
 > - 填寫形態（逐腿一行，機械可掃 `^>? ?-? ?receipt：`）：`receipt：sink=<artifact 絕對路徑>｜anchor=<錨點行或 section 標題>`；無 artifact 查證填 `receipt：receipt-only`
 
+> **watcher 配對回執（AIR-135.7 配對語義；AIR-152 MVP-4 起必填——空欄禁派）**：逐 background dispatch 一行宣告 watcher 在場憑證——填實際掛上的 arm one-liner（`uv run python …/bridge_waiter.py <jobId>`，waiter 登記腿寫 `.agent-tmp/liveness.jsonl`，Stop 配對催告閘以此機驗在場），或 foreground wait 者填免責理由；兩者皆無＝派工未配對，session 結束面會被催告。
+> - 填寫形態（逐 dispatch 一行，機械可掃 `^>? ?-? ?watcher：`）：`watcher：<arm one-liner>`｜`watcher：foreground-wait——<免責理由>`
+
 1. `rg -n "external-runtime" rules/model-routing.md` → ≥1 命中
 2. `rg -n "eligibility" rules/model-routing.md` → 命中
 3. `rg -n "needs-fix" skills/model-routing/SKILL.md` → 命中

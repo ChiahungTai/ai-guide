@@ -22,6 +22,14 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   selected 軸超齡的 poll → stdout 尾行 wake JSON
   （`{"wake":"stuck","jobId","axes":[...],"silenceMinutes":{...}}`）→ exit 3
   （與 0/1/2/124 正交；單 id 與批次同語義，wake JSON 恆為 stdout 最後一行）。
+- AIR-146 frozen spec amendment——機器登記腿（AIR-152）：T1 啟動 append
+  `<repo>/.agent-tmp/liveness.jsonl`（`{"event":"armed","jobId","armedAt","pid"}`）、
+  T5/T6 collect 補 `{"event":"collected","jobId","exitState","collectedAt"}`。
+  append-only、損壞容錯；僅輔助腿——寫入失敗 stderr 診斷，frozen spec 狀態機
+  與 exit 契約零變。台帳從手動紀律降級為人類 expect 欄；配對消費端＝
+  hooks/watcher_pairing_nag.py（Stop 配對催告，liveness.jsonl 任一行含
+  jobId 即視為 watcher 在場）。CLI 預設啟用（cwd repo 解析），
+  `--liveness-path` 可覆寫；測試直呼 run_watcher 不傳＝停用。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
 --------------------------------------------------------------------------------
@@ -613,6 +621,24 @@ def _dumps(payload: dict) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
+def _liveness_append(
+    liveness_path: Path | None, payload: dict, err: TextIOBase
+) -> None:
+    """liveness 登記腿（AIR-152 amendment）——append-only、損壞容錯。
+
+    僅輔助腿：任何寫入失敗 stderr 診斷後照常（frozen spec 狀態機與 exit
+    契約零變）；liveness_path None＝停用（測試直呼 run_watcher 的預設）。
+    """
+    if liveness_path is None:
+        return
+    try:
+        liveness_path.parent.mkdir(parents=True, exist_ok=True)
+        with liveness_path.open("a", encoding="utf-8") as fh:
+            fh.write(_dumps({"schema": "liveness/1", **payload}) + "\n")
+    except OSError as exc:
+        _emit(err, f"[watcher] liveness 登記失敗（輔助腿，不影響等待）: {exc}")
+
+
 def _emit_state(out: TextIOBase, err: TextIOBase, state: str, extra: dict) -> int:
     _emit(out, _dumps({"state": state, **extra}))
     _emit(err, f"[watcher] {state}: {extra.get('reason', '')}")
@@ -783,6 +809,7 @@ def run_watcher(
     now: Callable[[], datetime] | None = None,
     stdout: TextIOBase | None = None,
     stderr: TextIOBase | None = None,
+    liveness_path: Path | None = None,
 ) -> int:
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
@@ -812,6 +839,22 @@ def run_watcher(
             return _reconcile_or_error(out, err, job_id, exc)
         except LedgerCorruptError as exc:
             return _emit_state(out, err, "error", {"jobId": job_id, "reason": str(exc)})
+
+    # 機器登記腿 T1（AIR-152 amendment）：啟動即登記 armed——watcher_pairing_nag
+    # 以 liveness.jsonl 任一行含 jobId 判定 watcher 在場。
+    # armedAt 用真實牆鐘——登記腿非狀態機面，不消費注入時鐘（frozen spec
+    # 測試的 now 序列語義不變）
+    for job_id in job_ids:
+        _liveness_append(
+            liveness_path,
+            {
+                "event": "armed",
+                "jobId": job_id,
+                "armedAt": _system_now().isoformat(),
+                "pid": os.getpid(),
+            },
+            err,
+        )
 
     running_ids = [j for j in job_ids if snapshots[j].status == RUNNING]
     if running_ids:
@@ -1002,6 +1045,18 @@ def run_watcher(
         for row in rows
     )
     exit_state = "completed" if all_delivered else "terminal-non-completed"
+    # 機器登記腿 T5/T6（AIR-152 amendment）：collect 補 collected 欄（牆鐘，理由同 T1）
+    for job_id in job_ids:
+        _liveness_append(
+            liveness_path,
+            {
+                "event": "collected",
+                "jobId": job_id,
+                "exitState": exit_state,
+                "collectedAt": _system_now().isoformat(),
+            },
+            err,
+        )
     receipt = build_collection_receipt(
         rows,
         exit_state=exit_state,
@@ -1016,6 +1071,23 @@ def run_watcher(
 # ---------------------------------------------------------------------------
 # CLI 入口
 # ---------------------------------------------------------------------------
+
+
+def _default_liveness_path() -> Path:
+    """cwd repo 的 liveness 台帳（AIR-152 登記腿）：git toplevel 優先，非 repo 退 cwd。"""
+    cwd = Path.cwd()
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            return Path(proc.stdout.strip()) / ".agent-tmp" / "liveness.jsonl"
+    except OSError:
+        pass
+    return cwd / ".agent-tmp" / "liveness.jsonl"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1059,6 +1131,13 @@ def main(argv: list[str] | None = None) -> int:
         help="delegate-bridge CLI 路徑（預設 PATH 上的 delegate-bridge，"
         "或 $DELEGATE_BRIDGE_BIN）",
     )
+    parser.add_argument(
+        "--liveness-path",
+        default=None,
+        metavar="PATH",
+        help="liveness 登記腿台帳路徑（AIR-152；預設 <cwd repo>/.agent-tmp/"
+        "liveness.jsonl）",
+    )
     args = parser.parse_args(argv)
 
     sinks: dict[str, str] = {}
@@ -1075,6 +1154,9 @@ def main(argv: list[str] | None = None) -> int:
         anchors.setdefault(job_id, []).append(token)
 
     client = BridgeClient(args.bridge_bin)
+    liveness_path = (
+        Path(args.liveness_path) if args.liveness_path else _default_liveness_path()
+    )
     try:
         return run_watcher(
             client,
@@ -1082,6 +1164,7 @@ def main(argv: list[str] | None = None) -> int:
             kind=args.kind,
             sinks=sinks,
             anchors=anchors,
+            liveness_path=liveness_path,
         )
     except UsageError as exc:
         print(f"bridge_waiter: usage 錯誤：{exc}", file=sys.stderr)

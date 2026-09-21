@@ -5,6 +5,10 @@
 只標不殺、只報轉移、偵測與處置分離）＋ rules/bridge-dispatch.md
 「Dispatch⇄collection 配對」（terminal≠complete；sink 三步＝存在→非空→錨點）。
 
+收編盤點（AIR-152）：`--enrollment-root <dir>` 掃該目錄**下一層** git repos，
+以 guard 本體 load_profile（三態單一源）列「未收編」（無 marker）與
+marker-malformed 清單——一行一 repo，只報存量不處置（V8 可見面腿）。
+
 v1 資料源（bridge ledger 是 per-repo 的——`--state-root` 可多根，預設 ai-guide＋delegate-bridge）：
 - 各根 jobs ledger：`<state-root>/jobs/*.jsonl`（事件流，三種形態）
   ＋ `<state-root>/jobs.json`（bridge 自家索引；dispatch 時以 running 寫入、
@@ -17,6 +21,7 @@ v1 資料源（bridge ledger 是 per-repo 的——`--state-root` 可多根，�
 """
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -152,6 +157,14 @@ def parse_args() -> argparse.Namespace:
         help="terminal-unclaimed／unledgered 的回報回看窗（預設 168；0＝不限）",
     )
     parser.add_argument("--json", action="store_true", help="以 JSON 輸出報告")
+    parser.add_argument(
+        "--enrollment-root",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="收編盤點根（AIR-152）：掃下一層 git repos，列未收編／marker 壞清單"
+        "（唯讀可見面）",
+    )
     return parser.parse_args()
 
 
@@ -332,6 +345,73 @@ def load_ledger_rows(journal: Path) -> list[LedgerRow]:
     return rows
 
 
+def _guard_schema():
+    """載 guard 本體——load_profile 三態判定單一源（收編盤點與執行面同 schema）。"""
+    guard = (
+        Path(__file__).resolve().parents[1] / "hooks" / "marshal_admission_guard.py"
+    )
+    spec = importlib.util.spec_from_file_location("_marshal_guard_schema", guard)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def scan_enrollment(root: Path) -> dict:
+    """收編盤點（AIR-152）：root 下一層 git repos，唯讀、只報存量不處置。"""
+    guard = _guard_schema()
+    repos = sorted(
+        child
+        for child in root.iterdir()
+        if child.is_dir() and (child / ".git").exists()
+    )
+    enrolled: list[str] = []
+    unenrolled: list[str] = []
+    malformed: list[str] = []
+    for repo in repos:
+        # marker 權威面＝canonical PRIMARY（guard runtime 同錨——codex 152-C1 同源：
+        # linked WT 上 worktree 根的 marker 不被 guard 讀，盤點錨錯＝假收編）
+        primary = repo
+        try:
+            common = guard._git_common_dir(str(repo))
+            primary = Path(common).parent
+        except Exception:
+            pass  # 非 standard 佈局退 repo 根（盤點唯讀——判讀誤差可容忍）
+        status, _profile = guard.load_profile(str(primary))
+        if status == "ok":
+            enrolled.append(str(repo))
+        elif status == "malformed":
+            malformed.append(str(repo))
+        else:
+            unenrolled.append(str(repo))
+    return {
+        "root": str(root),
+        "scanned": len(repos),
+        "enrolled": enrolled,
+        "unenrolled": unenrolled,
+        "malformed": malformed,
+    }
+
+
+def render_enrollment(scan: dict) -> list[str]:
+    lines = [
+        "## enrollment (%d scanned | enrolled=%d unenrolled=%d marker-malformed=%d)"
+        % (
+            scan["scanned"],
+            len(scan["enrolled"]),
+            len(scan["unenrolled"]),
+            len(scan["malformed"]),
+        )
+    ]
+    for repo in scan["unenrolled"]:
+        lines.append(
+            f"- {repo} | 未收編（無 .agents/marshal-governance.json）——"
+            f"收編：uv run python scripts/enroll_repo.py --repo {repo}"
+        )
+    for repo in scan["malformed"]:
+        lines.append(f"- {repo} | marker-malformed——修復或刪除該 marker")
+    return lines
+
+
 def build_collection_map(rows: list[LedgerRow]) -> tuple[dict[str, LedgerRow], set[str]]:
     """回（已收 id→列, 全部登記於台帳的 id 集）。"""
     collected: dict[str, LedgerRow] = {}
@@ -466,6 +546,7 @@ def render_text(
     state_roots: list[Path],
     args: argparse.Namespace,
     now: datetime,
+    enrollment: dict | None = None,
 ) -> str:
     lines: list[str] = []
     multi = len(state_roots) > 1
@@ -490,6 +571,8 @@ def render_text(
                 f" [{face.status_face}]{root_tag} | 最後活動 {fmt_ts(face.last_activity)}"
                 f"（{age_text(face.last_activity, now)}）| {note}"
             )
+    if enrollment is not None:
+        lines.extend(render_enrollment(enrollment))
     lines.append("[ACTION] 處置分離：本工具不重派／不殺——依 AIR-135.7 契約由 Marshal 主座席裁決")
     return "\n".join(lines)
 
@@ -500,6 +583,7 @@ def render_json(
     state_roots: list[Path],
     args: argparse.Namespace,
     now: datetime,
+    enrollment: dict | None = None,
 ) -> str:
     payload = {
         "generated_at": now.isoformat(),
@@ -528,6 +612,8 @@ def render_json(
             for group in groups
         },
     }
+    if enrollment is not None:
+        payload["enrollment"] = enrollment
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
@@ -569,10 +655,21 @@ def main() -> int:
     )
     counts = {group: len(items) for group, items in groups.items()}
 
+    enrollment = None
+    if args.enrollment_root is not None:
+        if not args.enrollment_root.is_dir():
+            print(
+                f"[FAIL] agent_liveness_sweep: enrollment root 不存在："
+                f"{args.enrollment_root}",
+                file=sys.stderr,
+            )
+            return 2
+        enrollment = scan_enrollment(args.enrollment_root)
+
     if args.json:
-        print(render_json(groups, counts, state_roots, args, now))
+        print(render_json(groups, counts, state_roots, args, now, enrollment))
     else:
-        print(render_text(groups, counts, state_roots, args, now))
+        print(render_text(groups, counts, state_roots, args, now, enrollment))
     print(
         f"[OK] agent_liveness_sweep: 台帳列 {len(rows)}（提及 job id {len(mentioned)}），"
         f"掃描 {len(faces)} jobs／{len(state_roots)} roots",
