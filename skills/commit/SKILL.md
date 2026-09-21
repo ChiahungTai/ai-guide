@@ -160,6 +160,18 @@ staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-wr
 
 Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/commit 階段 6 成功後刷新 receipt `head_sha`——兩道閘共用同一判定源。
 
+### conditional commit delegation 驗收程序（autonomous session——outward rule 0921 條的 predicate 細節）
+
+用戶確認豁免的主張成立，須**五件齊**（任一缺＝回退互動確認 gate，禁寬認）：
+
+1. **active arc**：branch 名卡 id 對應的卡 status＝In Progress（非 To Do／Done）；
+2. **當次有效 receipt**：post-build receipt 存在且 `--verdict`＝`ok`（`stale`／`missing` 即無效）；
+3. **review profile 完成**：receipt 內 required review legs 全 terminal＋judge/followup 收斂（無 open findings 未處置）；
+4. **identity fresh**：receipt 後 working tree 產生新變更（`git status` 非空＋revision 變）＝須補 delta review 後重產 receipt，方可 commit；
+5. **委任面核對**：commit 內容屬該弧範圍（staged 逐檔對照 EP／卡 scope）。
+
+每次 commit 獨立驗五件；commit 後刷新 receipt `head_sha`（同上段機制，下一 commit 須重產 receipt 重驗）。push／deploy／跨 repo 寫不在委任內恆停；verdict（旗艦裁決）非本程序輸入。
+
 ### 階段 4：生成 Commit Message
 
 **格式**：`<type>(<scope>): <description>`

@@ -166,9 +166,9 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
 ## 自主授權形態（user 原話授權時）
 
-- **顧問共識授權**：「有共識就做，不用我同意」→ **user 已點名的顧問參與者**共識＝動工 gate（5.3 仍須 user 點名，見 [model-routing](../model-routing/SKILL.md)）；仍受紅線／黃線約束，commit 仍人 gate（見 [autonomous-execution](../autonomous-execution/SKILL.md)）
+- **顧問共識授權**：「有共識就做，不用我同意」→ **user 已點名的顧問參與者**共識＝動工 gate（5.3 仍須 user 點名，見 [model-routing](../model-routing/SKILL.md)）；仍受紅線／黃線約束，commit 預設人 gate（條件委任例外＝outward rule「conditional commit delegation」；見 [autonomous-execution](../autonomous-execution/SKILL.md)）
 - **對抗驗證／交卷互改**：review 段可用多家族各自審查→互相討論→歸納修正方向；難題位可用對抗驗證——兩者皆需 user 原話授權（睡前授權內含「用些對抗驗證」即算）
-- **旗艦裁決授權（顧問共識授權的無共識分支延伸；AIR-135.9）**：user 原話授權（例：「兩家族討論→旗艦裁決後就實作下去，不要卡」）→ 判斷類未決（真分岔）以「兩家族**獨立** findings（預設不互看；旗艦裁定 evidence-conflict 時允許一次 bounded rebuttal）→ 旗艦裁決者（Role=Arbiter，binding 走 [model-routing](../model-routing/SKILL.md)，條文不 materialize model 名）verdict → 直接實作」推進，不停等 user；兩家族已共識者免裁決直行（即顧問共識授權）。**觸發分級**：瑣碎取捨走「歧義選最合理＋記錄理由」；**選錯＝重做級**的真分岔才啟本機制。**邊界**：verdict 權僅及判斷類——強 outward、破壞性／單向門、需求歧義（intent 層）、自我擴權／revert 預算超支、commit 恆停（單一源＝[outward-action-consent](../../rules/outward-action-consent.md)＋[autonomous-execution](../autonomous-execution/SKILL.md) 紅線，本條不重刻）；verdict 枚舉 A/B/HYBRID/PROBE/PENDING，PENDING＝旗艦自判無權。**verdict 物四欄**（逐題 verdict＋理由＋被拒選項／可逆性聲明（高 revert 成本加註晨間優先複核）／PENDING 殘留）記卡 Notes，completion report 帶摘要；晨間否認＝revert 或重開卡（下游傳播走 AIR-135.3 AC#8 依賴語義）。
+- **旗艦裁決授權（顧問共識授權的無共識分支延伸；AIR-135.9）**：user 原話授權（例：「兩家族討論→旗艦裁決後就實作下去，不要卡」）→ 判斷類未決（真分岔）以「兩家族**獨立** findings（預設不互看；旗艦裁定 evidence-conflict 時允許一次 bounded rebuttal）→ 旗艦裁決者（Role=Arbiter，binding 走 [model-routing](../model-routing/SKILL.md)，條文不 materialize model 名）verdict → 直接實作」推進，不停等 user；兩家族已共識者免裁決直行（即顧問共識授權）。**觸發分級**：瑣碎取捨走「歧義選最合理＋記錄理由」；**選錯＝重做級**的真分岔才啟本機制。**邊界**：verdict 權僅及判斷類——強 outward、破壞性／單向門、需求歧義（intent 層）、自我擴權／revert 預算超支、commit（verdict 非 commit authority；弧內 commit 走 outward rule「conditional commit delegation」receipt gate，單一源＝[outward-action-consent](../../rules/outward-action-consent.md)＋[autonomous-execution](../autonomous-execution/SKILL.md)，本條不重刻）；verdict 枚舉 A/B/HYBRID/PROBE/PENDING，PENDING＝旗艦自判無權。**verdict 物四欄**（逐題 verdict＋理由＋被拒選項／可逆性聲明（高 revert 成本加註晨間優先複核）／PENDING 殘留）記卡 Notes，completion report 帶摘要；晨間否認＝revert 或重開卡（下游傳播走 AIR-135.3 AC#8 依賴語義）。
 
 ## Agent Spawn 規則
 

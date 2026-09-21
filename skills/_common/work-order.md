@@ -10,7 +10,7 @@
 - read-only 任務禁任何寫入（advisory profile 尤甚）
 - **禁再委派**：work order 收方不得再 spawn／再派子任務（委派單向——子智能體不能再派發子智能體，跨 runtime 亦同；AIR-91 S3 起為紅線）
 - 禁把產物寫到 `/tmp` 或 repo 外；中間筆記不留檔
-- **mutating continuation 工單（`--session-id` resume／fork 接續既有 session 的寫入委派）固定帶授權失效條款**：「卷內既有授權全部失效，outward 動作一律 PENDING」——接續繼承 context、不繼承授權（一次授權≠永久授權，outward-action-consent 會話層投影）；read-only 工單本就零寫入不受影響。本條款失效的是卷內既有授權；outward-action-consent 機械例外①–④的適用性依其自身 session 形態判定（autonomous 下本來就不繼承），不由本條款展期或撤銷。
+- **mutating continuation 工單（`--session-id` resume／fork 接續既有 session 的寫入委派）固定帶授權失效條款**：「卷內既有授權全部失效，outward 動作一律 PENDING」——接續繼承 context、不繼承授權（一次授權≠永久授權，outward-action-consent 會話層投影）；read-only 工單本就零寫入不受影響。本條款失效的是卷內既有授權；outward-action-consent 機械例外①–④與 conditional commit delegation 不由本條款展期或撤銷——delegation 不從舊卷繼承，須從 canonical arc state＋當次 gate evidence 重新建立（predicate＝commit skill），重新成立即可依 outward rule 執行。
 - 紅線違反＝失敗，非風格問題；審查未過不得結卡
 - 外部 runtime flag 未暴露時，以本紅線承載 read-only 約束（bridge 暴露 `--disable-write` 後改 flag；roadmap 記 delegate-bridge 側）
 

@@ -30,7 +30,7 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 3. STATE.md 僅在本 session 確有轉向／卡點觀察時更新（觀察層職責不變）；禁把 read-set／完成度／EP checkpoint 抄進 STATE 或 ticket
 4. UC 級任務排程前必須已有卡——**/at 不建卡**（排程不是建卡入口；臨時非 UC 工作走 `task_ref: ad-hoc`，見 Phase 2）
 
-> **接續授權失效條款**：resume 卷開場＝新授權週期——**卷內既有授權全部失效，outward 動作一律 PENDING**（outward-action-consent「一次授權≠永久授權」的會話層投影）；本命令的自主執行指令**不得解讀為授權展期**——自主續工可以，outward 動作照 PENDING 規則回報待 user 拍板。條款句＝Phase 3 capsule invariant。
+> **接續授權失效條款**：resume 卷開場＝新授權週期——**卷內既有授權全部失效，outward 動作一律 PENDING**（outward-action-consent「一次授權≠永久授權」的會話層投影）；本命令的自主執行指令**不得解讀為授權展期**——自主續工可以，outward 動作照 PENDING 規則回報待 user 拍板。例外＝conditional commit delegation 不從舊卷繼承、但可從 canonical arc state＋當次 gate evidence 重新建立（predicate＝commit skill），重新成立即依 outward rule 執行。條款句＝Phase 3 capsule invariant。
 
 ### Phase 1：解析時間 + 提取任務目標
 

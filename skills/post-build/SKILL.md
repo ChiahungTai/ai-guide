@@ -25,7 +25,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 ```
 
 - 構件真相源各歸其主（implement／code-review／judge-review／commit consent），本節只鎖序與 gate
-- commit gate 恆在 user（自主模式不豁免）；收尾段只做機械（commit 前整理），不重做判斷
+- commit gate 預設在 user（自主模式唯一例外＝outward rule「conditional commit delegation」——本節 receipt 即其 gate 證據，predicate 驗收程序＝commit skill）；收尾段只做機械（commit 前整理），不重做判斷
 
 ## WorkUnitContract rows（本 workflow 持有——AIR-91 S3）
 
@@ -196,7 +196,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - callstack 菜單（repo 有 `ai-analysis/blueprint/callstack-plan.md` 時）：積壓 N 條待生成（機械＝plan **成鏈行數**（①-③ 軌行；④ scripts/索引行不計）− `callstack/` 既有 md 數）——報庫存不催行動，生成＝獨立觸發＋報價（blueprint-bootstrap）
 - smell=<建議 zoom 的 dir|無>——訊號源＝階段 1/2 findings 中「疑似 AI 亂加／junk／scope creep」類 finding 所指目錄。**triage 訊號非鏈內調用**：人類看到再決定開 viewport session 跑 [smell-detector](../smell-detector/SKILL.md) zoom（受眾分離——smell-detector 是軌道②人類 viewport，不進本鏈自動跑；baseline/onboarding 盤點屬週期需求，不掛 post-build）
 - ⚠️ 待用戶確認：<決策清單>
-- 下一步：`/commit`（commit 需人類確認，本 skill 止步於此）
+- 下一步：`/commit`（commit 預設需人類確認；自主模式唯一例外＝conditional commit delegation——outward rule 0921 條，predicate＝commit skill，本 skill 止步於此）
 ```
 
 **EP 對照行是再次提醒**（主歸納點在 [implement](../implement/SKILL.md) 階段 6——build 現場最清楚）：弧模式帶階段 1 機械底稿；同 session 接續 → 帶入 implement 階段 6 歸納；修正迴圈有新增變動 → 更新後再報。此行是 commit 決策的 triage 訊號（一眼看出 EP 未解釋的變動），深度渲染屬 `/debrief`；delta_tour 機制與時點條件真相源見 code-review「B. Agent 載體」（S1 風險 profile 派發）。
@@ -208,7 +208,7 @@ dual-family 第二審查者因訂閱窗口／額度不足跳過時，必須顯�
 ## 執行約束
 
 - **新工具／新流程的首個真實消費者＝自己的 build 弧**：消費對照寫進收尾報告（工具驗收與弧審查合同一件事，不另造驗收場景）——適用全鏈（含 docs-mode 弧）
-- **止步於 commit 之前**：commit 需人類確認（硬規則，自主模式亦然）
+- **止步於 commit 之前**：commit 需人類確認（預設硬規則；自主模式唯一例外＝outward rule「conditional commit delegation」——receipt 即 gate 證據）
 - **鏈內委派 muse 必經 bridge**：任何階段把工作派給 muse（dual-family 第二審查者、docs 鏈分擔等）一律走 bridge task 入口，收尾報告記 ledger jobId——入口約束單一源見 [model-routing](../model-routing/SKILL.md)「bridge 必經」；ledger 查無的 muse 產出＝收尾不可考，標「未經 bridge，副作用側考古」
 - **不重抄被編排命令的方法論**：審查軸、judge 準則、consistency 六維都在各命令/skill 內，本檔只編排
 - 修正迴圈上限 3 輪，超過即停（不硬撐原則）
