@@ -3,10 +3,10 @@ id: AIR-151
 title: >-
   improvement discovery——quota-constrained 發現可改善機制（admission→結算收斂→pending
   nonblocking→v4 開卡）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-21 13:22'
-updated_date: '2026-09-21 13:48'
+updated_date: '2026-09-21 18:09'
 labels: []
 dependencies: []
 ordinal: 136000
@@ -33,3 +33,20 @@ flowchart LR
 
 〔已決策勿重辯〕①第一 invariant：discovery 不得阻塞 originating arc 的 Settle/Done（nonblocking 語義——現行 `decisions_pending.py` 任何 open row 擋 lint --card，本卡補 gate 維度）②schema owner 歸 135.3/135.2，本卡只增 row-type ③promotion 後原 row 凍結單向（更新只在卡上）④掛載點合流：每弧 post-build 搭便車（僅 admissible 時、capped）＋Settle 尾機械 dedupe/TTL；每弧 0 新增 LLM invocation 為硬約束 ⑤Planning Contract 帶 promotion trigger：需改 pending blocking semantics／Settle contract → 升 full ⑥探索是 filler 非 heartbeat——backlog 有承諾卡不探索；窗口尾/backlog 空才跑探索弧 ⑦與 135.8 邊界：KPI 語義 user correction 專屬，本卡轉化率另一套、名稱分開。溯源：tri 討論 job-mub6xkgs（muse GO）＋job-mub6xki6（codex GO）＋job-mub8ygxk 前身討論；findings＝`.agent-tmp/air-135-disc/findings-digest.md`。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+improvement discovery MVP 落地（commit aca11d63）：improvement_signals 四類機械掃描（零 LLM）＋decisions_pending kind/gate/meta（nonblocking 不擋 Done）＋update/recurrence＋ls --stale-days TTL＋KPI 漏斗 reviewed→opened→settled/dismissed＋post-build 收斂節（any_signal=false 跳過）。bi 審查兩輪（muse 首輪 4F→全修→複審 approve；codex 5F 交叉全修）；git+pytest 1296 綠。residue：rate-limited 桶 errorExcerpt 分類有誤報可能（MVP 接受）。
+
+```mermaid
+flowchart LR
+  S["機械訊號（零 quota）"] -->|"admission"| PB["post-build 收斂節<br/>capped ≤3（無訊號跳過）"]
+  PB -->|"kind=improvement<br/>gate=nonblocking"| P["pending 台帳"]
+  P -->|"晨間裁決"| U{user}
+  U -->|open| C["v4 開卡→Settle"]
+  U -->|dismiss| X["obsolete（KPI dismissed）"]
+  C --> ST["Settle 過關"] -->|"close"| SE["settled"]
+  PB -.->|"audit 併流"| A["arc_behavior_audit"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

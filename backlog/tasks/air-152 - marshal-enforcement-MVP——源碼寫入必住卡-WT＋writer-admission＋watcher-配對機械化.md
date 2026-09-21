@@ -1,10 +1,10 @@
 ---
 id: AIR-152
 title: marshal enforcement MVP——源碼寫入必住卡 WT＋writer admission＋watcher 配對機械化
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-21 13:22'
-updated_date: '2026-09-21 13:48'
+updated_date: '2026-09-21 18:09'
 labels: []
 dependencies: []
 ordinal: 137000
@@ -32,3 +32,20 @@ flowchart LR
 
 〔已決策勿重辯〕①三分歧定案：hook＋bridge 同弧並行／marker opt-in＋零摩擦收編＋sweep 未收編可見面／perl 前卡 NO-GO ②deny 三段式（擋什麼／為什麼／可 copy-paste 恢復命令）；無 bypass env，break-glass＝human 停 registration；hotfix 走 `--ephemeral` 不白名單 ③bridge `--wt`＝翻 DW-10「不驗證 worktree」邊界決策（驗證≠建立），bridge repo 實作走其既有流程、本卡擁契約面 ④waiter frozen spec 增機器登記腿＝AIR-146 amendment ⑤rollout：新閘 warn-first 一弧量誤擋率再轉 deny；bridge grace 期一弧 ⑥ZCode hook 事實：Edit/Write 不觸發 subagent 寫入（spawn 面只 bridge 可卡）；background gate audit log 硬編碼 ai-guide 路徑為既有 bug、泛化時改分 repo ⑦Q7 誤報豁免：≤2 檔合法／卡檔 journal 不算／fallback-attach 豁免／agent-id 歸因。溯源：tri job-mub8ygl7/mub8ygml/mub8ygxk＋Q7Q8 續問 job-mub9l0kf/mub9l0lw/mub9l0wu；收斂＝`.agent-tmp/air-135-disc/enforcement-digest.md`＋違規實證 `violations-digest.md`。開工時依 card Planning Contract 補 AC/Plan；probe-first 清單（modelID 進 log？／PostToolUse Bash matcher）見 digest。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+marshal enforcement MVP 落地（commit af285f1a）：guard marker 三態泛化（branch/wt 級＋regex fail-closed＋PRIMARY 錨）＋watcher pairing Stop 催告（budget 2 fail-open）＋bridge_waiter liveness 登記腿（AIR-146 amendment）＋enroll_repo 一命令收編（no-op 拒收）＋arc_behavior_audit 四流審計＋sweep --enrollment-root。muse approve；codex 兩輪 12F：9 修復＋1 rejected＋2 residue。git+pytest 1305 綠。residue→橋面卡候選：①bridge sessionId 傳播②--liveness-path 分歧③--wt 驗證（翻 DW-10）。
+
+```mermaid
+flowchart LR
+  W["write-capable dispatch"] -->|"bridge --wt（橋面卡）"| V{"wt identity＋<br/>single-writer"}
+  E["main seat Edit/Write"] -->|"PreToolUse"| G{"marker 三態<br/>branch/wt invariant"}
+  G -->|"malformed／hit"| D["deny＋指路 wt-open"]
+  V -->|fail| D2["deny exit 2"]
+  V -->|pass| R["worker 於卡 WT"]
+  SP["spawn"] -->|"stdout 印 arm＋Stop 催告＋liveness.jsonl"| WA["watcher 必在場"]
+  R --> AU["弧結算審計四流"] -->|"挖掘線索"| M["135.8 correction"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
