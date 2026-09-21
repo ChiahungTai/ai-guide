@@ -3,9 +3,10 @@ id: AIR-151
 title: >-
   improvement discovery——quota-constrained 發現可改善機制（admission→結算收斂→pending
   nonblocking→v4 開卡）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-21 13:22'
+updated_date: '2026-09-21 13:48'
 labels: []
 dependencies: []
 ordinal: 136000

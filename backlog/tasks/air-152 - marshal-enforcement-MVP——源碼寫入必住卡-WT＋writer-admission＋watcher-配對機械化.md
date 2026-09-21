@@ -1,9 +1,10 @@
 ---
 id: AIR-152
 title: marshal enforcement MVP——源碼寫入必住卡 WT＋writer admission＋watcher 配對機械化
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-21 13:22'
+updated_date: '2026-09-21 13:48'
 labels: []
 dependencies: []
 ordinal: 137000
