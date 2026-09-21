@@ -27,7 +27,7 @@ demo 用 demo_，禁 test_；測試用 test_。demo 暫存到 commit 時移 scri
 
 ## 比較式驗證 gate（IEEE 754 fail-open 防護）
 
-比較式 gate 對非有限值 fail-open（IEEE 754：NaN 的任何比較恆 False，`x > 0` 對 NaN 靜默放行）——正 gate 用 `not (x > 0)` 形（NaN→擋），非有限輸入以前置 finite 驗證擋（`math.isfinite`，專案多處使用時 helper 化）。真實案例：RiskGuard `price=nan` 任意名目 entry 全放行＋daily-loss breaker 被靜默解除（mosaic 0918 audit 實證，修復 86dd5279c）。
+比較式 gate 對非有限值 fail-open（IEEE 754：NaN 的任何比較恆 False，`x > 0` 對 NaN 靜默放行）——正 gate 用 `not (x > 0)` 形（NaN→擋），非有限輸入以前置 finite 驗證擋（`math.isfinite`，專案多處使用時 helper 化）。
 
 ## Python 命令執行
 

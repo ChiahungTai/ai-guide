@@ -14,7 +14,7 @@ harness-scope: neutral
 
 ### 破壞性選擇的查證觸發
 
-刪/併看似等價的無測試檔前，查 README 權威指名、Capabilities、git 活躍度/內容完整性及 backlog 依賴，禁憑檔名選；存活檔只改路徑卻沒吸收內容是刪錯訊號，停下重判。真實案例：standup 恢復事實只在卡 desc，原清單漏卡面而誤刪。
+刪/併看似等價的無測試檔前，查 README 權威指名、Capabilities、git 活躍度/內容完整性及 backlog 依賴，禁憑檔名選；存活檔只改路徑卻沒吸收內容是刪錯訊號，停下重判。
 
 ## 具體明確表達
 
@@ -31,4 +31,4 @@ harness-scope: neutral
 
 ## Agent 派發與產出回收
 
-跨 repo 寫入由主 session 負責；spawned/automation 只在卡 owning WT 操作，agent 寫不進目標或不能判定 owning 就回報主 session，禁把責任丟給受限 agent（案例：監控 session 因規則未載入誤結 owning=main 的卡）。寫檔 agent prompt 必注入三條（禁 /tmp／寫不進就回報／暫存集中 `.agent-tmp/`）；worktree 能力確認與完整自檢清單見 **agent-workflow skill**「Agent tool spawn 前」。
+跨 repo 寫入由主 session 負責；spawned/automation 只在卡 owning WT 操作，agent 寫不進目標或不能判定 owning 就回報主 session，禁把責任丟給受限 agent。寫檔 agent prompt 必注入三條（禁 /tmp／寫不進就回報／暫存集中 `.agent-tmp/`）；worktree 能力確認與完整自檢清單見 **agent-workflow skill**「Agent tool spawn 前」。

@@ -34,7 +34,7 @@ README/workflow/skill 的 outward 要求與「完成任務」都不是授權；�
 
 互動 session 機械例外（board 細節單一源＝kanban-board skill）：
 
-- ① backlog 建卡：**Description 經 user 確認（SC ext 點卡預覽——kanban-board skill「開卡 Description 先行」）後**即 commit 僅新增卡檔，message 帶 id，供跨 WT 可見並防 id 撞——例外①只及該初始 commit，不自動涵蓋後補 AC/Plan（走②或弧結算）；共享 WT 停活躍弧 branch 時走暫時 worktree 直進 main（形態＝kanban-board skill「共享 WT 活躍 branch 落點分流」）。
+- ① backlog 建卡：**Description 經 user 確認後**即 commit 僅新增卡檔（message 帶 id 防撞）；共享 WT 停活躍弧 branch 時走暫時 worktree 直進 main——例外①只及該初始 commit，不自動涵蓋後補 AC/Plan（走②或弧結算；流程與落點細節＝kanban-board skill）。
 - ② 開工 metadata（user 拍板）：In Progress＋refs 後即 commit 僅 backlog/；結算物不隨此。
 - ③ 結案兩步（user 拍板）：precheck 綠且結算物＋卡狀態同 commit 才豁免，否則走確認 gate。
 - ④ 純 ruff format/check --fix style 可 commit；混語義改動走確認 gate。

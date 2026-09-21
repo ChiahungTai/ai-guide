@@ -16,7 +16,7 @@ harness-scope: neutral
 
 ## 派生產物投影紀律（upstream 追溯）
 
-派生產物（投影殼、生成檔）須可追溯 upstream：manifest 宣告 upstream 清單＋content hash 快照（工具形態＝projection freshness check）。upstream 變更未重驗＝stale，**不得以 current 姿態呈現**——stale 冒充 current 比沒有更糟（誤導消費者把舊投影當現況）。
+派生產物（投影殼、生成檔）須可追溯 upstream：manifest 宣告 upstream 清單＋content hash 快照（工具形態＝projection freshness check）。upstream 變更未重驗＝stale，**不得以 current 姿態呈現**——stale 冒充 current 比沒有更糟。
 
 ## 主動揭露錯誤（Fail Loud）
 
