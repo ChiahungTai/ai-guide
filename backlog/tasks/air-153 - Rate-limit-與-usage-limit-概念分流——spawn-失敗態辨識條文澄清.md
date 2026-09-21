@@ -1,10 +1,10 @@
 ---
 id: AIR-153
 title: Rate limit 與 usage limit 概念分流——spawn 失敗態辨識條文澄清
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-21 23:02'
-updated_date: '2026-09-21 23:05'
+updated_date: '2026-09-21 23:56'
 labels: []
 dependencies: []
 references:
@@ -55,3 +55,19 @@ AC#4：新條文內零窗口/週期數字（數字只在窗口語義節），外
 <!-- SECTION:NOTES:BEGIN -->
 〔落地記錄 2026-09-22〕bi 審查收斂（codex job-mubue0pp-2ibiy2／muse job-mubuefzk-pj2g0r 兩腿 PASS-with-fixes，findings 互證全採）→ 實作於 card WT（blockquote＋1302 用語對齊）。回執四欄：classification=boundary（instruction 條文語義——spawn 失敗處置判讀面）；review=bi external（兩腿 external second-opinion 腿）＋機驗（AC#1-4 rg 全綠；rg "1308|rate limit" rules/ skills/ 掃描零未處置矛盾——agent-workflow L222 互補、model-routing L67/127 一致）；session-freshness=fresh（user 即時澄清＋當日源碼查證，governing rules 無中途變更）；deployment-surfaces=pending（diff 在 card WT，merge main 後 symlink 面［~/.agents/skills／~/.claude/skills］即生效；非 Claude 端 skills 走同一 symlink 母鏈）。跟進候選（不入本卡範圍）：memory-audit L51「usage limit/429 合流 fallback」、audit-test L480/487/588「rate limit」寬鬆用語——後續收斂卡候選。glossary 投影已隨 findings 對齊修正（429 正典歸屬 agent-workflow、web 池級宣稱收窄歸 entitlements、三態描述、錨改 file+symbol）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+spawn 失敗態辨識表格前新增 rate/usage 概念分流 blockquote（GLM 兩碼分流禁互換／codex native structured body 三態／web dialog＝retryable rate signal；錨 file+symbol、窗口數字正典不重刻）＋1302 機制欄用語對齊。bi 兩腿（codex＋muse）PASS-with-fixes 全採；AC#1-4 rg 機驗綠、引用面 drift 掃描零未處置矛盾。跟進候選：memory-audit L51、audit-test L480/487/588 用語收斂。
+
+```mermaid
+flowchart LR
+    A["spawn 失敗態辨識節"] --> B["概念分流 blockquote（新）"]
+    B --> C["rate path：backoff、持續 429 才降並發 → agent-workflow 正典"]
+    B --> D["usage path：只能等重置"]
+    B --> E["家族對應：GLM 1308/429、codex native 三態、web dialog"]
+    A --> F["症狀表（1302 用語已對齊）"]
+    E --> G["窗口數字正典＝窗口語義節，不重刻"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
