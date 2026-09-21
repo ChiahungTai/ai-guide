@@ -57,4 +57,7 @@ flowchart LR
 bridge wait watcher 落地——fan-in 包 wait、exit 124 內部 re-arm 零 LLM 喚醒、動態 T、heartbeatAt/lastEventAt 雙軸 advisory、exit 2 四面貌重探分流、CollectionReceipt（AIR-135.7 AC#2 投影）、bridge CLI 版本 pin。AC#1 證據：T4 advisory 節制＋T5 collect 各 H 級真 job 實證（round 3 advisory 攔截後 job 自行完成＝節制價值活體驗證）；124-re-arm 面 I 級如實記錄（glm 靜默>10m 即 advisory 攔截，自然不可達）。fresh 審查 7 findings（1 Critical single-id 零 collect）＋followup 驗收 pass＋N1 gap 帶併修，44 測試＋全套 1075 綠
 
 **0921 frozen spec amendment（雙模型調查 drift finding 修復）**：①stalled 判準對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」）——`crossed_floor(None)＝False` 取代原 fail-closed True（兩套判準在缺 stamp 時行為相反＝現行 drift；terminal/124/not-found wake 路徑不受影響）②binary 不可達＝clean fail-loud exit 2 附修法指引（取代 traceback 崩潰；bare shell 忘帶 DELEGATE_BRIDGE_BIN dogfood 實證）③實證附帶：codex web 長生成期 heartbeat 滯後→worker 5m floor 常態性誤報（×3），`--kind research` 緩解。調查源＝glm job-muafjfcl＋codex job-muafppoe（bridge 原生 wait 已有 N-job batch＋雙軸 stuck＋reconcile——watcher 增量定位＝124 透明 re-arm／advisory wake／receipt 機驗；長期 liveness 語義下沉回 producer）。
+
+**0921 消費同步排程（bridge 端 wake-on-stuck ship 後）**：delegate-bridge 2.0.23 新增 `--wake-on-stuck`／`--wake-axis`（exit 3＋stdout wake JSON；對端 session sess_0fdfeb50 實作中，工單＝.agent-tmp/air-135/bridge-handoff-prompt.md 項目二）——ship 後 bridge_waiter.py 退役自算雙軸（crossed_floor／_job_stalled），改消費原生 wake 訊號＋版本 gate 升 2.0.23；「liveness 語義下沉 producer」閉環。
+<!-- SECTION:FINAL_SUMMARY:END -->
 <!-- SECTION:FINAL_SUMMARY:END -->
