@@ -1,10 +1,10 @@
 ---
 id: AIR-163
 title: 五 repo instruction 層×CR 適配盤點——per-repo 矩陣＋tri 輸入
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 11:31'
-updated_date: '2026-09-22 12:09'
+updated_date: '2026-09-22 12:44'
 labels:
   - instruction-layer
   - cross-repo
@@ -61,3 +61,22 @@ flowchart TB
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+五 repo instruction×CR 適配盤點完成：三路 survey 報告齊（A ai-guide+mosaic 20KB／B bridge+sc-router 13KB／C southchariot），tri 收斂討論雙腿完成（codex 9176＋muse 8711）。per-repo 落點建議表、跨 repo 統一決策（predicate 契約＋freshness 分層＋開場 gate 不建 hook＋不做清單十條）已產出——歸各 repo 主權線後續卡。
+
+```mermaid
+flowchart TB
+  subgraph S["五 repo 唯讀掃描"]
+    A["ai-guide"] --> R["survey 報告"]
+    B["delegate-bridge"] --> R
+    C["southchariot"] --> R
+    D["mosaic_alpha"] --> R
+    E["sc-router"] --> R
+  end
+  R --> T["tri 收斂 muse+codex+5.3"]
+  T --> P["per-repo 落點建議表"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
