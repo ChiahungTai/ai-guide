@@ -1,12 +1,15 @@
 ---
 id: AIR-164
 title: instruction 層觸發點——coverage 契約＋CR freshness 分層（存在≠被用 根因修復）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-22 11:55'
+updated_date: '2026-09-22 12:09'
 labels:
   - instruction-layer
 dependencies: []
+references:
+  - skills/agent-workflow/SKILL.md
 ordinal: 150000
 ---
 
@@ -43,3 +46,30 @@ flowchart LR
 
 〔已決策勿重辯〕①predicate 機械化：MUST＝(a) 跨 session 消費者契約可執行入口 (b) bounded context 根 ≥3 源碼 (c) public contract／控制面 authority；MUST NOT＝純產物鏡像；CONDITIONAL＝混住②implement 5b 加生成分支＋post-build 加 detector，不加第七欄③scripts/ 單檔 AGENTS（responsibility cluster）非 per-script④CR freshness＝source identity 非 graph.db mtime⑤bridge 永不碰 write-face⑥L2 禁阻塞式 rebuild（cheap check 同步＋rebuild 異步或降級）⑦wt-close 不自動 build（印提醒＋receipt，marshal 決策）⑧雙腿收斂溯源：instruction-layer-codex-result.md（8871B）＋instruction-layer-muse-result.md（7071B）＋bridge 線 post-build 三路徑確認。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 agent-workflow 5b 生成分支在場（rg 可查）：新目錄/新可執行→create-or-sync AGENTS face 條文
+- [ ] #2 post-build candidate detector 在場（ Detect→Extract→Delegate 形狀）
+- [ ] #3 scripts/AGENTS.md 存在（responsibility cluster 導航）＋governance/AGENTS.md 存在
+- [ ] #4 skills/AGENTS.md 存在（自 CLAUDE.md 升級）；CLAUDE.md 為 @wrapper
+- [ ] #5 instruction-init L0 CR readiness 檢查在場（缺席→引導 build；失敗→明文降級收據）
+- [ ] #6 review-engine L2 dispatch preflight 在場（cheap check；stale→rebuild 或降級）
+- [ ] #7 wt-close 條件式提醒在場（trunk 前進→receipt 提醒）
+- [ ] #8 ai-development-guide dependency-graph 角色行更新（CR 取代）
+- [ ] #9 全套 pytest 綠零退化
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔Baseline〕①implement 5b reactive-only（從 diff 找既有 instruction 檔更新——新目錄空跳）②post-build 無 candidate detector③scripts/ 零 AGENTS④governance/ 零 AGENTS⑤skills/CLAUDE.md 無 AGENTS source⑥instruction-init 無 CR readiness⑦review-engine 無 dispatch preflight⑧wt-close 無 stale 提醒⑨ai-development-guide dependency-graph 角色行過時（CR 已取代手繪依賴圖）。
+
+〔已決策勿重辯〕①predicate 三條可機械判（雙腿收斂）②流程插入 implement 5b 生成分支＋post-build candidate detector③不加第七欄④CR freshness 四層（L0 init bootstrap／L1 開工提醒既有／L2 dispatch preflight／L3 wt-close 條件式）⑤freshness＝source identity 非 mtime⑥bridge 永不碰 write-face⑦wt-close 不自動 build⑧不做清單：per-script AGENTS 全補/root 膨脹/第七欄/instruction-sync --all 常駐⑨溯源：instruction-layer 雙腿 job-muckhka6/muckhkbc＋bridge 線 post-build 三路徑確認＋AIR-161 改動點 4。
+
+〔Scope〕動——skills/agent-workflow/SKILL.md（5b 生成分支＋偵測節已併）、skills/post-build/SKILL.md（candidate detector）、skills/instruction-init/SKILL.md（L0 CR readiness）、skills/review-engine/SKILL.md（L2 preflight）、scripts/wt-close.sh（條件式提醒）、scripts/AGENTS.md（新）、governance/AGENTS.md（新）、skills/AGENTS.md（新，自 CLAUDE.md 升級）、ai-development-guide.md（dependency-graph 角色行）、tests/。不動——bridge repo、sc-router、AIR-159 wt-sweep、compact-prep/handoff。
+
+〔Scenarios〕①新目錄/新機制誕生→5b 生成分支觸發→create-or-sync AGENTS face②post-build detector 掃到 candidate→delegate 萃取③instruction-init 遇 graph.db 缺席→L0 引導 build 或明文降級④review dispatch stale→L2 preflight 攔（rebuild 或降級）⑤wt-close trunk 前進→receipt 提醒非正確性。
+
+〔驗證式〕見 AC。
+<!-- SECTION:PLAN:END -->
