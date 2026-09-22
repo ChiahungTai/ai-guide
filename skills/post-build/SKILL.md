@@ -70,6 +70,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 > **副檔名 ≠ 影響面**：`.md` 不等於無行為影響（ai-guide 的 md 就是控制面）——一律以語義判準分流，不以副檔名或路徑枚舉分流（路徑枚舉 self-defeating：repo-root guide 與消費端控制面都不在 skills/rules/agents/commands 清單，修法自己的檔逃過自己建的 gate）。
 > **純修飾快道機械排除**（規範模態詞命中 → 一律升 docs-mode，不得走快道；producer「無語義變更」自述不背書——Claim→Evidence）：diff 命中 `禁`（單字——覆蓋禁掛/禁改/禁寫/禁用，本 repo 禁令主力形態）／`必須`／`禁止`／`不得`／`應該`／`永不`／`MUST`／`SHOULD`／`NEVER`（**詞表單一源＝此處**，他處引用不重列）。反例：單檔 MUST→SHOULD 過 consistency＋rg 卻改變控制語義＝PB1 失敗模式經快道復活。
+> **AGENTS coverage 候選判定時點**：coverage gate 的機械候選（`git diff --diff-filter=A --name-only` 頂層聚合）與本表分流**同時點**盤點——新可執行入口＋零 `.md` 變更的弧雖 docs=no，仍為第 3 點進階段 4（其餘 docs 項零 `.md` 自然空跳），coverage 偵測不隨 docs=no 跳過。
 
 **逐段 commit 後（弧模式——任務身份優先）**：context EP／卡 Plan 記有 baseline（或殼頭可讀）→ 切**弧模式**：triage 與階段 1 的審查對象改為 `git diff <baseline>..HEAD`＋uncommitted（模式細則見 [code-review](../code-review/SKILL.md)「任務弧模式」）。context 無 EP 記憶（跨 session 接續）→ **從殼讀 baseline**：任務家 `*/index.html`（`ai-analysis/_tasks/`、`ai-analysis/_projects/*/tasks/`、或 `00-tasks/`——探測見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」）殼頭部聲明 EP 路徑＋baseline hash（hook 1 起攜帶）——baseline 傳遞不依賴 build session context 存活。無任務 baseline（context 與殼皆無）→ 退 uncommitted 模式；uncommitted 亦空 → 印 `[WARN] no diff（逐段 commit 已落地？弧模式需任務 baseline）` 並停止——收尾鏈靜默 no-op 等於大聲錯誤被靜默化。**同樹多任務出口**：弧範圍內的非本弧 commits／uncommitted 檔列「**非本弧項**」清單（AIR-23 allowlist 人工形態正典化）——不納入審查與修正範圍、不順手修。
 
@@ -107,7 +108,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 修正迴圈或收尾期間變更觸及**新 scope**（新檔／新 invariant／邊界語義——不以檔案數計）時補審（不需全鏈重跑、但不得零審）：重新走風險 profile 判定（[review-engine](../review-engine/SKILL.md)「審查模式判定規則」），命中 extras（整合器／新簽名注入點→段級 review）照映射附加；已按同 profile 觸發過者不重複。
 
-## 階段 4 — Docs 鏈（僅有 `.md` 變更時）
+## 階段 4 — Docs 鏈（僅 .md 變更**或** AGENTS coverage candidate 非空時）
 
 1. 對每個變更的 `.md` 執行 `consistency`（[skills/consistency/SKILL.md](../consistency/SKILL.md)）；fail 項當場修再驗（**重驗範圍 = 修正觸及的檔**，非整個 docs 鏈重跑；上限同階段 3 的 3 輪）
 2. diff 觸及 Capabilities / `SYSTEM-MAP.md` / `dependency-graph.md` / `backlog/` → 執行 `metadata-sync`（[skills/metadata-sync](../metadata-sync/SKILL.md)）
@@ -120,16 +121,16 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 > 觸發：retire／政策句改寫／定義源新增列節弧（他類弧空跳——階段 4 主表第 5 點 candidate 空＝空跳）。retire 翻轉可留原名改語義，舊符號 rg 掃不出來（實證三類）。**第二個獨立消費者出現時晉升 `_common/policy-reversal-gate.md`**（三方共識 09-11）。成本原則：非相關弧只付 candidate detection；不做全檔重驗。
 
-- **① Detect（機械 candidate detector——先跑，便宜）**：`git diff --diff-filter=D` 刪檔清單＋新增列／節存在性＋定義源載體變動（何為定義源依 instruction-writing 單一源規則；叠加階段 4 表頭「僅 `.md` 變更」前置過濾）。
+- **① Detect（機械 candidate detector——先跑，便宜）**：`git diff --diff-filter=D` 刪檔清單＋新增列／節存在性＋定義源載體變動（何為定義源依 instruction-writing 單一源規則；叠加階段 4 表頭「僅 `.md` 變更**或** AGENTS coverage candidate 非空」前置過濾）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：舊主張／新約束／consumer concept（＝引用該政策句主張的下游陳述）；全判無政策影響才空跳。
 - **③ Delegate（委派既有機制——不重定義 scan）**：定義源變更 → instruction-writing single-source scan；blueprint 在場 → 讀其 AGENTS 真相源映射／更新觸發；否則 rename 反掃的 project AGENTS／EP fast-drift list；`rg` catch-all 封底。**html 投影面（lite backstop——非 freshness 主機制）**：弧 diff 觸及 projection manifest 宣告的任一 upstream → 跑 freshness check（`uv run python scripts/projection_freshness.py --manifest <manifest>`；exit 1 drift → refresh 重投影後 `--update` 收斂，或不重投影則殼頭標 stale）；契約細節見 [illustrate html-mode](../_common/illustrate-html-mode.md)「投影鎖定與 stale 標記」。
 - **④ Dispose（處置四值）**：`update`（改新政策／新錨）／`historical`（刻意留的退役說明；provenance 規則見 instruction-writing）／`no-change`（證據足才用）／`unverified`（證據不足——**不視為收斂**，報告帶未驗 consumer／原因）。**rg 命中≠待修**；零命中＝完成證據。
 
 ### AGENTS coverage gate（AIR-164）
 
-> 觸發：階段 4 主表第 3 點 candidate 非空（他類弧空跳）。解「新機制誕生→instruction 真空」——新目錄／新可執行入口落地而 AGENTS face 沒跟上。[implement](../implement/SKILL.md) 5b 生成分支是 build 側主動面，本 gate 是 post-build 兜底反掃；**MUST predicate 單一源＝implement 5b 生成分支**（(a) 可執行入口被 workflow/control 面消費 (b) bounded context 根 ≥3 源碼 (c) public contract／控制面 authority；MUST NOT＝純產物鏡像），本 gate 不重列。
+> 觸發：階段 4 主表第 3 點 candidate 非空（他類弧空跳）。解「新機制誕生→instruction 真空」——新目錄／新可執行入口落地而 AGENTS face 沒跟上。[implement](../implement/SKILL.md) 5b 生成分支是 build 側主動面，本 gate 是 post-build 兜底反掃；**MUST predicate 規範源＝[instruction-writing](../instruction-writing/SKILL.md)「instruction surface coverage」節**（與 implement 5b 共用同一規範源），本 gate 不重列。
 
-- **① Detect（機械——先跑，便宜）**：`git diff --diff-filter=A --name-only` 頂層聚合 → 新增頂層目錄與新增可執行 entry 清單（弧模式＝baseline..HEAD 同源；純 `.md` 弧也跑——instruction 真空不以語言別豁免）。
+- **① Detect（機械——先跑，便宜）**：`git diff --diff-filter=A --name-only` 頂層聚合 → 新增頂層目錄與新增可執行 entry 清單（弧模式＝baseline..HEAD 同源；零 `.md` 的 code 弧與純 `.md` 弧皆跑——instruction 真空不以語言別豁免）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：逐 candidate 對 MUST predicate 判「該目錄該不該有 AGENTS face」＋現有 face 是否已涵蓋新入口；全不命中或已涵蓋 → 空跳記證據。
 - **③ Delegate（命中即委派既有機制——不重寫生成邏輯）**：缺 AGENTS.md → create-or-sync 照 [instruction-init](../instruction-init/SKILL.md) 骨架與建檔閾值補檔（雙檔模式含 CLAUDE.md wrapper）；已有 AGENTS.md 但未涵蓋新入口 → 併入本鏈第 1 點 consistency 重驗範圍。**零 gap（全 candidate 已有 face 或已補）＝ settlement pass 證據；未補齊 → 列收尾報告未決項，不靜默**。
 

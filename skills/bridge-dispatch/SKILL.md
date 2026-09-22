@@ -26,3 +26,4 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 - provision 機制細節：user-invoked；stage per-model read-only configs＋sha256 manifest。glm 建立 job 的 model 記在 ledger row（resume 對帳用）；fail-closed 錯誤附 actionable hint。
 - 第二 pin 形態例：stable symlink、「latest」 shim——殘留靠 prune 清。
 - Brief 動詞紀律案例：muse 審查 job 收到全 CHANGE 條目的 spec brief、漏 read-only 指令→muse 讀完逕行實作 444 行（Writer/Reviewer 分離被打破）。
+- Dispatch prompt 禁以 `/` 開頭——zcode 系 carrier 會當 slash command 拒執→exit 0 假完成（AIR-165 實證，DB-26 bridge 側修復中）。
