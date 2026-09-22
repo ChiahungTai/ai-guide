@@ -40,7 +40,6 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   與 bridge 雙軸 `_job_stalled`（T4 STALLED_ADVISORY）互斥可判、互不誤發；
   消費端＝scripts/watcher_rearm.py（掃 stale armed rows 單次 re-arm＋
   broken alert）與 hooks/watcher_pairing_nag.py（死亡檔催告升級）。
-  CLI 預設啟用（cwd repo 解析），
   `--liveness-path` 可覆寫；測試直呼 run_watcher 不傳＝停用。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
