@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-22 14:28'
+updated_date: '2026-09-22 15:00'
 labels:
   - instruction-layer
 dependencies: []
@@ -38,3 +39,9 @@ flowchart LR
 - [ ] #2 dirty-WT source identity 判準句在場（含 fresh 定義式）；無實作細節重複
 - [ ] #3 相關 skill 引用面同步（instruction-writing/review-engine/agent-workflow 指針無 drift）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-09-22 post-build 審查＋judge verdict（Arbiter 5.3；✅5/❌1/⚠️0）：F1 🔴 muse 36KiB gate 超標（dry-run 實證 37,345B>36,864B）✅——AIR-135 節瘦身重寫（-701B→guide 6,884B；dry-run muse [OK] 99%）；F2 🟡 review-engine 緩解範圍窄版（fresh-branch loop-hole）✅——對齊 cr-query 全域句式＋「缺口關閉前只能證偽 stale、不能宣稱 fresh」；F3 🟡 preamble 權威倒置 ✅——改逐面定義源（條 1/4＝skill、條 2＝本節）；F4 🟢（L2）標註無定義源 ✅——刪；F5 🟢 cr-query 錨補位置 ✅——同 review-engine 句式；F6 🟢「Marshal 必守」標題 ❌不採納（義務下限非排他，卡面指定）。審查 A-F 軸：四條判準句全對應落點表、錨點六處全命中、凍結面零變更、AIR-135 命名與 conventions.md 無碰撞。
+<!-- SECTION:NOTES:END -->
