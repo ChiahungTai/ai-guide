@@ -1,12 +1,15 @@
 ---
 id: AIR-162
 title: worker 存活偵測 probe——supervision state 分離兩軸＋ping 五態矩陣凍結
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-22 10:40'
+updated_date: '2026-09-22 10:41'
 labels:
   - session-lifecycle
 dependencies: []
+references:
+  - scripts/harness_waiter.py
 ordinal: 148000
 ---
 
@@ -33,3 +36,25 @@ flowchart LR
 
 〔已決策勿重辯〕①probe 輸出分離兩軸（supervisionState ≠ observations）②死亡宣稱僅 A 級③D 級永不支撐死亡④身分窗綁定⑤SendMessage＝mutating probe 用 sacrificial workers⑥宿主＝harness_waiter probe mode（避免第二份死亡語義實作；codex 腿論證）⑦wake early declare death late⑧溯源：detection-codex-result.md＋detection-muse-result.md＋今日事故鏈。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 probe mode＋unit tests（五態輸出＋observations 三欄＋A-D 分級＋manualReview 旗）
+- [ ] #2 ping 五態矩陣真機執行（sacrificial workers×5 態×TaskOutput/SendMessage）＋記錄表落檔
+- [ ] #3 contract 偵測節吸收矩陣結論（可機械區分或誠實不可區分——兩者皆可驗收）
+- [ ] #4 全套 pytest 綠
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔Baseline〕①scripts/harness_waiter.py（AIR-160 probe 讀面基礎）②今日死亡誤判事故鏈（register 拒收 agent_ 前綴→output 檔啟發式→活 worker 判死→雙重派工→併發衝突）③雙腿設計收斂 detection-codex/muse-result.md。
+
+〔已決策勿重辯〕①probe 輸出分離兩軸：supervisionState（TERMINAL/HARD_DEATH/TIMEBOX/MONITORED/UNKNOWN）＋observations（recentExecution/addressable/workspaceActivity）＋strongestEvidence A-D＋manualReview 旗②死亡宣稱僅 A 級（terminal metadata/generation mismatch）③D 級（output 缺席/transcript mtime/ping 不在冊）永不支撐死亡④WT 活動須 attempt 身分窗綁定否則 attribution_ambiguous⑤SendMessage＝mutating probe 矩陣用 sacrificial workers⑥宿主＝harness_waiter probe mode⑦wake early declare death late——重派前 fresh probe＋fence。
+
+〔Scope〕動——scripts/harness_waiter.py（probe mode 唯讀聚合）、scripts/（ping 矩陣實驗腳本）、tests/。不動——bridge、liveness.jsonl 語義、T1-T9 frozen 主體。
+
+〔Scenarios〕①running→MONITORED②真死→HARD_DEATH_EVIDENCE③timebox→TIMEBOX_EXPIRED（不宣稱 dead）④無法判定→UNKNOWN fail-loud。
+
+〔驗證式〕見 AC。
+<!-- SECTION:PLAN:END -->
