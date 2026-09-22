@@ -168,6 +168,9 @@ if [ "$NEED_REBASE" = "1" ]; then
   else
     chk "P5 收斂可行性（將 rebase $CUR_BR onto $TRUNK ）" 1
   fi
+  # trunk clean 檢查對 rebase 路徑同樣適用（ff-only merge 在 full 模式需要；
+  # 漏檢＝preflight PASS 但 full 晚死——0922 AIR-153 實證，codex 152 複審指認）
+  chk "P5b trunk clean（$TRUNK @ ${TRUNK_WT:-暫時 worktree}，clean=$TRUNK_WT_CLEAN）" "$([ "$TRUNK_WT_CLEAN" = "1" ] && echo 1 || echo 0)" "$TRUNK_WT working tree 不 clean——先處理再收（含他弧 runtime 檔：確認 gitignored 或歸屬）"
 else
   chk "P5 收斂可行性（$TRUNK @ ${TRUNK_WT:-暫時 worktree}${TRUNK_WT:+，clean=$TRUNK_WT_CLEAN}）" "$([ "$TRUNK_WT_CLEAN" = "1" ] && echo 1 || echo 0)" "$TRUNK_WT working tree 不 clean——先處理再收"
 fi
