@@ -4,7 +4,7 @@ title: 五 repo instruction 層×CR 適配盤點——per-repo 矩陣＋tri 輸�
 status: Done
 assignee: []
 created_date: '2026-09-22 11:31'
-updated_date: '2026-09-22 12:44'
+updated_date: '2026-09-22 14:04'
 labels:
   - instruction-layer
   - cross-repo
@@ -61,6 +61,12 @@ flowchart TB
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-09-22 審計註記（lite-verify agent_01cd2439）：survey/tri 本體真實完成（user 認可 Done）。殘留三點——① per-repo 承接卡零開立（歸各 repo 主權線；落點建議表已固化 .agent-tmp/survey-backup-20260922/per-repo-landing-tri-consolidated.md）②卡 AC#1 契約路徑 .agent-tmp/air-163-survey/ 與實際 .agent-tmp/survey/ 不符 ③survey 產物原存 air-163 WT 未版控，已保全至主樹 .agent-tmp/survey-backup-20260922/。ai-guide 側 P0 殘留（CR dirty-WT source identity＋AIR-135 amendment 四條）歸 AIR-135 線另卡。
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

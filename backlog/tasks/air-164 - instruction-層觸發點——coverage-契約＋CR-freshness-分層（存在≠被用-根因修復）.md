@@ -4,7 +4,7 @@ title: instruction 層觸發點——coverage 契約＋CR freshness 分層（存
 status: Done
 assignee: []
 created_date: '2026-09-22 11:55'
-updated_date: '2026-09-22 12:44'
+updated_date: '2026-09-22 14:04'
 labels:
   - instruction-layer
 dependencies: []
@@ -78,6 +78,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 0922 tri 收斂後重開：A1-A5 amendment 五條（implement 5b 生成分支＋post-build candidate detector＋review-engine L2 preflight＋instruction-init L0＋instruction-writing owner≠presence）——上輪 worker 已交付主體（agent_bb1d576c），本輪 settlement reviewer 驗收＋殘餘 F5/F6/F1 materials 進版控。handoff scbus 直送 dogfood 留 settlement 後。
+
+2026-09-22 品質腿審查（code-reviewer agent_d543823e，報告 .agent-tmp/audit/air164-quality-review.md）：九 AC 全 pass、無 blocker、配得上 Done。三 🟡 移交 AIR-166：F1 predicate 三源 drift（implement 5b／instruction-writing A5／post-build 複本）；F2 tests/ plan-vs-delta（wt-close TRUNK_ADVANCED 零測試）；F3 coverage gate code-only 弧盲區。卡面勘誤併此記錄：AC#1「agent-workflow 5b」應為 implement 5b（F5）；Scope 宣稱 Integration 子欄實際未動（F4）；「1638 passed」為自報無獨立 receipt（audit 腿）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
