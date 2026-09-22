@@ -1,10 +1,10 @@
 ---
 id: AIR-162
 title: worker 存活偵測 probe——supervision state 分離兩軸＋ping 五態矩陣凍結
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 10:40'
-updated_date: '2026-09-22 10:41'
+updated_date: '2026-09-22 11:37'
 labels:
   - session-lifecycle
 dependencies: []
@@ -58,3 +58,21 @@ flowchart LR
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+worker 存活偵測 probe 落地：harness_waiter --probe mode（唯讀聚合 registry/heartbeat/workspace/metadata → supervisionState 五態＋observations 三欄＋strongestEvidence A-D＋manualReview 旗；身分窗綁定 attribution_ambiguous 升 needs_human）＋ping_matrix.py 五態×六面真機矩陣（TaskOutput/SendMessage structurally-unavailable 誠實標注→H 級 corpus＋self-verified live 替代；live running 之 output ABSENT×lsof LEASE HELD＝今日事故的直接機器反證）。29 tests＋全套 1525 綠＋frozen numstat 368/0 零變。settlement F1 措辭收斂已修。殘餘：in-conversation ping 語義凍結（parent session sacrificial 實驗——nonce ACK 升 B 級）與矩陣穩定性輪次為後續卡；heartbeat 未設定 probe 之 recentExecution 恆 unknown（缺席合法）。
+
+```mermaid
+flowchart LR
+  ID["worker id"] --> PR["probe 唯讀聚合"]
+  R["registry row"] --> PR
+  M["harness metadata"] --> PR
+  HB["heartbeat sidecar"] --> PR
+  PR --> ST["supervisionState 五態"]
+  PR --> OB["observations 三欄"]
+  PR --> EV["strongestEvidence A-D"]
+  ST -->|"僅 A 級可 HARD_DEATH"| MR["manualReview 旗"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
