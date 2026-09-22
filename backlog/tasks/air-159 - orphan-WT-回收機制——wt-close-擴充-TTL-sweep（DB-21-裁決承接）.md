@@ -1,10 +1,10 @@
 ---
 id: AIR-159
 title: orphan WT 回收機制——wt-close 擴充 TTL sweep（DB-21 裁決承接）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 02:47'
-updated_date: '2026-09-22 10:32'
+updated_date: '2026-09-22 11:12'
 labels:
   - session-lifecycle
 dependencies: []
@@ -61,4 +61,21 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 0922 對齊（154 worker 指認的殘留張力）：本卡依賴的 TTL 建議值來源＝**bridge 側評估文件＋規格提案**（開工前置，原 desc 已載）；AIR-154 慣例包節四僅記結項指針、不承載建議值——desc 中「orphan TTL 建議值來源＝AIR-154 慣例包」一句以本 note 為準修正讀法。
+
+0922 settlement TTL 裁決（marshal judge）：預設 72h 維持——lossless 閘（dirty 樹永不回收＋prune 顯式旗標）已保護內容，72h vs bridge 評估建議 168h 的差異＝打擾面取捨非資料風險；dogfood 複核點已註記於 wt-sweep.py 常數。F5（gitdir 損壞炸整趟掃描）＝已知行為記錄（fail-loud 安全方向，降級建議留後續）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+orphan card WT TTL sweep 落地：scripts/wt-sweep.py（孤兒三條件：identity contract 自洽＋活動面靜默代理 session 死＋TTL 72h；dry-run 預設兩形報告；--prune 顯式走 wt-close full，可證無搘閘：dirty/unmerged/locked/self-cwd 排除；wt-close subprocess 複用不重 implement）。27 tests＋wt-open/close 零變＋全套 1523 綠＋L4 真跑（含 prune 收斂 receipt 機驗）。settlement fresh reviewer：代碼 pass；F1 交付進版控（本結案含）＋F2 卡面契約（main 已 commit，reviewer 讀到 WT 過時副本）＋F3 TTL 72h 裁決出處回寫本 notes；F5/F6/F7 nit 記錄（gitdir 損壞 fail-loud 已知行為、兩條負向測試、naive timestamp）留 polish。bridge 側 PASSIVE gc report 消費面依評估文件 §3 對齊（本輪 report-only 無 bridge 依賴）。
+
+```mermaid
+flowchart LR
+  S["wt-sweep 掃描"] -->|"三條件齊"| O["孤兒列報告"]
+  S -->|"缺一"| K["跳過＋記原因"]
+  O -->|"--prune 顯式"| P["wt-close full 收斂回收"]
+  O -->|"預設"| D["dry-run 報告"]
+  P -->|"dirty/locked"| K
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
