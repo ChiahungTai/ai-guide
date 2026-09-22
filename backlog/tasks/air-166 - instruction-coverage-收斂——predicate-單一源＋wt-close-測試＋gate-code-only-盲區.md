@@ -4,7 +4,7 @@ title: instruction coverage 收斂——predicate 單一源＋wt-close 測試＋
 status: To Do
 assignee: []
 created_date: '2026-09-22 14:01'
-updated_date: '2026-09-22 14:04'
+updated_date: '2026-09-22 14:50'
 labels:
   - instruction-layer
 dependencies: []
@@ -38,3 +38,9 @@ flowchart LR
 - [ ] #2 wt-close 最小測試：trunk 前進→receipt 含 graph-stale-reminded；零 commit close→純 pass；uv run pytest 綠
 - [ ] #3 code-only 弧可達：新可執行入口＋零 .md 變更情境會觸發 coverage 偵測（流程實跑或文字推演擇一，記錄 notes）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-09-22 post-build 審查＋judge verdict（Arbiter 5.3；✅1/❌4/⚠️0）：R1 ✅採納——AC#3 code-only 弧推演落卡（本 notes 即 durable 證據）：新 .py 入口零 .md 變更→階段 0 triage（row 1，docs=no）＋candidate 判定同時點（blockquote :73）→標題閘「僅 .md 變更或 coverage candidate 非空」放行→第 1/2/4/5/6 點零 .md 自然空跳→第 3 點 detector 實跑→coverage gate ①②③ 可達。R2 ❌（收斂至 canonical 即設計目的，canonical 語義更嚴格且 instruction-init:130-141 保留排除語）；R3 ❌（detector untracked 盲區＝AIR-164 既有限制非本弧引入，逐段 commit 慣例下窗口小，留觀察）；R4 ❌（「Docs 鏈」改名屬下次觸及，cosmetic）；R5 ❌（DB-26 writer 跑作中＝bridge 線回執 2e24214c 直述，時態屬實；收斂時回改）。審查 A-F 軸全成立、AC#1/#2 pass；唯一全套 failed＝at_ticket 時鐘炸彈（AIR-157 既有缺陷，審查 E 軸獨立重現 'past-due'=='hold' 與本弧零交互）——本弧併最小修復（測試凍結時鐘）解 gate 阻塞。
+<!-- SECTION:NOTES:END -->
