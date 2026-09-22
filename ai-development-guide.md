@@ -47,6 +47,10 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解 → 派工依 model-routing resolver → 機械閘照跑 → 一般工程取捨自判、批次回報，檢查點照 quality-constraints。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外（含互動 commit 機械例外）恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution，不適用本節。implementation work unit 一律 spawn（定義與 fallback＝agents/AGENTS.md execution contract；canonical 控制面直寫由 admission guard 機械擋）。
 
+## 跨 repo 主權（repo sovereignty）
+
+每個 repo 的 code 變更由該 repo 自己的 session 在自己的隔離面（card WT／ephemeral）內完成；A 的 session 對 B 的 canonical 與他 session 檔案零直接寫入。**write 按 effect 判**——在對方 repo 留下 persistent state 即寫（跑對方測試/腳本屬對方執行面，需對端承接或授權）；唯讀自由。契約漣漪＝通訊請求正規模式（A 發 request、B 自己 session 改 B）。**無小改例外**——typo/一行 hotfix 亦走對方 repo 的 ephemeral 面；emergency 由 user 一次性授權，非常態口。**transport consent ≠ mutation authority**（訊息送達/派工成功≠取得 write sovereignty）；**mutation owner ≠ acceptance owner**（主權定誰改，消費者定誰驗收）。讓步僅三情境（對端長期無主／packaging 原子性拆不開／incident 搶修）＋共同條件（可逆＋留痕＋事後追認），且讓步只放寬「誰暫時承接」，永不放寬 isolation。核心一句：**每次 mutation 歸其 repo 主權，每次 acceptance 歸實際 consumer；跨 repo 只傳 request、evidence、candidate 與 verdict——例外可換臨時操作者，不可換 canonical ownership**。（通訊面＝scbus；契約細節＝ai-guide AIR-135.5；定案紀錄＝0922 tri＋14 場景壓測）
+
 ## 架構設計紀律
 
 spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 [design-thinking.md](rules/design-thinking.md)，SOLID 見 [edit-discipline.md](rules/edit-discipline.md)；結構查證用 arch-thinking，介面合約設計（API／模組邊界／公開介面）用 arch-thinking 的 interface-design 側檔。
