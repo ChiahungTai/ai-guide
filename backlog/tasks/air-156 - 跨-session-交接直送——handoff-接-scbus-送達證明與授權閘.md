@@ -1,10 +1,10 @@
 ---
 id: AIR-156
 title: 跨 session 交接直送——handoff 接 scbus 送達證明與授權閘
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 01:52'
-updated_date: '2026-09-22 10:41'
+updated_date: '2026-09-22 11:39'
 labels:
   - session-lifecycle
 dependencies: []
@@ -57,3 +57,19 @@ flowchart LR
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+handoff scbus 直送落地：SKILL delivery 段改版（scbus 第一路＋completion 四段 packet-produced→queued-visible→consumed/accepted→ownership-restored＋審計錨雙錨條款＋consent gate 節對齊 outward-action-consent）＋scripts/handoff_delivery.py（四段分類/位址分流/body 組裝 v2 結構欄＋8192 凍結面）＋40 tests。settlement F1 Critical（兩段式命令閘——單行 $( ) 內嵌吃 exit 2＝空 envelope 照送）修復＋F2-F4 全修。**live 直送 dogfood 待 user 授權面**（helpers 與 SKILL 條文已就位）。msg_type handoff_delivery 標記為 proto §5.9 控制信先例，晉升共用 schema 歸 conventions amendment。
+
+```mermaid
+flowchart LR
+  H["handoff 場景"] --> R["target 解析已知/未知"]
+  R -->|"已知＋consent"| S["scbus send 直送"]
+  S --> Q["queued-visible receipt"]
+  Q --> C["consumed/accepted"] --> O["ownership-restored"]
+  R -->|"未知"| F["manual paste fallback"]
+  R -.->|"跨 ownership"| G["consent gate AUTH"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
