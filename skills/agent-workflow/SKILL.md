@@ -288,7 +288,7 @@ Rules 檔在 session 啟動時載入，但**更新不會傳播到已 spawn 的 a
 - [ ] 當前 Agent 數量未超過上限
 - [ ] spawn 帶 `run_in_background: true`（前台僅限 <30s 短 probe **且 prompt 帶 `[fg]`**——見上「Spawn 預設背景」；省略參數已被 gate 自動轉背景）
 - [ ] Prompt 包含足夠 context + 相對路徑 + rules-reminder 規則摘要（Agent 看不到 auto-loaded rules，必須在 prompt 開頭明確寫入：多行 `python -c` 禁 `#` 註解、`rg`/`fd` 取代 `grep`/`find`、`uv run` 前綴 Python、禁止 `sed` 修改 `.py/.md`、禁止 `$` shell 展開、輸出繁體中文、獨立工具呼叫同 block 批次發、改檔前先 Read）
-- [ ] **寫檔類 agent** prompt 必注入三條：①禁 /tmp，產出留當前 repo/worktree；②寫不進指定路徑就回報「環境限制：我寫不進 X」，不可退 /tmp；③暫存集中 `.agent-tmp/`（post-build 清；夜掃兜底 `.agent-tmp/`/`.at-contexts/` 7d、`.review/` 30d）
+- [ ] **寫檔類 agent** prompt 必注入三條：①禁 /tmp，產出留當前 repo/worktree；②寫不進指定路徑就回報「環境限制：我寫不進 X」，不可退 /tmp；③暫存集中 `.agent-tmp/`（post-build 清；夜掃兜底 `.agent-tmp/` 7d——**排除 `.agent-tmp/at-tickets/`**：/at 未到期票禁掃，清理走 at_ticket classify 機械判準（AIR-157）；`.review/` 30d）
 - [ ] **🚫 spawned agent 禁寫記憶池面**（`.agents/memory*`——含 pool／inbox／memory-auto staging）——發現類內容以最終回報交回主 session，由主 session 走 consolidation（AIR-100 S-D）
 - [ ] **若任務涉及 mock / PropertyMock / fixture**：prompt 主動注入專案 `tests/AGENTS.md`（legacy `tests/CLAUDE.md`）的 mock 規範段落摘要（agent 不會自己讀專案 instruction 檔，必須主動注入；見上方「Rule Freshness」）
 - [ ] Uncommitted changes：需要 → 先 commit；Branch：不正確 → 先 checkout

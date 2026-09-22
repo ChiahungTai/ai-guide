@@ -83,4 +83,4 @@ description: "把工作交給另一個 LLM/session/repo 時，打包成對方讀
 ## 與既有整合
 
 - **引用 EP**：工作有 EP → 引用段落（self-contained 載體），handoff 補「這次對話剛定的決策」；無 EP → 現擠 brief（套完整 schema）
-- **`.at-contexts/`**：僅 `at-context-*`（`handoff --save` 寫檔已退場，改掛卡 `--append-notes`）
+- **`.agent-tmp/at-tickets/`**：/at 排程接續的 ticket 落點（狀態機 JSON，一律經 `/Users/ctai/Github/ai-guide/scripts/at_ticket.py` 讀寫；清理走 classify 機械判準——禁 mtime 夜掃，AIR-157）
