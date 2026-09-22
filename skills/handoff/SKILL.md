@@ -68,13 +68,73 @@ git rev-parse HEAD            # baseline commit hash
 
 依 skill「跨 provider 機密檢查」，flag 敏感內容（帳號/金鑰/真實持倉/未公開策略/客戶資料）並提醒 redact（代稱/抽象化）。workspace／卡歸屬欄＝內部拓撲資訊——跨 provider 時判定抽象化／省略（repo／WT 路徑不直出）；「建議執行 tier」欄條件式自足、無模型名，逕用。
 
-### Phase 4：產出
+### Phase 4：產出 packet（completion 第 1 段：packet-produced）
 
-預設印 markdown code block（複製貼到目標 session/provider）。
+產出 markdown code block（packet 本體；同時是 manual fallback 的攜帶載體，見 Phase 5）。
 
 帶 `--save` → 交接內容寫入追蹤卡 `backlog task edit <id> --append-notes "<交接內容>"`（卡 notes 段〔Implementation Notes〕，隨卡歸檔，board 可見；不另寫檔案。⚠️ CLI 無 `--comment` flag——09-05 MOS session 實測回報修正，`--append-notes` 是唯一掛卡形態）。
 
-> **有卡任務優先「卡即 handoff」**：卡 `desc`＋`notes`＋`references`＋`EP` 已 self-contained（見 [kanban-board](../kanban-board/SKILL.md)「卡即 handoff」），交接優先掛卡 notes（`--append-notes`）；原寫檔路徑已退場。**無追蹤卡**（跨 provider 一次性等）→ 不落檔，直接複製輸出貼給目標——`--save` 無標的可掛＝不適用。
+> **有卡任務優先「卡即 handoff」**：卡 `desc`＋`notes`＋`references`＋`EP` 已 self-contained（見 [kanban-board](../kanban-board/SKILL.md)「卡即 handoff」），交接優先掛卡 notes（`--append-notes`）；原寫檔路徑已退場。**無追蹤卡**（跨 provider 一次性等）→ 不落檔，直接複製輸出貼給目標——`--save` 無標的可掛＝不適用（manual paste fallback；分流見 Phase 5）。
+
+### Phase 5：Delivery——scbus 直送第一路＋manual paste fallback（AIR-156）
+
+「prompt 產完」≠「對方收到」。packet 落卡只是 completion 四段的第一段，送達證明照本段追蹤：
+
+| 段 | 判定證據 | 語義 |
+|----|---------|------|
+| 1 packet-produced | packet 掛卡 notes／落檔 | 起點，非完成 |
+| 2 queued-visible | `scbus send` 的 transport receipt（`receipts/<command_id>.json`，stage=accepted＋visible） | 已達收件匣——**receipt＝queued-visible 非完成** |
+| 3 consumed/accepted | 對方 recv 消費（pending→consumed）＋回 semantic ACK（`reply_type=accept`、`in_reply_to=<message_id>`） | 對方 session 承接 |
+| 4 ownership-restored | 對方回 `reply_type=completed`＋`result_pointer`＋`evidence` | 交接閉環，可關 correlation |
+
+- **審計錨條款**：receipt（command_id 鍵）＋ACK（correlation 鍵）兩錨同時對上才算完成證據，僅其一＝未閉環禁記完成（[conventions.md](../../governance/conventions.md) 節一對照表）。`declined`＝禁原樣重發；`needs-info`＝補件後同 correlation 重發。
+- **ack protocol 本輪不擴**：receipt 語義上限＝queued-visible（bus 無 ack／user-read 第三態）；correlated upper-layer reply 已是語義面承接，amendment 須多弧實證。
+
+**target 解析**（已知/未知分流——判定邏輯抽在 `scripts/handoff_delivery.py`，行為由單元測試鎖定）：
+
+```bash
+scbus list > .agent-tmp/scbus-rows.json     # registry rows
+scbus whoami                                # 本側 session_id／workspace_root
+uv run python scripts/handoff_delivery.py resolve-target \
+  --target "<對方 session_id 或 claimed name>" \
+  --rows-file .agent-tmp/scbus-rows.json \
+  --own-session-id "<本側 sid>" --own-workspace-root "<本側 WT>"
+```
+
+- `disposition=known-direct` → 走直送第一路（先過下方 Consent gate）；`cross_ownership=true` 時 build-body 加 `--cross-ownership --consent-evidence "<AUTH 指針>"`
+- `disposition=fallback-manual`（reason：`no-match`／`ambiguous`／`target-ended`／`self`）→ 降 manual paste fallback
+
+**第一路：scbus 直送**（已知 session；body 結構欄對齊 conventions v2；helper 的機械把關——≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → `--body ""` 空 envelope 照送＝fail-silent，禁用單行形）：
+
+```bash
+# 段 1：先組 body——exit 非 0（consent gate／超 8192／缺欄）即停不送，顯式 || 閘勿依賴 set -e
+uv run python scripts/handoff_delivery.py build-body \
+  --summary "<packet 指針＋一句話>" --source "<repo-id/card-id>" \
+  --correlation-id "<uuid>" --want "session 承接後回 accept" \
+  --card-ref "<repo-id/card-id>" > .agent-tmp/handoff-body.json || return
+
+# 段 2：段 1 成功才送
+scbus send --to "<session_id>" --body "$(cat .agent-tmp/handoff-body.json)"
+```
+
+send stdout 的 `message_id`／`command_id` 即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。
+
+> **msg_type 註記**：conventions v2 的 msg_type 四值枚舉（cross-repo-bug／fix-ready／verify-pass／breaking-intent）不涵蓋 handoff 交接——delivery body 以消費端約定 `handoff_delivery` 標記（先例＝proto §5.9 控制信 body 約定），不冒用枚舉值；晉升共用 schema 須 conventions.md amendment，非本 skill 權限。
+
+**fallback：manual paste**（直送 unavailable 時的降級路徑，非預設）：
+
+- 觸發條件＝`fallback-manual`（對方 session 未誕生／跨 provider 無法進 registry／ambiguous／ended）——此時印 code block 由 user 手貼
+- user 親手貼＝隱式授權載體但**無送達證明**：completion 停在第 1 段 packet-produced＋user 見證，禁記 queued-visible 以上任一段
+
+> **同repo 預設路徑標記（tri 裁決 4，勿重辯）**：同repo 預設＝新 session 尚未存在於 registry → 天然落 manual paste fallback，現況路徑本輪不斷路；「同 repo 交接意圖遷 Marshal continuation」方向已定，等該路徑 dogfood 後再收斂，本節僅標記。
+
+### Consent gate（直送的授權面——AIR-156）
+
+user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session mailbox，授權面重新設計——**不為機械化拆安全閘**：
+
+- **scbus 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權
+- **跨 ownership envelope**（target `workspace_root` ≠ 本側，即 resolve-target 的 `cross_ownership`）：delivery body 必帶 consent 欄——`"consent": {"granted_by": "user", "evidence": "<AUTH 指針>"}`（`build-body --cross-ownership` 無 `--consent-evidence` 即 fail loud）。欄位語義＝審計註記：**transport consent ≠ mutation authority**，送達≠取得對方寫入權，承接後 mutation 仍歸對方主權（[conventions.md](../../governance/conventions.md) 節一 evidence 條款）
+- **同 ownership**：gate 不豁免——直送仍是 outward，逐次 AUTH 照走；僅 body 免 consent 欄
 
 ---
 
@@ -94,6 +154,8 @@ git rev-parse HEAD            # baseline commit hash
 - **已決策（為何選 X 不選 Y）必含**（決策脈絡是最常漏的）
 - 嵌 code 必須讀回 commit 版本（drift 防護）
 - 跨 provider 必須跑機密檢查
+- 直送必過 consent gate：每次 `scbus send` 逐次 AUTH（Phase 5；跨 ownership 另帶 consent 欄）
+- 直送後照 completion 四段記錄送達狀態（receipt／ACK 證據進交接卡 notes）
 
 ### 禁止
 
@@ -101,11 +163,13 @@ git rev-parse HEAD            # baseline commit hash
 - ❌ 把用戶沒交代的決策硬擠進去
 - ❌ 跨 provider 未跑機密檢查就產出
 - ❌ 處理 usage resume（那是 `/at`）
+- ❌ 無 user 逐次授權的 `scbus send`（outward action；skill 條文≠授權）
+- ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
 
 ## 流程位置
 
 ```
-（主 session 在忙 / 跨家族第二意見 / 跨 repo）→ /handoff [接手方] → 貼到目標 session/provider
+（主 session 在忙 / 跨家族第二意見 / 跨 repo）→ /handoff [接手方] → delivery：已知 session 走 scbus 直送（consent gate 後）／否則 manual paste fallback → completion 四段追蹤
 ```
 
 第二意見走跨家族：`/handoff` 產 self-contained 工單 → bridge 派發（`task --family muse|codex`）→ 對方 findings 貼回原 session → `/judge-review` 評估採納（獨立性階梯見 [review-engine](../review-engine/SKILL.md) 執行預設點 7——跨家族是 systematic bias 的升級軸）。非第二意見的一般交接 → 接手方回覆 → 貼回原 session → `/judge-review` 評估採納。
