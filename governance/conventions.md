@@ -52,11 +52,13 @@
 | needs-info | 資訊不足 | info_request | 補件後以同 correlation 重發 |
 | completed | 請求動作已執行 | result_pointer＋evidence | 消費端驗 evidence 後關閉 |
 
+**ACK 附加欄位定義**：reason＝declined 的一句話拒絕理由；result_pointer＝completed 的交付物指針（格式複用 artifact_pointers：path＋hash）；evidence＝completed 的驗證證據指針（同 artifact_pointers 格式）——三者單義，禁與共用表欄位混用。
+
 **evidence 指向條款**（SC 案例②）：ACK 與 receipt 的文字須帶 evidence 指向（path／hash／可機驗指針），禁權威斷言——「已完成」是宣稱非證據，「result 在 `<path>` hash=`<h>`」是。訊息文案禁斷言權威：transport consent ≠ mutation authority，送達≠取得寫入權。
 
 ### 與 proto §5.7 receipt 的對照表（審計錨）
 
-transport receipt（機器面，delivery 保證）≠ semantic ACK（消費面，語義保證），兩面禁互升格。proto 現況：§5.7 receipt 兩 stage（accepted／visible）＋§5.8 consume 兩態（pending／consumed）；135.5 AC#6 歷史用語「四態 queued/delivered/read/acted」即由下表映射承接——本表為術語對齊審計錨（SC 案例③）。
+transport receipt（機器面，delivery 保證）≠ semantic ACK（消費面，語義保證），兩面禁互升格。proto 現況：§5.7 receipt 兩 stage（accepted／visible）＋§5.8 consume 兩態（pending／consumed）；歷史用語「四態 queued/delivered/read/acted」（出處＝AIR-154 卡 notes SC 要席回執案例③；135.5 AC#6 僅泛稱「四態 receipt」）即由下表映射承接——本表為術語對齊審計錨（SC 案例③）。
 
 | transport 面（proto 實況） | 語義 | 對應歷史四態 | 對應草案 ACK |
 |---------------------------|------|--------------|--------------|
