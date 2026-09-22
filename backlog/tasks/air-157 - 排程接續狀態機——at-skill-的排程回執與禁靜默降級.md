@@ -1,10 +1,10 @@
 ---
 id: AIR-157
 title: 排程接續狀態機——at skill 的排程回執與禁靜默降級
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 01:53'
-updated_date: '2026-09-22 10:41'
+updated_date: '2026-09-22 11:36'
 labels:
   - session-lifecycle
 dependencies: []
@@ -60,3 +60,21 @@ flowchart LR
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+at 排程接續狀態機落地：scripts/at_ticket.py（五主態四異常、轉移表外全拒 fail-loud、ARMED 必帶 receipt、SCHEDULER_REJECTED 禁復活禁靜默降級、cleanup 依 resume_at＋state＋grace 淘汰 mtime、原子寫＋損壞票 fail-loud）＋skills/at/SKILL.md 改版（狀態機圖＋禁降級 gate＋MISSED 誠實標記＋notification adapter 化）。settlement fresh reviewer：F1-F4 修復 round 全修（轉移表收窄＋絕對路徑＋drift 同步＋reason 強制）＋F5/F6 cosmetic；風險軸正面確認（跳級/復活/mtime 零參與/損壞 fail-loud/原子寫全數機驗）。46 tests＋全套 1542 綠。drift 殘留零命中。MISSED covering（zcode scheduled task POC）為後續卡。
+
+```mermaid
+flowchart LR
+  S["SCHEDULED"] -->|"arm receipt"| A["ARMED"]
+  A --> F["FIRED"]
+  F --> R["RESTORE_PROVEN"]
+  R --> T["SETTLED"]
+  S -.->|"fail-loud"| X["SCHEDULER_REJECTED"]
+  A -.-> M["MISSED＋badge"]
+  F -.-> RF["RESTORE_FAILED＋reason"]
+  X -.->|"唯一出口"| C["CANCELLED"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
