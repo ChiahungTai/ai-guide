@@ -46,6 +46,21 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 - 命令層級：`skills/<command-name>/SKILL.md`（slash `/<name>`；如 `skills/instruction-clean/SKILL.md`）
 - 符號連結：`@path` 引用（**僅 CLAUDE.md 展開**；AGENTS.md 不展開 `@`——見下）
 
+### instruction surface coverage（AIR-164——owner≠presence，禁無契約建檔）
+
+> coverage 看 candidate 是否有 instruction owner，不看 AGENTS.md 數量。owner＝local AGENTS.md 或 root AGENTS.md 明示擁有該面——兩者擇一即滿足。
+
+| 判定 | Predicate（任一命中即 MUST 有 instruction owner） |
+|---|---|
+| MUST | (a) 跨 session 消費者契約的可執行入口被目錄外 workflow/control 面引用；或 (b) bounded context 根（≥3 實質源碼檔，沿用 instruction-init 既有閾值）；或 (c) public contract／控制面 authority |
+| MUST NOT | 純產物／參考／實例內容（ai-analysis 分析文、ref-docs 鏡像、backlog 卡實例、report-assets）——維持零面是正確的 |
+| CONDITIONAL | 機制與內容混住——只為機制面寫，不為內容面寫 |
+
+- owner＝local AGENTS.md 或 root AGENTS.md 明示擁有該面均可（per-repo 調參不調結構）
+- 禁無契約建檔：新建 AGENTS 必須列至少一個跨 session 消費者＋可執行入口符號，否則刪（空殼的機械定義＝無消費者行）
+- 單目錄單檔：新機制先進既有目錄 AGENTS 加行，只有新 bounded context 才建新檔
+- 存量不溯及：既有目錄不發大掃蕩卡；下次動該目錄時順手補
+
 > **`@` transclusion 是 Claude Code 專用**：CLAUDE.md 啟動時自動展開 `@path`；AGENTS.md（與 ZCode/Codex/Muse）**不展開 `@`**。所以 AGENTS.md 內**不可用 `@`** 拉內容——中立內容直接寫在 AGENTS.md，Claude 專屬才放 CLAUDE.md 用 `@`。
 
 ### dir 層四家可達性差異（舊全稱句已證偽，不再承諾四家必達）
