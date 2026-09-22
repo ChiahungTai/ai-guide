@@ -4,7 +4,7 @@ title: compact 前交接準備自動化——外部化改機制觸發與恢復�
 status: Done
 assignee: []
 created_date: '2026-09-22 01:52'
-updated_date: '2026-09-22 14:04'
+updated_date: '2026-09-22 20:30'
 labels:
   - session-lifecycle
 dependencies: []
@@ -38,7 +38,7 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ZCode compact hook live acceptance 探針落地：fixture 產生 marker log，於真實 compact 事件後 marker 檔存在（附 path＋內容行）；或 gate 否決結論（無法觸發＋原因）——兩者擇一有機械證據
+- [x] #1 ZCode compact hook live acceptance 探針落地：fixture 產生 marker log，於真實 compact 事件後 marker 檔存在（附 path＋內容行）；或 gate 否決結論（無法觸發＋原因）——兩者擇一有機械證據
 - [ ] #2 checkpoint 格式驗證函式＋test：四問可答機械判準，壞檔 fail-loud 有 test
 - [ ] #3 restore-proven 判準＋test：restore 驗證通過才發 proven；cleanup 於未 proven 時被擋有 test
 - [ ] #4 compact-prep SKILL.md 改版：人肉提醒句（讀 context 檔續任務）移除或降 fallback 標註；rg 檢查指針指向機制面
@@ -67,6 +67,8 @@ flowchart LR
 0922 gate 判決（AC#1 結案）：**VETO**——ZCode 3.14 兩次獨立 /compact 實測（12:26、12:37，session sess_7deee1b7，DB compaction 記錄×4 對照 marker 零命中）皆不派發 SessionStart（無 matcher 亦然）。0824 舊實測為真，新 hooks 文檔的 compact source 真機不存在。附帶發現：session 切換會派發 SessionStart(resume)（scbus 收信注入可用點）。探針已卸載（config 備份 124302），marker 證據保留 .agent-tmp/probe/。**segment 2 設計方向據此定案：放棄 compact-moment 觸發，checkpoint 轉持續責任制**（工作中持續寫 durable owner＋restore-proven 驗證，compact 任意時刻發生皆不丢）——具體形態 segment 2 出。
 
 2026-09-22 審計註記（lite-verify agent_01cd2439）：機制已 merge（47f9d1f4，compact-restore-inject 284 行＋tests 408 行），但 AC#1 要求之「真 compact 事件證據或 gate 否決結論」兩者皆未發生。live dogfood 排定：marshal session 內由 user 跑 /compact 觸發真實事件，驗證 restore 注入後補結論（通過→真 Done；失敗→記 gate 否決）。
+
+2026-09-23 live dogfood 結案（AC#1 補證）：真實 compact（user /compact，sess_54554200）後首個 user prompt，hook 真觸發——AC-B gate 過（zcode DB 有晚於 baseline 的 compaction part）＋四問驗證 fail→corrupt 警示注入（fail-loud 非靜默，決策表 corrupt 分支 live 實證）。root cause＝marshal 手寫 checkpoint 缺 schema 錨定欄（寫入端缺陷；hook 行為照規格）。修復補 schema=compact-checkpoint/1 錨定欄→四問 VALID→bare python3 重放（真 DB＋真 checkpoint）→完整 thin pointer JSON（inject 分支；sha256 b56e832e）→write_restore_proven→重放 0 bytes（consumed 靜默）。corrupt（live）／inject（replay）／consumed（replay）三分支全驗；證據檔保留 .agent-tmp/compact-checkpoints/sess_54554200-b21a-4acb-b794-468f3d629ce6/。附帶發現：compact 後注入的 agentsMd＝session 開場快照非磁碟重讀（session 內 rules 再部署後 compact 不自動 refresh——Session freshness 重讀義務不受 compact 豁免）。教訓：compact_checkpoint 模組無 checkpoint writer helper，手寫 JSON 易漏 schema 欄。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -85,4 +87,6 @@ flowchart LR
   I --> V["四問驗證→restore-proven"]
   V --> G["cleanup guard 解除"]
 ```
+
+live dogfood（2026-09-23）：真 compact 事件 hook 真觸發；corrupt 分支 live 實證（手寫 checkpoint 漏 schema 欄被 fail-loud 攔下）→修復後 inject（thin pointer 重放）與 consumed（proven 後靜默）重放驗證——恢復生命週期三分支全通，AC#1 以真實事件證據結案。
 <!-- SECTION:FINAL_SUMMARY:END -->
