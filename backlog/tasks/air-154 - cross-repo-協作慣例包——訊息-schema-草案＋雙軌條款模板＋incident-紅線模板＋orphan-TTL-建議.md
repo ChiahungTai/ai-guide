@@ -4,6 +4,7 @@ title: cross-repo 協作慣例包——訊息 schema 草案＋雙軌條款模板
 status: To Do
 assignee: []
 created_date: '2026-09-22 00:19'
+updated_date: '2026-09-22 00:31'
 labels: []
 dependencies: []
 ordinal: 138000
@@ -24,3 +25,9 @@ flowchart LR
 
 〔已決策勿重辯〕P 主權前提＋精煉四句＋一句話核心（0922 tri＋14 場景壓測定案，已入 guide e8e89061/997a6813＋135.5 e2adafd1）；semantic ACK 四態；不開卡清單（cross-repo editor/shared WT/全域 dep graph/dispute service/bridge courier）。溯源：sovereignty tri job-mubv2py8/mubv2pzq＋壓測 job-mubvb722/mubvb73k；brief＝.agent-tmp/air-135-disc/sovereignty-scenarios-brief.md。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+採用 checklist 候選（0922 教訓）：其他 repo 採用 improvement-discovery 時必帶——①腳本複製或共用安裝形決策②.gitignore 同步加 KPI 檔（漏了=wt-close 撞牆重演，ai-guide 本家已犯一次）③guard 收編（enroll_repo.py）④KPI 檔 per-repo 各自累積非全域。
+<!-- SECTION:NOTES:END -->
