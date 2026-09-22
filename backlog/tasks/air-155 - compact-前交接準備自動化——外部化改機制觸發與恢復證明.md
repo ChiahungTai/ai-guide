@@ -4,7 +4,7 @@ title: compact 前交接準備自動化——外部化改機制觸發與恢復�
 status: In Progress
 assignee: []
 created_date: '2026-09-22 01:52'
-updated_date: '2026-09-22 02:33'
+updated_date: '2026-09-22 04:43'
 labels:
   - session-lifecycle
 dependencies: []
@@ -60,3 +60,9 @@ flowchart LR
 
 〔驗證式〕見 AC 欄（機械可判：探針 marker 或否決記錄、驗證函式 test、cleanup 擋行 test、skill 文字 rg 檢查、pytest 全綠）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0922 gate 判決（AC#1 結案）：**VETO**——ZCode 3.14 兩次獨立 /compact 實測（12:26、12:37，session sess_7deee1b7，DB compaction 記錄×4 對照 marker 零命中）皆不派發 SessionStart（無 matcher 亦然）。0824 舊實測為真，新 hooks 文檔的 compact source 真機不存在。附帶發現：session 切換會派發 SessionStart(resume)（scbus 收信注入可用點）。探針已卸載（config 備份 124302），marker 證據保留 .agent-tmp/probe/。**segment 2 設計方向據此定案：放棄 compact-moment 觸發，checkpoint 轉持續責任制**（工作中持續寫 durable owner＋restore-proven 驗證，compact 任意時刻發生皆不丢）——具體形態 segment 2 出。
+<!-- SECTION:NOTES:END -->

@@ -4,6 +4,7 @@ title: orphan WT 回收機制——wt-close 擴充 TTL sweep（DB-21 裁決承�
 status: To Do
 assignee: []
 created_date: '2026-09-22 02:47'
+updated_date: '2026-09-22 03:20'
 labels:
   - session-lifecycle
 dependencies: []
@@ -30,3 +31,9 @@ flowchart LR
 
 〔已決策勿重辯〕owner 裁決＝user 0922（bridge 線 DB-21）；wt-identity.json 為 registry 錨點（bridge 提案方向，隨評估文件確認）；orphan TTL 建議值來源＝AIR-154 慣例包；回收走既有 wt-close 路徑擴充、禁另起爐灶。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0922 對齊（154 worker 指認的殘留張力）：本卡依賴的 TTL 建議值來源＝**bridge 側評估文件＋規格提案**（開工前置，原 desc 已載）；AIR-154 慣例包節四僅記結項指針、不承載建議值——desc 中「orphan TTL 建議值來源＝AIR-154 慣例包」一句以本 note 為準修正讀法。
+<!-- SECTION:NOTES:END -->
