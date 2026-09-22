@@ -1,10 +1,10 @@
 ---
 id: AIR-155
 title: compact 前交接準備自動化——外部化改機制觸發與恢復證明
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 01:52'
-updated_date: '2026-09-22 04:43'
+updated_date: '2026-09-22 10:30'
 labels:
   - session-lifecycle
 dependencies: []
@@ -66,3 +66,21 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 0922 gate 判決（AC#1 結案）：**VETO**——ZCode 3.14 兩次獨立 /compact 實測（12:26、12:37，session sess_7deee1b7，DB compaction 記錄×4 對照 marker 零命中）皆不派發 SessionStart（無 matcher 亦然）。0824 舊實測為真，新 hooks 文檔的 compact source 真機不存在。附帶發現：session 切換會派發 SessionStart(resume)（scbus 收信注入可用點）。探針已卸載（config 備份 124302），marker 證據保留 .agent-tmp/probe/。**segment 2 設計方向據此定案：放棄 compact-moment 觸發，checkpoint 轉持續責任制**（工作中持續寫 durable owner＋restore-proven 驗證，compact 任意時刻發生皆不丢）——具體形態 segment 2 出。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+compact 前後脈絡保全落地（VETO 驅動的持續責任制設計）：scripts/compact_checkpoint.py（四問驗證/restore-proven hash 綁定/cleanup guard）＋hooks/compact-restore-inject.py（UserPromptSubmit sync 注入：compaction 記錄代理閘防誤拿——gate 過＋未消費→thin pointer 注入；gate 過＋已 proven→re-restore 注入；fail-open 全程）＋SKILL.md 降 boundary adapter（持續外部化義務清單＋人肉依賴句零殘留）。settlement fresh reviewer pass（F1 註冊材料進版控 hooks/＋F3 re-restore 語義翻轉——reviewer 可推翻條款成立＋F4 schema 驗證；judge 應用）。focused 71＋全套 1403 綠。機器註冊完成（backup 182954、installer 五面 parity 綠、新 session 生效）。live restore dogfood：下次真實 compact 事件驗證。附帶：gate 實驗推翻 zcode 文檔 compact source（drift 回報鏡像流程）。
+
+```mermaid
+flowchart LR
+  W["工作中"] -->|"持續義務"| CP["checkpoint 檔＋durable owner"]
+  CP --> C["compact 任意時刻"]
+  C --> U["下次開口"]
+  U --> H["UserPromptSubmit hook"]
+  H -->|"閘：有新 compaction"| I["注入 thin pointer"]
+  H -->|"無"| S["靜默"]
+  I --> V["四問驗證→restore-proven"]
+  V --> G["cleanup guard 解除"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
