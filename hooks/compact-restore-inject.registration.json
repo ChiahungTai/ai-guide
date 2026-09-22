@@ -1,0 +1,31 @@
+{
+  "_readme": "AIR-155 segment 2 restore 注入 hook 機器註冊片段（機器註冊由主 session 執行；worker 禁改 ~/.zcode/）。合併方式：把下方 UserPromptSubmit 陣列的**第二個元素** append 進 ~/.zcode/cli/config.json 現有 hooks.events.UserPromptSubmit 陣列尾端（現況 1 個元素＝scbus async 條目，2026-09-22 唯讀確認；上方的 scbus 元素僅為現況照抄、merge 時以 config 現值為準勿覆寫）。禁動 PreToolUse/Stop/PostToolUse/SessionStart 既有條目；hooks.enabled 已為 true 免動。UserPromptSubmit 不使用 matcher（ZCode hooks 文檔定案：不參與過濾），故條目無 matcher 鍵。command 用 python3 與既有 hook 條目同慣例（PATH 解析＝CLT 3.9，hook 已按 3.9 相容實作並以 bare python3 實跑複驗）。路徑＝primary repo（/Users/ctai/Github/ai-guide/hooks/）——本檔隨卡 merge 進版控，即永久正典位置——详见同目錄 INSTALL-PROTOCOL.md；長期收編 governance/registrations/zcode.json（{{REPO}} 模板）走 installer 單一源，屬 merge 後段落。",
+  "hooks": {
+    "events": {
+      "UserPromptSubmit": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "scbus hook --harness zcode --event user-prompt-submit",
+              "async": true
+            }
+          ]
+        },
+        {
+          "hooks": [
+            {
+              "type": "process",
+              "command": "python3",
+              "args": [
+                "/Users/ctai/Github/ai-guide/hooks/compact-restore-inject.py"
+              ],
+              "enabled": true,
+              "timeoutMs": 10000
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

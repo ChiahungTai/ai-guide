@@ -212,6 +212,38 @@ class TestRestoreProven:
         assert "checkpoint_path_mismatch" in reasons
 
 
+class TestCheckpointPaths:
+    """checkpoint/proven 約定落點（segment 2 restore hook 與 skill fallback 共用單一源）。"""
+
+    def test_pair_under_agent_tmp_with_fixed_names(self, tmp_path):
+        cp, proven = ccp.checkpoint_paths(tmp_path, "sess_abc")
+        assert cp.parent == proven.parent  # 成對同目錄（cleanup 同擋）
+        assert cp.parent == tmp_path / ".agent-tmp" / "compact-checkpoints" / "sess_abc"
+        assert cp.name == "checkpoint.json"
+        assert proven.name == "restore-proven.json"
+
+    def test_normal_session_id_unchanged(self, tmp_path):
+        sid = "sess_48b59be8-6c19-4761-99d0-91646b5e867a"
+        cp, _ = ccp.checkpoint_paths(tmp_path, sid)
+        assert cp.parent.name == sid
+
+    def test_session_id_traversal_sanitized(self, tmp_path):
+        cp, proven = ccp.checkpoint_paths(tmp_path, "../../evil")
+        # sanitize 後是 checkpoints 目錄下的單一元件——無分隔符、非 .／..
+        assert cp.parent.parent.parent == tmp_path / ".agent-tmp"
+        name = cp.parent.name
+        assert "/" not in name and name not in ("", ".", "..")
+        assert proven.parent == cp.parent
+
+    def test_dot_dot_session_becomes_placeholder(self, tmp_path):
+        cp, _ = ccp.checkpoint_paths(tmp_path, "..")
+        assert cp.parent.name == "_"
+
+    def test_empty_session_becomes_placeholder(self, tmp_path):
+        cp, _ = ccp.checkpoint_paths(tmp_path, "")
+        assert cp.parent.name == "_"
+
+
 class TestCleanupGuard:
     def test_guard_error_is_checkpoint_error(self):
         assert issubclass(ccp.CleanupBlockedError, ccp.CheckpointError)

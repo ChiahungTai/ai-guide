@@ -1,35 +1,59 @@
 ---
 name: compact-prep
-description: "當你要跑 /compact 壓縮對話前，外部化前置：掃全 session 產脈絡外部化檔（結構化 preserve-list，禁時序流水帳），然後請 user 執行 /compact；memory 候選整理是落盤後可選步驟、非救援必要路徑。不解決壓縮本身（harness 擁有），只解決 compact 後的接續材料。"
-when_to_use: "當 context 即將壓縮（user 宣告要 /compact、context window 快滿、長 session 準備壓縮）時載入——compact 前產脈絡外部化檔＋compact 後恢復指針。觸發詞：compact 準備、context 外部化、壓縮前、preserve-list、compact-audit。跨 session／repo／provider 交接屬 handoff、usage reset 自動接續屬 at——兩者皆不做 compact 前外部化，不重疊。"
+description: "壓縮邊界的 boundary adapter：①持續外部化義務——工作中持續把接續狀態落檔（checkpoint＋durable owner），compact（manual 或 auto）何時發生皆不丟；②恢復接線——新 context 開口消費 scripts/compact_checkpoint.py 的驗證/proven/cleanup（hook 注入與 fallback 走同一驗證）。不解決壓縮本身（harness 擁有）、不自製 compactor；外部化內容取捨（判斷面）仍是 LLM 職權。"
+when_to_use: "① session 工作中——維護 checkpoint 與 durable owner（持續責任制，無事件依賴）；② 新 context 開口（compact 後／resume）——恢復接續時走本 skill 的恢復流程；③ 交接包／compact 摘要品質需審計時（compact-audit 搭檔）。觸發詞：checkpoint、context 外部化、compact 恢復、restore-proven、compact-audit。跨 session／repo 交接屬 handoff、usage reset 自動接續屬 at——兩者不做本 skill 的 checkpoint 義務，不重疊。"
 ---
 
-# compact-prep：/compact 的前置外部化
+# compact-prep：壓縮邊界 boundary adapter
 
-> 背景：/compact 的摘要會壓掉 verbatim 交付物（實測 A/B：指示要求 verbatim 無效）、re-injection 快照可能過時。結構性解法＝compact 前把接續材料落檔。
+> **定位（AIR-155）**：compact 事件不可觀測（ZCode 0922 gate VETO：兩次獨立 /compact 實測不派發 SessionStart，無 matcher 亦然；auto-compact 閾值各 harness 不受控）→ 放棄 compact-moment 觸發，checkpoint 轉**持續責任制**——工作中持續落檔，狀態永遠已在檔上。
+>
+> **manual/auto 雙情境語義並列**：codex hooks 以 matcher 分流 PreCompact(manual|auto)（學理依據：manual 與 auto 是兩個 lifecycle 事件），但兩者對 checkpoint 的要求同構——持續責任制使分流失去意義：user 手動 /compact 或 harness auto-compact 何時發生，接續材料都已在檔上。本 skill 條文不區分兩情境，也不依賴任何 compact 事件存在。
 
-> **產出方針**：① **脈絡壓縮非時序流水**——落檔按任務脈絡結構組織，禁逐輪對話照抄；② **素材範圍＝全 session**——掃整個對話的任務結構（目標/決策/懸掛），非尾端幾筆對話窗口。preserve-list 語義與 [ai-development-guide](../../ai-development-guide.md)「Summary Instructions（壓縮策略）」同源。
+## 義務一：持續外部化（持續責任制，無 compact 事件依賴）
 
-## 步驟
+前提（CC compaction 保留矩陣機械化）：
 
-1. **定位當前 session（自我錨定，禁用「取 db 最新 session」法——同 worktree 並行 session 會撈到別的 session）**：以本 skill 的調用字串為錨——**必須 join message 限定 user-role part**：`SELECT DISTINCT p.session_id FROM part p JOIN message m ON p.message_id=m.id WHERE p.data LIKE '%compact-prep%' AND json_extract(m.data,'$.role')='user' ORDER BY p.time_created DESC LIMIT 1;`——裸 `part.data LIKE` 會誤中**後spawn 的 subagent session**（其繼承 context 含 skill 內文，時間戳更晚；2026-08-31 實測錨到 subagent）。另注意 schema：role/type 都在 data JSON 內（`json_extract`），無獨立欄位。撈出後抽查該 session 最後一則 user part 是否為本次調用，確認非鄰近 session 誤中。
-2. **落檔脈絡外部化檔**：**durable owner 優先**——先更新既有 EP 進度＋必要 evidence 檔（無 EP 用既有 `.agent-tmp/session-journal.md`；user 指定 report 則用該 report），checkpoint 欄位見 [task-recovery](../_common/task-recovery.md)「寫入端」；compact-context 檔保留作交接包——引用 durable owner 而非重抄內容，需逐字保存的錯誤／findings 原文例外。掃**全 session**（`message.sequence` 全程，非尾端窗口）提煉接續材料，寫入 `<repo>/.agent-tmp/compact-context-<date>.md`（檔頭標註 session id 與時間）。內容按 preserve-list 結構組織（非時序流水）：任務目標與待辦／已決策＋理由／已讀改檔案路徑／測試結果與錯誤訊息（verbatim）／懸掛動作（未執行命令、待確認提案、背景任務）／計數（verbatim）。關鍵交付物原文（錯誤訊息、findings）逐字保留——**選擇標準是相關性，不是對話位置**。
-3. **memory 候選整理（可選——落盤成功後才做，非救援必要路徑）**：本 session 的裁決/教訓是否值得寫 memory（cluster-first）？有 → 補寫。usage 不足／無寫權／gate 故障時跳過並記交接待辦——不得跳過後宣稱已蒸餾。
-4. **交付確認**：印出 context 檔路徑＋摘要（涵蓋哪些任務脈絡、多少字元），然後請 user 執行 `/compact`，並**明確提醒 user：compact 後開口第一句讓 AI 讀 context 檔**（例如「讀 context 檔續任務」）——新 context 的 AI 不知道檔案存在，沒有這句步驟 5 不會發生。
-5. **compact 後恢復**（無 hook 注入的環境；恢復順序單一源＝[task-recovery](../_common/task-recovery.md)「恢復順序」）：被 user 提醒後先讀 context 檔恢復任務脈絡，再繼續任務；已註冊 SessionStart(compact) hook 的環境 raw tail 已自動注入 context（verbatim 復原層），讀 context 檔補結構化脈絡後續任務。
-6. **清理**：context 檔恢復用途完成後即無價值——依 `.agent-tmp/` 既有清理紀律處理（互動模式完成時列清單保留/刪除）。
+- **conversation state 必死**——對話訊息面壓縮即換摘要、不保證 verbatim（A/B 實測：指示要求 verbatim 無效）→ 工作中持續落檔。
+- **CLAUDE.md／rules／skills 本體 harness 重注入**——每輪 context 重建自動在場 → 不用抄。
+
+**義務清單**（每次實質進展後更新；落點優先序＝durable owner 先：EP 進度節→journal→user 指定 report，定義源＝[task-recovery](../_common/task-recovery.md)「寫入端」）：
+
+1. **決策與理由**（含排除方案）
+2. **evidence 指針**（已驗／未驗證據、檔案路徑、測試結果與錯誤 verbatim）
+3. **dirty 邊界**（scope/cwd/baseline＋本弧未提交變更）
+4. **pending actions**（未執行命令、待確認提案、背景 job 與收法）
+5. **invariants**（不可違反約束、授權範圍——checkpoint 不擴張授權）
+
+**checkpoint 檔**：落點由 `scripts/compact_checkpoint.py` 的 `checkpoint_paths(cwd, session_id)` 給出（單一源，禁手拼）——`<cwd>/.agent-tmp/compact-checkpoints/<session_id>/checkpoint.json`，與 restore-proven receipt 成對同目錄。欄位照 task-recovery 十欄映射（四問必要：objective/completed/next_action/pending；弧起點空 list 是合法回答）。**寫入即驗證**：`validate_checkpoint(load_checkpoint(...))`——壞檔 fail-loud 禁靜默續行。
+
+**內容政策**（承接 preserve-list）：脈絡壓縮非時序流水帳；素材範圍＝全 session 非尾端窗口；需逐字保存的錯誤／findings 原文例外於「引用不重抄」；選擇標準是相關性不是對話位置。
+
+**memory 候選整理（可選，非救援必要路徑）**：落盤成功後才做；usage 不足／無寫權／gate 故障時跳過並記交接待辦——不得跳過後宣稱已蒸餾。
+
+## 義務二：恢復接線（新 context 開口）
+
+兩個入口走**同一驗證**（`scripts/compact_checkpoint.py` 的 validate_checkpoint／verify_restore_proven／assert_cleanup_allowed——機制單一源，任何入口不重寫判準）：
+
+1. **hook 注入（已註冊環境）**：ZCode UserPromptSubmit hook `hooks/compact-restore-inject.py`——每次 user prompt 查本 session 未消費 checkpoint，有則注入 **thin pointer**（路徑＋sha256＋head/tail 預覽；禁全文進 context，codex spill 語義同構：接續材料以檔案承載、context 只帶指針）；無 checkpoint 靜默；已 proven（消費）即靜默。
+2. **fallback（未註冊／其他 harness）**：新 context 開口先查 `checkpoint_paths` 指向的檔存在與否，存在即照同一恢復流程。
+
+**恢復流程**（恢復順序單一源＝[task-recovery](../_common/task-recovery.md)「恢復順序」）：
+
+1. 讀 checkpoint → `validate_checkpoint`（四問可答；壞檔 fail-loud——損壞比缺失更危險，禁靜默續行）
+2. 依 task-recovery 恢復順序核對實物（checkpoint hash 是比對依據非回滾目標）
+3. 驗證通過 → `write_restore_proven` 發 proven receipt（綁 checkpoint 內容 sha256）
+4. proven 後 hook 自動靜默；未 proven 前 `assert_cleanup_allowed` 擋 cleanup——禁清 checkpoint／proven（recovery artifact）
 
 ## 搭檔：compact-audit（重大弧線選配，高成本）
 
-壓縮後摘要品質審計：spawn 乾淨 context agent 讀 session DB 獨立提煉 15-20 條關鍵要點 → 與壓縮摘要三色比對（✓保留／△細節流失／✗遺漏）。成本量級：數 M tokens／數分鐘——**僅重大弧線 session（deep-work／多 EP）壓縮後跑**，例行壓縮不跑（與 callstack 生成同成本紀律：高成本操作獨立觸發）。
+壓縮後摘要品質審計：spawn 乾淨 context agent 讀 session DB 獨立提煉 15-20 條關鍵要點 → 與壓縮摘要三色比對（✓保留／△細節流失／✗遺漏）。成本量級：數 M tokens／數分鐘——**僅重大弧線 session（deep-work／多 EP）壓縮後跑**，例行壓縮不跑。
 
-agent prompt 須內嵌的非顯知識（2026-08-24 mosaic dogfood 實測）：
-- 壓縮摘要以 **user-role message** 注入 DB——獨立提煉須明確排除該 message（否則是抄摘要非獨立）
-- `part.sequence` 是 per-message 非全域錨；全域時序錨用 `message.sequence`
-- part types：text／tool／reasoning／compaction／step-start／step-finish／timeline
+agent prompt 須內嵌的非顯知識（2026-08-24 mosaic dogfood 實測）：摘要以 user-role message 注入 DB 須明確排除（否則是抄摘要非獨立）；全域時序錨用 `message.sequence`（`part.sequence` 是 per-message）；session 錨定須 join message 限定 user-role part（裸 `part.data LIKE` 會誤中後 spawn 的 subagent session）；part types：text／tool／reasoning／compaction／step-start／step-finish／timeline。
 
 ## 邊界
 
-- 不做壓縮、不產摘要（harness 職責）；只做 compact 前外部化＋compact 後恢復指針。
-- **ZCode：SessionStart(compact) hook 已實測死路（2026-08-24 L4 終驗：compact 不派發 SessionStart 給 config hooks）——步驟 2/4/5 全跑，hook 分支不適用**。Claude Code：SessionStart(compact) hook **已註冊**（`hooks/compact-tail-inject.py`，settings.json matcher=compact，2026-08-30 接線；tail 原文取自 CC transcript JSONL）——hook 是**機械 verbatim 復原層**（自動注入 raw tail；腳本做不了脈絡壓縮）；本 skill 職責＝步驟 2 脈絡外部化檔＋**步驟 3 memory 候選整理（可選，非救援必要路徑）**（皆 LLM 判斷層）＋步驟 4 讀檔提醒（hook 注入的 raw tail 不含 context 檔存在資訊）。
-- Claude Code 環境同樣適用（db 路徑改為該環境的 session 儲存；無 db 時步驟 1-2 改為模型直接從自己 context 提煉脈絡外部化檔——context 內含全程任務脈絡，非尾端窗口）。
+- 不做壓縮、不產摘要、不自製 compactor（harness 職責）；外部化內容取捨＝LLM 判斷面，機制面只保證「任何時刻都有一份可機械驗證的檔」。
+- **ZCode**：compact 事件 VETO（2026-09-22 gate 判決：3.14 兩次獨立 /compact 實測不派發 SessionStart——0824 舊實測為真，hooks 文檔的 compact source 真機不存在）→ 本 skill 不依賴任何 compact 事件；restore 注入走 UserPromptSubmit hook（註冊片段與協議見 `hooks/compact-restore-inject.registration.json`＋`hooks/compact-restore-inject.INSTALL-PROTOCOL.md`；未註冊機器走 fallback）。
+- **Claude Code**：SessionStart(compact) hook 已註冊（`hooks/compact-tail-inject.py`，settings.json matcher=compact——機械 verbatim 復原層，自動注入 raw tail）；本 skill 的 checkpoint／restore 流程在 CC 端以 fallback 形態適用（CC 無 scripts 慣例路徑差異時照 `checkpoint_paths` 相對 cwd 落點）。
+- 跨 session／repo 交接屬 handoff、usage reset 自動接續屬 at——兩者不做本 skill 的 checkpoint 義務，不重疊。

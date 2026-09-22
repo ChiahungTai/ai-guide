@@ -28,20 +28,30 @@
 四問判準是「可答」非「有進度」：completed/pending 允許空 list（弧起點的
 合法回答），objective/next_action 須非空白字串。額外欄位不拒絕（前向相容）。
 
-消費形態：函式 API（skill 段與後續 trigger 接線消費）；檔案落點由呼叫端
-指定（建議 checkpoint 與 proven 同住 .agent-tmp/ 下成對放置）。
+消費形態：函式 API（restore hook、skill 段與後續 trigger 接線消費）；約定落點
+由 checkpoint_paths 給出——checkpoint 與 proven 同住
+<cwd>/.agent-tmp/compact-checkpoints/<session_id>/ 成對放置（AIR-155 segment 2
+起為單一源；caller 自帶落點者仍可指定路徑）。
 """
 
 import datetime
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 SCHEMA = "compact-checkpoint/1"
 PROVEN_SCHEMA = "compact-restore-proven/1"
+
+# 約定落點（checkpoint_paths 單一源）——hook／skill fallback／寫入端共用
+CHECKPOINTS_SUBDIR = "compact-checkpoints"
+CHECKPOINT_FILENAME = "checkpoint.json"
+PROVEN_FILENAME = "restore-proven.json"
+
+_SESSION_UNSAFE = re.compile(r"[^A-Za-z0-9._-]")
 
 # 四問欄位：字串題（須非空白）與清單題（須為 list，可空）
 STRING_FIELDS = ("objective", "next_action")
@@ -64,6 +74,26 @@ class Checkpoint:
     completed: list[Any]  # Any＝JSON 邊界（條目可為字串或結構化值）
     next_action: str
     pending: list[Any]  # 同上
+
+
+def sanitize_session_id(session_id: str) -> str:
+    """session id → 單一安全路徑元件；非 [A-Za-z0-9._-] 一律換 _，危險值換佔位。"""
+    cleaned = _SESSION_UNSAFE.sub("_", session_id)
+    return cleaned if cleaned not in ("", ".", "..") else "_"
+
+
+def checkpoint_paths(cwd: Path, session_id: str) -> tuple[Path, Path]:
+    """checkpoint 與 proven 的約定落點（單一源，禁各處手拼路徑）。
+
+    `<cwd>/.agent-tmp/compact-checkpoints/<sanitize(session_id)>/` 下成對放置
+    checkpoint.json＋restore-proven.json（cleanup guard 同目錄同擋）。消費者：
+    hooks/compact-restore-inject.py（restore 注入）、compact-prep skill
+    （寫入端與 fallback 恢復）。
+    """
+    directory = (
+        Path(cwd) / ".agent-tmp" / CHECKPOINTS_SUBDIR / sanitize_session_id(session_id)
+    )
+    return directory / CHECKPOINT_FILENAME, directory / PROVEN_FILENAME
 
 
 def load_checkpoint(path: Path) -> dict[str, Any]:
