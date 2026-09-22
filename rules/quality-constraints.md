@@ -6,7 +6,7 @@ harness-scope: neutral
 
 ## 完整交付標準
 
-方向明確就做到可用：核心功能、相關測試、邊界處理、文檔同步；完成後檢查變更所在與上層 AGENTS.md 的架構/API/職責描述，必要時同步（含 Claude wrapper）。需方案選擇、需求不明或風險裁決時請示。
+方向明確就做到可用：核心功能、相關測試、邊界處理、文檔同步；完成後檢查變更所在與上層 AGENTS.md 的架構/API/職責描述，必要時同步。需方案選擇、需求不明或風險裁決時請示。
 
 ## 數據完整性優先（Crash-Only Design）
 
@@ -22,13 +22,9 @@ harness-scope: neutral
 
 未確認成功、跳過步驟/案例/驗證、migration 跳記錄、未驗邊界都須明列限制，禁報完成/全通過；隔離單元綠燈不代表功能完成。功能須有可執行例，API 實際呼叫，邊界實驗。
 
-### 消費端驗證模式
+### 消費端驗證＋漸進深度
 
-先定位主要消費者並跑完整流程；測試集範圍不可憑目錄直覺，須機械反查；symbol 命中≠接線被驅動。細則見 **validation-strategy skill**（證據分層見 [acceptance-evidence](acceptance-evidence.md)）。
-
-## 漸進式驗證（DEPTH-MIN→SAMPLE→FULL）
-
-一律 DEPTH-MIN→SAMPLE→FULL；失敗先分析/修正並回 MIN，禁改後直跑 FULL 或失敗盲重跑。風險分級決定最終深度；3–5 案、已知陷阱等細則見 validation-strategy skill。
+先定位主要消費者並跑完整流程（測試集範圍須機械反查；symbol 命中≠接線被驅動）；一律 DEPTH-MIN→SAMPLE→FULL，失敗先分析/修正並回 MIN，禁直跑 FULL 或盲重跑。細則見 **validation-strategy skill**（證據分層見 [acceptance-evidence](acceptance-evidence.md)）。
 
 ## 多步驟任務檢查點
 

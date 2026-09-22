@@ -11,10 +11,6 @@
 - **skill 優先序**：skill 方法論衝突時，ai-guide 部署的 skills 優先於 harness 內建／marketplace bundled 同功能 skill。
 - **需要跨 context 接續時先結算**：context 將耗盡先把進度與待辦寫回 EP／card；同一工作稍後續跑用 /at，交給另一個 session／repo／provider 用 /handoff。
 
-## 演化性思維
-
-測試保護下優先架構品質/正確性/清晰度，預設不保留向後相容；需確認情境見 [edit-discipline.md](rules/edit-discipline.md)。
-
 ## 驗證約束
 
 修改後須實跑，再查語法/import 並依風險驗證；純文檔/註解例外見 [must-execute-before-complete.md](rules/must-execute-before-complete.md)，順序/消費端要求見 [quality-constraints.md](rules/quality-constraints.md)。

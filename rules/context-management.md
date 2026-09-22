@@ -22,7 +22,7 @@ context 揮發且 quota 可能突然耗盡。
 
 ## STATE.md（Last session 觀察層）
 
-定位/寫入見 state-md-write 共用子範本（Claude: `skills/_common/state-md-write.md`）；由 at/deep-work 觸發，Open failures 走 kanban、不進 STATE。
+定位/寫入見 state-md-write 共用子範本；由 at/deep-work 觸發，Open failures 走 kanban、不進 STATE。
 
 ## Memory 生命周期規範（pointer）
 
