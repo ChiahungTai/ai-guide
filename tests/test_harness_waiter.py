@@ -1849,6 +1849,8 @@ def run_register(
     created=CREATED,
     metadata_absent=False,
     source=None,
+    expected_heartbeat=False,
+    heartbeat_file=None,
 ):
     # register 讀 metadata 取 generation anchor（createdAt）——先佈建觀察面
     layout = make_layout(tmp_path)
@@ -1867,6 +1869,8 @@ def run_register(
         surviving_handles=tuple(handles),
         silence_budget_min=budget,
         intervention_policy=policy,
+        expected_heartbeat=expected_heartbeat,
+        heartbeat_file=heartbeat_file,
         source=source,
         stdout=out,
         stderr=err,
@@ -1908,6 +1912,69 @@ def test_s2_register_metadata_missing_fail_loud(tmp_path):
     assert tail["state"] == "unknown"
     assert tail["reason"] == "metadata-anchor-missing"
     assert not rp.exists()
+
+
+def test_s2_register_agent_prefix_task_accepted(tmp_path):
+    # AIR-160 追加（marshal dogfood 0922 實證）：Task tool spawn 的真實 id＝
+    # agent_<uuid>——register 驗證放寬接受 agent_ 前綴（agentId 恒等映射；
+    # metadata childSessionId 全形 sess_subagent_agent_<uuid> 等價判定）
+    task = "agent_uuid1234"
+    code, out, rp = run_register(tmp_path, task=task)
+    assert code == 0
+    tail = last_json(out)
+    assert tail["state"] == "registered"
+    assert tail["taskId"] == task
+    entries = _mod.load_registry(rp)
+    assert entries[0].task_id == task
+    assert entries[0].created_at == CREATED  # generation anchor 照讀 metadata
+
+
+def test_s2_register_empty_or_unknown_prefix_rejected(tmp_path):
+    # 驗證不放水：空 id／無前綴亂值仍拒（invalid-task-id）——禁落地半套 entry
+    for bad in ("", "random-worker-1"):
+        code, out, rp = run_register(tmp_path, task=bad)
+        assert code == 1
+        tail = last_json(out)
+        assert tail["state"] == "unknown"
+        assert tail["reason"] == "invalid-task-id"
+        assert not rp.exists()
+
+
+def test_agent_id_derivation_agent_prefix_identity():
+    # AIR-160 追加第二項（三面對稱①resolve 面）：映射函數接受 agent_ 短形
+    # （恒等映射）——register/status/harvest 共享此單一映射，禁只放寬一面
+    assert _mod.agent_id_from_task("agent_uuid1234") == "agent_uuid1234"
+    assert _mod.agent_id_from_task("agent_") is None  # 純前綴無 id＝拒
+
+
+def test_status_agent_prefix_task_resolved(tmp_path):
+    # 三面對稱②status 面：agent_ 短形 taskId 照樣 resolve metadata——
+    # 只放寬 register 不放寬 status＝首輪 sweep 即 UNKNOWN fail-loud
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", "agent_uuid1234")  # agentId 即 agent_<uuid>
+    src = _mod.ZCodeLivenessSource(layout, lease_prober=lambda paths: [])
+    st = src.status("agent_uuid1234")
+    assert isinstance(st, _mod.TaskStatus)
+    assert st.state == "running"
+    # generation 錨點＝(childSessionId 全形, createdAt)——T5 對照照常成立
+    assert st.generation == ("sess_subagent_agent_uuid1234", CREATED)
+
+
+def test_watcher_first_cycle_agent_prefix_no_unknown(tmp_path):
+    # 三面對稱③sweep 面：agent_ 短形 entry 首輪輪詢照常續等——
+    # 禁 UNKNOWN fail-loud（註冊成功但 sweep 即死＝三面不對稱的失敗樣態）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", "agent_uuid1234")
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_dict(task="agent_uuid1234")],
+        layout,
+        times=[ts(5)],
+        max_cycles=1,
+    )
+    assert code == 1  # max-cycles 內部收場——非 exit 2 hard-death wake
+    assert '"state": "unknown"' not in out
+    assert "invalid-task-id" not in out
 
 
 def test_s2_register_entry_matches_frozen_schema_key_set(tmp_path):
@@ -2159,3 +2226,419 @@ def test_cli_register_e2e_roundtrip(tmp_path):
     assert not isinstance(entries, _mod.UnknownFace)
     assert entries[0].task_id == TASK
     assert entries[0].created_at == CREATED
+
+
+# ---------------------------------------------------------------------------
+# AIR-160：heartbeat sidecar join 讀面（三分支 fresh／missing／stale；
+# T1-T9 frozen 主體零變——advisory 輸入外掛）
+# ---------------------------------------------------------------------------
+
+HB_FILE = ".agent-tmp/heartbeats/att.jsonl"
+HB_PERIOD_S = 60  # 契約預設週期（＝child CLI --interval-secs 預設）
+
+
+def reg_entry_hb(**extra) -> dict:
+    base = {"expectedHeartbeat": True, "heartbeatFile": HB_FILE}
+    base.update(extra)
+    return reg_entry_dict(**base)
+
+
+def write_heartbeat(
+    tmp_path: Path,
+    *,
+    emitted: datetime | None = None,
+    attempt: str = "att-1",
+    seq: int = 1,
+    state: str = "working",
+    interval: int = HB_PERIOD_S,
+    raw: str | None = None,
+) -> Path:
+    p = tmp_path / HB_FILE
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if raw is not None:
+        p.write_text(raw)
+        return p
+    rec = {
+        "schema": "child-heartbeat/1",
+        "seq": seq,
+        "taskId": TASK,
+        "attemptId": attempt,
+        "state": state,
+        "emittedAt": iso(emitted),
+        "note": None,
+        "intervalSecs": interval,
+    }
+    p.write_text(json.dumps(rec) + "\n")
+    return p
+
+
+def hb_row(**over) -> dict:
+    """完整合法 row（reader record contract 測試基準）."""
+    rec = {
+        "schema": "child-heartbeat/1",
+        "seq": 1,
+        "taskId": TASK,
+        "attemptId": "att-1",
+        "state": "working",
+        "emittedAt": iso(ts(10)),
+        "note": None,
+        "intervalSecs": HB_PERIOD_S,
+    }
+    rec.update(over)
+    return rec
+
+
+def write_hb_text(tmp_path: Path, text: str) -> Path:
+    p = tmp_path / HB_FILE
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(text)
+    return p
+
+
+def hb_pending_dir(tmp_path: Path) -> Path:
+    return tmp_path / ".agent-tmp" / "liveness" / "pending"
+
+
+def test_heartbeat_fresh_telemetry_zero_wake_continues_polling(tmp_path):
+    # fresh：age ≤ 2×週期（60s 週期→門檻 120s）→telemetry heartbeat-fresh，
+    # 壓 advisory 續輪詢
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, emitted=ts(10))  # 11:10 beat
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(11), ts(12)],  # ages 60s／120s——皆 ≤ 門檻 120s
+        max_cycles=2,
+    )
+    assert code == 1  # max-cycles 內部錯，非 wake
+    assert "heartbeat=fresh" in out
+    assert "stale-advisory" not in out
+    assert "timebox-wake" not in out
+
+
+def test_heartbeat_fresh_at_timebox_expiry_marks_receipt_wake_still_fires(tmp_path):
+    # 偽造禁令：fresh 不延 timebox——timebox 到期照醒，wake receipt 帶 heartbeat
+    # fresh 標記（壓 advisory——parent 見 recent-checkin 可自選續等）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, emitted=ts(19))  # 11:19 beat——21m 時 fresh
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb()],  # 預設 20m box
+        layout,
+        times=[ts(21)],  # 21m > 20m——timebox 到
+    )
+    assert code == 3
+    tail = last_json(out)
+    assert tail["state"] == "timebox-wake"  # T4 主體路徑零變
+    assert tail["timeboxElapsedMin"] == 21.0  # 不延 timebox——喚醒未被推遲
+    assert tail["heartbeat"]["verdict"] == "fresh"
+    assert tail["heartbeat"]["lastHeartbeatAt"] == iso(ts(19))
+
+
+def test_heartbeat_missing_telemetry_l0_no_wake(tmp_path):
+    # missing：expectedHeartbeat=true 但缺席超 2×interval→telemetry L0 續輪詢
+    # （缺席合法——child 未實施 heartbeat／未回報皆不禁失敗禁喚醒）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],  # 無 sidecar 檔
+        layout,
+        times=[ts(25), ts(35)],  # 25m／35m > 20m 門檻——box 60m 未到
+        max_cycles=2,
+    )
+    assert code == 1
+    assert "heartbeat=missing" in out
+    assert "stale-advisory" not in out
+    assert "timebox-wake" not in out
+
+
+def test_heartbeat_missing_young_entry_stays_quiet(tmp_path):
+    # 註冊未滿 2×週期（120s）且無記錄＝啟動窗——零 telemetry（禁過早噪聲）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(1)],  # 註冊起 60s ≤ 120s 啟動窗
+        max_cycles=1,
+    )
+    assert code == 1
+    assert "heartbeat=" not in out
+    assert "heartbeat=" not in _err
+
+
+def test_heartbeat_corrupt_sidecar_treated_missing_not_fail_loud(tmp_path):
+    # sidecar 半截/損壞＝advisory 面 gap——丟棄不可解析行，禁拖垮 supervisor
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, raw='{"seq": 1, "task\n{"torn"\n')
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(25)],
+        max_cycles=1,
+    )
+    assert code == 1  # 續輪詢收場，非 unknown fail-loud
+    assert "heartbeat=missing" in out
+    assert '"state": "unknown"' not in out
+
+
+def test_heartbeat_stale_early_advisory_wake_before_timebox(tmp_path):
+    # stale：曾見記錄、斷訊超 2×週期→STALE_ADVISORY 提前醒（exit 3，
+    # advisory——不 stop 不重派、不收割不記帳、stale 不判死）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, emitted=ts(28))  # 11:28 beat（週期 60s→門檻 120s）
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(29), ts(31)],  # 29m age 60s fresh→31m age 180s > 120s stale
+    )
+    assert code == 3
+    tail = last_json(out)
+    assert tail["state"] == "stale-advisory"
+    assert tail["taskId"] == TASK
+    assert tail["attemptId"] == "att-1"
+    assert tail["advisoryOnly"] is True
+    assert tail["heartbeat"]["ageS"] == 180.0
+    assert tail["heartbeat"]["thresholdS"] == 120.0  # 2×週期
+    assert tail["heartbeat"]["lastHeartbeatAt"] == iso(ts(28))
+    assert "timebox-wake" not in out  # 提前醒——timebox（60m）未到
+    # stale advisory 不收割不發 pending receipt（與 T4 的機制差）
+    assert not hb_pending_dir(tmp_path).exists()
+    assert not (tmp_path / ".agent-tmp" / "liveness" / "harvest").exists()
+
+
+def test_timebox_frozen_precedes_stale_at_expiry(tmp_path):
+    # 順位：timebox 到期（T4 收割路徑）先於 stale——同輪命中走 T4 主體
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, emitted=ts(5))
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb()],  # 預設 20m box
+        layout,
+        times=[ts(30)],  # 30m：timebox 到＋stale 同輪
+    )
+    assert code == 3
+    tail = last_json(out)
+    assert tail["state"] == "timebox-wake"  # T4 主體贏
+    assert tail["heartbeat"]["verdict"] == "stale"  # stale 記進 receipt 供參
+    assert hb_pending_dir(tmp_path).exists()  # T4 收割路徑照走
+
+
+def test_non_heartbeat_entries_have_zero_new_output(tmp_path):
+    # 零變回歸：未啟用 expectedHeartbeat 的 entry——輸出與主體行為零新增
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_dict()],
+        layout,
+        times=[ts(5), ts(15)],
+        max_cycles=2,
+    )
+    assert code == 1
+    assert "heartbeat=" not in out
+
+
+def test_register_expected_heartbeat_roundtrip(tmp_path):
+    code, out, rp = run_register(
+        tmp_path, expected_heartbeat=True, heartbeat_file=HB_FILE
+    )
+    assert code == 0
+    tail = last_json(out)
+    assert tail["state"] == "registered"
+    raw = json.loads(rp.read_text())["entries"][0]
+    assert raw["expectedHeartbeat"] is True
+    assert raw["heartbeatFile"] == HB_FILE
+    e = _mod.load_registry(rp)[0]
+    assert e.expected_heartbeat is True
+    assert e.heartbeat_file == HB_FILE
+
+
+def test_register_expected_heartbeat_without_file_fail_loud(tmp_path):
+    code, out, rp = run_register(tmp_path, expected_heartbeat=True)
+    assert code == 1
+    tail = last_json(out)
+    assert tail["state"] == "unknown"
+    assert tail["reason"] == "heartbeat-file-required"
+    assert not rp.exists()  # 禁落地半套 entry
+
+
+def test_loader_expected_heartbeat_validation(tmp_path):
+    # 讀面 schema：expectedHeartbeat 需 boolean；=true 需 heartbeatFile 配對
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    cases = [
+        reg_entry_dict(expectedHeartbeat="yes"),  # 非 boolean
+        reg_entry_dict(expectedHeartbeat=True),  # 缺 heartbeatFile
+    ]
+    for entry in cases:
+        code, out, _rp = run_watcher(
+            tmp_path, [entry], layout, times=[ts(5)], max_cycles=1
+        )
+        assert code == 1
+        tail = last_json(out)
+        assert tail["state"] == "unknown"
+        assert tail["reason"] == "registry-schema"
+
+
+def test_s2_cli_register_expected_heartbeat_roundtrip(tmp_path, capsys):
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    rp = reg_path(tmp_path)
+    code = _mod.main(
+        [
+            str(rp),
+            "--register",
+            TASK,
+            "--attempt-id",
+            "att-9",
+            "--sink",
+            "out.md",
+            "--expected-heartbeat",
+            "--heartbeat-file",
+            HB_FILE,
+        ],
+        layout=layout,
+    )
+    assert code == 0
+    capsys.readouterr()
+    e = _mod.load_registry(rp)[0]
+    assert e.expected_heartbeat is True
+    assert e.heartbeat_file == HB_FILE
+
+
+def test_heartbeat_usage_documents_flags():
+    doc = _mod.__doc__ or ""
+    assert "--expected-heartbeat" in doc
+    assert "--heartbeat-file" in doc
+
+
+# ---------------------------------------------------------------------------
+# AIR-160 修復（codex blocking）：reader record contract 與寫面對稱——
+# schema/taskId/state/seq/intervalSecs 全欄位驗證＋torn tail 丟棄
+# ---------------------------------------------------------------------------
+
+
+def read_hb(tmp_path: Path, text: str):
+    return _mod._read_heartbeat_sidecar(write_hb_text(tmp_path, text), TASK, "att-1")
+
+
+def test_reader_rejects_wrong_schema(tmp_path):
+    latest, anomaly = read_hb(tmp_path, json.dumps(hb_row(schema="hb/2")) + "\n")
+    assert latest is None
+    assert anomaly is None  # 欄位不合＝丟棄非檔面異常
+
+
+def test_reader_rejects_task_id_mismatch(tmp_path):
+    # taskId 須與 entry 一致——他 task 的記錄禁計入本 attempt freshness
+    latest, anomaly = read_hb(
+        tmp_path, json.dumps(hb_row(taskId="sess_subagent_other")) + "\n"
+    )
+    assert latest is None
+    assert anomaly is None
+
+
+def test_reader_rejects_invalid_state(tmp_path):
+    # state 集只有 working|done——child 禁自報 collected（偽造禁令）
+    latest, anomaly = read_hb(tmp_path, json.dumps(hb_row(state="collected")) + "\n")
+    assert latest is None
+    assert anomaly is None
+
+
+def test_reader_rejects_non_positive_seq(tmp_path):
+    # seq 須正整數（0／負／bool／缺席皆丟棄）
+    for bad in (0, -1, True, None):
+        row = hb_row()
+        if bad is None:
+            del row["seq"]
+        else:
+            row["seq"] = bad
+        latest, _anomaly = read_hb(tmp_path, json.dumps(row) + "\n")
+        assert latest is None, f"seq={bad!r} 應丟棄"
+
+
+def test_reader_discards_complete_json_without_trailing_newline(tmp_path):
+    # torn tail：完整可解析 JSON 但末行無換行＝crash 半寫——丟棄
+    latest, anomaly = read_hb(tmp_path, json.dumps(hb_row()))  # 無 "\n"
+    assert latest is None
+    assert anomaly == "torn-tail-discarded"
+
+
+def test_reader_rejects_invalid_interval_secs(tmp_path):
+    # intervalSecs 須正整數（0／字串／bool／缺席皆丟棄）——與寫面契約對稱
+    for bad in (0, "60", True, None):
+        row = hb_row()
+        if bad is None:
+            del row["intervalSecs"]
+        else:
+            row["intervalSecs"] = bad
+        latest, _anomaly = read_hb(tmp_path, json.dumps(row) + "\n")
+        assert latest is None, f"intervalSecs={bad!r} 應丟棄"
+
+
+def test_reader_keeps_latest_valid_among_invalid_and_torn(tmp_path):
+    # 混合台帳：合法行存活（latest 取最後合法行）、壞行與 torn tail 丟棄
+    text = (
+        json.dumps(hb_row(seq=1, emittedAt=iso(ts(10))))
+        + "\n"
+        + "{corrupt\n"
+        + json.dumps(hb_row(seq=2, emittedAt=iso(ts(12))))
+        + "\n"
+        + json.dumps(hb_row(seq=3, emittedAt=iso(ts(14))))  # torn——無換行
+    )
+    path = write_hb_text(tmp_path, text)
+    latest, anomaly = _mod._read_heartbeat_sidecar(path, TASK, "att-1")
+    assert latest is not None
+    assert latest["seq"] == 2
+    assert anomaly == "torn-tail-discarded"
+
+
+def test_reader_other_attempt_record_not_credited(tmp_path):
+    # attemptId 不符（同 task 不同 attempt）——禁計入本 attempt freshness
+    latest, _anomaly = read_hb(tmp_path, json.dumps(hb_row(attemptId="att-0")) + "\n")
+    assert latest is None
+
+
+def test_torn_tail_complete_json_treated_missing_at_watcher_level(tmp_path):
+    # watcher 端到端：完整 JSON 無換行＝torn tail 丟棄→missing telemetry，非 fail-loud
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, raw=json.dumps(hb_row(emittedAt=iso(ts(24)))))
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(25)],
+        max_cycles=1,
+    )
+    assert code == 1  # 續輪詢收場
+    assert "heartbeat=missing" in out
+    assert '"state": "unknown"' not in out
+
+
+def test_heartbeat_threshold_follows_row_interval_secs(tmp_path):
+    # stale 門檻＝2×週期，週期以 row intervalSecs 為準（child 宣告對帳）：
+    # 週期 300s→門檻 600s——age 300s 為 fresh（固定 120s 門檻會誤判 stale）
+    layout = make_layout(tmp_path)
+    write_metadata(layout, "sess_p1", AGENT)
+    write_heartbeat(tmp_path, emitted=ts(10), interval=300)
+    code, out, _err = run_watcher(
+        tmp_path,
+        [reg_entry_hb(silenceBudget=60)],
+        layout,
+        times=[ts(15)],  # age 300s ≤ 600s
+        max_cycles=1,
+    )
+    assert code == 1
+    assert "heartbeat=fresh" in out
+    assert "threshold=600s" in out

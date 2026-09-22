@@ -42,7 +42,10 @@ v1 以「rollout＋artifact＋exec 三面推進靜默計數」判凍結；TC-4 r
 
 `taskId` 慣例（機器實證 2026-09-20）：childSessionId 全形
 `sess_subagent_agent_<uuid>`；exec/artifact 目錄名直接使用該全形 id；adapter
-以 glob 解析 parent，agentId 由 taskId 機械映射。
+以 glob 解析 parent，agentId 由 taskId 機械映射。可註冊形兩種（AIR-160 追加，
+marshal dogfood 2026-09-22 實證）：全形 `sess_subagent_agent_<uuid>`（v1）與
+Task tool spawn 短形 `agent_<uuid>`（恒等映射；childSessionId 等價判定在
+register 寫面）。
 
 fail-loud（frozen 擴充）：metadata 錨點缺失（running 期消失＝T5 hard-death）、
 JSON 不可解析／半寫 torn read、glob 歧義——一律 `unknown(原因)`，禁 crash
@@ -126,13 +129,20 @@ wake 對「第一個到期」收割即 exit——其餘 entry 中止監視，主
    定性更名（EP amendment）：本物＝**timeboxed attempt supervisor**（三結果
    TERMINAL／TIMEBOX_EXPIRED／UNKNOWN-HARD_DEATH；所有 stop/retry 歸
    controller policy）。
+16.〔AIR-160〕heartbeat sidecar 讀面為 T1-T9 frozen 主體的外掛 advisory 輸入
+   （契約單一源＝agent-workflow SKILL「Worker supervision contract」節）：狀
+   態機表與 exit code 零變；exit 3 觸發源增一（timebox 到期→stale-advisory
+   提前喚醒）——「advisory 不 stop 不重派」語義不變；stale-advisory 不收割
+   不記帳，與 T4 的分流以 stdout 尾 `state` 欄機判（先例＝偏差 4/10）；
+   registry schema 增 `expectedHeartbeat?`＋`heartbeatFile?` 成對欄位。
 
 exit 契約（frozen——watcher 主迴圈）
 -------------------------------------
 - 0＝正常收場（含空 registry、全 terminal〔stdout 尾附 CollectionReceipt〕）
 - 2＝hard-death wake（generation mismatch／metadata 消失／registry entry 異動）
-- 3＝timebox wake（stdout 尾附 harvest receipt JSON＋pending intervention；
-  advisory——不 stop 不重派）
+- 3＝advisory wake（timebox wake——stdout 尾附 harvest receipt JSON＋pending
+  intervention；或 stale-advisory——heartbeat 斷訊提前醒〔AIR-160〕，不收割不
+  記帳；兩者皆 advisory——不 stop 不重派）
 - 其他非零＝內部錯／fail-loud（診斷至 stderr＋stdout 尾行狀態 JSON；本檔
   用 1）
 - verification 模式延伸面（`--verify`——frozen 表為主迴圈 wake 語義，verify
@@ -156,23 +166,27 @@ stderr＝診斷。
         --attempt-id <id> --sink <path> [--expected <json>]
         [--surviving-handle HANDLE]... [--silence-budget-min MIN]
         [--intervention-policy interactive|autonomous_once]
+        [--expected-heartbeat --heartbeat-file PATH]
 
 registry＝workspace-local `.agent-tmp/liveness-registry.json`（寫入面＝
 `--register`；atomic write 契約——watcher 逐輪重讀偵測 entry 異動）。schema：
 `{"entries": [{taskId, attemptId, createdAt, sink, expected,
-survivingHandles[], silenceBudget?, interventionPolicy?}]}`；watcher 讀面：
-檔缺席＝fail-loud；entries 空＝exit 0（等待語義：無可監視物）。register 寫
-面：同 taskId 重註冊＝fail-loud（新 attempt 前先移除舊 entry）；既有檔損壞
-／schema 不符＝fail-loud 禁覆蓋；`createdAt`＝generation anchor，由 register
-自 agent metadata 機械讀取（**非牆鐘**——T5 對照基準＋v2 timebox 起點，寫牆
-鐘＝每次輪詢 hard-death）；`sink`/`expected`＝AIR-135.7 AC#2 bounded receipt
-欄位投影；`survivingHandles`＝dispatch 前已知 detached job 的 ownership
-handle（in-harness brief 禁未登記 long-lived/daemonized child；--verify 面
-＝correctness boundary）；`silenceBudget`＝timebox 分鐘（v2 重解釋；缺席＝
-20m 標準）；`interventionPolicy`（D-A）＝`interactive｜autonomous_once`——
-invoking session 當下寫入、watcher 只 echo 進 receipt（**兩軸分離**：policy
-管「誰處置」、retry_safe 管「可否重派」）；缺省不寫欄位、讀面缺省/未知值
-fail-safe＝interactive、寫面明確給錯＝fail-loud。
+survivingHandles[], silenceBudget?, interventionPolicy?, expectedHeartbeat?,
+heartbeatFile?}]}`；watcher 讀面：檔缺席＝fail-loud；entries 空＝exit 0
+（等待語義：無可監視物）。register 寫面：同 taskId 重註冊＝fail-loud（新
+attempt 前先移除舊 entry）；既有檔損壞／schema 不符＝fail-loud 禁覆蓋；
+`createdAt`＝generation anchor，由 register 自 agent metadata 機械讀取（**非
+牆鐘**——T5 對照基準＋v2 timebox 起點，寫牆鐘＝每次輪詢 hard-death）；
+`sink`/`expected`＝AIR-135.7 AC#2 bounded receipt 欄位投影；
+`survivingHandles`＝dispatch 前已知 detached job 的 ownership handle（in-
+harness brief 禁未登記 long-lived/daemonized child；--verify 面＝correctness
+boundary）；`silenceBudget`＝timebox 分鐘（v2 重解釋；缺席＝20m 標準）；
+`interventionPolicy`（D-A）＝`interactive｜autonomous_once`——invoking
+session 當下寫入、watcher 只 echo 進 receipt（**兩軸分離**：policy 管「誰處
+置」、retry_safe 管「可否重派」）；`expectedHeartbeat`＋`heartbeatFile`
+（AIR-160 heartbeat 協議——child 寫自己的 sidecar，watcher join 讀面）成對
+出現，register 給 `--expected-heartbeat` 必帶 `--heartbeat-file`；缺省不寫
+欄位、讀面缺省/未知值 fail-safe＝interactive、寫面明確給錯＝fail-loud。
 
 收割（bounded）：metadata copy→表面 manifest（exec/artifact＋rollout 存在
 才列；檔數上限）→rollout raw tail（位元組上限；存在才收；JSONL 收 raw
@@ -206,6 +220,39 @@ writer（窗前後 stat 不變）。無法歸屬 handle（存在非普通檔/不
 STOP_INCOMPLETE；survivingHandles＝correctness boundary 非 telemetry。
 exec lease probe＝寫入者面保留（active lease／probe 不可判定→
 STOP_INCOMPLETE fail-closed）。
+
+heartbeat sidecar 讀面（AIR-160；T1-T9 frozen 主體外掛——advisory 輸入）
+--------------------------------------------------------
+registry entry 可選 `expectedHeartbeat`（bool）＋`heartbeatFile`（workspace
+相對路徑，與 sink 同解析面）。sidecar＝child 自己的 JSONL append-only 台帳
+（格式單一源＝scripts/child_heartbeat.py 的 `child-heartbeat/1`：seq 自動遞
+增、emittedAt/intervalSecs 由 helper 寫、半截行丟棄；本檔讀面為 standalone
+最小投影，格式變更兩檔同步）。心跳週期（cadence）預設 60s（child CLI
+`--interval-secs`），由 row `intervalSecs` 自載宣告；**stale 門檻＝2×週期**。
+sweep 每輪對 expectedHeartbeat=true 且 timebox 未到（PollFresh）的 entry
+join 讀 sidecar，三分支：
+
+- **fresh**（本 attempt 最新記錄 age ≤ 2×週期）→ telemetry
+  `heartbeat-fresh`——壓 advisory（recent-checkin 續等——heartbeat 只證明
+  T 時刻執行過 emitter，不證明現在活著）；**禁延 timebox**
+  （heartbeat 永不覆蓋 timebox／terminal——timebox 到期照醒，wake receipt 附
+  `heartbeat.verdict` 供 parent 自選處置）
+- **stale**（記錄存在但 age > 2×週期）→ `STALE_ADVISORY` 提前喚醒（exit
+  3，stdout 尾 `state=stale-advisory`——advisory，不 stop 不重派，**stale 不
+  判死**；不收割、不發 pending receipt、不消耗 retry budget）
+- **missing**（無本 attempt 記錄且註冊起年齡 > 2×週期）→ telemetry
+  `heartbeat_missing`（L0）——**缺席合法**（pilot 外 role／未回報皆合法），
+  禁失敗禁喚醒；註冊未滿 2×週期的啟動窗＝零輸出
+
+sidecar 檔缺席／不可讀＝丟棄該面（telemetry gap，非 fail-loud——heartbeat
+是 advisory 輸入，禁拖垮 supervisor）；行級讀面與寫面 record contract 對稱
+驗證（schema/taskId/attemptId/state/seq/intervalSecs/emittedAt 全欄位——
+不合形行、attemptId 或 taskId 不符行、**末行無換行的 torn tail** 皆丟棄）。
+ownership：registration 與 collected 都 parent 專屬；child 禁
+寫 parent registry、禁自報 collected（偽造禁令——契約單一源＝
+skills/agent-workflow/SKILL.md「Worker supervision contract」節）。順位：
+hard-death > unknown > timebox-frozen（T4 主體）> stale——stale 與 timebox
+到期同輪命中走 T4 收割路徑（stale 記進 wake receipt）。
 """
 
 import argparse
@@ -243,6 +290,12 @@ TIMEBOX_MIN = float(os.environ.get("HARNESS_WAITER_FREEZE_MIN", DEFAULT_TIMEBOX_
 DEFAULT_POLL_INTERVAL_S = 60.0
 DEFAULT_VERIFICATION_GRACE_S = 30.0
 POLL_GAP_FACTOR = 2.0  # gap > interval×此倍數＝異常（機器睡眠）→扣除間隔
+# AIR-160：stale 門檻＝週期×此倍數——週期以 sidecar row `intervalSecs` 宣告為
+# 準（無有效記錄回落 HEARTBEAT_PERIOD_S_DEFAULT）
+HEARTBEAT_STALE_FACTOR = 2.0
+HEARTBEAT_SCHEMA = "child-heartbeat/1"  # 格式單一源＝scripts/child_heartbeat.py
+HEARTBEAT_STATES = frozenset({"working", "done"})  # child 禁自報 collected
+HEARTBEAT_PERIOD_S_DEFAULT = 60.0  # 契約預設週期（＝child CLI --interval-secs 預設）
 
 TERMINAL_STATES = frozenset({"completed", "failed", "stopped"})
 
@@ -259,6 +312,8 @@ MAX_TAIL_BYTES = 65_536
 MAX_MANIFEST_FILES = 2_000
 
 _SUBAGENT_PREFIX = "sess_subagent_"
+# Task tool spawn 的真實 id 前綴（AIR-160 追加，marshal dogfood 2026-09-22 實證）
+_AGENT_PREFIX = "agent_"
 
 
 # ---------------------------------------------------------------------------
@@ -303,11 +358,19 @@ class ZCodeLayout:
 
 
 def agent_id_from_task(task_id: str) -> str | None:
-    """taskId（childSessionId 全形）→ agentId 機械映射；非 subagent 形→None."""
-    if not task_id.startswith(_SUBAGENT_PREFIX):
-        return None
-    agent_id = task_id[len(_SUBAGENT_PREFIX) :]
-    return agent_id or None
+    """taskId→agentId 機械映射；非可註冊形→None.
+
+    兩形：`sess_subagent_<rest>→<rest>`（childSessionId 全形，v1 機械映射）；
+    `agent_<uuid>` 恒等映射（Task tool spawn 的 taskId 即 agentId——其
+    childSessionId 全形＝sess_subagent_＋agent_<uuid>，寫面等價判定見
+    run_register）。其餘（空 id／無前綴亂值）＝None 拒絕。
+    """
+    if task_id.startswith(_SUBAGENT_PREFIX):
+        agent_id = task_id[len(_SUBAGENT_PREFIX) :]
+        return agent_id or None
+    if task_id.startswith(_AGENT_PREFIX) and len(task_id) > len(_AGENT_PREFIX):
+        return task_id
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -523,6 +586,8 @@ class RegistryEntry:
     surviving_handles: tuple[str, ...]
     silence_budget_min: float | None
     intervention_policy: str = "interactive"
+    expected_heartbeat: bool = False  # AIR-160：heartbeat 協議——與 heartbeatFile 成對
+    heartbeat_file: str | None = None
 
 
 def _require_str(entry: dict, key: str) -> str | None:
@@ -582,6 +647,24 @@ def load_registry(path: Path) -> list[RegistryEntry] | UnknownFace:
         # ——interactive＝主 session 介入，禁誤判 autonomous 觸發自動鏈）
         policy_raw = raw.get("interventionPolicy")
         policy = policy_raw if policy_raw in INTERVENTION_POLICIES else "interactive"
+        # AIR-160：expectedHeartbeat 需 boolean，且 =true 時需 heartbeatFile 成對
+        hb_expected_raw = raw.get("expectedHeartbeat")
+        if hb_expected_raw is not None and not isinstance(hb_expected_raw, bool):
+            return UnknownFace(
+                "registry-schema", f"entries[{i}] expectedHeartbeat 需 boolean"
+            )
+        hb_file_raw = raw.get("heartbeatFile")
+        if hb_file_raw is not None and not (
+            isinstance(hb_file_raw, str) and hb_file_raw
+        ):
+            return UnknownFace(
+                "registry-schema", f"entries[{i}] heartbeatFile 需非空字串"
+            )
+        if hb_expected_raw and hb_file_raw is None:
+            return UnknownFace(
+                "registry-schema",
+                f"entries[{i}] expectedHeartbeat=true 需 heartbeatFile 成對",
+            )
         entries.append(
             RegistryEntry(
                 task_id=task_id,
@@ -592,6 +675,8 @@ def load_registry(path: Path) -> list[RegistryEntry] | UnknownFace:
                 surviving_handles=tuple(handles_raw),
                 silence_budget_min=budget,
                 intervention_policy=policy,
+                expected_heartbeat=bool(hb_expected_raw),
+                heartbeat_file=hb_file_raw,
             )
         )
     return entries
@@ -1244,6 +1329,119 @@ def collect_sink(entry: RegistryEntry, sink_base: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# heartbeat sidecar join（AIR-160——advisory 輸入；T1-T9 frozen 主體外掛）
+# ---------------------------------------------------------------------------
+
+
+def _valid_heartbeat_record(
+    rec: object, *, task_id: str, attempt_id: str
+) -> dict | None:
+    """record contract 驗證——與 scripts/child_heartbeat.py 寫面對稱.
+
+    schema/taskId/attemptId/state/seq/intervalSecs/emittedAt 全欄位檢查，不
+    合形者回 None（丟棄語義，不 raise）。taskId 須與 entry 一致（他 task 的
+    記錄禁計入本 attempt freshness）；state 集只有 working|done（child 禁自報
+    collected——偽造禁令）；seq 與 intervalSecs 須正整數。
+    """
+    if not isinstance(rec, dict):
+        return None
+    if rec.get("schema") != HEARTBEAT_SCHEMA:
+        return None
+    if rec.get("taskId") != task_id or rec.get("attemptId") != attempt_id:
+        return None
+    if rec.get("state") not in HEARTBEAT_STATES:
+        return None
+    seq = rec.get("seq")
+    if not isinstance(seq, int) or isinstance(seq, bool) or seq < 1:
+        return None
+    interval = rec.get("intervalSecs")
+    if not isinstance(interval, int) or isinstance(interval, bool) or interval < 1:
+        return None
+    emitted = rec.get("emittedAt")
+    if not isinstance(emitted, str) or _parse_iso(emitted) is None:
+        return None
+    return rec
+
+
+def _read_heartbeat_sidecar(
+    path: Path | None, task_id: str, attempt_id: str
+) -> tuple[dict | None, str | None]:
+    """sidecar join 讀面——回 (本 attempt 最新有效記錄, 異常註記).
+
+    格式單一源＝scripts/child_heartbeat.py（`child-heartbeat/1`）——本檔為
+    standalone 最小投影（不 import sibling；格式變更兩檔同步）。record
+    contract 驗證與寫面對稱（`_valid_heartbeat_record`）；append-only 台帳讀
+    語義：**末行無換行＝torn tail 丟棄**（縱使完整可解析 JSON——crash 半寫
+    不計 freshness）、不可解析／欄位不合／taskId 或 attemptId 不符行丟棄；
+    檔缺席／不可讀＝(None, 原因)——缺席合法（advisory 面，禁 fail-loud 拖垮
+    supervisor）。
+    """
+    if path is None:
+        return None, "sidecar-not-configured"
+    if not path.is_file():
+        return None, "sidecar-absent"
+    try:
+        raw = path.read_text(errors="replace")
+    except OSError as exc:
+        return None, f"sidecar-unreadable:{exc}"
+    torn_tail = bool(raw) and not raw.endswith("\n")
+    lines = raw.split("\n")
+    if torn_tail:
+        lines = lines[:-1]  # 末行無換行＝crash 半寫——丟棄
+    latest: dict | None = None
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+        except json.JSONDecodeError:
+            continue  # 半截／損壞行——append-only 台帳的丟棄語義
+        rec = _valid_heartbeat_record(parsed, task_id=task_id, attempt_id=attempt_id)
+        if rec is not None:
+            latest = rec
+    return latest, ("torn-tail-discarded" if torn_tail else None)
+
+
+def _heartbeat_verdict(
+    entry: RegistryEntry, now: datetime, *, ws_root: Path
+) -> tuple[str, dict]:
+    """heartbeat 三分支判準（AIR-160）——回 (verdict, info).
+
+    stale 門檻＝2×週期；週期以最新有效記錄的 `intervalSecs`（child 宣告）為
+    準，無有效記錄回落契約預設 60s。fresh（age ≤ 門檻，壓 advisory 禁延
+    timebox）／stale（記錄存在但斷訊超門檻，advisory 提前醒禁判死）／
+    missing（無本 attempt 記錄且註冊起年齡超門檻，telemetry L0 缺席合法）／
+    none（啟動窗——零輸出）。
+    """
+    latest, _anomaly = _read_heartbeat_sidecar(
+        _ws_path(ws_root, entry.heartbeat_file) if entry.heartbeat_file else None,
+        entry.task_id,
+        entry.attempt_id,
+    )
+    if latest is not None:
+        period_s = float(latest["intervalSecs"])
+        threshold_s = period_s * HEARTBEAT_STALE_FACTOR
+        emitted = _parse_iso(latest["emittedAt"])
+        age_s = max(0.0, (now - emitted).total_seconds())
+        info = {
+            "lastHeartbeatAt": latest["emittedAt"],
+            "intervalSecs": latest["intervalSecs"],
+            "ageS": age_s,
+            "thresholdS": threshold_s,
+        }
+        if age_s <= threshold_s:
+            return "fresh", info
+        return "stale", info
+    threshold_s = HEARTBEAT_PERIOD_S_DEFAULT * HEARTBEAT_STALE_FACTOR
+    created = _parse_iso(entry.created_at)
+    waited_s = (now - created).total_seconds() if created else None
+    if waited_s is not None and waited_s > threshold_s:
+        return "missing", {"thresholdS": threshold_s, "waitedS": waited_s}
+    return "none", {"thresholdS": threshold_s, "waitedS": waited_s}
+
+
+# ---------------------------------------------------------------------------
 # 主迴圈（T1-T6；狀態機實作對應 module docstring frozen spec）
 # ---------------------------------------------------------------------------
 
@@ -1276,6 +1474,7 @@ def run_watcher(
         src, threshold_min=threshold_min, poll_interval_s=poll_interval_s
     )
     harvester = Harvester(src, layout, liveness)
+    ws_root = registry_path.parent.parent  # workspace 根（sink/heartbeatFile 共用）
 
     entries = load_registry(registry_path)
     if isinstance(entries, UnknownFace):
@@ -1400,9 +1599,7 @@ def run_watcher(
             harvest_status = manifest.get("metadata", {}).get("status")
             terminal_race = harvest_status in TERMINAL_STATES
             if terminal_race:
-                collection = collect_sink(
-                    entry, registry_path.parent.parent
-                )  # workspace 根
+                collection = collect_sink(entry, ws_root)  # workspace 根
                 budget = None
                 suggested = _final_collect_suggestion(entry, collection, bundle)
             else:
@@ -1437,6 +1634,12 @@ def run_watcher(
                 "suggestedAction": suggested,
                 "manifest": manifest,
             }
+            if entry.expected_heartbeat:
+                # AIR-160：fresh 不延 timebox（照醒）——verdict 進 receipt 供
+                # parent 自選處置（fresh＝recent-checkin 可續等；stale 加證處置）
+                hb_name, hb_info = _heartbeat_verdict(entry, cycle_now, ws_root=ws_root)
+                if hb_name != "none":
+                    wake["heartbeat"] = {"verdict": hb_name, **hb_info}
             _emit(out, _dumps(wake))
             if terminal_race:
                 _emit(
@@ -1456,8 +1659,7 @@ def run_watcher(
         terminal_states = [v.state for _e, v in results if isinstance(v, PollTerminal)]
         if len(terminal_states) == len(results):
             # T2：全 terminal＝恰一次 collect（有 sink 時）→CollectionReceipt
-            sink_base = registry_path.parent.parent  # workspace 根（registry 慣例）
-            deliveries = [collect_sink(e, sink_base) for e in current]
+            deliveries = [collect_sink(e, ws_root) for e in current]
             delivered = sum(1 for d in deliveries if d["verdict"] == "delivered")
             receipt = {
                 "schema": COLLECTION_RECEIPT_SCHEMA,
@@ -1473,6 +1675,52 @@ def run_watcher(
             }
             _emit(out, _dumps(receipt))
             return EXIT_OK
+
+        # AIR-160 heartbeat face：expectedHeartbeat=true 且 timebox 未到
+        # （PollFresh）的 entry join 讀 sidecar——fresh/missing＝telemetry 續
+        # 輪詢；stale＝STALE_ADVISORY 提前醒（advisory，不收割不記帳不判死）
+        stale: tuple[RegistryEntry, dict] | None = None
+        for entry, verdict in results:
+            if not entry.expected_heartbeat or not isinstance(verdict, PollFresh):
+                continue
+            hb_name, hb_info = _heartbeat_verdict(entry, cycle_now, ws_root=ws_root)
+            if hb_name == "fresh":
+                _emit(
+                    out,
+                    f"[{WATCHER_NAME}] cycle={cycle} task={entry.task_id} "
+                    f"heartbeat=fresh age={hb_info['ageS']:.0f}s "
+                    f"(threshold={hb_info.get('thresholdS', 0):.0f}s)",
+                )
+            elif hb_name == "missing":
+                _emit(
+                    out,
+                    f"[{WATCHER_NAME}] cycle={cycle} task={entry.task_id} "
+                    f"heartbeat=missing (L0——缺席合法)",
+                )
+            elif hb_name == "stale" and stale is None:
+                stale = (entry, hb_info)
+
+        if stale is not None:
+            entry, hb_info = stale
+            wake = {
+                "state": "stale-advisory",
+                "schema": WAKE_RECEIPT_SCHEMA,
+                "taskId": entry.task_id,
+                "attemptId": entry.attempt_id,
+                "interventionPolicy": entry.intervention_policy,
+                "reason": "heartbeat-stale",
+                "heartbeat": hb_info,
+                "advisoryOnly": True,
+                "survivingHandles": list(entry.surviving_handles),
+            }
+            _emit(out, _dumps(wake))
+            _emit(
+                err,
+                f"[{WATCHER_NAME}] stale-advisory: {entry.task_id} heartbeat "
+                f"斷訊 {hb_info['ageS']:.0f}s（>{hb_info['thresholdS']:.0f}s）"
+                "——提前醒（advisory，不 stop 不重派，stale 不判死）",
+            )
+            return EXIT_FREEZE
 
         do_sleep(poll_interval_s)
 
@@ -1714,6 +1962,8 @@ def run_register(
     surviving_handles: Sequence[str] = (),
     silence_budget_min: float | None = None,
     intervention_policy: str | None = None,
+    expected_heartbeat: bool = False,
+    heartbeat_file: str | None = None,
     source: ZCodeLivenessSource | None = None,
     stdout: _Writable | None = None,
     stderr: _Writable | None = None,
@@ -1725,7 +1975,8 @@ def run_register(
     fail-loud。`interventionPolicy`（D-A）＝invoking session 當下寫入——
     缺席不寫欄位（讀面 fail-safe＝interactive）；明確給錯值＝fail-loud
     （寫面驗證與其他欄位一致；讀面的未知值才走 fail-safe coerce）。
-    其餘 fail-loud 面：欄位無效（task 非 subagent 形／attempt/sink 空／
+    其餘 fail-loud 面：欄位無效（task 非可註冊形——sess_subagent_／agent_
+    兩前綴之外／attempt/sink 空／
     expected 非 JSON／silenceBudget 非正數）、同 taskId 重註冊、既有
     registry 損壞或 schema 不符（禁覆蓋——損壞比缺失危險）。失敗一律不
     落地半套檔；成功以 atomic write 全檔替換。
@@ -1740,7 +1991,10 @@ def run_register(
 
     agent_id = agent_id_from_task(task_id)
     if agent_id is None:
-        return fail("invalid-task-id", f"需 {_SUBAGENT_PREFIX} 前綴：{task_id}")
+        return fail(
+            "invalid-task-id",
+            f"需 {_SUBAGENT_PREFIX} 或 {_AGENT_PREFIX} 前綴：{task_id}",
+        )
     if not isinstance(attempt_id, str) or not attempt_id.strip():
         return fail("invalid-attempt-id", "需非空字串（--attempt-id）")
     if not isinstance(sink, str) or not sink.strip():
@@ -1764,6 +2018,14 @@ def run_register(
     handles = tuple(h.strip() for h in surviving_handles)
     if any(not h for h in handles):
         return fail("invalid-surviving-handle", "handle 需非空白（--surviving-handle）")
+    if expected_heartbeat and not (
+        isinstance(heartbeat_file, str) and heartbeat_file.strip()
+    ):
+        # AIR-160：expectedHeartbeat 與 heartbeatFile 成對——缺路徑＝禁落地半套
+        return fail(
+            "heartbeat-file-required",
+            "--expected-heartbeat 需 --heartbeat-file（sidecar join 讀面依賴）",
+        )
 
     src = source or ZCodeLivenessSource(layout)
     meta_path = src.resolve_metadata(agent_id)
@@ -1773,7 +2035,11 @@ def run_register(
     meta = src.read_metadata(meta_path)
     if isinstance(meta, UnknownFace):
         return fail(meta.reason, meta.detail)
-    if meta["childSessionId"] != task_id:
+    if meta["childSessionId"] != task_id and meta["childSessionId"] != (
+        _SUBAGENT_PREFIX + task_id
+    ):
+        # agent_<uuid> 短形註冊：metadata childSessionId 為全形
+        # sess_subagent_agent_<uuid>——兩形等價（同一 child），禁誤判 mismatch
         return fail(
             "metadata-generation-mismatch",
             f"childSessionId 不符：{meta['childSessionId']}",
@@ -1807,6 +2073,9 @@ def run_register(
         entry["silenceBudget"] = float(silence_budget_min)
     if intervention_policy is not None:
         entry["interventionPolicy"] = intervention_policy
+    if expected_heartbeat:
+        entry["expectedHeartbeat"] = True
+        entry["heartbeatFile"] = heartbeat_file
     raw_entries.append(entry)
     _atomic_write_json(registry_path, {"entries": raw_entries})
     _emit(
@@ -1907,6 +2176,20 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         "誰處置；缺省 fail-safe＝interactive；可否重派歸 RETRY_SAFE）",
     )
     parser.add_argument(
+        "--expected-heartbeat",
+        action="store_true",
+        default=False,
+        help="--register 選帶：啟用 child heartbeat sidecar join（AIR-160）"
+        "——需成對 --heartbeat-file",
+    )
+    parser.add_argument(
+        "--heartbeat-file",
+        default=None,
+        metavar="PATH",
+        help="--register 選帶：child sidecar JSONL 路徑（workspace 相對——"
+        "與 sink 同解析面；--expected-heartbeat 必帶）",
+    )
+    parser.add_argument(
         "--poll-interval",
         type=float,
         default=DEFAULT_POLL_INTERVAL_S,
@@ -1954,6 +2237,8 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
             surviving_handles=tuple(args.surviving_handle or ()),
             silence_budget_min=args.silence_budget_min,
             intervention_policy=args.intervention_policy,
+            expected_heartbeat=args.expected_heartbeat,
+            heartbeat_file=args.heartbeat_file,
         )
     return run_watcher(
         layout,

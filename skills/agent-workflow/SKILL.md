@@ -81,9 +81,51 @@ ZCode 的 Agent tool **預設前台**（阻塞主對話）——前台 spawn 期
 - pytest 與預期 >10 分鐘命令預設背景跑；短測試可併機械驗證。spawn agent 不能拿來繞 Bash timeout——真實案例：誤以為 Bash 只能 600s 而加 bridge wrapper，實際 `run_in_background` 從頭可用，代價是 agent 開銷、間接層與收斂路徑變長。
 - 先做可獨立的前台工作；沒有就回報進行中並結束 turn 等通知。禁背景阻塞長等（各 harness 機制名不同；主對話被中斷時 agent 會連帶 killed、產出遺失）；前台短等待只限結果立即依賴的 <30s probe。
 - **背景 agent liveness（死亡盲區防禦——真實案例：ZCode app 更新重啟殺掉多個背景 agents、長時間無人知）**：通知是被動喚醒——可以等通知，但**一旦被喚醒（completion／user message／resume）、準備依賴舊 agents 結果前，先過 generation/reconciliation checkpoint**：確認承載 process generation 未變（ZCode app-owned Agent-tool 背景 agents：app 重啟＝舊代全死、零歧義；delegate-bridge external runtime 背景 worker 跨 session 存活，依其 jobs 狀態判定）。generation 命中後**先收 residue 再重派**（DB＋transcript＋worktree 殘留——完成未送達者盲重派＝duplicate side effects）；per-agent 判定禁「全凍結才報」聚合；**silence ≠ death；old-generation unresolved ≠ safe-to-retry**。驗屍法（watcher 不可用時的手工 fallback）：db.sqlite `MAX(time_created)`（Python `sqlite3`＋`file:...?mode=ro`——CLI 有 silent-empty 坑）＋`ps`＋transcript mtime＋`git status` 殘留＋`TaskOutput` registry 查無。防禦階梯其餘項（WAL receipt／generation watermark reconciliation／exact-process hard-death dual-signal；stall advisory——in-harness 域已由上條工具化承接，bridge 域維持 advisory-only）維持另案。
-- **in-harness 子 agent 凍結偵測工具化（主 session 持有 watcher＝`scripts/harness_waiter.py`：registry 註冊→輪詢→凍結收割→喚醒；AIR-149）**：dispatch 註冊一行（spawn 拿到 taskId 同 step）——`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json --register <taskId> --attempt-id <id> --sink <path> [--expected <json>] [--surviving-handle <h> ...] [--silence-budget-min <min>]`（register 假設序列呼叫——主 session dispatch 同 step 一行，並發無鎖）；註冊後啟動輪詢：`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json`（背景常駐 run_in_background——凍結/hard-death 時 exit 喚醒）；in-harness brief 禁未登記 long-lived/daemonized child——要 server 須記 ownership handle 進 `--surviving-handle`。**凍結處置協議（user 裁決：全面靜默 20m＝bug 處理——不判死，先收割後砍）**：全面靜默 20m→收割→喚醒→主 session TaskStop→STOP verification（metadata terminal＋cursors grace 靜止＝STOP_CONFIRMED；否則 STOP_INCOMPLETE 禁重派）；**quarantine 期恢復活動記 `resumed_during_quarantine=true` 仍照砍**——禁 kill 前重檢 silence（恢復一行逃過處置＝liveness inference 回滲）。重派前過 **RETRY_SAFE gate 三問**：surviving handles 全 collect？outward side effect 盤點？deliverable 已存在先 collect？——任一不明＝禁重派。**偵測與處置分離**：watcher 永不 stop／重派（TaskStop 與重派決策＝主 session）；bridge 域背景工維持 advisory-only watcher（AIR-146），不隨本工具化改。
+- **in-harness 子 agent 凍結偵測工具化（主 session 持有 watcher＝`scripts/harness_waiter.py`：registry 註冊→輪詢→凍結收割→喚醒；AIR-149）**：dispatch 註冊一行（spawn 拿到 taskId 同 step）——`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json --register <taskId> --attempt-id <id> --sink <path> [--expected <json>] [--surviving-handle <h> ...] [--silence-budget-min <min>] [--expected-heartbeat --heartbeat-file <path>]`（末組旗標＝heartbeat pilot——impl-lite／cr-research 兩 role 照抄範例即啟用；接線四環＝下節「Worker supervision contract」；register 假設序列呼叫——主 session dispatch 同 step 一行，並發無鎖）；註冊後啟動輪詢：`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json`（背景常駐 run_in_background——凍結/hard-death/stale 時 exit 喚醒）；in-harness brief 禁未登記 long-lived/daemonized child——要 server 須記 ownership handle 進 `--surviving-handle`。**凍結處置協議（user 裁決：全面靜默 20m＝bug 處理——不判死，先收割後砍）**：全面靜默 20m→收割→喚醒→主 session TaskStop→STOP verification（metadata terminal＋cursors grace 靜止＝STOP_CONFIRMED；否則 STOP_INCOMPLETE 禁重派）；**quarantine 期恢復活動記 `resumed_during_quarantine=true` 仍照砍**——禁 kill 前重檢 silence（恢復一行逃過處置＝liveness inference 回滲）。重派前過 **RETRY_SAFE gate 三問**：surviving handles 全 collect？outward side effect 盤點？deliverable 已存在先 collect？——任一不明＝禁重派。**偵測與處置分離**：watcher 永不 stop／重派（TaskStop 與重派決策＝主 session）；bridge 域背景工維持 advisory-only watcher（AIR-146），不隨本工具化改。
 - **subagent 自持背景命令完成後的自動續跑不可依賴（死亡盲區同族——真實案例：09-14 AIR-87，ZCode 實證背景 exec 已完成而 subagent 停留 completed 狀態、續跑未發生）**：防禦＝主 session 持有 watcher（`scripts/harness_waiter.py`，見上 liveness 工具化條）／輪詢敲醒，或背景命令由主 session 自持——禁假設「subagent 會被自己背景命令的完成通知喚醒續跑」。bridge 域（delegate-bridge 背景 job）同構防禦＝派工同 step 自動 arm `scripts/bridge_waiter.py`（一顆背景 shell；exit 124 內部消化、terminal 輸出 CollectionReceipt、stalled＝exit 3 advisory——自動 arm 規約單一源＝bridge-dispatch skill「Dispatch⇄collection 配對——完整模式」段）。
-- **collection-owner invariant（0921 雙模型調查收斂——invariant 與 mechanism 分離，mechanism 可演化 invariant 不綁 script）**：**背景＋有限工＋下游將依賴其結果 ⇒ dispatch 尚未完成，直到 collection owner（watch handle／registry entry）已建立**。形態分類：①bridge 背景 job（N 顆／長工／須活過重啟）＝強制 arm ②Task tool 背景 subagent＝寫檔／長工／無人在場（deepwork/夜間）→強制 register；互動短腿可豁免 ③前景 <30s probe＝豁免（前景本身即 ownership）④daemon／長駐 child＝不套 terminal watcher，ownership handle 登記（`--surviving-handle`）取代。誤報有聲且廉（advisory wake）、漏報靜默且貴（殭屍燒 quota——歷史殘留數十具實證），不對稱支持強制。
+- **collection-owner invariant（0921 雙模型調查收斂；0922 AIR-160 收緊——invariant 與 mechanism 分離，mechanism 可演化 invariant 不綁 script）**：**背景＋有限工 dispatch ⇒ register 義務——dispatch 尚未完成，直到 collection owner（watch handle／registry entry）已建立**。形態分類：①bridge 背景 job（N 顆／長工／須活過重啟）＝強制 arm ②Task tool 背景 subagent＝**一律強制 register**（寫檔／長工／無人在場／互動皆然——互動短腿豁免已刪，AIR-160：三起無聲死亡的事故破口）③前景 <30s probe＝豁免（前景本身即 ownership；限結果立即依賴且 <30s 且 prompt 帶 `[fg]`）④daemon／長駐 child＝不套 terminal watcher，**已登記 ownership handle**（`--surviving-handle`）豁免取代。誤報有聲且廉（advisory wake）、漏報靜默且貴（殭屍燒 quota——歷史殘留數十具實證），不對稱支持強制。
+
+## Worker supervision contract（派工監督契約——AIR-160 凍結）
+
+> 本節是 supervision contract 的**凍結定義源**（三出口語義、偽造禁令、heartbeat 協議）——機制面（registry/watcher/sidecar）可演化、契約不綁 script，改本節走卡面 amendment。機制真相源：`scripts/harness_waiter.py`（ZCode in-harness supervisor）、`scripts/child_heartbeat.py`（child 端 sidecar helper）。
+
+**invariant（勿重辯裁決）**：背景＋有限工 dispatch ⇒ register 義務——**dispatch 尚未完成，直到 collection owner（registry entry／watch handle）已建立**。豁免僅兩項：前景 <30s probe（前景本身即 ownership）＋已登記 ownership handle 的 daemon／長駐 child（`--surviving-handle` 取代 terminal watcher）。
+
+**三出口**（每個 registered worker 只能到達其中之一；**UNKNOWN 不是出口**）：
+
+| 出口 | 判準 | 處置 |
+|------|------|------|
+| **TERMINAL** | metadata terminal transition（唯一權威狀態訊號） | parent collect 銷帳 |
+| **HARD_DEATH_EVIDENCE** | 死亡證據（generation mismatch／registry entry 異動） | 立即喚醒 parent，禁 retry |
+| **TIMEBOX_EXPIRED** | 牆鐘 timebox 到期（時間盒事實） | 先收割後喚醒——advisory，不 stop 不重派 |
+| UNKNOWN（升級面） | 錨點缺失／JSON 不可解析／schema 不符＝無法判定 | **fail-loud 升級主 session，禁列結案態** |
+
+silence 可觀測、death 不可——**禁逾時宣稱死亡**（timebox 到期只宣稱逾時，禁宣稱 worker 已死）。
+
+**偵測與處置分離**：watcher／heartbeat 只偵測與喚醒（advisory）；TaskStop、重派、collect 銷帳＝主 session／deepwork 授權鏈。**ownership 歸 parent**：registration 與 collected 都是 parent 專屬動作。
+
+**偵測語義（分級證據——禁推活死）**：
+
+- **output.txt 缺席／transcript mtime／一般檔案活動＝D 級遙測**——只證明有活動過，禁推活死（實證：impl-lite flash 完成前不 materialize output.txt）
+- **ping 失敗＝不在冊（NOT_ADDRESSABLE），禁推死亡**——凍結矩陣未跑前 ping 僅 reachability
+- **working tree 活動歸因必須綁 attempt 身分窗**（`registry.createdAt ≤ mtime ≤ now`）——窗外增長標 `attribution_ambiguous` 升 needs_human（0922 同 WT 雙 worker 併發事故的條文化）
+
+**wake early, declare death late**：B/C/D 級證據可喚醒 controller；只有 A 級（terminal metadata／generation mismatch）可產生 `HARD_DEATH_EVIDENCE`；重派前必須 fresh probe＋scope fence。
+
+**heartbeat 協議（pilot：impl-lite＋cr-research 兩 role；其他 role 缺席合法）**：child 依注入週期寫**自己的** sidecar（`scripts/child_heartbeat.py`——JSONL append-only：seq 自動遞增、`emittedAt`/`intervalSecs` 由 helper 機械寫、半截行丟棄；**heartbeat 週期預設 60s**（`--interval-secs` 旗標，值寫進 sidecar row 供 watcher 對帳）；**harness_waiter stale 門檻＝2×週期**（預設 120s）；sidecar 路徑/taskId/attemptId/週期/timebox 由 spawn prompt 注入，role 檔不硬編）。watcher 每輪 join 讀 sidecar，三分支：
+
+- **fresh**（最新記錄 age ≤ 2×週期）→ 壓 advisory（recent-checkin／recent execution 續等——heartbeat 只證明 T 時刻執行過 emitter，不證明現在活著）——**禁延 timebox**（heartbeat 永不覆蓋 timebox／terminal）
+- **stale**（記錄存在但斷訊超 2×週期）→ `STALE_ADVISORY` 提前喚醒——advisory，**stale 不判死**
+- **缺席**（無記錄／child 未實施 heartbeat）→ `heartbeat_missing` telemetry L0——**缺席合法**，禁失敗禁喚醒
+
+**接線四環（照做即啟用 pilot——spawn prompt 注入 → child 寫 sidecar → register 帶旗標 → sweep join 讀，一次讀完能照做）**：
+
+1. **注入**：spawn prompt 給 sidecar 路徑（`.agent-tmp/heartbeats/<taskId>.jsonl`）＋taskId＋attemptId＋週期（預設 60s）＋timebox
+2. **child 回報**：working 期間每週期跑 `uv run python scripts/child_heartbeat.py --file <sidecar 路徑> --task-id <taskId> --attempt-id <attemptId> --state working`；完工改 `--state done`
+3. **register**：dispatch 同 step 的註冊行帶成對旗標 `--expected-heartbeat --heartbeat-file <同 1 的 sidecar 路徑>`（範例＝上節 liveness 工具化條）
+4. **sweep**：watcher 每輪 join 讀 sidecar（record contract 全欄位驗證、torn tail 丟棄）跑三分支——stale 提前醒，不收割不記帳
+
+**偽造禁令**：fresh 不延 timebox、stale 不判死、**child 禁自報 collected**（child 只寫自己的 sidecar；`done` 是 child 自述，collected 由 parent 對帳銷帳）。**台帳分家**：bridge liveness.jsonl 不動；child 寫自己的 sidecar；worker-supervision/1 投影按需。hooks＝reconciliation trigger 非 detector。SendMessage ping contract 未凍結——留空分支（凍結前禁接線）。
 
 ### Subagent 產出格式：schema 嚴格度（raw material vs deliverable）
 

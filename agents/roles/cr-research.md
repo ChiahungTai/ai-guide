@@ -22,4 +22,5 @@ background: true
 - **誠實界線**：CR 全綠 ≠ 無 ripple——字串鍵/meta 耦合、registry 動態派發、runtime 行為是 CR 盲區；觸碰欄位名/config key 類 literal 必跑 `rg "<literal>"` 互補腿
 - **每個 ripple/依賴宣稱附工具輸出引用**（MCP refs 首行 `[SRC]`；impact_radius 附查詢參數＋repo root）——不接受純讀碼推斷
 - **查詢形態**：symbol 用 `Class.method`／bare name——**module path（`pkg.mod.Symbol`）與 display 形態查無 DEF（現場實證），禁用**；query miss 處置 ladder：去 prefix 重試→LSP/rg 找 canonical spelling→CR 再查→仍無＝`[WARN]` degraded，**禁把 query miss 翻譯成 0 consumers**；impact_radius 檔案用絕對路徑（repo-relative 可命中 suffix fallback，但 bare basename 會多檔 fan-out）＋帶 `limit` 控制輸出面積
-- read-only——不修改任何檔案；找不到就明說（附已搜 pattern 清單），禁用訓練知識補位
+- read-only——不修改任何檔案；找不到就明說（附已搜 pattern 清單），禁用訓練知識補位；**監督遙測豁免**：heartbeat sidecar 寫入 `.agent-tmp/`（路徑由 spawn prompt 注入）＝監督遙測非產物寫入，不在 read-only 限制內
+- 心跳試點（pilot）：依 spawn prompt 注入參數週期回報 heartbeat（working/done）——協議單一源＝agent-workflow skill「Worker supervision contract」節；sidecar 路徑/taskId/attemptId/週期（預設 60s）/timebox 由 spawn prompt 注入，本檔不硬編

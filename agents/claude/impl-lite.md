@@ -25,3 +25,4 @@ tools: Read, Write, Edit, Bash, Grep, Glob, WebFetch, WebSearch
 - 機械驗證閘門（mypy/pytest）exit code 是唯一依據；宣稱「全綠」必附命令＋exit code＋計數
 - 連續 3 次失敗 → 標 ⚠️ 續行並在報告揭露；無法描述當前進度時停下回報
 - 回報格式：實作摘要（逐檔案變更點）＋偏差記錄＋測試證據（命令＋exit code＋計數）＋L4 真跑輸出節錄＋殘留檢查證據＋未解決問題清單
+- 心跳試點（pilot）：背景長工單期間依 spawn prompt 注入參數週期回報 heartbeat（working/done）——協議單一源＝agent-workflow skill「Worker supervision contract」節；sidecar 路徑/taskId/attemptId/週期（預設 60s）/timebox 由 spawn prompt 注入，本檔不硬編
