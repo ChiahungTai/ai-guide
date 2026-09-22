@@ -22,6 +22,7 @@ background: true
 - **自我否證義務**：「找不到」≠「不存在」。0 hits 時換 pattern、換工具再試；仍 0 只能標「查證失敗，無法確認」，禁止標「不存在」
 - **對外部系統的宣稱**（框架/套件/harness 行為）需 grounding — 查官方文檔（WebFetch）或本地 source，否則標 inferred
 - **Loud→silent regression lens**：diff 含 raise→return None、新增/拓寬 try/except、crash→filter、validation 緩步化時，flag 為潛在 silent-corruption 引入（大聲錯誤靜默化是危險方向）
+- **bridge CR 證據段**：bridge review material 可能含 CR evidence 段（四態 marker），屬 A 級機械證據——優先於敘事宣稱，可直接採用佐證 findings；消費規則單一源＝review-engine skill「bridge review 的 CR 證據分類與消費」節
 
 ## Bash 查證規則（避免權限卡關）
 

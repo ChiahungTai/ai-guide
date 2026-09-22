@@ -181,7 +181,7 @@ review finding 可經多層驗證，**各層都可能錯**：
    - **單家族顯性降級**：無 alternate family 可用（或額度撞牆）→ `explicit_same_family_degradation` 顯性降級＋記錄（詞彙與欄位見 [agent-review-cycle](../_common/agent-review-cycle.md) independence 欄），或依點 8 記 **no-candidate** 入既有帳本（規劃期＝EP Review 節；實作期＝`.review/<branch>.md`）；**user 明示跨家族＝required，缺場 fail loud**（禁靜默同家族替代）
    - **manual new session＝窄義 escape clause（meta-review 對照組）**：僅當 **reviewer orchestration 本身被審查**（懷疑審查機制自身）或 **spawn isolation 不可信**（spawn 基建被污染）時，作 escape/control mechanism——**非常設獨立性層級、非高風險常設補審**
    - **持久化鏈（durability 基建——與 session 邊界脫鉤）**：`review` 寫 finding → `judge-review` 寫決策（✅ / ❌ / ⚠️）→ apply（主 agent / impl LLM 改）→ `followup-review` 讀持久化逐項驗收（verified / closed / open）——persistence 串起每步、不靠對話記憶（防 compact／context 死亡；跨 context 接續與跨家族 findings 貼回消費同一鏈）。findings 交接格式見 [workflow-review-pattern](../_common/workflow-review-pattern.md) Finding Record。
-   - **spawn prompt 餵料衛生（高風險 review）**：fresh 腿**最小餵料**——只餵 diff／source，**禁塞 implementer 解讀與 dispatcher 自身結論摘要**（退化 dispatcher 污染面：dispatcher 把判讀塞進 fresh prompt＝fresh 腿被錨定，獨立性假象）；意圖材料只進 intent 腿（餵料差異見點 6）
+   - **spawn prompt 餵料衛生（高風險 review）**：fresh 腿**最小餵料**——只餵 diff／source，**禁塞 implementer 解讀與 dispatcher 自身結論摘要**（退化 dispatcher 污染面：dispatcher 把判讀塞進 fresh prompt＝fresh 腿被錨定，獨立性假象）；意圖材料只進 intent 腿（餵料差異見點 6）。**排除清單只及敘事面，不含 CR 機械證據**——bridge review material 附掛的 CR 段（四態 marker，A 級機械證據）**不在排除範圍**，隨 material 進 fresh 腿（分類與消費單一源見下「bridge review 的 CR 證據分類與消費」節）
 
 8. **no-candidate＝顯性 pending，入既有帳本**：缺合格 candidate 時由該 workflow 編排者在**既有帳本**記 open 阻擋項（規劃期＝EP Review 節；實作期＝`.review/<branch>.md`），欄位：scope/profile、原因、owner、DispatchTrace、下次查 availability 的重查條件。完成報告與 post-build triage 必列出；有已授權排程才排 re-arm，否則保留明確接續動作，**不暗建 automation**。再次 dispatch 前先查有無活 job——**不把無候選和 worker timeout 混同**；不以主模型裸自審取代缺口的獨立性（本條與 SM-13 對應；「缺 candidate 顯性 pending」不可被省配置跳過）。
 
@@ -196,6 +196,29 @@ spawn review agent 時，prompt 內的工具使用紀律（源方法論「token 
 - **Finding 驗證式段（硬性必含；欄位定義單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)，此處不重定義）**：spawn prompt 必含「Important+ 每條 finding 附驗證式（可機械複驗的 rg 命令／pytest case——judge 裁決與 followup 驗收共用同一驗證基準）」——無驗證式的 finding 不可直接進 judge 鏈
 
 > **quorum／verify node 配置單一源**：verify 階段的分級（lite 錨點批次 vs Critical 3-verifier quorum）與 compliance/judgment 分流在 [workflow-review-pattern](../_common/workflow-review-pattern.md)「兩階段模式」（Workflow 模式）與 [code-review](../code-review/SKILL.md)「B. Agent 載體」錨點驗證——本 skill 無 quorum 配置節，只有「quorum 對共同盲點無效」原則（見 [acceptance-evidence](../../rules/acceptance-evidence.md) A/B 軸）。
+
+---
+
+## bridge review 的 CR 證據分類與消費（四態 marker）
+
+> 標的＝**delegate-bridge review material**（`review --base` 自動附掛 code-reality graph-checked 機械證據段——bounded 輸出，material 尾段恆以四態 marker 之一收尾：`[cr:present]` / `[cr:empty]` / `[cr:unavailable]` / `[cr:skipped]`）。本節是 review 消費面的分類與消費**單一源**；bridge 側 attach 行為與 CR write-face（build/snapshot/建 index 歸 harness 互動面）不在此範圍。
+
+**證據地位（準入裁決）**：CR 段＝**A 級機械證據**（graph-checked——獨立機械產物，非敘事、非 marshal 篩選面），**優先於敘事宣稱**（implementer 解讀、dispatcher 結論摘要、receipts 敘事），**準入 fresh leg**——不在餵料排除清單（放行條文見執行預設點 7「spawn prompt 餵料衛生」）。anti-over-reliance 不變：graph＝structure≠behavior，dynamic dispatch/config 不在圖裡（見 [cr-query](../cr-query/SKILL.md)）。
+
+**四態 marker 消費表**：
+
+| marker | 態義 | 消費動作 |
+|--------|------|---------|
+| `[cr:present]` | CR 證據已附掛且有內容 | **直接採用**——作 A 級機械證據參與 finding 查證與 judge 裁決；與敘事宣稱衝突時機械證據優先 |
+| `[cr:empty]` | engine 在場、查詢無 CR 覆蓋 | **如實記錄**「無 CR 覆蓋」——不虛構覆蓋存在，查證退回既有 LSP/rg 腿 |
+| `[cr:unavailable]` | index 缺／過期等不可用 | **升級裁決（禁靜默吞）**——judge 兩態擇一：rebuild index 後重派 review，或明文接受降級（理由記入 judge 決策） |
+| `[cr:skipped]` | 未觸發 CR 附掛（無觸發面等） | **如實記錄**「CR 未觸發」——等價既有「CR 接線查證 N/A」註記，不需升級 |
+
+**judge 收件驗證步驟（收線前硬性）**——judge 收 bridge review material 時先驗尾段 marker：
+
+1. marker 落在四態內 → 照上表消費；裁決對 CR 段的取捨寫入 judge 決策持久化（[judge-review](../judge-review/SKILL.md) 寫入鏈）
+2. `[cr:unavailable]` → **兩態裁決**：rebuild index 重派，**或** 明文接受降級並記錄理由——兩者皆不做＝靜默吞，禁止
+3. marker 缺失或不可辨 → 不得當 `[cr:skipped]` 吞掉，照 `[cr:unavailable]` 同級處置（fail-closed）
 
 ---
 

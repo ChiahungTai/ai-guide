@@ -73,6 +73,8 @@ Writer/Reviewer 分離的品質閘門 — 用獨立 Agent context 審查，避�
 
 各腿 findings 合併（boundary 多腿按 profile 合併規則——單一源＝[workflow-review-pattern](./workflow-review-pattern.md)「findings 去重與復用判準」；ordinary 單 context 即單份三軸 findings）→ 主 LLM invoke `/judge-review`（✅ / ❌ / ⚠️）→ apply ✅ 採納清單 → `ruff check --fix && ruff format`。
 
+**bridge material marker 驗證（judge 收件步——AIR-161）**：material 來自 delegate-bridge review 時，judge 收件先驗尾段四態 marker（`[cr:present]`/`[cr:empty]`/`[cr:unavailable]`/`[cr:skipped]`）——`[cr:unavailable]` → rebuild index 重派**或**明文接受降級（兩態裁決，禁靜默吞）；分類與消費單一源＝[review-engine](../review-engine/SKILL.md)「bridge review 的 CR 證據分類與消費」節。
+
 findings 若需持久化（跨 session / `.review/` / EP 回寫），用 [workflow-review-pattern.md](./workflow-review-pattern.md) 的 Finding Record 格式（跨命令追蹤標準）。
 
 **結論回卡（強制——AIR-108）**：各腿 verdict 回收後，由 **owning session／board-control**（回收主體）以一行 `backlog task edit <卡id> --append-notes "<腿名＋verdict＋evidence ref/jobId>"` 落卡——spawned worker 禁直寫卡 metadata（board single-writer，worker 經 verdict 回報、回收主體代落）；詳細 findings 留工單輸出檔、卡面帶指針，禁逐腿全文散寫（噪音防護）；無卡弧 → 落 EP／report 並記錄去向。Arbiter 裁決的回卡契約單一源＝[judge-review](../judge-review/SKILL.md)「寫入持久化」第 6 點。
