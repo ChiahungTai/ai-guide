@@ -29,6 +29,18 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   與 exit 契約零變。台帳從手動紀律降級為人類 expect 欄；配對消費端＝
   hooks/watcher_pairing_nag.py（Stop 配對催告，liveness.jsonl 任一行含
   jobId 即視為 watcher 在場）。CLI 預設啟用（cwd repo 解析），
+- AIR-146 frozen spec amendment——liveness 腿（AIR-158）：watcher 每次輪詢後
+  append 一輪 heartbeat（`{"event":"heartbeat","jobId","ts","pid"}`——跟隨
+  既有 wait/re-arm 輪詢節奏、不獨立計時；閾值判準已預留 T_GROW_CAP_MIN=20m
+  間距上限餘裕，dogfood 複核點）；stall advisory exit 追加
+  `{"event":"advisory","jobId","advisedAt","pid"}`（有目的退出≠無聲死亡——
+  分態：job stall 已 wake 交辦 caller，不落死亡檔）。死亡判準
+  `watcher_death_suspect` 只消費 liveness 台帳自身 heartbeat 軸（armed 後
+  停滯逾 HEARTBEAT_STALE_THRESHOLD_MIN 且無 collected/advisory 終面），
+  與 bridge 雙軸 `_job_stalled`（T4 STALLED_ADVISORY）互斥可判、互不誤發；
+  消費端＝scripts/watcher_rearm.py（掃 stale armed rows 單次 re-arm＋
+  broken alert）與 hooks/watcher_pairing_nag.py（死亡檔催告升級）。
+  CLI 預設啟用（cwd repo 解析），
   `--liveness-path` 可覆寫；測試直呼 run_watcher 不傳＝停用。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
@@ -146,6 +158,14 @@ T_SHRINK_FLOOR_MIN = 1.0
 WORKER_SILENCE_FLOOR_MIN = 5.0
 RUNTIME_SILENCE_FLOOR_MIN = 10.0
 RUNTIME_SILENCE_FLOOR_RESEARCH_MIN = 25.0  # codex 裁量 20-30m 帶中值
+
+# watcher heartbeat stale 閾值（分鐘；AIR-158 liveness 腿）。
+# dogfood 複核點：必須 > T_GROW_CAP_MIN（20m，正常輪詢間距上限）——低於它會把
+# 正常 re-arm 節奏誤判成死亡；30m＝首版帶中值，dogfood 後依實測 heartbeat
+# 間距 P95 複核（風格對齊 digest §1.5 卡死判準 floor 查表）。鏡像常數＝
+# hooks/watcher_pairing_nag.py 同名（py3.9 runtime 禁 import——drift 由
+# tests/test_watcher_heartbeat.py regex 釘同值）。
+HEARTBEAT_STALE_THRESHOLD_MIN = 30.0
 
 # duration prior（P50 分鐘；family×work-kind 內嵌常數——adjudication Q2）
 DURATION_PRIOR_P50_MIN: dict[tuple[str, str], float] = {
@@ -639,6 +659,104 @@ def _liveness_append(
         _emit(err, f"[watcher] liveness 登記失敗（輔助腿，不影響等待）: {exc}")
 
 
+def _liveness_event_batch(
+    liveness_path: Path | None,
+    event: str,
+    ts_key: str,
+    job_ids: list[str],
+    err: TextIOBase,
+) -> None:
+    """per-job 批次 append 同輪事件（heartbeat／advisory）；同輪共享一時間戳。"""
+    if liveness_path is None or not job_ids:
+        return
+    ts = _system_now().isoformat()
+    pid = os.getpid()
+    for job_id in job_ids:
+        _liveness_append(
+            liveness_path,
+            {"event": event, "jobId": job_id, ts_key: ts, "pid": pid},
+            err,
+        )
+
+
+def _liveness_heartbeat(
+    liveness_path: Path | None, job_ids: list[str], err: TextIOBase
+) -> None:
+    """heartbeat 腿（AIR-158）：每次輪詢後 append 一輪。
+
+    頻率取捨（記錄）：不獨立計時——跟隨既有 wait/re-arm 輪詢節奏（最長間距
+    ＝T_GROW_CAP_MIN 20m）；獨立計時器會多一個喚醒源違反 pull-only 北極星，
+    stale 閾值已預留間距上限餘裕（見 HEARTBEAT_STALE_THRESHOLD_MIN 註解）。
+    """
+    _liveness_event_batch(liveness_path, "heartbeat", "ts", job_ids, err)
+
+
+def _liveness_advisory(
+    liveness_path: Path | None, job_ids: list[str], err: TextIOBase
+) -> None:
+    """分態腿（AIR-158）：stall advisory exit 時記 advisory 行——watcher 是
+    有目的退出（wake 已交辦 caller）非無聲死亡；rearm 掃描與 nag 死亡檔以此
+    排除，防 job stall 被誤發成 watcher death。"""
+    _liveness_event_batch(liveness_path, "advisory", "advisedAt", job_ids, err)
+
+
+# ---------------------------------------------------------------------------
+# liveness 台帳判準（AIR-158 liveness 腿——watcher death 分態）
+# ---------------------------------------------------------------------------
+
+LIVENESS_TS_KEYS = ("ts", "armedAt", "collectedAt", "advisedAt", "rearmedAt")
+LIVENESS_CONCLUDED_EVENTS = frozenset({"collected", "advisory"})
+
+
+def parse_liveness_rows(text: str) -> list[dict]:
+    """liveness.jsonl 寬容解析：壞行／非 dict 行跳過（AIR-152 損壞容錯語義）。"""
+    rows: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(rec, dict):
+            rows.append(rec)
+    return rows
+
+
+def liveness_last_seen(rows: list[dict]) -> datetime | None:
+    """全部行的最新可計齊時間戳；無可計齊＝None（canonical：非 staleness 不報）。"""
+    stamps = [
+        ts
+        for row in rows
+        for ts in (parse_iso_ts(row.get(key)) for key in LIVENESS_TS_KEYS)
+        if ts is not None
+    ]
+    return max(stamps) if stamps else None
+
+
+def watcher_death_suspect(rows: list[dict], now: datetime) -> bool:
+    """watcher death 判準（AIR-158）：armed 後 heartbeat 停滯且無 collected／
+    advisory 終面。
+
+    分態（已決策勿重辯）：本判準只消費 liveness 台帳自身的 heartbeat 時間軸，
+    禁讀 bridge job 的 worker/runtime stamp——job stall（T4 STALLED_ADVISORY）
+    走 `_job_stalled` 的 bridge 雙軸，兩條件互斥可判、互不誤發；advisory 行＝
+    watcher 有目的退出（wake 已交辦 caller），非死亡；無 armed 行＝配對催告
+    （nag）轄區，亦非死亡。
+    """
+    if not any(row.get("event") == "armed" for row in rows):
+        return False
+    if any(row.get("event") in LIVENESS_CONCLUDED_EVENTS for row in rows):
+        return False
+    last = liveness_last_seen(rows)
+    if last is None:
+        return False
+    silence = (now - last).total_seconds() / 60.0
+    # IEEE 754 fail-open 防護形（crossed_floor 同款）：NaN → 擋
+    return not (silence <= HEARTBEAT_STALE_THRESHOLD_MIN)
+
+
 def _emit_state(out: TextIOBase, err: TextIOBase, state: str, extra: dict) -> int:
     _emit(out, _dumps({"state": state, **extra}))
     _emit(err, f"[watcher] {state}: {extra.get('reason', '')}")
@@ -855,6 +973,8 @@ def run_watcher(
             },
             err,
         )
+    # 機器登記腿 T1（AIR-158）：啟動輪詢後即 append 首輪 heartbeat
+    _liveness_heartbeat(liveness_path, job_ids, err)
 
     running_ids = [j for j in job_ids if snapshots[j].status == RUNNING]
     if running_ids:
@@ -863,6 +983,7 @@ def run_watcher(
         if not native_wake and any(
             _job_stalled(snapshots[j], kind, now_fn()) for j in running_ids
         ):
+            _liveness_advisory(liveness_path, running_ids, err)  # AIR-158 分態腿
             return _emit_advisory(out, err, snapshots, running_ids, kind, now_fn())
         t_min = max(compute_t0(snapshots[j].family, kind) for j in running_ids)
     else:
@@ -901,6 +1022,7 @@ def run_watcher(
             # wake JSON）——轉譯為現行 stalled-advisory 後 exit 3 喚醒
             # （不 stop 不重派；處置權歸 caller）。legacy 模式的 exit 3 屬
             # 非預期，落下方 T8 fail-loud。
+            _liveness_advisory(liveness_path, running_ids, err)  # AIR-158 分態腿
             return _emit_native_advisory(out, err, wait_out)
 
         if code == 2:
@@ -997,6 +1119,7 @@ def run_watcher(
                 # T4（legacy）：跨 floor——stalled 永遠 advisory（不 stop 不重派）；
                 # native 模式此判定退役——bridge --wake-on-stuck 代行
                 still_ids = [*still_running, job_id]
+                _liveness_advisory(liveness_path, still_ids, err)  # AIR-158 分態腿
                 return _emit_advisory(out, err, snapshots, still_ids, kind, now_round)
             if (
                 current.heartbeat_at != previous.heartbeat_at
@@ -1008,6 +1131,9 @@ def run_watcher(
         running_ids = still_running
         if not running_ids:
             break  # 全數在本輪 124 窗內 terminal——進 collect
+
+        # 機器登記腿（AIR-158）：每次輪詢後對仍在監督集 append 一輪 heartbeat
+        _liveness_heartbeat(liveness_path, running_ids, err)
 
         # T2/T3：動態 T
         floors = [
