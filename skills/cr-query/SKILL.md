@@ -84,7 +84,7 @@ Two facts backends, complementary not competing:
 - ② 無 graph／stale：退 `rg "<符號>" tests/ -l`
 - ③ 輸出證據三級標記：`graph-derived`／`text-derived`／`未驗證 dynamic consumers`——`rg` 命中 ≠ 完整 impact（動態派發與字串鍵耦合是 CR 盲區，graph 亦盲）
 
-> **Stale graph check:** Rust repos — `code-reality scip_refs <sym> --repo` prints `[SRC] scip index @ <sha> · repo HEAD @ <sha>`; mismatch → regenerate the index before trusting results. Graph freshness — rebuild with `graph_db build --repo <root>` (Python cache first: `pyrefly-index --repo <root>`). Graph facts are build-time; stale graph = stale facts (parallel: LSP workspace state-dependence — re-verify before concluding).
+> **Stale graph check:** Rust repos — `code-reality scip_refs <sym> --repo` prints `[SRC] scip index @ <sha> · repo HEAD @ <sha>`; mismatch → regenerate the index before trusting results. Graph freshness — rebuild with `graph_db build --repo <root>` (Python cache first: `pyrefly-index --repo <root>`). Graph facts are build-time; stale graph = stale facts (parallel: LSP workspace state-dependence — re-verify before concluding). **freshness 判準單一源＝AIR-135 invariant（ai-development-guide「AIR-135 協作 invariant」條 2）：`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`（consumer identity 須含 dirty WT/content）**——現行 `[SRC]` 對照是 HEAD-based，未涵蓋未提交 WT（已知缺口，source identity 算法歸 code-reality repo）；缺口未關前 graph 只當 committed baseline，WT delta 以 live LSP 為準。
 
 ## 🔴 Anti-over-reliance (the failure this skill prevents)
 

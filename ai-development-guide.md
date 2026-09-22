@@ -43,6 +43,15 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解 → 派工依 model-routing resolver → 機械閘照跑 → 一般工程取捨自判、批次回報，檢查點照 quality-constraints。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外（含互動 commit 機械例外）恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution，不適用本節。implementation work unit 一律 spawn（定義與 fallback＝agents/AGENTS.md execution contract；canonical 控制面直寫由 admission guard 機械擋）。
 
+## AIR-135 協作 invariant（Marshal 必守）
+
+定義源：條 1/4＝所指 skill；條 2 freshness 判準＝本節。
+
+1. **instruction owner**：durable mechanism 誕生弧必取 owner；coverage 看 owner 不看文件數。predicate 單一源＝[instruction-writing](skills/instruction-writing/SKILL.md)；接線＝implement 5b＋post-build coverage gate。
+2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`——consumer identity 含 dirty WT/content，HEAD-only ≠ fresh；算法歸 code-reality repo。消費面＝review-engine＋cr-query。
+3. **advisory startup**：startup hook 只 advisory；correctness gate 在 consumer boundary。
+4. **supervision fence**：弱訊號只 wake；hard death／redispatch 需 authoritative evidence＋scope fence。契約＝[agent-workflow](skills/agent-workflow/SKILL.md)。
+
 ## 跨 repo 主權
 
 跨 repo 寫入僅限對方主權隔離面＋授權面；mutation 歸 repo 主權、acceptance 歸 consumer；無小改例外；細節＝AIR-135.5。
