@@ -1,13 +1,15 @@
 ---
 id: AIR-159
 title: orphan WT 回收機制——wt-close 擴充 TTL sweep（DB-21 裁決承接）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-22 02:47'
-updated_date: '2026-09-22 03:20'
+updated_date: '2026-09-22 10:32'
 labels:
   - session-lifecycle
 dependencies: []
+references:
+  - scripts/wt-close.sh
 ordinal: 145000
 ---
 
@@ -31,6 +33,29 @@ flowchart LR
 
 〔已決策勿重辯〕owner 裁決＝user 0922（bridge 線 DB-21）；wt-identity.json 為 registry 錨點（bridge 提案方向，隨評估文件確認）；orphan TTL 建議值來源＝AIR-154 慣例包；回收走既有 wt-close 路徑擴充、禁另起爐灶。開工時依 card Planning Contract 補 AC/Plan。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 孤兒偵測＋test：identity contract 存在＋dispatcher session 死＋TTL 逾三條件齊才列孤兒；缺一排除
+- [ ] #2 回收安全：dry-run 預設；prune 僅限零未 commit 變更＋branch 可刪之 WT——test 覆蓋 prune 與拒 prune 兩面
+- [ ] #3 wt-open/wt-close 既有行為零變（既有測試全綠）
+- [ ] #4 全套 pytest 綠
+- [ ] #5 bridge PASSIVE report 消費面：本輪明文 report-only 無 bridge 依賴（評估文件 §3 對齊聲明在場）
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔Baseline〕①scripts/wt-open.sh：identity contract 記載（enumeration by git worktree list 非 identity 檔——檔案為驗證材料）②scripts/wt-close.sh：拒無 identity contract 的 WT（manual git worktree remove 範疇）③bridge 評估文件 wt-reaper-evaluation.md（179 行，commit 859ea7b——§1 Form H vs Form B、§2 邊界、§3 建議 bridge PASSIVE gc report-only、§4 實作形狀）④DB-21 裁決：主動回收歸 ai-guide。
+
+〔已決策勿重辯〕①主動回收＝ai-guide 側（DB-21 裁決）②bridge 側僅 PASSIVE report-only（不碰 dispatcher 建 WT；評估建議採納）③孤兒定義從嚴三條件：identity contract 存在＋dispatcher session 死＋TTL 逾——缺一非孤兒④report-first（dry-run 預設）⑤prune 限可證無損 removals（零未 commit 變更＋branch 可刪）⑥不做 daemon⑦溯源：bridge 評估文件＋DB-21＋AIR-159 卡 notes 對齊記錄。
+
+〔Scope〕動——scripts/（新孤兒偵測＋TTL sweep：wt-sweep 或 wt-close 擴充入口）、tests/。不動——wt-open/wt-close 既有語義（擴充非重寫）、bridge repo、governance installer、liveness 台帳。
+
+〔Scenarios〕①正常卡 WT（dispatcher 活）→掃描跳過②孤兒（contract 在＋dispatcher 死＋TTL 逾）→報告→安全回收（prune 條件滿足）③identity contract 缺→非本機制範疇（manual git worktree remove）④dry-run 預設只報告不動手。
+
+〔驗證式〕見 AC。
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
