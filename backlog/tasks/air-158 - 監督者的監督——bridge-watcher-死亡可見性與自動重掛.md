@@ -1,10 +1,10 @@
 ---
 id: AIR-158
 title: 監督者的監督——bridge watcher 死亡可見性與自動重掛
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 01:53'
-updated_date: '2026-09-22 02:33'
+updated_date: '2026-09-22 05:05'
 labels:
   - session-lifecycle
 dependencies: []
@@ -65,3 +65,18 @@ flowchart LR
 
 0922 續：三筆歷史 drift 全數清償（雙 carrier 分析收斂後 user 授權處置）——①zcode standalone 重複 group 手術移除（備份 config.json.bak-20260922-102412）②cc 同款去重③cc settings.json symlink 修復：repo settings.json（gitignored machine-local，bootstrap G1）確立為 backing store，live 去重後收斂寫回 repo、home 換回 symlink。installer check＝五面 parity 綠。scbus session-start/session-end hooks 保留（合法機器狀態）。分歧記錄：muse 主張修 manifest target_is_symlink=false，codex 以 repo settings.json 存在翻案成立——muse 前提來自工單內聯錯誤事實（fd 遵守 .gitignore 漏掃，AIR-140 盲點重犯）。**殘餘 recurrence gate：下次 CC session 實際寫 settings 後再驗 test -L；若再斷＝CC writer 與 symlink 拓撲不相容的 runtime 證據，開 full-tier migration 卡（禁重建迴圈）**——此 gate 屬本卡開工盤點項。備份：.agent-tmp/backups/＋~/.claude/、~/.zcode/cli/ 各有 .bak。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+watcher 死亡可見性落地：bridge_waiter heartbeat 腿（+126/-0，frozen spec 零變）＋watcher_death_suspect 分態＋watcher_rearm.py 四桶掃描（broken 單次保證）＋nag 死亡檔催告升級。TDD 29 tests、doctrine 88 綠、全套 1361；settlement fresh reviewer pass（6 nit：F3 已修，F1 跨 session 盲窗/F2 exit2 張力/F4-F6 rearm 記帳與鏡像釘——皆記為 dogfood 觀察點）。H 級真死閉環複驗留 dogfood。本機 nag 部署缺口已同步修復。
+
+```mermaid
+flowchart LR
+  W["watcher armed"] -->|"heartbeat 正常"| S["沉默是成功"]
+  W -->|"heartbeat 停滯逾 30m"| D["STALE_ADVISORY"]
+  D --> R["watcher_rearm：單次重掛"]
+  D --> L["nag 死亡檔催告"]
+  R -->|"再死"| B["broken 只報警不重掛"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
