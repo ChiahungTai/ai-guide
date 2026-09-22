@@ -1,10 +1,10 @@
 ---
 id: AIR-160
 title: worker 派工監督契約——派工必登記＋逾時可見＋child 心跳試點
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 04:54'
-updated_date: '2026-09-22 04:54'
+updated_date: '2026-09-22 06:16'
 labels:
   - session-lifecycle
 dependencies: []
@@ -61,3 +61,20 @@ flowchart LR
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+worker 派工監督契約落地：agent-workflow 收緊（背景＋有限工 dispatch ⇒ register 義務，刪互動短腿豁免）＋supervision contract 凍結節（三出口＋UNKNOWN fail-loud＋偵測/處置分離＋偽造禁令）＋child_heartbeat.py sidecar（pilot：impl-lite＋cr-research）＋harness_waiter expectedHeartbeat 讀面＋register 三面對稱（agent_ 前綴）。dogfood 實戰：本卡自身的併發衝突仲裁與 register 拒收即契約活教材。全套 1396 passed；frozen spec T1-T9 零變。codex/muse 雙審＋996b1658 驗收。pilot 收斂判準（forget 率<20%＋真實提前喚醒）dogfood 中，達標才擴散其餘 roles。
+
+```mermaid
+flowchart LR
+  P["parent 派背景工"] -->|"dispatch 未完成"| R["register＋timebox"]
+  R --> W["worker 執行"]
+  W -->|"完成"| T["TERMINAL 收帳"]
+  R -->|"逾時 20m"| X["TIMEBOX_EXPIRED 喚醒"]
+  W -.->|"heartbeat pilot"| H["sidecar 記錄"]
+  H -->|"斷訊"| A["STALE_ADVISORY 提前醒"]
+  X -.->|"禁宣稱 dead"| N["UNKNOWN fail-loud 升人"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
