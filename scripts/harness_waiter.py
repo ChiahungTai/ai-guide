@@ -150,6 +150,10 @@ exit 契約（frozen——watcher 主迴圈）
   STOP_INCOMPLETE（禁重派）、1＝fail-loud
 - 註冊模式延伸面（`--register`，S2）：0＝registered、1＝fail-loud（欄位
   無效／schema 不符／重註冊；stdout 尾行 `state`＝registered／unknown）
+- probe 模式延伸面（`--probe`，AIR-162）：0＝verdict 成立（MONITORED／
+  TERMINAL／TIMEBOX_EXPIRED）、2＝HARD_DEATH_EVIDENCE（鏡像 frozen
+  hard-death wake）、1＝UNKNOWN fail-loud；機械判準＝stdout 尾行 JSON 的
+  `supervisionState` 欄（先例＝偏差 4 的 verify 延伸）
 
 stdout：compact progress log＋尾行狀態／receipt JSON（單行，機械可判）；
 stderr＝診斷。
@@ -160,6 +164,8 @@ stderr＝診斷。
         [--poll-interval SEC] [--timebox-min MIN] [--max-cycles N]
     uv run python scripts/harness_waiter.py <registry> --verify <taskId>
         [--grace SEC]
+    uv run python scripts/harness_waiter.py <registry> --probe <taskId>
+        [--timebox-min MIN]
     uv run python scripts/harness_waiter.py <registry> --harvest-delta \
         <taskId> <manifestPath>
     uv run python scripts/harness_waiter.py <registry> --register <taskId>
@@ -253,6 +259,82 @@ ownership：registration 與 collected 都 parent 專屬；child 禁
 skills/agent-workflow/SKILL.md「Worker supervision contract」節）。順位：
 hard-death > unknown > timebox-frozen（T4 主體）> stale——stale 與 timebox
 到期同輪命中走 T4 收割路徑（stale 記進 wake receipt）。
+
+probe mode（AIR-162——唯讀聚合；T1-T9 frozen 主體零變）
+--------------------------------------------------------
+`--probe <taskId>`：輸入 worker id，唯讀聚合 registry row／harness
+metadata／heartbeat sidecar／workspace 觀察面，輸出分離兩軸 structured
+JSON（schema `supervision-probe/1`）。零處置（不 stop 不重派不收割不記
+帳）、零 registry 寫入；宿主＝本檔 probe mode（避免第二份死亡語義實作——
+card AIR-162 已決策⑥）。雙腿設計源＝.agent-tmp/air-135-disc/
+detection-{codex,muse}-result.md。
+
+證據分級對照表（A-D；死亡宣稱僅 A 級——card AIR-162 已決策②③）：
+
+| 級 | 內容 | 例 |
+|---|---|---|
+| A（authoritative） | harness 權威狀態訊號 | metadata terminal、generation mismatch（registry createdAt 對照）、已註冊身份 metadata 消失、timebox 到期（牆鐘事實） |
+| B（corroborated） | 可歸因執行證據 | child heartbeat（taskId＋attemptId 可歸因）fresh |
+| C（single weak） | 單一弱訊號 | registry row、native running row（可尋址／lifecycle intent，非 process liveness）、身份窗內 workspace 活動 |
+| D（absence） | 缺席／無法歸因 | output 缺席、transcript mtime、ping 不在冊、registry 缺席——**永不支撐死亡** |
+
+supervisionState 五態（僅 A 級證據可產生前三者）：
+- TERMINAL：metadata status terminal（A）——唯一權威狀態訊號
+- HARD_DEATH_EVIDENCE：generation mismatch／已註冊身份 metadata 消失（A）
+  ——禁 retry；exit 2 鏡像 watcher hard-death wake 語義
+- TIMEBOX_EXPIRED：running 超 timebox（A 級時間盒事實）——**不宣稱 dead**；
+  處置照 T4 鏈（harvest→recheck→fence→RETRY_SAFE），probe 本身零處置
+- MONITORED：running 且 timebox 未到（無不良證據）
+- UNKNOWN：無法判定（exit 1＋manualReview=true，禁猜）——含「無 registry
+  row 無 metadata」的 lookup miss（never-existed／reaped／打錯 id 不可區
+  分，D 級缺席禁推死）
+
+observations 三欄（與 supervisionState 分離——已決策①）：
+- recentExecution：heartbeat fresh=yes（B）／stale=no（最新可歸因執行已逾
+  2×週期門檻）／缺席或未設定=unknown（D 級缺席合法，禁推 no）
+- addressable：native running row=yes（C：可尋址／lifecycle intent）／
+  terminal=no／錨點缺席或損壞=unknown（lookup miss 禁推不可尋址）
+- workspaceActivity：attempt 身份窗綁定（繫窗規則：registry.createdAt ≤ mtime ≤ now，已決策④）——窗內活動=yes／面上檔案全在窗外=no／無可觀察檔案或
+  無窗錨點=unknown。歸因面：exec/artifact 目錄（路徑即 taskId 身份，機械
+  歸因）＋registry 登記面（sink／survivingHandles——共享面）。共享面窗內
+  活動或未來 mtime（時鐘異常）＝attribution_ambiguous（升 manualReview）。
+  mtime／表面活動永不升級為 heartbeat、永不進死亡判準（K1 證偽——v2 已
+  移除靜默計數，禁回滲）。窗錨點缺席（未註冊）時 workspace 活動不可綁定
+  身份窗，觀察值維持 unknown。
+
+strongestEvidence：A＞B＞C＞D 取最強（A 態恆 A；heartbeat fresh＝B；
+registry row／running row／窗內活動任一＝C；僅缺席面＝D）。
+manualReview：UNKNOWN 或 attribution_ambiguous 時 true；其餘 false——機械
+verdict 的處置照既有鏈，人工判讀旗只為升級面。
+
+ping 偵測節（AIR-162 五態矩陣結論——AC#3 偵測節吸收）
+--------------------------------------------------------
+矩陣記錄落點＝.agent-tmp/ping-matrix/（matrix.json／matrix.md／
+contract-suggestion.md；2026-09-22 真機執行，ZCode 3.14.3 macOS arm64，
+六 cell＝running〔self-verified live〕／completed-retained／failed／
+stopped／reaped〔exec face 在、metadata 缺席的自然樣本〕／nonexistent）。
+
+**ping 正式語義（矩陣凍結結論）**：TaskOutput／SendMessage 在 ZCode 為
+parent session in-conversation 工具、**無 script CLI 面**（工具面機械探測
+實證）——probe v1 零 ping 欄，reachability 判定全走被動面；in-conversation
+ping 失敗＝「查詢面此刻找不到 active target」（NOT_ADDRESSABLE／不在冊），
+⊃｛死、完成後被清、從未存在、查詢面錯｝——**禁死亡推論**；nonce ACK 可升
+B 級一節仍未凍結（留 parent session 以 sacrificial workers 實驗——後續卡）。
+SendMessage＝mutating probe，契約凍結前禁對真 worker 使用。
+
+**被動查詢面正式語義（矩陣實證——probe 正式語義）**：
+- metadata-status：五態可機械區分（running/completed/failed/stopped 逐字
+  互異；terminal transition＝A 級唯一來源）；reaped 與 nonexistent 同文
+  MISS——**metadata lookup miss ≠ 死亡**（本 probe 據此把無 registry row
+  的錨點缺席判 UNKNOWN 而非 HARD_DEATH）。
+- exec face：可機械區分 reaped（面在）與 nonexistent（全缺席）——但兩者
+  皆非「死」，存在性 ≠ 活性，歸 UNKNOWN／needs_human 面。
+- lsof-exec-lease：六格互異（live cell 唯一 LEASE HELD）＝process-presence
+  訊號（C 級可尋址性），禁升 liveness／progress（K1）。
+- output face：**output 缺席與活性並存實機實證成立**（live running cell
+  output.txt/task.output 皆 ABSENT、同格 lease HELD）——D 級 output 缺席
+  禁進任何判準（含 probe、含人工臨場判讀；09-22 marshal 誤判事故觸發面）。
+- side effect：全部被動面查詢前後 stat 對照零變——唯讀安全。
 """
 
 import argparse
@@ -276,6 +358,7 @@ PENDING_RECEIPT_SCHEMA = "liveness-pending-intervention/1"
 HARVEST_MANIFEST_SCHEMA = "harness-harvest-manifest/1"
 HARVEST_DELTA_SCHEMA = "harness-harvest-delta/1"
 COLLECTION_RECEIPT_SCHEMA = "harness-collection-receipt/1"
+PROBE_SCHEMA = "supervision-probe/1"  # AIR-162 --probe 唯讀聚合輸出
 
 EXIT_OK = 0
 EXIT_FAILLOUD = 1
@@ -2095,6 +2178,276 @@ def run_register(
 
 
 # ---------------------------------------------------------------------------
+# supervision probe（AIR-162——唯讀聚合；T1-T9 frozen 主體零變）
+# ---------------------------------------------------------------------------
+
+
+def run_probe(
+    layout: ZCodeLayout,
+    registry_path: Path,
+    task_id: str,
+    *,
+    threshold_min: float = DEFAULT_TIMEBOX_MIN,
+    now_fn: Callable[[], datetime] | None = None,
+    source: ZCodeLivenessSource | None = None,
+    stdout: _Writable | None = None,
+    stderr: _Writable | None = None,
+) -> int:
+    """--probe <taskId>：唯讀聚合——分離兩軸＋A-D 證據分級（AIR-162）.
+
+    契約與證據分級對照表見 module docstring「probe mode」節（單一源）；
+    本函式只實作：registry face→heartbeat/workspace 觀察→metadata 狀態
+    判定（terminal→generation→timebox→monitored）→structured JSON 尾行。
+    判定規則（已決策勿重辯）：死亡宣稱僅 A 級；D 級缺席永不支撐死亡
+    （lookup miss＝UNKNOWN 非 HARD_DEATH）；workspace 活動須身份窗綁定
+    （registry.createdAt ≤ mtime ≤ now），窗外/時鐘異常禁歸因；probe 零
+    處置零寫入。
+    """
+    out = stdout if stdout is not None else sys.stdout
+    err = stderr if stderr is not None else sys.stderr
+    now = (now_fn or _system_now)()
+    src = source or ZCodeLivenessSource(layout)
+    ws_root = registry_path.parent.parent
+    evidence: list[dict] = []
+    hb_extra: dict | None = None  # heartbeat 面輸出（face 2 填入；早退路徑 None）
+
+    def row(grade: str, face: str, detail: str) -> None:
+        evidence.append({"grade": grade, "face": face, "detail": detail})
+
+    def strongest_of(state: str) -> str:
+        if state in ("TERMINAL", "HARD_DEATH_EVIDENCE", "TIMEBOX_EXPIRED"):
+            return "A"
+        if observations["recentExecution"] == "yes":
+            return "B"
+        if any(r["grade"] == "C" for r in evidence):
+            return "C"
+        return "D"
+
+    def finish(
+        state: str,
+        *,
+        exit_code: int,
+        ambiguous: bool,
+        **extra: object,
+    ) -> int:
+        # manualReview＝UNKNOWN 升級態或 attribution_ambiguous（人工判讀旗）
+        manual = ambiguous or state == "UNKNOWN"
+        if hb_extra:
+            extra.setdefault("heartbeat", hb_extra)
+        payload = {
+            "schema": PROBE_SCHEMA,
+            "watcher": WATCHER_NAME,
+            "taskId": task_id,
+            "supervisionState": state,
+            "observations": observations,
+            "strongestEvidence": strongest_of(state),
+            "manualReview": manual,
+            "attributionAmbiguous": ambiguous,
+            "evidence": evidence,
+        }
+        payload.update(extra)
+        _emit(out, _dumps(payload))
+        _emit(
+            err,
+            f"[{WATCHER_NAME}] probe: {task_id} → {state} "
+            f"(evidence={payload['strongestEvidence']}, "
+            f"manualReview={manual})",
+        )
+        return exit_code
+
+    observations = {
+        "recentExecution": "unknown",
+        "addressable": "unknown",
+        "workspaceActivity": "unknown",
+    }
+
+    def unknown(reason: str, detail: str = "") -> int:
+        row("D", "unknown", f"{reason}: {detail}".rstrip(": "))
+        return finish(
+            "UNKNOWN",
+            exit_code=EXIT_FAILLOUD,
+            ambiguous=False,
+            unknownReason=reason,
+            unknownDetail=detail,
+        )
+
+    # face 1：registry row（C）／缺席（D）／損壞（fail-loud UNKNOWN）
+    entries = load_registry(registry_path)
+    entry: RegistryEntry | None = None
+    if isinstance(entries, UnknownFace):
+        if entries.reason == "registry-missing":
+            # probe 輸入是 task 非 registry——缺席＝D 級缺席面（非 fail-loud，
+            # 與 watcher T6 不同面）；損壞仍 fail-loud（損壞比缺失危險）
+            row("D", "registry", f"registry-missing: {entries.detail}")
+        else:
+            return unknown(entries.reason, entries.detail)
+    else:
+        candidates = {task_id}
+        if task_id.startswith(_AGENT_PREFIX):
+            candidates.add(_SUBAGENT_PREFIX + task_id)
+        entry = next((e for e in entries if e.task_id in candidates), None)
+        if entry is not None:
+            row("C", "registry", f"row present attempt={entry.attempt_id}")
+        else:
+            row("D", "registry", "registry has no entry for this task")
+
+    # face 2：heartbeat sidecar join（可歸因執行證據——fresh=B／stale=C）
+    if entry is not None and entry.expected_heartbeat and entry.heartbeat_file:
+        hb_name, hb_info = _heartbeat_verdict(entry, now, ws_root=ws_root)
+        hb_extra = {"verdict": hb_name, **hb_info}
+        if hb_name == "fresh":
+            observations["recentExecution"] = "yes"
+            row("B", "heartbeat", f"fresh age={hb_info['ageS']:.0f}s")
+        elif hb_name == "stale":
+            observations["recentExecution"] = "no"
+            row("C", "heartbeat", f"stale age={hb_info['ageS']:.0f}s")
+        else:
+            row("D", "heartbeat", f"{hb_name} (absence legal)")
+    else:
+        row("D", "heartbeat", "not-configured")
+
+    # face 3：workspace 觀察面（身份窗綁定——registry.createdAt ≤ mtime ≤ now；
+    # task-scoped 面＝路徑即身份可機械歸因；shared 面（sink/handles）恆ambiguous）
+    faces: list[tuple[str, Path]] = []
+    full_task = (
+        task_id if task_id.startswith(_SUBAGENT_PREFIX) else _SUBAGENT_PREFIX + task_id
+    )
+    for tid in dict.fromkeys((task_id, full_task)):
+        faces += [("task-scoped", p) for p in _files_in_dir(layout.exec_dir(tid))]
+        faces += [("task-scoped", p) for p in _files_in_dir(layout.artifact_dir(tid))]
+    window_start: datetime | None = None
+    if entry is not None:
+        window_start = _parse_iso(entry.created_at)
+        shared = [_ws_path(ws_root, entry.sink)]
+        shared += [_ws_path(ws_root, h) for h in entry.surviving_handles]
+        faces += [("shared", p) for p in shared]
+    in_window = False
+    future_hit = False
+    shared_hit = False
+    any_file = False
+    for face_label, path in faces:
+        try:
+            if not path.is_file():
+                continue
+            mtime = datetime.fromtimestamp(path.stat().st_mtime_ns / 1e9, tz=UTC)
+        except OSError:
+            continue  # 讀撞＝可選面 telemetry gap，不拖垮 probe
+        any_file = True
+        if window_start is None:
+            continue  # 無窗錨點（未註冊）＝活動不可歸因——維持 unknown
+        if mtime > now:
+            in_window = True
+            future_hit = True  # 未來 mtime＝時鐘異常，禁歸因
+        elif mtime >= window_start:
+            in_window = True
+            if face_label == "shared":
+                shared_hit = True
+    if not any_file:
+        row("D", "workspace", "no observable files")
+    elif window_start is None:
+        row("D", "workspace", "no window anchor (unregistered)")
+    elif in_window:
+        observations["workspaceActivity"] = "yes"
+        row("C", "workspace", "in-window activity")
+    else:
+        observations["workspaceActivity"] = "no"
+        row("D", "workspace", "files observable, none in attempt window")
+    ambiguous = shared_hit or future_hit
+
+    # face 4：harness metadata（唯一權威狀態訊號）——terminal→generation→timebox
+    st = src.status(task_id)
+    if isinstance(st, UnknownFace):
+        if st.reason == "metadata-anchor-missing" and entry is not None:
+            # 已註冊身份的 metadata 消失＝A 級 hard-death fast path（T5 對稱）；
+            # 無 registry row 的 lookup miss（never-existed/reaped/打錯 id）＝
+            # UNKNOWN——D 級缺席禁推死（已決策③）
+            row("A", "metadata", f"registered-identity-gone: {st.detail}")
+            return finish(
+                "HARD_DEATH_EVIDENCE",
+                exit_code=EXIT_HARD_DEATH,
+                ambiguous=ambiguous,
+            )
+        return unknown(st.reason, st.detail)
+
+    if entry is not None:
+        reg_created = _parse_iso(entry.created_at)
+        meta_created = _parse_iso(st.created_at)
+        if (
+            reg_created is not None
+            and meta_created is not None
+            and reg_created != meta_created
+        ):
+            row("A", "metadata", "generation-mismatch-registry-createdAt")
+            return finish(
+                "HARD_DEATH_EVIDENCE",
+                exit_code=EXIT_HARD_DEATH,
+                ambiguous=ambiguous,
+                metadataStatus=st.state,
+            )
+
+    addressable = st.state not in TERMINAL_STATES
+    observations["addressable"] = "yes" if addressable else "no"
+    if addressable:
+        row("C", "metadata", f"native running row status={st.state}")
+    else:
+        row("A", "metadata", f"terminal transition status={st.state}")
+
+    if st.state in TERMINAL_STATES:
+        extra: dict = {}
+        if entry is not None:
+            extra["sink"] = collect_sink(entry, ws_root)  # 資訊面——verdict 不影響
+        return finish(
+            "TERMINAL",
+            exit_code=EXIT_OK,
+            ambiguous=ambiguous,
+            **extra,
+        )
+
+    meta_created = _parse_iso(st.created_at)
+    if meta_created is None:
+        # read_metadata 已擋不可解析 createdAt——防禦面（F-6 對稱）
+        return unknown("metadata-corrupt", "createdAt unparseable")
+    threshold_eff = (
+        entry.silence_budget_min
+        if entry is not None and entry.silence_budget_min is not None
+        else threshold_min
+    )
+    elapsed_s = (now - meta_created).total_seconds()
+    timebox_info = {
+        "thresholdMin": threshold_eff,
+        "elapsedMin": round(elapsed_s / 60.0, 2),
+    }
+    if elapsed_s < 0:
+        # 時鐘回撥（createdAt 在未來）＝禁判 timebox（frozen 條款對稱）
+        row("D", "timebox", "clock-rollback (elapsed<0)——禁判 timebox")
+        return finish(
+            "MONITORED",
+            exit_code=EXIT_OK,
+            ambiguous=ambiguous,
+            timebox=timebox_info,
+        )
+    if elapsed_s >= threshold_eff * 60.0:
+        row(
+            "A",
+            "timebox",
+            f"expired {timebox_info['elapsedMin']}min ≥ "
+            f"{threshold_eff}min——時間盒事實，不宣稱 dead",
+        )
+        return finish(
+            "TIMEBOX_EXPIRED",
+            exit_code=EXIT_OK,
+            ambiguous=ambiguous,
+            timebox=timebox_info,
+        )
+    return finish(
+        "MONITORED",
+        exit_code=EXIT_OK,
+        ambiguous=ambiguous,
+        timebox=timebox_info,
+    )
+
+
+# ---------------------------------------------------------------------------
 # CLI 入口
 # ---------------------------------------------------------------------------
 
@@ -2124,6 +2477,14 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         help="STOP fencing verification（明列三項）：metadata terminal＋"
         "registered handles quiescent/collected＋sink grace 內無 writer→"
         "STOP_CONFIRMED（exit 0）／STOP_INCOMPLETE（exit 4）",
+    )
+    mode.add_argument(
+        "--probe",
+        metavar="taskId",
+        default=None,
+        help="唯讀聚合 probe（AIR-162）：分離兩軸 supervisionState×"
+        "observations＋A-D 證據分級＋manualReview 旗（零處置零寫入；"
+        "exit 0=verdict／2=HARD_DEATH_EVIDENCE／1=UNKNOWN）",
     )
     mode.add_argument(
         "--harvest-delta",
@@ -2223,6 +2584,13 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
     liveness = args.registry.parent / "liveness"
     if args.verify is not None:
         return run_verify(layout, args.registry, args.verify, grace_s=args.grace)
+    if args.probe is not None:
+        return run_probe(
+            layout,
+            args.registry,
+            args.probe,
+            threshold_min=args.timebox_min,
+        )
     if args.harvest_delta is not None:
         task_id, manifest = args.harvest_delta
         return run_harvest_delta(layout, liveness, task_id, Path(manifest))
