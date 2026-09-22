@@ -4,7 +4,7 @@ title: instruction 層觸發點——coverage 契約＋CR freshness 分層（存
 status: Done
 assignee: []
 created_date: '2026-09-22 11:55'
-updated_date: '2026-09-22 12:20'
+updated_date: '2026-09-22 12:44'
 labels:
   - instruction-layer
 dependencies: []
@@ -74,20 +74,25 @@ flowchart LR
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+0922 tri 收斂後重開：A1-A5 amendment 五條（implement 5b 生成分支＋post-build candidate detector＋review-engine L2 preflight＋instruction-init L0＋instruction-writing owner≠presence）——上輪 worker 已交付主體（agent_bb1d576c），本輪 settlement reviewer 驗收＋殘餘 F5/F6/F1 materials 進版控。handoff scbus 直送 dogfood 留 settlement 後。
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-instruction 層觸發點落地（存在≠被用 根因修復）：改動一 AGENTS coverage 生成面——implement 5b 生成分支（predicate 機械化：可執行入口被消費/bounded 根 ≥3/public contract）＋post-build candidate detector（Detect→Extract→Delegate）＋scripts/governance/skills 三面 AGENTS＋Planning 子欄＋guide dependency-graph 角色行更新（CR 取代手繪）。改動二 CR freshness 四層——instruction-init L0（缺席→引導 build；失敗→明文降級收據禁全綠）＋review-engine L2 dispatch preflight（cheap check 同步；stale→rebuild 異步或降級，禁阻塞）＋wt-close 條件式提醒（非正確性）。全套 1638 passed；投影 freshness exit 0。改動點 4（freshness 前置）歸 review-engine L2 已吸收。双legs 設計（codex+muse）+bridge post-build 三路徑確認＝完整閉環。
+instruction 層觸發點完成。改動一：coverage 生成面（5b 分支＋post-build detector＋scripts/governance/skills 三 AGENTS＋Planning 子欄＋guide dependency-graph 角色行更新）。改動二：CR freshness 四層（L0 init bootstrap＋L2 dispatch preflight＋wt-close 條件式提醒）。追加 A5：instruction-writing coverage 判準（owner≠presence＋禁無契約建檔）。全套 1638 passed。
 
 ```mermaid
 flowchart LR
-  B["新機制誕生"] -->|"5b 生成分支"| AG["AGENTS face create-or-sync"]
-  AG --> PB["post-build candidate detector"]
-  PB -->|"零 gap"| OK["settlement pass"]
-  II["instruction-init L0"] -->|"缺 graph.db"| HB["引導 harness build"]
-  RD["review dispatch L2"] -->|"cheap check"| FC{"fresh?"}
-  FC -->|"stale"| RB["rebuild 異步或降級"]
-  FC -->|"fresh"| OK2["CR attach [cr:present]"]
-  WC["wt-close"] -->|"trunk 前進"| RM["receipt 提醒非正確性"]
+  B["新機制誕生"] -->|"5b 生成分支"| AG["AGENTS face"]
+  AG --> PB["post-build detector"]
+  PB --> OK["settlement pass"]
+  II["instruction-init L0"] --> HB["graph.db 缺→引導 build"]
+  RD["review dispatch L2"] --> FC{"fresh?"}
+  FC -->|"stale"| RB["rebuild 或降級"]
+  WC["wt-close"] -->|"trunk 前進"| RM["receipt 提醒"]
 ```
 <!-- SECTION:FINAL_SUMMARY:END -->
