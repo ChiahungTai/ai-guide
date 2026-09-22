@@ -531,9 +531,20 @@ def test_sweep_ignores_non_json_files(tmp_path):
     assert _mod.sweep_dir(d, now=NOW, grace_s=GRACE) == []
 
 
-def test_cli_classify_outputs_rows(tmp_path, capsys):
+def test_cli_classify_outputs_rows(tmp_path, capsys, monkeypatch):
     _cli_create(tmp_path)
     _cli_create(tmp_path / "_")  # 鄰目錄不干擾
+
+    class _FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW if tz in (None, UTC) else NOW.astimezone(tz)
+
+    # CLI classify 用掛鐘 now（at_ticket._cmd_classify）——patch 限縮在建檔後的
+    # classify 呼叫面：凍結成 NOW 使斷言與執行時刻脫鉤（原本寫死 RESUME_AT＝
+    # 當日 12:01，時鐘過線即 past-due≠hold）。提前 patch 會破壞 new_ticket 的
+    # isinstance tz-aware 驗證，故置於建檔之後。
+    monkeypatch.setattr(_mod, "datetime", _FrozenDatetime)
     d = tmp_path / "tickets"
     code = _mod.main(["classify", "--dir", str(d)])
     assert code == 0
