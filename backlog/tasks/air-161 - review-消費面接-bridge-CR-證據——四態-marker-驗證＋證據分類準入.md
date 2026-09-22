@@ -1,10 +1,10 @@
 ---
 id: AIR-161
 title: review 消費面接 bridge CR 證據——四態 marker 驗證＋證據分類準入
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 06:13'
-updated_date: '2026-09-22 10:32'
+updated_date: '2026-09-22 10:44'
 labels:
   - review-engine
   - bridge
@@ -62,3 +62,18 @@ flowchart LR
 
 〔驗證式〕見 AC。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+review 消費面接 bridge CR 證據落地：review-engine 新節（CR 段＝A 級機械證據準入 fresh leg＋四態 marker 消費表＋judge 收件驗證 fail-closed）＋agent-review-cycle 執行指針＋code-reviewer/cr-research 兩 role 證據地位補句＋投影同步。docs 卡全套 1496 綠。bridge 線五題表態已回（不開 bi）。改動點 4（index freshness 前置檢查）歸後續——隨 review dispatch workflow 段落處理。bridge 側 reviewer-brief-template 歸 bridge repo 自有卡。
+
+```mermaid
+flowchart LR
+  B["bridge review attach"] -->|"四態 marker"| M["review material"]
+  M --> F["fresh leg：CR 段 A 級準入"]
+  M --> J["judge 收件驗證"]
+  J -->|"unavailable"| R["rebuild 重派或明文降級"]
+  J -->|"present"| A["機械證據優先於敘事"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
