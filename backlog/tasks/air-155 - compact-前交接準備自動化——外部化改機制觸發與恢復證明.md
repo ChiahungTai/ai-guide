@@ -4,7 +4,7 @@ title: compact 前交接準備自動化——外部化改機制觸發與恢復�
 status: Done
 assignee: []
 created_date: '2026-09-22 01:52'
-updated_date: '2026-09-22 10:30'
+updated_date: '2026-09-22 10:39'
 labels:
   - session-lifecycle
 dependencies: []
@@ -70,7 +70,7 @@ flowchart LR
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-compact 前後脈絡保全落地（VETO 驅動的持續責任制設計）：scripts/compact_checkpoint.py（四問驗證/restore-proven hash 綁定/cleanup guard）＋hooks/compact-restore-inject.py（UserPromptSubmit sync 注入：compaction 記錄代理閘防誤拿——gate 過＋未消費→thin pointer 注入；gate 過＋已 proven→re-restore 注入；fail-open 全程）＋SKILL.md 降 boundary adapter（持續外部化義務清單＋人肉依賴句零殘留）。settlement fresh reviewer pass（F1 註冊材料進版控 hooks/＋F3 re-restore 語義翻轉——reviewer 可推翻條款成立＋F4 schema 驗證；judge 應用）。focused 71＋全套 1403 綠。機器註冊完成（backup 182954、installer 五面 parity 綠、新 session 生效）。live restore dogfood：下次真實 compact 事件驗證。附帶：gate 實驗推翻 zcode 文檔 compact source（drift 回報鏡像流程）。
+compact 前後脈絡保全落地（VETO 驅動的持續責任制設計）：scripts/compact_checkpoint.py（四問驗證/restore-proven hash 綁定/cleanup guard）＋hooks/compact-restore-inject.py（UserPromptSubmit sync 注入：compaction 記錄代理閘防誤拿——gate 過＋未消費→thin pointer 注入；gate 過＋已 proven→re-restore 注入；fail-open 全程）＋SKILL.md 降 boundary adapter（持續外部化義務清單＋人肉依賴句零殘留）。settlement fresh reviewer pass（F1 註冊材料進版控 hooks/＋F3 re-restore 語義翻轉——reviewer 可推翻條款成立＋F4 schema 驗證；marshal judge 應用）。focused 71＋全套 1403 綠。機器註冊完成（backup 182954、installer 五面 parity 綠、新 session 生效）。live restore dogfood：下次真實 compact 事件驗證。附帶：gate 實驗推翻 zcode 文檔 compact source（drift 回報鏡像流程）。
 
 ```mermaid
 flowchart LR
