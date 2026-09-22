@@ -3,7 +3,7 @@
 > 讀者＝跨 repo 協作的 AI session／user。 sovereignty 前提單一源＝AIR-135.5「repo sovereignty 總則」：每 mutation 歸其 repo 主權、每 acceptance 歸實際 consumer；跨 repo 只傳 request、evidence、candidate 與 verdict。本檔是慣例面模板，不覆寫總則、不設總則例外。
 > 消費規則：欄位定義一欄一義，禁複用欄位承載第二語義；模板節（節二／節三）照佔位符〈〉填寫，填後禁刪填寫說明以外的結構行。
 
-## 節一：scbus 訊息 schema 草案 v1——sc-router needs-info 回饋後升 v2
+## 節一：scbus 訊息 schema 草案 v2——已吸收 sc-router needs-info 五條
 
 身位宣告：本節是給 sc-router protocol amendment 的輸入草案，非 protocol 權威（protocol.md 歸 sc-router repo 單方）。發送端行為（逐次確認 gate、sent-record 八欄、transport 四路分流）單一源＝AIR-135.5 AC#6，本節只定線上訊息格式與回覆語義。
 
@@ -15,10 +15,22 @@
 | target | 必填 | 對端地址＝`harness:sessionId` 字串形（canonical＝複合鍵 `(harness, session_id)`，mapping owner＝sc-router）；附 WS 尾名僅 display hint |
 | source | 必填 | 本側身分；有對應卡時帶 Counterpart token（`repo-id/card-id` 格式） |
 | correlation_id | 必填 | 回覆與原始訊息的配對錨；同因重發＝新 id＋`supersedes` 註記舊 id |
-| expiry | 必填 | 時效界——到期後禁確認發送，須 fresh facts 重組草案 |
-| body | 必填 | 訊息本體（UTF-8 ≤8192，bus 凍結面）；大材料落 repo 檔案、訊息只派路徑 |
+| want | 請求類必填 | 發送方要的動作＋期望回覆類型（structured，與 body 人話敘述分離）——接收端 automation 機械分診依據 |
+| expires_at | 選填 | 時效界——到期後禁確認發送，須 fresh facts 重組草案；接收端可據此 triage／過期標記（「開工時回覆」「probe 週期內有效」類訊息建議必填） |
+| card_ref | 選填 | 訊息歸屬卡／線 id（`repo-id/card-id`，如 `sc-189`／`air-154`）——busForeign 分組＋跨 repo card↔message 對帳錨 |
+| body | 必填 | 訊息本體（UTF-8 ≤8192，bus 凍結面）；大材料落 repo 檔案、訊息只派路徑；欄位需求類回覆用固定段落標題（逐欄一節），禁散文化 |
 | artifact_pointers | 選填 | 支撐材料指針＋hash（驗證錨，非權威斷言） |
 | context_delta | 選填 | 收訊端重建語境所需的最小差量 |
+
+### 回覆訊息共用欄位（semantic ACK 欄位化——機械契約不由 body 自由文承擔）
+
+| 欄位 | 必填 | 語義（一欄一義） |
+|------|------|------------------|
+| reply_type | 回覆必填 | 四值枚舉：accept／needs-info／declined／completed——semantic ACK 的欄位化承載 |
+| in_reply_to | 回覆必填 | 原始訊息的 message_id／command_id——機械追線錨，禁靠 body 內字串引用 |
+| info_request | needs-info 必填 | 補件清單（接收端消費者視角的欄位／資訊需求） |
+
+（v1 的 ACK 四態語義表維持有效，v2 起四態以 `reply_type` 欄位承載，body 只放人話補充。）
 
 ### 各 msg_type 附加必填欄位
 
@@ -54,6 +66,16 @@ transport receipt（機器面，delivery 保證）≠ semantic ACK（消費面�
 | semantic ACK＋evidence | 消費面完成證據 | acted | completed |
 
 **對照即審計錨條款**（SC 案例③收束）：任何「已送達／已同意／已完成」宣稱須能同時指出 transport receipt 檔（command_id 鍵）與 semantic ACK 訊息（correlation 鍵）；僅有其一＝未閉環，禁記完成。receipt 檔路徑僅以 command_id 為鍵（跨 sender 撞名後寫蓋前寫，proto 已知限制）——審計時須核對 message_id 欄。
+
+### v1→v2 對照註記（sc-router needs-info 五條吸收記錄）
+
+| needs-info 條目 | v2 落點 |
+|-----------------|---------|
+| ① in_reply_to＋reply_type 欄位化（ACK 禁埋 body 自由文） | 新增「回覆訊息共用欄位」表：reply_type enum＋in_reply_to 錨 |
+| ② want 欄位（請求動作＋期望回覆類型，structured 分診） | 共用欄位表新增 want（請求類必填） |
+| ③ expires_at（時效 triage／過期標記） | v1 expiry 改名 expires_at，語義擴充接收端 triage 面 |
+| ④ card_ref（卡／線歸屬錨） | 共用欄位表新增 card_ref（選填） |
+| ⑤ body 慣例（長材料入檔＋欄位需求回覆固定段落標題） | body 欄語義補固定段落標題要求；冪等去重維持現狀無新增 |
 
 ## 節二：contract 雙軌期條款模板
 
