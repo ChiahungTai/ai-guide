@@ -47,9 +47,9 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解 → 派工依 model-routing resolver → 機械閘照跑 → 一般工程取捨自判、批次回報，檢查點照 quality-constraints。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外（含互動 commit 機械例外）恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution，不適用本節。implementation work unit 一律 spawn（定義與 fallback＝agents/AGENTS.md execution contract；canonical 控制面直寫由 admission guard 機械擋）。
 
-## 跨 repo 主權（repo sovereignty）
+## 跨 repo 主權
 
-跨 repo 寫入只在對方主權隔離面（card WT／ephemeral）＋對方授權面內；A 對 B 的 canonical／他 session 檔案零直接寫入。write 按 effect 判（留 persistent state 即寫）；唯讀自由；契約漣漪＝通訊請求（A 發 request、B 自己改）；無小改例外（typo 亦走 ephemeral；emergency＝user 一次性授權）；transport consent≠mutation authority；mutation owner≠acceptance owner；讓步僅三情境（對端無主／packaging 原子性／incident）＋可逆＋留痕＋事後追認。核心：mutation 歸 repo 主權、acceptance 歸 consumer；跨 repo 只傳 request/evidence/verdict——例外換臨時操作者，不換 canonical ownership。細節＝AIR-135.5；通訊面＝scbus。
+跨 repo 寫入僅限對方主權隔離面＋授權面；mutation 歸 repo 主權、acceptance 歸 consumer；無小改例外；細節＝AIR-135.5。
 
 ## 架構設計紀律
 
