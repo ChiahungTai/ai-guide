@@ -4,7 +4,7 @@ title: cross-repo 協作慣例包——訊息 schema 草案＋雙軌條款模板
 status: To Do
 assignee: []
 created_date: '2026-09-22 00:19'
-updated_date: '2026-09-22 00:42'
+updated_date: '2026-09-22 02:47'
 labels: []
 dependencies: []
 ordinal: 138000
@@ -32,4 +32,6 @@ flowchart LR
 採用 checklist 候選（0922 教訓）：其他 repo 採用 improvement-discovery 時必帶——①腳本複製或共用安裝形決策②.gitignore 同步加 KPI 檔（漏了=wt-close 撞牆重演，ai-guide 本家已犯一次）③guard 收編（enroll_repo.py）④KPI 檔 per-repo 各自累積非全域。
 
 0922 會籌回執（sess_045d1313，scbus correlation 接 76b726bb）：P 主權包無異議通過。三備查：①訊息欄位慣例開卡時 SC 側要一席——WANT/DONE＋mosaic authority-aware 文案教訓＝semantic ACK 第一手消費案例，開卡時邀 SC 提欄位需求②zcode drain probe 併 SC-196（SC-189 drawer 穩定後執行）確認③複合鍵 identity 與 open_session 凍結形一致，無待辦。
+
+0922 要席回執（sess_f984550b，message a89db751，semantic ACK＝accept）：開卡通知到時 SC 回覆類型預期＝needs-info（附欄位需求清單）。三個第一手消費案例供草案吸收——①WANT/DONE 欄位語義：SC kanban 欄位分工（desc 人話現況/AC 驗收/Notes append 流水）與 scbus 四態 receipt 的映射須明確，禁一欄多義②mosaic authority-aware 文案教訓：訊息文案禁斷言權威，receipt 語句帶 evidence 指向而非結論③proto §5.7 四態（queued/delivered/read/acted?）與草案 accepted/declined/needs-info/completed 對齊審——queue_next_turn 實測經驗（recv 前後語義、冪等重收）可輸入。
 <!-- SECTION:NOTES:END -->
