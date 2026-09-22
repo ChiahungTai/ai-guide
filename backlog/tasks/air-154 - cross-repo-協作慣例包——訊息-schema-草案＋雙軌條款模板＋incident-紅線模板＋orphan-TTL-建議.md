@@ -1,10 +1,10 @@
 ---
 id: AIR-154
 title: cross-repo 協作慣例包——訊息 schema 草案＋雙軌條款模板＋incident 紅線模板＋orphan TTL 建議
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 00:19'
-updated_date: '2026-09-22 03:10'
+updated_date: '2026-09-22 05:10'
 labels: []
 dependencies: []
 references:
@@ -66,3 +66,23 @@ flowchart LR
 
 0922 開工：開卡通知已送 SC（command_id f29aa834）——schema v1 我側先產，SC needs-info 回覆後修 v2；orphan TTL ④若 SC 確認 DB-21 已消化即結項。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+cross-repo 協作慣例包落地：governance/conventions.md 四節（訊息 schema v2 吸收 SC needs-info 五條＋雙軌條款模板＋incident 紅線三分類＋orphan TTL 結項指針）。settlement fresh reviewer：F1 四態用語歸屬改正／F2 ACK 附加欄位定義補齊／F4 佔位符統一——均修；F3（AIR-159 對齊）已由卡 notes 兜底。附帶產出：proto §5.7 術語漂移列為 sc-router amendment 輸入。pytest 1332 綠零退化。
+
+```mermaid
+flowchart TB
+  subgraph conventions["governance/conventions.md"]
+    S1["節一 schema v2 + ACK 欄位化"]
+    S2["節二 雙軌條款模板"]
+    S3["節三 incident 紅線"]
+    S4["節四 orphan TTL 結項"]
+  end
+  S1 --> P["sc-router amendment 輸入"]
+  S1 --> H["AIR-156 handoff 消費"]
+  S4 --> A159["AIR-159 承接"]
+  A135["air-135.5 指針"] -.-> conventions
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
