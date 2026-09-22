@@ -494,7 +494,7 @@
     <tbody>
       <tr><td><a href="workflow.md">workflow.md</a></td><td>WT 形態與責任邊界→<a href="../reports/2026-09-10-wt-workflow-decision.md">WT workflow 正式裁決報告</a>；git/branch 收斂語義→repo AGENTS.md「git 慣例」＋kanban-board；八站→<a href="../reports/2026-09-10-holistic-design-review.md">整體設計審視</a>；O1–O8 與波次→<a href="../blueprint-execution-order-0910.md">執行順序藍圖</a>；②⑥站殼 codegen→illustrate 三方終案＋mosaic 試驗附錄（跨 repo pointer）；viewport 供給→<a href="../reports/2026-09-10-viewport-serving-architecture.md">viewport 架構裁決</a>＋mosaic run-report-server.sh（跨 repo）＋schedule-registry 條 A5＋illustrate-html-mode 放置分流；測試契約與 agent 分工→<a href="../reports/2026-09-11-test-contract-design.md">測試契約裁決 v3.1</a></td><td>中；WT 基建落地期偏快</td><td>八站生命週期、primary/card-WT 責任分界、board single-writer、memory 拓撲、open/close transaction、波次與 freshness invariant、viewport 供給三層與放置規則、測試契約與驗證分工、agent 分工原則</td></tr>
       <tr><td><a href="onboarding.md">onboarding.md</a></td><td>MULTI-MACHINE.md＋<code>deploy_agents.py</code>＋rules 部署契約＋agents registry 契約＋UC6/7 dry run 清單；排程輔助→schedule-registry；code-reality 安裝語義→code-reality skill</td><td>中；machine-local 接線改動時快</td><td>從空機器恢復的六段 runbook 與現有支撐／缺口</td></tr>
-      <tr><td><a href="structure.md">structure.md</a></td><td>載體增退役／generator／invariant／接線改變→各域治理檔（rules／agents／hooks AGENTS.md＋skills/CLAUDE.md＋root AGENTS.md）＋generator source（<code>sync_agents.py</code>／<code>deploy_agents.py</code>）</td><td>中；載體增退役或接線改變時快</td><td>五層載體×四種邊型的結構全景（本頁 <a class="jump" href="#s12" onclick="return go2('s12')">12</a> 節投影）</td></tr>
+      <tr><td><a href="structure.md">structure.md</a></td><td>載體增退役／generator／invariant／接線改變→各域治理檔（root／rules／agents／hooks／skills／governance／scripts 各域 AGENTS.md）＋generator source（<code>sync_agents.py</code>／<code>deploy_agents.py</code>）</td><td>中；載體增退役或接線改變時快</td><td>五層載體×四種邊型的結構全景（本頁 <a class="jump" href="#s12" onclick="return go2('s12')">12</a> 節投影）</td></tr>
       <tr><td><a href="AGENTS.md">AGENTS.md</a></td><td>本表＋更新紀律本身（真相源映射的單一源）</td><td>—</td><td>誰在什麼觸發下、以什麼紀律重編哪一檔</td></tr>
     </tbody>
   </table>
@@ -650,7 +650,7 @@
   <table>
     <thead><tr><th>層</th><th>內容</th><th>單源與治理</th><th>生成／接線</th><th>機械守護</th></tr></thead>
     <tbody>
-      <tr><td>L0 authoring（手改單源）</td><td>guide、<code>rules/</code>、<code>skills/</code>（含 <code>_common/</code>）、<code>agents/roles/</code>、<code>hooks/</code>、memory-governance plugin、root AGENTS.md＋CLAUDE.md wrapper、<code>backlog/</code>、<code>ai-analysis/</code></td><td>各域治理檔：<a href="../../rules/AGENTS.md">rules</a>／<a href="../../agents/AGENTS.md">agents</a>／<a href="../../hooks/AGENTS.md">hooks</a> AGENTS.md＋<a href="../../skills/CLAUDE.md">skills/CLAUDE.md</a>＋root AGENTS.md</td><td>—（手改）</td><td>—</td></tr>
+      <tr><td>L0 authoring（手改單源）</td><td>guide、<code>rules/</code>、<code>skills/</code>（含 <code>_common/</code>）、<code>agents/roles/</code>、<code>hooks/</code>、memory-governance plugin、root AGENTS.md＋CLAUDE.md wrapper、<code>backlog/</code>、<code>ai-analysis/</code></td><td>各域治理檔：<a href="../../rules/AGENTS.md">rules</a>／<a href="../../agents/AGENTS.md">agents</a>／<a href="../../hooks/AGENTS.md">hooks</a> AGENTS.md＋<a href="../../skills/AGENTS.md">skills</a>／<a href="../../governance/AGENTS.md">governance</a>／<a href="../../scripts/AGENTS.md">scripts</a> 各域 AGENTS.md＋root AGENTS.md</td><td>—（手改）</td><td>—</td></tr>
       <tr><td>L1 生成投影（禁手改）</td><td><code>agents/zcode/</code>＋<code>agents/claude/</code> registry；非 Claude 三家 bundle；<code>blueprint/index.html</code>（本目錄四檔投影）</td><td><code>roles/</code> 為 authoring 單源</td><td><code>sync_agents.py</code>／<code>deploy_agents.py</code>；index.html 手寫＋殼 codegen</td><td><code>agents_projection_sync</code>、<code>deploy_bundle_freshness</code></td></tr>
       <tr><td>L2 部署接線（各 harness 全域位置）</td><td>skills 三根、agents 兩根、Claude rules 目錄 symlink＋CLAUDE.md、hooks 絕對路徑 config、muse user-scope plugin＋marker</td><td>Claude rules＝目錄 symlink 即時生效；非 Claude＝bundle snapshot（改 rule 後須重跑 deploy）</td><td>symlink／config 引用（hooks 無目錄載入點不能 symlink）</td><td><code>hook_registration</code>、<code>zcode_live_parity</code>、<code>skill_allowlist_coverage</code></td></tr>
       <tr><td>L3 狀態資料</td><td><code>.agents/memory/</code> 主體＋<code>memory-inbox/</code>、memory-spine、<code>.tours/</code>、<code>.code-reality/</code>、<code>.review/</code></td><td>寫入端紀律＝memory-audit skill；tour 契約＝tour-bootstrap／code-reality skill</td><td>主體→CC 舊徑 symlink→ZCode 雙跳；codex 唯讀（單一寫入點）</td><td>memory hooks sensors＋index-regen gate、<code>tour_validate</code></td></tr>
@@ -662,7 +662,7 @@
   <ul class="dots">
     <li><b>部署邊</b>（誰投影到哪）：三個 generator＋symlink 群＋兩家 config——<b>唯一由 invariant 機械守護的邊群</b>（細節在 rules／agents AGENTS.md「部署紀律」「registry 結構」，此處不複載）。</li>
     <li><b>引用邊</b>（誰引用誰）：rule 留 always-on 核心＋pointer、深層住同名 skill（reference 分層配對，見下表）；其餘 rule→skill pointer 為常規跳轉；skill→skill 以 review-engine 家族真相源與 <code>_common/</code> 20 檔為樞紐。</li>
-    <li><b>消費邊</b>（workflow 哪階段用誰）：生命週期 dispatch 表在 agents/AGENTS.md（execution contract）；命令分類表在 root AGENTS.md（本頁 <a class="jump" href="#s11" onclick="return go2('s11')">11</a> 節）；核心流程拓撲在 skills/CLAUDE.md；排程反查表在 schedule-registry。</li>
+    <li><b>消費邊</b>（workflow 哪階段用誰）：生命週期 dispatch 表在 agents/AGENTS.md（execution contract）；命令分類表在 root AGENTS.md（本頁 <a class="jump" href="#s11" onclick="return go2('s11')">11</a> 節）；核心流程拓撲在 skills/AGENTS.md；排程反查表在 schedule-registry。</li>
     <li><b>治理邊</b>（誰驗誰）：single-source invariants 11 條（<code>check_single_source.py</code>，<code>/sync-sources</code> 消費）＋blueprint 對齊覆核觸發＋kanban precheck＋memory hooks。</li>
   </ul>
   <h3>引用邊：reference 分層配對（含 bundle role 欄）</h3>
@@ -688,8 +688,8 @@
       <tr><td><code>blueprint/index.html</code> 投影落後</td><td>✅ 本卡已解（AIR-81）</td><td>backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估）</td></tr>
       <tr><td>grok-build 未安裝但 dispatch matrix 引用</td><td>⚠️</td><td>已標「引用前先查證」；安裝後補 SessionEnd 條目</td></tr>
       <tr><td>ZCode 無 SessionEnd 事件</td><td>⚠️</td><td>hooks/AGENTS.md 定案＝remediation 成本極低非缺口</td></tr>
-      <tr><td><code>skills/CLAUDE.md</code> 索引手維護</td><td>⚠️</td><td>無機械防線；超載時可評估 invariant 化</td></tr>
-      <tr><td>AGENTS.md 家族命名不對稱</td><td>⚠️</td><td>低風險，改名成本大於收益</td></tr>
+      <tr><td><code>skills/AGENTS.md</code> 索引手維護（自標 drift-prone）</td><td>⚠️</td><td>無機械防線；超載時可評估 invariant 化</td></tr>
+      <tr><td>AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md）</td><td>✅ 已解（AIR-164——skills 升 AGENTS.md source＋CLAUDE.md @wrapper，與各域對稱）</td><td>—</td></tr>
       <tr><td>WT 形態（board single-writer／wt-open/close）</td><td>✅ 已落地（AIR-72；大致——語義以 workflow.md 為準）</td><td>錨點＝workflow.md「待建基建」＋<code>scripts/wt-open.sh</code>／<code>wt-close.sh</code>；_tasks 遷移由 AIR-77 落地</td></tr>
     </tbody>
   </table>

@@ -111,18 +111,27 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 1. 對每個變更的 `.md` 執行 `consistency`（[skills/consistency/SKILL.md](../consistency/SKILL.md)）；fail 項當場修再驗（**重驗範圍 = 修正觸及的檔**，非整個 docs 鏈重跑；上限同階段 3 的 3 輪）
 2. diff 觸及 Capabilities / `SYSTEM-MAP.md` / `dependency-graph.md` / `backlog/` → 執行 `metadata-sync`（[skills/metadata-sync](../metadata-sync/SKILL.md)）
-3. **rename 反掃（結案 gate 機械收口——非 rename 弧自然空跳）**：①清單萃取（`git diff --diff-filter=R -M` 檔級＋LLM 讀 diff 提取符號級）；②反掃 `rg "<舊符號>"` 掃 AGENTS.md 家族＋專案快 drift 檔；③命中即修或記 drift；零命中＝完成證據。
-4. **政策翻轉 consumer-propagation gate**：retire／政策句改寫弧跑[下方 gate](#政策翻轉-consumer-propagation-gateair-75)；candidate 空＝空跳（證據）。他類弧空跳。
-5. **CR wiring telemetry checkpoint（AIR-67 弧B；與第 4 點 AIR-75 分軸——政策傳播 vs 行為量測）**：diff 觸及 CR 接線載體（`rules/symbol-query-routing.md`、`skills/cr-query/`、`agents/roles/*`、`skills/_common/work-order.md` §7、review-engine／implement 等 skill 的 CR 接線段）→ 收尾報告必附 `uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/cr_usage.py --days <弧天數>` 輸出（三源計數見 [corrections-weekly](../corrections-weekly/SKILL.md)）。**checkpoint＝基線數字，非 effectiveness proof**——接線已改≠行為已形成，後續真實 review/job 樣本才是判讀面（corrections-weekly 週期承載）。candidate 空＝空跳（證據）。
+3. **AGENTS coverage gate（生成面 candidate detector——AIR-164）**：rename 反掃之前的機械前置——偵測新增頂層目錄／新增可執行 entry（`git diff --diff-filter=A --name-only` 頂層聚合，便宜），candidate 非空才進[下方 gate](#agents-coverage-gateair-164)；candidate 空＝空跳（證據）。
+4. **rename 反掃（結案 gate 機械收口——非 rename 弧自然空跳）**：①清單萃取（`git diff --diff-filter=R -M` 檔級＋LLM 讀 diff 提取符號級）；②反掃 `rg "<舊符號>"` 掃 AGENTS.md 家族＋專案快 drift 檔；③命中即修或記 drift；零命中＝完成證據。
+5. **政策翻轉 consumer-propagation gate**：retire／政策句改寫弧跑[下方 gate](#政策翻轉-consumer-propagation-gateair-75)；candidate 空＝空跳（證據）。他類弧空跳。
+6. **CR wiring telemetry checkpoint（AIR-67 弧B；與第 5 點 AIR-75 分軸——政策傳播 vs 行為量測）**：diff 觸及 CR 接線載體（`rules/symbol-query-routing.md`、`skills/cr-query/`、`agents/roles/*`、`skills/_common/work-order.md` §7、review-engine／implement 等 skill 的 CR 接線段）→ 收尾報告必附 `uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/cr_usage.py --days <弧天數>` 輸出（三源計數見 [corrections-weekly](../corrections-weekly/SKILL.md)）。**checkpoint＝基線數字，非 effectiveness proof**——接線已改≠行為已形成，後續真實 review/job 樣本才是判讀面（corrections-weekly 週期承載）。candidate 空＝空跳（證據）。
 
 ### 政策翻轉 consumer-propagation gate（AIR-75）
 
-> 觸發：retire／政策句改寫／定義源新增列節弧（他類弧空跳——階段 4 主表第 4 點 candidate 空＝空跳）。retire 翻轉可留原名改語義，舊符號 rg 掃不出來（實證三類）。**第二個獨立消費者出現時晉升 `_common/policy-reversal-gate.md`**（三方共識 09-11）。成本原則：非相關弧只付 candidate detection；不做全檔重驗。
+> 觸發：retire／政策句改寫／定義源新增列節弧（他類弧空跳——階段 4 主表第 5 點 candidate 空＝空跳）。retire 翻轉可留原名改語義，舊符號 rg 掃不出來（實證三類）。**第二個獨立消費者出現時晉升 `_common/policy-reversal-gate.md`**（三方共識 09-11）。成本原則：非相關弧只付 candidate detection；不做全檔重驗。
 
 - **① Detect（機械 candidate detector——先跑，便宜）**：`git diff --diff-filter=D` 刪檔清單＋新增列／節存在性＋定義源載體變動（何為定義源依 instruction-writing 單一源規則；叠加階段 4 表頭「僅 `.md` 變更」前置過濾）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：舊主張／新約束／consumer concept（＝引用該政策句主張的下游陳述）；全判無政策影響才空跳。
 - **③ Delegate（委派既有機制——不重定義 scan）**：定義源變更 → instruction-writing single-source scan；blueprint 在場 → 讀其 AGENTS 真相源映射／更新觸發；否則 rename 反掃的 project AGENTS／EP fast-drift list；`rg` catch-all 封底。**html 投影面（lite backstop——非 freshness 主機制）**：弧 diff 觸及 projection manifest 宣告的任一 upstream → 跑 freshness check（`uv run python scripts/projection_freshness.py --manifest <manifest>`；exit 1 drift → refresh 重投影後 `--update` 收斂，或不重投影則殼頭標 stale）；契約細節見 [illustrate html-mode](../_common/illustrate-html-mode.md)「投影鎖定與 stale 標記」。
 - **④ Dispose（處置四值）**：`update`（改新政策／新錨）／`historical`（刻意留的退役說明；provenance 規則見 instruction-writing）／`no-change`（證據足才用）／`unverified`（證據不足——**不視為收斂**，報告帶未驗 consumer／原因）。**rg 命中≠待修**；零命中＝完成證據。
+
+### AGENTS coverage gate（AIR-164）
+
+> 觸發：階段 4 主表第 3 點 candidate 非空（他類弧空跳）。解「新機制誕生→instruction 真空」——新目錄／新可執行入口落地而 AGENTS face 沒跟上。[implement](../implement/SKILL.md) 5b 生成分支是 build 側主動面，本 gate 是 post-build 兜底反掃；**MUST predicate 單一源＝implement 5b 生成分支**（(a) 可執行入口被 workflow/control 面消費 (b) bounded context 根 ≥3 源碼 (c) public contract／控制面 authority；MUST NOT＝純產物鏡像），本 gate 不重列。
+
+- **① Detect（機械——先跑，便宜）**：`git diff --diff-filter=A --name-only` 頂層聚合 → 新增頂層目錄與新增可執行 entry 清單（弧模式＝baseline..HEAD 同源；純 `.md` 弧也跑——instruction 真空不以語言別豁免）。
+- **② Extract（LLM 萃取——candidate 非空才做）**：逐 candidate 對 MUST predicate 判「該目錄該不該有 AGENTS face」＋現有 face 是否已涵蓋新入口；全不命中或已涵蓋 → 空跳記證據。
+- **③ Delegate（命中即委派既有機制——不重寫生成邏輯）**：缺 AGENTS.md → create-or-sync 照 [instruction-init](../instruction-init/SKILL.md) 骨架與建檔閾值補檔（雙檔模式含 CLAUDE.md wrapper）；已有 AGENTS.md 但未涵蓋新入口 → 併入本鏈第 1 點 consistency 重驗範圍。**零 gap（全 candidate 已有 face 或已補）＝ settlement pass 證據；未補齊 → 列收尾報告未決項，不靜默**。
 
 ## 收斂態落卡（階段 5 前——AIR-121）
 

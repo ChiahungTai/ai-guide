@@ -30,6 +30,10 @@
 #   （格式：timestamp|mode|wt|branch|result；mode＝preflight|full）。失敗調用也記
 #   （failure receipt）；log 寫入失敗僅 stderr 警告、不改變 exit code——收線本身是主體。
 #   .git 內容永不進版控（machine-local，刻意不隨 clone 同步）、存活於 WT 移除。
+# - CR freshness 提醒（AIR-164）：full 收斂且 trunk 實際前進（merge 前 card branch 尚未
+#   含於 trunk）→ 印「graph 可能 stale——下次 review 前 code-reality rebuild」到 stderr
+#   並落 receipt（result=pass;graph-stale-reminded）。非正確性依賴、不自動 build
+#   （rebuild 決策歸 marshal）。
 #
 # 依賴：git、bash 3.2+。退出碼：0 成功／2 鎖衝突／3 驗證失敗／4 preflight 未過。
 
@@ -204,6 +208,10 @@ if [ "$NEED_REBASE" = "1" ]; then
 fi
 
 MERGE_TARGET_BRANCH="$CUR_BR"
+# CR freshness（AIR-164）：merge 前先捕捉 trunk 是否已含 card branch——未含＝本次收斂
+# 將實際前進 trunk（供收尾條件式提醒；非正確性依賴）
+TRUNK_ADVANCED=0
+git -C "$PRIMARY" merge-base --is-ancestor "$MERGE_TARGET_BRANCH" "$TRUNK" || TRUNK_ADVANCED=1
 cleanup_tmp() { [ -n "${TMP_WT:-}" ] && git -C "$PRIMARY" worktree remove --force "$TMP_WT" 2>/dev/null || true; }
 MERGE_WT=""
 if [ -n "$TRUNK_WT" ]; then
@@ -243,5 +251,10 @@ fi
 info "已移除：WT $WT_PATH ＋ branch $CUR_BR （identity contract 隨 .agent-tmp 同滅）"
 
 rm -rf "$LOCK"; trap - EXIT
-receipt "pass"
+if [ "$TRUNK_ADVANCED" = "1" ]; then
+  warn "CR freshness 提醒：trunk 已實際前進（吸收 ${CUR_BR}）——code-reality graph 可能 stale，下次 review 前建議 code-reality rebuild（非正確性依賴，不自動 build）"
+  receipt "pass;graph-stale-reminded"
+else
+  receipt "pass"
+fi
 info "✅ wt-close 完成：$TRUNK @ $(git -C "$PRIMARY" rev-parse --short "$TRUNK")"

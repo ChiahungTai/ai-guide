@@ -55,6 +55,15 @@ uv run python <scan-project-skill-dir>/scripts/scan_project.py --project-root . 
 
 **無 scan-project 時**：跳過此 phase，Phase 2 使用 Phase 1 的粗略分析。
 
+### Phase 1.6：CR readiness 檢查（L0——AIR-164）
+
+Phase 1.5 完成後檢查 code-reality graph 就緒（消費端＝後續 review 的 `[cr:unavailable]` 降級預先已知化，非事後驚奇）：
+
+- `.code-reality/graph.db` **在場** → 印 `CR readiness=ok`，無動作。
+- **缺席** → 印引導一行：`CR readiness=skipped——請操作者執行 code-reality build --repo <root>（分鐘級）；未 build 即進 review 時 [cr:unavailable] 為已知結果`，並把降級收據明文寫進本 init 的產出報告——**不靜默跳過**。
+- 操作者執行 build **失敗** → 印 `CR readiness=failed`——產出報告**禁宣稱全綠**（明知 review 腿會降級而報綠＝靜默吞，fail-loud）。
+- **邊界（bridge 禁碰 write-face）**：graph 的 build/snapshot 是 harness 互動面（write-face）——bridge 與本 skill 的 agent 腿皆**不代跑 build**，只印引導由操作者執行（邊界單一源＝[review-engine](../review-engine/SKILL.md)「bridge review 的 CR 證據分類與消費」）。
+
 ### Phase 2：Bottom-up 產生 instruction files（每層 AGENTS.md source + CLAUDE.md wrapper）
 
 從最深層的子模組開始，一路往上寫到 Root：**每層**（root + 模組）都產生 AGENTS.md（source，neutral）+ CLAUDE.md（`@AGENTS.md` wrapper，讓 Claude 讀到 AGENTS.md）——雙檔模式見 [instruction-writing.md](../../rules/instruction-writing.md)。

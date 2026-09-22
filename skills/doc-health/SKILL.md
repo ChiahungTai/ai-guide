@@ -77,10 +77,10 @@ LLM 直接讀取索引/清單類段落，驗證與實際檔案一致：
 - **入口有效性**：CLI 命令格式合理、路徑指向存在（scan 的 X-cap-path 已做路徑檢查，此處補充 CLI 命令等判斷）
 - **模組覆蓋**：主要模組都有 Capabilities 表格（scan 的 X6 已做機械性檢查）
 
-**Skill 索引（`skills/CLAUDE.md` Skill 索引段）**：
+**Skill 索引（`skills/AGENTS.md` Skill 索引段）**：
 - **機械比對**：`fd -t d . skills/ --max-depth 1` 列實際 skill 目錄，`rg` 抓索引列出的 skill name，比對差集
 - **標記**：索引有但目錄無 = 幽靈（important）；目錄有但索引無 = 遺漏（important）
-- **容錯**：無 `skills/CLAUDE.md` 或無 Skill 索引段 → 跳過（非所有專案有 skill 索引）
+- **容錯**：無 `skills/AGENTS.md` 或無 Skill 索引段 → 跳過（非所有專案有 skill 索引）
 
 ### 步驟 2.5：知識庫真相源偵測（opt-in by 慣例）
 

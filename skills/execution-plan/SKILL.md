@@ -76,7 +76,7 @@ standard／parent-EP bounded child 不寫 standalone EP，規劃住卡 plan 段�
 
 1. **Baseline**：現況＋錨點 file:line
 2. **已決策**（勿重辯）：parent-EP child 另列 inherited decisions 附 parent EP 錨點。每條 boundary／architecture 決策必須帶 provenance anchor——parent EP 錨點、既有檔案 file:line、或先前已結案卡；**無 anchor＝新決策**→本卡不是 standard，contract 成立前即 promotion 至 full
-3. **Scope**：動／不動檔案
+3. **Scope**：動／不動檔案——instruction 面（AGENTS.md / CLAUDE.md / architecture.md 等導航文檔）**動或不動都明列**：動＝implement 5b 同步對象（新增目錄／可執行入口命中 5b 生成分支 predicate 也要列）；不動＝明示免同步，供 post-build AGENTS coverage gate 對帳
 4. **Scenarios**：行為情境，含邊界／fail 情境
 5. **Integration**：下游消費者／整合點
 6. **驗證式**：AC 機械可判——命令＋預期結果；驗證式＝AC 的規劃態——開工承諾時結晶為卡 AC 欄，卡 AC 欄是唯一驗收源
@@ -367,7 +367,7 @@ EP 產物全為 instruction/documentation 檔，或其 static HTML Report Shell�
 | TDD / mypy / ruff / pytest | 強制 | **跳過**（`/implement` 階段 2 僅「修改 → rg 殘留 → 跨檔一致性 → `/consistency`」）|
 | 整合路徑覆蓋 | `rg "<param>="` | **跳過**（或改為跨檔引用一致性 rg）|
 | EP Review 維度 | Call Stack / Pattern Alignment | 改為「文檔一致性 + 設計合理性 + 引用 drift + 漏改」|
-| 收尾 Capabilities + Kanban | 強制 | 元專案跳過；改為「受影響命令/rules 行為已反映 + `skills/CLAUDE.md` 工作流索引 description 同步」|
+| 收尾 Capabilities + Kanban | 強制 | 元專案跳過；改為「受影響命令/rules 行為已反映 + `skills/AGENTS.md` 工作流索引 description 同步」|
 
 docs mode 的 `/implement` 執行分支見 [implement skill](../implement/SKILL.md) 階段 0/2/3。
 

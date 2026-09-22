@@ -19,7 +19,7 @@ L2 部署接線（各 harness 全域位置）
 
 | 層 | 內容 | 單源與治理 | 生成/接線 | 機械守護 |
 | --- | --- | --- | --- | --- |
-| L0 | guide（`ai-development-guide.md`）、`rules/`、`skills/`（含 `_common/` 共用子範本）、`agents/roles/`、`hooks/`、`muse-plugins/memory-governance/`、root `AGENTS.md`＋`CLAUDE.md` wrapper、`backlog/`、`ai-analysis/` | 各域治理檔：[rules](../../rules/AGENTS.md)／[agents](../../agents/AGENTS.md)／[hooks](../../hooks/AGENTS.md) AGENTS.md＋[skills/CLAUDE.md](../../skills/CLAUDE.md)＋root AGENTS.md | —（手改） | — |
+| L0 | guide（`ai-development-guide.md`）、`rules/`、`skills/`（含 `_common/` 共用子範本）、`agents/roles/`、`hooks/`、`muse-plugins/memory-governance/`、root `AGENTS.md`＋`CLAUDE.md` wrapper、`backlog/`、`ai-analysis/` | 各域治理檔：[rules](../../rules/AGENTS.md)／[agents](../../agents/AGENTS.md)／[hooks](../../hooks/AGENTS.md) AGENTS.md＋[skills](../../skills/AGENTS.md)＋root AGENTS.md | —（手改） | — |
 | L1 | `agents/zcode/`＋`agents/claude/` registry；非 Claude 三家 bundle（`~/.{zcode,codex,config/muse}/AGENTS.md`）；`blueprint/index.html`（本目錄四檔投影） | `roles/` 為 authoring 單源 | `scripts/sync_agents.py`（roles→雙 registry）；`scripts/deploy_agents.py`（guide＋neutral rules→bundle）；index.html 手寫＋殼 codegen | `agents_projection_sync`、`deploy_bundle_freshness` |
 | L2 | skills 三根（`~/.claude`／`~/.zcode`／`~/.agents` `skills`）、agents 兩根（`~/.zcode`／`~/.claude` `agents`）、Claude rules 目錄 symlink＋`~/.claude/CLAUDE.md`→guide、hooks 絕對路徑 config、muse user-scope plugin＋marker `.agents/memory-governance.json` | Claude rules＝目錄 symlink 即時生效；非 Claude＝bundle snapshot（改 rule 後須重跑 deploy） | symlink／config 引用（hooks 無目錄載入點不能 symlink：Claude settings.json→repo `settings.json`〔gitignored〕、ZCode config.json merge `governance/registrations/zcode.json`） | `hook_registration`、`zcode_live_parity`、`skill_allowlist_coverage` |
 | L3 | `.agents/memory/` 主體（gitignored 自帶池 git）＋`memory-inbox/`、`~/.agents/memory-spine/`、`.tours/`（corpus＋manifest provenance）、`.code-reality/`（graph.db）、`.review/`（profile-driven findings，弧後清理） | 寫入端紀律＝memory-audit skill；tour 契約＝tour-bootstrap／code-reality skill | 記憶拓撲：主體→CC 舊徑目錄 symlink→ZCode 雙跳；codex 唯讀（單一寫入點） | memory hooks sensors＋index-regen PreToolUse gate、`tour_validate`（finalization gate） |
@@ -62,7 +62,7 @@ L2 部署接線（各 harness 全域位置）
 | --- | --- | --- |
 | 生命週期 dispatch（stage→orchestrator→agent→tier→artifact→fallback） | execution contract | [agents/AGENTS.md](../../agents/AGENTS.md) |
 | 命令受眾（LLM 鏈 vs 人類 viewport 兩軌道） | 命令分類表 | root [AGENTS.md](../../AGENTS.md)「命令的受眾視角」 |
-| 核心流程拓撲（pre-EP→spec→execution-plan→implement→post-build→commit＋review 鏈＋viewport 三 checkpoint） | 流程圖 | [skills/CLAUDE.md](../../skills/CLAUDE.md) |
+| 核心流程拓撲（pre-EP→spec→execution-plan→implement→post-build→commit＋review 鏈＋viewport 三 checkpoint） | 流程圖 | [skills/AGENTS.md](../../skills/AGENTS.md) |
 | 排程消費（cron/launchd→skill） | A1–A6 反查表 | [schedule-registry](../schedule-registry.md) |
 
 ### 治理邊（誰驗誰）
@@ -77,8 +77,8 @@ L2 部署接線（各 harness 全域位置）
 | `blueprint/index.html` 投影落後（Priority backbone 段與本檔未入投影） | ✅ 投影落後已解（AIR-81） | AIR-81 收斂：backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估，不在本卡範圍） |
 | grok-build 未安裝但 dispatch matrix 引用 | ⚠️ | 已標「引用前先查證」；安裝後補 SessionEnd 條目 |
 | ZCode 無 SessionEnd 事件（plugin 孤兒清理缺席） | ⚠️ | hooks/AGENTS.md 定案＝remediation 成本極低非缺口 |
-| `skills/CLAUDE.md` 索引手維護（自標 drift-prone） | ⚠️ | 無機械防線；超載時可評估 invariant 化 |
-| AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md） | ⚠️ | 低風險，改名成本大於收益 |
+| `skills/AGENTS.md` 索引手維護（自標 drift-prone） | ⚠️ | 無機械防線；超載時可評估 invariant 化 |
+| AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md） | ✅ 已解（AIR-164——skills 升 AGENTS.md source＋CLAUDE.md @wrapper，與各域對稱） | — |
 | WT 形態（board single-writer／wt-open/close） | ✅ 已落地（AIR-72） | 落地錨點＝workflow.md「待建基建」＋`scripts/wt-open.sh`／`scripts/wt-close.sh`（wt-open 試點通過、wt-close 真卡收線已驗——AIR-77 74d483d；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112；board single-writer 大致落地）；_tasks 遷移由 AIR-77 落地。此處僅 pointer，語義以 workflow.md 為準 |
 
 ## 維護語義

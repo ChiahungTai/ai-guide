@@ -25,7 +25,7 @@
 
 ### 逐站怎麼做（導引層）
 
-> 本表＝「八站 → 入口命令／詳讀來源」的人類 lifecycle mapping 單一源（index.html section 02 投影自此）；只列 command/skill ID＋link＋runtime status，**不重述 command 內部步驟**——command 語義以各 `skills/<x>/SKILL.md` 為權威，LLM 端命令拓撲在 [skills/CLAUDE.md](../../skills/CLAUDE.md)。command rename／退役／生命週期位置改變時，覆核本表再刷新 projection。
+> 本表＝「八站 → 入口命令／詳讀來源」的人類 lifecycle mapping 單一源（index.html section 02 投影自此）；只列 command/skill ID＋link＋runtime status，**不重述 command 內部步驟**——command 語義以各 `skills/<x>/SKILL.md` 為權威，LLM 端命令拓撲在 [skills/AGENTS.md](../../skills/AGENTS.md)。command rename／退役／生命週期位置改變時，覆核本表再刷新 projection。
 
 | 站 | 怎麼做 |
 | --- | --- |

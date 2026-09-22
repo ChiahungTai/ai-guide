@@ -253,7 +253,7 @@ Suggestion 級留在報告即可,不持久化(避免噪音)。
 
 ## 流程位置
 
-> **canonical review flow（詳細）以本檔為單一源** —— 其他命令畫 flow 須引用此處、不重畫（防 flow drift；機械追蹤見 [/sync-sources](../sync-sources/SKILL.md)）。skills/CLAUDE.md 的 review-pipeline recipe 是高層概觀，非重畫。
+> **canonical review flow（詳細）以本檔為單一源** —— 其他命令畫 flow 須引用此處、不重畫（防 flow drift；機械追蹤見 [/sync-sources](../sync-sources/SKILL.md)）。skills/AGENTS.md 的 review-pipeline recipe 是高層概觀，非重畫。
 
 ```
 /spec（純輔助·需求釐清，可選）→ /execution-plan（含 EP Review；定稿生 Report Shell〔hook 1〕＋EP 落任務家 <task>/ep.md）→ [/ep-validate] → /implement（含 Agent Review）→ /post-build（收尾鏈編排：/code-review（六軸含 axis 3 結構 = arch 吸收，top-down，含 commit message）→ /judge-review（一次）→ 修正迴圈 → consistency → metadata-sync → 殼 refresh〔hook 2〕；可拆開單跑）→ /commit

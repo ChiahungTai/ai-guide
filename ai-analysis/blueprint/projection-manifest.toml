@@ -5,21 +5,21 @@ artifact = "ai-analysis/blueprint/index.html"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/AGENTS.md"
-sha1 = "ef6af52ef55a7910701858fd0cae05b3a8de781f"
+sha1 = "afeeb3d25c041357a51cb798e8753e4ece6c2f33"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/structure.md"
-sha1 = "3c6f593c427d115d2c20c74a365946fa7c972aae"
+sha1 = "feb5ceddd62033fc0a1cb9d8cddd6c2a0ce1c0e2"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/workflow.md"
-sha1 = "fd3b8e7d742da7078d9136a2ab30d6d44979ce50"
+sha1 = "4e73026b60dd6f59ff65961e5172b6a962c64870"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/onboarding.md"
-sha1 = "20c8324bfd8ee7de51a0f10ff20ea5b81c470dc0"
+sha1 = "76620b80fd8d20bbc001c386765ceb3c11034205"
 
 [[projection.upstream]]
 path = "AGENTS.md"
 section = "命令的受眾視角"
-sha1 = "c8576d95d9c374f80b7b61181b3f9c2e08e067bc"
+sha1 = "a17c87ebdf3ec2d2d5c438d71244c840bf4452bf"

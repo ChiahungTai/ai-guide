@@ -135,7 +135,7 @@ uv run python scripts/sync_agents.py
 ~/.agents/skills → <repo>/skills/
 ```
 
-因此 fresh machine 不需要逐個複製 skill，也不需要一套 generated inventory deployment；真正缺的是把這條 symlink 重建並驗證。**禁補建 `~/.zcode/skills`**——ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，雙根並存＝skill 清單重複注入（同 `skills/CLAUDE.md` 架構節）。
+因此 fresh machine 不需要逐個複製 skill，也不需要一套 generated inventory deployment；真正缺的是把這條 symlink 重建並驗證。**禁補建 `~/.zcode/skills`**——ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，雙根並存＝skill 清單重複注入（同 `skills/AGENTS.md` 架構節）。
 
 驗證時必須檢查 link 本身，而不是列出 link target 後誤判內容來源：
 

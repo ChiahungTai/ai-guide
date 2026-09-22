@@ -115,7 +115,7 @@ allowed-tools: ["Read", "Write", "Edit"]
 ---
 ```
 
-> skill 完整 frontmatter 欄位（`when_to_use` / `paths` / `disable-model-invocation` / `context:fork` / `allowed-tools` 等）與決策原則見 [skills/CLAUDE.md](../CLAUDE.md)（單一真相源，此處不重複）。
+> skill 完整 frontmatter 欄位（`when_to_use` / `paths` / `disable-model-invocation` / `context:fork` / `allowed-tools` 等）與決策原則見 [skills/AGENTS.md](../AGENTS.md)（單一真相源，此處不重複）。
 
 ### 跨 harness description 消費差異（desc 契約）
 

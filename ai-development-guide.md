@@ -7,7 +7,7 @@
 ## Session 開場導引
 
 - **先定位現在在哪**：有 STATE.md 先讀最近 session 觀察，再以 active card／board 狀態與 card notes／EP 進度節核對目前工作、已完成處與 resume point；觀察層不能取代現況來源。
-- **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；需求釐清、審查、修復等分支及各步方法論查 skills/CLAUDE.md 索引與對應 skill。
+- **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；需求釐清、審查、修復等分支及各步方法論查 skills/AGENTS.md 索引與對應 skill。
 - **skill 優先序**：skill 方法論衝突時，ai-guide 部署的 skills 優先於 harness 內建／marketplace bundled 同功能 skill。
 - **需要跨 context 接續時先結算**：context 將耗盡先把進度與待辦寫回 EP／card；同一工作稍後續跑用 /at，交給另一個 session／repo／provider 用 /handoff。
 
@@ -27,7 +27,7 @@
 
 功能先定義 Use Case。AGENTS.md Capabilities＝已完成能力索引，backlog＝承諾池；多卡優先序可由 project blueprint dependency graph 決定（backbone），未被支撐的卡走 kanban triage；操作/refs/precheck 單一源為 kanban-board skill。
 
-文檔角色：AGENTS.md＝導航/完成能力 what/where；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency-graph.md＝人工依賴/ripple 地圖（機械查詢交 code-reality）；backlog/＝任務卡。長文按需 link，禁全量 transclude。
+文檔角色：AGENTS.md＝導航/完成能力 what/where；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph（機械產生；手繪 dependency-graph.md 已由 CR 取代——mosaic/ai-guide 均不再維護）；backlog/＝任務卡。長文按需 link，禁全量 transclude。
 
 UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 

@@ -59,7 +59,7 @@
 ## 6. 範圍限定
 
 - 動：檔案級列舉（如 `rules/model-routing.md`、`skills/model-routing/SKILL.md`、`agents/AGENTS.md`、`skills/_common/work-order.md`）
-- 不動：其他一切（尤其 `agents/zcode/*.md`／`agents/claude/*.md` **生成檔**——勿手改，sync 會覆蓋；`rules/tool-discipline.md`、`skills/CLAUDE.md` 以外的索引檔等）
+- 不動：其他一切（尤其 `agents/zcode/*.md`／`agents/claude/*.md` **生成檔**——勿手改，sync 會覆蓋；`rules/tool-discipline.md`、`skills/AGENTS.md` 以外的索引檔等）
 - 違反範圍＝失敗；不動檔需在交付報告中舉證 `git diff --name-only` 未改
 
 ## 7. 工具接線

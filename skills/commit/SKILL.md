@@ -76,7 +76,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 | 變更檔案 | 掃描目標 | 搜尋方式 |
 |---------|---------|---------|
-| `skills/*/SKILL.md` | `skills/CLAUDE.md` 索引 + 引用此 skill 的其他 .md | `rg "skill名" rules/ skills/` |
+| `skills/*/SKILL.md` | `skills/AGENTS.md` 索引 + 引用此 skill 的其他 .md | `rg "skill名" rules/ skills/` |
 | `skills/_common/*.md` | 引用該子範本的 skills | `rg "檔名" skills/` |
 | `rules/*.md` | 引用此 rule 的 skills | `rg "rule名或檔名" skills/` |
 | `ai-development-guide.md` | 所有引用 guide 定義的 skills（如 UC 狀態 emoji） | `rg "具體定義文字" skills/` |

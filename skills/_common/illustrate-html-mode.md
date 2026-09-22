@@ -100,7 +100,7 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
 ## 產物生命週期
 
 - **輸出位置**：任務家（流程 brief）或 `ai-analysis/<域>/`（按需視覺/決策 viewport）——見「產物位置分流」；入口 HTML 命名 **`index.html`**、mermaid 源 `diagram-<name>.mmd`、渲染產物 `diagram-<name>.svg`；`--output <path>` 自訂路徑尊崇（track 與否使用者決定）
-- **目錄即索引**：不建 index——kebab 檔名自描述；手維護 index 是 drift-prone 清單（同 skills/CLAUDE.md 索引教訓），量大再考慮機械投影生成（YAGNI）
+- **目錄即索引**：不建 index——kebab 檔名自描述；手維護 index 是 drift-prone 清單（同 skills/AGENTS.md 索引教訓），量大再考慮機械投影生成（YAGNI）
 - **git 分工（⚖️ 源＋殼＋svg 渲染全進 git——單一源，per-repo 可覆蓋）**：**`.mmd` 源＋殼 `index.html`＋mermaid 渲染（svg）＋visual-check receipt 全進 git**（AIR-74）；`.mmd` 仍可重渲染 svg，但輸出 tracked——「可重渲染」≠「不追蹤」
 - **html→md 雙輸出**：同主題先 html 後要 md 沉澱 → 從同一 grounding 事實再渲染 Mermaid；md 是 source of record
 

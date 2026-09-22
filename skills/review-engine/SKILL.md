@@ -185,6 +185,8 @@ review finding 可經多層驗證，**各層都可能錯**：
 
 8. **no-candidate＝顯性 pending，入既有帳本**：缺合格 candidate 時由該 workflow 編排者在**既有帳本**記 open 阻擋項（規劃期＝EP Review 節；實作期＝`.review/<branch>.md`），欄位：scope/profile、原因、owner、DispatchTrace、下次查 availability 的重查條件。完成報告與 post-build triage 必列出；有已授權排程才排 re-arm，否則保留明確接續動作，**不暗建 automation**。再次 dispatch 前先查有無活 job——**不把無候選和 worker timeout 混同**；不以主模型裸自審取代缺口的獨立性（本條與 SM-13 對應；「缺 candidate 顯性 pending」不可被省配置跳過）。
 
+9. **CR freshness preflight（風險 profile 派發側 cheap check——AIR-164，吸收 AIR-161 改動點 4）**：風險 profile 判定後、review 腿 spawn 前跑 **<1s 機械檢查**——①`.code-reality/graph.db` 存在性；②identity 對照（graph 記錄的 source revision vs 當前 HEAD——`[SRC]` provenance 行／`graph_audit`，機制真相源＝[cr-query](../cr-query/SKILL.md)「Stale graph check」；**freshness 判 stale 以 source identity 為準，不用 graph.db mtime**——mtime 不反映語義變更）。**fresh → 正常派發**；**stale → 兩態擇一**：背景 rebuild（異步，不阻塞本次 dispatch——本次 review 以降級姿態進行並明文記錄）或明文降級收據（與 `[cr:unavailable]` 同級消費——見下「bridge review 的 CR 證據分類與消費」）。**禁阻塞式同步 rebuild**（scip ~8min 是不可接受的 dispatch 稅——cheap check 同步、rebuild 永不擋路）。engine 未安裝 → 既有「未裝跳過不阻擋」降級語義不變，不重複檢查。
+
 ### spawn prompt 工具紀律（review agent 通用）
 
 spawn review agent 時，prompt 內的工具使用紀律（源方法論「token 紀律」的**限縮吸收**——原版「All tools are functional and will work without error」宣稱與本 repo 的 degraded contract 衝突，不吸收該宣稱）：
