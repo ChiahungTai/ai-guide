@@ -49,7 +49,7 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 ## 跨 repo 主權（repo sovereignty）
 
-每個 repo 的 code 變更由該 repo 自己的 session 在自己的隔離面（card WT／ephemeral）內完成；A 的 session 對 B 的 canonical 與他 session 檔案零直接寫入。**write 按 effect 判**——在對方 repo 留下 persistent state 即寫（跑對方測試/腳本屬對方執行面，需對端承接或授權）；唯讀自由。契約漣漪＝通訊請求正規模式（A 發 request、B 自己 session 改 B）。**無小改例外**——typo/一行 hotfix 亦走對方 repo 的 ephemeral 面；emergency 由 user 一次性授權，非常態口。**transport consent ≠ mutation authority**（訊息送達/派工成功≠取得 write sovereignty）；**mutation owner ≠ acceptance owner**（主權定誰改，消費者定誰驗收）。讓步僅三情境（對端長期無主／packaging 原子性拆不開／incident 搶修）＋共同條件（可逆＋留痕＋事後追認），且讓步只放寬「誰暫時承接」，永不放寬 isolation。核心一句：**每次 mutation 歸其 repo 主權，每次 acceptance 歸實際 consumer；跨 repo 只傳 request、evidence、candidate 與 verdict——例外可換臨時操作者，不可換 canonical ownership**。（通訊面＝scbus；契約細節＝ai-guide AIR-135.5；定案紀錄＝0922 tri＋14 場景壓測）
+跨 repo 寫入只在對方主權隔離面（card WT／ephemeral）＋對方授權面內；A 對 B 的 canonical／他 session 檔案零直接寫入。write 按 effect 判（留 persistent state 即寫）；唯讀自由；契約漣漪＝通訊請求（A 發 request、B 自己改）；無小改例外（typo 亦走 ephemeral；emergency＝user 一次性授權）；transport consent≠mutation authority；mutation owner≠acceptance owner；讓步僅三情境（對端無主／packaging 原子性／incident）＋可逆＋留痕＋事後追認。核心：mutation 歸 repo 主權、acceptance 歸 consumer；跨 repo 只傳 request/evidence/verdict——例外換臨時操作者，不換 canonical ownership。細節＝AIR-135.5；通訊面＝scbus。
 
 ## 架構設計紀律
 
