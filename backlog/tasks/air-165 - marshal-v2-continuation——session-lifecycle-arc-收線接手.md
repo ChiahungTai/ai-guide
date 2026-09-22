@@ -1,10 +1,10 @@
 ---
 id: AIR-165
 title: marshal v2 continuation——session-lifecycle arc 收線接手
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 13:04'
-updated_date: '2026-09-22 14:23'
+updated_date: '2026-09-22 15:03'
 labels:
   - session-lifecycle
 dependencies: []
@@ -28,5 +28,14 @@ ordinal: 151000
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-marshal v2 bridge write-access vehicle card。詳見 handoff packet。
+marshal continuation 實義完成：12 卡完成度審計→假 Done 修正（本卡 reopen）→164 品質腿→166/167 全鏈落地→三 WT 收線→bridge 線協調→survey D→落點表 v2→deploy 3/3。剩 dogfood 與 mosaic/code-reality 位址見 handoff packet v2。
+
+```mermaid
+flowchart LR
+  A["handoff 接手"] --> B["12 卡審計＋164 品質腿"]
+  B --> C["假 Done 修正<br/>（本卡 reopen）"]
+  C --> D["166/167 全鏈落地<br/>post-build→judge→commit→close"]
+  D --> E["bridge/SC 協調<br/>DB-26/27 啟動"]
+  E --> F["survey D＋落點表 v2<br/>deploy 3/3"]
+```
 <!-- SECTION:FINAL_SUMMARY:END -->
