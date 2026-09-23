@@ -60,6 +60,10 @@ git rev-parse HEAD            # baseline commit hash
 
 有 EP → 引用段落 + 補這次對話剛定的決策；無 EP → 現擠 brief（完整 schema）。
 
+### Phase 1.5：交接資訊採「收取法形」書寫（AIR-168）
+
+packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產出路徑**＋**收法**（哪個命令／怎麼讀）＋**對帳注記**（若有已知矛盾，明寫）」。**狀態快照（「誰在跑／做到哪」類手抄敘述）禁入 handoff**——寫下即爛；狀態一律以 `uv run python scripts/inflight_snapshot.py` 機械生成現值替代，不手抄進 packet。依據：AIR-168 契約 §附帶——收取法形實證全數存活、快照形寫下即爛。
+
 ### Phase 2：按接手方調嵌入程度
 
 依 skill「接手方三層」：同repo 引用路徑（對方讀得到 repo）/ 跨 repo 加跨 repo 背景 + 嵌源 repo 相關片段 / 跨 provider 嵌**最小必要**片段。
