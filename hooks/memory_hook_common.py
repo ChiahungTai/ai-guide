@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Shared bits for memory hook sensors (AIR-56 F6 single-source).
 
-Hook runtime is python 3.9 — no 3.10+ syntax in this file. Imported by
+Deployed hooks use governance-resolved Python 3.12. Keep Python 3.9 syntax
+compatibility during the mixed-session / rollback window. Imported by
 memory-write-sensor.py / memory-dirty-sensor.py via sys.path on __file__ dir.
 
 Conventions (defined once here):

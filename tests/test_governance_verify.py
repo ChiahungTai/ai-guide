@@ -16,20 +16,22 @@ mod = load_module("governance/install.py")
 
 
 def _muse_doc(status: str, cap_id: str = "memory-inbox") -> str:
-    return json.dumps({
-        "runtime_capabilities": [
-            {"candidate": {"capability_id": cap_id}, "status": status}
-        ]
-    })
+    return json.dumps(
+        {
+            "runtime_capabilities": [
+                {"candidate": {"capability_id": cap_id}, "status": status}
+            ]
+        }
+    )
 
 
 def _patch_run(monkeypatch, *, returncode=0, stdout="", stderr=""):
     fake = SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
-    monkeypatch.setattr(mod, "subprocess",
-                        SimpleNamespace(run=lambda *a, **k: fake))
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=lambda *a, **k: fake))
     # probe_muse 先跑 shutil.which——不 patch 時 muse-less 機器回 GUARD 假紅（review S-5）
-    monkeypatch.setattr(mod, "shutil",
-                        SimpleNamespace(which=lambda name: "/usr/bin/muse"))
+    monkeypatch.setattr(
+        mod, "shutil", SimpleNamespace(which=lambda name: "/usr/bin/muse")
+    )
 
 
 # ── muse probe（AC-3.3：mock 非 trusted → FAIL）──────────────────
@@ -68,7 +70,7 @@ def test_muse_probe_bad_json_fail_closed(monkeypatch):
 
 
 def test_muse_probe_non_dict_payload_fail_closed(monkeypatch):
-    _patch_run(monkeypatch, stdout='[1, 2]')
+    _patch_run(monkeypatch, stdout="[1, 2]")
     assert mod.probe_muse("x")[0] == "FAIL"
 
 
@@ -106,23 +108,81 @@ def test_pipe_payload_probe_hook_allow_is_fail(monkeypatch):
     assert "實得 0" in detail
 
 
+def test_pipe_payload_probe_uses_governance_hook_python(monkeypatch):
+    """S oracle: verify must exercise the same interpreter rendered to harnesses."""
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **kwargs):
+        seen.append(argv)
+        return SimpleNamespace(returncode=2, stdout="", stderr="")
+
+    monkeypatch.setattr(
+        mod, "resolve_hook_python", lambda: "/tmp/uv-python3.12", raising=False
+    )
+    monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=fake_run))
+    status, _ = mod.probe_pipe_payload("hooks/block-memory-index-write.py")
+    assert status == "PASS"
+    assert seen[0][0] == "/tmp/uv-python3.12"
+
+
 def test_pipe_payload_probe_timeout_is_fail(monkeypatch):
     def fake_run(*a, **k):
         raise subprocess.TimeoutExpired(cmd="hook", timeout=30)
 
     monkeypatch.setattr(
-        mod, "subprocess",
-        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired))
+        mod,
+        "subprocess",
+        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired),
+    )
     assert mod.probe_pipe_payload("hooks/block-memory-index-write.py")[0] == "FAIL"
+
+
+def test_pipe_payload_probe_resolver_failure_is_guard(monkeypatch):
+    """M1: resolver failure maps to GUARD with the actionable message (no raise)."""
+
+    def _boom():
+        raise mod.GovernanceError(
+            "找不到已安裝的 uv-managed Python 3.12。"
+            "先執行 `uv python install 3.12` 後重跑 governance installer。"
+        )
+
+    monkeypatch.setattr(mod, "resolve_hook_python", _boom)
+    status, detail = mod.probe_pipe_payload("hooks/block-memory-index-write.py")
+    assert status == "GUARD"
+    assert "uv python install 3.12" in detail
+
+
+def test_cmd_verify_resolver_failure_is_guard_not_crash(monkeypatch):
+    """M1 CLI boundary: all-GUARD probes exit 2 without traceback."""
+
+    def _boom():
+        raise mod.GovernanceError(
+            "找不到已安裝的 uv-managed Python 3.12。"
+            "先執行 `uv python install 3.12` 後重跑 governance installer。"
+        )
+
+    monkeypatch.setattr(mod, "resolve_hook_python", _boom)
+    manifest = {
+        "probes": {
+            name: {
+                "type": "pipe-payload",
+                "script": "hooks/block-memory-index-write.py",
+            }
+            for name in ("claude", "zcode", "codex")
+        }
+    }
+    assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_GUARD
 
 
 # ── codex mixed-rep 掃描（codex ⑦——TC-10 P10-2 報告腿）──────────────
 
 
 def _group(event: str, matcher: str, script: str) -> str:
-    return (f"[[hooks.{event}]]\nmatcher = \"{matcher}\"\n\n"
-            f"[[hooks.{event}.hooks]]\ntype = \"command\"\n"
-            f"command = \"python3 /Users/x/ai-guide/hooks/{script}\"\n\n")
+    return (
+        f'[[hooks.{event}]]\nmatcher = "{matcher}"\n\n'
+        f'[[hooks.{event}.hooks]]\ntype = "command"\n'
+        f'command = "python3 /Users/x/ai-guide/hooks/{script}"\n\n'
+    )
 
 
 def test_mixed_rep_duplicate_inline_group_warns(tmp_path):
@@ -134,8 +194,9 @@ def test_mixed_rep_duplicate_inline_group_warns(tmp_path):
 def test_mixed_rep_hooks_json_copy_warns(tmp_path):
     (tmp_path / ".codex").mkdir()
     (tmp_path / ".codex" / "hooks.json").write_text("{}")
-    warnings = mod.codex_mixed_rep_warnings(_group("Stop", "", "stop-notification.sh"),
-                                            codex_home=tmp_path)
+    warnings = mod.codex_mixed_rep_warnings(
+        _group("Stop", "", "stop-notification.sh"), codex_home=tmp_path
+    )
     assert any("hooks.json copy" in w for w in warnings)
 
 
@@ -151,8 +212,7 @@ def test_mixed_rep_clean_config_no_warnings(tmp_path):
 
 def _codex_toml_with_state(state_key: str) -> tuple[str, str]:
     template = _group("PreToolUse", "apply_patch", "codex_memory_path_deny.py")
-    live = ('[hooks.state]\n'
-            f'"{state_key}" = "sha256:abc"\n\n' + template)
+    live = f'[hooks.state]\n"{state_key}" = "sha256:abc"\n\n' + template
     return live, template
 
 
@@ -175,12 +235,14 @@ def test_codex_trust_diagnostics_reports_untrusted():
 
 
 def test_codex_trust_diagnostics_multi_handler_keys():
-    merged = ('[[hooks.PreToolUse]]\nmatcher = "Bash"\n\n'
-              '[[hooks.PreToolUse.hooks]]\ntype = "command"\n'
-              'command = "python3 /Users/x/ai-guide/hooks/block-python-c-comment.py"\n\n'
-              '[[hooks.PreToolUse.hooks]]\ntype = "command"\n'
-              'command = "python3 /Users/x/ai-guide/hooks/block-python-file-write.py"\n\n')
-    live = '[hooks.state]\n\n' + merged
+    merged = (
+        '[[hooks.PreToolUse]]\nmatcher = "Bash"\n\n'
+        '[[hooks.PreToolUse.hooks]]\ntype = "command"\n'
+        'command = "python3 /Users/x/ai-guide/hooks/block-python-c-comment.py"\n\n'
+        '[[hooks.PreToolUse.hooks]]\ntype = "command"\n'
+        'command = "python3 /Users/x/ai-guide/hooks/block-python-file-write.py"\n\n'
+    )
+    live = "[hooks.state]\n\n" + merged
     lines = mod.codex_trust_diagnostics(live, merged)
     assert len(lines) == 2
     assert "pre_tool_use:0:0" in lines[0]
@@ -190,11 +252,16 @@ def test_codex_trust_diagnostics_multi_handler_keys():
 
 def test_probe_codex_cli_absent_guard_with_l1(tmp_path, monkeypatch):
     """launchd PATH 無 codex 場（live 實證）：GUARD 非 crash，L1 仍如實報告。"""
-    tmpl = mod.render((mod.MANIFEST_PATH.parent / "registrations/codex.toml").read_text())
+    tmpl = mod.render(
+        (mod.MANIFEST_PATH.parent / "registrations/codex.toml").read_text()
+    )
     target = tmp_path / "config.toml"
     target.write_text("[hooks.state]\n\n" + tmpl)
-    manifest = {"registrations": {"codex": {"target": str(target),
-                                            "template": "registrations/codex.toml"}}}
+    manifest = {
+        "registrations": {
+            "codex": {"target": str(target), "template": "registrations/codex.toml"}
+        }
+    }
     monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
     status, _detail, lines = mod.probe_codex(manifest)
     assert status == "GUARD"
@@ -222,9 +289,13 @@ def test_cmd_verify_monitor_stub_not_impl():
 
 def test_cmd_verify_fail_dominates_guard(monkeypatch):
     """GUARD 不得吞 FAIL——worst 語義（install.py cmd_verify docstring 契約）釘住。"""
-    manifest = {"probes": {"claude": {"type": "pipe-payload", "script": "x"},
-                           "zcode": {"type": "pipe-payload", "script": "x"},
-                           "codex": {"type": "codex-three-layer"}}}
+    manifest = {
+        "probes": {
+            "claude": {"type": "pipe-payload", "script": "x"},
+            "zcode": {"type": "pipe-payload", "script": "x"},
+            "codex": {"type": "codex-three-layer"},
+        }
+    }
     monkeypatch.setattr(mod, "run_probe", lambda m, n, p: next(_seq))
     _seq = iter([("GUARD", "", []), ("PASS", "", []), ("FAIL", "", [])])
     assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_DRIFT

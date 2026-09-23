@@ -8,7 +8,7 @@ fail-open 面（malformed payload／缺 ledger）＝None。
 
 import ast
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from conftest import REPO_ROOT, load_module
@@ -18,7 +18,7 @@ NAG = load_module("hooks/watcher_pairing_nag.py")
 
 
 def _iso(minutes_ago: float) -> str:
-    return (datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)).isoformat()
+    return (datetime.now(UTC) - timedelta(minutes=minutes_ago)).isoformat()
 
 
 def _make_repo(tmp_path: Path, rows: list) -> Path:
@@ -34,7 +34,9 @@ def _payload(repo: Path, session: str = "sess-1") -> dict:
     return {"session_id": session, "cwd": str(repo)}
 
 
-def _job(job_id: str, session: str, minutes_ago: float, status: str = "running") -> dict:
+def _job(
+    job_id: str, session: str, minutes_ago: float, status: str = "running"
+) -> dict:
     return {
         "id": job_id,
         "status": status,
@@ -44,7 +46,7 @@ def _job(job_id: str, session: str, minutes_ago: float, status: str = "running")
 
 
 # ---------------------------------------------------------------------------
-# py3.9 語法契約（hook runtime＝OS 預設 python3——禁 3.10+ 語法）
+# mixed-session／rollback Python 3.9 syntax compatibility gate
 # ---------------------------------------------------------------------------
 
 
@@ -74,8 +76,7 @@ def test_liveness_registered_no_block(tmp_path):
     liveness = repo / ".agent-tmp" / "liveness.jsonl"
     liveness.parent.mkdir(parents=True)
     liveness.write_text(
-        "{bad json line\n"
-        + json.dumps({"event": "armed", "jobId": "job-a-1"}) + "\n",
+        "{bad json line\n" + json.dumps({"event": "armed", "jobId": "job-a-1"}) + "\n",
         encoding="utf-8",
     )
     assert NAG.evaluate(_payload(repo)) is None
@@ -129,7 +130,7 @@ def test_missing_session_id_no_block(tmp_path):
 def test_naive_timestamp_no_block(tmp_path):
     """naive 時間戳不可計齊 → 不催告（fail-safe 方向，post-build-gate 同哲學）。"""
     row = _job("job-a-1", "sess-1", 15.0)
-    row["timestamp"] = datetime(2026, 9, 21, 12, 0, 0).isoformat()  # 無 tz
+    row["timestamp"] = datetime(2026, 9, 21, 12, 0, 0).isoformat()  # noqa: DTZ001 -- intentionally naive rejection fixture.
     repo = _make_repo(tmp_path, [row])
     assert NAG.evaluate(_payload(repo)) is None
 
@@ -179,12 +180,15 @@ def test_single_block_covers_all_due_jobs_at_once(tmp_path):
 
 
 def test_budget_is_per_session(tmp_path):
-    repo = _make_repo(tmp_path, [_job("job-a", "sess-1", 15.0), _job("job-b", "sess-2", 15.0)])
+    repo = _make_repo(
+        tmp_path, [_job("job-a", "sess-1", 15.0), _job("job-b", "sess-2", 15.0)]
+    )
     assert NAG.evaluate(_payload(repo, "sess-1")) is not None
     assert NAG.evaluate(_payload(repo, "sess-2")) is not None  # 另 session 自有預算
 
 
 # ---------- 回歸（codex 152-C4/C5 審查修復釘） ----------
+
 
 def test_liveness_exact_jobid_no_substring_false_match(tmp_path):
     """job-a 的登記查詢不得被子串命中 job-a-1 的記錄（152-C4）。"""

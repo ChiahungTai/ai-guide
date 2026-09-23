@@ -92,7 +92,7 @@ def test_failopen_on_missing_session_id(tmp_path, capsys):
 
 
 def test_failopen_on_session_id_key_absent(tmp_path, capsys):
-    """缺鍵（payload.get→None）不得被 str(None)="None" 當合法 id——bare python3
+    """缺鍵（payload.get→None）不得被 str(None)="None" 當合法 id——entrypoint
     實跑抓到的回歸釘住（缺 session_id 的匹配指令須放行非 deny）。"""
     payload = json.loads(_bash_payload("backlog task create x", tmp_path))
     del payload["session_id"]

@@ -1,13 +1,13 @@
 # hooks/ — 跨 harness Hook 實作腳本
 
-> 本目錄擁有共享 hook 腳本的行為與 runtime 契約；`governance/` 擁有已收編的 machine-local 安裝／註冊。harness 不會掃描本目錄載入 hooks，須由註冊逐項引用腳本；已收編來源＝[CC](../governance/registrations/cc.json)、[ZCode](../governance/registrations/zcode.json)、[Codex](../governance/registrations/codex.toml)，compact restore 的獨立註冊見下節。installer 將 `{{REPO}}` 展開為來源 repo 絕對路徑；live 安裝須過落地閘及授權，入口＝`uv run python governance/install.py --surface hooks`，不能從 authoring WT 提前安裝。模板存在不等於 live 已啟用，模板缺項也不代表機器上未註冊；安裝／trust／核對流程見 [governance README](../governance/README.md)。
+> 本目錄擁有共享 hook 腳本的行為與 runtime 契約；`governance/` 擁有已收編的 machine-local 安裝／註冊。harness 不會掃描本目錄載入 hooks，須由註冊逐項引用腳本；已收編來源＝[CC](../governance/registrations/cc.json)、[ZCode](../governance/registrations/zcode.json)、[Codex](../governance/registrations/codex.toml)；compact restore 接線見下節（註冊單一源＝[ZCode governance template](../governance/registrations/zcode.json)，安裝經 `governance/install.py --surface hooks`）。installer 將 `{{REPO}}` 展開為來源 repo 絕對路徑；live 安裝須過落地閘及授權，入口＝`uv run python governance/install.py --surface hooks`，不能從 authoring WT 提前安裝。模板存在不等於 live 已啟用，模板缺項也不代表機器上未註冊；安裝／trust／核對流程見 [governance README](../governance/README.md)。
 
 ## 註冊維護與 runtime
 
-- **系統 Python runtime 例外**：註冊模板使用 `python3`；ZCode GUI 已知部署環境使用 `/usr/bin/python3`（CommandLineTools Python 3.9），不能假設會經 user shell 的 uv／pyenv。hook 與其共用模組須相容 Python 3.9 的語法與 stdlib API（例如不可用 `datetime.UTC`）。開發／pytest 仍走 uv；修改 Python hook 後，另以 `/usr/bin/python3 <hook>` 和 `uv run python <hook>` 對隔離 fixture 實跑 entrypoint，驗 stdin／stdout／exit 與副作用。這是 hook 部署 interpreter 的複驗例外，不是一般開發可跳過 uv；fixture 與 log 落 worktree `.agent-tmp/`，不碰真記憶池。
+- **治理 hook Python runtime**：tracked registrations 以 `{{HOOK_PYTHON}}` 表示 interpreter；`governance/install.py` 在 render／check／verify 時用 uv 解析**已安裝的 managed CPython 3.12**，再把絕對 interpreter path 寫入 live config。hook fire 本身不呼叫 uv、不依賴 user shell PATH／project discovery／uv cache；缺 uv 或缺 managed 3.12 時 installer fail-loud，先 `uv python install 3.12`。mixed-session／rollback 窗期暫時保留 Python 3.9 語法相容 gate，這是 rollback compatibility floor，不是部署 interpreter。開發／pytest 仍走 `uv run python`；修改 Python hook 後用 installer resolver 所得 interpreter 對隔離 fixture 實跑 entrypoint，並保留既有 3.9 parse compatibility test，驗 stdin／stdout／exit 與副作用。
 - **註冊寫入**：installer 維護 CC settings 的 hooks、ZCode `~/.zcode/cli/config.json` 的 hooks 子樹與 Codex config 的 inline hooks，保留非本套件設定；備份／preimage／原子寫規則由 governance 擁有。
 - **設定載入與 script 執行分開驗**：ZCode 在 session 啟動取得 hook 配置快照，改註冊或啟停 plugin 後須新 session 驗接線；這不能推導「script bytes 也被快照」。既有 process 註冊以 command＋args 執行路徑上的腳本；只改同路徑 source 時先跑 entrypoint，再以事件觸發驗實際載入，沒有證據不得一概要求重開 session。Codex trust 依 governance 流程由 user approve，不由 installer 代寫。
-- **接線現況**：ZCode 模板只有 PreToolUse／PostToolUse／Stop；CC 與 Codex 的 SessionEnd 都註冊 `stop-notification.sh`，沒有 external-runtime job cleanup 條目。這些模板使用 repo 腳本，沒有 plugin cache 版號路徑；不可由其他 plugin 的能力推定本套件已接線。
+- **接線現況**：ZCode 模板含 PreToolUse／PostToolUse／Stop／UserPromptSubmit；CC 與 Codex 的 SessionEnd 都註冊 `stop-notification.sh`，沒有 external-runtime job cleanup 條目。這些模板使用 repo 腳本，沒有 plugin cache 版號路徑；不可由其他 plugin 的能力推定本套件已接線。
 
 ## Agent 背景 gate（ZCode）
 
@@ -35,8 +35,8 @@
 ## Compact 注入邊界
 
 - `compact-tail-inject.py` 接在 CC SessionStart、matcher `compact`，只讀事件提供的 `transcript_path` 與 cwd 的 STATE.md；不猜其他 session 的 transcript。ZCode／Codex 模板未接此注入器。
-- 輸出契約：在預算內優先保留最新尾段；單則訊息過長時保留 UTF-8 可解碼尾部並標示截斷，總預算須包含 framing、separator 與 JSON escaping。排除上代注入 marker，避免 compact 遞迴膨脹；最終 stdout 仍須是有效且 bounded 的 JSON。錯誤維持 fail-open（stderr 診斷、空 stdout），不能把注入缺席當作原文不存在。
-- `compact-restore-inject.py` 是另一條 ZCode UserPromptSubmit 接線：檢查尚未消費的 session checkpoint 並注入 thin pointer，未註冊環境依 [compact-prep](../skills/compact-prep/SKILL.md) fallback。其 [獨立註冊片段](compact-restore-inject.registration.json) 與 [安裝協議](compact-restore-inject.INSTALL-PROTOCOL.md) 尚待收編到 governance；機器註冊與 live dogfood 分別驗證，不能由 governance 模板缺項判定未啟用。操作前核對片段、協議與實際 canonical 路徑，勿照抄遺留 worktree 路徑；收編及 config 寫入由主 session 另行處理。
+- 輸出契約：在預算內優先保留最新尾段；單則訊息過長時保留 UTF-8 可解碼尾部並標示截斷，總預算須包含 framing、separator 與 JSON escaping。排除完整上代注入 envelope（一般提及 marker 保留），避免 compact 遞迴膨脹；最終 stdout 仍須是有效且 bounded 的 JSON。錯誤維持 fail-open（stderr 診斷、空 stdout），不能把注入缺席當作原文不存在。
+- `compact-restore-inject.py` 是 ZCode UserPromptSubmit 接線：檢查尚未消費的 session checkpoint 並注入 thin pointer，未註冊環境依 [compact-prep](../skills/compact-prep/SKILL.md) fallback。註冊單一源已收編到 [ZCode governance template](../governance/registrations/zcode.json)，安裝／check／verify 走 `governance/install.py --surface hooks`；機器註冊與 live dogfood 分別驗證，不能由 template 在場推定 live 已啟用。
 
 ## 背景工作回收邊界
 

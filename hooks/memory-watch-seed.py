@@ -12,8 +12,8 @@ the same entry filter `memory_hook_common.is_pool_entry` applies, so we never
 watch files the dirty sensor would drop).
 
 Always exits 0; pool missing -> stderr hint + empty watch list; pool empty
--> empty watch list (harmless no-op). Hook runtime is python 3.9 — no 3.10+
-syntax in this file.
+-> empty watch list (harmless no-op). Deployed runtime is governance-resolved
+Python 3.12; keep Python 3.9 syntax compatibility during mixed-session rollback.
 """
 
 import json

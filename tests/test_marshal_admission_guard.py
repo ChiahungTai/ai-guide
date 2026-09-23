@@ -137,7 +137,10 @@ def _run_hook(
     sandbox: dict, payload, cwd: Path | None = None
 ) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(sandbox["canon"] / "hooks" / "marshal_admission_guard.py")],
+        [
+            sys.executable,
+            str(sandbox["canon"] / "hooks" / "marshal_admission_guard.py"),
+        ],
         input=payload if isinstance(payload, str) else json.dumps(payload),
         capture_output=True,
         text=True,
@@ -296,9 +299,7 @@ def test_malformed_marker_deny_with_repair_guidance(sandbox):
         out = json.loads(r.stdout)
         assert out["hookSpecificOutput"]["permissionDecision"] == "deny"
         # 修復出口：marker 檔本身仍可編輯
-        r_fix = _run_hook(
-            sandbox, _edit_payload(str(marker))
-        )
+        r_fix = _run_hook(sandbox, _edit_payload(str(marker)))
         _assert_allow(r_fix, "malformed 下修 marker 自身")
     finally:
         marker.write_text(original, encoding="utf-8")
@@ -330,9 +331,7 @@ def test_malformed_marker_deny_extends_to_card_worktree(sandbox):
     original = marker.read_text(encoding="utf-8")
     marker.write_text("[broken", encoding="utf-8")
     try:
-        r = _run_hook(
-            sandbox, _edit_payload(str(sandbox["wt"] / "notes" / "idea.md"))
-        )
+        r = _run_hook(sandbox, _edit_payload(str(sandbox["wt"] / "notes" / "idea.md")))
         assert r.returncode == 2, f"壞 marker 下卡 WT 寫入應 deny\n{r.stderr}"
         assert "marker 損毀" in r.stderr
     finally:
@@ -360,7 +359,9 @@ def test_canonical_control_plane_absolute_deny(sandbox):
 @pytest.mark.parametrize("tool", ["Edit", "Write"])
 def test_tool_matrix_deny(sandbox, tool):
     canon = sandbox["canon"]
-    r = _run_hook(sandbox, _edit_payload(str(canon / "skills" / "x" / "SKILL.md"), tool=tool))
+    r = _run_hook(
+        sandbox, _edit_payload(str(canon / "skills" / "x" / "SKILL.md"), tool=tool)
+    )
     _assert_deny(r, f"tool={tool}")
 
 
@@ -450,7 +451,11 @@ def test_codex_multifile_patch_clean_plus_hit_deny(sandbox):
     )
     r = _run_hook(
         sandbox,
-        {"tool_name": "apply_patch", "tool_input": {"command": command}, "cwd": str(canon)},
+        {
+            "tool_name": "apply_patch",
+            "tool_input": {"command": command},
+            "cwd": str(canon),
+        },
     )
     _assert_deny(r, "多檔 patch 一命中")
 
@@ -511,7 +516,11 @@ def test_codex_clean_patch_allow(sandbox):
     )
     r = _run_hook(
         sandbox,
-        {"tool_name": "apply_patch", "tool_input": {"command": command}, "cwd": str(canon)},
+        {
+            "tool_name": "apply_patch",
+            "tool_input": {"command": command},
+            "cwd": str(canon),
+        },
     )
     _assert_allow(r, "多檔 patch 全 clean")
 
@@ -546,7 +555,10 @@ def test_non_registered_tool_ignored(sandbox):
     canon = sandbox["canon"]
     r = _run_hook(
         sandbox,
-        {"tool_name": "Bash", "tool_input": {"file_path": str(canon / "rules" / "x.md")}},
+        {
+            "tool_name": "Bash",
+            "tool_input": {"file_path": str(canon / "rules" / "x.md")},
+        },
     )
     _assert_allow(r, "Bash 工具")
 
@@ -610,7 +622,7 @@ def test_match_path_missing_arg_usage_error(sandbox):
 
 
 # ---------------------------------------------------------------------------
-# py3.9 語法契約（hook runtime＝OS 預設 python3——禁 3.10+ 語法）
+# mixed-session／rollback Python 3.9 syntax compatibility gate
 # ---------------------------------------------------------------------------
 
 
@@ -640,9 +652,19 @@ def test_malformed_marker_invalid_regex_deny(sandbox):
     marker = canon / ".agents" / "marshal-governance.json"
     original = marker.read_text(encoding="utf-8")
     for bad in (
-        {"protocol": 1, "trunk": "main", "invariantLevel": "branch", "sourceRoots": ["["]},
-        {"protocol": 1, "trunk": "main", "invariantLevel": "branch",
-         "sourceRoots": ["src/"], "allowlist": ["(unclosed"]},
+        {
+            "protocol": 1,
+            "trunk": "main",
+            "invariantLevel": "branch",
+            "sourceRoots": ["["],
+        },
+        {
+            "protocol": 1,
+            "trunk": "main",
+            "invariantLevel": "branch",
+            "sourceRoots": ["src/"],
+            "allowlist": ["(unclosed"],
+        },
     ):
         marker.write_text(json.dumps(bad), encoding="utf-8")
         try:

@@ -14,7 +14,8 @@ Scope contract (fail-loud):
   `watchPaths`, per CC mirror docs) with this group on an omitted matcher.
   Live firing is verified from the next session's hook log; until then the
   hash leg remains the external-write backstop.
-- Always exits 0. Hook runtime is python 3.9 — no 3.10+ syntax.
+- Always exits 0. Deployed runtime is governance-resolved Python 3.12; keep
+  Python 3.9 syntax compatibility during the mixed-session / rollback window.
 """
 
 import json

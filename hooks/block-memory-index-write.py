@@ -42,10 +42,10 @@ mem-distill）的上限是 prompt 紀律非機械強制。ZCode 端 exit 2 產�
 （官方文檔）；stderr 指引送達模型未證（EP A3 deferred）——失敗跡象＝無解釋重試，
 回滾按 memory-hooks-rollback.md。
 hook crash（非 0 非 2 exit）為非阻斷，工具仍執行。
-hook runtime python 3.9——禁 3.10+ 語法。
+部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback 窗期保留
+Python 3.9 語法相容。
 desc 量測近似已知形態（品質洞非完整性洞，不修）：YAML folded scalar（`>-`——
-量到摺疊符號本身，超長 desc 放行；generator flat-parse 同不展開，索引不膨脹）；
-`description :`（冒號前空格——Edit 偵測 startswith 漏，generator k.strip() 讀得到）。
+量到摺疊符號本身，超長 desc 放行；generator flat-parse 同不展開，索引不膨脹）。
 Write 收斂豁免：content 比既有檔短即放行（與 Edit delta 豁免對稱——部分收斂
 結果仍 >12K 但方向正確，不擋）。
 """
@@ -118,27 +118,31 @@ def is_entry_file(file_path: str, has_generator: bool) -> bool:
 
 
 def extract_desc(text: str) -> str:
-    """從 Write content 抽 frontmatter description 值（單行值＋縮排續行近似）。"""
-    lines = text.splitlines()
-    in_fm = False
-    for i, line in enumerate(lines):
-        if line.strip() == "---" and not in_fm:
-            in_fm = True
+    """取 generator 實際投影的 description，不擴成通用 YAML parser。
+
+    對齊 skills/memory-audit/scripts/generate_index.py 的 parse_frontmatter
+    與 main 的 read_text：universal newlines、首行／終界、頂層 key trim、
+    最後同名 key 勝出、值去引號與空白。
+    縮排行是巢狀 key，不是 description 的續行。
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    if not text.startswith("---\n"):
+        return ""
+    end = text.find("\n---", 4)
+    if end < 0:
+        return ""
+    desc = ""
+    for line in text[4:end].splitlines():
+        if (
+            not line.strip()
+            or line.lstrip().startswith("#")
+            or line.startswith((" ", "\t"))
+        ):
             continue
-        if in_fm and line.strip() == "---":
-            break
-        if in_fm and line.startswith("description:"):
-            val = line.partition(":")[2].strip().strip("'\"")
-            j = i + 1
-            while (
-                not val
-                and j < len(lines)
-                and (lines[j].startswith(" ") or lines[j].startswith("\t"))
-            ):
-                val += lines[j].strip().strip("'\"")
-                j += 1
-            return val
-    return ""
+        key, _, value = line.partition(":")
+        if key.strip() == "description":
+            desc = value.strip().strip("'\"")
+    return " ".join(desc.split())
 
 
 def main() -> None:

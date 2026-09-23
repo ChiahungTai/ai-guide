@@ -13,10 +13,36 @@ import pytest
 from conftest import load_module
 
 cti = load_module("hooks/compact-tail-inject.py")
+gov = load_module("governance/install.py")
+
+
+def _managed_hook_python() -> str:
+    """Deployed hook interpreter (C3): absolute uv-managed 3.12 via governance
+    resolver — never a nested uv-run hook-fire dependency."""
+    try:
+        return gov.resolve_hook_python()
+    except gov.GovernanceError as exc:
+        pytest.skip(
+            f"uv-managed Python 3.12 unavailable: {exc} — run `uv python install 3.12`"
+        )
 
 
 def _line(**kw) -> str:
     return json.dumps(kw)
+
+
+def _entrypoint_context(transcript, executable):
+    result = subprocess.run(
+        [executable, cti.__file__],
+        input=json.dumps({"source": "compact", "transcript_path": str(transcript)}),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    if not result.stdout:
+        return ""
+    return json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
 
 
 def test_texts_of_str_and_list_blocks():
@@ -68,18 +94,75 @@ def test_fetch_tail_filters_and_chronological_order(tmp_path):
     assert "04:05:06" in out
 
 
-def test_fetch_tail_skips_prior_injection_marker(tmp_path):
+@pytest.mark.parametrize("runtime", ["managed-312", "system-python"])
+@pytest.mark.parametrize("role", ["user", "assistant"])
+@pytest.mark.parametrize(
+    "text",
+    [
+        "含 <compact-tail-inject> 的正常討論",
+        "<compact-tail-inject> 這個 tag 的用途是什麼？",
+        "<compact-tail-inject>\n普通文字\n</compact-tail-inject>",
+    ],
+)
+def test_fetch_tail_preserves_marker_mentions(tmp_path, role, text, runtime):
+    """S: F2 retains ordinary mentions, including tag-led text and quoted tag pairs."""
     p = tmp_path / "t.jsonl"
     p.write_text(
         _line(
-            type="user",
-            message={"content": "含 <compact-tail-inject> 上代注入"},
+            type=role,
+            message={"content": text},
             timestamp="2026-08-30T05:00:00Z",
         )
         + "\n",
         encoding="utf-8",
     )
-    assert cti.fetch_tail(str(p)) == ""
+    executable = (
+        _managed_hook_python() if runtime == "managed-312" else "/usr/bin/python3"
+    )
+    assert f"\n{text}\n</raw-tail>" in _entrypoint_context(p, executable)
+
+
+@pytest.mark.parametrize("runtime", ["managed-312", "system-python"])
+@pytest.mark.parametrize("role", ["user", "assistant"])
+@pytest.mark.parametrize(
+    "shape", ["complete", "mixed-blocks", "embedded", "no-prefix", "no-suffix"]
+)
+def test_producer_envelope_roundtrip(tmp_path, role, shape, runtime):
+    """S: F2 filters complete real producer output per text block, preserving mentions."""
+    p = tmp_path / "t.jsonl"
+    p.write_text(_line(type="user", message={"content": "PRIOR-ONLY-SENTINEL"}))
+    executable = (
+        _managed_hook_python() if runtime == "managed-312" else "/usr/bin/python3"
+    )
+    envelope = _entrypoint_context(p, executable)
+    assert "PRIOR-ONLY-SENTINEL" in envelope
+    if shape == "complete":
+        content = " \n" + envelope + "\n "
+    elif shape == "mixed-blocks":
+        content = [
+            {"type": "text", "text": "KEEP-BEFORE"},
+            {"type": "text", "text": envelope},
+            {"type": "tool_use", "text": "NOT-TEXT"},
+            {"type": "text", "text": "KEEP-AFTER"},
+        ]
+    elif shape == "embedded":
+        content = "請檢查這段輸出：\n" + envelope
+    elif shape == "no-prefix":
+        content = envelope.split("\n", 1)[1]
+    else:
+        content = envelope.removesuffix("</compact-tail-inject>")
+    p.write_text(_line(type=role, message={"content": content}))
+    context = _entrypoint_context(p, executable)
+    if shape == "complete":
+        assert context == ""
+        return
+    tail = context.split("<raw-tail session=>\n", 1)[1].rsplit("\n</raw-tail>", 1)[0]
+    if shape == "mixed-blocks":
+        assert tail.endswith("KEEP-BEFORE\nKEEP-AFTER")
+        assert "PRIOR-ONLY-SENTINEL" not in tail
+        assert "NOT-TEXT" not in tail
+    else:
+        assert tail.endswith(content.strip())
 
 
 def test_fetch_tail_budget_drops_oldest_keeps_newest(tmp_path):
@@ -176,11 +259,11 @@ def test_malformed_records_do_not_hide_valid_latest(tmp_path):
 
 @pytest.mark.parametrize(
     "runtime",
-    [["uv", "run", "python"], ["/usr/bin/python3"]],
-    ids=["uv-run-python", "system-python"],
+    ["managed-312", "system-python"],
 )
 @pytest.mark.parametrize("filler", ['"\\\n', "\x01", "繁體🙂"])
 def test_entrypoint_escaped_tail_and_state_stay_bounded(tmp_path, runtime, filler):
+    python = _managed_hook_python() if runtime == "managed-312" else "/usr/bin/python3"
     p = tmp_path / "transcript.jsonl"
     p.write_text(
         _line(type="assistant", message={"content": filler * 22000 + "LATEST-END"})
@@ -193,7 +276,7 @@ def test_entrypoint_escaped_tail_and_state_stay_bounded(tmp_path, runtime, fille
         "session_id": "s",
     }
     result = subprocess.run(
-        [*runtime, cti.__file__],
+        [python, cti.__file__],
         input=json.dumps(payload),
         text=True,
         capture_output=True,

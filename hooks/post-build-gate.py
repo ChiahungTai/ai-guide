@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """post-build gate（AIR-119）——主鏈跳步機械閘，A/B 共用判定單一源。
 
 B 腿（Stop hook，CC＋ZCode 雙端註冊）：turn 結束判定，命中→輸出 block JSON
@@ -19,13 +18,15 @@ missing／exempt＋ahead 數），skill 消費子進程輸出，禁 import（檔
      /commit 階段 6 成功後刷新 receipt head_sha（審查 F1），刷新前窗期的 stale
      視同已覆蓋，reason 自帶逃生口。
 
-安全約束：runtime python 3.9（機器 python3）——禁 3.10+ 語法；<1s（實測
+安全約束：部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback
+窗期保留 Python 3.9 語法相容；<1s（實測
 65-80ms）；內部任何錯誤 exit 0 fail-open（催告閘非安全閘，禁讓 turn 崩）；
 block 預算 per-branch 終身 2 次（branch 經 `/`→`__` 檔名編碼——slash branch
 預算防線才不會靜默失效，審查 F2）；block JSON 輸出 ensure_ascii 預設（locale
 編碼防禦，審查 F9）。已知限制：trunk 候選硬編碼 main/master，自訂 trunk 的
 repo 閘不存在（覆蓋缺口非誤攔，審查 F7）。
 """
+
 import json
 import os
 import subprocess
@@ -38,7 +39,10 @@ MAIN_CANDIDATES = ("main", "master")
 def _git(repo, *args):
     out = subprocess.run(
         ["git", "-C", repo] + list(args),
-        capture_output=True, text=True, timeout=10,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
     )
     return out.stdout.strip() if out.returncode == 0 else ""
 
@@ -51,7 +55,11 @@ def _card_exists(repo, branch):
     try:
         out = subprocess.run(
             ["backlog", "task", "view", branch],
-            cwd=repo, capture_output=True, text=True, timeout=15,
+            check=False,
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
         return out.returncode == 0
     except Exception:
@@ -64,8 +72,9 @@ def _branch_key(branch):
 
 def _receipt(repo, branch, head):
     """回 (state, stale_at)：state ∈ ok／stale／missing。缺 head_sha 鍵＝missing（審查 F6）。"""
-    path = os.path.join(repo, ".agent-tmp", "post-build-receipts",
-                        _branch_key(branch) + ".json")
+    path = os.path.join(
+        repo, ".agent-tmp", "post-build-receipts", _branch_key(branch) + ".json"
+    )
     try:
         with open(path) as fh:
             data = json.load(fh)
@@ -80,8 +89,11 @@ def _receipt(repo, branch, head):
 
 def _budget_count(repo, branch):
     try:
-        with open(os.path.join(repo, ".agent-tmp", "post-build-gate",
-                               _branch_key(branch) + ".blocks")) as fh:
+        with open(
+            os.path.join(
+                repo, ".agent-tmp", "post-build-gate", _branch_key(branch) + ".blocks"
+            )
+        ) as fh:
             return int(fh.read().strip() or "0")
     except Exception:
         return 0
@@ -129,24 +141,39 @@ def verdict(repo):
     state, stale_at = _receipt(repo, branch, head)
     if state == "ok":
         try:  # receipt 覆蓋現狀——清 block 預算（新工作＝新預算）
-            os.remove(os.path.join(repo, ".agent-tmp", "post-build-gate",
-                                   _branch_key(branch) + ".blocks"))
+            os.remove(
+                os.path.join(
+                    repo,
+                    ".agent-tmp",
+                    "post-build-gate",
+                    _branch_key(branch) + ".blocks",
+                )
+            )
         except OSError:
             pass
         return {"branch": branch, "state": "ok", "ahead": ahead, "reason": ""}
     if state == "stale":
-        return {"branch": branch, "state": "stale", "ahead": ahead, "reason": (
-            "post-build receipt 已過期（head != 當前 HEAD，完成於 %s）——其後又有新 "
-            "commit。若本弧已完成：重跑 /post-build 刷新 receipt；若僅 /commit 推進 "
-            "了 HEAD（receipt 內容已含本弧工作）：此提醒可忽略，/commit 階段 6 會刷新。"
-            % (stale_at or "未知時點")
-        )}
-    return {"branch": branch, "state": "missing", "ahead": ahead, "reason": (
-        "本弧尚無有效 post-build receipt（branch=%s，領先 main %s 個 commit）。"
-        "若本弧已完成：先跑 /post-build（收尾鏈），完成後再結束；"
-        "若僅段落結算、弧未完成：直接繼續工作即可（此提醒有預算上限，不會連環出現）。"
-        % (branch, ahead)
-    )}
+        return {
+            "branch": branch,
+            "state": "stale",
+            "ahead": ahead,
+            "reason": (
+                "post-build receipt 已過期（head != 當前 HEAD，完成於 %s）——其後又有新 "
+                "commit。若本弧已完成：重跑 /post-build 刷新 receipt；若僅 /commit 推進 "
+                "了 HEAD（receipt 內容已含本弧工作）：此提醒可忽略，/commit 階段 6 會刷新。"
+                % (stale_at or "未知時點")
+            ),
+        }
+    return {
+        "branch": branch,
+        "state": "missing",
+        "ahead": ahead,
+        "reason": (
+            f"本弧尚無有效 post-build receipt（branch={branch!s}，領先 main {ahead!s} 個 commit）。"
+            "若本弧已完成：先跑 /post-build（收尾鏈），完成後再結束；"
+            "若僅段落結算、弧未完成：直接繼續工作即可（此提醒有預算上限，不會連環出現）。"
+        ),
+    }
 
 
 def main():

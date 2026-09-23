@@ -20,6 +20,8 @@ demo 用 demo_，禁 test_；測試用 test_。demo 暫存到 commit 時移 scri
 
 ## 型別註解（Python 3.12+）
 
+hook 相容性所需的型別例外依 owner runtime／rollback 契約（ai-guide：hooks/AGENTS.md）。
+
 - 禁 from __future__ import annotations，字串化會掩蓋缺失/circular import；其他 class 前向引用用字串。
 - 禁 TYPE_CHECKING，循環須重構解決；回傳自身/子類用 Self（cls、enter、copy 等）。
 - 禁 List/Dict/Set/Tuple/Optional/Union 舊 typing——改內建泛型與 T | None / T1 | T2；typing 只 import Callable、Protocol、TypeVar、ParamSpec、Self、Any。
@@ -31,4 +33,4 @@ NaN 的有序比較（`< <= > >=`）與 `==` 為 False，`!=` 為 True；`if x <
 
 ## Python 命令執行
 
-Python 命令執行（uv run 強制、pytest 背景跑、PYTHONPATH 禁令、timeout 禁令）單一源＝[tool-discipline.md](tool-discipline.md)。
+執行單一源＝[tool-discipline.md](tool-discipline.md)。

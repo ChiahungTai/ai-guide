@@ -44,9 +44,11 @@ def _write_payload(
     )
 
 
-def run_hook(payload: str) -> subprocess.CompletedProcess:
+def run_hook(
+    payload: str, executable: str | None = None
+) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, str(HOOK)],
+        [executable or sys.executable, str(HOOK)],
         input=payload,
         capture_output=True,
         text=True,
@@ -199,17 +201,18 @@ def test_edit_candidate_description(tmp_path, desc, old, new, replace_all, expec
 
 
 @pytest.mark.parametrize("legacy", ["x" * 101, "commit 47aa89d", "09-09 sess_ABC123"])
+@pytest.mark.parametrize("key", ["description:", "description \t:"])
 @pytest.mark.parametrize(
     "kind", ["body", "whole-file", "body-description-example", "shrink"]
 )
-def test_edit_preserves_legacy_desc_body_allowance(tmp_path, legacy, kind):
+def test_edit_preserves_legacy_desc_body_allowance(tmp_path, legacy, kind, key):
     """S: H2 exempts unchanged legacy descriptions and permits oversized body shrinkage."""
     pool = make_pool(tmp_path)
     target = pool / "entry.md"
     body = "body\n"
     if kind == "shrink":
         body = "begin" + "x" * 13_000 + "end"
-    original = f"---\nname: entry\ndescription: {legacy}\n---\n{body}"
+    original = f"---\nname: entry\n{key} {legacy}\n---\n{body}"
     target.write_text(original)
     old, new = body, "shorter body\n"
     if kind == "whole-file":
@@ -265,6 +268,200 @@ def test_edit_ambiguous_description_is_not_approved(tmp_path, edit):
     assert result.returncode == 2, result.stderr
     assert "Edit" in result.stderr
     assert target.read_text() == original
+
+
+@pytest.mark.parametrize("runtime", ["managed-312", "system-python"])
+@pytest.mark.parametrize("tool", ["Write", "Edit"])
+@pytest.mark.parametrize("key", ["description:", "description \t:"])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("x" * 101, 2),
+        ("commit 47aa89d", 2),
+        ("release 09-09", 2),
+        ("source sess_ABC123", 2),
+        ("觸發詞：一句鉤子", 0),
+    ],
+)
+def test_description_key_spacing_gate(tmp_path, tool, key, value, expected, runtime):
+    """S: repair F1 requires all description gates for consumer-normalized keys."""
+    executable = "/usr/bin/python3"
+    if runtime == "managed-312":
+        gov = load_module("governance/install.py")
+        try:
+            executable = gov.resolve_hook_python()
+        except gov.GovernanceError as exc:
+            pytest.skip(
+                f"uv-managed Python 3.12 unavailable: {exc} — run `uv python install 3.12`"
+            )
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    original = f"---\nname: entry\n{key} before\ntype: project\n---\nbody\n"
+    if tool == "Write":
+        payload = _write_payload(str(target), content=original.replace("before", value))
+    else:
+        target.write_text(original)
+        payload = json.dumps(
+            {
+                "tool_name": tool,
+                "tool_input": {
+                    "file_path": str(target),
+                    "old_string": "before",
+                    "new_string": value,
+                },
+            }
+        )
+    result = run_hook(payload, executable=executable)
+    assert result.returncode == expected, result.stderr
+    if expected == 2:
+        assert "description" in result.stderr
+
+
+@pytest.mark.parametrize("tool", ["Write", "Edit"])
+@pytest.mark.parametrize(
+    ("candidate", "selected", "expected"),
+    [
+        (
+            "---\ndescription: safe\ndescription : commit 47aa89d\n---\n",
+            "commit 47aa89d",
+            2,
+        ),
+        ("---\ndescription: commit 47aa89d\ndescription : safe\n---\n", "safe", 0),
+        ("---\ndescription: commit 47aa89d\ndescription:\n---\n", "", 0),
+        ("body\n---\ndescription: commit 47aa89d\n---\n", "", 0),
+        ("--- \ndescription: commit 47aa89d\n---\n", "", 0),
+        ("---\ndescription: commit 47aa89d\n", "", 0),
+        (
+            "---\ndescription: safe\n---not-a-yaml-fence\ndescription: commit 47aa89d\n---\n",
+            "safe",
+            0,
+        ),
+        (
+            "---\ndescription: safe\n  ---\ndescription: commit 47aa89d\n---\n",
+            "commit 47aa89d",
+            2,
+        ),
+        ("---\ndescription:\n  commit 47aa89d\n---\n", "", 0),
+        (
+            "---\nmetadata:\n  description: commit 47aa89d\ndescription: safe\n---\n",
+            "safe",
+            0,
+        ),
+        ("---\ndescription: safe\n# description: commit 47aa89d\n---\n", "safe", 0),
+        ("---\ndescription: >-\n  commit 47aa89d\n---\n", ">-", 0),
+        ("---\ndescription : 'safe     value'\n---\n", "safe value", 0),
+        ('---\r\ndescription \t: "commit 47aa89d"\r\n---\r\n', "commit 47aa89d", 2),
+    ],
+)
+def test_description_consumer_selection(tmp_path, tool, candidate, selected, expected):
+    """S: F1 consumer parity; oracle is the independent generator plus explicit outcomes."""
+    consumer = load_module("skills/memory-audit/scripts/generate_index.py")
+    hook = load_module("hooks/block-memory-index-write.py")
+    candidate_file = tmp_path / "consumer-candidate.md"
+    candidate_file.write_bytes(candidate.encode("utf-8"))
+    actual = " ".join(
+        (
+            consumer.parse_frontmatter(candidate_file.read_text(encoding="utf-8")).get(
+                "description"
+            )
+            or ""
+        ).split()
+    )
+    assert actual == selected
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    if tool == "Write":
+        payload = _write_payload(str(target), content=candidate)
+    else:
+        original = "---\ndescription: before\n---\nbody\n"
+        target.write_text(original)
+        payload = json.dumps(
+            {
+                "tool_name": tool,
+                "tool_input": {
+                    "file_path": str(target),
+                    "old_string": original,
+                    "new_string": candidate,
+                },
+            }
+        )
+    result = run_hook(payload)
+    assert result.returncode == expected, result.stderr
+    assert hook.extract_desc(candidate) == selected
+
+
+@pytest.mark.parametrize("runtime", ["managed-312", "system-python"])
+@pytest.mark.parametrize("tool", ["Write", "Edit"])
+@pytest.mark.parametrize("newlines", ["cr-only", "mixed"])
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("x" * 101, 2),
+        ("commit 47aa89d", 2),
+        ("release 09-09", 2),
+        ("source sess_ABC123", 2),
+        ("觸發詞：一句鉤子", 0),
+    ],
+)
+def test_description_universal_newlines(
+    tmp_path, runtime, tool, newlines, value, expected
+):
+    """S: accepted review finding; consumer oracle includes real read_text normalization."""
+    executable = "/usr/bin/python3"
+    if runtime == "managed-312":
+        gov = load_module("governance/install.py")
+        try:
+            executable = gov.resolve_hook_python()
+        except gov.GovernanceError as exc:
+            pytest.skip(
+                f"uv-managed Python 3.12 unavailable: {exc} — run `uv python install 3.12`"
+            )
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    separators = (
+        ["\r"] * 6
+        if newlines == "cr-only"
+        else ["\r", "\r\n", "\n", "\r", "\n", "\r\n"]
+    )
+    lines = [
+        "---",
+        "name: entry",
+        "description : before",
+        "type: project",
+        "---",
+        "body",
+    ]
+    original = "".join(line + sep for line, sep in zip(lines, separators, strict=True))
+    if tool == "Write":
+        candidate = original.replace("before", value)
+        payload = _write_payload(str(target), content=candidate)
+    else:
+        target.write_bytes(original.encode("utf-8"))
+        old = "---\nname: entry\ndescription : before\n"
+        new = "".join(
+            line.replace("before", value) + sep
+            for line, sep in zip(lines[:3], separators[:3], strict=True)
+        )
+        candidate = target.read_text(encoding="utf-8").replace(old, new, 1)
+        payload = json.dumps(
+            {
+                "tool_name": tool,
+                "tool_input": {
+                    "file_path": str(target),
+                    "old_string": old,
+                    "new_string": new,
+                },
+            }
+        )
+    candidate_file = tmp_path / "consumer-candidate.md"
+    candidate_file.write_bytes(candidate.encode("utf-8"))
+    consumer = load_module("skills/memory-audit/scripts/generate_index.py")
+    selected = consumer.parse_frontmatter(candidate_file.read_text(encoding="utf-8"))
+    assert selected["description"] == value
+    result = run_hook(payload, executable=executable)
+    assert result.returncode == expected, result.stderr
+    if expected == 2:
+        assert "description" in result.stderr
 
 
 if __name__ == "__main__":

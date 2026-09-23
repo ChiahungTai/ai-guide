@@ -22,7 +22,10 @@
         },
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/memory-index-regen.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/memory-index-regen.py"
+          ],
           "timeout": 10
         }
       ]
@@ -32,7 +35,10 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/post-build-gate.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/post-build-gate.py"
+          ],
           "timeout": 10
         }
       ]
@@ -56,7 +62,10 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/compact-tail-inject.py"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/compact-tail-inject.py"
+          ]
         }
       ]
     },
@@ -64,7 +73,10 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/memory-watch-seed.py"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/memory-watch-seed.py"
+          ]
         }
       ]
     }
@@ -75,15 +87,24 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/block-python-c-comment.py"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/block-python-c-comment.py"
+          ]
         },
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/block-python-file-write.py"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/block-python-file-write.py"
+          ]
         },
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/kanban-skill-gate.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/kanban-skill-gate.py"
+          ],
           "timeout": 10
         }
       ]
@@ -93,12 +114,18 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/block-memory-index-write.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/block-memory-index-write.py"
+          ],
           "timeout": 10
         },
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/marshal_admission_guard.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/marshal_admission_guard.py"
+          ],
           "timeout": 10
         }
       ]
@@ -110,7 +137,12 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/memory-write-sensor.py --source claude"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/memory-write-sensor.py",
+            "--source",
+            "claude"
+          ]
         }
       ]
     },
@@ -119,7 +151,10 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/kanban-skill-gate.py",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/kanban-skill-gate.py"
+          ],
           "timeout": 10
         }
       ]
@@ -130,7 +165,10 @@
       "hooks": [
         {
           "type": "command",
-          "command": "python3 {{REPO}}/hooks/memory-dirty-sensor.py"
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/memory-dirty-sensor.py"
+          ]
         }
       ]
     }

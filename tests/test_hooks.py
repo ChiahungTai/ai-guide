@@ -12,6 +12,18 @@ from conftest import load_module
 
 block_comment = load_module("hooks/block-python-c-comment.py")
 block_write = load_module("hooks/block-python-file-write.py")
+gov = load_module("governance/install.py")
+
+
+def _managed_hook_python() -> str:
+    """Deployed hook interpreter (C3): absolute uv-managed 3.12 via governance
+    resolver — never a nested uv-run hook-fire dependency."""
+    try:
+        return gov.resolve_hook_python()
+    except gov.GovernanceError as exc:
+        pytest.skip(
+            f"uv-managed Python 3.12 unavailable: {exc} — run `uv python install 3.12`"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -136,8 +148,7 @@ def test_unsupported_or_multiple_heredocs_still_block_real_write(command):
 
 @pytest.mark.parametrize(
     "runtime",
-    [["uv", "run", "python"], ["/usr/bin/python3"]],
-    ids=["uv-run-python", "system-python"],
+    ["managed-312", "system-python"],
 )
 @pytest.mark.parametrize(
     "body, expected",
@@ -147,8 +158,9 @@ def test_unsupported_or_multiple_heredocs_still_block_real_write(command):
     ],
 )
 def test_write_entrypoint_runtime_contract(tmp_path, runtime, body, expected):
+    python = _managed_hook_python() if runtime == "managed-312" else "/usr/bin/python3"
     result = subprocess.run(
-        [*runtime, block_write.__file__],
+        [python, block_write.__file__],
         cwd=tmp_path,
         input=json.dumps(
             {
@@ -200,8 +212,7 @@ def test_shell_expansion_shell_receiver_and_ast_budget_use_fallback(command):
 # default reads must not interpret a filename as a Path.open mode.
 @pytest.mark.parametrize(
     "runtime",
-    [["uv", "run", "python"], ["/usr/bin/python3"]],
-    ids=["uv-run-python", "system-python"],
+    ["managed-312", "system-python"],
 )
 @pytest.mark.parametrize(
     "body, expected",
@@ -298,8 +309,9 @@ def test_shell_expansion_shell_receiver_and_ast_budget_use_fallback(command):
 )
 def test_h4_followup_mode_and_receiver_contract(tmp_path, runtime, body, expected):
     command = "python3 - <<'PY'\n" + body + "\nPY"
+    python = _managed_hook_python() if runtime == "managed-312" else "/usr/bin/python3"
     result = subprocess.run(
-        [*runtime, block_write.__file__],
+        [python, block_write.__file__],
         cwd=tmp_path,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         text=True,

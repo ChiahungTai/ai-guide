@@ -19,7 +19,8 @@ codex 對 memory 主體（.agents/memory／.agents/memory-inbox／.agents/memory
 
 覆蓋邊界：Bash（shell）redirect／MCP 寫檔工具不在本 hook 面（與 CC/ZCode 同
 邊界——reconcile detected 兜底，coverage matrix 註記）。
-hook runtime python 3.9——禁 3.10+ 語法（與 block-memory-index-write.py 同界）。
+部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback 窗期保留
+Python 3.9 語法相容（與 block-memory-index-write.py 同界）。
 """
 
 import json
@@ -43,7 +44,8 @@ PATCH_PATH_RE = re.compile(
 # codex BI 審查 Critical）。patch 相對路徑仍以 session cwd 為基準 resolve（apply_patch 語義）。
 REPO_ROOT = Path(__file__).resolve().parent.parent
 POOL_ROOTS = tuple(
-    str(REPO_ROOT / rel) for rel in (".agents/memory", ".agents/memory-inbox", ".agents/memory-auto")
+    str(REPO_ROOT / rel)
+    for rel in (".agents/memory", ".agents/memory-inbox", ".agents/memory-auto")
 )
 # 跨池共享層（spine）與家目錄偽池路徑——codex 為 spine 唯讀方（AIR-100 S-D＋live 探針
 # 發現 codex 會探索 ~/.agents）：寫 spine＝污染所有 harness 共享的 user state；家目錄
@@ -104,9 +106,7 @@ def main():
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError) as exc:
-        print(
-            f"{FAIL_CLOSED_MESSAGE}\n詳情：stdin parse error: {exc}", file=sys.stderr
-        )
+        print(f"{FAIL_CLOSED_MESSAGE}\n詳情：stdin parse error: {exc}", file=sys.stderr)
         sys.exit(2)
     if not isinstance(data, dict):
         print(f"{FAIL_CLOSED_MESSAGE}\n詳情：payload 非 dict", file=sys.stderr)
@@ -130,7 +130,9 @@ def main():
     if not command:
         sys.exit(0)
     cwd_raw = data.get("cwd")
-    cwd = cwd_raw if isinstance(cwd_raw, str) and cwd_raw else os.getcwd()  # F-1：缺席退 process cwd
+    cwd = (
+        cwd_raw if isinstance(cwd_raw, str) and cwd_raw else os.getcwd()
+    )  # F-1：缺席退 process cwd
     hit = violation(extract_patch_paths(command), cwd)
     if hit:
         print(f"{DENY_MESSAGE}\n命中座標：{hit}", file=sys.stderr)

@@ -46,8 +46,8 @@ additionalContext 注入 context；空 stdout＝成功無效果；輸出上限 3
 （根級 maxOutputBytes 預設）。repo 未註冊／無 checkpoint 的 repo 每次成本為
 一次 stat——靜默零輸出。
 
-hook 執行面 python3＝CommandLineTools 3.9（hooks/AGENTS.md）——禁 3.10+ 語法；
-改動後必以 bare python3 實跑複驗，不可只信 ruff 綠。
+部署 runtime 由 governance installer 解析 uv-managed Python 3.12（hooks/AGENTS.md）；
+mixed-session／rollback 窗期仍維持 Python 3.9 語法相容，改動後兩面都驗。
 """
 
 import datetime
@@ -116,7 +116,9 @@ def _proven_baseline_ms(proven_path):
     try:
         data = json.loads(Path(proven_path).read_text(encoding="utf-8"))
         if CCP is not None and data.get("schema") != CCP.PROVEN_SCHEMA:
-            return 0  # schema 錯的 receipt 不當 baseline（F4：與 JSON 壞同判 從未 proven）
+            return (
+                0  # schema 錯的 receipt 不當 baseline（F4：與 JSON 壞同判 從未 proven）
+            )
         verified_at = data["verified_at"]
         return int(datetime.datetime.fromisoformat(verified_at).timestamp() * 1000)
     except Exception:

@@ -27,9 +27,9 @@ deny 慣例同 marshal_admission_guard（ZCode exit 2 已證、CC exit 2 阻斷�
 fail-open 面：stdin 壞 JSON／payload 非 dict／session_id 缺席（marker 無從
 歸屬）／tool_input 非 dict／任何例外 → 放行＋stderr 診斷。
 
-hook 執行面 python3＝CommandLineTools 3.9（hooks/AGENTS.md）——禁 3.10+
-語法（無 match、無 X|Y union）；改動後必以 bare python3 實跑複驗，不可只信
-測試綠。
+部署 runtime 由 governance installer 解析 uv-managed Python 3.12（hooks/AGENTS.md）。
+mixed-session／rollback 窗期仍維持 Python 3.9 語法相容（無 match、無 X|Y union），
+改動後除 3.12 entrypoint 外仍跑 3.9 compatibility gate。
 """
 
 import json
@@ -56,7 +56,7 @@ def _sanitize_session_id(session_id):
     """session_id → 安全檔名片段；非字串／空白／退化（`.`、`..`）回 None（＝anomaly）。
 
     缺鍵（payload.get→None）必須在此攔——str(None)="None" 會被當合法 id，
-    使 marker 查詢誤判 missing 而 deny（bare python3 實跑抓到的回歸）。
+    使 marker 查詢誤判 missing 而 deny（歷史 entrypoint 實跑抓到的回歸）。
     """
     if not isinstance(session_id, str) or not session_id.strip():
         return None

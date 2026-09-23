@@ -22,12 +22,13 @@ def _owned_group(matcher: str, script: str, timeout: int = 10) -> str:
     return ('[[hooks.PreToolUse]]\n'
             f'matcher = "{matcher}"\n\n'
             '[[hooks.PreToolUse.hooks]]\ntype = "command"\n'
-            f'command = "python3 /Users/x/ai-guide/hooks/{script}"\n'
+            f'command = "python3 {mod.REPO_ROOT}/hooks/{script}"\n'
             f'timeout = {timeout}\n\n')
 
 
 def test_merge_codex_appends_missing_group():
     tmpl = _owned_group("apply_patch", "codex_memory_path_deny.py")
+    assert mod._codex_group_identity(tmpl)[2] == frozenset({"codex_memory_path_deny.py"})
     new_text, messages = mod.merge_codex_text("", tmpl, remove=False)
     assert "appended group" in " ".join(messages)
     assert tmpl in new_text

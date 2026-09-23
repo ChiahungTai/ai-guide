@@ -56,6 +56,6 @@ agent prompt 須內嵌的非顯知識（2026-08-24 mosaic dogfood 實測）：�
 ## 邊界
 
 - 不做壓縮、不產摘要、不自製 compactor（harness 職責）；外部化內容取捨＝LLM 判斷面，機制面只保證「任何時刻都有一份可機械驗證的檔」。
-- **ZCode**：compact 事件 VETO（2026-09-22 gate 判決：3.14 兩次獨立 /compact 實測不派發 SessionStart——0824 舊實測為真，hooks 文檔的 compact source 真機不存在）→ 本 skill 不依賴任何 compact 事件；restore 注入走 UserPromptSubmit hook（註冊片段與協議見 `hooks/compact-restore-inject.registration.json`＋`hooks/compact-restore-inject.INSTALL-PROTOCOL.md`；未註冊機器走 fallback）。
+- **ZCode**：compact 事件 VETO（2026-09-22 gate 判決：3.14 兩次獨立 /compact 實測不派發 SessionStart——0824 舊實測為真，hooks 文檔的 compact source 真機不存在）→ 本 skill 不依賴任何 compact 事件；restore 注入走 UserPromptSubmit hook，canonical registration 在 `governance/registrations/zcode.json`，由 `governance/install.py --surface hooks` 安裝／對帳；未註冊機器走 fallback。
 - **Claude Code**：SessionStart(compact) hook 已註冊（`hooks/compact-tail-inject.py`，settings.json matcher=compact——機械 verbatim 復原層，自動注入 raw tail）；本 skill 的 checkpoint／restore 流程在 CC 端以 fallback 形態適用（CC 無 scripts 慣例路徑差異時照 `checkpoint_paths` 相對 cwd 落點）。
 - 跨 session／repo 交接屬 handoff、usage reset 自動接續屬 at——兩者不做本 skill 的 checkpoint 義務，不重疊。

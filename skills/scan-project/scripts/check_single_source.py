@@ -954,7 +954,11 @@ def _cc_wiring(events: dict) -> set[tuple[str, str, str]]:
             for h in g.get("hooks") or []:
                 if not isinstance(h, dict) or h.get("enabled") is False:
                     continue
-                text = str(h.get("command", ""))
+                text = (
+                    str(h.get("command", ""))
+                    + " "
+                    + " ".join(str(a) for a in h.get("args") or [])
+                )
                 for name in re.findall(r"([A-Za-z0-9_-]+\.(?:py|sh))(?![\w.-])", text):
                     out.add((event, matcher, name))
     return out
@@ -985,9 +989,7 @@ def check_cc_live_parity(
             )
         ]
     live = (
-        Path(live_path)
-        if live_path
-        else Path(inv["live"]).expanduser()
+        Path(live_path) if live_path else Path(inv["live"]).expanduser()
     )  # tri F1：live 指 CC 實讀路徑（~/.claude/settings.json），expanduser 走 HOME hop
     if not live.exists():
         return []  # live 缺場（非本機／symlink 斷）→ skip 不 false positive

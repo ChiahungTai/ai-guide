@@ -61,18 +61,9 @@ fd -e py . path/to/search
 
 ---
 
-## 3. 所有 Python 命令必須 `uv run`
+## 3. Python 命令執行
 
-```bash
-# ❌ 禁止
-python script.py
-python3 script.py
-pytest tests/
-
-# ✅ 正確
-uv run python script.py
-uv run pytest tests/
-```
+Python 命令與 hook owner runtime 例外依 [tool-discipline](../../rules/tool-discipline.md)「Python 命令執行」單一源。
 
 ---
 

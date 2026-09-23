@@ -4,12 +4,12 @@ matcher = "Bash"
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "python3 {{REPO}}/hooks/block-python-c-comment.py"
+command = "{{HOOK_PYTHON}} {{REPO}}/hooks/block-python-c-comment.py"
 timeout = 10
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "python3 {{REPO}}/hooks/block-python-file-write.py"
+command = "{{HOOK_PYTHON}} {{REPO}}/hooks/block-python-file-write.py"
 timeout = 10
 
 [[hooks.SessionEnd]]
@@ -38,10 +38,10 @@ matcher = "apply_patch"
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "python3 {{REPO}}/hooks/codex_memory_path_deny.py"
+command = "{{HOOK_PYTHON}} {{REPO}}/hooks/codex_memory_path_deny.py"
 timeout = 10
 
 [[hooks.PreToolUse.hooks]]
 type = "command"
-command = "python3 {{REPO}}/hooks/marshal_admission_guard.py"
+command = "{{HOOK_PYTHON}} {{REPO}}/hooks/marshal_admission_guard.py"
 timeout = 10

@@ -55,7 +55,8 @@ security boundary）。**無 bypass env**（break-glass＝human 停 registration
 決策勿重辯）。
 覆蓋：Edit/Write hook 家族不觸發於 subagent 寫入（ZCode 實證）——spawned
 worker 在卡 WT 的寫入（理想形態）本就不經此閘。
-hook runtime python 3.9——禁 3.10+ 語法。
+部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback 窗期保留
+Python 3.9 語法相容。
 """
 
 import json
@@ -70,7 +71,9 @@ GUARD_REL = os.path.join(".githooks", "control-plane-guard.sh")
 MARKER_REL = os.path.join(".agents", "marshal-governance.json")
 MARKER_PROTOCOL = 1
 VALID_LEVELS = ("branch", "wt")
-GIT_BIN = shutil.which("git") or "/usr/bin/git"  # ZCode GUI 行程 PATH 窄——退 /usr/bin 絕對路徑
+GIT_BIN = (
+    shutil.which("git") or "/usr/bin/git"
+)  # ZCode GUI 行程 PATH 窄——退 /usr/bin 絕對路徑
 BASH_BIN = "/bin/bash"
 
 # apply_patch 寫入座標抽取（形態照 codex_memory_path_deny.py——大小寫敏感、
@@ -80,8 +83,12 @@ PATCH_PATH_RE = re.compile(
     re.MULTILINE,
 )
 
-DENY_HEADER_WT = "[Hook Blocked] 控制面路徑禁 canonical 主樹直寫（marshal admission guard）"
-DENY_HEADER_BRANCH = "[Hook Blocked] trunk 直寫被拒——branch 級 invariant（marshal admission guard）"
+DENY_HEADER_WT = (
+    "[Hook Blocked] 控制面路徑禁 canonical 主樹直寫（marshal admission guard）"
+)
+DENY_HEADER_BRANCH = (
+    "[Hook Blocked] trunk 直寫被拒——branch 級 invariant（marshal admission guard）"
+)
 DENY_HEADER_MALFORMED = "[Hook Blocked] marshal-governance marker 損毀——fail-closed（marshal admission guard）"
 
 
@@ -204,7 +211,10 @@ def load_profile(repo_root):
             try:
                 re.compile(item)
             except re.error:
-                return "malformed", None  # 壞 regex＝該規則永不命中＝靜默失效——fail-closed
+                return (
+                    "malformed",
+                    None,
+                )  # 壞 regex＝該規則永不命中＝靜默失效——fail-closed
     return "ok", data
 
 
@@ -274,9 +284,10 @@ def evaluate(raw_paths, cwd):
             continue  # 非 canonical——卡 WT／ephemeral WT 放行
         if _matches_any(_compile_patterns(profile.get("allowlist", [])), rel_posix):
             continue
-        if profile.get("invariantLevel") == "branch":
-            if _git_branch(toplevel) != profile.get("trunk"):
-                continue  # branch 級豁免：非 trunk branch 的 canonical checkout
+        if profile.get("invariantLevel") == "branch" and _git_branch(
+            toplevel
+        ) != profile.get("trunk"):
+            continue  # branch 級豁免：非 trunk branch 的 canonical checkout
         hit = _matches_any(_compile_patterns(profile.get("sourceRoots", [])), rel_posix)
         if not hit:
             if hook_common is None:
@@ -299,8 +310,10 @@ def evaluate(raw_paths, cwd):
 def _guidance(trunk):
     """deny 三段式第三段——可 copy-paste 恢復命令（trunk 由 marker profile 帶）。"""
     return (
-        "寫入走非 canonical worktree：scripts/wt-open.sh <卡id> --base " + trunk
-        + " 開卡 WT，或 scripts/wt-open.sh --ephemeral <name> --base " + trunk
+        "寫入走非 canonical worktree：scripts/wt-open.sh <卡id> --base "
+        + trunk
+        + " 開卡 WT，或 scripts/wt-open.sh --ephemeral <name> --base "
+        + trunk
         + " 快速分身（hotfix 亦走 --ephemeral，不白名單）；"
         "canonical 主樹（PRIMARY）留 " + trunk + "，編輯在卡 WT 完成後經 merge 收線。"
     )
@@ -316,7 +329,8 @@ def _deny(hit):
             "marker：" + marker + "\n"
             "（profile 不可判讀＝invariant 狀態未知，本 repo 寫入一律擋——"
             "marker 檔本身除外，修復出口保留）\n"
-            "修復：直接編輯該 marker 修正 JSON/schema（protocol=" + str(MARKER_PROTOCOL)
+            "修復：直接編輯該 marker 修正 JSON/schema（protocol="
+            + str(MARKER_PROTOCOL)
             + "、invariantLevel=branch|wt、trunk 非空字串、sourceRoots/allowlist＝"
             "字串陣列），或刪除該檔即停用本閘。"
         )
@@ -331,8 +345,7 @@ def _deny(hit):
             why = "canonical 主樹 × profile 命中（wt 級 invariant）"
         reason = (
             header + "。\n命中座標：" + str(resolved) + "\n"
-            "（worktree：" + toplevel + "；判定：" + why + "）\n"
-            + _guidance(trunk)
+            "（worktree：" + toplevel + "；判定：" + why + "）\n" + _guidance(trunk)
         )
     # stdout JSON 說明（ZCode hookSpecificOutput dialect，照 background gate 形態）；
     # 載荷機制＝exit 2＋stderr（三 harness 已證／文檔認可的 deny 形）

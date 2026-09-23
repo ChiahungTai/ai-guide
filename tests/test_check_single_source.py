@@ -377,9 +377,9 @@ def test_hook_registration_claude_only_members_absent_from_templates():
         if p.exists():
             template_texts += p.read_text(encoding="utf-8")
     for name in inv["claude_only"]:
-        assert not re.search(rf"(?<![\w.-]){re.escape(name)}(?![\w.-])", template_texts), (
-            f"claude_only 成員 {name} 已出現在 tracked 模板面——應移出豁免名單"
-        )
+        assert not re.search(
+            rf"(?<![\w.-]){re.escape(name)}(?![\w.-])", template_texts
+        ), f"claude_only 成員 {name} 已出現在 tracked 模板面——應移出豁免名單"
 
 
 def test_hook_registration_basename_edge_negative(tmp_path, monkeypatch):
@@ -387,8 +387,7 @@ def test_hook_registration_basename_edge_negative(tmp_path, monkeypatch):
     (tmp_path / "hooks").mkdir()
     (tmp_path / "hooks" / "ok.py").write_text("pass")
     (tmp_path / "settings.json").write_text(
-        '{"hooks": {"x": ["python3 /x/hooks/ok.py.bak", '
-        '"python3 /x/hooks/xa.py"]}}',
+        '{"hooks": {"x": ["python3 /x/hooks/ok.py.bak", "python3 /x/hooks/xa.py"]}}',
         encoding="utf-8",
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
@@ -956,9 +955,7 @@ def test_doctrine_tier_table_header_detected(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = [
-        f
-        for f in css.check_forbidden_pattern(_doctrine_inv())
-        if "guide.md" in f[2]
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "guide.md" in f[2]
     ]
     assert len(findings) == 1
     assert findings[0][1] == "important"
@@ -985,9 +982,7 @@ def test_doctrine_role_requirement_header_detected(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = [
-        f
-        for f in css.check_forbidden_pattern(_doctrine_inv())
-        if "guide.md" in f[2]
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "guide.md" in f[2]
     ]
     assert len(findings) == 1
 
@@ -1014,9 +1009,7 @@ def test_doctrine_workflow_equals_tier_matrix(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = [
-        f
-        for f in css.check_forbidden_pattern(_doctrine_inv())
-        if "guide.md" in f[2]
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "guide.md" in f[2]
     ]
     assert len(findings) == 1
 
@@ -1024,9 +1017,7 @@ def test_doctrine_workflow_equals_tier_matrix(tmp_path, monkeypatch):
         "舊寫法：judge-review＝lite\n", encoding="utf-8"
     )
     findings = [
-        f
-        for f in css.check_forbidden_pattern(_doctrine_inv())
-        if "guide.md" in f[2]
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "guide.md" in f[2]
     ]
     assert len(findings) == 1
 
@@ -1053,9 +1044,7 @@ def test_doctrine_role_frontmatter_tier_tag_detected(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = [
-        f
-        for f in css.check_forbidden_pattern(_doctrine_inv())
-        if "roles" in f[2]
+        f for f in css.check_forbidden_pattern(_doctrine_inv()) if "roles" in f[2]
     ]
     assert len(findings) == 1
 
@@ -1194,7 +1183,9 @@ def test_coverage_both_faces_drift_important(tmp_path, monkeypatch):
     """兩面都在場且 allow 集合不一致→important（鏡像 stale）。"""
     _write_skill(tmp_path, "my-skill")
     _write_mirror(tmp_path, ["Skill(my-skill)"])
-    _write_live_allow(tmp_path, ["Skill(my-skill)", "Skill(new-skill)", "Bash(git diff:*)"])
+    _write_live_allow(
+        tmp_path, ["Skill(my-skill)", "Skill(new-skill)", "Bash(git diff:*)"]
+    )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     findings = css.check_coverage(_coverage_inv())
     drift = [f for f in findings if "鏡像" in f[2]]
@@ -1256,9 +1247,7 @@ CC_TPL_JSON = {
     "Notification": [
         {
             "matcher": "",
-            "hooks": [
-                {"type": "command", "command": "{{REPO}}/hooks/notification.sh"}
-            ],
+            "hooks": [{"type": "command", "command": "{{REPO}}/hooks/notification.sh"}],
         }
     ],
     "SessionStart": [
@@ -1316,6 +1305,64 @@ def test_cc_parity_missing_in_live_critical(tmp_path, monkeypatch):
     assert all("F8" in f[2] for f in findings)
 
 
+def test_cc_parity_exec_template_missing_in_live_critical(tmp_path, monkeypatch):
+    """S: AIR174 工單要求 args 中的 Python hook 缺 live 接線時仍報 critical。"""
+    _write_cc_tpl(
+        tmp_path,
+        data={
+            "SessionStart": [
+                {
+                    "matcher": "compact",
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": "{{HOOK_PYTHON}}",
+                            "args": ["{{REPO}}/hooks/compact-tail-inject.py"],
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+    _write_cc_live(tmp_path, monkeypatch, events={})
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    findings = css.check_cc_live_parity(_cc_parity_inv())
+    assert len(findings) == 1
+    assert findings[0][:2] == ("cc_live_parity", "critical")
+    assert "compact-tail-inject.py（SessionStart/compact）" in findings[0][2]
+    assert "F8" in findings[0][2]
+
+
+@pytest.mark.parametrize(
+    "template_exec", [False, True], ids=["shell-exec", "exec-shell"]
+)
+def test_cc_parity_exec_shell_equivalent(tmp_path, monkeypatch, template_exec):
+    """S: AIR174 工單要求 exec/shell 兩向等價，且不能以空 wiring 假綠。"""
+    template_hook = {"type": "command"}
+    live_hook = {"type": "command"}
+    if template_exec:
+        template_hook.update(
+            command="{{HOOK_PYTHON}}",
+            args=["{{REPO}}/hooks/compact-tail-inject.py"],
+        )
+        live_hook["command"] = "python3 /abs/repo/hooks/compact-tail-inject.py"
+    else:
+        template_hook["command"] = "python3 {{REPO}}/hooks/compact-tail-inject.py"
+        live_hook.update(
+            command="/abs/runtime/bin/python3.12",
+            args=["/abs/repo/hooks/compact-tail-inject.py"],
+        )
+    template = {"SessionStart": [{"matcher": "compact", "hooks": [template_hook]}]}
+    live = {"SessionStart": [{"matcher": "compact", "hooks": [live_hook]}]}
+    _write_cc_tpl(tmp_path, data=template)
+    _write_cc_live(tmp_path, monkeypatch, events=live)
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    expected = {("SessionStart", "compact", "compact-tail-inject.py")}
+    assert css._cc_wiring(template) == expected
+    assert css._cc_wiring(live) == expected
+    assert css.check_cc_live_parity(_cc_parity_inv()) == []
+
+
 def test_cc_parity_all_deployed_ok(tmp_path, monkeypatch):
     """兩面同步→零 finding。"""
     _write_cc_tpl(tmp_path)
@@ -1327,7 +1374,10 @@ def test_cc_parity_all_deployed_ok(tmp_path, monkeypatch):
                 {
                     "matcher": "",
                     "hooks": [
-                        {"type": "command", "command": "/abs/repo/hooks/notification.sh"}
+                        {
+                            "type": "command",
+                            "command": "/abs/repo/hooks/notification.sh",
+                        }
                     ],
                 }
             ],

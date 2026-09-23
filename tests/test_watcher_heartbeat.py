@@ -305,7 +305,7 @@ def test_liveness_last_seen_takes_newest_parseable():
 
 
 def test_threshold_pinned_across_waiter_and_nag_above_poll_cap():
-    """鏡像常數防 drift：nag（py3.9 runtime 禁 import）與 waiter 同值；
+    """鏡像常數防 drift：nag 與 waiter 保持獨立實作但同值；
     閾值必須高於 T_GROW_CAP_MIN（正常輪詢間距上限）以免誤判。"""
     pat = re.compile(r"HEARTBEAT_STALE_THRESHOLD_MIN\s*=\s*([0-9.]+)")
     waiter = pat.search(WAITER_SRC.read_text(encoding="utf-8"))
@@ -322,7 +322,8 @@ def test_threshold_pinned_across_waiter_and_nag_above_poll_cap():
 # ---------------------------------------------------------------------------
 
 
-def _snapshot(hb: str, ev: str, ts: str) -> "_mod.JobSnapshot":
+def _snapshot(hb: str, ev: str, ts: str):
+    # load_module returns a runtime module, not a static type namespace.
     return _mod.JobSnapshot(
         job_id="job-a",
         status="running",

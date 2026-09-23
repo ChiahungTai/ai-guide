@@ -54,7 +54,7 @@ def main() -> None:
         print(json.dumps(output, ensure_ascii=False))
     try:
         record = {
-            "_ts": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 — ZCode 以系統 python3（3.9）呼叫本 hook，datetime.UTC 要 3.11+
+            "_ts": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 — rollback compatibility 仍涵蓋 Python 3.9
             "tool_name": event.get("tool_name"),
             "tool_input_keys": sorted(tool_input.keys())
             if isinstance(tool_input, dict)

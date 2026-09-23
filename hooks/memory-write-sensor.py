@@ -16,7 +16,8 @@ Scope contract (fail-loud, not fake coverage):
   on the ZCode side is absorbed by this sensor's fail-safe filters (worst
   case: silent no-op; coverage boundary in AIR-56 card).
 - Always exits 0: a sensor must never block or fail the tool call.
-- Hook runtime is python 3.9 — no 3.10+ syntax in this file.
+- Deployed runtime is governance-resolved Python 3.12; keep Python 3.9 syntax
+  compatibility during the mixed-session / rollback window.
 """
 
 import json

@@ -131,9 +131,8 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from io import TextIOBase
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TextIO
 
 MIN_BRIDGE_VERSION = "2.0.22"
 # native wake-on-stuck feature 閘（bridge 2.0.23 出貨——docs/ep.md S1 增補）；
@@ -162,7 +161,7 @@ RUNTIME_SILENCE_FLOOR_RESEARCH_MIN = 25.0  # codex 裁量 20-30m 帶中值
 # dogfood 複核點：必須 > T_GROW_CAP_MIN（20m，正常輪詢間距上限）——低於它會把
 # 正常 re-arm 節奏誤判成死亡；30m＝首版帶中值，dogfood 後依實測 heartbeat
 # 間距 P95 複核（風格對齊 digest §1.5 卡死判準 floor 查表）。鏡像常數＝
-# hooks/watcher_pairing_nag.py 同名（py3.9 runtime 禁 import——drift 由
+# hooks/watcher_pairing_nag.py 同名（hook 保持獨立低成本，不跨層 import——drift 由
 # tests/test_watcher_heartbeat.py regex 釘同值）。
 HEARTBEAT_STALE_THRESHOLD_MIN = 30.0
 
@@ -631,7 +630,7 @@ def build_collection_receipt(
 # ---------------------------------------------------------------------------
 
 
-def _emit(file: TextIOBase, text: str) -> None:
+def _emit(file: TextIO, text: str) -> None:
     file.write(text + "\n")
     file.flush()
 
@@ -640,9 +639,7 @@ def _dumps(payload: dict) -> str:
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
 
-def _liveness_append(
-    liveness_path: Path | None, payload: dict, err: TextIOBase
-) -> None:
+def _liveness_append(liveness_path: Path | None, payload: dict, err: TextIO) -> None:
     """liveness 登記腿（AIR-152 amendment）——append-only、損壞容錯。
 
     僅輔助腿：任何寫入失敗 stderr 診斷後照常（frozen spec 狀態機與 exit
@@ -663,7 +660,7 @@ def _liveness_event_batch(
     event: str,
     ts_key: str,
     job_ids: list[str],
-    err: TextIOBase,
+    err: TextIO,
 ) -> None:
     """per-job 批次 append 同輪事件（heartbeat／advisory）；同輪共享一時間戳。"""
     if liveness_path is None or not job_ids:
@@ -679,7 +676,7 @@ def _liveness_event_batch(
 
 
 def _liveness_heartbeat(
-    liveness_path: Path | None, job_ids: list[str], err: TextIOBase
+    liveness_path: Path | None, job_ids: list[str], err: TextIO
 ) -> None:
     """heartbeat 腿（AIR-158）：每次輪詢後 append 一輪。
 
@@ -691,7 +688,7 @@ def _liveness_heartbeat(
 
 
 def _liveness_advisory(
-    liveness_path: Path | None, job_ids: list[str], err: TextIOBase
+    liveness_path: Path | None, job_ids: list[str], err: TextIO
 ) -> None:
     """分態腿（AIR-158）：stall advisory exit 時記 advisory 行——watcher 是
     有目的退出（wake 已交辦 caller）非無聲死亡；rearm 掃描與 nag 死亡檔以此
@@ -756,15 +753,15 @@ def watcher_death_suspect(rows: list[dict], now: datetime) -> bool:
     return not (silence <= HEARTBEAT_STALE_THRESHOLD_MIN)
 
 
-def _emit_state(out: TextIOBase, err: TextIOBase, state: str, extra: dict) -> int:
+def _emit_state(out: TextIO, err: TextIO, state: str, extra: dict) -> int:
     _emit(out, _dumps({"state": state, **extra}))
     _emit(err, f"[watcher] {state}: {extra.get('reason', '')}")
     return 2
 
 
 def _emit_advisory(
-    out: TextIOBase,
-    err: TextIOBase,
+    out: TextIO,
+    err: TextIO,
     snapshots: dict[str, JobSnapshot],
     running_ids: list[str],
     kind: str,
@@ -796,7 +793,7 @@ def _emit_advisory(
     return 3
 
 
-def _emit_native_advisory(out: TextIOBase, err: TextIOBase, wait_stdout: str) -> int:
+def _emit_native_advisory(out: TextIO, err: TextIO, wait_stdout: str) -> int:
     """native wake 分支（bridge ≥2.0.23，T8 amendment）：wake JSON → stalled-advisory。
 
     bridge 已代行 stuck 偵測（--wake-on-stuck --wake-axis runtime）——watcher
@@ -849,9 +846,7 @@ def _emit_native_advisory(out: TextIOBase, err: TextIOBase, wait_stdout: str) ->
     return 3
 
 
-def _reconcile_or_error(
-    out: TextIOBase, err: TextIOBase, job_id: str, exc: BridgeError
-) -> int:
+def _reconcile_or_error(out: TextIO, err: TextIO, job_id: str, exc: BridgeError) -> int:
     if exc.kind == "not-found":
         return _emit_state(
             out, err, "unknown/reconcile", {"jobId": job_id, "reason": str(exc)}
@@ -924,8 +919,8 @@ def run_watcher(
     sinks: dict[str, str] | None = None,
     anchors: dict[str, list[str]] | None = None,
     now: Callable[[], datetime] | None = None,
-    stdout: TextIOBase | None = None,
-    stderr: TextIOBase | None = None,
+    stdout: TextIO | None = None,
+    stderr: TextIO | None = None,
     liveness_path: Path | None = None,
 ) -> int:
     out = stdout if stdout is not None else sys.stdout

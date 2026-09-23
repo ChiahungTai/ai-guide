@@ -25,6 +25,13 @@ TAIL_BUDGET_BYTES = 20000
 STATE_BUDGET_BYTES = 4000
 OUTPUT_GUARD_BYTES = 30000  # 最終防線（framing＋JSON 結構開銷後仍須 < 32768）
 INJECT_MARKER = "<compact-tail-inject>"  # 跳過上代注入，防連續 compact 遞迴膨脹
+INJECT_PREFIX = (
+    INJECT_MARKER + "\n以下為 /compact 壓縮前的對話尾部原文與專案 STATE，"
+    "由 SessionStart hook 注入。tail 是壓縮前尾段的**原文**——與摘要衝突時的"
+    "裁決規則：摘要中若含對尾段內容的明確更正或裁決，以更正為準；其餘以 tail "
+    "原文為準（優於任何重新注入的舊快照）。STATE.md 為專案 session 觀察層。\n"
+)
+INJECT_SUFFIX = "</compact-tail-inject>"
 TRUNCATION_MARKER = "[truncated]\n"
 
 
@@ -64,7 +71,7 @@ def _fetch_tail_blocks(transcript_path: str) -> list[tuple[str, str]]:
     """由 transcript JSONL 尾段累積 raw text 到 bytes 預算。
 
     截斷砍最舊、保最新（verbatim 標的在最後）。排除 compact 摘要列、
-    sidechain（subagent）列、含上代注入 marker 的列。
+    sidechain（subagent）列；逐 text block 排除完整 producer envelope，保留一般提及。
     """
     entries: list[tuple[str, str, str]] = []  # (role, hh:mm:ss, text)
     with open(transcript_path, encoding="utf-8") as fh:
@@ -77,8 +84,16 @@ def _fetch_tail_blocks(transcript_path: str) -> list[tuple[str, str]]:
                 continue
             if e.get("isCompactSummary") or e.get("isSidechain"):
                 continue
-            text = "\n".join(t for t in _texts_of(e.get("message") or {}) if t).strip()
-            if not text or INJECT_MARKER in text:
+            text = "\n".join(
+                t
+                for t in _texts_of(e.get("message") or {})
+                if t
+                and not (
+                    t.strip().startswith(INJECT_PREFIX + "\n\n")
+                    and t.strip().endswith("\n\n" + INJECT_SUFFIX)
+                )
+            ).strip()
+            if not text:
                 continue
             ts = str(e.get("timestamp", ""))
             hhmmss = ts.split("T")[-1][:8] or ts[:8]
@@ -164,12 +179,7 @@ def main() -> None:
     if not tail and not state:
         print("compact-tail-inject: 無可注入內容", file=sys.stderr)
         return
-    parts = [
-        "<compact-tail-inject>\n以下為 /compact 壓縮前的對話尾部原文與專案 STATE，"
-        "由 SessionStart hook 注入。tail 是壓縮前尾段的**原文**——與摘要衝突時的"
-        "裁決規則：摘要中若含對尾段內容的明確更正或裁決，以更正為準；其餘以 tail "
-        "原文為準（優於任何重新注入的舊快照）。STATE.md 為專案 session 觀察層。\n"
-    ]
+    parts = [INJECT_PREFIX]
 
     def render(raw_tail: str) -> str:
         framed = parts.copy()
@@ -177,7 +187,7 @@ def main() -> None:
             framed.append(f"<raw-tail session={session_id}>\n{raw_tail}\n</raw-tail>")
         if state:
             framed.append(f"<state-md>\n{state}\n</state-md>")
-        framed.append("</compact-tail-inject>")
+        framed.append(INJECT_SUFFIX)
         return json.dumps(
             {
                 "hookSpecificOutput": {

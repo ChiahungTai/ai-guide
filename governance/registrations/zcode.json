@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/zcode_agent_background_gate.py"
             ],
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/block-python-c-comment.py"
             ],
@@ -28,7 +28,7 @@
           },
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/block-python-file-write.py"
             ],
@@ -36,7 +36,7 @@
           },
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/kanban-skill-gate.py"
             ],
@@ -49,7 +49,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/block-memory-index-write.py"
             ],
@@ -57,7 +57,7 @@
           },
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/marshal_admission_guard.py"
             ],
@@ -79,7 +79,7 @@
           },
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/memory-index-regen.py"
             ],
@@ -91,7 +91,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/post-build-gate.py"
             ],
@@ -103,7 +103,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/watcher_pairing_nag.py"
             ],
@@ -118,7 +118,7 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/memory-write-sensor.py",
               "--source",
@@ -133,10 +133,25 @@
         "hooks": [
           {
             "type": "process",
-            "command": "python3",
+            "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/kanban-skill-gate.py"
             ],
+            "timeoutMs": 10000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/compact-restore-inject.py"
+            ],
+            "enabled": true,
             "timeoutMs": 10000
           }
         ]

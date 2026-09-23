@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """watcher pairing nag（Stop hook）——bridge 派工×watcher 在場配對催告
 （AIR-135 Q8 MVP-2；AIR-152。post-build-gate 形態：budget 2、fail-open、
 只報新增未配對不報存量）。
@@ -34,8 +33,10 @@
 registration）。
 state／audit 落 `.agent-tmp/`（gitignored lifecycle 區，跨 session 自然分檔：
 state per-session id、audit append-only jsonl）。
-hook runtime python 3.9（機器 python3）——禁 3.10+ 語法。
+部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback 窗期保留
+Python 3.9 語法相容。
 """
+
 import json
 import os
 import subprocess
@@ -45,8 +46,8 @@ from datetime import datetime, timezone
 GRACE_MINUTES = 10.0
 BLOCK_BUDGET = 2
 # 鏡像常數：單一源 scripts/bridge_waiter.py HEARTBEAT_STALE_THRESHOLD_MIN——
-# 本 hook runtime py3.9 無法 import（bridge_waiter 用 3.10+ 語法），鏡像值
-# 由 tests/test_watcher_heartbeat.py regex 釘同值防 drift（AIR-158）
+# 本 hook 保持獨立、低啟動成本，不 import bridge_waiter；鏡像值由
+# tests/test_watcher_heartbeat.py regex 釘同值防 drift（AIR-158）
 HEARTBEAT_STALE_THRESHOLD_MIN = 30.0
 CONCLUDED_EVENTS = ("collected", "advisory")
 LEDGER_REL = os.path.join(".delegate-bridge", "jobs.json")
@@ -65,14 +66,17 @@ def _iso_to_aware(value):
         return None
     if parsed.tzinfo is None:
         return None  # naive 不做時區假設——不可計齊＝不催告（fail-safe 方向）
-    return parsed.astimezone(timezone.utc)
+    return parsed.astimezone(timezone.utc)  # noqa: UP017 -- retain Python 3.9 rollback runtime compatibility.
 
 
 def _git_toplevel(cwd):
     try:
         out = subprocess.run(
             ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=10,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         if out.returncode == 0 and out.stdout.strip():
             return out.stdout.strip()
@@ -127,8 +131,7 @@ def _heartbeat_stale(last_seen, now):
     """heartbeat 停滯判準（AIR-158 watcher death 檔）——正 gate 用
     not (x <= floor) 形（IEEE 754 fail-open 防護，bridge_waiter crossed_floor
     同款）。"""
-    return not ((now - last_seen).total_seconds()
-                <= HEARTBEAT_STALE_THRESHOLD_MIN * 60)
+    return not ((now - last_seen).total_seconds() <= HEARTBEAT_STALE_THRESHOLD_MIN * 60)
 
 
 def _load_state(state_path):
@@ -154,8 +157,10 @@ def _save_state(state_path, state):
             json.dump(state, fh, ensure_ascii=False)
         return True
     except Exception as exc:
-        print("[watcher_pairing_nag] state 寫入失敗（fail-open 不擋）: %r" % (exc,),
-              file=sys.stderr)
+        print(
+            f"[watcher_pairing_nag] state 寫入失敗（fail-open 不擋）: {exc!r}",
+            file=sys.stderr,
+        )
         return False
 
 
@@ -164,11 +169,17 @@ def _audit(repo, payload):
         path = _repo_file(repo, AUDIT_REL)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "a", encoding="utf-8") as fh:
-            fh.write(json.dumps({
-                "event": "budget-exhausted",
-                "at": datetime.now(timezone.utc).isoformat(),
-                "session": payload.get("session_id", ""),
-            }, ensure_ascii=False) + "\n")
+            fh.write(
+                json.dumps(
+                    {
+                        "event": "budget-exhausted",
+                        "at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 -- retain Python 3.9 rollback runtime compatibility.
+                        "session": payload.get("session_id", ""),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
     except Exception:
         pass
 
@@ -177,18 +188,20 @@ def _waiter_arm_line(job_id):
     """可 copy-paste 的 watcher arm 命令（waiter 與本 hook 同 repo——部署面一致）。"""
     waiter = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "scripts", "bridge_waiter.py",
+        "scripts",
+        "bridge_waiter.py",
     )
-    return "uv run python %s %s" % (waiter, job_id)
+    return f"uv run python {waiter!s} {job_id!s}"
 
 
 def _rearm_line():
     """可 copy-paste 的單次自動重掛命令（AIR-158 死亡檔出口）。"""
     rearm = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "scripts", "watcher_rearm.py",
+        "scripts",
+        "watcher_rearm.py",
     )
-    return "uv run python %s" % rearm
+    return f"uv run python {rearm!s}"
 
 
 def evaluate(payload):
@@ -209,9 +222,9 @@ def evaluate(payload):
     if not isinstance(rows, list):
         return None
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)  # noqa: UP017 -- retain Python 3.9 rollback runtime compatibility.
     unpaired = []  # 無登記——「無 watcher」檔（原語義）
-    dead = []      # 有登記但 heartbeat 停滯——「watcher 疑似死亡」檔（AIR-158）
+    dead = []  # 有登記但 heartbeat 停滯——「watcher 疑似死亡」檔（AIR-158）
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -258,24 +271,17 @@ def evaluate(payload):
         arm_lines = "\n".join("  " + _waiter_arm_line(j) for j in fresh)
         sections.append(
             "bridge job 派工後無 watcher 在場（AIR-135.7 配對語義；超寬限 "
-            "%d 分鐘且 .agent-tmp/liveness.jsonl 無登記）：%s\n"
-            "離場前先掛起 watcher（派工去睡＝watcher 接手盯場），逐 job：\n%s\n"
+            f"{int(GRACE_MINUTES):d} 分鐘且 .agent-tmp/liveness.jsonl 無登記）：{', '.join(fresh)!s}\n"
+            f"離場前先掛起 watcher（派工去睡＝watcher 接手盯場），逐 job：\n{arm_lines!s}\n"
             "或以 foreground wait 收完再走（免責：在回覆聲明前台等待理由與收法）。"
-            % (int(GRACE_MINUTES), ", ".join(fresh), arm_lines)
         )
     if fresh_dead:
         arm_lines_dead = "\n".join("  " + _waiter_arm_line(j) for j in fresh_dead)
         sections.append(
             "bridge job 的 watcher 疑似死亡（AIR-158 liveness 腿；liveness.jsonl "
-            "有登記但 heartbeat 停滯超過 %d 分鐘）：%s\n"
-            "單次自動重掛（已重掛過的 job 只報警不再重掛）：\n  %s\n"
-            "或人工確認後逐 job 重 arm：\n%s"
-            % (
-                int(HEARTBEAT_STALE_THRESHOLD_MIN),
-                ", ".join(fresh_dead),
-                _rearm_line(),
-                arm_lines_dead,
-            )
+            f"有登記但 heartbeat 停滯超過 {int(HEARTBEAT_STALE_THRESHOLD_MIN):d} 分鐘）：{', '.join(fresh_dead)!s}\n"
+            f"單次自動重掛（已重掛過的 job 只報警不再重掛）：\n  {_rearm_line()!s}\n"
+            f"或人工確認後逐 job 重 arm：\n{arm_lines_dead!s}"
         )
     reason = "\n".join(sections)
     entry["count"] = entry.get("count", 0) + 1
@@ -296,7 +302,7 @@ def main():
     try:
         reason = evaluate(payload)
     except Exception as exc:  # fail-open：禁讓 turn 崩
-        print("[watcher_pairing_nag] fail-open: %r" % (exc,), file=sys.stderr)
+        print(f"[watcher_pairing_nag] fail-open: {exc!r}", file=sys.stderr)
         reason = None
     if reason:
         print(json.dumps({"decision": "block", "reason": reason}))
