@@ -24,6 +24,7 @@
 | durable_owner        | 落點優先序（EP/journal 指針）           |      |
 | scope/cwd/baseline   | scope/cwd/baseline＋本弧 dirty          |      |
 | authorization        | 授權來源與範圍指針                      |      |
+| lessons              | session-local scar（可選，不驗）       |      |
 
 四問判準是「可答」非「有進度」：completed/pending 允許空 list（弧起點的
 合法回答），objective/next_action 須非空白字串。額外欄位不拒絕（前向相容）。

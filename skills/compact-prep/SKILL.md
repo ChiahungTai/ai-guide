@@ -29,6 +29,8 @@ when_to_use: "① session 工作中——維護 checkpoint 與 durable owner（�
 
 **內容政策**（承接 preserve-list）：脈絡壓縮非時序流水帳；素材範圍＝全 session 非尾端窗口；需逐字保存的錯誤／findings 原文例外於「引用不重抄」；選擇標準是相關性不是對話位置。
 
+**lessons（十欄之外 optional，觸發式建議非義務）**：觸發——本 session 發生同錯重犯或 user 糾正致行為變更時，checkpoint 加 `lessons: string[]`：≤5 條、一行一條、「下次做 X 而非 Y」形（mistake→correction 語義）；無傷疤 session 省略合法。抽源判準：journal 已記＋實際發生＋correction 已確認或行為已變更，且「接續者不看會重犯」；排除 transient failure、純風格偏好、未驗證風險、設計內行為（如介面記憶歸零）。隱私：路徑一律 repo-relative、禁 secret/home 名。分界：lessons 是 session-local scar，checkpoint lessons 永不自動晉升——跨 session 教訓走 rules/skills/memory 晉升（memory-audit）。讀取面：lessons 被讀到靠恢復流程 step 1 讀 checkpoint 全文，非 hook 注入（hook 只給 thin pointer）。
+
 **memory 候選整理（可選，非救援必要路徑）**：落盤成功後才做；usage 不足／無寫權／gate 故障時跳過並記交接待辦——不得跳過後宣稱已蒸餾。
 
 ## 義務二：恢復接線（新 context 開口）
