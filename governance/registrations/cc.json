@@ -80,6 +80,11 @@
         {
           "type": "command",
           "command": "python3 {{REPO}}/hooks/block-python-file-write.py"
+        },
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/kanban-skill-gate.py",
+          "timeout": 10
         }
       ]
     },
@@ -106,6 +111,16 @@
         {
           "type": "command",
           "command": "python3 {{REPO}}/hooks/memory-write-sensor.py --source claude"
+        }
+      ]
+    },
+    {
+      "matcher": "Read",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 {{REPO}}/hooks/kanban-skill-gate.py",
+          "timeout": 10
         }
       ]
     }
