@@ -179,8 +179,10 @@ else
   chk "P5 收斂可行性（$TRUNK @ ${TRUNK_WT:-暫時 worktree}${TRUNK_WT:+，clean=$TRUNK_WT_CLEAN}）" "$([ "$TRUNK_WT_CLEAN" = "1" ] && echo 1 || echo 0)" "$TRUNK_WT working tree 不 clean——先處理再收"
 fi
 
-# 池副本分流提醒（不自動執行）
-info "池副本提醒：池 gitignored——WT 池寫入已隨 symlink 直落 primary canonical；若有池結構副本需重放，由 marshal 合併後套（本腳本不自動執行）"
+# 池副本分流提醒（不自動執行）——guard 同 wt-open WARN-skip 鍵：無池 repo 不印本提醒
+if [ -d "$WT_PATH/.agents/memory" ]; then
+  info "池副本提醒：池 gitignored——WT 池寫入已隨 symlink 直落 primary canonical；若有池結構副本需重放，由 marshal 合併後套（本腳本不自動執行）"
+fi
 
 if [ "$PREFLIGHT" = "1" ]; then
   rm -rf "$LOCK"; trap - EXIT

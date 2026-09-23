@@ -226,6 +226,8 @@ uv run python scripts/decisions_pending.py add-improvement <owning卡id或-> "<�
 - 下一步：`/commit`（commit 預設需人類確認；自主模式唯一例外＝conditional commit delegation——outward rule 0921 條，predicate＝commit skill，本 skill 止步於此）
 ```
 
+**Anchored gate receipt（AIR-177）**：收尾鏈各 deterministic gate（consistency、rename 反掃、tour corpus gate、lite-verify 對帳等機械腿）通過後，在 post-build receipt 的 `gate_anchors[]` 逐 gate 記錨——每筆＝gate 名＋命令原文＋`git stash create` content hash（tracked working-tree 快照、不動 index——`git write-tree` 錨的是 index，post-build 鏈無 staging 動作＝錨空或 false-fresh）＋exit code＋輸出摘要（計數級，非全文）。錨定限 tracked 面，untracked 產物由輸出摘要承載；重驗 hash 不符＝stale→重跑（fail 向 stale 不向 fresh）。`gate_anchors[]` 與 receipt 內 review legs（commit skill 消費的 legs 結算）並存，消費端各取各鍵。後續 marshal／commit 閘重驗**只重跑三類**：①receipt 驗證失敗（檔缺席／欄位缺／hash 對不上當前樹）；②非確定性 gate（輸出隨環境漂移者）；③flaky 嫌疑隔離清單在冊者——其餘以 receipt 核過即豁免重複執行。**收據只豁免重複執行，語義裁決不隨收據轉移**：findings 取捨、scope／風險 profile 分級、acceptance 判準的判斷一律不繼承（收據證明「跑過且通過」，不證明「審查已足夠」）。
+
 **EP 對照行是再次提醒**（主歸納點在 [implement](../implement/SKILL.md) 階段 6——build 現場最清楚）：弧模式帶階段 1 機械底稿；同 session 接續 → 帶入 implement 階段 6 歸納；修正迴圈有新增變動 → 更新後再報。此行是 commit 決策的 triage 訊號（一眼看出 EP 未解釋的變動），深度渲染屬 `/debrief`；delta_tour 機制與時點條件真相源見 code-review「B. Agent 載體」（S1 風險 profile 派發）。
 
 dual-family 第二審查者因訂閱窗口／額度不足跳過時，必須顯式記錄降級（「額度降級：X 跳過，原因＝…」入收尾報告），禁靜默略過——與 [quality-constraints](../../rules/quality-constraints.md)「主動揭露錯誤（Fail Loud）」同族。

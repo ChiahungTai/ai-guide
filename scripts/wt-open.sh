@@ -24,6 +24,7 @@
 # - 池拓撲分流（AIR-71 形態①）：.agents/memory 與 .agents/memory-inbox 以 symlink 指向
 #   primary canonical 主體（兩者皆 gitignored）——池內容不隨 branch 收斂；涉及池的交付
 #   拆「資產源隨 branch＋池副本 marshal 合併後套」，close 端只提醒不自動執行。
+#   池缺席＝WARN-skip 不 die（AIR-177）——無池 repo 不得建 worktree 到一半才失敗。
 # - stale-state 檢查位：.code-reality index／bridge ledger（.delegate-bridge）／backlog
 #   卡檔對時——三者皆 machine-local 或未 commit 面，開 WT 時逐項回報。
 #
@@ -142,10 +143,12 @@ for pat in ".agents/memory" ".agents/memory-inbox"; do
 done
 
 # ── 池／inbox symlink（primary canonical 主體 → WT 內同名路徑）────────────
-# 池拓撲是 opt-in：primary 無 .agents/ 的 repo（未採 AIR-71 池形態）整段跳過，
-# 不 die（採池 repo 行為不變；真實案例：southchariot 動卡 wt-open 即死於此檢查）
-if [ ! -d "$PRIMARY/.agents" ]; then
-  info "primary 無 .agents/——repo 未採記憶池拓撲，跳過池 symlink"
+# 池拓撲是 opt-in：primary 無 .agents/memory 主體的 repo 整段 WARN-skip，不 die
+# （採池 repo 行為不變；真實案例：southchariot 動卡 wt-open 即死於此檢查；
+# AIR-177：舊行為 .agents/ 在但 memory 主體缺席＝worktree 建到一半 exit 3——
+# 池缺席不是錯誤，mid-way 死才是）
+if [ ! -d "$PRIMARY/.agents/memory" ]; then
+  warn "primary 記憶池缺席（$PRIMARY/.agents/memory）——WARN-skip 池 symlink（池拓撲 opt-in），WT 照常交付"
 else
 mkdir -p "$WT_PATH/.agents"
 for d in memory memory-inbox; do
@@ -221,7 +224,8 @@ if [ "$MODE" = "card" ]; then
 fi
 
 # ── 池 symlink 解析驗證（斷鏈＝fatal）＋ignore 面檢查────────────────────────
-if [ -d "$PRIMARY/.agents" ]; then
+# guard 與 symlink 建立段同鍵（.agents/memory 在場）——池缺席 WARN-skip 時本段空跳
+if [ -d "$PRIMARY/.agents/memory" ]; then
 for d in memory memory-inbox; do
   LINK="$WT_PATH/.agents/$d"
   [ -e "$LINK" ] || die "池 symlink 斷鏈：$LINK"

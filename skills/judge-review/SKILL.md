@@ -133,6 +133,17 @@ finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響
 
 ---
 
+## 常設 judge lane（折衷試行——AIR-177）
+
+> **屬性：折衷試行**——「每弧全新 judge」與「常設 lane」兩極間的試行形態：lane 內跨批接續裁決省每次冷啟，代價以「上限強制換新＋全新 judge 抽樣對帳」償還；試行期與既制並存，漂移超標即退回全新 judge。**三防線鐵律不動**：永不 resume writer 當 judge、逐行裁決附機械證據、sycophancy 否證腿照跑——本節只加 lane 運行規則，不改裁決紀律。
+
+- **定向 resume 帶建立時 `--model` pin**：lane 內接續裁決走定向 resume，必帶**建立時**的 model id（不帶＝落 manifest default、不符＝carrier fail-closed——契約單一源＝[bridge-dispatch rule](../../rules/bridge-dispatch.md)「glm resume model-match」）；resume 只延續裁決 context，**不延續舊卷授權**（mutating continuation 授權失效條款照 [work-order](../_common/work-order.md) §1）
+- **delta packet 餵料**：批間接續只派 delta——新增 findings＋帳本 decision/status 差量＋受影響檔案現況，錨定工作帳本（`.review/<branch>.md`），禁重餵全量歷史；裁決照舊落同帳本
+- **turn/token 上限強制換新＋distilled state 交接**：lane seat 觸及 turn 或 token 上限即強制換新 session——交接 **distilled state**（已裁結論＋改判條件＋未決清單＋查證已覆蓋面，落帳本），新 seat 只讀 distilled state 續裁，禁考古舊卷；「長弧後段防疲勞」自查（三防線機械化補償）在換新後首裁加強
+- **每批一弧全新 judge 抽樣對帳**：每批（lane 內一段連續裁決）至少一次以全新 judge（fresh context、不 resume）重裁同批抽樣 findings——同 finding 結論相異且不可歸因於新證據＝lane context 污染訊號：該批裁決重開＋lane 換新；抽樣與比對結果記帳本
+
+---
+
 ## 語音通知
 
 遵循 [voice-notification skill](../voice-notification/SKILL.md)（隨機稱謂、sentinel 進度提醒、say 樣板見 skill）：

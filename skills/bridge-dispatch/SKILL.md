@@ -21,6 +21,16 @@ delegated job 完成時**不會通知任何人**——`task --background` detach
 
 watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄collection 配對——完整模式」段；watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；bare shell 呼叫 watcher 須帶 `DELEGATE_BRIDGE_BIN=<bridge 絕對路徑>`（watcher 預設只查 PATH，找不到即 clean fail-loud exit 2 附修法——路徑由 installed_plugins.json registry pin 解析，見 rules caller surface 表；0921 dogfood 實證）；雙軸 stalled 判準已對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」——0921 codex 腿 drift finding 修復）；**codex web 長生成期 heartbeat 滯後→worker 軸 5m floor 常態性誤報**（0921 高強度研究工單實證×3，job 本體活躍）——研究類派工帶 `--kind research` 抬 runtime floor 並容忍 advisory；watcher 增量定位＝124 透明 re-arm＋advisory wake＋CollectionReceipt 機驗（native wait 已原生支援 N-job batch fan-in 與雙軸 stuck 觀察——勿重複實作，長期 liveness 語義下沉回 producer）；0921 消費同步已落地：bridge ≥2.0.23 時 watcher arm 帶 `--wake-on-stuck --wake-axis runtime`，exit 3 wake JSON 轉譯為現行 stalled-advisory（自算雙軸輪詢退役；124 re-arm／terminal collect／exit 2 分流保留）——選 runtime 軸不選 worker，因 codex web 長生成期 heartbeat 滯後誤報×3（前述），選軸即把誤報消化在 producer；<2.0.23 維持自算雙軸（版本閘控雙模，MIN pin 不變 2.0.22——ZCode pin 翻轉後自動走 native）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝delegate-run-output「Receipt acceptance」節，本檔引用不自創）。
 
+## Canonical dispatch runbook（glm writer lane）
+
+> glm writer（implementation）派發的全命令模板鏈——把 rules/bridge-dispatch.md 各條收斂成單一序列；條文語義單一源仍在 rule 端（本節只排步，不重定義）。
+
+1. **registry pin 解析**：plugin surface 用 `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`；bare shell 讀 `~/.zcode/cli/plugins/installed_plugins.json` 取 `installPath` 拼 `bin/delegate-bridge`——禁手拼版本化 cache 路徑（第二 pin，rules caller surface 表）
+2. **provision 前置**：workspace 首次 glm 委派前 `delegate-bridge provision --family glm`；spawn verify-only（缺漏／drift＝fail-loud 附指引，不自動補）
+3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）
+4. **watcher 配對（cwd＝job workspace）**：派工同 step arm `uv run python <ai-guide repo>/scripts/bridge_waiter.py <jobId>`——**waiter 的 cwd 必須＝job 的 workspace**：job ledger 是 per-workspace（`<ws>/.delegate-bridge/`），cwd 錯位＝查無 job（not-found 誤入 reconcile 分支）
+5. **定向 resume**：接續必帶**建立時** `--model <id>`（ledger row 有記；不符＝carrier fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`
+
 ## 下沉細節（自 rules 精煉遷入——on-demand 參考）
 
 - provision 機制細節：user-invoked；stage per-model read-only configs＋sha256 manifest。glm 建立 job 的 model 記在 ledger row（resume 對帳用）；fail-closed 錯誤附 actionable hint。
