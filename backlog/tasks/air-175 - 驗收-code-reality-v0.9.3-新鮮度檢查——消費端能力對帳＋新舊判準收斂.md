@@ -1,10 +1,10 @@
 ---
 id: AIR-175
 title: 驗收 code-reality v0.9.3 新鮮度檢查——消費端能力對帳＋新舊判準收斂
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-23 10:00'
-updated_date: '2026-09-23 11:35'
+updated_date: '2026-09-23 11:44'
 labels: []
 dependencies: []
 ordinal: 161000
@@ -37,3 +37,25 @@ flowchart LR
   E --> F
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 四態實跑對帳：fresh（pair 相等）／stale（content-drift 等）／legacy（legacy-signals）／無 slot（FAIL＋指引）全驗，exit 全 0
+- [x] #2 cr-query 舊 HEAD 判準句收斂：[SRC] 行降級 provenance 顯示、head_drift 獨立語義入條文
+- [x] #3 review-engine <1s 誠實前提傳播（冷啟全量 hash＋同尺寸同 mtime 逃 gate 由 stamp 兜底）
+<!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**結案（2026-09-23）**：四態實跑對帳完成（fresh ✓ pair 相等／stale ✓ content-drift＋doc-set-drift／legacy ✓ legacy-signals／no-slot ✓ [FAIL]＋指引；exit 全 0 fail-open）＋兩處條文收斂落地（69f26c52）：①cr-query [SRC] 行降級為 per-symbol provenance 顯示，新鮮判定一律走 freshness face，head_drift 獨立欄位不進 stale_reasons（HEAD 前進≠過期）②review-engine <1s 補兩誠實前提（冷啟全量 hash／同尺寸同 mtime 逃 cache gate 由 stamp 全量重 hash 兜底，最壞 false-stale 安全方向）。驗發現缺陷：無（face 行為與條文宣稱一致）——CR 線無需回執缺陷。
+
+```mermaid
+flowchart LR
+  F["freshness face 四態"] -->|"fresh: pair 相等"| OK["可宣稱新鮮"]
+  F -->|"stale: content-drift 等"| DG["降級 committed-baseline"]
+  F -->|"legacy: 無戳記"| LG["legacy-signals"]
+  F -->|"無 slot"| NS["FAIL＋建立指引"]
+  HD["head_drift 獨立欄位"] -.->|"HEAD 前進≠過期"| F
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
