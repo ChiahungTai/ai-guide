@@ -6,7 +6,7 @@
 
 ## 1. 紅線（首段，違反＝失敗）
 
-- 禁 `git add`／`git commit`／`git push`／改任何 backlog 卡狀態——止步於 working tree 編輯（「止步 commit 前」不夠，AIR-18 自行 staged 多檔教訓）
+- 禁 `git add`／`git commit`／`git push`／改任何 backlog 卡狀態——止步於 working tree 編輯（「止步 commit 前」不夠，AIR-18 自行 staged 多檔教訓）；例外：`--marshal` 派工（DB-33 authority profile）的 writer 工單本 no-commit fence 不適用——commit 授權依 caller conditional commit delegation（見 §8「marshal mode 條款」；push／backlog 紅線不變）
 - read-only 任務禁任何寫入（advisory profile 尤甚）
 - **禁再委派**：work order 收方不得再 spawn／再派子任務（委派單向——子智能體不能再派發子智能體，跨 runtime 亦同；AIR-91 S3 起為紅線）
 - 禁把產物寫到 `/tmp` 或 repo 外；中間筆記不留檔
@@ -89,6 +89,8 @@
 > - 填寫形態（逐 dispatch 一行，機械可掃 `^>? ?-? ?watcher：`）：`watcher：<arm one-liner>`｜`watcher：foreground-wait——<免責理由>`
 
 > **writer 落盤條款（implementation 工單必含）**：writer（implementation）工作單必含 bounded slices＋checkpoint receipt 落盤條款（契約原文單一源＝AIR-135.7，引用不重刻）。
+
+> **marshal mode 條款（`--marshal` 派工——DB-33 authority profile）**：`--marshal` 派工的 writer 工單不帶 §1 blanket no-commit fence——commit 授權改依 caller 的 conditional commit delegation（active arc＋有效 post-build receipt＋judge 收斂＋revision 未變；predicate＝commit skill）。不動項：correctness guards（glm leading-slash 防護、model pin）保留；reviewer READ-ONLY fence 保留（role 語義）。依據：commit 治理不進 bridge——bridge 供能力＋audit stamp（`authorityMode=marshal`），治理正確位置是 caller governance。
 
 1. `rg -n "external-runtime" rules/model-routing.md` → ≥1 命中
 2. `rg -n "eligibility" rules/model-routing.md` → 命中
