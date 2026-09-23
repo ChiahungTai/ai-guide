@@ -1,10 +1,10 @@
 ---
 id: AIR-174
-title: 治理 hooks 統一到 Python 3.12 runtime
+title: 治理 hooks runtime 分割——3.9 相容＋install 3.12 resolver（memory/compact 閘修復）
 status: Done
 assignee: []
 created_date: '2026-09-23 08:42'
-updated_date: '2026-09-23 11:05'
+updated_date: '2026-09-23 11:29'
 labels: []
 dependencies: []
 references:
@@ -56,6 +56,8 @@ flowchart LR
 接續結算：原 rules/hooks hardening 已在 main 639a479b；三項審查必修已完成，AIR-174 runtime migration 與 CC exec-form parity 修復正進行最後整合審查。下方最終回執將取代上方歷史 To Do 觀察；保留原始審查全文供追溯。
 
 最終收斂：原 hardening 與三項必修完整保留；IR1/IR2 獨立反例修復並複審通過。最終完整測試 2083 passed／2 intentional skips。Receipt: classification=boundary / review=native fresh+intent, Muse external+Arbiter, fresh Muse IR2 final APPROVE (job-mudzulxa-e1dpd1); main judge adopts closure / session-freshness=fresh (source hashes verified) / deployment-surfaces=pending (live configs and bundles not deployed).
+
+【0923 卡面更正】原標題「統一到 Python 3.12 runtime」為貼錯（user 確認）——實際落地＝分割 runtime（hooks 3.9 相容＋installer 解析 managed 3.12）；3.12 deployment migration 未含。receipts 目錄指針：ai-analysis/_tasks/09-23-hook-python312-runtime/。跟進批＝AIR-176；deployment 繼任待開。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
