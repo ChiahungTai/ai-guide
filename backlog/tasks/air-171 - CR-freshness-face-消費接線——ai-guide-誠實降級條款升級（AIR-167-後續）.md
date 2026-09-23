@@ -1,12 +1,15 @@
 ---
 id: AIR-171
 title: CR freshness face 消費接線——ai-guide 誠實降級條款升級（AIR-167 後續）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-23 01:46'
 updated_date: '2026-09-23 01:47'
 labels: []
 dependencies: []
+references:
+  - skills/cr-query/SKILL.md
+  - skills/review-engine/SKILL.md
 ordinal: 157000
 ---
 
