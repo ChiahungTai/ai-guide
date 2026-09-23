@@ -1,7 +1,7 @@
 ---
 id: AIR-168
 title: scbus 位址制契約——address+binding＋送達意圖三態（D4；sc-router 工單前置）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 23:29'
 updated_date: '2026-09-23 19:51'
@@ -56,3 +56,18 @@ flowchart LR
 
 【0924 驗收＋AC1 落地】sc-router S1-S6 交付（main a8a5e0b）驗收通過：部署升級 install.sh（uv tool install --force；registry 無損遷移——1268 sessions/14 claims/my session 健在）；§8 五項機驗 PASS——①transfer gen1→2 後寄 address 新 holder 收到（schema v2 envelope）②steer/notify 無 holder fail-loud exit 1＋可操作提示、queue 可達、fallback queue 顯式降級 fallback_used:true ③address ls --pending 信封面＋ack acked:true generation 帶回 ④observe 後 lease_expires_at_us 不變（假新鮮消失）⑤muse steer fail-loud exit 1；對抗案例 double-claim name_conflict、stale holder renew/ack fencing exit 1（generation 指控）。AC1：契約 v2 落 governance/scbus-address-contract.md。備考：headless queue 不偽報 consumed 有部分旁證（queue-mode ack consumed:false），resume binding 語義未獨立複驗（歸 SCR e2e 覆蓋）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+契約 v2 落 governance/scbus-address-contract.md（單一源，含 §5 四面 drain 矩陣）；sc-router S1-S6 交付驗收通過——部署升級（registry 無損遷移 1268 sessions/14 claims）＋§8 五項＋三對抗案例全數機驗 PASS（詳 .agent-tmp/scr-accept/）。
+
+```mermaid
+flowchart LR
+  W["工單信 AC2"] --> R["sc-router 主權實作 S1-S6"]
+  R --> D["部署升級 install.sh＋registry 無損遷移"]
+  D --> V["§8 五項＋三對抗案例機驗"]
+  V -->|全 PASS| G["契約 v2 落 governance 單一源"]
+  G --> F["四面 drain 矩陣：muse 待 ingress"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
