@@ -1,13 +1,15 @@
 ---
 id: AIR-168
 title: scbus 位址制契約——address+binding＋送達意圖三態（D4；sc-router 工單前置）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-22 23:29'
-updated_date: '2026-09-23 00:03'
+updated_date: '2026-09-23 04:49'
 labels:
   - orchestration
 dependencies: []
+references:
+  - scripts/
 ordinal: 154000
 ---
 
