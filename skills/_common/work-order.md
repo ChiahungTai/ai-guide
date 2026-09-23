@@ -90,7 +90,7 @@
 
 > **writer 落盤條款（implementation 工單必含）**：writer（implementation）工作單必含 bounded slices＋checkpoint receipt 落盤條款（契約原文單一源＝AIR-135.7，引用不重刻）。
 
-> **marshal mode 條款（`--marshal` 派工——DB-33 authority profile）**：`--marshal` 派工的 writer 工單不帶 §1 blanket no-commit fence——commit 授權改依 caller 的 conditional commit delegation（active arc＋有效 post-build receipt＋judge 收斂＋revision 未變；predicate＝commit skill）。不動項：correctness guards（glm leading-slash 防護、model pin）保留；reviewer READ-ONLY fence 保留（role 語義）。依據：commit 治理不進 bridge——bridge 供能力＋audit stamp（`authorityMode=marshal`），治理正確位置是 caller governance。
+> **marshal mode 條款（`--marshal` 派工——DB-33 authority profile）**：`--marshal` 派工的 writer 工單不帶 §1 blanket no-commit fence——commit 授權改依 caller 的 conditional commit delegation（active arc＋有效 post-build receipt＋judge 收斂＋revision 未變；predicate＝commit skill）。不動項：correctness guards（glm leading-slash 防護、model pin）保留；reviewer READ-ONLY fence 保留（role 語義）。若 `--marshal` 與 `--session-id` resume／fork 接續同時存在，resume 只延續 session context，不延續舊卷授權；commit 仍須依當次 canonical arc state＋gate evidence 重新成立 conditional delegation。依據：commit 治理不進 bridge——bridge 供能力＋audit stamp（`authorityMode=marshal`），治理正確位置是 caller governance。
 
 1. `rg -n "external-runtime" rules/model-routing.md` → ≥1 命中
 2. `rg -n "eligibility" rules/model-routing.md` → 命中
