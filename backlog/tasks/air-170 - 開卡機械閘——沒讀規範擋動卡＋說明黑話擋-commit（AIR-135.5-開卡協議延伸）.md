@@ -4,7 +4,7 @@ title: 開卡機械閘——沒讀規範擋動卡＋說明黑話擋 commit（AIR
 status: In Progress
 assignee: []
 created_date: '2026-09-23 00:07'
-updated_date: '2026-09-23 00:11'
+updated_date: '2026-09-23 00:45'
 labels:
   - infrastructure
 dependencies: []
@@ -41,8 +41,14 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 動卡前閘落地：PreToolUse hook（zcode＋CC 註冊）——session 未載入 kanban skill 而執行 backlog task create/edit → deny＋指引訊息；已載入（session 標記）→ 放行；附 unit tests（擋/放行兩案）
-- [ ] #2 黑話掃描落地：card-diagram-guard 擴充——Description 主體內部代號 regex 掃描（D\d、C\d[ab]、flash [ABC]、job- 编號等 pattern）→ deny＋訊息；結尾證據指針行豁免；附 tests
-- [ ] #3 AIR-135.5 卡 amendment 註記（協議①延伸登記：兩閘出處與判準）
+- [x] #1 動卡前閘落地：PreToolUse hook（zcode＋CC 註冊）——session 未載入 kanban skill 而執行 backlog task create/edit → deny＋指引訊息；已載入（session 標記）→ 放行；附 unit tests（擋/放行兩案）
+- [x] #2 黑話掃描落地：card-diagram-guard 擴充——Description 主體內部代號 regex 掃描（D\d、C\d[ab]、flash [ABC]、job- 编號等 pattern）→ deny＋訊息；結尾證據指針行豁免；附 tests
+- [x] #3 AIR-135.5 卡 amendment 註記（協議①延伸登記：兩閘出處與判準）
 - [ ] #4 dogfood：本 repo 下次建卡實測兩閘各一次（擋一次＋放行一次，留紀錄）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0923 實作收斂】分工律下混合弧：5.3 寫主體（被更正分工時已近完成）→Flash（impl-lite）驗證補完（26+1656 全綠、bare python3 deny/allow 實跑、deny schema 機械比對官方文檔）→5.3 fresh-eyes（approve-with-findings F1-F8）→judge：F1 採納現修（CJK lookaround＋2 測試案，28 passed；Flash 執行）、F2 docstring 註記、F3-F7 接受（寧誤抓方向＋逃生口完備）、F8 已補（135.5 amendment 註記 c74c8fde）。commit 1b18f5a5（main，wt-close full 零殘留）＋hooks live 安裝。AC#4 dogfood 待下次建卡實測兩閘。殘留取捨（F4 行級豁免搭便車/F5 flash B2/F6 marker 偽造面/F7 MCP 形態缺口）已記 fresh-eyes 報告，後續觸發再修。
+<!-- SECTION:NOTES:END -->
