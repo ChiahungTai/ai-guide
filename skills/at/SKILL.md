@@ -90,6 +90,12 @@ context: {ticket_path}
 
 > **禁靜默降級（gate）**：arm 失敗後**禁**退背景 sleep／`sleep`+喚醒等 session 內替代——sleep 綁 session 存活，session 死＝保險全滅（三連敗實證）；CronCreate 被拒與 session 內 sleep 是兩個 failure domain，**不可互為 fallback**。處置只有兩條：向 user 回報 arm 失敗原因，或 `transition --to CANCELLED` 結案（Phase 0 已 checkpoint 的狀態照舊在 durable owner，不受影響）。替代 scheduler adapter 須為獨立 failure domain 且經驗證——沒有就標 unsupported，**不自造 scheduler primitive**。SCHEDULER_REJECTED 票非 terminal 禁清（sweep 會持續回報 past-due 直到明示處置）。
 
+> **已知缺口（真實案例：southchariot sc-231）**：ZCode VS Code extension（chtai.southchariot）環境 `CronCreate` 恆失敗——「Cannot verify whether this session belongs to a scheduled task」。
+>
+> - **根因（逆向實證）**：CronCreate 前置需 App 代答 carrier→App 反向請求 `automation/checkTaskBinding`／`automation/list`（handler 住 desktop host）；SC extension 只實作四個 server-request handler（runtimePrefs／MCP auth／permission／userInput），automation/* 恆回 -32601——**永久 capability gap 非暫態**，「Try again later」文案誤導，重試無效。
+> - **繞道**：排程走 ZCode desktop app 內建 Automations UI（desktop host 實作全部 automation handler，desktop scheduler 為唯一 authority）；本命令 arm 失敗照上 gate 落 SCHEDULER_REJECTED，禁重試轟炸。
+> - **出路（條件式，非承諾）**：carrier 端 Patch（app-server 直呼官方 AutomationService）已 probe 可行（~3 檔百行級），待 user 拍板另案——落地前本 gap 不變。
+
 ### Phase 4：確認 + 通知
 
 印出排程摘要（ARMED 後）：
