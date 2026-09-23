@@ -1,10 +1,10 @@
 ---
 id: AIR-170
 title: 開卡機械閘——沒讀規範擋動卡＋說明黑話擋 commit（AIR-135.5 開卡協議延伸）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-23 00:07'
-updated_date: '2026-09-23 00:45'
+updated_date: '2026-09-23 01:21'
 labels:
   - infrastructure
 dependencies: []
@@ -52,3 +52,20 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【0923 實作收斂】分工律下混合弧：5.3 寫主體（被更正分工時已近完成）→Flash（impl-lite）驗證補完（26+1656 全綠、bare python3 deny/allow 實跑、deny schema 機械比對官方文檔）→5.3 fresh-eyes（approve-with-findings F1-F8）→judge：F1 採納現修（CJK lookaround＋2 測試案，28 passed；Flash 執行）、F2 docstring 註記、F3-F7 接受（寧誤抓方向＋逃生口完備）、F8 已補（135.5 amendment 註記 c74c8fde）。commit 1b18f5a5（main，wt-close full 零殘留）＋hooks live 安裝。AC#4 dogfood 待下次建卡實測兩閘。殘留取捨（F4 行級豁免搭便車/F5 flash B2/F6 marker 偽造面/F7 MCP 形態缺口）已記 fresh-eyes 報告，後續觸發再修。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**dogfood AC#4 追蹤（2026-09-23 收案留追蹤）**：兩閘已 main＋live 安裝（1b18f5a5；ZCode 新 session 生效，CC/codex approve 手動）——AC#4＝下次自然建卡實測兩閘各一次（擋/放行），留紀錄後補勾。混合歸屬（5.3 主體＋Flash 驗證＋5.3 fresh-eyes）已記 notes。
+
+```mermaid
+flowchart LR
+  A["AI 想動卡"] -->|"沒讀規範"| B["skill-gate deny＋指引"]
+  A -->|"讀過"| C["放行建卡"]
+  C --> D["Description 人話＋圖"]
+  D --> E["user 確認"]
+  E --> F["commit"]
+  F -->|"黑話/缺圖"| G["guard 擋（v4 CJK lookaround）"]
+  F -->|"乾淨"| OK["進版控"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

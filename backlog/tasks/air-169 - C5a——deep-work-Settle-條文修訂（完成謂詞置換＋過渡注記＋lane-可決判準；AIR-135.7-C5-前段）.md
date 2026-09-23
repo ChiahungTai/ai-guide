@@ -1,10 +1,10 @@
 ---
 id: AIR-169
 title: C5a——deep-work Settle 條文修訂（完成謂詞置換＋過渡注記＋lane 可決判準；AIR-135.7 C5 前段）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-22 23:36'
-updated_date: '2026-09-23 00:23'
+updated_date: '2026-09-23 01:21'
 labels:
   - orchestration
 dependencies: []
@@ -57,3 +57,18 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【0923 實作收斂】worker（5.3）落地兩 hunk（Settle 節＋L254 置換+過渡注記）；fresh-eyes 審查（5.3）verdict＝approve-with-findings。Judge（marshal 5.3）裁決：F1 採納修復——worker 編輯因 wt-open(170) 把 primary 歸位 main 而晾在 canonical，被 admission guard 攔下（防線實證）→走卡 WT（patch 搬運＋branch -f 重置，d9b25c02 與 main 3b3448aa patch 等同零損失）；F2-F8 全採納（merge 入 ask-list／fail-closed judgment-required／evidence delta 三元定義／pending safe-default／precheck 措辭／概括語禁令／C5b 錨點）；F9 記 drift-watch（check_single_source REGISTRY 候選，未登記）。fence L171-213 三次複驗逐字零差。commit 7bbbe6bd（main，wt-close full：rebase→merge→WT+branch 清除零殘留）。AC#4 開放——下次 dw 進場照新條文編譯 /goal 留紀錄後結案。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**dogfood AC#4 追蹤（2026-09-23 收案留追蹤）**：本卡條文面全數落地（AC1-3 勾）；AC#4＝下次 deep-work 自然進場照新條文編譯 /goal 並留調用紀錄（歷史零紀錄的第一次）——不為結案造弧，留自然 dogfood 追蹤。條文 commit 7bbbe6bd。
+
+```mermaid
+flowchart LR
+  OLD["舊：收工條件綁 todo 清單"] -->|0920 stop-early| BAD["提前收工 未完成"]
+  NEW["新：Settle 完成條件節"] --> OK["卡 AC 全勾＋precheck 綠＋報告落盤"]
+  OK --> ST["停法三選一 cap/stall/紅線"]
+  OK --> ROT["批量每卡 goal replace"]
+  ST --> TRACE["AC4 留追蹤：下次 dw 留 /goal 紀錄"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
