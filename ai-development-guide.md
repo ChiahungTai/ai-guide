@@ -48,7 +48,7 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 定義源：條 1/4＝所指 skill；條 2 freshness 判準＝本節。
 
 1. **instruction owner**：durable mechanism 誕生弧必取 owner；coverage 看 owner 不看文件數。predicate 單一源＝[instruction-writing](skills/instruction-writing/SKILL.md)；接線＝implement 5b＋post-build coverage gate。
-2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`——consumer identity 含 dirty WT/content，HEAD-only ≠ fresh；算法歸 code-reality repo。消費面＝review-engine＋cr-query。
+2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`——consumer identity 含 dirty WT/content，HEAD-only ≠ fresh；機械求值＝code-reality `freshness` face（算法真相源歸 code-reality repo；消費語法單一源＝cr-query「Stale graph check」）。消費面＝review-engine＋cr-query。
 3. **advisory startup**：startup hook 只 advisory；correctness gate 在 consumer boundary。
 4. **supervision fence**：弱訊號只 wake；hard death／redispatch 需 authoritative evidence＋scope fence。契約＝[agent-workflow](skills/agent-workflow/SKILL.md)。
 
