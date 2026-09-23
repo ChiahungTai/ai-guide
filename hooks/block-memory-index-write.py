@@ -141,14 +141,6 @@ def extract_desc(text: str) -> str:
     return ""
 
 
-def desc_from_edit(new_string: str) -> str:
-    """Edit 的 new_string 含 description: 行時，回傳該（新）值；否則空字串。"""
-    for line in new_string.splitlines():
-        if line.startswith("description:"):
-            return line.partition(":")[2].strip().strip("'\"")
-    return ""
-
-
 def main() -> None:
     try:
         data = json.load(sys.stdin)
@@ -180,7 +172,8 @@ def main() -> None:
     if not is_entry_file(file_path, has_generator):
         sys.exit(0)
     target = Path(file_path)
-    cur_len = len(target.read_text(encoding="utf-8")) if target.exists() else 0
+    cur_text = target.read_text(encoding="utf-8") if target.exists() else ""
+    cur_len = len(cur_text)
     # ④ 狀態後綴擋（AIR-100 S-B——插在 desc 檢查前，更上游；air-90 決策 P3 落地）
     if cur_len == 0 and STEM_SUFFIX_RE.search(target.stem):
         print(
@@ -249,9 +242,39 @@ def main() -> None:
             )
             sys.exit(2)
     elif tool == "Edit":
-        new_string = tool_input.get("new_string", "") or ""
-        old_string = tool_input.get("old_string", "") or ""
-        desc = desc_from_edit(new_string)
+        new_string = tool_input.get("new_string")
+        old_string = tool_input.get("old_string")
+        replace_all = tool_input.get("replace_all", False)
+        if (
+            not isinstance(old_string, str)
+            or not old_string
+            or not isinstance(new_string, str)
+            or not isinstance(replace_all, bool)
+            or old_string not in cur_text
+        ):
+            print(
+                "[Hook Blocked] Edit 無法重建候選內容：請重新讀取條目，提供可匹配的"
+                " old_string、字串 new_string 與 boolean replace_all。",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        candidate = cur_text.replace(old_string, new_string, -1 if replace_all else 1)
+        previous_desc = extract_desc(cur_text)
+        desc = extract_desc(candidate)
+        if not replace_all and cur_text.count(old_string) > 1:
+            # Body-only ambiguity stays with the tool's uniqueness gate, as
+            # before (including shrink allowance). A description-changing
+            # ambiguous edit cannot be validated as a unique candidate.
+            all_desc = extract_desc(cur_text.replace(old_string, new_string))
+            if desc != previous_desc or all_desc != previous_desc:
+                print(
+                    "[Hook Blocked] Edit old_string 有多處匹配且可能改變 description；"
+                    "請提供唯一匹配或明確設定 replace_all。",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+        if desc == previous_desc:
+            desc = ""  # 存量不溯及：body-only 或攜帶未變 desc 的編輯仍可收斂。
         if len(desc) > DESC_LIMIT:
             print(
                 f"[Hook Blocked] 新 description {len(desc)} chars > {DESC_LIMIT}。\n"
@@ -280,17 +303,9 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(2)
-        cur_text = target.read_text(encoding="utf-8") if target.exists() else ""
-        # replace_all 置換全部 occurrences——膨脹 = 單次 delta × 出現次數（old 空時 count 無意義退單次）
-        occurrences = (
-            cur_text.count(old_string)
-            if tool_input.get("replace_all") and old_string
-            else 1
-        )
-        delta = (len(new_string) - len(old_string)) * occurrences
-        if delta > 0 and len(cur_text) + delta > BODY_LIMIT:
+        if len(candidate) > cur_len and len(candidate) > BODY_LIMIT:
             print(
-                f"[Hook Blocked] 條目檔將膨脹到 {len(cur_text) + delta:,} chars > {BODY_LIMIT:,}。\n"
+                f"[Hook Blocked] 條目檔將膨脹到 {len(candidate):,} chars > {BODY_LIMIT:,}。\n"
                 "膨脹主因＝進行中弧線每 session 追加（實證：單檔 98 次 Edit 養到 84KB）。\n"
                 "修正方式：弧線進度住 EP 檔；此檔收案後一次性蒸餾。收斂方向（縮小）的編輯不受限。",
                 file=sys.stderr,

@@ -59,7 +59,7 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 
 **核心原則**：每個 claim 必須查證，不基於 LLM 訓練資料推測。findings **非定論** — 可被下層（judge-review / 實作查證）推翻，以「可被推翻」的心態輸出。
 
-- **claim 必須查證**：聲稱檔案存在 → Read 它；聲稱命名衝突 → LSP `findReferences` 查 import 鏈；聲稱依賴順序有問題 → LSP `incomingCalls`/`outgoingCalls` 追蹤；聲稱 dead code → LSP `findReferences`（zero hits = 確認）
+- **claim 必須查證**：聲稱檔案存在 → Read 它；命名衝突、依賴順序與 dead code 宣稱 → 依下節查詢路由取得 import／引用／呼叫鏈證據。**zero hits 只代表指定查詢範圍未命中，不能確認 dead code**；刪除宣稱另依 [acceptance-evidence](../acceptance-evidence/SKILL.md)「刪除/死碼自述」查全消費端，包含設定、註冊、動態載入與非函式庫入口，並執行受影響消費者驗證。
 - **無法查證標 `unverified`**：不得當成事實陳述
 - **對外部行為判斷必須實證**（通用原則）：對套件/演算法/數值特性的判斷，不能只靠推理 — 寫最小 demo 跑一次、或引用套件 source（`.venv/lib/...`）具體行號佐證，否則標 inferred + 降級
 - **歸因紀律（mixed-tree）**：審查範圍含非本次變更引入的既有問題時，**不報為 diff 新引入**（標 `pre-existing` 或不報；判準＝baseline 態已存在）。finding 訊噪比政策（HIGH SIGNAL／DO-NOT-FLAG 六條）屬 profile 層——單一源見 [code-quality profile](code-quality-profile.md)「HIGH SIGNAL filter」，本 skill 不收（非全命令適用，見「收進判準」）
@@ -72,24 +72,18 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 
 ## LSP 查證方法
 
-符號查證 cr-first（index 在場；缺場退 LSP），文字搜尋用 rg，檔案用 fd。完整決策樹見 [symbol-query-routing](../../rules/symbol-query-routing.md)。
+查詢路由、在場／freshness 檢查與 fallback 以 [symbol-query-routing](../../rules/symbol-query-routing.md) 為唯一準據；操作與限制見 [symbol-query-routing skill](../symbol-query-routing/SKILL.md)，CR provenance 與覆蓋判讀見 [cr-query](../cr-query/SKILL.md)。本節只定義 review 證據義務，不另設工具分工表。
 
-| 查證對象 | 工具 |
-|---------|------|
-| 符號定義 / 引用 / 型別 / 呼叫鏈 / 介面實作 | LSP（goToDefinition / findReferences / hover / incomingCalls / outgoingCalls / goToImplementation / workspaceSymbol） |
-| 註解、字串、config 值、日誌、TODO | rg（LSP 不索引非程式碼） |
-| 檔案搜尋 | fd（LSP 不處理檔案系統） |
-
-> **圖譜 facts 後備（code-reality，companion）**：衝擊半徑 / transitive callers / affected flows / community 等**圖譜級**結構事實，在 engine 在場的 repo 用 code-reality（見 [cr-query](../cr-query/SKILL.md)）—— LSP 查單一 symbol（定義/簽名/單點引用），CR 查 transitive impact/flows（review 的 Architecture 軸 ripple、change scoping）。分工 + GATE + anti-over-reliance（graph=structure≠behavior，dynamic dispatch/config 不在圖裡）見 cr-query；engine 缺場 → `[WARN]` + fallback LSP/scan-project（不靜默降級）。
+每個結論記錄查詢範圍、source identity／新鮮度、實際命中與未覆蓋面；降級如實標示。CR／LSP 提供其索引或語言服務能解析的結構證據，**不保證涵蓋 runtime 動態引用**；設定驅動、registry、反射與外部入口須另查來源及必要的執行證據。靜態結構證據不能代替 runtime 行為驗證。
 
 ### 自我否證義務
 
 **「找不到」≠「不存在」**。查證 0 hits 時必須：
 
-1. **換工具**：rg 0 hits → LSP `findReferences`（覆蓋動態引用、避免 pattern 失誤）
+1. **核對工具與覆蓋**：依上述路由檢查 index／workspace 新鮮度及查詢範圍；文字搜尋未命中時補符號引用查詢，避免 pattern 漏查，但不得宣稱 CR／LSP 已排除動態引用。
 2. **換 pattern**：`rg "<Class>\("` 失敗 → 試 `rg "<Class>"`（去 `(`，建構方式可能不同）、`workspaceSymbol`
 3. **換位置**：以為在某檔 → `workspaceSymbol` 全域查定義位置
-4. **標「查證失敗」而非「不存在」**：三工具都 0 hits，仍只能標「查證失敗，無法確認」—— **禁止標「不存在」**（查證者可能是 pattern 失誤，非程式碼不存在）
+4. **標明證據限制**：完成可用查詢仍 0 hits，記「已查範圍未命中，尚無法確認不存在」及未覆蓋面；沒有查詢結果不等於程式碼不存在，也不能以工具數量升格成 confirmed。
 
 > 真實案例：審查者 rg 稱「`<ExecutorClass>` 無建構點」→ 不採納 finding。獨立查證：LSP `findReferences` 立刻列出 import 行 + 建構行。審查者 rg pattern 失誤，把「自己沒查到」誤判為「程式碼不存在」。
 

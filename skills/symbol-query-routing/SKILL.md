@@ -9,6 +9,8 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 
 ## LSP operation 速查表（自 rule 下沉）
 
+先依 [查詢路由 rule](../../rules/symbol-query-routing.md) 選 carrier；下表是在 LSP 適用時選 operation，不另設 LSP-first 路由。
+
 | 查什麼 | 首選 | 降級／備註 |
 |--------|------|-----------|
 | 符號引用（dead code、API 變更影響範圍） | `findReferences` | LSP 區分 scope；rg 只匹配文字 |
@@ -22,7 +24,7 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 
 ## LSP 驗證任務 workflow（5 步）
 
-1. **Start with LSP／cr** — 符號導航禁 rg 起手（cr index 在場用 cr）
+1. **依 rule 選工具** — 先依 [查詢路由 rule](../../rules/symbol-query-routing.md) 驗在場／freshness，再使用對應查詢或明示 fallback。
 2. **Verify with evidence** — 禁「looks correct」，一律驗簽名/回傳/呼叫鏈
 3. **Trace full chains** — 被問函式 → 同時追 incomingCalls + outgoingCalls
 4. **Report precise locations** — 每個 finding 附 `file:line`
@@ -40,10 +42,10 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 - `rg "<ServiceClient>\("` 結果被截斷（只顯示 `n`），只能「推測」呼叫端；`LSP findReferences` 精準列出結構化 references（定義 + import + 型別註解 + 唯一實際呼叫點）。
 - **audit 覆蓋判斷（真實案例）**：`rg "list_.*_classes" tests/` → 0 hits，audit 誤報「多個 class 無 membership 斷言」。實際測試用不同符號（列舉函式 / registry 變數），LSP `findReferences` 可找到。**符號覆蓋判斷用 rg 會因命名 pattern 差異 false negative**。
 - **judge-review 查證（真實案例）**：審查者 rg 稱「`<ExecutorClass>` 在 `<module>.py` 無建構點」，LSP `findReferences` 立刻列出 import 行 + 建構行。**符號存在性查證用 rg 會因 pattern 失誤 false negative，把「自己沒查到」誤判為「不存在」**。
-- **rg display masking（真實案例）**：`rg "_update_x_axis_labels"` 把 method 名 mask 成 `n`（輸出 `def n(self) -> None:`）—— **看起來像真實輸出但不是**。masking 比 truncation 更危險：truncation 是「少給」（你知道有漏），masking 是「給錯的」（誤以為查到了，停止往下查）。符號引用查詢一律 LSP `findReferences`。
+- **rg display masking（真實案例）**：`rg "_update_x_axis_labels"` 把 method 名 mask 成 `n`（輸出 `def n(self) -> None:`）—— **看起來像真實輸出但不是**。masking 比 truncation 更危險：truncation 是「少給」（你知道有漏），masking 是「給錯的」（誤以為查到了，停止往下查）。符號引用查詢依 rule 路由取得結構證據，不能以失真的文字輸出下結論。
 - **toplevel-only pattern 漏 local import（真實案例）**：`rg "^from <package>"` 只抓 toplevel import，漏掉函式內的 `from <package>.<module> import ...  # noqa: PLC0415`（local import，被刻意降級以規避循環依賴）。local import 往往是「開發者知道是違規但就地掩蓋」的信號（`# noqa: PLC0415` 是指紋）— 恰恰是最該被抓出的結構債。**依賴分析不可只錨 `^` toplevel**；需搭配 LSP `findReferences`（涵蓋 import 行 + call site）或 rg 不錨 `^` + 篩 `noqa: PLC0415`。
 
-**結論**：符號查詢用 rg 會 truncated/漏/pattern 失誤/masking（給錯的）；LSP 結構化、不截斷、100% 涵蓋（workspace 索引最新時；過時見「Workspace 狀態相依性」段）。**依賴枚舉用錨定 `^` toplevel 會系統性漏一整類（local import）**。
+**結論**：rg 可能 truncated／漏查／pattern 失誤／masking；CR／LSP 提供可解析範圍的結構證據，仍受 source 新鮮度、索引與查詢 coverage 限制，不保證動態引用完整或輸出無截斷。依 rule 路由查證並列未覆蓋面，zero hits 不證明不存在。**依賴枚舉用錨定 `^` toplevel 會系統性漏一整類（local import）**。
 
 ## 方法論限制 loopback（報告內部一致性）
 
@@ -63,28 +65,28 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 
 ## 優先級規則：task prompt 條件句不覆蓋全域規則
 
-task prompt 寫「若有 LSP 工具可用...無 LSP 則用 rg」是**提醒確認可用性**，**不是授權默認假設無 LSP**。衝突時優先級：`skill / 全域 rules > task prompt 條件句`。即：task prompt 的條件句要求你「確認可用性」（調用 LSP 測試），全域規則要求你「符號查詢用 LSP」。兩者一致 — 條件句不構成「跳過 LSP」的授權。
+task prompt 寫「若有 LSP 工具可用...無 LSP 則用 rg」是**提醒確認可用性**，**不是授權默認假設無 LSP**。工具在場、freshness 與 fallback 依 [查詢路由 rule](../../rules/symbol-query-routing.md)；條件句不構成跳過在場確認的理由，也不能把既有 cr-first 路由改成固定 LSP-first。工單工具／唯讀限制仍按 rule 處理。
 
 > **真實失誤案例（本規則的觸發源）**：分析任務全程用 rg，理由是「task prompt 寫若有 LSP 則用」。實際上 LSP 工具可用，但 LLM (a) 誤讀條件句為「預設 rg」、(b) 全程未調用 LSP、(c) 被提醒後用 `timeout` 命令（shell 工具）測試並下結論「LSP 不可用」 — 三重失誤全因缺強制啟動 step。
 
 ## Agent Prompt 工具選擇
 
-> **核心原則**：spawn agent 時，prompt 必須根據任務性質明確指定使用 LSP 或 rg。禁止只寫「驗證/讀取/確認」不指定工具（always-on 摘要見 rules 端 tool-discipline「工具選擇原則」）。
+> **核心原則**：spawn agent 時，prompt 必須依查詢路由 rule 與任務性質指定實際工具。禁止只寫「驗證/讀取/確認」不指定工具（always-on 摘要見 rules 端 tool-discipline「工具選擇原則」）。
 
 **Agent prompt 工具指定模板**：
 
 ```
 # 工具選擇（必填）
-- 簽名/型別/定義位置 → 用 LSP hover / goToDefinition
-- 呼叫鏈/引用 → 用 LSP outgoingCalls / incomingCalls / findReferences
+- 簽名/型別/定義位置 → 依 rules/symbol-query-routing.md 指定查詢；LSP 適用時用 hover / goToDefinition
+- 呼叫鏈/引用 → 依同一 rule 指定 CR 或 fallback；LSP 適用時用 outgoingCalls / incomingCalls / findReferences
 - 文字搜尋（字串、註解、config）→ 用 rg
 - 檔案搜尋 → 用 fd
 - Cython 模組（.pyx/.so）→ 用 rg + Read（LSP 不索引 Cython）
-- audit-test 域 2（Traceability）覆蓋判斷 → 禁用單一 rg pattern；registry membership / class 引用 / method call 必須 LSP findReferences 為主、rg 為輔
-- judge-review 符號查證 → 「X 是否存在 / 在哪引用」必須 LSP findReferences / workspaceSymbol；rg 0 hits 不可直接下「不存在」結論
+- audit-test 域 2（Traceability）覆蓋判斷 → 禁用單一 rg pattern；registry membership / class 引用 / method call 依 rule 取得結構證據，另查字串/config 與動態入口
+- judge-review 符號查證 → 「X 是否存在 / 在哪引用」依 rule 查詢；CR/LSP/rg 0 hits 均不可直接下「不存在」結論
 ```
 
-**判斷方式**：任務描述含「簽名」「型別」「定義」「呼叫」「繼承」「Protocol」→ 主工具 LSP，輔以 rg；含「字串」「註解」「config」「檔案路徑」→ 主工具 rg/fd。
+**判斷方式**：任務描述含「簽名」「型別」「定義」「呼叫」「繼承」「Protocol」→ 依 rule 的符號／型別路由；含「字串」「註解」「config」「檔案路徑」→ 依文字／檔案路由，不另定工具優先序。
 
 ## 跨 harness LSP 載體對照
 

@@ -275,16 +275,16 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 
 ## 導航優先原則
 
-> **核心理念**：instruction file 的導航職責是提供「概念→符號」的種子；符號→位置的機械查找由 LSP 接手。文檔寫作精力應放在語義知識（設計理由、約束、失敗教訓），而非檔案路徑表。
+> **核心理念**：instruction file 的導航職責是提供「概念→符號」的種子；符號→位置的機械查找依查詢路由 rule 選工具。文檔寫作精力應放在語義知識（設計理由、約束、失敗教訓），而非檔案路徑表。
 
 ### 導航的兩個子類（LSP 時代）
 
 | 子類 | 內容 | 誰負責 | 說明 |
 |------|------|--------|------|
 | **導航-A：概念→符號** | 「台股除權息調整」→ `backward_adjust()` | **instruction file（不可約）** | LSP `workspaceSymbol` 要先有名字才能搜；概念是人類用語，符號是程式碼用語，這對應只能人寫 |
-| **導航-B：符號→位置/簽名/引用** | `backward_adjust()` → 哪個檔案、簽名、誰呼叫 | **LSP（可推導）** | `goToDefinition` / `hover` / `findReferences` / `incomingCalls`，live 且 100% 準確 |
+| **導航-B：符號→位置/簽名/引用** | `backward_adjust()` → 哪個檔案、簽名、誰呼叫 | **結構查詢工具（可推導）** | 路由依 [symbol-query-routing](../../rules/symbol-query-routing.md)；CR／LSP 結果受 source 新鮮度與查詢覆蓋限制，不保證 runtime 動態引用完整，zero hits 不證明無消費者 |
 
-**LSP 時代原則**：instruction file 只需給導航-A（概念→symbol name）；導航-B 交給 LSP。檔案路徑不再是要求。LSP 工具決策樹與分工見 `rules/symbol-query-routing.md`。
+**導航原則**：instruction file 只需給導航-A（概念→symbol name）；導航-B 依 [symbol-query-routing](../../rules/symbol-query-routing.md) 查詢。檔案路徑不再是要求；工具選擇與 fallback 不在本檔重定義。
 
 ### 概念→符號映射（導航-A）
 

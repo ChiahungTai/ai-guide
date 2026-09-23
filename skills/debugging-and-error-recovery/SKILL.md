@@ -91,9 +91,9 @@ Narrow down which layer: UI, API, database, build tooling, external service, or 
 
 **環境/依賴錯誤速查**：`ModuleNotFoundError` 先確認 `uv pip install -e .`（package 未以 editable 安裝）；已安裝仍失敗續依 Localize 流程查 import path／package config／誤刪 module——不得僅由 exception type 判定非 code bug（反例：刪錯 consumer 的 runtime `ModuleNotFoundError` 是 code bug）。
 
-**符號查詢預設用 LSP，rg 只做文字/字串**（找 class/def/引用/呼叫端 → LSP first；找字串內容/註解/config → rg）：
+**查詢依 [symbol-query-routing](../../rules/symbol-query-routing.md)** 選工具、核對 freshness 與 fallback；以下是 LSP 適用時的定位方法，不另設 LSP-first 路由：
 
-- 「誰建立/引用這個符號？」→ LSP `findReferences`（100% 涵蓋；rg 可能 truncated/漏動態引用）
+- 「誰建立/引用這個符號？」→ LSP `findReferences` 取可解析引用；CR／LSP 結果都受查詢 coverage 與 source 新鮮度限制，動態引用／外部入口須另驗，zero hits 不證明無 caller。
 - Stack trace `file:line` → LSP `goToDefinition` to jump directly to relevant source
 - Type confusion → LSP `hover` to see actual inferred type at that location
 - "Who calls this method?" → LSP `incomingCalls` to trace execution path to failure point

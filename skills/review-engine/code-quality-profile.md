@@ -163,7 +163,7 @@ DEAD CODE IDENTIFIED:
 
 - **嚴重度分級 + 信心水準**（原 5 級含 Nit/FYI → 統一 3 級 Critical/Important/Suggestion + confirmed/evidence-based/inferred；Critical 禁止 inferred）
 - **審查者自證 / 誠信**（原 Reviewer Self-Verification + Honesty in Review — 每 claim 必須查證、findings 非定論、對外部行為判斷必須實證、不 rubber-stamp）
-- **LSP 查證方法 + 自我否證義務**（原 LSP-Assisted Review — 符號用 LSP、文字用 rg、找不到 ≠ 不存在）
+- **查證方法 + 自我否證義務**（查詢路由依 [symbol-query-routing](../../rules/symbol-query-routing.md)；證據範圍與「找不到 ≠ 不存在」依 review-engine）
 - **Writer-Reviewer 分離 + 多層驗證**（原 Multi-Model Review Pattern — 獨立 context 審查避免自審、review→judge→followup 各層都可能錯）
 
 See also: [review-engine](SKILL.md)（通用審查邏輯真相源）

@@ -14,7 +14,7 @@ harness-scope: neutral
 
 ## Python 命令執行（單一源）
 
-一律 `uv run python`/`uv run pytest` 前綴，禁 `python`/`python3`/`PYTHONPATH`（含 `=$PWD` 形式）。多行 `python -c` 禁換行後 `#` 註解；改單行或 .py。pytest 背景跑；禁外部 `timeout`/`gtimeout`（macOS 無此命令）。逾時替代法、ModuleNotFoundError 處置見 debugging-and-error-recovery skill。
+一律 `uv run python`/`uv run pytest` 前綴，禁 `python`/`python3`/`PYTHONPATH`（含 `=$PWD` 形式）。hook 註冊與隔離複驗依 owner runtime 契約例外，仍須 uv 驗證。多行 `python -c` 禁換行後 `#` 註解；改單行或 .py。pytest 背景跑；禁外部 `timeout`/`gtimeout`（macOS 無此命令）。逾時替代法、ModuleNotFoundError 處置見 debugging-and-error-recovery skill。
 
 ## zsh 動態 flag 組合（陣列、禁純量）
 
@@ -27,7 +27,7 @@ harness-scope: neutral
 
 ## 背景執行
 
-長命令與 spawn agent 背景執行：spawn **一律明帶 `run_in_background: true`**，回報進行中即結束 turn 等通知；**ZCode 端省略自動補背景，前景（含 <30s probe）須 prompt 帶 `[fg]`**。行為契約見 agent-workflow skill「Spawn 預設背景」。
+長命令與 agent 預設非阻塞；schema 有 `run_in_background` 才傳 `true`，否則用原生 async／wait。派發須建立 collection owner 並回收；細節與例外見 agent-workflow skill。
 
 ## 閘門命令禁 pipe 到 tail/grep
 

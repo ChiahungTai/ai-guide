@@ -70,16 +70,16 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 考古／稽核／掃描／分類調查→開 N 個 flash 平行拆樣（**一次三個為上限**，user 裁定）＋**主 session 統合複查**（主 session 的義務，不外包給 agent）。
 
-### Spawn 預設背景（ZCode spawn 原生預設前台——規則補上）
+### Spawn 預設背景
 
-ZCode 的 Agent tool **預設前台**（阻塞主對話）——前台 spawn 期間使用者無法插話，steering 訊息只能中斷、連帶殺掉 agent。因此：
+派發預設須讓主對話保持可回應，使用 carrier 實際提供的非阻塞機制；派發與回收是一組義務。ZCode Agent tool 的前台阻塞與中斷風險由背景 gate 承接，不推定其他 carrier 有相同生命週期。因此：
 
-- **spawn 帶 `run_in_background: true`**（Claude 2.1.198+ 已預設背景免動作）；spawn 後主對話回報「進行中」即結束 turn，agent 完成的通知會自動接手
+- **依 schema 派發**：tool schema 提供 `run_in_background` 時明帶 `true`；原生 async spawn 沒有此欄位時不補參數，以回傳 handle 接原生 wait／通知。派發同時建立 collection owner（watch handle／registry entry），回報「進行中」不能取代回收。
 - **背景 gate（ZCode 已上線）**：省略或 `run_in_background != true` 的 Agent 派發被 PreToolUse hook 以 allow＋updatedInput 自動補成背景（rewrite 式零浪費，fail-open）——**省略參數不再等於前景**；真要前景（含 <30s 短 probe 例外）須 prompt 前 200 字帶 `[fg]` 機械子串。機制細節（audit log、per-session 啟動快照限制）見 `hooks/AGENTS.md`「Agent 背景 gate」
-- 例外（前台）：結果是當前步驟立即依賴且預期 <30s 的短 probe，**且 prompt 帶 `[fg]`**
-- 為什麼（兩面）：前台 = 對話卡死 + 使用者 steer 即殺 agent；背景 = 使用者可繼續對話、steer 不影響 agent、通知後無縫接手——token 帳等價（接手時 context 重送都一次、cache TTL 看壁鐘與 turn 結構無關）
+- 例外（前台）：結果是當前步驟立即依賴且預期 <30s 的短 probe，**且 prompt 帶 `[fg]`**；`[fg]` 是 ZCode gate 的辨識標記，不使其他 carrier 自動切換執行模式。
+- 非阻塞讓使用者可繼續 steer；中斷後 worker 是否存活與結果如何取得，以 carrier 的生命週期及回收證據為準，不以「背景」名稱保證。
 - pytest 與預期 >10 分鐘命令預設背景跑；短測試可併機械驗證。spawn agent 不能拿來繞 Bash timeout——真實案例：誤以為 Bash 只能 600s 而加 bridge wrapper，實際 `run_in_background` 從頭可用，代價是 agent 開銷、間接層與收斂路徑變長。
-- 先做可獨立的前台工作；沒有就回報進行中並結束 turn 等通知。禁背景阻塞長等（各 harness 機制名不同；主對話被中斷時 agent 會連帶 killed、產出遺失）；前台短等待只限結果立即依賴的 <30s probe。
+- 先做可獨立的工作；沒有就回報進行中，依 carrier yield 等通知或使用可中斷的原生 wait。禁用阻塞 shell 長等取代回收機制；原生 async worker 的 wait 是回收，不等於前台 spawn，也不免除下方 collection-owner invariant。
 - **背景 agent liveness（死亡盲區防禦——真實案例：ZCode app 更新重啟殺掉多個背景 agents、長時間無人知）**：通知是被動喚醒——可以等通知，但**一旦被喚醒（completion／user message／resume）、準備依賴舊 agents 結果前，先過 generation/reconciliation checkpoint**：確認承載 process generation 未變（ZCode app-owned Agent-tool 背景 agents：app 重啟＝舊代全死、零歧義；delegate-bridge external runtime 背景 worker 跨 session 存活，依其 jobs 狀態判定）。generation 命中後**先收 residue 再重派**（DB＋transcript＋worktree 殘留——完成未送達者盲重派＝duplicate side effects）；per-agent 判定禁「全凍結才報」聚合；**silence ≠ death；old-generation unresolved ≠ safe-to-retry**。驗屍法（watcher 不可用時的手工 fallback）：db.sqlite `MAX(time_created)`（Python `sqlite3`＋`file:...?mode=ro`——CLI 有 silent-empty 坑）＋`ps`＋transcript mtime＋`git status` 殘留＋`TaskOutput` registry 查無。防禦階梯其餘項（WAL receipt／generation watermark reconciliation／exact-process hard-death dual-signal；stall advisory——in-harness 域已由上條工具化承接，bridge 域維持 advisory-only）維持另案。
 - **in-harness 子 agent 凍結偵測工具化（主 session 持有 watcher＝`scripts/harness_waiter.py`：registry 註冊→輪詢→凍結收割→喚醒；AIR-149）**：dispatch 註冊一行（spawn 拿到 taskId 同 step）——`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json --register <taskId> --attempt-id <id> --sink <path> [--expected <json>] [--surviving-handle <h> ...] [--silence-budget-min <min>] [--expected-heartbeat --heartbeat-file <path>]`（末組旗標＝heartbeat pilot——impl-lite／cr-research 兩 role 照抄範例即啟用；接線四環＝下節「Worker supervision contract」；register 假設序列呼叫——主 session dispatch 同 step 一行，並發無鎖）；註冊後啟動輪詢：`uv run python scripts/harness_waiter.py .agent-tmp/liveness-registry.json`（背景常駐 run_in_background——凍結/hard-death/stale 時 exit 喚醒）；in-harness brief 禁未登記 long-lived/daemonized child——要 server 須記 ownership handle 進 `--surviving-handle`。**凍結處置協議（user 裁決：全面靜默 20m＝bug 處理——不判死，先收割後砍）**：全面靜默 20m→收割→喚醒→主 session TaskStop→STOP verification（metadata terminal＋cursors grace 靜止＝STOP_CONFIRMED；否則 STOP_INCOMPLETE 禁重派）；**quarantine 期恢復活動記 `resumed_during_quarantine=true` 仍照砍**——禁 kill 前重檢 silence（恢復一行逃過處置＝liveness inference 回滲）。重派前過 **RETRY_SAFE gate 三問**：surviving handles 全 collect？outward side effect 盤點？deliverable 已存在先 collect？——任一不明＝禁重派。**偵測與處置分離**：watcher 永不 stop／重派（TaskStop 與重派決策＝主 session）；bridge 域背景工維持 advisory-only watcher（AIR-146），不隨本工具化改。
 - **subagent 自持背景命令完成後的自動續跑不可依賴（死亡盲區同族——真實案例：09-14 AIR-87，ZCode 實證背景 exec 已完成而 subagent 停留 completed 狀態、續跑未發生）**：防禦＝主 session 持有 watcher（`scripts/harness_waiter.py`，見上 liveness 工具化條）／輪詢敲醒，或背景命令由主 session 自持——禁假設「subagent 會被自己背景命令的完成通知喚醒續跑」。bridge 域（delegate-bridge 背景 job）同構防禦＝派工同 step 自動 arm `scripts/bridge_waiter.py`（一顆背景 shell；exit 124 內部消化、terminal 輸出 CollectionReceipt、stalled＝exit 3 advisory——自動 arm 規約單一源＝bridge-dispatch skill「Dispatch⇄collection 配對——完整模式」段）。
@@ -286,8 +286,8 @@ Rules 檔在 session 啟動時載入，但**更新不會傳播到已 spawn 的 a
 - [ ] 已印出 `[Agent] model=X, max=N, current=M`
 - [ ] consequential dispatch 前已印出 `[Dispatch] unit=…` 完整 preview 行（派工前契約揭露；`[Agent]`/`[Bridge]` 是執行面回報，不可替代）
 - [ ] 當前 Agent 數量未超過上限
-- [ ] spawn 帶 `run_in_background: true`（前台僅限 <30s 短 probe **且 prompt 帶 `[fg]`**——見上「Spawn 預設背景」；省略參數已被 gate 自動轉背景）
-- [ ] Prompt 包含足夠 context + 相對路徑 + rules-reminder 規則摘要（Agent 看不到 auto-loaded rules，必須在 prompt 開頭明確寫入：多行 `python -c` 禁 `#` 註解、`rg`/`fd` 取代 `grep`/`find`、`uv run` 前綴 Python、禁止 `sed` 修改 `.py/.md`、禁止 `$` shell 展開、輸出繁體中文、獨立工具呼叫同 block 批次發、改檔前先 Read）
+- [ ] spawn 使用 carrier 非阻塞機制（schema 有 `run_in_background` 才傳 `true`；原生 async 保留 handle 並建立 collection owner）；前台僅限 <30s 短 probe **且 prompt 帶 `[fg]`**——見上「Spawn 預設背景」
+- [ ] Prompt 包含足夠 context + 相對路徑 + rules-reminder 規則摘要（Agent 看不到 auto-loaded rules，必須在 prompt 開頭明確寫入：多行 `python -c` 禁 `#` 註解、`rg`/`fd` 取代 `grep`/`find`、`uv run` 前綴 Python、禁止 `sed` 修改 `.py/.md`、Claude Bash 才禁 `$VAR`／`$(cmd)` shell 展開（其他 carrier 的 zsh arrays 依 tool-discipline）、輸出繁體中文、獨立工具呼叫同 block 批次發、改檔前先 Read）
 - [ ] **寫檔類 agent** prompt 必注入三條：①禁 /tmp，產出留當前 repo/worktree；②寫不進指定路徑就回報「環境限制：我寫不進 X」，不可退 /tmp；③暫存集中 `.agent-tmp/`（post-build 清；夜掃兜底 `.agent-tmp/` 7d——**排除 `.agent-tmp/at-tickets/`**：/at 未到期票禁掃，清理走 at_ticket classify 機械判準（AIR-157）；`.review/` 30d）
 - [ ] **🚫 spawned agent 禁寫記憶池面**（`.agents/memory*`——含 pool／inbox／memory-auto staging）——發現類內容以最終回報交回主 session，由主 session 走 consolidation（AIR-100 S-D）
 - [ ] **若任務涉及 mock / PropertyMock / fixture**：prompt 主動注入專案 `tests/AGENTS.md`（legacy `tests/CLAUDE.md`）的 mock 規範段落摘要（agent 不會自己讀專案 instruction 檔，必須主動注入；見上方「Rule Freshness」）

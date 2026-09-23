@@ -6,9 +6,12 @@ fixtures build a fake pool (dir + MEMORY.md) under tmp_path.
 """
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 HOOKS = Path(__file__).resolve().parents[1] / "hooks"
 WRITE_SENSOR = HOOKS / "memory-write-sensor.py"
@@ -217,3 +220,121 @@ def test_watch_seed_outputs_pool_entry_watch_paths():
     if paths:  # live pool present on this machine
         assert all(p.endswith(".md") for p in paths)
         assert not any(p.endswith("MEMORY.md") or "/_" in p for p in paths)
+
+
+@pytest.mark.parametrize("script", [WRITE_SENSOR, DIRTY_SENSOR])
+@pytest.mark.parametrize(
+    "destination",
+    [
+        "MEMORY.md",
+        "_inventory.md",
+        "_generate_index.py",
+        "nested/log.jsonl",
+        "file-alias",
+        "directory-alias",
+        "outbound-alias",
+        "nested-outbound-alias",
+    ],
+)
+def test_log_destination_protects_entire_pool(tmp_path, script, destination):
+    """S: accepted H1 forbids append/rotation anywhere in a pool, including aliases."""
+    pool, entry = make_pool(tmp_path)
+    target = pool / destination
+    if destination == "file-alias":
+        target = tmp_path / "external.jsonl"
+        target.symlink_to(pool / "MEMORY.md")
+    elif destination == "directory-alias":
+        alias = tmp_path / "alias"
+        alias.symlink_to(pool, target_is_directory=True)
+        target = alias / "nested" / "log.jsonl"
+    elif destination in ("outbound-alias", "nested-outbound-alias"):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (pool / "out").symlink_to(outside, target_is_directory=True)
+        target = pool / "out" / "log.jsonl"
+        if destination == "nested-outbound-alias":
+            alias = tmp_path / "alias"
+            alias.symlink_to(pool, target_is_directory=True)
+            target = alias / "out" / "log.jsonl"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("protected\n")
+    before = target.read_bytes()
+    home = tmp_path / "home"
+    payload = {
+        "tool_name": "Write",
+        "tool_input": {"file_path": str(entry)},
+        "file_path": str(entry),
+    }
+    result = subprocess.run(
+        [sys.executable, str(script)],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, HOME=str(home), MEMORY_HOOK_LOG=str(target)),
+    )
+    assert result.returncode == 0, result.stderr
+    assert target.read_bytes() == before
+    assert not target.with_suffix(target.suffix + ".prev").exists()
+    fallback = home / ".local/share/ai-guide/memory-hook-events.jsonl"
+    assert len(fallback.read_text().splitlines()) == 1
+
+
+@pytest.mark.parametrize("mode", ["ancestor", "file-alias", "rotation-alias"])
+def test_unsafe_default_log_is_not_written(tmp_path, mode):
+    """S: H1 requires default and rotation destination validation, with no unsafe fallback."""
+    pool, entry = make_pool(tmp_path)
+    home = tmp_path / "home"
+    log = home / ".local/share/ai-guide/memory-hook-events.jsonl"
+    log.parent.mkdir(parents=True)
+    protected = pool / "MEMORY.md"
+    if mode == "ancestor":
+        (home / "MEMORY.md").write_text("# home is a pool\n")
+    elif mode == "file-alias":
+        log.symlink_to(protected)
+    else:
+        log.write_text("x" * (2 * 1024 * 1024 + 1))
+        log.with_suffix(".jsonl.prev").symlink_to(protected)
+    before = protected.read_bytes()
+    log_before = log.read_bytes() if log.exists() else None
+    payload = {"tool_name": "Write", "tool_input": {"file_path": str(entry)}}
+    result = subprocess.run(
+        [sys.executable, str(WRITE_SENSOR)],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, HOME=str(home), MEMORY_HOOK_LOG="relative.jsonl"),
+    )
+    assert result.returncode == 0, result.stderr
+    assert protected.read_bytes() == before
+    assert (log.read_bytes() if log.exists() else None) == log_before
+    if mode == "rotation-alias":
+        assert log.with_suffix(".jsonl.prev").is_symlink()
+
+
+def test_log_rotation_alias_falls_back_without_touching_pool(tmp_path):
+    """S: H1 protects a pool-targeting rotation sibling as well as the append path."""
+    pool, entry = make_pool(tmp_path)
+    log = tmp_path / "events.jsonl"
+    old = "x" * (2 * 1024 * 1024 + 1)
+    log.write_text(old)
+    prev = log.with_suffix(".jsonl.prev")
+    prev.symlink_to(pool / "MEMORY.md")
+    before = (pool / "MEMORY.md").read_bytes()
+    home = tmp_path / "home"
+    result = subprocess.run(
+        [sys.executable, str(WRITE_SENSOR)],
+        input=json.dumps(
+            {"tool_name": "Write", "tool_input": {"file_path": str(entry)}}
+        ),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, HOME=str(home), MEMORY_HOOK_LOG=str(log)),
+    )
+    assert result.returncode == 0, result.stderr
+    assert prev.is_symlink()
+    assert log.read_text() == old
+    assert (pool / "MEMORY.md").read_bytes() == before
+    assert (home / ".local/share/ai-guide/memory-hook-events.jsonl").is_file()

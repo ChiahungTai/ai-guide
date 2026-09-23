@@ -136,7 +136,7 @@ Error Self-Healing（上）是 per-error（單一錯誤重試 ceiling）。**缺
 | 讀取檔案 | Read/Grep/Glob（無需權限） |
 | Python 執行 | 僅用 `uv run pytest` 和 `uv run python` |
 | 內聯腳本 | `python -c`、`python3 -c`、`uv run python -c` 等一律**禁止使用 `#` 註解**（會觸發權限提示），需要註解時改寫為 `.py` 檔案 |
-| Shell 展開 | **禁止 `$VAR`、`$(cmd)`**（觸發 simple_expansion / command_substitution），需要變數時用具體值或寫 `.py` |
+| Shell 展開 | **Claude Bash 禁止 `$VAR`、`$(cmd)`**（觸發 simple_expansion / command_substitution），需要變數時用具體值或寫 `.py`；其他 carrier 的 zsh arrays 依 [tool-discipline](../../rules/tool-discipline.md) |
 | 多行驗證 | 寫成 `.py` 檔案再 `uv run` |
 
 ## Completion Report

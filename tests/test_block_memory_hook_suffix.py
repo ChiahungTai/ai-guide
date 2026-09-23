@@ -31,9 +31,13 @@ def make_pool(tmp_path):
     return pool
 
 
-def _write_payload(path: str, desc: str = "觸發詞：一句鉤子", content: str | None = None) -> str:
-    body = content if content is not None else (
-        f"---\nname: entry\ndescription: {desc}\ntype: project\n---\n\nbody\n"
+def _write_payload(
+    path: str, desc: str = "觸發詞：一句鉤子", content: str | None = None
+) -> str:
+    body = (
+        content
+        if content is not None
+        else (f"---\nname: entry\ndescription: {desc}\ntype: project\n---\n\nbody\n")
     )
     return json.dumps(
         {"tool_name": "Write", "tool_input": {"file_path": path, "content": body}}
@@ -111,7 +115,10 @@ def test_suffix_blocked_before_desc_checks(tmp_path):
         _write_payload(
             str(pool / "entry-done.md"),
             desc="x" * 120,
-            content="---\nname: e\ndescription: " + "x" * 120 + "\n---\n\n" + "y" * 5000,
+            content="---\nname: e\ndescription: "
+            + "x" * 120
+            + "\n---\n\n"
+            + "y" * 5000,
         )
     )
     assert r.returncode == 2
@@ -150,6 +157,114 @@ class TestCrashPaths:
         except RuntimeError:
             code = "crash"  # 未捕獲例外→hook runtime 給非 0/2 exit＝非阻斷
         assert code != 2, "crash 面不得偽裝成 deny（fail-open 語義刻畫）"
+
+
+@pytest.mark.parametrize(
+    ("desc", "old", "new", "replace_all", "expected"),
+    [
+        ("short", "short", "x" * 101, False, 2),
+        ("commit token", "token", "47aa89d", False, 2),
+        ("reference token", "token", "93715b60a", False, 2),
+        ("release 09-DD", "DD", "09", False, 2),
+        ("source sess_token", "token", "ABC123", False, 2),
+        ("a a", "a", "x" * 50, True, 2),
+        ("a a", "a", "x" * 49, True, 0),
+        ("short", "short", "x" * 100, False, 0),
+        ("x" * 101, "x" * 101, "short", False, 0),
+    ],
+)
+def test_edit_candidate_description(tmp_path, desc, old, new, replace_all, expected):
+    """S: accepted H2 validates the final changed description, not replacement fragments."""
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    original = f"---\nname: entry\ndescription: {desc}\n---\nbody\n"
+    target.write_text(original)
+    result = run_hook(
+        json.dumps(
+            {
+                "tool_name": "Edit",
+                "tool_input": {
+                    "file_path": str(target),
+                    "old_string": old,
+                    "new_string": new,
+                    "replace_all": replace_all,
+                },
+            }
+        )
+    )
+    assert result.returncode == expected, result.stderr
+    if expected == 2:
+        assert "description" in result.stderr
+    assert target.read_text() == original
+
+
+@pytest.mark.parametrize("legacy", ["x" * 101, "commit 47aa89d", "09-09 sess_ABC123"])
+@pytest.mark.parametrize(
+    "kind", ["body", "whole-file", "body-description-example", "shrink"]
+)
+def test_edit_preserves_legacy_desc_body_allowance(tmp_path, legacy, kind):
+    """S: H2 exempts unchanged legacy descriptions and permits oversized body shrinkage."""
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    body = "body\n"
+    if kind == "shrink":
+        body = "begin" + "x" * 13_000 + "end"
+    original = f"---\nname: entry\ndescription: {legacy}\n---\n{body}"
+    target.write_text(original)
+    old, new = body, "shorter body\n"
+    if kind == "whole-file":
+        old, new = original, original.replace(body, new)
+    elif kind == "body-description-example":
+        new = "description: " + "z" * 101 + "\n"
+    result = run_hook(
+        json.dumps(
+            {
+                "tool_name": "Edit",
+                "tool_input": {
+                    "file_path": str(target),
+                    "old_string": old,
+                    "new_string": new,
+                },
+            }
+        )
+    )
+    assert result.returncode == 0, result.stderr
+    assert target.read_text() == original
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        {"new_string": "updated"},
+        {"old_string": "short"},
+        {"old_string": "", "new_string": "updated"},
+        {"old_string": None, "new_string": "updated"},
+        {"old_string": "short", "new_string": None},
+        {"old_string": "absent", "new_string": "updated"},
+        {"old_string": "short", "new_string": "updated", "replace_all": "false"},
+        {"old_string": "short", "new_string": "updated"},
+    ],
+)
+def test_edit_ambiguous_description_is_not_approved(tmp_path, edit):
+    """S: H2 conservatively refuses malformed/stale or ambiguous description edits."""
+    pool = make_pool(tmp_path)
+    target = pool / "entry.md"
+    original = "---\ndescription: short\n---\nshort body\n"
+    target.write_text(original)
+    result = run_hook(
+        json.dumps(
+            {
+                "tool_name": "Edit",
+                "tool_input": {
+                    "file_path": str(target),
+                    **edit,
+                },
+            }
+        )
+    )
+    assert result.returncode == 2, result.stderr
+    assert "Edit" in result.stderr
+    assert target.read_text() == original
 
 
 if __name__ == "__main__":

@@ -9,9 +9,9 @@ Conventions (defined once here):
   MEMORY.md itself and _* files.
 - event timestamps carry microseconds (F2): same-second distinct writes must
   keep order; sensor clock is wall time, ties across channels still possible.
-- log path validation (F3): override must be absolute and must not itself be
-  a pool entry file (never append JSONL into memory content); violations fall
-  back to the default. Fail-closed, caller still exits 0.
+- log destinations and rotation siblings must be outside every pool ancestor,
+  including lexical and symlink paths. Unsafe overrides use the validated
+  default; if neither is safe, skip telemetry. Caller still exits 0.
 - size-bounded append (F4): single-generation rotation at 2 MiB.
 """
 
@@ -49,18 +49,47 @@ def is_pool_entry(file_path):
     return None
 
 
+def _outside_pool(path):
+    """Containment is independent of the narrower event attribution filter."""
+    if not path.is_absolute():
+        return False
+    # Resolve every lexical ancestor too: alias/pool/outbound-symlink must
+    # remain protected even when the final resolved target is outside pool.
+    for lexical in (path,) + tuple(path.parents):
+        resolved = lexical.resolve()
+        for ancestor in (lexical, resolved) + tuple(resolved.parents):
+            if (ancestor / POOL_INDEX).is_file():
+                return False
+    return True
+
+
 def log_path():
-    override = os.environ.get("MEMORY_HOOK_LOG")
-    if override:
-        cand = Path(override).expanduser()
-        if cand.is_absolute() and is_pool_entry(str(cand)) is None:
-            return cand
-    return DEFAULT_LOG
+    for raw in (os.environ.get("MEMORY_HOOK_LOG"), DEFAULT_LOG):
+        if not raw:
+            continue
+        try:
+            cand = Path(raw).expanduser()
+            resolved = cand.resolve()
+            # emit rotates next to the canonical append path; validate both
+            # spellings so neither an alias nor its sibling bypasses policy.
+            paths = (
+                cand,
+                resolved,
+                cand.with_suffix(cand.suffix + ".prev"),
+                resolved.with_suffix(resolved.suffix + ".prev"),
+            )
+            if all(_outside_pool(path) for path in paths):
+                return resolved
+        except (OSError, RuntimeError, ValueError):
+            continue
+    return None
 
 
 def emit(event):
     try:
         lp = log_path()
+        if lp is None:
+            return
         lp.parent.mkdir(parents=True, exist_ok=True)
         if lp.is_file() and lp.stat().st_size > MAX_LOG_BYTES:
             prev = lp.with_suffix(lp.suffix + ".prev")

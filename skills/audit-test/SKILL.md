@@ -187,10 +187,10 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 **Method Coverage 流程**（避免將有覆蓋的方法誤判為零覆蓋）：
 
 1. **建立候選清單**：從 source file 提取所有 public method（排除 `_` 開頭）
-2. **找測試檔案**：不只看同名 `test_foo.py`，用 `rg "ClassName" tests/ -l` 找所有引用該 class 的 test files
-3. **搜尋 method call**：對每個候選 method，在所有找到的 test files 中搜尋 `.method_name(` pattern
-4. **判定零覆蓋**：只有當 method 在**所有** test files 中都不出現時，才判定為零覆蓋
-5. **交叉驗證**：報告前用 `rg "\.method_name\(" tests/` 確認，避免單一檔案掃描遺漏
+2. **定位候選測試**：不只看同名 `test_foo.py`；`rg -l -F "ClassName" tests/` 與 `rg -F ".method_name(" tests/` 僅定位文字候選，不構成完整引用清單或 runtime 覆蓋證據
+3. **追蹤 method 驅動路徑**：對每個候選 method，依 [symbol-query-routing](../../rules/symbol-query-routing.md) 查結構引用／呼叫鏈，不限於文字命中的檔案；核對 alias、繼承、`getattr`、decorator 與測試入口的實際驅動證據，CR／LSP 仍受 freshness／coverage 限制，不保證涵蓋動態引用
+4. **判定覆蓋證據**：0 hits 只表示已查範圍未見引用／呼叫；未能確認的路徑標 unverified，不直接宣稱 runtime 零覆蓋；文字命中也不代表該 method 或消費端路徑已被測試驅動
+5. **報告前交叉驗證**：列出已查工具、範圍、結果及測試入口／路徑驅動證據；已確認的測試缺口照既有規則列 finding，證據不足者標 unverified 並列待查面
 
 **Registry Membership 流程**（避免單一 rg pattern 造成 false positive）：
 
@@ -199,10 +199,10 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 1. **候選符號清單**：從 source file 提取 registry 的所有可能符號（registry 變數名 `*_REGISTRY`、列舉函式 `list_*_classes()` / `<enum_classes>()`、registry module 的 import）
 2. **多工具交叉搜尋**（至少兩個獨立途徑）：
    - `rg "<registry_var>" tests/ -l`（找直接引用 registry 變數的 test files）
-   - **LSP `findReferences`**（從 registry 變數定義找所有引用點 — 100% 涵蓋，含動態引用，避免 pattern 失誤）
+   - **結構引用查詢**（依 [symbol-query-routing](../../rules/symbol-query-routing.md) 選工具；從 registry 定義找可解析引用，避免文字 pattern 漏查。CR／LSP 仍受 freshness／coverage 限制，不保證涵蓋動態引用）
    - `rg "<ClassName>.*(in|__name__).*<registry>" tests/`（找 per-class membership 斷言的多種寫法）
 3. **檔案存在性用 fd + ls 雙查**：`fd "<test_name>" tests/` 0 results 時，必須 `ls <expected_dir>/` 或 `fd -g "<exact_name>.py" tests/` 確認 — **不能單靠 fd 結果下結論**（gitignore、pattern 差異會造成 false negative）
-4. **判定零覆蓋**：只有當上述多個工具都 0 hits 時，才判定為零覆蓋
+4. **判定覆蓋證據**：上述工具都 0 hits 只表示已查範圍未見引用／斷言；仍須核對動態註冊與測試入口，未覆蓋面標 unverified，不直接宣稱 runtime 零覆蓋。
 5. **報告前交叉驗證**：報告中列出「已查的工具與結果」，讓 reviewer 可複現
 
 #### 消費端路徑證據

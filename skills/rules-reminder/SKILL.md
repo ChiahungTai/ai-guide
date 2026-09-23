@@ -1,6 +1,6 @@
 ---
 name: rules-reminder
-description: "Enforces the most frequently violated cross-harness rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion, uv run for Python, no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
+description: "Enforces the most frequently violated cross-harness rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion in Claude Bash, uv run for Python, no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
 ---
 
 # Rules Reminder — 最常被忘記的規則
@@ -91,9 +91,9 @@ sed -i 's/old/new/g' README.md
 
 ---
 
-## 5. 禁止 `$` shell 展開
+## 5. Claude Bash 禁止 `$` shell 展開
 
-Claude Code 偵測到 `$` 開頭的結構會觸發權限提示：
+本節僅限 Claude Bash 權限面（[bash-hard-rules](../../rules/bash-hard-rules.md)）；不套其他 carrier。其他 carrier 的 zsh flags 依 [tool-discipline](../../rules/tool-discipline.md) 使用陣列。Claude Code 偵測到 `$` 開頭的結構會觸發權限提示：
 
 ```bash
 # ❌ 禁止 — 觸發 simple_expansion
@@ -110,7 +110,7 @@ cat /tmp/file.txt
 uv run python scripts/check.py
 ```
 
-**規則**：bash 命令中**不使用 `$VAR`、`$(cmd)`**。需要變數時用具體值或寫成 `.py` 檔案。
+**規則**：Claude Bash 命令中**不使用 `$VAR`、`$(cmd)`**。需要變數時用具體值或寫成 `.py` 檔案。
 
 ---
 
@@ -144,10 +144,10 @@ uv run python scripts/check.py
 
 ## 記憶口訣
 
-> **`#` 是毒藥、`$` 是禁區、`grep`/`find` 是禁區、`uv run` 是王道、`sed` 是地雷、`簡體字是違規`、獨立同發、先 Read 再改**
+> **`#` 是毒藥、Claude Bash 的 `$` 是禁區、`grep`/`find` 是禁區、`uv run` 是王道、`sed` 是地雷、`簡體字是違規`、獨立同發、先 Read 再改**
 
 每次寫 Bash 命令或批次修改前，默念這幾條。
 
 ---
 
-> **再次提醒**：你可能剛才用了 `find`/`grep`，或多行 `python -c` 裡寫了 `#` 註解，或在 bash 命令中用了 `$VAR`/`$(cmd)`。這些都會觸發權限提示。**現在起只用 `fd`/`rg`，多行 `python -c` 不加 `#`，bash 中不碰 `$`。**
+> **再次提醒**：你可能剛才用了 `find`/`grep`，或多行 `python -c` 裡寫了 `#` 註解，或在 Claude Bash 命令中用了 `$VAR`/`$(cmd)`。這些都會觸發權限提示。**現在起只用 `fd`/`rg`，多行 `python -c` 不加 `#`，Claude Bash 中不碰 `$`。**

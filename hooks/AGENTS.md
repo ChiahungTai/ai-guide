@@ -1,42 +1,46 @@
 # hooks/ — 跨 harness Hook 實作腳本
 
-> 本目錄腳本跨 Claude/ZCode 單一來源。hooks 無目錄載入點，**不能 symlink**——兩家 config 以絕對路徑引用：Claude `~/.claude/settings.json`；ZCode 3.7.7+ user-level hooks 註冊模板＝[../governance/registrations/zcode.json](../governance/registrations/zcode.json)（AIR-116 收編；安裝/升級唯一入口＝`uv run python governance/install.py --surface hooks`——模板是 `~/.zcode/cli/config.json` `hooks:` 鍵下的子樹值，installer 只動 hooks 子樹、mcp/plugins 逐鍵不變）。`notification.sh` 不移植。
+> 本目錄擁有共享 hook 腳本的行為與 runtime 契約；`governance/` 擁有已收編的 machine-local 安裝／註冊。harness 不會掃描本目錄載入 hooks，須由註冊逐項引用腳本；已收編來源＝[CC](../governance/registrations/cc.json)、[ZCode](../governance/registrations/zcode.json)、[Codex](../governance/registrations/codex.toml)，compact restore 的獨立註冊見下節。installer 將 `{{REPO}}` 展開為來源 repo 絕對路徑；live 安裝須過落地閘及授權，入口＝`uv run python governance/install.py --surface hooks`，不能從 authoring WT 提前安裝。模板存在不等於 live 已啟用，模板缺項也不代表機器上未註冊；安裝／trust／核對流程見 [governance README](../governance/README.md)。
 
-## ZCode hooks 註冊維護語義（註冊面已收編 governance/——本節存 hook 本體紀律）
+## 註冊維護與 runtime
 
-- **hook 執行環境＝OS 預設 python3（CommandLineTools 3.9）**：ZCode.app（GUI 行程）spawn hooks，PATH 不含 user shell 的 pyenv/uv shim——bare `python3` 解析到 `/usr/bin/python3`；hook 腳本**禁 3.10+ 語法**（repo pyproject 宣告 py312，ruff auto-fix 會把新語法修進 hook——真實案例：UP017 `datetime.UTC` 在 3.9 ImportError，functional 複驗攔下）；改 hook 後必以 bare `python3` 實跑複驗，不可只信 ruff 綠
-- **merge 方式**：由 installer 自動化（`--surface hooks`）——取 `events` 子樹 merge 進 config 的 `hooks:` 鍵下，備份／preimage／原子寫由 installer 安全模型承擔（[governance/README.md](../governance/README.md)）
-- **SessionEnd 條目＝範本預載、ZCode 端未 merge**：merge 閘門＝`ref-docs/harness/contracts.md` 的 ZCode hooks 事件表**出現 SessionEnd**（當前無——初測 3.7.7，子集實測見 04 報告 §207）；閘門開後對 zcode hooks 文檔事件表複核一次才 merge 進 config
-- **plugin 升級＝路徑維護點**：plugin cache 版號路徑漂移會使註冊模板（`governance/registrations/`）內 muse/codex 條目的絕對路徑過時——plugin 升級時同步更新模板並重跑 installer
-- **grok-build 未安裝**：安裝後照 muse/codex 條目形態補第三條 SessionEnd（其 cache 的 `scripts/session-lifecycle-hook.mjs` 同款）
+- **系統 Python runtime 例外**：註冊模板使用 `python3`；ZCode GUI 已知部署環境使用 `/usr/bin/python3`（CommandLineTools Python 3.9），不能假設會經 user shell 的 uv／pyenv。hook 與其共用模組須相容 Python 3.9 的語法與 stdlib API（例如不可用 `datetime.UTC`）。開發／pytest 仍走 uv；修改 Python hook 後，另以 `/usr/bin/python3 <hook>` 和 `uv run python <hook>` 對隔離 fixture 實跑 entrypoint，驗 stdin／stdout／exit 與副作用。這是 hook 部署 interpreter 的複驗例外，不是一般開發可跳過 uv；fixture 與 log 落 worktree `.agent-tmp/`，不碰真記憶池。
+- **註冊寫入**：installer 維護 CC settings 的 hooks、ZCode `~/.zcode/cli/config.json` 的 hooks 子樹與 Codex config 的 inline hooks，保留非本套件設定；備份／preimage／原子寫規則由 governance 擁有。
+- **設定載入與 script 執行分開驗**：ZCode 在 session 啟動取得 hook 配置快照，改註冊或啟停 plugin 後須新 session 驗接線；這不能推導「script bytes 也被快照」。既有 process 註冊以 command＋args 執行路徑上的腳本；只改同路徑 source 時先跑 entrypoint，再以事件觸發驗實際載入，沒有證據不得一概要求重開 session。Codex trust 依 governance 流程由 user approve，不由 installer 代寫。
+- **接線現況**：ZCode 模板只有 PreToolUse／PostToolUse／Stop；CC 與 Codex 的 SessionEnd 都註冊 `stop-notification.sh`，沒有 external-runtime job cleanup 條目。這些模板使用 repo 腳本，沒有 plugin cache 版號路徑；不可由其他 plugin 的能力推定本套件已接線。
 
 ## Agent 背景 gate（ZCode）
 
 - `zcode_agent_background_gate.py`（PreToolUse，matcher `Agent`——官方語法兼容 `Agent`/`Task` alias）：ZCode Agent tool 原生預設前台，本 gate 把省略或 `run_in_background != true` 的派發以 `allow`＋`updatedInput` 補成背景——同一 call 生效、不拒絕不重派（deny 式才浪費一趟 request）。逃生口＝prompt 前 200 字含 `[fg]` 機械子串（user 確認要前景時用）；fail-open（任何內部錯誤靜默原樣放行）；全事件旁錄 `.agent-tmp/zcode-agent-gate.jsonl`（省略形態取證＋行為審計，post-build 清理自然收走）
-- 配套：`rules/tool-discipline.md`「背景執行」＝prompt 層一律明帶 `run_in_background: true`（gate 失效／未註冊機器的 defense-in-depth）；`agents/AGENTS.md`「背景執行」＝agent 定義一律 `background: true`（Claude 端原生強制；ZCode 忽略此欄位，由本 gate 承接）
-- 限制：hooks 是 per-session 啟動快照——註冊／改 script 後須新 session 才生效；`updatedInput` 是完整替換物件（原 keys 必須照抄，gate 已處理）
+- 配套：`rules/tool-discipline.md`「背景執行」要求使用 carrier 非阻塞機制；ZCode Agent schema 有 `run_in_background` 時明帶 `true`（gate 失效／未註冊機器的 defense-in-depth）。其他 carrier 不套此 gate；`agents/AGENTS.md` 的 `background: true` 為 Claude 定義欄位，ZCode 忽略，由本 gate 承接。
+- 限制：ZCode 註冊改動須新 session 驗證，source 載入另依上節查證；`updatedInput` 是完整替換物件（原 keys 必須照抄，gate 已處理）
 - 實證（2026-09-12）：新 session 省略參數派發 → log `rewrite_from_absent`、主對話零阻塞、agent 以背景完成通知收尾
 - `zcode_agent_probe.py` 已刪——取證功能由 gate 的旁錄 log 吸收
 
 ## marshal admission guard（AIR-135.10，ZCode/CC/codex 三面）
 
-- `marshal_admission_guard.py`（PreToolUse；ZCode/CC matcher `Edit|Write`——`tool_input.file_path`，codex matcher `apply_patch`——patch 標頭抽取 adapter 照 `codex_memory_path_deny.py` 形態、多檔 patch 任一命中即整 call deny）：控制面路徑 × canonical 主樹 → deny＋指路卡 WT——AIR-106 隔離閘從 commit 時點前移到編輯當下。canonical 判定＝git-common-dir→PRIMARY（`scripts/wt-open.sh` 同款拓撲錨，棄 wt-identity 存在性判據）；patterns 單一源＝`.githooks/control-plane-guard.sh --match-path` 子入口（Python 側零複製 regex）；repo self-gate（common dir 比對）防 user-level hook 殺其他 repo 同名路徑；crash fail-open（exit 0＋stderr 診斷）；**無 bypass env**——break-glass＝human 停 registration（本節上半「註冊維護語義」的 merge/approve 流程）
+- `marshal_admission_guard.py`（PreToolUse；ZCode/CC matcher `Edit|Write`——`tool_input.file_path`，codex matcher `apply_patch`——patch 標頭抽取 adapter 照 `codex_memory_path_deny.py` 形態、多檔 patch 任一命中即整 call deny）：控制面路徑 × canonical 主樹 → deny＋指路卡 WT——AIR-106 隔離閘從 commit 時點前移到編輯當下。canonical 判定＝git-common-dir→PRIMARY（`scripts/wt-open.sh` 同款拓撲錨，棄 wt-identity 存在性判據）；patterns 單一源＝`.githooks/control-plane-guard.sh --match-path` 子入口（Python 側零複製 regex）；repo self-gate（common dir 比對）防 user-level hook 殺其他 repo 同名路徑；crash fail-open（exit 0＋stderr 診斷）；**無 bypass env**——break-glass＝human 停 registration（本檔「註冊維護與 runtime」及 governance 安裝／trust 流程）
 - 覆蓋邊界：Bash redirect／MCP write 不在 hook 面（定位＝Marshal admission guard 非防惡意 sandbox——提高違規成本＋留審計跡，禁宣稱完整 write security boundary）；subagent 寫入不觸發本 hook 家族（同下方 memory sensor 同款 ZCode 實證）——spawned worker 在卡 WT 的寫入（理想形態）本就不經此閘
-- rollout：註冊／改 script 後須**新 session 生效**（per-session 啟動快照，同下方「限制」條）；安裝唯一入口＝`uv run python governance/install.py --surface hooks`；Muse 側 registration 模板不在本 repo——coverage 未驗證項，啟用前須實測
+- rollout：依上節分別驗註冊與 source 載入；CC／ZCode／Codex 接線見各 tracked registration，不以模板存在宣稱 live 已受保護。Muse 側無本 guard 的 registration 模板，coverage 未驗證，啟用前須實測。
 
-## memory sensors（AIR-56，CC-only）
+## memory sensors（write：CC／ZCode；watch：CC）
 
-- `memory-write-sensor.py`（PostToolUse，matcher `Edit|Write`）：成功後才記 actor 證據→ `$MEMORY_HOOK_LOG`（預設 `~/.local/share/ai-guide/memory-hook-events.jsonl`）。池判定＝父目錄含 MEMORY.md。
+- `memory-write-sensor.py`（PostToolUse，matcher `Edit|Write`）：成功後才記 actor 證據→ `$MEMORY_HOOK_LOG`（預設 `~/.local/share/ai-guide/memory-hook-events.jsonl`）。entry attribution＝父目錄含 MEMORY.md 的條目，排除索引與 `_` 前綴；與 log destination 安全判定分開。
+- `memory_hook_common.py` 的 log 契約：override 與 default 都須檢查，log／rotation 目的地不得落在含 MEMORY.md 的池、池內索引／generator／子路徑或指向它們的 symlink；沒有安全目的地時不寫 log，不能用未驗證 default 繞過。sensor 是旁錄，不是寫入授權或阻擋閘；缺 log 不證明沒發生寫入。
 - `memory-dirty-sensor.py`（FileChanged，omitted matcher——匹配所有 watched file）：只記 dirty（watcher≠writer，不指派）。**接線（2026-09-09 已接）**：matcher 種子是 cwd 域字面檔名 watch 不到池外路徑 → 經 `memory-watch-seed.py`（SessionStart 回傳 `watchPaths` 池條目絕對路徑）動態注入 watch list（CC 鏡像 FileChanged 節指引）。live 觸發驗證＝下個 CC session 的 hook log（首次 session start 後生效）；外部寫入後備仍是 hash 腿。
 - ZCode hooks 事件子集**含 PostToolUse**（04 報告 §207 實測，初測 3.7.7）→ write-sensor 兩家都已接（ZCode 側 process 形態；payload schema 差異由 sensor 容錯吸收——最壞靜默 no-op fail-safe）。
 - `memory-watch-seed.py`（SessionStart，CC-only——ZCode 無 FileChanged 事件故無此需求）：列 ai-guide 記憶池條目（頂層 .md、排除 MEMORY.md 與 `_` 前綴——與 `is_pool_entry` 同過濾）輸出 `hookSpecificOutput.watchPaths`；冪等、池缺場輸出空清單。
-- 註冊（user 側 `~/.claude/settings.json` → symlink 至 repo `settings.json`〔gitignored，版控化 local-only〕）：兩家註冊由 governance installer 維護（`--surface hooks`；CC 條目見 `governance/registrations/cc.json`、ZCode 見 `zcode.json`）。collector 消費：`attribution --hook-events <log>`（merge 去重＋dirty 旗）。
+- 註冊由 governance installer 維護；以 tracked CC／ZCode 模板及 live 核對結果為準，不依賴個別機器 settings symlink 形態。Codex 模板未接 sensors，其 memory 寫入限制由 `codex_memory_path_deny.py` 的 apply_patch admission 承接。collector 消費：`attribution --hook-events <log>`（merge 去重＋dirty 旗）。
 
-## 孤兒清理落差（SessionEnd hook 在 ZCode 缺席）
+## Compact 注入邊界
 
-- 三家 external-runtime plugin 都有 SessionEnd 孤兒清理 hook（muse「reconcile stale jobs on start, cancel+kill on end」、codex `terminateProcessTree`、grok 同款）——CC 原生載入；**ZCode 無 SessionEnd 事件（contracts.md 定案）→ plugin 孤兒清理 hook 在 ZCode 缺席**
-- muse 側由 bridge `reconcileStaleRunning` ledger 兜底＋post-build 開工背景寫入者盤點涵蓋
-- **remediation＝ZCode app 重開（收同生命週期進程；detached 背景進程跑完自然結束、結果照落 ledger）＋`git status` 檢 working tree 半套編輯——實務成本極低（user 2026-09-05 確認），非防護缺口**
+- `compact-tail-inject.py` 接在 CC SessionStart、matcher `compact`，只讀事件提供的 `transcript_path` 與 cwd 的 STATE.md；不猜其他 session 的 transcript。ZCode／Codex 模板未接此注入器。
+- 輸出契約：在預算內優先保留最新尾段；單則訊息過長時保留 UTF-8 可解碼尾部並標示截斷，總預算須包含 framing、separator 與 JSON escaping。排除上代注入 marker，避免 compact 遞迴膨脹；最終 stdout 仍須是有效且 bounded 的 JSON。錯誤維持 fail-open（stderr 診斷、空 stdout），不能把注入缺席當作原文不存在。
+- `compact-restore-inject.py` 是另一條 ZCode UserPromptSubmit 接線：檢查尚未消費的 session checkpoint 並注入 thin pointer，未註冊環境依 [compact-prep](../skills/compact-prep/SKILL.md) fallback。其 [獨立註冊片段](compact-restore-inject.registration.json) 與 [安裝協議](compact-restore-inject.INSTALL-PROTOCOL.md) 尚待收編到 governance；機器註冊與 live dogfood 分別驗證，不能由 governance 模板缺項判定未啟用。操作前核對片段、協議與實際 canonical 路徑，勿照抄遺留 worktree 路徑；收編及 config 寫入由主 session 另行處理。
+
+## 背景工作回收邊界
+
+本套件 SessionEnd 的通知 hook 不承擔 external-runtime job 清理。工作回收由派發端持有 collection owner，依 [agent-workflow](../skills/agent-workflow/SKILL.md) 與 [bridge-dispatch](../skills/bridge-dispatch/SKILL.md) 收取 authoritative terminal 狀態及產物；程序重啟或一段時間無輸出不能代替完成／死亡證據。外部 plugin 的 lifecycle 接線由該 plugin 的 registration/runtime 負責，需獨立查證。
 
 ## 多機移植（clone 到新機器）
 
