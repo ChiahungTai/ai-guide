@@ -7,22 +7,33 @@ gitignored），三觸發點掃尾（session 開場／compact 前／結案前）
 `lint --card <id>` 有 open 且 blocking 的項目即 exit 1——卡標 Done 前必過。
 
 用法：
-  uv run python scripts/decisions_pending.py add <卡id或-> "<問題一句>" [選項A/B/...]
+  uv run python scripts/decisions_pending.py add <卡id或-> "<問題一句>" [選項A/B/...] [--kind correction]
   uv run python scripts/decisions_pending.py close <D-id> "<決策一句＋去處>" [--obsolete]
   uv run python scripts/decisions_pending.py promote <D-id> "<開卡卡id>"   # improvement 專用
   uv run python scripts/decisions_pending.py update <D-id> --evidence-ref <指針>  # improvement 重現更新
   uv run python scripts/decisions_pending.py ls [--open] [--stale-days N]
-  uv run python scripts/decisions_pending.py lint --card <卡id>   # Done-gate：open blocking 項 exit 1
+  uv run python scripts/decisions_pending.py lint --card <卡id>      # Done-gate：open blocking 項 exit 1
+  uv run python scripts/decisions_pending.py lint --dispatch <卡id>  # Dispatch-gate（AIR-135.8）：open correction 項 exit 1
   uv run python scripts/decisions_pending.py add-improvement <卡id或-> "<一行人話>" \
       --source <訊號源> --evidence-ref <指針> --class <類別> --cost S|M|L   # AIR-151
 
 台帳格式（機器可解析 markdown 表；狀態＝open|decided|obsolete）：
   | D-001 | 2026-09-19 | AIR-135.2 | 問題 | 選項 | open | 備註 | kind | gate | meta |
 後三欄 AIR-151 增補；舊 7 欄列照讀（kind 預設 decision、gate 預設 blocking、meta 空）。
-- `kind`＝row 類型：`decision`（等 user 決策，預設）｜`improvement`（AIR-151 發現候選）
+- `kind`＝row 類型：`decision`（等 user 決策，預設）｜`improvement`（AIR-151 發現候選）｜
+  `correction`（AIR-135.8 user correction 收編——gate 恆 blocking、落帳即記 KPI detected）
 - `gate`＝lint 語義：`blocking`（open 時擋 lint --card，預設）｜`nonblocking`
   （discovery 不得阻塞 originating arc 的 Settle/Done——improvement kind 必帶此值）
 - `meta`＝`key=value;key=value`（improvement 帶 source／evidence_ref／class／cost）
+
+correction 載體路由表速覽（AIR-135.8——收編按性質分流；**主體＝skills/post-build/SKILL.md
+階段 4「correction mining checkpoint」**，本節為註解形態速覽，改表兩處同步）：
+  卡面 section（intent/procedure）——單卡作業糾正，隨卡收斂
+  decision entity（backlog CLI）——跨卡長壽決策
+  rule——always-on 最小核心（條文面：instruction 落地前審查閘＋控制面隔離閘）
+  skill——on-demand 方法論（條文面同上）
+派工前執法＝`lint --dispatch <卡id>`（open＋kind=correction＋gate=blocking 即 exit 1，
+先收編再派工；按卡關聯擋、非全域擋——card=- 的 correction 不擋他卡 dispatch）。
 
 KPI 記數（AIR-151 source-segmented 轉化漏斗，append-only jsonl）：
   reviewed（--add-improvement 落帳）→ opened（promote 開卡）→ settled（promoted row
@@ -32,10 +43,18 @@ KPI 記數（AIR-151 source-segmented 轉化漏斗，append-only jsonl）：
   `.agents/improvement-kpi.jsonl`——跨 WT 單一副本）。
   彙總消費端＝`scripts/improvement_signals.py --kpi <path>`。
 
+correction KPI 記數（AIR-135.8 迴路漏斗，append-only jsonl，欄位＝ts／correction id／event）：
+  detected（add --kind correction）→ incorporated（close decided——resolution 帶載體去處
+  指針）；`--obsolete` 收 correction 不記新事件（enum 無 dismissed 值，禁冒充 restated）。
+  restated＝重述偵測命中（新候選 vs 已收編項比對——LLM 判讀非機械閘）＝迴路 fail 訊號，
+  由 session 側以同行 json append；routed 為預留事件值（已決定去處未寫入的中間態）。
+  路徑錨定同台帳（git common dir 父目錄 `.agents/correction-kpi.jsonl`——跨 WT 單一副本）。
+
 日期＝本機日曆日（`date.today()`；非 UTC——Asia/Taipei 00:00–08:00 間 UTC 日期
 會慢一天，TTL 計齊跟著錯，codex 151-C5）。
 
-測試／隔離重導向：各子命令支援 `--ledger <path>`／`--kpi-file <path>`（預設用上述錨點）。
+測試／隔離重導向：各子命令支援 `--ledger <path>`／`--kpi-file <path>`／`--correction-kpi-file <path>`
+（預設用上述錨點）。
 
 決策落帳時 close 行尾加決策指針（寫進哪個卡 notes／commit）。
 """
@@ -63,6 +82,8 @@ LEDGER = (
 )
 # AIR-151 KPI 漏斗記數——與台帳同錨點（跨 WT 單一副本）、append-only jsonl
 KPI_FILE = LEDGER.parent / ".agents" / "improvement-kpi.jsonl"
+# AIR-135.8 correction 迴路 KPI——同錨點獨立檔（漏斗語義與 improvement 分源，禁混桶）
+CORRECTION_KPI_FILE = LEDGER.parent / ".agents" / "correction-kpi.jsonl"
 
 ROW = re.compile(
     r"^\| (D-\d+) \| (\d{4}-\d{2}-\d{2}) \| ([^|]*) \| ([^|]*) \| ([^|]*) \| (\S+)"
@@ -85,7 +106,7 @@ SOURCES = (
 
 def _today() -> str:
     """本機日曆日（非 UTC——Taipei 00:00–08:00 UTC 日期慢一天，TTL 跟著錯）。"""
-    return datetime.date.today().isoformat()
+    return datetime.datetime.now().astimezone().date().isoformat()
 
 
 def _load(ledger: Path) -> list[dict]:
@@ -133,7 +154,8 @@ def _save(rows: list[dict], ledger: Path) -> None:
         "",
         "> 三觸發點掃尾：session 開場／compact 前／結案前（`ls --open`）。"
         "卡標 Done 前 `lint --card <id>` 須 exit 0（open 且 gate=blocking 才擋——"
-        "kind=improvement 帶 gate=nonblocking 不擋，AIR-151）。close 行附決策去處指針。",
+        "kind=improvement 帶 gate=nonblocking 不擋，AIR-151）。"
+        "派工前 `lint --dispatch <卡id>` 須 exit 0（open＋kind=correction＋gate=blocking＋卡匹配才擋，AIR-135.8）。close 行附決策去處指針。",
     ]
     ledger.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -169,9 +191,25 @@ def _append_kpi(kpi_file: Path, event: str, row: dict) -> None:
         fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
+def _append_correction_kpi(kpi_file: Path, event: str, row: dict) -> None:
+    """correction 迴路漏斗記數（AIR-135.8：detected→incorporated；restated＝重述
+    fail 訊號由 session 側記）——欄位＝ts／correction id／event 三欄，append-only。"""
+    rec = {
+        "ts": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
+        "id": row["id"],
+        "event": event,
+    }
+    kpi_file.parent.mkdir(parents=True, exist_ok=True)
+    with kpi_file.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
 def _add_io_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--ledger", type=Path, default=LEDGER, help=argparse.SUPPRESS)
     p.add_argument("--kpi-file", type=Path, default=KPI_FILE, help=argparse.SUPPRESS)
+    p.add_argument(
+        "--correction-kpi-file", type=Path, default=CORRECTION_KPI_FILE, help=argparse.SUPPRESS
+    )
 
 
 def main() -> None:
@@ -181,6 +219,12 @@ def main() -> None:
     p_add.add_argument("card", help=" owning 卡 id，無卡填 -")
     p_add.add_argument("question")
     p_add.add_argument("options", nargs="?", default="")
+    p_add.add_argument(
+        "--kind",
+        choices=["decision", "correction"],
+        default="decision",
+        help="row 類型（correction＝AIR-135.8 user correction 收編——gate 恆 blocking、記 KPI detected）",
+    )
     p_close = sub.add_parser("close")
     p_close.add_argument("did")
     p_close.add_argument("resolution")
@@ -201,7 +245,11 @@ def main() -> None:
         help="TTL 面：只列 date 早於 N 天前的 open improvement（晨間裁決清單；未給＝不過濾）",
     )
     p_lint = sub.add_parser("lint")
-    p_lint.add_argument("--card", required=True)
+    lint_target = p_lint.add_mutually_exclusive_group(required=True)
+    lint_target.add_argument("--card", help="Done-gate：open blocking 項擋卡 Done")
+    lint_target.add_argument(
+        "--dispatch", help="Dispatch-gate（AIR-135.8）：目標卡 open correction blocking 項擋派工"
+    )
     p_imp = sub.add_parser(
         "add-improvement",
         help="AIR-151 improvement 候選落帳（kind=improvement gate=nonblocking，KPI reviewed）",
@@ -241,12 +289,18 @@ def main() -> None:
             "options": args.options,
             "status": "open",
             "note": "",
-            "kind": "decision",
+            "kind": args.kind,
             "gate": "blocking",
             "meta": "",
         }
+        if args.kind == "correction" and args.card == "-":
+            ap.error(
+                "correction 收編必帶 owning 卡 id（禁 `-`）——無卡 correction 不受 dispatch/Done 兩閘涵蓋（AIR-135.8 review F2）"
+            )
         rows.append(row)
         _save(rows, args.ledger)
+        if args.kind == "correction":
+            _append_correction_kpi(args.correction_kpi_file, "detected", row)
         print(f"[OK] {row['id']} 已登記（{row['card']}）——結案/compact 前會再掃到")
     elif args.cmd == "add-improvement":
         meta_parts = [
@@ -311,6 +365,9 @@ def main() -> None:
                 if r["kind"] == "improvement":
                     # 未 promote 即收＝另一終態——不可記 settled（漏斗語義，codex 151-C3）
                     _append_kpi(args.kpi_file, "dismissed", r)
+                elif r["kind"] == "correction" and not args.obsolete:
+                    # correction 收編結案＝漏斗末段；--obsolete 不記（enum 無 dismissed 值）
+                    _append_correction_kpi(args.correction_kpi_file, "incorporated", r)
                 print(f"[OK] {args.did} closed（{r['status']}）：{args.resolution}")
                 return
         print(f"[FAIL] {args.did} 不存在或已關閉")
@@ -334,7 +391,8 @@ def main() -> None:
         stale_cutoff = ""
         if getattr(args, "stale_days", None):
             stale_cutoff = (
-                datetime.date.today() - datetime.timedelta(days=args.stale_days)
+                datetime.datetime.now().astimezone().date()
+                - datetime.timedelta(days=args.stale_days)
             ).isoformat()
         for r in rows:
             if args.open and r["status"] != "open":
@@ -355,6 +413,23 @@ def main() -> None:
                 continue
             print(f"{r['id']} [{r['status']}{kind_tag}] {r['date']} {r['card']}：{r['question']}{extra}")
     elif args.cmd == "lint":
+        if args.dispatch is not None:
+            # Dispatch-gate（AIR-135.8）：只看 correction kind——open＋gate=blocking＋
+            # 按卡關聯（D-d：card=- 的 correction 非全域，不擋他卡 dispatch）
+            open_for = [
+                r
+                for r in rows
+                if r["status"] == "open"
+                and r["kind"] == "correction"
+                and r["gate"] == "blocking"
+                and r["card"] == args.dispatch
+            ]
+            if open_for:
+                for r in open_for:
+                    print(f"[FAIL] open correction {r['id']}：{r['question']}（擋 {args.dispatch} dispatch——先收編再派工）")
+                sys.exit(1)
+            print(f"[OK] {args.dispatch} 無 open corrections——可派工")
+            return
         open_for = [
             r
             for r in rows

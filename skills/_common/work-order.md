@@ -20,6 +20,7 @@
 
 - 例句型：「把 X 制度化為 Y，達成 Z」（填寫時替換為本次任務的具體目標）
 - **派工前 admission**：usage probe＋family identity 驗證（availability 當次形成；unknown/stale≠available）
+- **派工前 correction 執法（AIR-135.8）**：dispatch 前對目標卡跑 `uv run python scripts/decisions_pending.py lint --dispatch <卡id>`——open 且 kind=correction 且 gate=blocking 即 exit 1＝禁派工，先收編再派（載體路由表＝[post-build](../post-build/SKILL.md)「correction mining checkpoint」）
 
 ### Role contract（派發 registry role 時必填子段）
 

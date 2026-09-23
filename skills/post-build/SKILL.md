@@ -116,6 +116,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 4. **rename 反掃（結案 gate 機械收口——非 rename 弧自然空跳）**：①清單萃取（`git diff --diff-filter=R -M` 檔級＋LLM 讀 diff 提取符號級）；②反掃 `rg "<舊符號>"` 掃 AGENTS.md 家族＋專案快 drift 檔；③命中即修或記 drift；零命中＝完成證據。
 5. **政策翻轉 consumer-propagation gate**：retire／政策句改寫弧跑[下方 gate](#政策翻轉-consumer-propagation-gateair-75)；candidate 空＝空跳（證據）。他類弧空跳。
 6. **CR wiring telemetry checkpoint（AIR-67 弧B；與第 5 點 AIR-75 分軸——政策傳播 vs 行為量測）**：diff 觸及 CR 接線載體（`rules/symbol-query-routing.md`、`skills/cr-query/`、`agents/roles/*`、`skills/_common/work-order.md` §7、review-engine／implement 等 skill 的 CR 接線段）→ 收尾報告必附 `uv run python /Users/ctai/Github/ai-guide/skills/corrections-weekly/scripts/cr_usage.py --days <弧天數>` 輸出（三源計數見 [corrections-weekly](../corrections-weekly/SKILL.md)）。**checkpoint＝基線數字，非 effectiveness proof**——接線已改≠行為已形成，後續真實 review/job 樣本才是判讀面（corrections-weekly 週期承載）。candidate 空＝空跳（證據）。
+7. **correction mining checkpoint（AIR-135.8；與第 6 點分軸——CR 行為量測 vs user correction 迴路）**：每弧結算機械掃 user correction 候選——挖掘→收編→路由→KPI 四步迴路，見[下方 checkpoint](#correction-mining-checkpointair-1358)；candidate 偵測便宜、非相關弧空跳（證據）。
 
 ### 政策翻轉 consumer-propagation gate（AIR-75）
 
@@ -133,6 +134,16 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 - **① Detect（機械——先跑，便宜）**：`git diff --diff-filter=A --name-only` 頂層聚合 → 新增頂層目錄與新增可執行 entry 清單（弧模式＝baseline..HEAD 同源；零 `.md` 的 code 弧與純 `.md` 弧皆跑——instruction 真空不以語言別豁免）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：逐 candidate 對 MUST predicate 判「該目錄該不該有 AGENTS face」＋現有 face 是否已涵蓋新入口；全不命中或已涵蓋 → 空跳記證據。
 - **③ Delegate（命中即委派既有機制——不重寫生成邏輯）**：缺 AGENTS.md → create-or-sync 照 [instruction-init](../instruction-init/SKILL.md) 骨架與建檔閾值補檔（雙檔模式含 CLAUDE.md wrapper）；已有 AGENTS.md 但未涵蓋新入口 → 併入本鏈第 1 點 consistency 重驗範圍。**零 gap（全 candidate 已有 face 或已補）＝ settlement pass 證據；未補齊 → 列收尾報告未決項，不靜默**。
+
+### correction mining checkpoint（AIR-135.8）
+
+> 掛點：每弧結算（弧模式與 uncommitted 模式皆跑；candidate 偵測便宜——階段 4 主表第 7 點）。迴路四步＝挖掘→收編→路由→KPI（卡面真相源＝AIR-135.8；model findings 不入本迴路——走 135.2 假設台帳＋135.7 裁決觸發）。
+
+- **① Detect（機械——先跑，便宜）**：`uv run python skills/corrections-weekly/scripts/mine_corrections.py --since <弧起點ts>`（毫秒 epoch——弧起點建議＝弧 baseline commit 時間；`--until` 缺省＝現在；與週報 `--days` 互斥共存——per-arc 管當下收編、週報管趨勢）。**零候選＝空跳（證據）**；有候選→清單落 session journal。
+- **② Extract（LLM 判讀——candidate 非空才做）**：沿用 corrections-weekly 七類＋疑似不硬歸（關鍵詞有假陽性，腳本不判「是否真糾正」）；與已收編（close decided）correction 比對——**重述命中＝迴路 fail**，列收尾報告交 user 裁決，session 側以一行 json（ts／id／event=`restated`）append 進 KPI 檔——路徑以 `git rev-parse --path-format=absolute --git-common-dir` 的**父目錄**解析 `.agents/correction-kpi.jsonl`（跨 WT 單一副本，禁 WT-local 相對路徑）；重述比對以穩定 correction id＋原文 hash 為 identity，LLM 聚類僅輔助候選分組（禁作唯一 dedup authority）。
+- **③ 收編**：逐條 `uv run python scripts/decisions_pending.py add <owning卡id或-> "<一行人話>" --kind correction`——kind=correction gate=blocking 落台帳（KPI `detected` 自動記數）。
+- **④ 路由（載體分流——本表為主體）**：按 correction 性質分流——**卡面 section**（intent/procedure：單卡作業糾正，隨卡收斂）／**decision entity**（backlog CLI：跨卡長壽決策）／**rule**（always-on 最小核心）／**skill**（on-demand 方法論）；rule/skill 屬條文面，一律走 instruction 落地前審查閘＋控制面隔離閘。路由完成即收編結案：`uv run python scripts/decisions_pending.py close <D-id> "<載體去處指針>"`（KPI `incorporated`）。速覽鏡像住 [decisions_pending.py](../../scripts/decisions_pending.py) 模組 docstring——改表兩處同步。
+- **⑤ 執法（消費端——非本鏈步驟，派工面）**：Marshal dispatch 前對目標卡跑 `uv run python scripts/decisions_pending.py lint --dispatch <卡id>`——open correction blocking 即禁派工先收編（義務掛點＝[work-order](../_common/work-order.md) §2 派工 admission；執法點歸 AIR-135.7 DispatchSlice）。
 
 ## 收斂態落卡（階段 5 前——AIR-121）
 
