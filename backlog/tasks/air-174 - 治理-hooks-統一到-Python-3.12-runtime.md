@@ -1,10 +1,10 @@
 ---
 id: AIR-174
 title: 治理 hooks runtime 分割——3.9 相容＋install 3.12 resolver（memory/compact 閘修復）
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-09-23 08:42'
-updated_date: '2026-09-23 11:29'
+updated_date: '2026-09-23 13:47'
 labels: []
 dependencies: []
 references:
@@ -58,6 +58,8 @@ flowchart LR
 最終收斂：原 hardening 與三項必修完整保留；IR1/IR2 獨立反例修復並複審通過。最終完整測試 2083 passed／2 intentional skips。Receipt: classification=boundary / review=native fresh+intent, Muse external+Arbiter, fresh Muse IR2 final APPROVE (job-mudzulxa-e1dpd1); main judge adopts closure / session-freshness=fresh (source hashes verified) / deployment-surfaces=pending (live configs and bundles not deployed).
 
 【0923 卡面更正】原標題「統一到 Python 3.12 runtime」為貼錯（user 確認）——實際落地＝分割 runtime（hooks 3.9 相容＋installer 解析 managed 3.12）；3.12 deployment migration 未含。receipts 目錄指針：ai-analysis/_tasks/09-23-hook-python312-runtime/。跟進批＝AIR-176；deployment 繼任待開。
+
+【0923 批次二】AIR-178 深審（82/100）F1/F2 轉入本卡修復：F1＝面獨立語義二選一＋實作對齊（install.py:1060 注釋 vs 849-857/1065-1117/1121 raise-abort）；F2＝traceback 收斂 GovernanceError EXIT_EXEC(4)＋每實例回歸案例（run_wrap 734、871-873、442-492、281-283、750、main 2015-2017）。F3-F7＋Q1 小修另批不隨本批。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

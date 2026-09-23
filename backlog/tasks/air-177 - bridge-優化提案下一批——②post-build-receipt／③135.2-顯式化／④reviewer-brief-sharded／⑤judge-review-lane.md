@@ -3,11 +3,14 @@ id: AIR-177
 title: >-
   bridge 優化提案下一批——②post-build receipt／③135.2 顯式化／④reviewer-brief
   sharded／⑤judge-review lane
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-23 11:45'
+updated_date: '2026-09-23 13:46'
 labels: []
 dependencies: []
+references:
+  - skills/post-build/SKILL.md
 ordinal: 163000
 ---
 
@@ -36,10 +39,22 @@ flowchart LR
 **驗收**：四項逐項 rg 勾稽＋bridge 線回執確認；落地紀律照 instruction-writing＋review-engine 風險分類。
 <!-- SECTION:DESCRIPTION:END -->
 
+## Implementation Plan
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide 4b49900e〕
+〔已決策勿重辯：①bridge 裁決五案中①已由 AIR-176 落地，本卡只做②③④⑤（bridge 線信 27e61cc8；裁決落地 commit 7df053e）；②fdfe6c11 dispatch 歸因三件併入本卡（0923 journal 裁決）——bridge-dispatch 歸屬行級修／wt-open.sh pool 缺席 fallback／dispatch runbook 收斂；③AC#2 對照 AIR-171/175 既有接線後僅做顯式化或指針微調，禁在新位置重刻 freshness 定義（單一源＝ai-development-guide 條2）；④AC#4 judge lane＝折衷試行——定向 resume 帶建立時 --model pin＋turn/token 上限強制換新＋distilled state 交接＋每批一弧全新 judge 抽樣對帳漂移；鐵律不動（永不 resume writer 當 judge、逐行裁決附機械證據、sycophancy 否證腿照跑）〕
+範圍：skills/post-build/SKILL.md（AC#1）、ai-development-guide.md 條2＋skills/cr-query＋skills/review-engine 對照點（AC#2）、reviewer-brief 範本住點（worker 先 rg 定位現行 reviewer-brief 落點再動手，AC#3）、skills/judge-review/SKILL.md（AC#4）、rules/bridge-dispatch.md（AC#5）、scripts/wt-open.sh（AC#6）、skills/bridge-dispatch/SKILL.md（AC#7）
+驗收：AC#1-7 逐項 rg 勾稽；AC#4 另需 bridge 線回執確認（scbus 寄 bridge-task-marshal）；落地紀律照 instruction-writing＋review-engine 風險分類（gate/contract 面條文語義變更，主 session 補審查腿）
+Final Summary 預告：instruction 修正批，user-visible surface＝七處檔面條文（rg 可查）；trivial surface 以 AC 內 rg 命中即樣張，無獨立 mockup。
+<!-- SECTION:PLAN:END -->
+
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 ② post-build skill：anchored receipt 條文＋三類重跑清單——rg 可查
 - [ ] #2 ③ AIR-135.2 freshness rule 顯式化對照 AIR-171/175 後落地（可能僅指針微調）
 - [ ] #3 ④ reviewer-brief-template：sharded codex 形＋judge gating rule 入範本
 - [ ] #4 ⑤ judge-review skill：常設 lane 折衷試行條文（鐵律不動）；bridge 線回執確認
+- [ ] #5 fdfe6c11① rules/bridge-dispatch.md watcher 主路徑行補「ai-guide repo 的」owner 歸屬——rg 可查
+- [ ] #6 fdfe6c11② wt-open.sh memory pool 缺席時 fallback（WARN-skip 或顯式旗標），不再建 worktree 到一半 exit 3——無 pool repo 實測驗證
+- [ ] #7 fdfe6c11③ bridge-dispatch skill 收 canonical dispatch runbook（glm writer lane 全命令模板：registry pin 解析→--wt --card 布林→禁 --steps→waiter cwd＝job workspace）——rg 可查
 <!-- AC:END -->
