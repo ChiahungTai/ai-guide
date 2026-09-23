@@ -1,9 +1,10 @@
 ---
 id: AIR-175
 title: 驗收 code-reality v0.9.3 新鮮度檢查——消費端能力對帳＋新舊判準收斂
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-23 10:00'
+updated_date: '2026-09-23 11:35'
 labels: []
 dependencies: []
 ordinal: 161000

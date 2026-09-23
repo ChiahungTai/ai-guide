@@ -1,12 +1,15 @@
 ---
 id: AIR-176
 title: air-174 跟進修正批——rules-reminder 指針化＋work-order 強制句＋STATE 註解＋卡面更正
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-23 11:28'
-updated_date: '2026-09-23 11:29'
+updated_date: '2026-09-23 11:30'
 labels: []
 dependencies: []
+references:
+  - skills/rules-reminder/SKILL.md
+  - skills/_common/work-order.md
 ordinal: 162000
 ---
 
