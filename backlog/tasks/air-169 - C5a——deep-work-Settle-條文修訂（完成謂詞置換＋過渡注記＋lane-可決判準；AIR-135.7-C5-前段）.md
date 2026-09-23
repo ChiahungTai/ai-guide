@@ -4,7 +4,7 @@ title: C5a——deep-work Settle 條文修訂（完成謂詞置換＋過渡注�
 status: In Progress
 assignee: []
 created_date: '2026-09-22 23:36'
-updated_date: '2026-09-23 00:07'
+updated_date: '2026-09-23 00:23'
 labels:
   - orchestration
 dependencies: []
@@ -46,8 +46,14 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 L240 裸 /goal 範例置換＋其下 3 行過渡注記落位（條件＝卡 AC＋precheck＋report、禁綁 todo、stall N=2、批量 replace）——0923 雙腿審查要求①；驗證＝條文 diff＋rg 術語掃描
-- [ ] #2 完成謂詞＋停法三選一＋批量輪換＋dw 承諾制＋lane 可決判準（含協調 vs 新承諾分界）入 skill 條文；驗證＝與 135.7 卡零矛盾對錶＋harness 中立表述（無單家寫死）
-- [ ] #3 fence 驗證：skill L171-213 旗艦裁決段逐字零變更（diff）；autonomous-execution 與 outward rule 未動
+- [x] #1 L240 裸 /goal 範例置換＋其下 3 行過渡注記落位（條件＝卡 AC＋precheck＋report、禁綁 todo、stall N=2、批量 replace）——0923 雙腿審查要求①；驗證＝條文 diff＋rg 術語掃描
+- [x] #2 完成謂詞＋停法三選一＋批量輪換＋dw 承諾制＋lane 可決判準（含協調 vs 新承諾分界）入 skill 條文；驗證＝與 135.7 卡零矛盾對錶＋harness 中立表述（無單家寫死）
+- [x] #3 fence 驗證：skill L171-213 旗艦裁決段逐字零變更（diff）；autonomous-execution 與 outward rule 未動
 - [ ] #4 dogfood 前置成立：下一次 dw 進場照新條文編譯 /goal 並留調用紀錄（史證缺口——歷史上零 /goal 調用紀錄，第一次留證）；本 AC 為 135.7 AC#7 批量夜間 dogfood 的前置
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0923 實作收斂】worker（5.3）落地兩 hunk（Settle 節＋L254 置換+過渡注記）；fresh-eyes 審查（5.3）verdict＝approve-with-findings。Judge（marshal 5.3）裁決：F1 採納修復——worker 編輯因 wt-open(170) 把 primary 歸位 main 而晾在 canonical，被 admission guard 攔下（防線實證）→走卡 WT（patch 搬運＋branch -f 重置，d9b25c02 與 main 3b3448aa patch 等同零損失）；F2-F8 全採納（merge 入 ask-list／fail-closed judgment-required／evidence delta 三元定義／pending safe-default／precheck 措辭／概括語禁令／C5b 錨點）；F9 記 drift-watch（check_single_source REGISTRY 候選，未登記）。fence L171-213 三次複驗逐字零差。commit 7bbbe6bd（main，wt-close full：rebase→merge→WT+branch 清除零殘留）。AC#4 開放——下次 dw 進場照新條文編譯 /goal 留紀錄後結案。
+<!-- SECTION:NOTES:END -->
