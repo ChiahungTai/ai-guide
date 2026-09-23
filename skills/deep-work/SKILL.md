@@ -225,6 +225,20 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 
 ---
 
+## Settle 完成條件
+
+> 契約單一源＝backlog 卡 AIR-135.7（dw 承諾制／批量 Settle 迴圈——AC#7/#8＋Implementation Notes）；本節為 skill 端投影。
+
+1. **收工謂詞**：卡 AC 全勾＋precheck 綠（跨線掃描 precheck＝`backlog_precheck.sh`，[kanban-board](../kanban-board/SKILL.md)）＋completion report 落盤。**禁綁 session todo**——todo 清完≠完成；只認實據（改出的檔、命令輸出、測試結果），計畫與待辦清單不算。
+2. **goal 條件編譯**：只取有明確 verifier 的 AC（command+expected、artifact 驗收、schema invariant、state transition）——生成＝投影既有 verification spec，非 LLM 解讀；無明確 verifier 的 AC fail-closed 成 judgment-required 留 reviewer，不入 goal 也不靜默丟失。C5b goal compiler（predicate compiler，歸 AIR-135.1 amendment）落地前，由 invoking session 進場時手動編譯。
+3. **停法三選一**（無額度帽——停機僅由下列三者觸發）：**cap-stop**（額度自然耗盡＝換班非收工，排 `/at` 接續）／**stall-stop**（連續兩輪無 evidence delta 即停——delta 定義單一源＝AIR-135.7 題六⑤：predicate states＋artifact 錨＋reviewer verdict id；停後縮小 slice，禁原樣重派）／**紅線-stop**（強 outward／破壞性紅線——停該卡、續下一卡；紅線定義單一源＝[autonomous-execution](../autonomous-execution/SKILL.md)）。
+4. **批量模式**：跨卡依次推進，每卡 `/goal` replace 輪換（goal 輪換協議）；不逐卡回報／斷言視圖，收線只產一張多卡匯總 receipt——住 parent 卡 Final Summary。
+5. **lane 可決不上拋**：已有卡、已定案（勿重辯區）的事——卡序、做法方向、優先序、既有常設授權的協調動作——自主決定並記錄；新承諾、跨 repo 寫入、merge（trunk 收線）、outward 才問 user；無人值守批量下非紅線 human gate 入 pending 台帳套 safe default 續跑（AIR-135.7 AC#7）。
+6. **dw 承諾制**：接到 deep-work 指令即承諾做完卡 AC；判斷阻塞→bi/tri（雙腿／三腿多家族審查）取結論→續做；報告僅終場一次。語義單一源＝AIR-135.7，數值不在此重刻。
+7. **harness 中立**：Settle predicate 為主體；native `/goal`（ZCode／muse）與外部 driver（codex／claude，bridge_waiter 形態）皆為 adapter 投影。bridge 派的 worker 無 goal 接點——編譯責任在 invoking session。
+
+---
+
 ## 與其他命令的協作
 
 **自主可調度**：`/execution-plan`（無 EP 時 deep-work 任務中自主產，非 user 前置）、`/implement`、`/post-build`（pipeline 預設終段——收尾鏈編排）、`/code-review`、`/ep-review`、`/ep-validate`、`/audit-test`
@@ -237,4 +251,8 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 
 > **Agent Review Cycle 已完成。** 可直接 `/commit`；如需額外審查可跑獨立 `/code-review`。
 
-**搭配 `/goal`**：`/goal all TaskCreate tasks completed, uv run pytest exits 0, ruff clean, mypy clean, all demos run`（收尾前觸發檢查見上——AIR-131）
+**搭配 `/goal`**：進場時依「Settle 完成條件」節編譯 goal 條件——形如 `/goal 卡 AC 逐項 verifier 全勾, precheck 綠, completion report 落盤`；逐 AC 展開其驗證式，禁以「AC 全勾」類概括語直接入 goal 字串（概括語可被 LLM 自判 Met——AIR-131 舊病殘留形態；收尾前觸發檢查見上）
+
+> **過渡注記（C5b goal compiler 落地前）**：goal 條件由 invoking session 進場時手動編譯；收工條件＝卡 AC 全勾＋precheck 綠＋completion report 落盤，禁綁 session todo。
+> stall N=2——連續兩輪無 evidence delta 即停（停後縮小 slice，禁原樣重派）。
+> 批量模式每卡 `/goal` replace 輪換；完整規則見上「Settle 完成條件」節（契約單一源＝AIR-135.7）。
