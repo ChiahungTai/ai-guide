@@ -1,13 +1,15 @@
 ---
 id: AIR-169
 title: C5a——deep-work Settle 條文修訂（完成謂詞置換＋過渡注記＋lane 可決判準；AIR-135.7 C5 前段）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-22 23:36'
-updated_date: '2026-09-23 00:04'
+updated_date: '2026-09-23 00:07'
 labels:
   - orchestration
 dependencies: []
+references:
+  - skills/deep-work/SKILL.md
 ordinal: 155000
 ---
 
