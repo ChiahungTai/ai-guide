@@ -1,9 +1,10 @@
 ---
 id: AIR-178
 title: install.py +917 全量審查——3.12 resolver＋三家 registration 投影（深審腿）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-23 12:02'
+updated_date: '2026-09-23 12:03'
 labels: []
 dependencies: []
 ordinal: 164000
