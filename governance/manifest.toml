@@ -138,6 +138,6 @@ flags = ["--dry-run", "--uninstall", "--check", "--verify"]  # 四 flag 兩兩�
 [bootstrap_cli.exit_codes]
 "0" = "成功/綠"
 "1" = "drift／verify FAIL"
-"2" = "環境守衛（Python 地板／工具缺席／flag 衝突）"
+"2" = "環境守衛（Python 地板／工具缺席／flag 衝突／root euid 寫入面守衛）"
 "3" = "子命令未實裝（stub）"
 "4" = "執行錯誤（malformed／lost-update／子進程失敗——plan journal 有線索）"

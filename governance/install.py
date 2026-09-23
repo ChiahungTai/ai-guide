@@ -164,8 +164,10 @@ def resolve_hook_python() -> str:
     uv = shutil.which("uv")
     if uv is None:
         raise GovernanceError(
-            "uv 缺席，無法解析治理 hook Python 3.12。"
-            "先安裝 uv，再執行 `uv python install 3.12`。"
+            "uv 缺席，無法解析治理 hook Python 3.12。\n"
+            "安裝 uv：curl -LsSf https://astral.sh/uv/install.sh | sh"
+            "（或見 https://docs.astral.sh/uv/getting-started/installation/）\n"
+            "裝完先執行 `uv python install 3.12`，再重跑 governance installer。"
         )
     argv = [
         uv,
@@ -289,6 +291,25 @@ def home_path(p: str) -> Path:
     return Path(os.path.expanduser(p))
 
 
+def sudo_home_guard() -> str | None:
+    """F5（AIR-181）：root（euid=0）執行寫入面 → guard 訊息（None＝通過）。
+
+    規格裁定（judge 修正輪 F-3）：以 euid==0 直接擋，**不作 HOME 比對**——root
+    身分跑 installer 寫入面即實害（root-owned 檔案散進安裝點）；macOS root 家
+    目錄為 /var/root、Linux 為 /root，HOME 比對無法跨平台且 sudo -E 又保留
+    user HOME——euid 判準單一、跨平台一致。EXIT_GUARD(2) 語義不變。
+    範圍＝僅寫入面（install/uninstall，main() 呼叫）；唯讀面（dry-run/check/
+    verify）不擋——唯讀不散佈檔案。
+    """
+    if os.geteuid() == 0:
+        return (
+            "[guard] root（euid=0）執行寫入面——安裝檔案將以 root 身分寫入"
+            "（root-owned 檔案散進安裝點，實害）。請以 user 身分重跑："
+            "uv run python governance/install.py …"
+        )
+    return None
+
+
 def real_target(target: Path) -> Path:
     """P0-3 鐵律：symlink 目標先 resolve（原子寫直打 symlink 路徑＝斷鏈）。"""
     return target.resolve() if target.is_symlink() else target
@@ -303,6 +324,31 @@ def load_manifest() -> dict:
             f"manifest 不可解析，拒載 fail-loud：{MANIFEST_PATH}",
             exc,
             "修正 governance/manifest.toml 語法後重跑",
+        ) from exc
+    except FileNotFoundError as exc:  # F-A（AIR-181）：manifest 檔缺席禁裸 traceback
+        raise _exec_error(
+            f"manifest 檔缺席：{MANIFEST_PATH}",
+            exc,
+            "確認 governance/manifest.toml 在場（完整 checkout）後重跑",
+        ) from exc
+
+
+def _read_template(rel: str, *, journal_hint: bool = True) -> str:
+    """F-A（AIR-181）共用收斂：註冊模板檔讀取——缺席 → GovernanceError。
+
+    裸 FileNotFoundError（manifest template 路徑打錯／檔被刪）違反 EXIT_EXEC(4)
+    契約。journal_hint 語意同 _exec_error：apply 面（journal 已寫本次 entry）帶
+    指針；check/probe 面（唯讀、本次無 journal）傳 False 防指針誤導。
+    """
+    try:
+        return (MANIFEST_PATH.parent / rel).read_text()
+    except FileNotFoundError as exc:
+        raise _exec_error(
+            f"註冊模板檔缺席：{rel}（manifest template 路徑與 repo 失同步？）",
+            exc,
+            "確認 governance/registrations/ 下模板在場，或修正 manifest 的"
+            " template 路徑後重跑",
+            journal_hint=journal_hint,
         ) from exc
 
 
@@ -355,7 +401,9 @@ def sha256_text(text: str) -> str:
 def journal_path(surface: str) -> Path:
     JOURNAL_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")  # noqa: DTZ005 -- preserve existing local-naive journal/backup timestamp format.
-    return JOURNAL_DIR / f"{ts}-{surface}.json"
+    # F4（AIR-181）：檔名加 pid——同秒雙 run 互覆防護（S-4 同款，仿 backup_target）；
+    # prune 仍走 _prune_glob（ts 前綴字串序＝時間序，pid 尾碼不影響新舊判定主軸）。
+    return JOURNAL_DIR / f"{ts}-{os.getpid()}-{surface}.json"
 
 
 def write_journal(path: Path, plan: dict) -> None:
@@ -561,6 +609,12 @@ GROUP_HEADER = re.compile(r"^\[\[hooks\.([A-Za-z]+)\]\]\s*$")
 # 缺旗標時 handlers 恆 0——live verify 首跑實證）；match() 用法不受影響。
 HANDLER_HEADER = re.compile(r"^\[\[hooks\.[A-Za-z]+\.hooks\]\]", re.MULTILINE)
 AI_GUIDE_COMMENT = "# ai-guide"
+# F6 立約（AIR-181）：header 認定＝column-0（GROUP/HANDLER 皆 ^ 錨定）。TOML 允許
+# 縮排 table header，但本解析器以行首 `[` 切單位——縮排 header 會被吞進前一段
+# unit（merge 誤屬/誤改風險）。守衛方案（非文件注記）：fail-loud 拒解析；誤報面
+# ＝multi-line 字串內含縮排 `[[hooks.*]]` 字樣（codex config 實務不存在，寧可
+# 大聲失敗不靜默誤改）。
+INDENTED_HOOKS_HEADER = re.compile(r"^[ \t]+\[\[hooks\.[A-Za-z]+", re.MULTILINE)
 
 
 def _peel_leading_comments(
@@ -588,7 +642,15 @@ def codex_group_units(text: str) -> tuple[str, list[dict]]:
     group unit＝前導 ai-guide 註解＋`[[hooks.E]]`＋全部 `[[hooks.E.hooks]]` 子表；
     zone＝其餘頂層表（[hooks.state]、[projects.*] 等）原樣保留。
     前導註解自前一 holder 尾端「實際搬移」（截斷），禁複製留存（註解重複 bug 教訓）。
+    立約（F6）：只認 column-0 header；縮排 header 由 INDENTED_HOOKS_HEADER 守衛
+    fail-loud（byte-parity——合法輸入零改寫，本函式不重排任何位元組）。
     """
+    if INDENTED_HOOKS_HEADER.search(text):
+        raise GovernanceError(
+            "codex config 含縮排（非 column-0）的 [[hooks.*]] header——installer "
+            "單位切分只認 column-0 header，縮排 header 會被吞進前一段 unit"
+            "（merge 誤改/誤刪風險）。請將該行退回 column-0（行首無空白）後重跑。"
+        )
     lines = text.splitlines(keepends=True)
     hdr = [i for i, ln in enumerate(lines) if ln.startswith("[")]
     if not hdr:
@@ -623,12 +685,43 @@ def codex_group_units(text: str) -> tuple[str, list[dict]]:
     )
 
 
-def _codex_group_identity(unit_text: str) -> tuple:
+def _codex_group_identity(unit_text: str, *, journal_hint: bool = True) -> tuple:
     m = re.search(r"^\[\[hooks\.([A-Za-z]+)\]\]", unit_text, re.MULTILINE)
     event = m.group(1) if m else ""
-    group = tomllib.loads(unit_text)["hooks"][event][0]
+    try:
+        # F6（AIR-181）：per-unit parse＋結構索引收斂——group 片段壞 TOML／缺
+        # hooks 結構禁裸 TOMLDecodeError/KeyError/IndexError（merge/check/probe
+        # 多消費面共用本 gate）。F-2（judge 修正輪）：journal_hint 透傳——
+        # merge/apply 面 True（journal 已寫本次 entry）；check/probe 面 False
+        # （drift/status 訊息不帶指針噪音）。
+        group = tomllib.loads(unit_text)["hooks"][event][0]
+    except tomllib.TOMLDecodeError as exc:
+        raise _exec_error(
+            f"codex group unit 不可解析：{(unit_text.splitlines() or [''])[0][:60]!r}…",
+            exc,
+            "確認 [[hooks.*]] group 片段語法（installer 只認 column-0 header）後重跑",
+            journal_hint=journal_hint,
+        ) from exc
+    except (KeyError, IndexError) as exc:
+        raise _exec_error(
+            f"codex group unit 缺 hooks 結構（無 {event or '?'}/[0] group）："
+            f"{(unit_text.splitlines() or [''])[0][:60]!r}…",
+            exc,
+            "確認 [[hooks.*]] group 片段含至少一個 [[hooks.<event>.hooks]] handler"
+            " 後重跑",
+            journal_hint=journal_hint,
+        ) from exc
+    # F-5（judge 修正輪）：型別逃逸以 isinstance 前檢（擇此非 except
+    # (TypeError, AttributeError)——except 會把 downstream 真 bug 吞成格式問題；
+    # 前檢語義與既有 `if not isinstance(command, str): continue` 同族：資料形態
+    # 非預期＝無法構成套件 ownership 主張，scripts 空集）。
+    raw_hooks = group.get("hooks", [])
+    if not isinstance(raw_hooks, list):
+        return (event, group.get("matcher"), frozenset())
     scripts: set[str] = set()
-    for handler in group.get("hooks", []):
+    for handler in raw_hooks:
+        if not isinstance(handler, dict):
+            continue
         command = handler.get("command", "")
         if not isinstance(command, str):
             continue
@@ -680,11 +773,13 @@ def codex_positional_shift_warnings(live_text: str, template_text: str) -> list[
     return warnings
 
 
-def _codex_template_groups(template_text: str) -> dict[tuple, str]:
+def _codex_template_groups(
+    template_text: str, *, journal_hint: bool = True
+) -> dict[tuple, str]:
     """Shared merge/remove/check gate: package ownership must be nonempty and unique."""
     _, tmpl_units = codex_group_units(template_text)
     tmpl_by_ident = {
-        (_codex_group_identity(u["text"])): u["text"]
+        (_codex_group_identity(u["text"], journal_hint=journal_hint)): u["text"]
         for u in tmpl_units
         if u["kind"] == "group"
     }
@@ -836,31 +931,49 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
                     "補齊 governance/manifest.toml 對應 registration 後重跑",
                 ) from exc
     if surface in ("skills", "all"):
-        for sl in manifest["surfaces"]["skills"]["symlinks"]:
-            targets.append(
-                {
-                    "kind": "symlink",
-                    "link": sl["link"],
-                    "target": sl["target"],
-                    "action": "remove" if mode == "uninstall" else "merge",
-                }
-            )
+        try:  # F-A：surfaces.skills KeyError 家族（build_plan 階段 journal 未寫）
+            for sl in manifest["surfaces"]["skills"]["symlinks"]:
+                targets.append(
+                    {
+                        "kind": "symlink",
+                        "link": sl["link"],
+                        "target": sl["target"],
+                        "action": "remove" if mode == "uninstall" else "merge",
+                    }
+                )
+        except KeyError as exc:
+            raise _exec_error(
+                "manifest 缺 surfaces.skills 必要欄位（skills 面）",
+                exc,
+                "補齊 governance/manifest.toml [surfaces.skills] 的 symlinks/"
+                "link/target 後重跑",
+                journal_hint=False,
+            ) from exc
     if surface in ("memory", "all") and mode == "uninstall":
         targets.append({"kind": "muse-disable", "action": "remove"})
     if surface == "monitor" or (surface == "all" and mode == "uninstall"):
         # C-1：all-uninstall 含 monitor unload（EP rollback「--uninstall --surface
         # all …含 monitor unload」）；all-install 不含（monitor＝顯式排程面，README
         # bootstrap 步驟 7 單獨裝載——非對稱屬設計，README uninstall 節載明）。
-        mon = manifest["surfaces"]["monitor"]
-        targets.append(
-            {
-                "kind": "launchd-plist",
-                "target": f"{mon['install_root']}/{mon['label']}.plist",
-                "source": mon["plist_source"],
-                "label": mon["label"],
-                "action": "remove" if mode == "uninstall" else "merge",
-            }
-        )
+        try:  # F-A：surfaces.monitor KeyError 家族（同 skills 面）
+            mon = manifest["surfaces"]["monitor"]
+            targets.append(
+                {
+                    "kind": "launchd-plist",
+                    "target": f"{mon['install_root']}/{mon['label']}.plist",
+                    "source": mon["plist_source"],
+                    "label": mon["label"],
+                    "action": "remove" if mode == "uninstall" else "merge",
+                }
+            )
+        except KeyError as exc:
+            raise _exec_error(
+                "manifest 缺 surfaces.monitor 必要欄位（monitor 面）",
+                exc,
+                "補齊 governance/manifest.toml [surfaces.monitor] 的 "
+                "install_root/label/plist_source 後重跑",
+                journal_hint=False,
+            ) from exc
     return {
         "ts": datetime.datetime.now().isoformat(timespec="seconds"),  # noqa: DTZ005 -- preserve existing local-naive journal/backup timestamp format.
         "surface": surface,
@@ -918,7 +1031,6 @@ def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
     # _apply_target 簽名；.get 防 plan 構築前置對缺 registrations 的 manifest
     # 裸 KeyError（build_plan 同款 .get）。
     reg = manifest.get("registrations", {})
-    exit_code = EXIT_OK
     for i, t in enumerate(plan["targets"]):
         try:
             outcome = _apply_target(reg, t, plan["mode"])
@@ -930,13 +1042,12 @@ def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
                 f"  FAIL [{t['kind']}] {t.get('target') or t.get('link')}: {exc}",
                 file=sys.stderr,
             )
-            exit_code = EXIT_EXEC
             if jp:
                 write_journal(jp, plan)  # 落盤已完成/未完成分野
-            raise
+            raise  # F-E 契約：apply_plan 回 EXIT_OK 或 raise，永不回非零
         if jp:
             mark_done(jp, plan, i)
-    return exit_code
+    return EXIT_OK
 
 
 def _apply_target(reg: dict, t: dict, mode: str) -> str:
@@ -945,7 +1056,7 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         if mode == "uninstall" and not target.exists():
             return "not-present（leave）"  # 乾淨機器 uninstall＝零動作（EP Q3）
         live = read_json_config(target)
-        raw_tmpl = (MANIFEST_PATH.parent / t["template"]).read_text()
+        raw_tmpl = _read_template(t["template"])
         # C1：uninstall identity 不經 resolver（rollback 不依賴 managed 3.12 在場）
         # F2：render 產出壞 JSON 經共用 helper 收斂 GovernanceError（禁裸 traceback）
         tmpl = render_template_json(
@@ -967,7 +1078,7 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
             raise GovernanceError(
                 f"malformed config，拒寫 fail-loud：{target}\n{exc}"
             ) from exc
-        raw_tmpl = (MANIFEST_PATH.parent / t["template"]).read_text()
+        raw_tmpl = _read_template(t["template"])
         # C1：uninstall identity 不經 resolver；install 走 shell-safe quote（C2）
         template_text = render_codex(raw_tmpl, resolve_python=(mode != "uninstall"))
         new_text, _msgs = merge_codex_text(
@@ -1158,12 +1269,10 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
         # ——skills 母鏈必須先於 rules wrap 建置，乾淨機器否則 deploy_agents abort。
         if surface in ("skills", "all"):
             try:
-                rc = apply_plan(manifest, build_plan(manifest, "skills", mode))
+                # F-E 契約：apply_plan 回 EXIT_OK 或 raise——非零 rc 分支不存在
+                apply_plan(manifest, build_plan(manifest, "skills", mode))
             except GovernanceError as exc:
                 _record_face_failure(face_failures, "skills", exc)
-            else:
-                if rc != EXIT_OK:
-                    face_failures.append("skills")
         for wrapped in ("rules", "agents"):
             if surface not in (wrapped, "all"):
                 continue
@@ -1224,12 +1333,10 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
                 _record_face_failure(face_failures, "memory", exc)
     if surface in ("hooks", "skills", "all", "memory", "monitor"):
         try:
-            rc = apply_plan(manifest, build_plan(manifest, surface, mode))
+            # F-E 契約：apply_plan 回 EXIT_OK 或 raise——非零 rc 分支不存在
+            apply_plan(manifest, build_plan(manifest, surface, mode))
         except GovernanceError as exc:  # F1：面失敗收彙整，完成輸出照跑
             _record_face_failure(face_failures, surface, exc)
-        else:
-            if rc != EXIT_OK:
-                return rc
     print_manual_steps(surface)
     if mode == "install":
         _print_default_state_warnings(manifest, surface)
@@ -1387,11 +1494,28 @@ def check_json_face(
     manifest: dict, harness: str, drifts: list[tuple[str, str]]
 ) -> None:
     """CC/ZCode：模板條目 vs live 套件條目語義 diff＋symlink 健康腿（P0-3）。"""
-    reg = manifest["registrations"][harness]
-    raw = home_path(reg["target"])
+    try:  # F-A：registrations KeyError 家族（check 面不帶 journal 指針）
+        reg = manifest["registrations"][harness]
+    except KeyError as exc:
+        raise _exec_error(
+            f"manifest 缺 registrations.{harness}（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 後重跑",
+            journal_hint=False,
+        ) from exc
+    try:  # F-4（judge 修正輪）：registration 欄位 KeyError 同家族
+        reg_target, reg_template = reg["target"], reg["template"]
+    except KeyError as exc:
+        raise _exec_error(
+            f"manifest registrations.{harness} 缺必要欄位 target/template（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 欄位後重跑",
+            journal_hint=False,
+        ) from exc
+    raw = home_path(reg_target)
     if not raw.exists():
         drifts.append(
-            (harness, f"live config 缺席：{reg['target']}（新機器？跑 install）")
+            (harness, f"live config 缺席：{reg_target}（新機器？跑 install）")
         )
         return
     if reg.get("target_is_symlink") and not raw.is_symlink():
@@ -1410,14 +1534,14 @@ def check_json_face(
         return
     try:
         tmpl = render_template_json(
-            (MANIFEST_PATH.parent / reg["template"]).read_text(),
-            label=reg["template"],
+            _read_template(reg_template, journal_hint=False),
+            label=reg_template,
             journal_hint=False,
         )
     except GovernanceError as exc:
         # M3：--check 維持 exit-1 drift-list 契約，不 traceback（install/apply 仍 fail-loud）。
-        # resolver 失敗訊息自帶 `uv python install 3.12` 指引；壞 JSON 經 F2 共用
-        # helper（render_template_json）帶模板名＋佔位檢查指引。
+        # resolver 失敗訊息自帶 `uv python install 3.12` 指引；壞 JSON／模板檔缺席
+        # 經共用 helper（render_template_json／_read_template）帶模板名＋指引。
         drifts.append((harness, f"模板 render/parse 失敗：{exc}"))
         return
     merge_root = reg.get("merge_root", "hooks")
@@ -1462,10 +1586,27 @@ def check_codex_face(
     manifest: dict, drifts: list[tuple[str, str]], codex_home: Path | None = None
 ) -> None:
     """codex：註冊在場＋條目逐行等值＋trust Modified 獨立 class＋mixed-rep 掃描。"""
-    reg = manifest["registrations"]["codex"]
-    raw = home_path(reg["target"])
+    try:  # F-A：registrations KeyError 家族（同 check_json_face）
+        reg = manifest["registrations"]["codex"]
+    except KeyError as exc:
+        raise _exec_error(
+            "manifest 缺 registrations.codex（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 後重跑",
+            journal_hint=False,
+        ) from exc
+    try:  # F-4（judge 修正輪）：registration 欄位 KeyError 同家族
+        reg_target, reg_template = reg["target"], reg["template"]
+    except KeyError as exc:
+        raise _exec_error(
+            "manifest registrations.codex 缺必要欄位 target/template（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 欄位後重跑",
+            journal_hint=False,
+        ) from exc
+    raw = home_path(reg_target)
     if not raw.exists():
-        drifts.append(("codex", f"config 缺席：{reg['target']}（新機器？跑 install）"))
+        drifts.append(("codex", f"config 缺席：{reg_target}（新機器？跑 install）"))
         return
     live_text = raw.read_text()
     try:
@@ -1473,10 +1614,14 @@ def check_codex_face(
     except tomllib.TOMLDecodeError as exc:
         drifts.append(("codex", f"malformed config：{exc}"))
         return
+    try:  # F-A：模板缺席獨立回報（不再誤稱 resolver 失敗）
+        raw_template = _read_template(reg_template, journal_hint=False)
+    except GovernanceError as exc:
+        # M3：--check 維持 exit-1 drift-list 契約，不 traceback。
+        drifts.append(("codex", str(exc)))
+        return
     try:
-        template_text = render_codex(
-            (MANIFEST_PATH.parent / reg["template"]).read_text()
-        )
+        template_text = render_codex(raw_template)
     except GovernanceError as exc:
         # M3：--check 維持 exit-1 drift-list 契約，不 traceback（install/apply 仍 fail-loud）
         drifts.append(
@@ -1486,13 +1631,21 @@ def check_codex_face(
             )
         )
         return
-    live_groups = [
-        (_codex_group_identity(u["text"]), u["text"])
-        for u in codex_group_units(live_text)[1]
-        if u["kind"] == "group"
-    ]
     try:
-        tmpl_by_ident = _codex_template_groups(template_text)
+        # F-1（judge 修正輪）：live-side 建構包 try——live config 縮排 header
+        # （守衛）／group unit 壞 TOML 時收進 drift（M3 exit-1 契約；--surface
+        # all 剩餘 faces 不被中斷；install/uninstall apply 面仍 fail-loud exit 4）。
+        # journal_hint=False（F-2）：check 面 drift 不帶 journal 指針。
+        live_groups = [
+            (_codex_group_identity(u["text"], journal_hint=False), u["text"])
+            for u in codex_group_units(live_text)[1]
+            if u["kind"] == "group"
+        ]
+    except GovernanceError as exc:
+        drifts.append(("codex", f"live codex hooks 區塊不可解析：{exc}"))
+        return
+    try:
+        tmpl_by_ident = _codex_template_groups(template_text, journal_hint=False)
     except GovernanceError as exc:
         drifts.append(("codex", str(exc)))
         return
@@ -1523,6 +1676,22 @@ def check_codex_face(
             drifts.append(
                 ("codex", f"缺 group {ident[0]}/{ident[1]} {sorted(ident[2])}")
             )
+    # F3（AIR-181）殘留掃描：identity 不符的 live group 若含套件腳本（identity
+    # 第三元——已由 _hook_path_pattern 過濾為 canonical/本 checkout hooks 路徑、
+    # 只認直接呼叫形態）＝手改/殘留條目，不再靜默忽略（json 面「多條目」同款；
+    # vendor group 腳本集空 → 交集空 → 不報，誤報控制）。
+    tmpl_scripts = {s for ident in tmpl_by_ident for s in ident[2]}
+    for ident, _text in live_groups:
+        if ident in tmpl_by_ident or not (ident[2] & tmpl_scripts):
+            continue
+        drifts.append(
+            (
+                "codex",
+                f"多條目（套件腳本現身非模板 group）{ident[0]}/{ident[1]} "
+                f"{sorted(ident[2])}——install 不清除，手工移除或 "
+                "--uninstall --surface hooks 後重裝對稱化",
+            )
+        )
     owned_live = [i for i, _ in live_groups if i in tmpl_by_ident]
     if len(owned_live) > len(tmpl_by_ident):
         drifts.append(
@@ -1979,12 +2148,22 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
     config 在場性＋state 診斷＋層三）；L2 Untrusted＝install 直後預期態非 FAIL
     （SM-7）；positional state key 僅診斷輸出（Q4 紅線）。
     """
-    reg = manifest["registrations"]["codex"]
+    try:  # F-4（judge 修正輪）：registrations KeyError 家族（probe 面同家族化）
+        reg = manifest["registrations"]["codex"]
+    except KeyError as exc:
+        raise _exec_error(
+            "manifest 缺 registrations.codex（verify/probe 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 後重跑",
+            journal_hint=False,
+        ) from exc
     target = real_target(home_path(reg["target"]))
     if not target.exists():
         return "FAIL", f"codex config 缺席：{target}", []
     live_text = target.read_text()
-    template_text = render_codex((MANIFEST_PATH.parent / reg["template"]).read_text())
+    template_text = render_codex(
+        _read_template(reg["template"], journal_hint=False)
+    )  # F-A：模板缺席 → GovernanceError（--verify 面禁裸 traceback）
     lines: list[str] = []
     has_cli = shutil.which("codex") is not None
     if has_cli:  # 版本診斷（codex ⑧）——CLI 缺席時跳過不 crash（launchd PATH 場實證）
@@ -1996,12 +2175,12 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
                 f"  [diag] {v.stdout.strip()}（state key 公式與 trust 行為隨版本可能變）"
             )
     owned = [
-        _codex_group_identity(u["text"])
+        _codex_group_identity(u["text"], journal_hint=False)
         for u in codex_group_units(template_text)[1]
         if u["kind"] == "group"
     ]
     live_idents = [
-        _codex_group_identity(u["text"])
+        _codex_group_identity(u["text"], journal_hint=False)
         for u in codex_group_units(live_text)[1]
         if u["kind"] == "group"
     ]
@@ -2119,13 +2298,18 @@ def main() -> int:
     )  # 1201 事故教訓：attribute 名歸一化
     if mode == "dry-run":
         set_dry_run()
+    # F5（AIR-181）：sudo/HOME 守衛——寫入面（install/uninstall）在 manifest
+    # 載入前擋下（EXIT_GUARD）；唯讀面不擋（守衛 docstring 記範圍裁定）。
+    if mode in ("install", "uninstall"):
+        sudo_msg = sudo_home_guard()
+        if sudo_msg:
+            print(sudo_msg, file=sys.stderr)
+            return EXIT_GUARD
     try:
-        # F2（AIR-178）：load_manifest 在 try 內——本批已收斂面（registrations/
-        # TOML/uv/json/hooks 子樹）落 EXIT_EXEC(4)（原在 try 前，收斂後仍以裸
-        # traceback 漏出、exit 1）。殘留待收斂面（judge F-A 限定範圍）：manifest
-        # 檔缺席 FileNotFoundError、surfaces/registrations 其餘 KeyError 家族、
-        # 模板檔缺席 read_text FileNotFoundError——main 只接 GovernanceError，
-        # 同類面仍裸 traceback，記卡待小修批。
+        # F2+F-A（AIR-178/181）：load_manifest 在 try 內——manifest 解析/缺席、
+        # registrations/surfaces KeyError 家族、模板檔缺席（_read_template）全收斂
+        # EXIT_EXEC(4)（原裸 traceback 面）。main 只接 GovernanceError：預期
+        # lookup 失敗乾淨 exit 4；程式 bug 照樣 traceback——禁全域 catch。
         manifest = load_manifest()
         if mode == "dry-run":
             return cmd_install_uninstall(manifest, args.surface, "dry-run")
