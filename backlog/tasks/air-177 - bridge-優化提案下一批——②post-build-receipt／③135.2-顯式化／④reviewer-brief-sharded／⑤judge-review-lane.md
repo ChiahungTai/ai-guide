@@ -41,13 +41,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ② post-build skill：anchored receipt 條文＋三類重跑清單——rg 可查
-- [ ] #2 ③ AIR-135.2 freshness rule 顯式化對照 AIR-171/175 後落地（可能僅指針微調）
-- [ ] #3 ④ reviewer-brief-template：sharded codex 形＋judge gating rule 入範本
+- [x] #1 ② post-build skill：anchored receipt 條文＋三類重跑清單——rg 可查
+- [x] #2 ③ AIR-135.2 freshness rule 顯式化對照 AIR-171/175 後落地（可能僅指針微調）
+- [x] #3 ④ reviewer-brief-template：sharded codex 形＋judge gating rule 入範本
 - [ ] #4 ⑤ judge-review skill：常設 lane 折衷試行條文（鐵律不動）；bridge 線回執確認
-- [ ] #5 fdfe6c11① rules/bridge-dispatch.md watcher 主路徑行補「ai-guide repo 的」owner 歸屬——rg 可查
-- [ ] #6 fdfe6c11② wt-open.sh memory pool 缺席時 fallback（WARN-skip 或顯式旗標），不再建 worktree 到一半 exit 3——無 pool repo 實測驗證
-- [ ] #7 fdfe6c11③ bridge-dispatch skill 收 canonical dispatch runbook（glm writer lane 全命令模板：registry pin 解析→--wt --card 布林→禁 --steps→waiter cwd＝job workspace）——rg 可查
+- [x] #5 fdfe6c11① rules/bridge-dispatch.md watcher 主路徑行補「ai-guide repo 的」owner 歸屬——rg 可查
+- [x] #6 fdfe6c11② wt-open.sh memory pool 缺席時 fallback（WARN-skip 或顯式旗標），不再建 worktree 到一半 exit 3——無 pool repo 實測驗證
+- [x] #7 fdfe6c11③ bridge-dispatch skill 收 canonical dispatch runbook（glm writer lane 全命令模板：registry pin 解析→--wt --card 布林→禁 --steps→waiter cwd＝job workspace）——rg 可查
 <!-- AC:END -->
 
 ## Implementation Plan
