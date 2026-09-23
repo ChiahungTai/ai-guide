@@ -1,10 +1,10 @@
 ---
 id: AIR-176
 title: air-174 跟進修正批——rules-reminder 指針化＋work-order 強制句＋STATE 註解＋卡面更正
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-23 11:28'
-updated_date: '2026-09-23 11:30'
+updated_date: '2026-09-23 11:40'
 labels: []
 dependencies: []
 references:
@@ -39,7 +39,21 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 rules-reminder 雙殘留清零：rg「所有 Python 命令必須|uv run 是王道|uv run for Python」零命中；規範指針指 tool-discipline
-- [ ] #2 work-order.md 含 bounded slices＋checkpoint receipt 強制句＋admission 步驟註記——rg 可查；bridge 首批 dogfood 配合（回執他線）
-- [ ] #3 read_state STATE 註解一行＋AIR-174 卡標題/notes 更正（receipts 指針）
+- [x] #1 rules-reminder 雙殘留清零：rg「所有 Python 命令必須|uv run 是王道|uv run for Python」零命中；規範指針指 tool-discipline
+- [x] #2 work-order.md 含 bounded slices＋checkpoint receipt 強制句＋admission 步驟註記——rg 可查；bridge 首批 dogfood 配合（回執他線）
+- [x] #3 read_state STATE 註解一行＋AIR-174 卡標題/notes 更正（receipts 指針）
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**結案（2026-09-23）**：三檔 +6/−2 落地（rules-reminder 雙殘留清零／work-order 派工端強制句＋admission 步驟／STATE 註解一行）。muse 驗收腿 verdict=accept（AC1-3 自跑 rg 全過；diff 數字由 marshal 補驗 git diff --stat 一致）。commit 13062e9b（wt-close full 零殘留）。bridge 首批 dogfood 配合：work-order 強制句即 DB 優化提案①（立即生效項）。
+
+```mermaid
+flowchart LR
+  RR["rules-reminder 指針化"] --> TS["tool-discipline 單一源"]
+  WO["work-order 強制句"] --> BS["bounded slices＋receipt＋admission"]
+  ST["STATE head 註解"] --> NR["防誤改 tail"]
+  ALL["三檔落地 13062e9b"] --> DONE["muse accept＋ Done"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
