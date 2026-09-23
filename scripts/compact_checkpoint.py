@@ -21,7 +21,7 @@
 | decisions            | 已決策理由及排除方案                    |      |
 | evidence             | 已驗/未驗證據指針                       |      |
 | read_set             | read-set 與未恢復範圍                   |      |
-| durable_owner        | 落點優先序（EP/journal 指針）           |      |
+| durable_owner        | 落點優先序（card/EP/journal/report 指針） |      |
 | scope/cwd/baseline   | scope/cwd/baseline＋本弧 dirty          |      |
 | authorization        | 授權來源與範圍指針                      |      |
 | lessons              | session-local scar（可選，不驗）       |      |

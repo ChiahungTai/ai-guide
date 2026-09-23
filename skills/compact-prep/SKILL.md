@@ -17,7 +17,7 @@ when_to_use: "① session 工作中——維護 checkpoint 與 durable owner（�
 - **conversation state 必死**——對話訊息面壓縮即換摘要、不保證 verbatim（A/B 實測：指示要求 verbatim 無效）→ 工作中持續落檔。
 - **CLAUDE.md／rules／skills 本體 harness 重注入**——每輪 context 重建自動在場 → 不用抄。
 
-**義務清單**（每次實質進展後更新；落點優先序＝durable owner 先：EP 進度節→journal→user 指定 report，定義源＝[task-recovery](../_common/task-recovery.md)「寫入端」）：
+**義務清單**（每次實質進展後更新；落點優先序＝durable owner 先：active card→EP 進度節（該弧原有 EP 時）→journal→user 指定 report，定義源＝[task-recovery](../_common/task-recovery.md)「寫入端」）：
 
 1. **決策與理由**（含排除方案）
 2. **evidence 指針**（已驗／未驗證據、檔案路徑、測試結果與錯誤 verbatim）

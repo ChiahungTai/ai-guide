@@ -27,8 +27,8 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 
 排程前依 [task-recovery](../_common/task-recovery.md)「寫入端」把工程狀態落進 durable 載體；ticket 只承載**任務身份與指針**——不抄 read-set、規格、完成度：
 
-1. 有 EP → 只 append EP 進度節（checkpoint 必要欄位＝task-recovery 寫入端表）；有卡且具 board 寫權 → 卡 notes 僅加一行「進度見 EP §X」指針——**board single-writer：無 board 寫權的 session 連指針行也不寫**，改在 ticket `owner_ref` 註記 `card: <id>（未寫 notes，無權）`
-2. 無 EP → 既有 `.agent-tmp/session-journal.md`；user 指定 report → 該 report
+1. 有卡且具 board 寫權 → 卡 notes 為 durable owner（checkpoint 必要欄位＝task-recovery 寫入端表）；該弧原有 EP → 併 append EP 進度節（詳細 plan/evidence owner）——**board single-writer：無 board 寫權的 session 連指針行也不寫**，改在 ticket `owner_ref` 註記 `card: <id>（未寫 notes，無權）`
+2. 無卡 → 該弧原有 EP → 只 append EP 進度節；都無 → 既有 `.agent-tmp/session-journal.md`；user 指定 report → 該 report
 3. STATE.md 僅在本 session 確有轉向／卡點觀察時更新（觀察層職責不變）；禁把 read-set／完成度／EP checkpoint 抄進 STATE 或 ticket
 4. UC 級任務排程前必須已有卡——**/at 不建卡**（排程不是建卡入口；臨時非 UC 工作走 `task_ref: ad-hoc`，見 Phase 2）
 
@@ -46,7 +46,7 @@ allowed-tools: ["Read", "Write", "Bash", "Glob", "CronCreate", "CronDelete", "Cr
 
 > **不支援相對時間**（`+Xh`/`+Xm`）：相對延遲須換算成絕對時刻，註冊瞬間時刻已過會靜默滾到一年後才觸發。用戶給相對時間時，用 `date` 查當前時間換算成絕對時刻（跨日時明確向用戶確認目標日期），再排程。
 
-2. **提取任務目標**：時間之後的所有文字為**任務目標一行**（進 ticket 的 goal）；詳細規格／read-set 住 durable owner（EP 進度節／卡 notes／journal），不展開進 ticket。
+2. **提取任務目標**：時間之後的所有文字為**任務目標一行**（進 ticket 的 goal）；詳細規格／read-set 住 durable owner（卡 notes／EP 進度節／journal），不展開進 ticket。
 
 ### Phase 2：寫入 ticket（狀態機起點 SCHEDULED）
 
@@ -75,7 +75,7 @@ uv run python /Users/ctai/Github/ai-guide/scripts/at_ticket.py new \
 🔴 /at resume — {resume_time}，task_ref: {task_ref}
 context: {ticket_path}
 
-1. 讀 ticket → 沿指針讀 durable owner（EP 進度節／卡／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
+1. 讀 ticket → 沿指針讀 durable owner（卡／EP 進度節／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
 2. ⛔ 前卷 outward 授權已失效——commit/push/deploy/send 等 outward 一律 PENDING 等新授權；其餘工作自主完成
 3. ticket 缺失／不可讀 → 以 task_ref 定位 durable owner；仍無法確立任務身份 → 產出狀態報告（首行標 `at-ticket missing: {path}`），禁靜默結束、禁推測另一任務
 4. ticket 推進 SETTLED 的時機＝恢復已成功且（工作完成 OR 進度已 re-checkpoint 回 durable owner）

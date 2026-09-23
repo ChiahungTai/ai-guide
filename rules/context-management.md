@@ -15,9 +15,9 @@ harness-scope: neutral
 context 揮發且 quota 可能突然耗盡。
 
 - 關鍵發現/理由、排除路徑/原因、下一步意圖產生即記，附「中間檢查點／最終」＋尚待事項，防未驗收被當完成。
-- 有 EP→append；有卡→`task edit --append-notes`；都無→`.agent-tmp/session-journal.md`。長任務 spawn prompt 注入落盤要求。
+- 有卡→`task edit --append-notes`；該弧原有 EP→併 append EP 進度節；都無→`.agent-tmp/session-journal.md`。長任務 spawn prompt 注入落盤要求。
 - **唯讀/工單限制優先**：不得自行寫 EP/卡/筆記；以進度訊息交有權寫入者。checkpoint 不擴張授權。
-- quota 中斷接手先讀 journal/EP/卡 notes，按檔案現況續行；恢復順序／checkpoint 欄位單一源＝`skills/_common/task-recovery.md`，此處不重抄清單。
+- quota 中斷接手先讀卡 notes／EP（該弧原有 EP 時）／journal，按檔案現況續行；恢復順序／checkpoint 欄位單一源＝`skills/_common/task-recovery.md`，此處不重抄清單。
 - journal 可記未定案工作，不觸發 memory；memory 須一句話測試＋確定才寫。
 
 ## STATE.md（Last session 觀察層）

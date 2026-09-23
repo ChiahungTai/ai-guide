@@ -1,15 +1,16 @@
 # Task Recovery — 跨入口恢復順序與 checkpoint 欄位（共用片段）
 
-> 共享片段——compact-prep／at／handoff／autonomous-execution（Session 級 Recovery）與 [rules/context-management](../../rules/context-management.md) 引用此處，恢復清單不在各入口各自維護。**非 skill、非狀態檔、非自動化引擎**：本檔只持有「中斷前寫什麼」（checkpoint 必要欄位）與「接手後按什麼序核對」（恢復順序）。不新增 active-pointer 檔／registry／跨任務索引——active pointer 就是既有 EP 進度節的 checkpoint 指針（無 EP 用既有 journal／user 指定 report）。
+> 共享片段——compact-prep／at／handoff／autonomous-execution（Session 級 Recovery）與 [rules/context-management](../../rules/context-management.md) 引用此處，恢復清單不在各入口各自維護。**非 skill、非狀態檔、非自動化引擎**：本檔只持有「中斷前寫什麼」（checkpoint 必要欄位）與「接手後按什麼序核對」（恢復順序）。不新增 active-pointer 檔／registry／跨任務索引——active pointer 就是 active card 上的 checkpoint 指針（該弧原有 EP 時 EP 進度節並持；無 card／EP 用既有 journal／user 指定 report）；兩者差異時以卡為準（卡＝intent／AC／current plan／accepted decisions 權威，EP＝詳細 plan/evidence），EP 側差異記 drift 待辦。
 
 ## 寫入端：checkpoint 必要欄位
 
 中斷／離開前把工程狀態落進**既有 durable 載體**，落點優先序：
 
-1. 有 EP → 更新 EP 進度節（含本弧 checkpoint 指針）＋必要 evidence 檔
-2. 無 EP → 既有 `.agent-tmp/session-journal.md`
-3. user 指定 report → 該 report
-4. compact-context 等交接包只**引用** durable owner、不重抄內容——需逐字保存的錯誤／findings 原文例外
+1. active card → 卡持 intent／AC／current plan／accepted decisions；實質進展與本弧 checkpoint 指針落卡 notes（具 board 寫權時；無寫權沿 ticket `owner_ref`／交接包引用註記，禁靜默跳過）
+2. 該弧原有 EP → EP 為詳細 plan/evidence owner：更新 EP 進度節＋必要 evidence 檔
+3. 無 card／EP → 既有 `.agent-tmp/session-journal.md`
+4. user 指定 report → 該 report
+5. compact-context 等交接包只**引用** durable owner、不重抄內容——需逐字保存的錯誤／findings 原文例外
 
 必要欄位（恢復端要能從檔案找到；缺一即 checkpoint 未就緒）：
 
@@ -26,15 +27,15 @@
 | 下一個可執行 action | 接手第一動 |
 | read-set 與未恢復範圍 | 接手要讀什麼、哪些範圍未涵蓋 |
 
-**已有欄位不重抄**——既有 owner 持有者只留指針：成功條件→EP／卡 AC；baseline/dirty→[work-order](work-order.md) §3、[workflow-review-pattern](workflow-review-pattern.md) header identity；實跑與段落結果→EP 進度節＋evidence 檔；findings→`.review/<branch>.md`／EP review 區段；job 收法→[work-order](work-order.md) §10 附加＋model-routing「完成回報收法」；授權→[outward-action-consent](../../rules/outward-action-consent.md) AUTH line。
+**已有欄位不重抄**——既有 owner 持有者只留指針：成功條件→卡 AC／EP；baseline/dirty→[work-order](work-order.md) §3、[workflow-review-pattern](workflow-review-pattern.md) header identity；實跑與段落結果→卡 notes／EP 進度節＋evidence 檔；findings→`.review/<branch>.md`／EP review 區段；job 收法→[work-order](work-order.md) §10 附加＋model-routing「完成回報收法」；授權→[outward-action-consent](../../rules/outward-action-consent.md) AUTH line。
 
 **memory 整理在落盤之後**：工程狀態落盤成功後才做可選 memory 候選整理。gate 故障／無授權／無寫權都不能阻止保存工程狀態，也不能跳過後宣稱「已蒸餾」——未蒸餾就記交接待辦（owner／待辦承載）。
 
 ## 恢復順序（接手端）
 
 1. **定位指定任務**——以 user 指定／卡／工單為準；**不用「最新 session」猜身份**（同 worktree 並行 session 會撈錯）
-2. **核對當前實物**——git HEAD/dirty、EP 進度、卡狀態、active job（機械核對檔案／hash／job 狀態）。段落 receipt 在場時跑 `scripts/segment_receipt.py --verify <receipt>`（FRESH＝EP 進度判斷欄仍有效；DRIFTED＝以實物 re-derive，receipt 是 validity token 非第二真相源；跨 repo 消費以 ai-guide checkout 絕對路徑呼叫）
-3. **active findings＋最新證據**——`.review`／EP review 區段、實跑結果指針
+2. **核對當前實物**——git HEAD/dirty、卡狀態、EP 進度（該弧原有 EP 時）、active job（機械核對檔案／hash／job 狀態）。段落 receipt 在場時跑 `scripts/segment_receipt.py --verify <receipt>`（FRESH＝卡 notes checkpoint 指針與 EP 進度判斷欄（該弧原有 EP 時並持）仍有效；DRIFTED＝以實物 re-derive，receipt 是 validity token 非第二真相源；跨 repo 消費以 ai-guide checkout 絕對路徑呼叫）
+3. **active findings＋最新證據**——卡 notes、`.review`／EP review 區段、實跑結果指針
 4. **checkpoint 理由及未決**——為何轉向、哪些未決；checkpoint 舊 hash 只是比對依據，**不是當前 HEAD 必須回到的 target**
 5. **按需 STATE/memory**——STATE 是觀察層，補「為什麼」不覆蓋完成度；完成度以實物核對為準
 6. **所需新鮮 guidance**——governing rules/政策 session 中變更過，依 freshness 條款重載／fresh context；舊 context 不作新政策證明
