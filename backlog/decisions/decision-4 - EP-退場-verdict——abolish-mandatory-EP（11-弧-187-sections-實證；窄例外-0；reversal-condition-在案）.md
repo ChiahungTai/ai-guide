@@ -4,7 +4,7 @@ title: >-
   EP 退場 verdict——abolish mandatory EP（11 弧 187 sections 實證；窄例外 0；reversal
   condition 在案）
 date: '2026-09-19 04:06'
-status: proposed
+status: accepted
 ---
 ## Context
 
@@ -21,9 +21,9 @@ user 方向裁決在先（0919 走查 Step 2：「EP 本來我就要消除」—
 
 - 新弧省去 EP 儀式（Scenario Matrix／pseudo-code／report shell 類 0/47 消費的塊直接不再產）；規劃品質不減（六欄契約＋AC 驗證式替代）。
 - 遷移成本尖峰＝EP Review Findings 的 finding→裁定→偏差鏈，落 decision entity 時 rejected alternatives＋supersedes 為必填（AIR-29／AIR-48 實證的消費密度尖峰）。
-- status：**proposed**——user 對 Code Lens POC 視圖完成 Align pass（AC#5×135.4 AC#4 聯合 dogfood 的 human 檢查點）後翻 accepted；翻正時記 Align 結果（一致／intent diff 清單）。
+- status：**accepted**（0924 翻正）。Align 結果＝一致，無 intent diff：Q1 誤分類／Q3 承接漏項由兩條獨立驗證腿查證（muse job-muelmli7-7lek7p＋glm/flash job-muelo1e0-8a2r3w，sink＝`.agent-tmp/air-135/dogfood/decision4-verify-{muse}.md`＋glm receipt——user 裁定承重分類驗證歸實作端非 user 體感）；Q2 逆轉條件門＝user 0924 親核「OK」。翻正生效條件（驗證腿 findings，入 AIR-135.2 遷移批次）：①doc entity 晉升義務明文化（AIR-94 investigation.md 已腐爛實證）②findings 鏈遷移執法 rejected alternatives＋supersedes 必填（本文已載）③review-baseline Plan 版本身份約定補 AC#4 ④ac1 儀式計數小帳勘正（per-arc 口徑 0/45）。
 
-## Rejected Alternatives
+## Alternatives
 
 - **保留 mandatory EP 但瘦身**（DRAFT-12 原方向「減少雙載體冗餘」）：被否——187 sections 中 25% unconsumed 全是儀式塊，瘦身後仍是第二 plan truth，雙載體同步成本不消失；且 AIR-29 實證 EP 自身進化掉儀式塊後與卡趨同，載體合一是終態。
 - **全面立即退役（consumer 不遷）**：被否——16 檔 STRUCTURAL consumer（ep-review/implement/post-build/segment_receipt 等）讀 EP 的 code path 在場，立即退役打斷在途弧的可恢復性；故保留「未遷完不退役」時序條款。
