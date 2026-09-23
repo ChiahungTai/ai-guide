@@ -4,7 +4,7 @@ title: scbus 位址制契約——address+binding＋送達意圖三態（D4；sc
 status: In Progress
 assignee: []
 created_date: '2026-09-22 23:29'
-updated_date: '2026-09-23 04:49'
+updated_date: '2026-09-23 05:10'
 labels:
   - orchestration
 dependencies: []
@@ -44,7 +44,13 @@ flowchart LR
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 契約文件落地：位址語義＋binding 生命週期（claim/transfer/tombstone/lease）＋三態語義＋consumed_at stage＋registry 分離——單一源落點（skills 或 governance docs），含 zcode/codex/claude/muse 四面 drain 能力矩陣
-- [ ] #2 sc-router 工單信草稿完成（含 flash B 實證數據＋D4 契約全文＋drain adapter 缺口清單）——送出前 user 授權＋主權 session 位址
-- [ ] #3 journal 在飛總表機械生成 helper 落地（查 bridge show/scbus list/git status 現值輸出）＋弧結算流程接線（狀態欄位禁手抄）
-- [ ] #4 handoff packet 模板增『收取法形』欄位正典化（flash A 結構發現：收取法形全活、狀態快照形寫下即爛）
+- [x] #2 sc-router 工單信草稿完成（含 flash B 實證數據＋D4 契約全文＋drain adapter 缺口清單）——送出前 user 授權＋主權 session 位址
+- [x] #3 journal 在飛總表機械生成 helper 落地（查 bridge show/scbus list/git status 現值輸出）＋弧結算流程接線（狀態欄位禁手抄）
+- [x] #4 handoff packet 模板增『收取法形』欄位正典化（flash A 結構發現：收取法形全活、狀態快照形寫下即爛）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0923 交付段收線】AC2 工單信已送 sc-router 主權 sess_536d749c（5e42fba6，user 授權＋位址）；AC3 helper 落地（inflight_snapshot.py：三路查現值、單路容錯、11 tests＋真資料 565 jobs/776 live rows 實跑；實跑暴露 331 筆 unknown 舊 envelope——job 生命週期終態定義＝bridge/sc-router 裁決素材）；AC4 handoff 收取法形正典化（+4 行，狀態快照禁入）。AC1 契約單一源落點保留——契約 v2 暫住 .agent-tmp，待 sc-router 接受後落 governance 單一源。卡留 In Progress（AC1＋外部實作）。殘留三項記 worker-report（bridge 在飛語義含 unknown/model 欄/scbus 假活列如實輸出）。
+<!-- SECTION:NOTES:END -->
