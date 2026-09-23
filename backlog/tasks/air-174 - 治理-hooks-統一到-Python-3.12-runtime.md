@@ -1,10 +1,10 @@
 ---
 id: AIR-174
 title: 治理 hooks runtime 分割——3.9 相容＋install 3.12 resolver（memory/compact 閘修復）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-23 08:42'
-updated_date: '2026-09-23 13:47'
+updated_date: '2026-09-23 16:14'
 labels: []
 dependencies: []
 references:
@@ -60,25 +60,22 @@ flowchart LR
 【0923 卡面更正】原標題「統一到 Python 3.12 runtime」為貼錯（user 確認）——實際落地＝分割 runtime（hooks 3.9 相容＋installer 解析 managed 3.12）；3.12 deployment migration 未含。receipts 目錄指針：ai-analysis/_tasks/09-23-hook-python312-runtime/。跟進批＝AIR-176；deployment 繼任待開。
 
 【0923 批次二】AIR-178 深審（82/100）F1/F2 轉入本卡修復：F1＝面獨立語義二選一＋實作對齊（install.py:1060 注釋 vs 849-857/1065-1117/1121 raise-abort）；F2＝traceback 收斂 GovernanceError EXIT_EXEC(4)＋每實例回歸案例（run_wrap 734、871-873、442-492、281-283、750、main 2015-2017）。F3-F7＋Q1 小修另批不隨本批。
+
+【0923 批次二 judge 收斂】approve-with-findings 88/100，F-A~F-D 修正落地（33 passed／ruff 綠／L4 行為零變更）：F-A 注釋限定範圍（本批收斂 registrations/TOML/uv/json/hooks 子樹面→EXIT_EXEC(4)；殘留待收斂＝manifest 檔缺席 FileNotFoundError、surfaces/registrations 其餘 KeyError 家族、模板檔缺席——待小修批）；F-B 注釋更正（apply 層不消費 registrations）；F-C/F-D 型別＋kw-only。六項偏差全 ACCEPT。待清記錄（只標不刪）：F-E dead assignment exit_code=EXIT_EXEC（apply_plan 約 L936）＋兩處不可達 if rc!=EXIT_OK（約 1161-1162/1227-1228）；F-F build_plan 階段失敗 journal 指針指向舊 run。行為變更備忘：uninstall 面 hooks:false 舊碼靜默刪鍵／install 形靜默覆寫→新碼拒碰 raise（fail-loud 方向正確）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-原 rules／hooks hardening（639a479b）完整保留；三項三方審查必修已完成：memory description parser 與 consumer 收斂（含 CR newline）、compact 僅排除完整注入 envelope、Python 執行規範回單一 owner。AIR-174 的 installer runtime migration、CC command＋args parity 與 Codex quoted-path ownership／外部 hook 保留修復一併收斂。
+批次二 F1/F2 收斂：install.py per-face 面獨立（單面失敗他面照裝）＋fail-loud GovernanceError 契約（EXIT_EXEC(4)＋journal 指針），13 回歸案例 RED→GREEN、全量 2096 passed、judge approve-with-findings 88/100 修正收斂。殘留待收斂面與 dead code 記卡 notes 待小修批。
 
 ```mermaid
 flowchart LR
-  A["原 rules 與 hooks hardening"] --> B["三項審查修復與回歸驗證"]
-  B --> C["合併後 canonical source"]
-  D["installer 解析 managed Python 3.12"] --> E["CC argv / ZCode process / Codex quoted command"]
-  E --> F["模板與卸載 ownership 已驗證"]
-  F --> C
-  C --> G["live config 與 bundles 待正式部署"]
-  H["Python 3.9 rollback 相容"] --> F
+  F["install faces：skills／rules／agents wrap／memory"] --> G["per-face try/except GovernanceError"]
+  G -->|單面失敗| H["face_failures 彙整＋他面照裝"]
+  G -->|全成功| OK["EXIT_OK"]
+  E["邊界錯誤：uv 缺失／JSON／TOML／hooks 子樹非 dict／build_plan KeyError"] --> X["_exec_error 收斂 helper"]
+  H --> X
+  X --> C["GovernanceError → EXIT_EXEC(4)＋可操作指引＋journal 指針"]
 ```
-
-驗證與 finding 逐項裁決：[landing.md](ai-analysis/_tasks/09-23-hook-python312-runtime/landing.md) 與同目錄 `review-ledger.md`。Codex fresh/intent、Muse 外審及 Muse Arbiter followup 收斂；完整測試 2083 passed／2 intentional skips；正常 pre-commit 閘於提交時再執行。Ruff 通過，scoped mypy 通過；scanner 的既存 15 項型別錯誤未增加。
-
-部署驗收保留 **pending**：三端 bundle 尚未同步；runtime registrations 未安裝、trust 未 approve；live hooks check 的 22 drift（含既有 duplicate groups 與 Codex trust Modified）如實保留。下一個 deployment 工作從 canonical 執行 installer、bundle deploy、必要 approve 與 host/live firing 驗證；這裡的 isolated pipe PASS 不等於實機 acceptance。AIR-174 以 source implementation/review 完成收 Done，此 pending 不因卡結案被抹除。
 <!-- SECTION:FINAL_SUMMARY:END -->
