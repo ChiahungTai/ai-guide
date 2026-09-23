@@ -78,6 +78,22 @@ def set_dry_run() -> None:
     _DRY_RUN = True
 
 
+def _exec_error(
+    context: str, exc: Exception, hint: str, *, journal_hint: bool = True
+) -> GovernanceError:
+    """F2（AIR-178）共用收斂 helper（install/check 同面）：邊界例外 → GovernanceError。
+
+    裸 traceback（FileNotFoundError／JSONDecodeError／TOMLDecodeError／KeyError）
+    違反 manifest [bootstrap_cli.exit_codes] EXIT_EXEC(4) 契約——統一包裝成
+    GovernanceError：原委＋可操作指引＋journal 指針（README：exit 4＝plan
+    journal 有線索）。check 面傳 journal_hint=False（drift 訊息不帶 journal 噪音）。
+    """
+    msg = f"{context}\n原因：{type(exc).__name__}: {exc}\n處置：{hint}"
+    if journal_hint:
+        msg += f"\n線索：plan journal {JOURNAL_DIR}"
+    return GovernanceError(msg)
+
+
 # ── 基礎 helpers ─────────────────────────────────────────────────
 
 
@@ -279,8 +295,15 @@ def real_target(target: Path) -> Path:
 
 
 def load_manifest() -> dict:
-    with open(MANIFEST_PATH, "rb") as fh:
-        return tomllib.load(fh)
+    try:
+        with open(MANIFEST_PATH, "rb") as fh:
+            return tomllib.load(fh)
+    except tomllib.TOMLDecodeError as exc:  # F2：TOMLDecodeError 禁裸 traceback
+        raise _exec_error(
+            f"manifest 不可解析，拒載 fail-loud：{MANIFEST_PATH}",
+            exc,
+            "修正 governance/manifest.toml 語法後重跑",
+        ) from exc
 
 
 def serialize_json(obj: object) -> str:
@@ -295,6 +318,28 @@ def read_json_config(path: Path) -> dict:
     except (json.JSONDecodeError, OSError) as exc:
         raise GovernanceError(
             f"malformed config，拒寫 fail-loud：{path}\n{exc}"
+        ) from exc
+
+
+def render_template_json(
+    raw: str, *, uninstall: bool = False, label: str, journal_hint: bool = True
+) -> dict:
+    """模板 render＋JSON parse（F2 共用 helper——install/_apply_target 與
+    check/check_json_face 同面）。
+
+    render 產出非合法 JSON（模板或 token 佔位破壞結構）→ GovernanceError：
+    install 走 EXIT_EXEC(4)；--check 由 caller 收進 drift（exit-1 契約，M3）。
+    """
+    rendered = render_uninstall(raw) if uninstall else render(raw)
+    try:
+        return json.loads(rendered)
+    except json.JSONDecodeError as exc:
+        raise _exec_error(
+            f"template render 產出非合法 JSON：{label}",
+            exc,
+            "檢查 registrations 模板與 {{REPO}}/{{HOME}}/{{HOOK_PYTHON}} 佔位"
+            "是否破壞 JSON 結構",
+            journal_hint=journal_hint,
         ) from exc
 
 
@@ -448,8 +493,17 @@ def merge_json_hooks(
     禁把模板鍵散落 root 頂層。
     """
     root = copy.deepcopy(live_root)
-    existed = isinstance(root.get(merge_root_key), dict)
-    subtree = copy.deepcopy(root[merge_root_key]) if existed else {}
+    raw_subtree = root.get(merge_root_key)
+    if raw_subtree is not None and not isinstance(raw_subtree, dict):
+        # F2（AIR-178）：非 dict 子樹（如 `hooks: false`）原先被靜默覆寫／pop——
+        # malformed live 值拒碰 fail-loud，不自動改寫 user 資料。
+        raise GovernanceError(
+            f"malformed config，拒寫 fail-loud：live「{merge_root_key}」子樹為 "
+            f"{type(raw_subtree).__name__}（非 dict）——先手工修正該鍵（移除或改回 "
+            "dict 形態）再重跑，不自動覆寫"
+        )
+    existed = raw_subtree is not None
+    subtree = copy.deepcopy(raw_subtree) if existed else {}
     changed = False
     if (
         not remove
@@ -462,6 +516,14 @@ def merge_json_hooks(
     # live event map 位置：zcode 子樹有 events 鍵；cc 子樹本體即 event map
     ev_container = subtree.setdefault("events", {}) if "events" in package else subtree
     for evt, tmpl_groups in events.items():
+        raw_groups = ev_container.get(evt)
+        if raw_groups is not None and not isinstance(raw_groups, list):
+            # F2：非 list 條目原在 setdefault 後 .append／enumerate 崩（裸
+            # AttributeError/TypeError）——收斂成乾淨 GovernanceError。
+            raise GovernanceError(
+                f"malformed config，拒寫 fail-loud：live「{merge_root_key}/{evt}」"
+                f"條目為 {type(raw_groups).__name__}（非 list）——先手工修正再重跑"
+            )
         groups = ev_container.setdefault(evt, [])
         for tg in tmpl_groups:
             ident = _group_identity(tg)
@@ -734,7 +796,14 @@ def codex_trust_diagnostics(live_text: str, template_text: str) -> list[str]:
 def run_wrap(argv: list[str], extra: list[str] | None = None) -> int:
     cmd = [*argv, *(extra or [])]
     print(f"[wrap] {' '.join(cmd)}")
-    proc = subprocess.run(cmd, check=False, cwd=REPO_ROOT)
+    try:
+        proc = subprocess.run(cmd, check=False, cwd=REPO_ROOT)
+    except FileNotFoundError as exc:  # F2：缺 uv 等執行檔禁裸 traceback
+        raise _exec_error(
+            f"wrap 子進程無法啟動：{cmd[0]} 不在 PATH",
+            exc,
+            f"確認 {cmd[0]} 已安裝且在 PATH（wrap 面 rules/agents 依賴 uv）後重跑",
+        ) from exc
     return proc.returncode
 
 
@@ -747,18 +816,25 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
     reg = manifest.get("registrations", {})
     if surface in ("hooks", "all"):
         for harness in ("cc", "zcode", "codex"):
-            cfg = reg[harness]
-            targets.append(
-                {
-                    "kind": f"json-subtree:{harness}"
-                    if harness != "codex"
-                    else "toml-groups",
-                    "target": cfg["target"],
-                    "template": cfg["template"],
-                    "merge_root": cfg.get("merge_root", "hooks"),
-                    "action": "remove" if mode == "uninstall" else "merge",
-                }
-            )
+            try:
+                cfg = reg[harness]
+                targets.append(
+                    {
+                        "kind": f"json-subtree:{harness}"
+                        if harness != "codex"
+                        else "toml-groups",
+                        "target": cfg["target"],
+                        "template": cfg["template"],
+                        "merge_root": cfg.get("merge_root", "hooks"),
+                        "action": "remove" if mode == "uninstall" else "merge",
+                    }
+                )
+            except KeyError as exc:  # F2：缺 registration 欄位禁裸 KeyError
+                raise _exec_error(
+                    f"manifest 缺 registrations.{harness} 必要欄位（hooks 面）",
+                    exc,
+                    "補齊 governance/manifest.toml 對應 registration 後重跑",
+                ) from exc
     if surface in ("skills", "all"):
         for sl in manifest["surfaces"]["skills"]["symlinks"]:
             targets.append(
@@ -838,7 +914,10 @@ def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
     jp = journal_path(plan["surface"]) if journal else None
     if jp:
         write_journal(jp, plan)
-    reg = manifest["registrations"]
+    # F1 配套（judge F-B 更正）：apply 層不消費 registrations——reg 僅透傳
+    # _apply_target 簽名；.get 防 plan 構築前置對缺 registrations 的 manifest
+    # 裸 KeyError（build_plan 同款 .get）。
+    reg = manifest.get("registrations", {})
     exit_code = EXIT_OK
     for i, t in enumerate(plan["targets"]):
         try:
@@ -868,8 +947,9 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         live = read_json_config(target)
         raw_tmpl = (MANIFEST_PATH.parent / t["template"]).read_text()
         # C1：uninstall identity 不經 resolver（rollback 不依賴 managed 3.12 在場）
-        tmpl = json.loads(
-            render_uninstall(raw_tmpl) if mode == "uninstall" else render(raw_tmpl)
+        # F2：render 產出壞 JSON 經共用 helper 收斂 GovernanceError（禁裸 traceback）
+        tmpl = render_template_json(
+            raw_tmpl, uninstall=(mode == "uninstall"), label=t["template"]
         )
         new_root, _changed = merge_json_hooks(
             live, tmpl, t["merge_root"], remove=(mode == "uninstall")
@@ -1023,6 +1103,19 @@ def print_manual_steps(surface: str) -> None:
 # ── 模式入口（S3 verify／S4 check／S5 monitor 於後續段落實裝）────
 
 
+def _record_face_failure(
+    face_failures: list[str], face: str, exc: GovernanceError
+) -> None:
+    """F1（AIR-178）面獨立契約的彙整點：單面失敗收進 face_failures（非 abort）。
+
+    印 FAIL 原委到 stderr；冪等記錄（同面重複失敗只記一次——skills 面先跑、
+    all-plan 內 skills 目標重跑的雙帳防護）。
+    """
+    print(f"[FAIL] {face} 面：{exc}", file=sys.stderr)
+    if face not in face_failures:
+        face_failures.append(face)
+
+
 def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
     if mode == "dry-run":
         print_plan(build_plan(manifest, surface, mode))
@@ -1040,6 +1133,7 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
                 or rc
             )
         return rc  # TC-3：dry-run 零寫入（wrap 面--dry-run/--check 亦唯讀）
+    face_failures: list[str] = []  # F1：跨 mode 彙整（install/uninstall 同契約）
     if mode == "uninstall":
         if surface in ("rules", "agents", "all"):
             print(
@@ -1058,69 +1152,90 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
             )
             return EXIT_GUARD
         # 編排語義（AC-6.3 fixture 實證後定案）：面與面獨立——單面失敗照常安裝
-        # 其他面（機器不留半套無告警），結束以最壞 rc 彙整報告。
-        face_failures: list[str] = []
+        # 其他面（機器不留半套無告警），結束以最壞 rc 彙整報告。F1（AIR-178）：
+        # 任一面 GovernanceError 收進 face_failures（行為對齊本注釋，非 abort）。
         # rules 面 pointer preflight 驗證 skill runtime 可達（~/.agents/skills/...）
         # ——skills 母鏈必須先於 rules wrap 建置，乾淨機器否則 deploy_agents abort。
-        if (
-            surface in ("skills", "all")
-            and apply_plan(manifest, build_plan(manifest, "skills", mode)) != EXIT_OK
-        ):
-            face_failures.append("skills")
+        if surface in ("skills", "all"):
+            try:
+                rc = apply_plan(manifest, build_plan(manifest, "skills", mode))
+            except GovernanceError as exc:
+                _record_face_failure(face_failures, "skills", exc)
+            else:
+                if rc != EXIT_OK:
+                    face_failures.append("skills")
         for wrapped in ("rules", "agents"):
-            if (
-                surface in (wrapped, "all")
-                and run_wrap(manifest["surfaces"][wrapped]["argv"]) != 0
-            ):
-                face_failures.append(wrapped)
+            if surface not in (wrapped, "all"):
+                continue
+            try:
+                rc = run_wrap(manifest["surfaces"][wrapped]["argv"])
+            except GovernanceError as exc:
+                _record_face_failure(face_failures, wrapped, exc)
+            else:
+                if rc != 0:  # AIR-132：wrap 非零＝真 FAIL（禁吞碼假綠）
+                    face_failures.append(wrapped)
         if surface in ("memory", "all"):
-            _require_muse_cli()  # R2 codex#4：FileNotFoundError 前置乾淨化
-            plugin_path = REPO_ROOT / manifest["surfaces"]["memory"]["plugin_path"]
-            pid = manifest["surfaces"]["memory"]["plugin_id"]
-            muse_ok = True
-            # 順序契約（AC-2.5 round-trip 實證）：disable 後 approve 無 active
-            # capabilities 會失敗——必須 enable 先於 approve。
-            for argv in (
-                ["muse", "plugins", "install", str(plugin_path), "--scope", "user"],
-                ["muse", "plugins", "enable", pid],
-                ["muse", "plugins", "approve", pid],
-            ):
-                proc = subprocess.run(argv, check=False, capture_output=True, text=True)
-                if proc.returncode != 0:
-                    print(f"[FAIL] {' '.join(argv)}\n{proc.stderr}", file=sys.stderr)
-                    muse_ok = False
-                    break
-                print(f"[muse] {' '.join(argv[:2])}… OK")
-            if muse_ok:
-                pool_setup = REPO_ROOT / manifest["surfaces"]["memory"]["pool_setup"]
-                proc = subprocess.run(
-                    [
-                        "bash",
-                        str(pool_setup),
-                        *manifest["surfaces"]["memory"].get(
-                            "pool_setup_apply_args", ["--apply"]
-                        ),
-                    ],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                )
-                print(f"[pool-topology] {proc.stdout.strip() or proc.stderr.strip()}")
-                if proc.returncode != 0:
-                    muse_ok = False
-            if not muse_ok:
-                face_failures.append("memory")
+            try:
+                _require_muse_cli()  # R2 codex#4：FileNotFoundError 前置乾淨化
+                plugin_path = REPO_ROOT / manifest["surfaces"]["memory"]["plugin_path"]
+                pid = manifest["surfaces"]["memory"]["plugin_id"]
+                muse_ok = True
+                # 順序契約（AC-2.5 round-trip 實證）：disable 後 approve 無 active
+                # capabilities 會失敗——必須 enable 先於 approve。
+                for argv in (
+                    ["muse", "plugins", "install", str(plugin_path), "--scope", "user"],
+                    ["muse", "plugins", "enable", pid],
+                    ["muse", "plugins", "approve", pid],
+                ):
+                    proc = subprocess.run(
+                        argv, check=False, capture_output=True, text=True
+                    )
+                    if proc.returncode != 0:
+                        print(
+                            f"[FAIL] {' '.join(argv)}\n{proc.stderr}", file=sys.stderr
+                        )
+                        muse_ok = False
+                        break
+                    print(f"[muse] {' '.join(argv[:2])}… OK")
+                if muse_ok:
+                    pool_setup = (
+                        REPO_ROOT / manifest["surfaces"]["memory"]["pool_setup"]
+                    )
+                    proc = subprocess.run(
+                        [
+                            "bash",
+                            str(pool_setup),
+                            *manifest["surfaces"]["memory"].get(
+                                "pool_setup_apply_args", ["--apply"]
+                            ),
+                        ],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                    )
+                    print(
+                        f"[pool-topology] {proc.stdout.strip() or proc.stderr.strip()}"
+                    )
+                    if proc.returncode != 0:
+                        muse_ok = False
+                if not muse_ok:
+                    face_failures.append("memory")
+            except GovernanceError as exc:
+                _record_face_failure(face_failures, "memory", exc)
     if surface in ("hooks", "skills", "all", "memory", "monitor"):
-        plan = build_plan(manifest, surface, mode)
-        rc = apply_plan(manifest, plan)
-        if rc != EXIT_OK:
-            return rc
+        try:
+            rc = apply_plan(manifest, build_plan(manifest, surface, mode))
+        except GovernanceError as exc:  # F1：面失敗收彙整，完成輸出照跑
+            _record_face_failure(face_failures, surface, exc)
+        else:
+            if rc != EXIT_OK:
+                return rc
     print_manual_steps(surface)
     if mode == "install":
         _print_default_state_warnings(manifest, surface)
-    if mode == "install" and face_failures:
+    if face_failures:
         print(
-            f"[install] 部分面失敗：{'、'.join(face_failures)}"
+            f"[{mode}] 部分面失敗：{'、'.join(face_failures)}"
             "（其他面已就位——修復後重跑失敗面）",
             file=sys.stderr,
         )
@@ -1294,15 +1409,16 @@ def check_json_face(
         drifts.append((harness, f"malformed config：{exc}"))
         return
     try:
-        tmpl = json.loads(render((MANIFEST_PATH.parent / reg["template"]).read_text()))
-    except GovernanceError as exc:
-        # M3：--check 維持 exit-1 drift-list 契約，不 traceback（install/apply 仍 fail-loud）
-        drifts.append(
-            (
-                harness,
-                f"hook runtime 未解析（先 `uv python install 3.12` 後重跑）：{exc}",
-            )
+        tmpl = render_template_json(
+            (MANIFEST_PATH.parent / reg["template"]).read_text(),
+            label=reg["template"],
+            journal_hint=False,
         )
+    except GovernanceError as exc:
+        # M3：--check 維持 exit-1 drift-list 契約，不 traceback（install/apply 仍 fail-loud）。
+        # resolver 失敗訊息自帶 `uv python install 3.12` 指引；壞 JSON 經 F2 共用
+        # helper（render_template_json）帶模板名＋佔位檢查指引。
+        drifts.append((harness, f"模板 render/parse 失敗：{exc}"))
         return
     merge_root = reg.get("merge_root", "hooks")
     subtree = live.get(merge_root)
@@ -1998,13 +2114,19 @@ def main() -> int:
     if len(flags) > 1:  # F-11：兩兩互斥（argparse group 已擋；此為契約顯式防線）
         print(f"flag 衝突：{flags}——四 flag 兩兩互斥", file=sys.stderr)
         return EXIT_GUARD
-    manifest = load_manifest()
     mode = (
         flags[0].replace("_", "-") if flags else "install"
     )  # 1201 事故教訓：attribute 名歸一化
     if mode == "dry-run":
         set_dry_run()
     try:
+        # F2（AIR-178）：load_manifest 在 try 內——本批已收斂面（registrations/
+        # TOML/uv/json/hooks 子樹）落 EXIT_EXEC(4)（原在 try 前，收斂後仍以裸
+        # traceback 漏出、exit 1）。殘留待收斂面（judge F-A 限定範圍）：manifest
+        # 檔缺席 FileNotFoundError、surfaces/registrations 其餘 KeyError 家族、
+        # 模板檔缺席 read_text FileNotFoundError——main 只接 GovernanceError，
+        # 同類面仍裸 traceback，記卡待小修批。
+        manifest = load_manifest()
         if mode == "dry-run":
             return cmd_install_uninstall(manifest, args.surface, "dry-run")
         if mode == "check":

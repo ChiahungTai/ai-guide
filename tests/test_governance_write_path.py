@@ -207,18 +207,33 @@ def test_codex_toml_uninstall_absent_file_leaves(tmp_path):
 # ── muse CLI 前置守衛（R2 item7——codex#4 ownership）──────────────
 
 
-def test_memory_face_requires_muse_cli(monkeypatch):
-    """memory install 前置守衛：muse 缺席＝GovernanceError 乾淨訊息
+def test_memory_face_requires_muse_cli(tmp_path, monkeypatch, capsys):
+    """memory install 前置守衛：muse 缺席＝乾淨 GovernanceError 訊息
     （非 FileNotFoundError traceback；bootstrap preflight 同款守衛的
-    installer 側防線）。canonical 預種＝繞過非 canonical install guard
-    （本測試在 card WT 跑，不預種會先撞 EXIT_GUARD 到不了 muse 守衛）。"""
-    monkeypatch.setattr(mod, "_CANONICAL_CACHE",
-                        {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    installer 側防線）。F1（AIR-178）後面獨立：單面失敗收進 face_failures
+    彙整、不 abort，總 exit EXIT_EXEC。canonical 預種＝繞過非 canonical
+    install guard（本測試在 card WT 跑，不預種會先撞 EXIT_GUARD 到不了
+    muse 守衛）。"""
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    monkeypatch.setattr(mod, "JOURNAL_DIR", tmp_path / "journal")
     monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
-    manifest = {"surfaces": {"memory": {"plugin_id": "x", "plugin_path": "p",
-                                        "pool_setup": "s"}}}
-    with pytest.raises(mod.GovernanceError, match="muse CLI 缺席"):
-        mod.cmd_install_uninstall(manifest, "memory", "install")
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(
+            run=lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="")
+        ),
+    )
+    manifest = {
+        "surfaces": {
+            "memory": {"plugin_id": "x", "plugin_path": "p", "pool_setup": "s"}
+        }
+    }
+    rc = mod.cmd_install_uninstall(manifest, "memory", "install")
+    assert rc == mod.EXIT_EXEC
+    err = capsys.readouterr().err
+    assert "muse CLI 缺席" in err  # 乾淨訊息在場（非 traceback）
+    assert "部分面失敗" in err  # 失敗面進彙整
 
 
 def test_muse_disable_requires_muse_cli(monkeypatch):
