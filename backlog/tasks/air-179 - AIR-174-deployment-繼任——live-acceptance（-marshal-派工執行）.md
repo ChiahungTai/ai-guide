@@ -4,7 +4,7 @@ title: AIR-174 deployment 繼任——live acceptance（--marshal 派工執行�
 status: Done
 assignee: []
 created_date: '2026-09-23 12:02'
-updated_date: '2026-09-23 12:34'
+updated_date: '2026-09-23 20:07'
 labels: []
 dependencies: []
 ordinal: 165000
@@ -41,6 +41,12 @@ flowchart LR
 - [x] #3 live firing：zcode 新 session 兩閘實測記錄
 - [x] #4 authorityMode=marshal stamp 在 ledger（DB-33 dogfood 副產品）
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0924】codex 面 hooks trust 批准完成（user 手動——config.toml [hooks.state] trusted_hash 4→15）；governance/install.py --surface hooks --verify 三層全 PASS：全部治理組 Trusted＋L3 canary byte-level 未變 codex exec exit 0。deployment 繼任待辦全數閉。
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
