@@ -1,6 +1,6 @@
 ---
 name: rules-reminder
-description: "Enforces the most frequently violated cross-harness rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion in Claude Bash, uv run for Python, no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
+description: "Enforces the most frequently violated cross-harness rules to prevent permission prompts. Use when writing any Bash command. Covers: rg/fd instead of grep/find, no # after newline in python -c, no $ shell expansion in Claude Bash, Python command execution per tool-discipline (single source), no sed for code, Traditional Chinese output, independent tool calls batched in one block, Read target file before Edit/Write, re-read large files via rg/partial Read not full re-read."
 ---
 
 # Rules Reminder — 最常被忘記的規則
@@ -135,7 +135,7 @@ uv run python scripts/check.py
 
 ## 記憶口訣
 
-> **`#` 是毒藥、Claude Bash 的 `$` 是禁區、`grep`/`find` 是禁區、`uv run` 是王道、`sed` 是地雷、`簡體字是違規`、獨立同發、先 Read 再改**
+> **`#` 是毒藥、Claude Bash 的 `$` 是禁區、`grep`/`find` 是禁區、`uv run` 問 tool-discipline、`sed` 是地雷、`簡體字是違規`、獨立同發、先 Read 再改**
 
 每次寫 Bash 命令或批次修改前，默念這幾條。
 

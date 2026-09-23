@@ -136,6 +136,7 @@ def fetch_tail(transcript_path: str) -> str:
 def read_state(cwd: str) -> str:
     state = Path(cwd) / "STATE.md" if cwd else None
     if state and state.is_file():
+        # STATE 覆寫非累積（state-md-write.md），head＝最新觀察——非流水，勿改 tail
         return (
             state.read_text(encoding="utf-8")
             .encode("utf-8")[:STATE_BUDGET_BYTES]

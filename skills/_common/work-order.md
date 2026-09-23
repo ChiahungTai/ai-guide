@@ -19,6 +19,7 @@
 > 一句話說明本次委派要達成的背景與目標（讓 reviewer 一句看懂為何派）。
 
 - 例句型：「把 X 制度化為 Y，達成 Z」（填寫時替換為本次任務的具體目標）
+- **派工前 admission**：usage probe＋family identity 驗證（availability 當次形成；unknown/stale≠available）
 
 ### Role contract（派發 registry role 時必填子段）
 
@@ -86,6 +87,8 @@
 
 > **watcher 配對回執（AIR-135.7 配對語義；AIR-152 MVP-4 起必填——空欄禁派）**：逐 background dispatch 一行宣告 watcher 在場憑證——填實際掛上的 arm one-liner（`uv run python …/bridge_waiter.py <jobId>`，waiter 登記腿寫 `.agent-tmp/liveness.jsonl`，Stop 配對催告閘以此機驗在場），或 foreground wait 者填免責理由；兩者皆無＝派工未配對，session 結束面會被催告。
 > - 填寫形態（逐 dispatch 一行，機械可掃 `^>? ?-? ?watcher：`）：`watcher：<arm one-liner>`｜`watcher：foreground-wait——<免責理由>`
+
+> **writer 落盤條款（implementation 工單必含）**：writer（implementation）工作單必含 bounded slices＋checkpoint receipt 落盤條款（契約原文單一源＝AIR-135.7，引用不重刻）。
 
 1. `rg -n "external-runtime" rules/model-routing.md` → ≥1 命中
 2. `rg -n "eligibility" rules/model-routing.md` → 命中
