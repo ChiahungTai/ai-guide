@@ -437,3 +437,18 @@ grok-build 源碼有完整的 `/goal` 契約＋journal＋adversarial verifier（
 ### 10.4 報告其餘部分的效力邊界
 
 §1-§5／§7-§9 的對照分析與背書判定經雙腿審查無修正項；§6.1 以 §10.1 分揀為準、§6.3/§9 作為 135.1 EP 的「已知未知」清單直接引用。
+
+### 10.5 追記修正（user 挑戰觸發——「機械帳本不會其實早就做好了吧」）
+
+§1 結論 2「機械化確定性檢查落後一個身位」的敘事**不準確，修正如下**：
+
+**已在運行的帳本基礎（調查時未被計入「我們已有的」）**：
+- 派工事件帳＝`.delegate-bridge/jobs/`（每 job 的 id/status/model/時間戳/回執——批量夜判讀腿以此機驗）
+- liveness 流水＝`liveness.jsonl`（armed/heartbeat/collected/advisory 四態、323 行實運）＋bridge_waiter.py（1305 行）＋agent_liveness_sweep.py（682 行）
+- 回執契約＝CollectionReceipt（terminal≠complete＋sink/anchor 機驗——實攔過假完成）
+- hash 綁定＝restore-proven（sha256＋verified_at）
+- 派工前執法＝decisions_pending.py lint --card（135.8 機制基礎）
+
+**真缺的只有四個增量**：①帳本自動重播恢復未完成 slice（現靠 checkpoint＋人讀帳）②重放 inputHash 防禦閘 ③三家族異質回執正規化為單一 schema ④token 用量彙總成預算帳本。
+
+**落點修正**：四增量大多歸 **135.7 collection 升級＋delegate-bridge repo**（bridge 側 ledger schema），不是 135.1。正確敘事＝「機械帳本地基早已在跑，135.1 編譯器蓋好、批量夜 #2 產生真實派工量後，135.7 做四增量升級」——不是「從零落後」。§10.1 的分揀結論（MVP 只留欄位形狀）不變，但理由從「我們沒有」改為「已有地基、增量等量」。
