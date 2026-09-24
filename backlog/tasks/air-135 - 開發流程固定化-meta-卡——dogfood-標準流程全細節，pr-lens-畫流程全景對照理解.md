@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-24 21:45'
+updated_date: '2026-09-24 22:06'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -178,6 +178,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0925 批量夜 #2 Final Summary（多卡匯總 receipt——135.7 AC#7 載體慣例）】■範圍：AIR-135.1 S1-S4 全鏉×3 輪＋mini-batch＋W1 真執行＋135.5 #3 proposal＋135.7 AC#7 首例。■交付物（全 merge main，HEAD c5720da1 後＋S3）：①scripts/arc_spec.py——四物 schema＋fail-loud 校驗＋CLI（S1）②scripts/receipt_normalize.py——三家族回執 canonical 正規化（S2）③scripts/intent_review.py——Intent Review 工單機械生產（S3）④2280 tests 全綠（seal 模式：worker 無 Bash 誠實申報→marshal 實跑→RED 即修→ALL GREEN 才 commit）⑤mini-batch：兩真卡八檔＋誠實標注 13 筆＋摩擦 top3（compiler 改版輸入）⑥W1 真執行：compiler 產工單→marshal 編排→belief-update 首例＋Intent Review 腿 GO——135.7 AC#7 勾選（批量 Settle 迴圈機制全運轉實證）。■品質鏉：每 slice 老規矩（flash implement→codex+muse post-build→GLM-5.3 judge）——judge 三輪全 GO；跨腿抓真 bug 累計：nullable 矛盾／blockers 漏合併／巢狀型別 silent-pass／sink.mode 無枚舉／NB-1 型別沙拉／usage 鍵靜默丟／marshal 自己 NB-1 修 3/4 被 judge 抓。■機制學習入帳：worker 無 Bash 面誠實申報＋seal 模式／judge 落盤須 --write-mode／單發禁內部 agent 條款／watcher 四層佈防。■晨間裁決清單（pending 台帳——user 一次掃）：(1)135.1 改版候補：budget null=未設 分流（belief-update decision）／sealed stage／card_status 欄／envelope 加 intent_review（JN-1）(2)135.7 轉入：J-3 manual-anchor 零錨收緊／muse N-2 plan_hash 源檔路徑／extras 收編 (3)135.5 #3 proposal 待 SC 確認（三子項）(4)135.4 解凍排程（canonical 側主線）(5)cookbook r2 五項共識→skill 修正候補 (6)舊台帳：closeout 機械化／muse bundle 21B／鏡像孤兒 3 頁。■未做（誠實）：AIR-135.7 W2-W8 未派（卡級 AC 全閉待後續批量）／135.4 主線未動工／cookbook r2 修正未實施。
 
 【0925 晨間合議決議（muse job-mug23iwj＋codex job-mug23iyj；六項全可決，零回問）】①budget 語義：否決 marshal 原案（null=未設/無帽 又是同值異義——兩腿聯手攔下）→定案＝三態（null=未設＋無帽另立顯式值＋0 專任零）＋先在 mini-batch 兩卡重編驗證再定版（13 筆標注＝現成 regression corpus）；codex 替代案 required_at 條件化入改版評估。②135.7 轉入：現在批次＝manual-anchor 收緊＋plan_hash 源路徑＋JN-1 envelope 納 intent_review（W2 前置）；extras 延後 W2-W8 真實 consumer，屆時只收指針（muse：值入 receipt＝第二套 truth 違 135.5 邊界）＋extension namespace（codex）——兩案相容。③135.5 proposal：兩腿共識補強後送——補 provisional 版本釘注記（135.1 改版在即）＋三子項 acceptance boundary（codex：每點寫明 SC 回覆後改變什麼）＋消費形態附 P0 邊界；渠道＝scbus 可審計通道（兩腿共識；AUTH＝user 原話『待你轉 SC 確認』＋『不能再問我』）。④135.4 排第三（135.1 改版＞135.7 W2-W8＞135.4）；首 slice＝AC#4 驗收改寫＋canonical 需求凍結（SC-162 被評草率、dogfood 延後→無驗收對象，先凍需求）。⑤cookbook r2：第一卡＝記憶三連 Memory Evals（兩腿一致；AIR-93 真事故背書）；第二卡＝sev_bot（muse：0924 授權語義真摩擦＋outward 憲法級；判準採真實事故背書者）；skills_in_api／eval 方法論／sandboxed-migration 記錄待需求信號。⑥舊台帳：closeout 機械化開卡（兩腿一致）／瘦身延後撞 90KiB 線再說／孤兒 3 頁按 LIFECYCLE 五準則一次裁定（不需長期卡）；muse 加塞新發現＝bridge 2.0.31 打包回歸疑點（binary 自報 2.0.2、waiter 版本閘失效＝fail-open 窗口）——記 pending 台帳查證優先。■執行分配：③本 session 送出；①②改版規格已成brief 級→新 session 執行（本 session 已跨多弧）；⑤⑥三張候補卡＋查證→下 session 開卡。
+
+【0925 孤兒頁裁定——未半做，留精確起點】naive diff（manifest 504 頁 vs 實檔 518）出 14 頁不合（README/contracts/control-plane-matrix 等非鏡像檔也在列）——與台帳『3 頁』口徑不合，需照 LIFECYCLE 退役五準則正式判定（manifest 路徑格式 vs 檔案路徑的映射規則要先讀）。naive 清單已產（本節指令可重跑）。併入下 session 小批。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
