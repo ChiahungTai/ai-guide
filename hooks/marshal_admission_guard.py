@@ -18,6 +18,17 @@ marshal admission guard——per-repo marker profile 寫入准入閘（AIR-152 m
   （regex search）命中放行 → sourceRoots（regex search，repo 相對 POSIX
   路徑；前綴語請錨定寫 `"^src/"`——未錨定 `"src/"` 以 search 語義會命中
   `docs/src/…` 任意含子串路徑）或（self repo）控制面 guard 命中即 deny。
+  非 canonical worktree（卡 WT／ephemeral WT）寫入命中 sourceRoots 時另需
+  在場 work-order 憑證（SC-199.1——守 marshal 直寫盲區）：憑證＝WT 根
+  `.agent-tmp/work-order.json`，v1 schema `{schema:"work-order/1", worker,
+  card, scope, brief, issuedBy, issuedAt}`，hook 只驗在場性＋schema 必填
+  欄位（不做內容語義驗證）；缺席或 schema 壞→deny 指路 marshal spawn 流程。
+  豁免（不觸發憑證要求）：backlog/ metadata、.agent-tmp/（含憑證檔自身——
+  寫憑證不需憑證）、governance json 自身（marker 檔恆豁免涵蓋）、docs/。
+  sourceRoots 空清單＝不受此規則管（ai-guide 卡 WT 零行為變更）。
+  residual threat model（v1 已決策）：憑證為在場性宣告非防偽——writer 先
+  自鑄 .agent-tmp/work-order.json 再寫 src/ 的 self-issuance bypass 已知
+  不設防，治理靠 AIR-135.8 審計線（另案）。
 - malformed——deny（fail-closed，禁 fail-open）：JSON 不可解析／schema 不符
   （protocol≠1、invariantLevel 非 branch|wt、trunk 缺、sourceRoots/allowlist
   非字串陣列、任一 pattern regex 語法錯——靜默失效即假保護）→ 本 repo 寫入
@@ -40,7 +51,8 @@ faces（policy 共用、payload adapter 分開）：
 流程：resolve（symlink／`../`／相對路徑——新檔以 nearest existing parent 定
 worktree 錨）→ `git rev-parse --show-toplevel` → `--git-common-dir`→PRIMARY →
 marker 三態（malformed deny／absent 放行）→ 非 canonical（卡 WT／ephemeral
-WT）放行 → allowlist → invariant 級（branch 級加 branch==trunk 判定）→
+WT）：sourceRoots 命中且非豁免面需在場 work-order 憑證（SC-199.1），其餘
+放行 → canonical：allowlist → invariant 級（branch 級加 branch==trunk 判定）→
 sourceRoots／控制面 patterns 命中 deny。
 
 deny 輸出：exit 2＋stderr 指路（跨 harness 慣例——ZCode exit 2 deny 已證、
@@ -71,6 +83,15 @@ GUARD_REL = os.path.join(".githooks", "control-plane-guard.sh")
 MARKER_REL = os.path.join(".agents", "marshal-governance.json")
 MARKER_PROTOCOL = 1
 VALID_LEVELS = ("branch", "wt")
+# SC-199.1——非 canonical WT 寫 sourceRoots 的在場憑證（marshal spawn 發放；
+# hook 只驗在場性＋schema 必填欄位，不做內容語義驗證）
+WORK_ORDER_REL = os.path.join(".agent-tmp", "work-order.json")
+WORK_ORDER_SCHEMA = "work-order/1"
+WORK_ORDER_REQUIRED = ("worker", "card", "scope", "brief", "issuedBy", "issuedAt")
+# 憑證要求豁免面（SC-199.1 決策③）：backlog/ metadata、.agent-tmp/（含憑證
+# 檔自身——寫憑證不需憑證）、docs/；governance json 自身由 marker 檔恆豁免
+# 涵蓋。僅收緊非 canonical 憑證面，canonical invariant 判定不受影響。
+WORK_ORDER_EXEMPT_PREFIXES = ("backlog/", ".agent-tmp/", "docs/")
 GIT_BIN = (
     shutil.which("git") or "/usr/bin/git"
 )  # ZCode GUI 行程 PATH 窄——退 /usr/bin 絕對路徑
@@ -90,6 +111,9 @@ DENY_HEADER_BRANCH = (
     "[Hook Blocked] trunk 直寫被拒——branch 級 invariant（marshal admission guard）"
 )
 DENY_HEADER_MALFORMED = "[Hook Blocked] marshal-governance marker 損毀——fail-closed（marshal admission guard）"
+DENY_HEADER_WORK_ORDER = (
+    "[Hook Blocked] 卡 WT 原始碼寫入缺 work-order 憑證（marshal admission guard）"
+)
 
 
 def extract_patch_paths(command):
@@ -181,6 +205,37 @@ def _git_branch(workdir):
     return out or None
 
 
+def _work_order_exempt(rel_posix):
+    """非 canonical 憑證要求豁免面（SC-199.1 決策③）——目錄前綴語義：命中
+    `backlog/…`、`.agent-tmp/…`、`docs/…`（帶尾斜線的檔案路徑）；裸目錄名
+    （"backlog" 無尾斜線）不豁免——Edit/Write 寫入座標恆為檔案路徑，裸名
+    不出現，且裸名亦不命中 sourceRoots 前綴 regex（無 deny 面，不受影響）。"""
+    return rel_posix.startswith(WORK_ORDER_EXEMPT_PREFIXES)
+
+
+def load_work_order(toplevel):
+    """非 canonical WT 的在場憑證（SC-199.1）——只驗在場性＋schema 必填欄位
+    （不做內容語義驗證）；回 dict 或 None（缺席／不可解析／schema 不符）。
+    residual threat model（v1 已決策）：憑證為在場性宣告非防偽——
+    self-issuance bypass（writer 自鑄憑證再寫 src/）已知，治理靠
+    AIR-135.8 審計線（另案）。"""
+    path = os.path.join(toplevel, WORK_ORDER_REL)
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except (json.JSONDecodeError, OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or data.get("schema") != WORK_ORDER_SCHEMA:
+        return None
+    for key in WORK_ORDER_REQUIRED:
+        val = data.get(key)
+        if not isinstance(val, str) or not val:
+            return None
+    return data
+
+
 def load_profile(repo_root):
     """讀 canonical 根的 marker——回 (status, profile)；status ∈ absent/ok/malformed。
 
@@ -250,7 +305,8 @@ def evaluate(raw_paths, cwd):
     """任一 target 命中 → hit dict；全數通過 → None。
 
     hit["kind"] ∈ "control-plane"（wt／branch invariant 命中）｜
-    "marker-malformed"（profile 不可判讀，fail-closed）。
+    "marker-malformed"（profile 不可判讀，fail-closed）｜
+    "work-order-missing"（非 canonical sourceRoots 寫入無在場憑證——SC-199.1）。
     例外由 main 的 fail-open 接住（exit 0 放行）。
     """
     hook_root = Path(__file__).resolve().parent.parent
@@ -281,7 +337,24 @@ def evaluate(raw_paths, cwd):
         if status == "absent":
             continue  # opt-in 三態——無 marker＝本 repo 不啟用
         if os.path.realpath(toplevel) != os.path.realpath(primary):
-            continue  # 非 canonical——卡 WT／ephemeral WT 放行
+            # 非 canonical——卡 WT／ephemeral WT；SC-199.1 收緊：governed repo
+            # 寫 sourceRoots 命中路徑（豁免面除外）需在場 work-order 憑證；
+            # sourceRoots 空清單＝不受此規則管，其餘寫入照舊放行
+            if (
+                not _work_order_exempt(rel_posix)
+                and _matches_any(
+                    _compile_patterns(profile.get("sourceRoots", [])), rel_posix
+                )
+                and load_work_order(toplevel) is None
+            ):
+                return {
+                    "kind": "work-order-missing",
+                    "raw": raw,
+                    "resolved": resolved,
+                    "toplevel": toplevel,
+                    "primary": primary,
+                }
+            continue  # 其餘非 canonical 寫入放行（正當出路）
         if _matches_any(_compile_patterns(profile.get("allowlist", [])), rel_posix):
             continue
         if profile.get("invariantLevel") == "branch" and _git_branch(
@@ -333,6 +406,18 @@ def _deny(hit):
             + str(MARKER_PROTOCOL)
             + "、invariantLevel=branch|wt、trunk 非空字串、sourceRoots/allowlist＝"
             "字串陣列），或刪除該檔即停用本閘。"
+        )
+    elif hit["kind"] == "work-order-missing":
+        reason = (
+            DENY_HEADER_WORK_ORDER + "。\n命中座標：" + str(resolved) + "\n"
+            "（worktree："
+            + toplevel
+            + "；判定：governed repo 非 canonical worktree 寫入命中 marker "
+            "sourceRoots，需在場憑證 .agent-tmp/work-order.json——缺席或 schema "
+            "不符）\n"
+            "憑證由 marshal 於 spawn 時發放至本 WT .agent-tmp/work-order.json"
+            "（發放工具住 governed repo 的 scripts/issue-work-order.mjs；"
+            "豁免面：backlog/ metadata、.agent-tmp/、governance json、docs/）"
         )
     else:
         profile = hit["profile"]

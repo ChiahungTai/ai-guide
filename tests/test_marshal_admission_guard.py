@@ -262,13 +262,220 @@ def test_branch_level_non_source_path_allow(branch_sandbox):
 
 
 def test_branch_level_worktree_allow(branch_sandbox):
-    """非 canonical 卡 WT 寫 sourceRoots 檔 → 放行（正當出路）。"""
+    """非 canonical 卡 WT 寫 sourceRoots 檔＋在場憑證 → 放行（SC-199.1 後的
+    正當出路：卡 WT 寫 src/ 需 marshal 發放的 work-order.json）。"""
     repo = branch_sandbox["repo"]
     wt = branch_sandbox["repo"].parent / "repo2-wt"
     r = _git(repo, "worktree", "add", "-b", "card-1", str(wt))
     assert r.returncode == 0, r.stderr
+    _write_work_order(wt)
     r = _run_branch_hook(branch_sandbox, _edit_payload(str(wt / "src" / "app.py")))
-    _assert_allow(r, "卡 WT 寫 src/")
+    _assert_allow(r, "卡 WT 寫 src/（有憑證）")
+
+
+# ---------------------------------------------------------------------------
+# SC-199.1——非 canonical 卡 WT 寫 sourceRoots 需在場 work-order 憑證
+# ---------------------------------------------------------------------------
+
+# work-order 憑證 v1 schema（SC-199.1 決策①——marshal spawn 時發放；
+# hook 只驗在場性＋schema 必填欄位，不做內容語義驗證）
+WO_VALID = {
+    "schema": "work-order/1",
+    "worker": "implement-lite",
+    "card": "SC-199.1",
+    "scope": "src/**",
+    "brief": "unit-test work order",
+    "issuedBy": "marshal",
+    "issuedAt": "2026-09-24T00:00:00Z",
+}
+
+
+@pytest.fixture(scope="module")
+def wo_sandbox(tmp_path_factory):
+    """SC-199.1 憑證閘沙箱：governed repo（branch 級）sourceRoots 刻意涵蓋
+    src 面＋豁免面（backlog/.agent-tmp/docs 也命中 sourceRoots——豁免須在
+    sourceRoots 命中之下仍放行，測試才非平凡）＋卡 worktree。"""
+    tmp_path = tmp_path_factory.mktemp("marshal-wo")
+    repo = tmp_path / "repo3"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True)
+    _git(repo, "config", "user.email", "t@t")
+    _git(repo, "config", "user.name", "t")
+    (repo / ".githooks").mkdir()
+    (repo / "hooks").mkdir()
+    (repo / ".githooks" / "control-plane-guard.sh").write_text(
+        GUARD.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (repo / "hooks" / "marshal_admission_guard.py").write_text(
+        HOOK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    _write_marker(
+        repo,
+        {
+            "protocol": 1,
+            "trunk": "main",
+            "invariantLevel": "branch",
+            "sourceRoots": ["^src/", "^docs/", "^backlog/", "^\\.agent-tmp/"],
+            "allowlist": ["^\\.agents/marshal-governance\\.json$"],
+        },
+    )
+    (repo / "src").mkdir()
+    (repo / "src" / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (repo / "docs").mkdir()
+    (repo / "docs" / "a.md").write_text("x\n", encoding="utf-8")
+    (repo / "backlog" / "tasks").mkdir(parents=True)
+    (repo / "backlog" / "tasks" / "t.md").write_text("x\n", encoding="utf-8")
+    (repo / ".agent-tmp").mkdir()
+    (repo / ".agent-tmp" / "keep.txt").write_text("x\n", encoding="utf-8")
+    (repo / "notes").mkdir()
+    (repo / "notes" / "idea.md").write_text("x\n", encoding="utf-8")
+    (repo / "README.md").write_text("seed\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "seed")
+    wt = tmp_path / "repo3-wt"
+    r = _git(repo, "worktree", "add", "-b", "card-9", str(wt))
+    assert r.returncode == 0, r.stderr
+    yield {"repo": repo, "wt": wt}
+    _git(repo, "worktree", "remove", "--force", str(wt))  # 測試建 worktree 收尾
+
+
+@pytest.fixture()
+def wo_clean(wo_sandbox):
+    """每案例憑證隔離：進出都保證卡 WT 無殘留 .agent-tmp/work-order.json
+    （module fixture 的可變狀態不跨測試洩漏——rerun／-k 單選不誤報）。"""
+    wo_path = wo_sandbox["wt"] / ".agent-tmp" / "work-order.json"
+    wo_path.unlink(missing_ok=True)
+    yield wo_sandbox
+    wo_path.unlink(missing_ok=True)
+
+
+def _run_wo_hook(
+    wo_sandbox: dict, payload, cwd: Path | None = None
+) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(wo_sandbox["repo"] / "hooks" / "marshal_admission_guard.py"),
+        ],
+        input=payload if isinstance(payload, str) else json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(cwd) if cwd is not None else None,
+    )
+
+
+def _write_work_order(wt: Path, data: dict | None = None, raw: str | None = None):
+    """在卡 WT 根放 .agent-tmp/work-order.json（data=None→合法憑證；
+    raw 非 None→原樣寫入壞 JSON 用）。"""
+    d = wt / ".agent-tmp"
+    d.mkdir(exist_ok=True)
+    path = d / "work-order.json"
+    if raw is not None:
+        path.write_text(raw, encoding="utf-8")
+        return
+    payload = dict(WO_VALID) if data is None else data
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _assert_wo_deny(r: subprocess.CompletedProcess, context: str) -> None:
+    assert r.returncode == 2, f"{context}：應 deny（exit 2）未擋\n{r.stderr}"
+    assert "work-order.json" in r.stderr, (
+        f"{context}：deny 須指到憑證檔 .agent-tmp/work-order.json\n{r.stderr}"
+    )
+    assert "marshal" in r.stderr, (
+        f"{context}：deny 須指路 marshal spawn 流程\n{r.stderr}"
+    )
+    out = json.loads(r.stdout)
+    assert out["hookSpecificOutput"]["permissionDecision"] == "deny", context
+
+
+def test_wo_card_wt_src_without_credential_deny(wo_clean):
+    """①非 canonical 卡 WT 寫 src/ 無憑證 → deny＋指路 spawn 流程。"""
+    wt = wo_clean["wt"]
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "src" / "app.py")))
+    _assert_wo_deny(r, "卡 WT 寫 src/ 無憑證")
+
+
+def test_wo_deny_message_repo_neutral_pointer(wo_clean):
+    """deny 指路文字 repo-neutral：issue-work-order.mjs 住 governed repo 非
+    本 hook repo——訊息只以 marshal＋work-order.json 字樣指路，不以 repo 內
+    可執行命令形態（node scripts/…）誤導；發放工具須帶 governed repo 限定語。"""
+    wt = wo_clean["wt"]
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "src" / "app.py")))
+    _assert_wo_deny(r, "deny 指路文字")
+    assert "node scripts/" not in r.stderr, "deny 文字勿以 repo 內命令形態指路"
+    assert "governed repo" in r.stderr, "發放工具須帶 governed repo 限定語"
+
+
+def test_wo_card_wt_src_with_valid_credential_allow(wo_clean):
+    """②同座標＋合法憑證在場 → 放行（SC-199.1 後卡 WT 寫 src 的正當出路）。"""
+    wt = wo_clean["wt"]
+    _write_work_order(wt)
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "src" / "app.py")))
+    _assert_allow(r, "卡 WT 寫 src/ 有憑證")
+
+
+def test_wo_broken_credential_schema_deny(wo_clean):
+    """③憑證 schema 壞（版本錯／缺必填欄位／空值／型別錯／非 dict／爛 JSON）
+    → 與缺席同罪 deny（fail-closed）。憑證清理交 wo_clean fixture。"""
+    wt = wo_clean["wt"]
+    missing = {k: v for k, v in WO_VALID.items() if k != "card"}
+    broken_variants = [missing, "{not-json", "[1, 2]"]
+    for patch in (
+        {"schema": "work-order/2"},
+        {"scope": ""},
+        {"worker": None},
+        {"brief": 123},
+    ):
+        data = dict(WO_VALID)
+        data.update(patch)
+        broken_variants.append(data)
+    for bad in broken_variants:
+        if isinstance(bad, str):
+            _write_work_order(wt, raw=bad)
+        else:
+            _write_work_order(wt, data=bad)
+        r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "src" / "app.py")))
+        _assert_wo_deny(r, f"憑證 schema 壞（{bad!r}）")
+
+
+def test_wo_exempt_paths_card_wt_allow_without_credential(wo_clean):
+    """⑤豁免面（backlog metadata／.agent-tmp／docs）在 sourceRoots 命中下
+    仍不觸發憑證要求——寫憑證檔自身亦不需憑證（防循環）。
+    豁免語義＝目錄前綴（`backlog/`…帶尾斜線；見 _work_order_exempt docstring）：
+    bare 目錄名不豁免亦不命中 sourceRoots——Edit/Write 座標恆為檔案路徑。"""
+    wt = wo_clean["wt"]
+    for rel in (
+        "docs/a.md",
+        "backlog/tasks/t.md",
+        ".agent-tmp/scratch.md",
+        ".agent-tmp/work-order.json",
+    ):
+        r = _run_wo_hook(wo_clean, _edit_payload(str(wt / rel)))
+        _assert_allow(r, f"豁免面 {rel}（無憑證）")
+
+
+def test_wo_card_wt_non_source_path_allow(wo_clean):
+    wt = wo_clean["wt"]
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "notes" / "idea.md")))
+    _assert_allow(r, "卡 WT 非 sourceRoots 路徑（無憑證）")
+
+
+def test_wo_canonical_source_hit_still_deny(wo_sandbox):
+    """豁免只及非 canonical 憑證面——canonical 寫命中 sourceRoots 的 docs/
+    仍走既有 invariant deny。"""
+    repo = wo_sandbox["repo"]
+    r = _run_wo_hook(wo_sandbox, _edit_payload(str(repo / "docs" / "a.md")))
+    _assert_branch_deny(r, "canonical docs/ 命中 sourceRoots")
+
+
+def test_wo_empty_sourceroots_repo_card_wt_unchanged(sandbox):
+    """④sourceRoots 空清單 repo（ai-guide 形態）：卡 WT 寫 src 面（非豁免面）
+    無憑證仍放行——零行為變更。"""
+    wt = sandbox["wt"]
+    r = _run_hook(sandbox, _edit_payload(str(wt / "src" / "new.py")))
+    _assert_allow(r, "空 sourceRoots repo 卡 WT 寫 src/（行為不變）")
 
 
 def test_marker_file_itself_exempt(sandbox):
