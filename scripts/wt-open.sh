@@ -86,7 +86,8 @@ if [ "$MODE" = "ephemeral" ]; then
   TASK="(ephemeral) $EPH_NAME"
 else
   CARD_ID="$(printf '%s' "$CARD_ID" | tr 'A-Z' 'a-z')"
-  case "$CARD_ID" in ''|*[!A-Za-z0-9-]*) die "card id 形態異常：$CARD_ID" ;; esac
+  # 點號允許（子卡 air-135.3 形態常態；git branch 中段點號合法；開頭/連續兩點由 git 自身拒）——SC finding #1（sess_d6e3e495 結算信）採納
+  case "$CARD_ID" in ''|*[!A-Za-z0-9.-]*) die "card id 形態異常：$CARD_ID" ;; esac
   BRANCH="$CARD_ID"
   TASK="$CARD_ID"
   # 只認 committed card（workflow.md：未提交 working-copy 狀態不視為 baseline）
