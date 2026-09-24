@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-24 07:07'
+updated_date: '2026-09-24 13:29'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -170,6 +170,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0924 路線定著（user 三 OK——marshal session 收斂）】①AIR-135.9 結案 Done（7a814151）：註冊收線——旗艦裁決＋Mockup 契約已落地（516e0a56），dogfood 歸 135.3 AC#7/#8＋135.7 AC#7 消費端；殘留＝過渡期旗艦諮詢成本手動記卡 Notes（等 135.1 budget context）、mockup 合規盲區（無場景 vs 靜默跳過）交 135.8 mining ②AIR-135.5 翻 In Progress（0141becc；SC-162 handoff＋scbus amendment 進行中——precheck 反向檢查訊號解）③family 實作路線五波定著：W0＝135.2 decision-4 viewport pass（user 看 Code Lens POC 三問→翻 accepted）→W1＝135.2 收尾＋135.3 收斂＋135.5 形式化（互動弧——凍結契約基座，135.1 的前置）→W2＝批量夜 #1（135.6＋135.8；standard、零跨 repo、decision-5 過關直行；產 135.7 AC#7 批量 Settle dogfood 證據＋S7 度量首批）→W3＝135.1 compiler build（family 唯一未動工大件、full tier bounded design EP、multi-slice）→W4＝批量夜 #2＝family dogfood 一輪跑真弧（Two-Touch 不變式計數）→收 135.7→S7 rename/migration 清單→user viewport 終審→parent 收線；135.4 park 等 SC-162（不佔本地關鍵路徑）④AIR-135.8 Plan 節已落（四步迴路＋D-a~D-e 開放決策；batch 夜前 entry Align 補六欄）。待 user：decision-4 viewport pass（三問隨 illustrate 視圖交付）；兩筆卡面編輯 commit 已獲 user 確認。
 
 【0924 user 資源約束】GLM 並發上限 3 線（含主 seat；codex/muse bridge 腿不計）——marshal 派工前機械盤點：seat＋在跑 GLM subagent（impl-lite=flash、Explore/general-purpose 繼承 5.3）＋bridge glm job，合計 ≤3 才派，超過排隊等回收。本批量剩餘弧一體適用。
+
+【0924 receipt 錨更新（135.7 判讀腿附帶發現）】批量夜 #1 兩張匯總 receipt 引用的 commit 61f9b205／700bbb1f 已成孤兒（收線 merge 換 hash、無 ref 包含、僅 reflog 可達＝GC 風險）。內容新錨：135.6 內容＝22663e62（card-first recovery ownership 遷移）、135.8 內容＝b0fb2945（correction 迴路四步）。本節即錨修正記錄。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
