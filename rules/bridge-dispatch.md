@@ -9,5 +9,6 @@ harness-scope: neutral
 - glm provision 前置：首次 glm 委派前必跑 `delegate-bridge provision --family glm`。
 - 派工必配回收：waiter exit 即通知、全 terminal 喚醒輸出 CollectionReceipt；watcher＝`scripts/bridge_waiter.py` 背景 shell fan-in 包 wait（124 內部消化、exit 3 stalled advisory wake、exit 2 禁重派）；裸 `wait` 背景 shell 降為 fallback（exit 124 仍＝re-arm 非失敗、禁重派）。terminal ≠ complete：有 sink 登記者以 artifact 機驗（存在＋非空＋錨點）為完成，無登記者以 bounded receipt 非空為完成；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
 - 長輸出：預期輸出逼近上限→交付一律檔案承載（分塊＋checkpoint），禁純文字長文。
+- codex web 整包預算：composer 整包（工單＋AGENTS.md 鏈＋全域 instructions＋buffer）須 <100K chars（實測死亡線 ~100K–126K）；估算式與替代路由＝bridge-dispatch skill webgpt 節。
 
 webgpt 大內容、glm resume model-match、Brief 動詞紀律、失敗態分流等細節＝bridge-dispatch skill。

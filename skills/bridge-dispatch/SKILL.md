@@ -1,6 +1,6 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（turn body 計算含整個 turn、session 歷史計入；大材料寫進 repo 檔案只派路徑；失敗勿原樣重派——carrier 自動重試同 payload 放大限流；觀測值與失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知、waiter exit 即通知；單顆短工前景 shell vs N 顆平行 --background＋fan-in wait 場景；wait exit 124 re-arm 禁重派；--stuck-after family 起跳值；重啟後恢復 playbook——runs 禁盲重派、show --json 收完成、重掛 wait；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory。"
+description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（turn body 計算含整個 turn、session 歷史計入；雙軸預算——材料軸 inline 線／整包軸 composer 整包線——與 fat-AGENTS 替代路由；失敗勿原樣重派——carrier 自動重試同 payload 放大限流；觀測值與失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知、waiter exit 即通知；單顆短工前景 shell vs N 顆平行 --background＋fan-in wait 場景；wait exit 124 re-arm 禁重派；--stuck-after family 起跳值；重啟後恢復 playbook——runs 禁盲重派、show --json 收完成、重掛 wait；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS。"
 ---
 
 # bridge-dispatch — delegate-bridge 委派深層
@@ -24,7 +24,19 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 
 ## codex web pool（webgpt）大內容
 
-ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷史計入；resume 中型舊 session 也會超標）。大材料寫進 repo 檔案、prompt 只派**檔案路徑**讓 runtime 自讀；失敗**勿原樣重派**——carrier 會自動重試同一 payload，放大限流。精確觀測值與失敗態分流 → delegate-bridge repo `AGENTS.md`「Caller dispatch discipline」節。
+ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷史計入；resume 中型舊 session 也會超標）；失敗**勿原樣重派**——carrier 會自動重試同一 payload，放大限流。精確觀測值與失敗態分流 → delegate-bridge repo `AGENTS.md`「Caller dispatch discipline」節。
+
+派工前過**雙軸預算**（兩軸量的是相反兩端——材料端 vs 整包端，禁互抵、禁共用「上限／安全線」一詞；預算值行在 `rules/bridge-dispatch.md`）：
+
+- **材料軸**（量待審材料）：待審材料內聯 prompt ≤8KB 實測安全——webgpt agent 讀不到 caller 本地檔，工單只帶 repo 檔案路徑＝未驗形態（agent 無從審起，09-16 實證）。超標 → chunk／改形態。
+- **整包軸**（量 composer 整包＝工單＋repo AGENTS.md 鏈＋全域 `~/.codex/AGENTS.md` ~30K＋envelope buffer ~20K）：須 <100K chars——死亡線 ~100K–126K 實測收斂（as-of 2026-09，codex CLI 0.155.0-alpha.16），工單小 ≠ payload 小。超標 → fat-AGENTS 替代路由。
+
+**fat-AGENTS 替代**：判準以估算式為準、不以 repo AGENTS.md 單一數字為準（教訓正在於工單小＋fat AGENTS 才爆）——repo AGENTS.md ≳50K 即進估算參考錨（dispatch 前 `wc -c AGENTS.md` 為低成本可選機械檢查；實例：62K AGENTS.md＋3KB 工單已死）。順序＝①降 payload（改 repo 檔案路徑交付〔材料軸未驗形態，採用前先驗 agent 可達〕／減 inline／用既有 artifact）→②native codex（credits 訂閱池——帳號路徑分界與額度現值依 model-routing）→③muse／glm（依 model-routing resolver）→④in-harness。
+
+**觀察項**（單次實測值不升格永久規格）：
+- CLI 注入量 drift：估算式的全域 instructions 與 envelope 兩項綁當前 CLI 版本，升級即過時——條文只認 as-of 標記，精確觀測值留 delegate-bridge AGENTS.md。
+- envelope buffer 漂移：buffer 佔比隨版本增加，估算式逐項須定期對照。
+- 回應段死亡（09-16 `displayed an error` 形態，分流表見 model-routing webgpt 節）×整包預算交互未對照實證——下次回應段死時記整包估算值回填死亡線 bracket。
 
 ## Dispatch⇄collection 配對（派工必配回收）——完整模式
 
