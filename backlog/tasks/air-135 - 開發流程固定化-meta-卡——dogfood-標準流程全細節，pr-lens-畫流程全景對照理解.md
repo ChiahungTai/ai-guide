@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-24 06:33'
+updated_date: '2026-09-24 07:07'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -187,4 +187,16 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 度量（S7 首批）：無正當理由打斷＝0（user 僅問進度＋新增 AIR-168 交接任務）；自治決策記帳＝review 裁定／豁免適用／editorial apply 全數落卡 notes 與 receipts；紅線跳過＝0（trunk merge 恆停待授權）。審查鏈＝codex＋muse review／5.3 judge（user 指定）；全部 findings 分級處置（採納／記後續項）。
 
 待 user 晨間：①trunk merge 兩 ephemeral branch 授權 ②bridge 2.0.31 打包回歸（binary 自報 2.0.2，waiter 版本閘失效）③sess_64d6fbf9 關閉 TODO 2 筆裁決 ④close-out 機械化命令是否開卡 ⑤glm closeout 腿 interim 續收。
+
+## W1 續行批量 receipt（0924 白天，AIR-183 授權後續線）
+
+| 卡／弧 | 結果 | commit |
+|---|---|---|
+| AIR-135.2 AC#4 consumer 遷移 | **五模式 slices 1-5 全落地＋REFERENTIAL 25 檔收編完**（8fbb6834/94da3094/1a439ff9/8b4b2fda/02df7709/d73d772f/fc7147e2）；結案評估＝六 AC 勾，#2 歸 135.3、#9 待 user | 各 slice commit |
+| AIR-183 commit gate 放寬 | **Done＋生效**：tri panel→五補丁→3/3 部署→drift 零殘留→memory 蒸餾（6dee1ef0/補丁/6e45f824） | 6e45f824 |
+| AIR-184 webgpt 雙軸預算 | **Done**：三檔＋部署閘 hotfix（30,699B；0627d903/657f3d08） | 0110a6c4 |
+| SC-199.1 跨 repo 摩擦③ | **閉環**：SC 停手改 finding 形態＋d9372a91 處置留用（6b41748b＋回執 dd7b7c46） | 6b41748b |
+| DB-41 muse 越權擋關調查 | 擋關清單成冊（SOP 驗收閘/admission guard 憑證/#1 sandbox 候補）——worker 面不隨 AIR-183 放寬 | 記 183 卡 |
+
+度量（S7）：無正當理由打斷＝0（user 三次 mid-turn 指令全即時消化）；checkpoint proven 三發（每次邊界重寫後重驗）；GLM 並發≤3 約束自落實後零違反。**pending 台帳**：135.2#9 user 逐卡點頭／AIR-182 branch 合併授權／sess_64d6fbf9 TODO 2 筆／closeout 機械化開卡／glm closeout 續收／SC-162 摩擦兩筆／muse bundle 餘裕 21B 瘦身。下一批：135.3 收斂弧（含六欄還原演練）→135.5 形式化。
 <!-- SECTION:FINAL_SUMMARY:END -->
