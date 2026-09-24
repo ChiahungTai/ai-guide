@@ -104,7 +104,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 | 空（無命中） | 通過 |
 | 非空 | 逐個處置（見下） |
 
-**逐個處置**（跨段落豁免）：先讀 POC 檔頭「EP 段落」標注，判斷生命週期：
+**逐個處置**（跨段落豁免）：先讀 POC 檔頭「EP 段落」標注，判斷生命週期（card-first 分支——AIR-135.2 AC#4：檔頭標注讀「EP 段落」**或卡 TaskRef／卡 id（`TaskRef: <卡id> <section>` 形態），任一在場即判**——card-first 弧 POC 檔頭非孤兒）：
 
 - 所屬段落尚未 build（活躍 POC）→ 標「待該段落 build 時處置」，暫不擋
 - 所屬段落已 build+commit，或檔頭缺失 → 強制顯式歸類檔案去處
@@ -121,7 +121,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 **delete 須附分類證據**（非憑空理由，三選一）：
 
 - 「已被既有 test 覆蓋」→ 附 `test_path:line` + 該 assert 驗證的行為一句話（階段 5 可機械核對 assert 真覆蓋 POC 行為，非僅驗檔案存在）
-- 「假設被推翻（行為不進生產）」→ 附 EP finding（ep-validate ❌ 結果記錄）
+- 「假設被推翻（行為不進生產）」→ 附 EP finding（ep-validate ❌ 結果記錄）或卡 finding 記錄（卡 comments／Notes supersedes）
 - 「純探索性（無對應 UC）」→ 說明探索目的 + 為何無對應 UC
 
 提不出證據 → 不得 delete，須改寫成 test（倒逼覆蓋）。用戶階段 5 見處置清單（含證據），可核對 AI 是否全選 delete 編理由。
