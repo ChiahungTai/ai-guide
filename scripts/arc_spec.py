@@ -82,6 +82,8 @@ AUTHORITIES = ("writer", "read-only")
 COLLECTION_MODES = ("waiter", "bounded-receipt", "manual")
 DELIVERY_VERDICTS = ("delivered", "undelivered", "manual-anchor", "not-assessed")
 COMMIT_DELEGATIONS = ("none", "conditional-this-repo")
+# 135.3 AC#7（S3 接線）：Intent Review 驗收腿回寫 verdict 枚舉——receipt.intent_review 欄
+INTENT_REVIEW_VERDICTS = ("GO", "GO-WITH-FIXES", "NO-GO")
 
 TERMINAL_SEMANTICS_FIXED = {
     "on_budget_exhausted": "budget-limited",
@@ -264,6 +266,11 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
                       "CollectionReceipt delivery 欄位集（D7 沿用）：mode/sink/l1_present/l2_anchor/anchor_hits/verdict"),
             FieldSpec("bounded_receipt_projection", "machine-invariant", "always",
                       "bounded receipt：final_text_non_empty（bridge_waiter 慣例投影）"),
+            FieldSpec("intent_review", "machine-invariant", "never",
+                      "Intent Review 驗收腿回寫面（S3/135.3 AC#7）：{verdict, leg, read_set_exclusion}"
+                      "——verdict 枚舉 GO／GO-WITH-FIXES／NO-GO、leg＝審查腿身份、read_set_exclusion＝"
+                      "chain-exclusion 自述；選填（required_at=never，同 receipt_sink N6 慣例）＝"
+                      "閘外小弧自報為足，閘內獨立腿缺失＝exit Align 未過關"),
             FieldSpec("top_findings", "llm-guidance", "never", "語義欄——判定歸 caller（bridge_waiter 慣例）"),
             FieldSpec("blockers", "llm-guidance", "never", "阻礙清單"),
             FieldSpec("unverified", "llm-guidance", "never", "未驗面誠實申報（Fail Loud）"),
@@ -663,6 +670,33 @@ def _check_receipt(data: dict, stage: str, errors: list[str]) -> None:
                 f"`bounded_receipt_projection.final_text_non_empty` must be a boolean "
                 f"for {kind}, got {type(flag).__name__}"
             )
+
+    review = data.get("intent_review")
+    if review is not None:
+        if not isinstance(review, dict):
+            errors.append(
+                f"`intent_review` must be an object for {kind}, got {type(review).__name__}"
+            )
+        else:
+            verdict = review.get("verdict")
+            if not _present_nonempty(verdict):
+                errors.append(
+                    f"`intent_review.verdict` 不得為空 for {kind} — "
+                    f"Intent Review 回寫面 minimum＝verdict＋leg＋read_set_exclusion"
+                )
+            elif verdict not in INTENT_REVIEW_VERDICTS:
+                errors.append(_unknown_enum(
+                    FieldSpec("verdict", "machine-invariant", "always", "",
+                              values=INTENT_REVIEW_VERDICTS, noun="intent review verdict",
+                              plural="intent review verdicts"),
+                    verdict, kind,
+                ))
+            for key in ("leg", "read_set_exclusion"):
+                if not _present_nonempty(review.get(key)):
+                    errors.append(
+                        f"`intent_review.{key}` 不得為空 for {kind} — "
+                        f"Intent Review 回寫面 minimum＝verdict＋leg＋read_set_exclusion"
+                    )
 
 
 _CHECKERS = {
