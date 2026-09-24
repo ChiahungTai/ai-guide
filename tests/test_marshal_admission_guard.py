@@ -16,11 +16,14 @@ fail-open 契約＝malformed payload／非轄面工具 → exit 0。
 
 import ast
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from conftest import load_module
 
 REPO = Path(__file__).resolve().parents[1]
 HOOK = REPO / "hooks" / "marshal_admission_guard.py"
@@ -397,15 +400,105 @@ def test_wo_card_wt_src_without_credential_deny(wo_clean):
     _assert_wo_deny(r, "卡 WT 寫 src/ 無憑證")
 
 
-def test_wo_deny_message_repo_neutral_pointer(wo_clean):
-    """deny 指路文字 repo-neutral：issue-work-order.mjs 住 governed repo 非
-    本 hook repo——訊息只以 marshal＋work-order.json 字樣指路，不以 repo 內
-    可執行命令形態（node scripts/…）誤導；發放工具須帶 governed repo 限定語。"""
+def test_wo_deny_message_generic_pointer_with_workable_example(wo_clean, tmp_path):
+    """deny 指路文字（AIR-194 定案反轉 SC-199.1 舊斷言）：寫死 repo 限定語
+    （governed repo）退場——發行工具改通用措辭（對端 repo scripts/… 或等值
+    發行面）＋附最小手寫憑證範例（可發現性）；仍不以 repo 內可執行命令形態
+    （node scripts/…）誤導。範例須機驗可過 load_work_order——文案↔schema
+    drift 防護（本卡主題的反向閘）。"""
     wt = wo_clean["wt"]
     r = _run_wo_hook(wo_clean, _edit_payload(str(wt / "src" / "app.py")))
     _assert_wo_deny(r, "deny 指路文字")
     assert "node scripts/" not in r.stderr, "deny 文字勿以 repo 內命令形態指路"
-    assert "governed repo" in r.stderr, "發放工具須帶 governed repo 限定語"
+    assert "governed repo" not in r.stderr, "寫死 repo 限定語已退場（AIR-194）"
+    assert "issue-work-order.mjs" in r.stderr, "發行工具通用指路保留"
+    assert "等值發行面" in r.stderr, "措辭須通用化至等值發行面"
+    m = re.search(r'\{"schema":"work-order/1"[^\n]*\}', r.stderr)
+    assert m, "deny 須附一行 JSON 手寫憑證範例"
+    example = json.loads(m.group(0))  # 範例須為合法 JSON
+    guard = load_module("hooks/marshal_admission_guard.py")
+    (tmp_path / ".agent-tmp").mkdir()
+    (tmp_path / ".agent-tmp" / "work-order.json").write_text(
+        json.dumps(example), encoding="utf-8"
+    )
+    assert guard.load_work_order(str(tmp_path)) is not None, (
+        "deny 文案所附範例須實際可過 schema 驗證（文案↔schema drift 防護）"
+    )
+
+
+# ---------------------------------------------------------------------------
+# AIR-194——scope 兩形（非空 str 或非空 list[str]）＋canonical schema 單一源
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        "src/**",  # 手寫 str 形（回兼容——SC-199.1 原形）
+        ["src/**"],  # 發行工具 list 形（單元素）
+        ["src/**", "tests/**"],  # list 形（多元素）
+    ],
+)
+def test_wo_scope_two_forms_allow(wo_clean, scope):
+    """AC#1：scope 兩形皆過閘——清單形（工具產憑證正典）＋文字形（手寫回兼容）。"""
+    data = dict(WO_VALID)
+    data["scope"] = scope
+    _write_work_order(wo_clean["wt"], data=data)
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wo_clean["wt"] / "src" / "app.py")))
+    _assert_allow(r, f"scope 兩形過閘（{scope!r}）")
+
+
+@pytest.mark.parametrize(
+    "scope",
+    [
+        "",  # 空 str
+        [],  # 空清單
+        ["src/**", ""],  # 清單含空 str
+        ["src/**", 123],  # 混型清單
+        123,  # 非容器非 str
+        {"glob": "src/**"},  # dict 形（第三形 drift 防護）
+    ],
+)
+def test_wo_scope_bad_forms_deny(wo_clean, scope):
+    """AC#2：fail-loud 不回歸——空 str／空清單／含空元素／混型／型別錯皆拒。"""
+    data = dict(WO_VALID)
+    data["scope"] = scope
+    _write_work_order(wo_clean["wt"], data=data)
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wo_clean["wt"] / "src" / "app.py")))
+    _assert_wo_deny(r, f"scope 壞形（{scope!r}）")
+
+
+@pytest.mark.parametrize(
+    "key", ["worker", "card", "scope", "brief", "issuedBy", "issuedAt"]
+)
+def test_wo_missing_required_key_deny(wo_clean, key):
+    """AC#2：六必填欄位逐一缺皆拒（與缺席同罪 fail-closed）。"""
+    data = {k: v for k, v in WO_VALID.items() if k != key}
+    _write_work_order(wo_clean["wt"], data=data)
+    r = _run_wo_hook(wo_clean, _edit_payload(str(wo_clean["wt"] / "src" / "app.py")))
+    _assert_wo_deny(r, f"缺必填欄位 {key}")
+
+
+def test_wo_schema_single_source_doc_and_hook_pointer():
+    """AC#4：canonical schema 單一源文檔在場、涵蓋六欄＋scope 兩形，hook 源碼
+    帶引用指針（防第三個消費者再分叉）。"""
+    doc = REPO / "hooks" / "work-order-schema.md"
+    assert doc.is_file(), "hooks/work-order-schema.md 單一源文檔在場"
+    text = doc.read_text(encoding="utf-8")
+    for token in (
+        "work-order/1",
+        "worker",
+        "card",
+        "scope",
+        "brief",
+        "issuedBy",
+        "issuedAt",
+        "hooks/marshal_admission_guard.py",
+        "issue-work-order.mjs",
+    ):
+        assert token in text, f"schema 文檔缺錨點 {token!r}"
+    hook_src = HOOK.read_text(encoding="utf-8")
+    assert "work-order-schema.md" in hook_src, "hook 源碼應引用 schema 單一源文檔"
 
 
 def test_wo_card_wt_src_with_valid_credential_allow(wo_clean):

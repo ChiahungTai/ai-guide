@@ -21,8 +21,10 @@ marshal admission guard——per-repo marker profile 寫入准入閘（AIR-152 m
   非 canonical worktree（卡 WT／ephemeral WT）寫入命中 sourceRoots 時另需
   在場 work-order 憑證（SC-199.1——守 marshal 直寫盲區）：憑證＝WT 根
   `.agent-tmp/work-order.json`，v1 schema `{schema:"work-order/1", worker,
-  card, scope, brief, issuedBy, issuedAt}`，hook 只驗在場性＋schema 必填
-  欄位（不做內容語義驗證）；缺席或 schema 壞→deny 指路 marshal spawn 流程。
+  card, scope, brief, issuedBy, issuedAt}`（規格單一源＝hooks/work-order-
+  schema.md；AIR-194 起 scope 兩形：非空 str 或非空 list[str]），hook 只驗
+  在場性＋schema 必填欄位（不做內容語義驗證）；缺席或 schema 壞→deny 指路
+  marshal spawn 流程（附最小手寫憑證範例）。
   豁免（不觸發憑證要求）：backlog/ metadata、.agent-tmp/（含憑證檔自身——
   寫憑證不需憑證）、governance json 自身（marker 檔恆豁免涵蓋）、docs/。
   sourceRoots 空清單＝不受此規則管（ai-guide 卡 WT 零行為變更）。
@@ -88,6 +90,9 @@ VALID_LEVELS = ("branch", "wt")
 WORK_ORDER_REL = os.path.join(".agent-tmp", "work-order.json")
 WORK_ORDER_SCHEMA = "work-order/1"
 WORK_ORDER_REQUIRED = ("worker", "card", "scope", "brief", "issuedBy", "issuedAt")
+# 憑證 schema 單一源＝hooks/work-order-schema.md（AIR-194）——欄位/型別/
+# scope 兩形語義以該檔為準；對端發行工具（scripts/issue-work-order.mjs 或
+# 等值發行面）同源引用，禁各自另立定義。
 # 憑證要求豁免面（SC-199.1 決策③）：backlog/ metadata、.agent-tmp/（含憑證
 # 檔自身——寫憑證不需憑證）、docs/；governance json 自身由 marker 檔恆豁免
 # 涵蓋。僅收緊非 canonical 憑證面，canonical invariant 判定不受影響。
@@ -216,6 +221,9 @@ def _work_order_exempt(rel_posix):
 def load_work_order(toplevel):
     """非 canonical WT 的在場憑證（SC-199.1）——只驗在場性＋schema 必填欄位
     （不做內容語義驗證）；回 dict 或 None（缺席／不可解析／schema 不符）。
+    scope 兩形（AIR-194）：非空 str（手寫向下相容）或非空 list[str]（發行
+    工具正典形，全元素非空 str）——檢查只驗在場性不讀內容。規格單一源＝
+    hooks/work-order-schema.md。
     residual threat model（v1 已決策）：憑證為在場性宣告非防偽——
     self-issuance bypass（writer 自鑄憑證再寫 src/）已知，治理靠
     AIR-135.8 審計線（另案）。"""
@@ -231,7 +239,15 @@ def load_work_order(toplevel):
         return None
     for key in WORK_ORDER_REQUIRED:
         val = data.get(key)
-        if not isinstance(val, str) or not val:
+        if key == "scope":
+            ok = (isinstance(val, str) and bool(val)) or (
+                isinstance(val, list)
+                and bool(val)
+                and all(isinstance(s, str) and bool(s) for s in val)
+            )
+        else:
+            ok = isinstance(val, str) and bool(val)
+        if not ok:
             return None
     return data
 
@@ -412,12 +428,17 @@ def _deny(hit):
             DENY_HEADER_WORK_ORDER + "。\n命中座標：" + str(resolved) + "\n"
             "（worktree："
             + toplevel
-            + "；判定：governed repo 非 canonical worktree 寫入命中 marker "
+            + "；判定：非 canonical worktree 寫入命中 marker "
             "sourceRoots，需在場憑證 .agent-tmp/work-order.json——缺席或 schema "
             "不符）\n"
-            "憑證由 marshal 於 spawn 時發放至本 WT .agent-tmp/work-order.json"
-            "（發放工具住 governed repo 的 scripts/issue-work-order.mjs；"
-            "豁免面：backlog/ metadata、.agent-tmp/、governance json、docs/）"
+            "憑證由 marshal 於 spawn 時經發行工具（對端 repo "
+            "scripts/issue-work-order.mjs 或等值發行面）發放至本 WT "
+            ".agent-tmp/work-order.json"
+            "（豁免面：backlog/ metadata、.agent-tmp/、governance json、docs/）\n"
+            "最小手寫憑證範例（schema 規格單一源：hooks/work-order-schema.md）：\n"
+            '{"schema":"work-order/1","worker":"implement-lite","card":"AIR-XXX",'
+            '"scope":"src/**","brief":"one-line task brief","issuedBy":"marshal",'
+            '"issuedAt":"2026-01-01T00:00:00Z"}'
         )
     else:
         profile = hit["profile"]
