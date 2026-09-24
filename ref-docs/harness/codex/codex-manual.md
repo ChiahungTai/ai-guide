@@ -8,7 +8,7 @@ hidden: true
 ## Find By Topic
 
 - `pricing`, `plans`, `ChatGPT`, `API key`, `Plus`, `Pro`, `Business`, `Enterprise`, `Edu`, `feature maturity`, `what's new`: [Surfaces and experiences](#surfaces-and-modes)
-- `prompting`, `threads`, `context window`, `multi_agent`, `subagents`, `projects`, `long-running work`, `/plan`, `workflow`: [Execution Model and Workflows](#execution-model-and-workflows)
+- `prompting`, `model selection`, `threads`, `context window`, `multi_agent`, `subagents`, `projects`, `long-running work`, `/plan`, `workflow`: [Execution Model and Workflows](#execution-model-and-workflows)
 - `approval_policy`, `sandbox_mode`, `permissions`, `permission profiles`, `network access`, `read-only`, `workspace-write`, `danger-full-access`, `security`, `cyber`: [Approvals, Sandboxing, and Security](#approvals-sandboxing-and-security)
 - `config.toml`, `.codex/config.toml`, `auth.json`, `ChatGPT sign-in`, `API key login`, `models`, `providers`, `model_reasoning_effort`: [Configuration, Authentication, and Models](#configuration-auth-and-models)
 - `codex exec`, `codex cloud`, `codex mcp`, `worktrees`, `cloud environments`, `internet access`, `Voice`, `remote connections`, `web search`, `image generation`: [CLI, IDE, App, and Cloud Behavior](#surface-behavior)
@@ -56,7 +56,7 @@ Ways to organize, delegate, and review work.
 
 - [Notifications](https://learn.chatgpt.com/docs/notifications): Choose how ChatGPT tells you when work needs attention.
 
-- [Pets](https://learn.chatgpt.com/docs/pets): Choose an animated companion and follow chat activity.
+- [Pets](https://learn.chatgpt.com/docs/pets): Choose a companion, start chats, and follow activity.
 
 - [Codex Micro](https://learn.chatgpt.com/docs/features/codex-micro): Monitor and control ChatGPT chats from a Work Louder keyboard.
 
@@ -384,6 +384,64 @@ Source: [What's new](https://learn.chatgpt.com/docs/whats-new.md)
 This weekly digest highlights ChatGPT and Codex features that can change how you
 work, with examples and links to learn more. For every versioned update, bug fix,
 and minor improvement, see the [Codex changelog](https://learn.chatgpt.com/docs/changelog).
+
+#### September 21–25, 2026
+
+#### Choose GPT-6 Sol and Luna
+
+GPT-6 Sol and GPT-6 Luna are rolling out in Codex at lower token prices than
+their GPT-5.6 predecessors. Start with **Sol Medium** for everyday and complex
+coding, or **Luna High** for focused, repeatable tasks. Availability depends
+on your plan, client, and workspace settings.
+
+See [Models](https://learn.chatgpt.com/docs/models) for model selection, [Pricing](https://learn.chatgpt.com/docs/pricing) for
+usage and credit rates, and the [launch announcement](https://learn.chatgpt.com/docs/changelog#codex-2026-09-22-gpt-6-sol-luna)
+for availability details.
+
+#### September 14–18, 2026
+
+#### Prepare for GPT-5.5 retirement
+
+GPT-5.5 will retire from ChatGPT, ChatGPT Work, and Codex on October 14, 2026,
+across all plans. The OpenAI API isn't affected.
+
+For Codex with ChatGPT sign-in, switch to **GPT-5.6 Sol** (`gpt-5.6-sol`).
+Update saved model settings, workspace defaults, custom agents, scheduled
+tasks, and scripts that still select GPT-5.5 before the retirement date.
+[Read the retirement notice](https://learn.chatgpt.com/docs/changelog#codex-2026-09-14-gpt-55-retirement)
+for details.
+
+#### September 7–11, 2026
+
+#### Start a quick chat from your pet
+
+Type a request or start a voice conversation from the floating
+[Pets controls](https://learn.chatgpt.com/docs/pets?surface=app) in the ChatGPT desktop app on macOS
+and Windows. Keep working in another app while you follow progress, then open
+the full conversation when you need it.
+
+Choose a companion in **Settings > Pets**, or select **Mini** to use the
+controls without a pet. Press **Option+Space** on macOS or **Windows+Alt+P** on
+Windows to show the controls and focus Quick Chat. Use `@` to add context and
+`$` to choose a skill, then press **Enter** to send your request.
+
+#### Share an app window on Windows
+
+[Appshots](https://learn.chatgpt.com/docs/appshots?surface=app) bring a screenshot and available text
+from the frontmost Windows app into ChatGPT. Press both **Alt** keys at the
+same time, then ask a question about the window or describe what you want to
+do. Windows Appshots open in the main ChatGPT app.
+
+On macOS, Appshots can also start a new chat in the floating Pets controls
+when they're visible and the main ChatGPT window is in the background. Set
+**Appshot destination** to **Automatic** and authorize Appshots permissions
+in the main app first.
+
+Update the desktop app to use these features. Availability depends on rollout
+and workspace settings.
+
+[Read the September 11 release notes](https://learn.chatgpt.com/docs/changelog#codex-2026-09-11-app)
+for the full update and smaller improvements.
 
 #### August 31–September 4, 2026
 
@@ -1229,17 +1287,25 @@ Source: [Pricing](https://learn.chatgpt.com/docs/pricing.md)
 ChatGPT Work and Codex share usage. ChatGPT Work usage inside
 ChatGPT uses the same pricing, credits, and usage limits as Codex.
 
+GPT-5.5 retires from ChatGPT, ChatGPT Work, and Codex on all plans on
+October 14, 2026. The OpenAI API isn't affected. See
+[GPT-5.5 retirement](https://learn.chatgpt.com/docs/models#gpt-55-retirement) for migration guidance.
+
 Pricing options
 
 **Free** ($0 /month):
 
 Explore Codex capabilities on quick coding tasks.
 
+- GPT-6 Luna at Standard speed in the desktop app, subject to rollout
+
 [Get Free](https://chatgpt.com/plans/free/)
 
 **Go** ($8 /month):
 
 Use Codex for lightweight coding tasks.
+
+- GPT-6 Luna at Standard speed in the desktop app, subject to rollout
 
 [Get Go](https://chatgpt.com/plans/go)
 
@@ -1250,9 +1316,7 @@ Power a few focused coding sessions each week.
 - Codex on the web, in the CLI, in the IDE extension, and on iOS
 - Cloud-based integrations like automatic code review and Slack
   integration
-- The GPT-5.6 model family, including Sol, Terra, and Luna
-- GPT-5.6 Luna for higher usage limits on lighter-weight or high-volume
-  workloads
+- GPT-6 Sol and GPT-6 Luna
 - Flexibly extend usage with [ChatGPT credits](#credits-overview)
 - Other [ChatGPT features](https://chatgpt.com/pricing) as part of the
   Plus plan
@@ -1265,11 +1329,7 @@ Choose 5x or 20x higher rate limits than Plus.
 
 Everything in Plus and:
 
-- Access to GPT-5.3-Codex-Spark (research preview), a fast Codex model
-  for day-to-day coding tasks
 - 5x or 20x more Codex usage than Plus\*
-- Unlimited ChatGPT Voice on the $200/month tier; tasks still draw from
-  your Codex usage budget
 - Other [ChatGPT features](https://chatgpt.com/pricing) as part of the
   Pro plan
 
@@ -1346,11 +1406,6 @@ invitation.
 
 #### Frequently asked questions
 
-#### How much does Sites cost?
-
-[Sites](https://learn.chatgpt.com/docs/sites) is included with eligible ChatGPT plans during public
-beta. Availability depends on your plan, region, and workspace settings.
-
 #### What are the usage limits for my plan?
 
 The number of messages you can send depends on the model used, size and
@@ -1363,15 +1418,7 @@ Tasks that look similar can consume different amounts of your allowance. Model
 choice, context, reasoning, tool use, retrieval, and caching all affect usage,
 so prompt length alone isn't a reliable estimate.
 
-Choose the GPT-5.6 model that best fits your work:
-
-- **Sol** is built for the hardest work—complex reasoning, ambiguous problems,
-  advanced coding, and high-stakes decisions.
-- **Terra** is the everyday workhorse for production tasks, reporting, document
-  analysis, coding, and work that requires sound judgment.
-- **Luna** is optimized for fast, high-volume work such as routing,
-  classification, extraction, support, background automation, and focused coding
-  tasks.
+For model recommendations, see [Models](https://learn.chatgpt.com/docs/models).
 
 The estimates below show local messages per five-hour period. Cloud chats on
 ChatGPT plans use GPT-5.6 Sol and may use more of your allowance than local
@@ -1396,6 +1443,22 @@ and reset times.
       25-225
       100-900
       5-45
+
+        [Usage-based](https://platform.openai.com/docs/pricing)
+
+      GPT-6 Sol
+      15-150
+      70-700
+      300-3,000
+      15-150
+
+        [Usage-based](https://platform.openai.com/docs/pricing)
+
+      GPT-6 Luna
+      350-3,000
+      1,750-14,000
+      7,000-56,000
+      350-3,000
 
         [Usage-based](https://platform.openai.com/docs/pricing)
 
@@ -1466,33 +1529,26 @@ Speed configurations increase credit consumption for all applicable models, so
 they also use included limits faster. Fast mode consumes credits at a higher
 rate for supported models. See [Speed](https://learn.chatgpt.com/docs/agent-configuration/speed) for supported models and
 rates. Image generations also use included limits ~3-5x faster on average,
-depending on image quality and size. GPT-5.3-Codex-Spark is in research preview
-for ChatGPT Pro users only, and isn't available in the API at launch. Because it
-runs on specialized low-latency hardware, usage is governed by a separate usage
-limit that may adjust based on demand.
+depending on image quality and size.
 
-#### ChatGPT Voice in Desktop
+#### How much does Sites cost?
 
-ChatGPT Voice on desktop uses a separate, plan-dependent allowance measured in
-rolling five-hour windows. Tasks started through Voice use your existing Codex
-usage budget. ChatGPT notifies you when you reach either limit.
+[Sites](https://learn.chatgpt.com/docs/sites) is included with eligible ChatGPT plans during public
+beta. Availability depends on your plan, region, and workspace settings.
 
-GPT-Live manages the live conversation. When you use Voice in an existing
-Codex task, the task's selected model handles the work. See
-[ChatGPT Voice](https://learn.chatgpt.com/docs/features/voice#start-talking) for availability and setup.
+#### How much does Voice cost?
 
-- **Plus:** Approximately 15–30 minutes
-- **Pro 5x ($100/month):** Approximately 1–2.5 hours
-- **Pro 20x ($200/month):** Unlimited voice access
-- **Business:** Approximately 45 minutes
-- **Enterprise / Edu (legacy):** Approximately 45 minutes
+Voice in Desktop uses your existing Codex usage budget at $0.05 per
+minute.
 
-Unlimited voice access doesn't make Codex tasks unlimited. Tasks started through
-ChatGPT Voice continue to use your existing Codex usage budget.
+GPT-Live manages the live conversation. The model handling your task is billed
+separately at its standard token rates. Voice and tasks share your plan's usage
+limits.
 
-For Business, Edu, and Enterprise workspaces with credit-based or pay-as-you-go
-billing, Desktop voice costs approximately 6 credits per minute. ChatGPT Voice
-in Desktop is not available via API Key currently.
+For Business, Edu, and Enterprise workspaces with credit-based billing, desktop
+voice costs 1.25 credits per minute. This rate also applies when Plus and Pro
+users spend additional credits. ChatGPT Voice in Desktop isn't available via API
+key.
 
 #### What happens when you hit usage limits?
 
@@ -1506,9 +1562,6 @@ credits to continue working without needing to upgrade their existing plan.
 Business, Edu, and Enterprise plans with [flexible
 pricing](https://help.openai.com/en/articles/11487671-flexible-pricing-for-the-enterprise-edu-and-business-plans)
 can purchase additional workspace credits to continue working.
-
-If you are approaching usage limits, you can also switch to a smaller model to
-make your usage limits last longer.
 
 All users may also run extra local chats using an API key, with usage charged at
 [standard API rates](https://platform.openai.com/docs/pricing).
@@ -1548,11 +1601,16 @@ or agreement.
 
 #### Token rates
 
-The token rates below are quoted in credits per million input tokens, cached
-input tokens, and output tokens. [Learn more about
+The rates below are for Standard speed, quoted in credits per million input
+tokens, cached input tokens, and output tokens. [Learn more about
 tokens](https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them).
 
-Fast mode applies a 2.5x multiplier to Astra's Standard rate.
+Codex credit billing has no separate cache-write charge. API-key usage follows
+[API pricing](https://developers.openai.com/api/docs/pricing).
+
+GPT-5.6 Sol, Terra, and Luna rates remain unchanged. Credit prices alone don't determine
+included subscription usage; check your
+[usage dashboard](#where-can-i-see-my-current-usage-limits) for current limits.
 
 A small subset of Enterprise customers should continue using the legacy rate
 card until we migrate you to the new token-based pricing. For more information,
@@ -1571,6 +1629,16 @@ sales](https://chatgpt.com/contact-sales?utm_internal_source=openai_developers_c
         250 credits
         25 credits
         1,250 credits
+
+        GPT-6 Sol
+        50 credits
+        5 credits
+        250 credits
+
+        GPT-6 Luna
+        2.5 credits
+        0.25 credits
+        12.5 credits
 
         GPT-5.6 Sol
         100 credits
@@ -1597,6 +1665,11 @@ sales](https://chatgpt.com/contact-sales?utm_internal_source=openai_developers_c
         0.5 credits
         30 credits
 
+        GPT-Rosalind-Research
+        125 credits
+        12.5 credits
+        625 credits
+
         GPT-5.5
         125 credits
         12.50 credits
@@ -1612,10 +1685,6 @@ sales](https://chatgpt.com/contact-sales?utm_internal_source=openai_developers_c
         1.875 credits
         113 credits
 
-        GPT-5.3-Codex-Spark
-
-          research preview
-
         GPT-Image-2 (image)
         200 credits
         50 credits
@@ -1628,8 +1697,10 @@ sales](https://chatgpt.com/contact-sales?utm_internal_source=openai_developers_c
 
           GPT-5.6 usage averages 5-30 credits per message.
 
-          Fast mode consumes credits at a higher rate for supported models. See
-          Speed for rates.
+          Fast mode uses 2.5x the Standard credit rate for GPT-6 Astra, Sol, and
+          Luna where available. See
+          Speed for details and
+          other models.
 
           Daybreak access requires [Trusted Access for
           Cyber](https://learn.chatgpt.com/docs/cyber-safety#trusted-access-for-cyber) approval.
@@ -1637,10 +1708,6 @@ sales](https://chatgpt.com/contact-sales?utm_internal_source=openai_developers_c
           separate approval and provisioning.
 
 _GPT-5.6 Sol’s promotional pricing is available at least through November 21, 2026._
-
-Speed configurations will increase credit consumption for all models that apply.
-Fast mode consumes credits at a higher rate for supported models. See
-[Speed](https://learn.chatgpt.com/docs/agent-configuration/speed) for supported models and rates.
 
 [Learn more about credits in ChatGPT Plus and
 Pro.](https://help.openai.com/en/articles/12642688)
@@ -1674,9 +1741,6 @@ tips to maximize your limits:
 - **Limit the number of MCP servers you use.** Every
   [MCP](https://learn.chatgpt.com/docs/extend/mcp) server adds more context to your messages and uses
   more of your limit. Disable MCP servers when you don’t need them.
-- **Switch to a smaller model for routine tasks.** Using GPT-5.6 Terra or
-  GPT-5.6 Luna can extend your local-message usage limits, depending on the
-  model you switch from.
 
 For guidance on choosing and scoping tasks, see [Use Work
 efficiently](https://learn.chatgpt.com/docs/prompting#use-work-efficiently).
@@ -1684,7 +1748,7 @@ efficiently](https://learn.chatgpt.com/docs/prompting#use-work-efficiently).
 #### Feature availability
 
 - Feature is currently limited to only specific regions. Check the
-  individual feature documentation to learn more about geo restrictions.
+  individual feature documentation to learn more about geographic restrictions.
 
   † Some first party plugins are not available.
 
@@ -1810,7 +1874,7 @@ A good default is to include four things in your prompt:
 
 This helps Codex stay scoped, make fewer assumptions, and produce work that's easier to review.
 
-Choose a reasoning level based on how hard the task is and test what works best for your workflow. Different users and tasks work best with different settings.
+Start with **Medium** for GPT-6 Sol, **High** for GPT-6 Luna, or **Light** for GPT-6 Astra (`low` in configuration). Adjust based on the task and the result. See [Models](https://learn.chatgpt.com/docs/models) for available reasoning levels.
 
 - Low for faster, well-scoped tasks
 - Medium or High for more complex changes or debugging
@@ -2141,27 +2205,30 @@ reasoning effort. To balance intelligence, speed, and price for each task,
 request a specific model or reasoning effort in your prompt,
 configure `[agents]` defaults in `config.toml`, or set `model` and
 `model_reasoning_effort` directly in the custom agent file.
-For example, use `gpt-5.6-terra` for fast scans or a higher-effort `gpt-5.6` configuration for more demanding reasoning.
+For example, use `gpt-6-luna` for fast scans or a higher-effort `gpt-6-sol` configuration for more demanding reasoning.
 
 For most tasks in Codex, start with
-`gpt-5.6`. Use
-`gpt-5.6-terra` when you want
-a faster, lower-cost option for lighter subagent work.
+`gpt-6-sol`. Use
+`gpt-6-luna` when you want a faster, lower-cost option for lighter subagent
+work.
 
 #### Model choice
 
-- **`gpt-5.6`**: Start here for demanding agents. It's strongest for ambiguous, multi-step work that needs planning, tool use, validation, and follow-through across a larger context.
-- **`gpt-5.6-terra`**: Use for agents that favor speed and efficiency over depth, such as exploration, read-heavy scans, large-file review, or processing supporting documents. It works well for parallel workers that return distilled results to the main agent.
-- **`gpt-5.6-luna`**: Use for fast, narrowly scoped agents handling clear, repeatable, or high-volume work.
+- **`gpt-6-sol`**: Start here for demanding agents. It's strongest for ambiguous, multi-step work that needs planning, tool use, validation, and follow-through across a larger context.
+- **`gpt-6-luna`**: Use for fast, narrowly scoped agents handling clear, repeatable, or high-volume work.
 
 #### Reasoning effort (`model_reasoning_effort`)
+
+For explicit model settings, start with `medium` for GPT-6 Sol, `high` for
+GPT-6 Luna, or `low` for GPT-6 Astra. Adjust for the task using a level the
+selected model supports.
 
 - **`ultra`**: Use for the deepest reasoning when the selected model supports
   it.
 - **`max`** and **`xhigh`**: Use for especially demanding reasoning when the
   selected model supports these levels.
 - **`high`**: Use when an agent needs to trace complex logic, check assumptions, or work through edge cases (for example, reviewer or security-focused agents).
-- **`medium`**: A balanced default for most agents.
+- **`medium`**: Balances speed and depth; the starting point for GPT-6 Sol.
 - **`low`**: Use when the task is straightforward and speed matters most.
 
 Higher reasoning effort increases response time and token usage, but it can improve quality for complex work. For details, see [Models](https://learn.chatgpt.com/docs/models), [Config basics](https://learn.chatgpt.com/docs/config-file/config-basic), and [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference).
@@ -2339,8 +2406,8 @@ max_concurrent_threads_per_session = 8
 ```toml
 name = "pr_explorer"
 description = "Read-only codebase explorer for gathering evidence before changes are proposed."
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Stay in exploration mode.
@@ -2354,8 +2421,8 @@ Prefer fast search and targeted file reads over broad scans.
 ```toml
 name = "reviewer"
 description = "PR reviewer focused on correctness, security, and missing tests."
-model = "gpt-5.6-terra"
-model_reasoning_effort = "high"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 Review code like an owner.
@@ -2369,8 +2436,8 @@ Lead with concrete findings, include reproduction steps when possible, and avoid
 ```toml
 name = "docs_researcher"
 description = "Documentation specialist that uses the docs MCP server to verify APIs and framework behavior."
-model = "gpt-5.6-luna"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Use the docs MCP server to confirm APIs, options, and version-specific behavior.
@@ -2404,8 +2471,8 @@ max_concurrent_threads_per_session = 6
 ```toml
 name = "code_mapper"
 description = "Read-only codebase explorer for locating the relevant frontend and backend code paths."
-model = "gpt-5.6-luna"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = """
 Map the code that owns the failing UI flow.
@@ -2418,8 +2485,8 @@ Identify entry points, state transitions, and likely files before the worker sta
 ```toml
 name = "browser_debugger"
 description = "UI debugger that uses browser tooling to reproduce issues and capture evidence."
-model = "gpt-5.6-terra"
-model_reasoning_effort = "high"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """
 Reproduce the issue in the browser, capture exact steps, and report what the UI actually does.
@@ -2437,8 +2504,8 @@ startup_timeout_sec = 20
 ```toml
 name = "ui_fixer"
 description = "Implementation-focused agent for small, targeted fixes after the issue is understood."
-model = "gpt-5.3-codex-spark"
-model_reasoning_effort = "medium"
+model = "gpt-6-luna"
+model_reasoning_effort = "high"
 developer_instructions = """
 Own the fix once the issue is reproduced.
 Make the smallest defensible change, keep unrelated files untouched, and validate only the behavior you changed.
@@ -2689,6 +2756,10 @@ details.
 
 #### Fast mode
 
+GPT-5.5 retires from ChatGPT, ChatGPT Work, and Codex on all plans on
+October 14, 2026. The OpenAI API isn't affected. See
+[GPT-5.5 retirement](https://learn.chatgpt.com/docs/models#gpt-55-retirement) for migration guidance.
+
 Codex offers the ability to increase the speed of the model for increased
 credit consumption.
 
@@ -2696,8 +2767,8 @@ For GPT-5.6, GPT-5.5, and GPT-5.4, Fast mode increases model speed by 1.5x.
 GPT-5.6 and GPT-5.5 consume credits at 2.5x the Standard rate; GPT-5.4 consumes
 credits at 2x the Standard rate.
 
-GPT-6 Astra Fast mode consumes credits at 2.5x the Standard rate where
-available. See [Models](https://learn.chatgpt.com/docs/models) for model availability and
+For GPT-6 Astra, GPT-6 Sol, and GPT-6 Luna, Fast mode consumes credits at
+2.5x the Standard rate where available. See [Models](https://learn.chatgpt.com/docs/models) for model availability and
 [Pricing](https://learn.chatgpt.com/docs/pricing#token-rates) for token rates.
 
 Use `/fast on`, `/fast off`, or `/fast status` in the CLI to change or inspect
@@ -2708,15 +2779,6 @@ sign in with ChatGPT. Fast mode is a ChatGPT credit feature. With an API key,
 Codex uses API token pricing instead, and ChatGPT credit multipliers don't
 apply. API Priority processing has its own billing rate; for GPT-5.6, it costs
 2x the Standard API token rate.
-
-#### Codex-Spark
-
-GPT-5.3-Codex-Spark is a separate fast, less-capable Codex model optimized for
-near-instant, real-time coding iteration. Unlike fast mode, which speeds up a
-supported model at a higher credit rate, Codex-Spark is its own model choice
-and has its own usage limits.
-
-During research preview Codex-Spark is only available for ChatGPT Pro subscribers.
 
 ### Developers
 
@@ -2767,8 +2829,6 @@ Add Codex to products, systems, and automated workflows.
 - [Codex SDK](https://learn.chatgpt.com/docs/codex-sdk): Control Codex programmatically from your application.
 
 - [App Server](https://learn.chatgpt.com/docs/app-server): Integrate with the protocol that powers Codex clients.
-
-- [MCP Server](https://learn.chatgpt.com/docs/mcp-server): Expose Codex capabilities through Model Context Protocol.
 
 - [GitHub Action](https://learn.chatgpt.com/docs/github-action): Run Codex from GitHub Actions workflows.
 
@@ -2891,7 +2951,7 @@ Learn more about [plugins](https://learn.chatgpt.com/docs/plugins).
 
 Choose [GPT-6 Astra](https://learn.chatgpt.com/docs/models#gpt-6-astra) for demanding work that needs
 careful reasoning, visual judgment, or a polished final file. For simpler tasks,
-consider Sol, Terra, or Luna. Select from the models
+consider Sol or Luna. Select from the models
 available in your model selector and check [plan usage](https://learn.chatgpt.com/docs/pricing)
 before starting a large task.
 
@@ -3027,6 +3087,57 @@ or is ready for review.
 - [Projects and chats](https://learn.chatgpt.com/docs/projects)
 - [Scheduled tasks](https://learn.chatgpt.com/docs/automations)
 - [Sandbox and permissions](https://learn.chatgpt.com/docs/sandboxing)
+
+### Model selection
+
+Source: [Model selection](https://learn.chatgpt.com/docs/model-selection.md)
+
+import {
+ModelOverview,
+ModelRecommender,
+} from "@components/react/models/ModelSelection.react";
+
+#### Meet the models
+
+Availability, tools, reasoning settings, and usage limits differ by product and
+model version. Check the [models available in ChatGPT](https://learn.chatgpt.com/docs/models) or the
+[API model catalog](https://developers.openai.com/api/docs/models).
+
+#### Find the right model for your workflow
+
+Choose your work and task and get a recommendation.
+
+#### How to think about models and reasoning effort
+
+Luna is the most cost-efficient model, while Astra is our state-of-the-art,
+most powerful model. If cost and latency aren't a concern, you can default to
+Astra. To reduce costs or latency, use the guidance below to choose a model
+and reasoning effort for your needs.
+
+Luna is our most efficient model, while Astra is our state-of-the-art, most
+powerful model. If you don't need to think about usage or how long it takes to
+complete a task, you can default to Astra. To optimize usage, use the guidance
+below to choose a model and reasoning effort for your needs.
+
+#### Experiment
+
+Treat the guidance on this page as a starting point. The best way to find the right
+model for your workflow is to experiment with different models and reasoning
+settings to see what works.
+
+Start by considering:
+
+- **How often does your workflow run?** A frequent automation makes usage and cost
+  add up faster than an occasional project.
+- **How quickly do you need the result?** A task you're waiting on may need a
+  faster setting than one that runs overnight.
+- **How will you use the output?** A draft for your review may need less polish
+  than something you'll share externally.
+- **How important is the quality of the result?** Depending on your use case or
+  industry, you might want to use a stronger model to put an emphasis on quality.
+
+If you can, experiment using the same inputs to compare results and keep the
+lightest setting that meets your quality bar.
 
 ### Prompting
 
@@ -4159,8 +4270,8 @@ different model and effort when the task requires them:
 
 ```bash
 npx @openai/codex-security scan "$REPOSITORY" \
-  --model gpt-5.6-terra \
-  --effort high
+  --model gpt-6-sol \
+  --effort medium
 ```
 
 Supported effort levels are `minimal`, `low`, `medium`, `high`, `xhigh`, and
@@ -4865,14 +4976,14 @@ Codex configuration value.
 To select a different model and reasoning effort without writing TOML:
 
 ```bash
-npx @openai/codex-security scan . --model gpt-5.6-terra --effort high
+npx @openai/codex-security scan . --model gpt-6-sol --effort medium
 ```
 
 Quote string values passed through `--codex` so the TOML parser receives a
 string:
 
 ```bash
-npx @openai/codex-security scan . --codex 'model="gpt-5.6-terra"'
+npx @openai/codex-security scan . --codex 'model="gpt-6-sol"'
 ```
 
 #### `codex-security install-hook`
@@ -4920,7 +5031,7 @@ repositories interactively. This flow requires a GitHub CLI sign-in.
 To choose a model and reasoning effort during interactive discovery:
 
 ```bash
-npx @openai/codex-security bulk-scan --model gpt-5.6-terra --effort high
+npx @openai/codex-security bulk-scan --model gpt-6-sol --effort medium
 ```
 
 For a prepared repository list, provide a CSV and `--output-dir`:
@@ -5763,7 +5874,7 @@ Source: [Codex Security plugin changelog](https://learn.chatgpt.com/docs/securit
 
 Use this changelog to see what changed in the Codex Security plugin.
 
-**Latest plugin version:** `0.1.20`.
+**Latest plugin version:** `0.1.24`.
 
 Check the plugin version in your current Codex environment before you use a
 feature from a newer release.
@@ -5771,6 +5882,114 @@ feature from a newer release.
 Changelog entries follow the plugin version, not the package version. CLI and
 SDK users can run `npx @openai/codex-security info --json` to check the
 package and bundled plugin versions together.
+
+#### 0.1.24 (September 9, 2026)
+
+#### Check Daybreak access from the plugin
+
+- Check Daybreak access before a scan in desktop and CLI sessions signed in
+  with ChatGPT, without connecting the separate Codex Security Access app.
+- Show an enrollment link when access isn't granted, or a warning when access
+  can't be verified. Sessions that use only an API key can't verify account
+  access.
+- Continue the scan after the advisory, including when access is unavailable
+  or the check fails. The advisory doesn't grant access or control whether
+  the scan runs.
+
+#### Verify security fixes when requested
+
+- Run `$codex-security:verify-fix` only when you explicitly request verification
+  of a security fix.
+- Keep ordinary fix implementation, code review, and test requests in their
+  existing workflows instead of automatically switching to the verification
+  result format.
+
+#### 0.1.23 (September 8, 2026)
+
+#### Assess the risk of a proposed patch
+
+- Use `$codex-security:assess-patch-risk` to review a proposed change against
+  exact revisions and source evidence.
+- Assess impact, likelihood, and the difficulty of recovery separately from
+  regression protection, and identify evidence gaps that affect the recommendation.
+- Receive an advisory recommendation to merge, revise, or make no change.
+  The assessment doesn't merge code or replace repository approval rules.
+
+#### Recover retained results from failed scans
+
+- Recover valid saved findings from a selected failed scan when you request
+  it, without repeating the scan.
+- Browse saved scans and findings without automatically recovering every
+  failed scan. Recovery preserves the failed outcome and isn't available for
+  running, completed, or canceled scans.
+- Preserve distinct findings when workers reuse candidate identifiers, and
+  keep valid evidence and root-cause details during recovery.
+
+#### Make scan setup and reports clearer
+
+- See individual readiness checks and their blocking or warning details in
+  standard and change scans.
+- Keep a scan available for continuation while you decide how to resolve a
+  setup issue. Persistent configuration changes in interactive sessions still
+  require your approval.
+- See the configured include and exclude paths in deep-scan reports.
+- Keep context updates scoped to the selected scan without replacing saved
+  workspace defaults.
+
+#### Improve startup and GitHub triage
+
+- Allow up to two minutes for the plugin's tool server to start, and pass
+  OpenAI API-key authentication to deep-scan workers.
+- Honor an explicitly selected GitHub connector when importing findings for
+  triage, and ask before switching to another connection or account.
+
+#### 0.1.22 (August 25, 2026)
+
+#### Verify existing security fixes
+
+- Use `$codex-security:verify-fix` to check whether an existing patch resolves
+  a reported security finding without changing repository files or issue
+  trackers.
+- Receive a `fixed`, `still_vulnerable`, or `inconclusive` result for each
+  finding, with supporting evidence and validation limits.
+- Add an investigation before patching and a review after patching to the
+  finding-remediation workflow.
+
+#### Preserve findings when scans stop
+
+- Save findings and pending candidates as deep-scan workers make progress.
+- Keep accepted worker findings represented when later result consolidation
+  omits them or fails.
+- Keep valid results from failed, canceled, or interrupted scans while
+  preserving their non-success outcome and incomplete coverage.
+- Carry the supplied scan prompt into deep-scan workers, and preserve supported
+  filesystem deny rules from the parent session.
+
+#### Improve Windows and filesystem compatibility
+
+- Match equivalent Windows paths in scan history and load Windows system
+  configuration from the expected location.
+- Block scan artifact paths that Windows would interpret ambiguously.
+- Save scan results on filesystems that don't support hard links.
+- Read UTC scan timestamps consistently on Python 3.10.
+
+#### 0.1.21 (August 21, 2026)
+
+#### Install and start the plugin more reliably
+
+- Install the plugin without requiring the optional Codex Security Access app.
+  The hosted access check remains advisory.
+- Use Codex's bundled Node.js runtime when starting the plugin, including on
+  Windows installations where packaged executables can't run directly.
+- Read Git metadata as UTF-8 on Windows.
+
+#### Preserve finding details and improve SARIF exports
+
+- Keep validation, attack-path evidence, and root-cause details consistent
+  across saved findings, reports, and the Security workbench.
+- Export readable rule names, remediation guidance, CWE tags, and security
+  severity for GitHub code scanning while preserving finding identities,
+  fingerprints, and source locations.
 
 #### 0.1.20 (August 17, 2026)
 
@@ -6738,8 +6957,8 @@ const security = new CodexSecurity({
   pluginPath: "/path/to/codex-security-plugin",
   pythonPath: "/path/to/python",
   codexOverrides: {
-    model: "gpt-5.6-terra",
-    model_reasoning_effort: "high",
+    model: "gpt-6-sol",
+    model_reasoning_effort: "medium",
   },
 });
 ```
@@ -7985,14 +8204,14 @@ choose another model and effort for a CSV campaign:
 npx @openai/codex-security bulk-scan repositories.csv \
   --output-dir /path/outside/repositories/security-scans \
   --workers 4 \
-  --model gpt-5.6-terra \
-  --effort high
+  --model gpt-6-sol \
+  --effort medium
 ```
 
 The same options work during interactive repository discovery:
 
 ```bash
-npx @openai/codex-security bulk-scan --model gpt-5.6-terra --effort high
+npx @openai/codex-security bulk-scan --model gpt-6-sol --effort medium
 ```
 
 Supported effort levels are `minimal`, `low`, `medium`, `high`, and `xhigh`.
@@ -9400,6 +9619,8 @@ automatic approval review can still be part of a task that monitoring later paus
 
 #### Network access
 
+For Codex cloud, see [agent internet access](https://learn.chatgpt.com/docs/cloud/internet-access) to enable full internet access or a domain allow list.
+
 For the ChatGPT desktop app, Codex CLI, or IDE extension, the default `workspace-write` sandbox mode keeps network access turned off unless you enable it in your configuration:
 
 ```toml
@@ -9773,7 +9994,7 @@ To try it:
 
 1. Install Visual Studio Code and the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers).
 2. Copy the Codex example `.devcontainer` setup into your repository, or start from the Codex repository directly.
-3. In VS Code, run **Dev Containers: Open Folder in Container...** and select `.devcontainer/devcontainer.secure.json`.
+3. In VS Code, run `Dev Containers: Open Folder in Container...` and select `.devcontainer/devcontainer.secure.json`.
 4. After the container starts, open a terminal and run `codex`.
 
 You can also start the container from the CLI:
@@ -11263,8 +11484,15 @@ They cannot access privileged browser APIs such as `window.alert`,
 `window.prompt`, `window.confirm`, or `navigator.clipboard`. The CSP controls
 standard `fetch` requests. Nested frames are unavailable by default; enable
 specific origins in resource CSP metadata such as
-`_meta.ui.csp.frameDomains`. Work with your OpenAI partner if you need a
-specific domain added to the allowlist.
+`_meta.ui.csp.frameDomains`. Plugins can embed pages from their MCP server's
+own registrable domain, including existing editors and admin interfaces. See
+the [iframe policy](https://developers.openai.com/plugins/app-guidelines#iframes-and-embedded-pages) for
+domain ownership, required justifications, and review requirements.
+
+The widget CSP restricts which iframe destinations can load. An embedded
+page uses its own CSP; the widget `connectDomains` and `resourceDomains`
+allowlists do not restrict network requests made inside that page. Keep iframe
+origins specific and include the embedded experience in your security review.
 
 Server-side code has no network restrictions beyond what your hosting environment enforces. Follow normal best practices for outbound calls (TLS verification, retries, timeouts).
 
@@ -11651,7 +11879,7 @@ for examples and approval tradeoffs.
 | `memories.min_rate_limit_remaining_percent`                   | `number`                                                                                                                                                      |         | Minimum remaining percentage required in Codex rate-limit windows before memory generation starts. Defaults to `25` and is clamped to `0`-`100`.                                                                                                                                                                                                                                                                                                                                            |
 | `memories.min_rollout_idle_hours`                             | `number`                                                                                                                                                      |         | Minimum idle time before a thread is considered for memory generation. Defaults to `6` and is clamped to `1`-`48`.                                                                                                                                                                                                                                                                                                                                                                          |
 | `memories.use_memories`                                       | `boolean`                                                                                                                                                     |         | When `false`, Codex skips injecting existing memories into future sessions. Defaults to `true`.                                                                                                                                                                                                                                                                                                                                                                                             |
-| `model`                                                       | `string`                                                                                                                                                      |         | Model to use (e.g., `gpt-5.5`).                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `model`                                                       | `string`                                                                                                                                                      |         | Model to use (e.g., `gpt-6-sol`).                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `model_auto_compact_token_limit`                              | `number`                                                                                                                                                      |         | Token threshold that triggers automatic history compaction (unset uses model defaults).                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `model_auto_compact_token_limit_scope`                        | `total \| body_after_prefix`                                                                                                                                  |         | Controls whether the auto-compaction threshold counts the full active context (`total`, the default) or only growth after the carried compaction-window prefix (`body_after_prefix`).                                                                                                                                                                                                                                                                                                       |
 | `model_catalog_json`                                          | `string (path)`                                                                                                                                               |         | Optional path to a JSON model catalog loaded on startup. A selected `$CODEX_HOME/profile-name.config.toml` profile file can override this per profile.                                                                                                                                                                                                                                                                                                                                      |
@@ -11682,7 +11910,7 @@ for examples and approval tradeoffs.
 | `model_providers..wire_api`                                   | `responses`                                                                                                                                                   |         | Protocol used by the provider. `responses` is the only supported value, and it is the default when omitted.                                                                                                                                                                                                                                                                                                                                                                                 |
 | `model_providers.amazon-bedrock.aws.profile`                  | `string`                                                                                                                                                      |         | AWS profile name used by the built-in `amazon-bedrock` provider.                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `model_providers.amazon-bedrock.aws.region`                   | `string`                                                                                                                                                      |         | AWS region used by the built-in `amazon-bedrock` provider.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `model_reasoning_effort`                                      | `minimal \| low \| medium \| high \| xhigh`                                                                                                                   |         | Adjust reasoning effort for supported models (Responses API only; `xhigh` is model-dependent).                                                                                                                                                                                                                                                                                                                                                                                              |
+| `model_reasoning_effort`                                      | `string`                                                                                                                                                      |         | Reasoning effort advertised by the selected model, such as `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`. Available levels depend on the model and client.                                                                                                                                                                                                                                                                                                                            |
 | `model_reasoning_summary`                                     | `auto \| concise \| detailed \| none`                                                                                                                         |         | Select reasoning summary detail or disable summaries entirely.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `model_supports_reasoning_summaries`                          | `boolean`                                                                                                                                                     |         | Force Codex to send or not send reasoning metadata.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `model_verbosity`                                             | `low \| medium \| high`                                                                                                                                       |         | Optional GPT-5 Responses API verbosity override; when unset, the selected model/preset default is used.                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -11735,7 +11963,7 @@ for examples and approval tradeoffs.
 | `permissions..workspace_roots`                                | `table`                                                                                                                                                       |         | Profile-defined workspace roots that receive `:workspace_roots` filesystem rules alongside the session's runtime workspace roots.                                                                                                                                                                                                                                                                                                                                                           |
 | `permissions..workspace_roots.`                               | `boolean`                                                                                                                                                     |         | Opt a path into the profile's workspace root set when `true`. Disabled entries remain inactive.                                                                                                                                                                                                                                                                                                                                                                                             |
 | `personality`                                                 | `none \| friendly \| pragmatic`                                                                                                                               |         | Default communication style for models that advertise `supportsPersonality`; can be overridden per thread/turn or via `/personality`.                                                                                                                                                                                                                                                                                                                                                       |
-| `plan_mode_reasoning_effort`                                  | `none \| minimal \| low \| medium \| high \| xhigh`                                                                                                           |         | Plan-mode-specific reasoning override. When unset, Plan mode uses its built-in preset default.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `plan_mode_reasoning_effort`                                  | `string`                                                                                                                                                      |         | Plan-mode-specific reasoning override using a level supported by the selected model. When unset, Plan mode uses its built-in preset default.                                                                                                                                                                                                                                                                                                                                                |
 | `plugins..enabled`                                            | `boolean`                                                                                                                                                     |         | Enable or disable a local-marketplace plugin using a `plugin-name@marketplace-name` key. Read from the effective merged config; trusted-project settings can override user, cloud-managed, and system defaults. Marketplace refresh can install or refresh configured plugins even when disabled. This does not override workspace-managed enabled states.                                                                                                                                  |
 | `plugins..mcp_servers..default_tools_approval_mode`           | `auto \| prompt \| writes \| approve`                                                                                                                         |         | Default approval behavior for tools on a plugin-provided MCP server.                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `plugins..mcp_servers..disabled_tools`                        | `array`                                                                                                                                                       |         | Deny list applied after `enabled_tools` for a plugin-provided MCP server.                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -11833,9 +12061,9 @@ stricter approval behavior Codex derives when a project uses
 `approval_policy = "untrusted"`.
 
 The `[models.new_thread]` table supplies managed defaults, not enforcement.
-Explicit launch choices from dedicated CLI flags or `--config` overrides take
-precedence. An explicit model or reasoning-effort override skips both managed
-model fields; `service_tier` is independent.
+If you explicitly override the model or reasoning effort with `--model`,
+`--config`, or `--profile`, Codex ignores both `model` and
+`model_reasoning_effort` in `[models.new_thread]`. `service_tier` is independent.
 
 The browser requirements cover three separate surfaces. `in_app_browser`
 controls the browser pane that a person opens and uses directly. `browser_use`
@@ -11973,11 +12201,11 @@ from either one wins.
 | `mcp_servers..identity.url.match`                            | `exact \| prefix \| regex`             |         | Match operation for the configured MCP server URL.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `mcp_servers..identity.url.value`                            | `string`                               |         | Value used by an `exact` or `prefix` URL matcher.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `model_catalog_json`                                         | `string (path)`                        |         | Enforce the JSON model catalog Codex uses at startup.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `models`                                                     | `table`                                |         | Managed model defaults for new threads. These values take priority over user and project defaults, but an explicit selection for the new thread can override them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `models.new_thread`                                          | `table`                                |         | Defaults to apply when a new local thread starts. Each model setting is optional.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `models.new_thread.model`                                    | `string`                               |         | Default model for new threads. An explicit `--model` or model/reasoning `--config` override takes precedence.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `models.new_thread.model_reasoning_effort`                   | `string`                               |         | Default reasoning effort for new threads. An explicit model or reasoning-effort override skips both managed model fields.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `models.new_thread.service_tier`                             | `string`                               |         | Default service tier for new threads. An explicit service-tier override takes precedence independently of the model fields.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `models`                                                     | `table`                                |         | Contains the `[models.new_thread]` table.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `models.new_thread`                                          | `table`                                |         | Optional defaults to apply when a new local thread starts. They take priority over user and project defaults, but can be superseded by explicit overrides.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `models.new_thread.model`                                    | `string`                               |         | Default model for new threads. An explicit override of either the model or reasoning effort causes both fields to be ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `models.new_thread.model_reasoning_effort`                   | `string`                               |         | Default reasoning effort for new threads. An explicit override of either the model or reasoning effort causes both fields to be ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `models.new_thread.service_tier`                             | `string`                               |         | Default service tier for new threads. An explicit service-tier override causes this field to be ignored.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `permissions`                                                | `table`                                |         | Admin-defined permission profiles keyed by profile name. Uses the same profile fields as `config.toml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `permissions.`                                               | `table`                                |         | Admin-defined permission profile. The name can't start with `:`, use the reserved name `filesystem`, or duplicate a profile from a loaded config. Uses the same profile fields as `config.toml`; see the Permissions guide for the complete profile schema.                                                                                                                                                                                                                                                                                                                                                                             |
 | `permissions.filesystem.deny_read`                           | `array`                                |         | Admin-enforced filesystem read denials. Entries can be paths or glob patterns, and users cannot weaken them with local config.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -12073,8 +12301,6 @@ name itself is not a fixed Codex environment variable.
 For automation secret handling, see
 [Use API key auth](https://learn.chatgpt.com/docs/non-interactive-mode#use-api-key-auth).
 For access token setup, see [Access tokens](https://learn.chatgpt.com/docs/enterprise/access-tokens).
-For workload identity setup, see
-[Workload identity federation](https://learn.chatgpt.com/docs/enterprise/workload-identity).
 
 #### Diagnostics
 
@@ -12118,8 +12344,8 @@ profile file; don't nest them under `[profiles.profile-name]`.
 
 ```toml
 # ~/.codex/deep-review.config.toml
-model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
 approval_policy = "on-request"
 model_catalog_json = "/Users/me/.codex/model-catalogs/deep-review.json"
 ```
@@ -12152,10 +12378,10 @@ Examples:
 
 ```shell
 # Dedicated flag
-codex --model gpt-5.6-terra
+codex --model gpt-6-sol
 
 # Generic key/value override (value is TOML, not JSON)
-codex --config model='"gpt-5.6-terra"'
+codex --config model='"gpt-6-sol"'
 codex --config sandbox_workspace_write.network_access=true
 codex --config 'shell_environment_policy.include_only=["PATH","HOME"]'
 ```
@@ -12264,7 +12490,7 @@ A model provider defines how Codex connects to a model (base URL, wire API, auth
 Define additional providers and point `model_provider` at them:
 
 ```toml
-model = "gpt-5.6-terra"
+model = "gpt-6-sol"
 model_provider = "proxy"
 
 [model_providers.proxy]
@@ -13077,11 +13303,6 @@ runners. For general OpenAI API calls, continue to use Platform API keys.
 For setup steps, permissions, rotation, and revocation guidance, see
 [Access tokens](https://learn.chatgpt.com/docs/enterprise/access-tokens).
 
-If your cloud platform, CI system, or cluster already issues short-lived
-workload tokens, use
-[workload identity federation](https://learn.chatgpt.com/docs/enterprise/workload-identity)
-instead of storing an OpenAI credential.
-
 If your environment already provides a Codex access token, pipe it to the CLI:
 
 ```shell
@@ -13312,7 +13533,7 @@ Here are a few options people change most often:
 Choose the model Codex uses by default in the CLI and IDE.
 
 ```toml
-model = "gpt-5.6"
+model = "gpt-6-sol"
 ```
 
 #### Approval prompts
@@ -13373,7 +13594,7 @@ web_search = "cached"  # default; serves results from the web search cache
 Tune how much reasoning effort the model applies when supported.
 
 ```toml
-model_reasoning_effort = "high"
+model_reasoning_effort = "medium"
 ```
 
 #### Communication style
@@ -13479,10 +13700,30 @@ For lifecycle hook configuration, see [Hooks](https://learn.chatgpt.com/docs/hoo
 
 Source: [Models](https://learn.chatgpt.com/docs/models.md)
 
+#### GPT-5.5 retirement
+
+On October 14, 2026, GPT-5.5 will retire from ChatGPT, ChatGPT Work, and Codex
+on all plans, including consumer, Business, Enterprise, and Edu plans. This
+retirement does not apply to the OpenAI API.
+
+If you use Codex with ChatGPT sign-in, choose an available replacement before
+October 14:
+
+- On Plus, Pro, Business, Enterprise, and Edu plans, choose **GPT-6 Sol**
+  (`gpt-6-sol`) when available.
+- On Free and Go plans, choose **GPT-6 Luna** (`gpt-6-luna`) in the desktop app
+  when available.
+
+Replace `gpt-5.5` in workspace defaults, saved model settings, managed
+configurations, custom agents, scheduled tasks, and scripts that select a model.
+
+See [workspace model availability](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability#prepare-for-the-gpt-55-retirement)
+for administrator guidance.
+
 #### Choose a model
 
-In the ChatGPT desktop app, use the model and reasoning control beneath the
-composer to choose an available model and adjust its reasoning effort.
+In Work or Codex in the ChatGPT desktop app, use the model and reasoning control
+beneath the composer to choose an available model and adjust its reasoning effort.
 
 Higher reasoning effort can improve results for complex tasks, but it takes
 longer and uses more tokens. Start with the default effort and increase it when
@@ -13515,13 +13756,13 @@ reasoning effort. You can also choose a model when you launch Codex with
 `--model` or its `-m` alias:
 
 ```bash
-codex --model gpt-5.6
+codex --model gpt-6-sol
 ```
 
 The same option works with non-interactive runs. For example:
 
 ```bash
-codex exec -m gpt-5.6 "Review the current changes"
+codex exec -m gpt-6-sol "Review the current changes"
 ```
 
 Higher reasoning effort can improve results for complex tasks, but it takes
@@ -13549,20 +13790,30 @@ making it useful for larger tasks that can be split across subagents.
 
 #### Recommended models
 
+GPT-6 Sol and GPT-6 Luna bring improved coding, factual reliability, and
+communication to lower-cost models. Use Sol for complex coding and agentic
+workflows, and Luna for focused, repeatable tasks. Select `gpt-6-sol` or
+`gpt-6-luna` in your model picker or saved configuration when available.
+
+In ChatGPT, GPT-6 Sol and GPT-6 Luna are available in Work and Codex. They
+aren't available in Chat.
+
+GPT-5.6 Sol, GPT-5.6 Terra, and GPT-5.6 Luna remain available during the rollout. Selecting a
+new model doesn't change workspace permissions or grant access to it.
+
 Availability depends on the rollout, your sign-in method, and your client.
 See [pricing](https://learn.chatgpt.com/docs/pricing) for plan access and usage, and
-[workspace model availability](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability#gpt-6-astra-in-enterprise)
+[workspace model availability](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability)
 for Enterprise access.
 
 Start with the default Power setting available to your account. Move toward
 **Smarter** for deeper reasoning or **Faster** for faster, lower-cost work.
-Open **Advanced** when you want `gpt-5.6-luna` or a specific model, reasoning
-effort, or speed.
+Open **Advanced** to choose a specific model, reasoning effort, or speed.
 
-The picker illustrations show GPT-5.6 controls. For eligible Pro, Business
-($100), and Enterprise accounts, the Astra rollout updates the Power options
-to Terra Light, Sol Light, Sol Medium, Astra Light, Astra Medium, and Astra
-Extra High. Options can differ by plan and rollout stage.
+The six Power presets shown are Luna High, Sol Light (the starting
+preset), Sol Medium, Astra Light, Astra Medium, and Astra Extra High. Some paid plans omit
+Astra Extra High. Advanced controls are illustrative; available options
+and defaults vary by plan, client, workspace settings, and rollout.
 
 #### Experimental context management
 
@@ -13577,10 +13828,10 @@ To opt in, set `features.context_management.experimental_mode = true` in your
 for the setting and [configuration basics](https://learn.chatgpt.com/docs/config-file/config-basic)
 for the file location. Workspace requirements still apply.
 
-#### Choosing Astra, Sol, Terra, and Luna
+#### Choosing Astra, Sol, and Luna
 
 Choose **Astra** when a task needs the strongest capability across multiple
-steps and tools. **Sol** offers depth and polish, **Terra** suits everyday work,
+steps and tools. **Sol** suits everyday work and complex coding,
 and **Luna** suits clear, repeatable tasks.
 
 #### Where each model shines
@@ -13590,21 +13841,19 @@ and **Luna** suits clear, repeatable tasks.
   Give it the sources, templates, constraints, and checks that define a useful
   result. Astra is better at asking focused questions and incorporating your
   guidance while keeping the original goal and constraints in view.
-- **Sol, for complex, open-ended work.** Choose Sol for ambiguous, difficult, or
+- **Sol, for everyday and complex work.** Choose Sol for ambiguous, difficult, or
   high-value tasks that need extra analysis, judgment, or polish, such as
   complex code changes, deep research, or polished documents. For narrower
   tasks, define what done looks like to keep the work focused.
-- **Terra, the pragmatic all-rounder.** Choose Terra for everyday work that
-  needs strong reasoning and tool use when you do not need Sol's full depth. It
-  is a natural starting point for work you previously gave GPT-5.5.
 - **Luna, for clear, repeatable tasks.** Choose Luna for specific, high-volume
   tasks when you know what a good result looks like, such as extraction,
   classification, transformation, and structured summaries.
 
 #### Pick a reasoning effort
 
-Use the lowest reasoning effort that produces the result you need. Increase it
-for tasks that need more planning, analysis, or checking.
+Start with **Medium** for Sol, **High** for Luna, or **Light** for Astra.
+In configuration, Astra's Light setting is `low`. Increase the effort for tasks
+that need more planning, analysis, or checking.
 
 - **Light** in the ChatGPT desktop app, ChatGPT Work on the web, and IDE extension, or **Low** in the
   CLI, suits quick, well-scoped tasks.
@@ -13612,8 +13861,8 @@ for tasks that need more planning, analysis, or checking.
 - **High** and **Extra High** suit difficult work with multiple steps, sources,
   or tradeoffs.
 
-There is no exact mapping from GPT-5.5 reasoning efforts to GPT-5.6. Try a
-familiar task at a lower setting and adjust based on the result.
+Reasoning efforts don't map exactly between model generations. Try a familiar task
+at a lower setting and adjust based on the result.
 
 #### Know when to use Max or Ultra
 
@@ -13625,19 +13874,15 @@ don't see Max in your options, you'll have to enable it in your app settings.
 separate parts of a complex task in parallel. Choose it when you can divide the
 work into meaningful parts. Most tasks do not need Max or Ultra.
 
-If Ultra doesn't appear in the desktop app's model slider, go to
-**Settings** > **Configuration**, then turn on **Ultra in model picker slider**.
+GPT-6 Luna supports reasoning efforts up to **Max**, but not **Ultra**.
+
+If your model supports Ultra but it doesn't appear in the desktop app's model
+slider, go to **Settings** > **Configuration**, then turn on
+**Ultra in model picker slider**.
 
 #### Other models
 
 When you sign in with ChatGPT, Codex works best with the recommended models listed above.
-
-    GPT-5.4 and GPT-5.4 mini retire from Codex on August 31, 2026.
-
-If you sign in with ChatGPT, replace `gpt-5.4` with `gpt-5.6-terra` and
-`gpt-5.4-mini` with `gpt-5.6-luna` in saved configurations, custom agents, and
-scheduled tasks. The OpenAI API and Codex authenticated with your own API key
-aren't affected.
 
 #### View other models
 
@@ -13648,10 +13893,17 @@ future releases of Codex.
 
 #### Deprecated Codex models
 
-The `gpt-5.4` and `gpt-5.4-mini` models retire from Codex with ChatGPT sign-in
-on August 31, 2026. Replace `gpt-5.4` with `gpt-5.6-terra` and
-`gpt-5.4-mini` with `gpt-5.6-luna` in workspace defaults, saved model
-settings, managed configurations, custom agents, and scheduled tasks.
+GPT-5.5 retires from Codex with ChatGPT sign-in on October 14, 2026. Replace
+`gpt-5.5` with a model available to your account and client. See
+[GPT-5.5 retirement](https://learn.chatgpt.com/docs/models#gpt-55-retirement) for plan-specific
+replacements and the migration checklist.
+
+The `gpt-5.4` and `gpt-5.4-mini` models retired from Codex with ChatGPT sign-in
+on August 31, 2026. Replace `gpt-5.4` with `gpt-6-sol` and
+`gpt-5.4-mini` with `gpt-6-luna` when available to your plan and client.
+In Enterprise and Edu, an administrator must enable Luna first. Update workspace
+defaults, saved model settings, managed configurations, custom agents, and
+scheduled tasks with an available replacement.
 
 The `gpt-5.2` and `gpt-5.3-codex` models are already deprecated in Codex when
 you sign in with ChatGPT. Update scripts, configuration files, and
@@ -13669,7 +13921,7 @@ The ChatGPT desktop app, Codex CLI, and IDE extension use the same `config.toml`
 ChatGPT desktop app, Codex CLI, or IDE extension uses a recommended model.
 
 ```toml
-model = "gpt-5.6"
+model = "gpt-6-sol"
 ```
 
 #### Choose a model for cloud chats
@@ -13709,9 +13961,9 @@ Use the snippet below as a reference. Copy only the keys and sections you need i
 
 ################################################################################
 
-# Primary model used by Codex. Recommended example for most users: "gpt-5.6".
+# Primary model used by Codex. Recommended example for most users: "gpt-6-sol".
 
-model = "gpt-5.6"
+model = "gpt-6-sol"
 
 # Communication style for supported models. Allowed values: none | friendly | pragmatic
 
@@ -13719,7 +13971,7 @@ model = "gpt-5.6"
 
 # Optional model override for /review. Default: unset (uses current session model).
 
-# review_model = "gpt-5.6"
+# review_model = "gpt-6-sol"
 
 # Provider id selected from [model_providers]. Default: "openai".
 
@@ -13757,11 +14009,11 @@ model_provider = "openai"
 
 ################################################################################
 
-# Reasoning effort: minimal | low | medium | high | xhigh
+# Reasoning effort advertised by the selected model; supported levels vary by model and client.
 
 # model_reasoning_effort = "medium"
 
-# Optional override used when Codex runs in plan mode: none | minimal | low | medium | high | xhigh
+# Optional reasoning effort override for Plan mode; use a level supported by the selected model.
 
 # plan_mode_reasoning_effort = "high"
 
@@ -14037,11 +14289,11 @@ web_search = "cached"
 
 # Default model for spawned agents. An explicit spawn model takes precedence.
 
-# default_subagent_model = "gpt-5.6-terra"
+# default_subagent_model = "gpt-6-sol"
 
 # Default reasoning effort for spawned agents. An explicit spawn effort takes precedence.
 
-# default_subagent_reasoning_effort = "high"
+# default_subagent_reasoning_effort = "medium"
 
 # Record a model-visible message when an agent turn is interrupted. Default: true
 
@@ -14349,7 +14601,7 @@ show_tooltips = true
 
 # [tui.model_availability_nux]
 
-# "gpt-5.6-terra" = 1
+# "gpt-6-sol" = 1
 
 # Enable or disable analytics for this machine. When unset, Codex uses its default behavior.
 
@@ -14375,7 +14627,7 @@ enabled = true
 
 # "hide_gpt-5.1-codex-max_migration_prompt" = true
 
-# model_migrations = { "gpt-5.4" = "gpt-5.6-terra" }
+# model_migrations = { "gpt-5.4" = "gpt-6-sol" }
 
 ################################################################################
 
@@ -14757,7 +15009,7 @@ enabled = true
 
 # For example, a CI profile could live at $CODEX_HOME/ci.config.toml:
 
-# model = "gpt-5.6-terra"
+# model = "gpt-6-sol"
 
 # approval_policy = "on-request"
 
@@ -14940,7 +15192,7 @@ Package knowledge, connect services, and add capabilities.
 
 Install and update ChatGPT on a supported Linux desktop.
 
-- [ChatGPT desktop app](https://learn.chatgpt.com/docs/linux/linux-app): Install the Linux preview on Ubuntu, Debian, or Fedora.
+- [ChatGPT desktop app](https://learn.chatgpt.com/docs/linux/linux-app): Install the Linux preview on Ubuntu, Debian, Fedora, or Arch Linux.
 
 #### Windows
 
@@ -14958,7 +15210,7 @@ Source: [Personalize ChatGPT](https://learn.chatgpt.com/docs/personalize.md)
 
 Personalize ChatGPT so its responses and working style better match your
 preferences. You control which personalization features are enabled and can
-change them at any time in the ChatGPT desktop app settings.
+change them in settings. Available controls vary between web and desktop.
 
 #### Choose a personality
 
@@ -14974,6 +15226,22 @@ instructions are stored in your global `AGENTS.md` file. Projects and
 repositories can also provide their own instructions.
 
 [Learn how `AGENTS.md` instructions work](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+
+#### Match your writing style in Work
+
+In ChatGPT Work on the web, writing style uses your own writing from connected
+apps to help drafts sound like you.
+
+1. Open Set up writing style.
+2. Connect the available email, messaging, or document apps you want ChatGPT
+   to use. Available apps depend on your account and workspace.
+3. Select **Use writing style** to enable it. Connecting an app alone doesn't
+   complete setup.
+4. Ask Work to draft an email, message, or document.
+
+To turn it off, open **Settings > Personalization > Writing** on the web and
+disable **Reference my writing style**. You can return to setup from the same
+section.
 
 #### Carry context forward with memories
 
@@ -15037,7 +15305,7 @@ information.
 | `--enable`                                           | `feature`                                                     |         | Force-enable a feature flag (translates to `-c features.=true`). Repeatable.                                                                                                                                                |
 | `--image, -i`                                        | `path[,path...]`                                              |         | Attach one or more image files to the initial prompt. Separate multiple paths with commas or repeat the flag.                                                                                                               |
 | `--local-provider`                                   | `lmstudio \| ollama`                                          |         | Choose the local provider used with `--oss`, overriding `oss_provider` for this run.                                                                                                                                        |
-| `--model, -m`                                        | `string`                                                      |         | Override the model set in configuration (for example `gpt-5.6-terra`).                                                                                                                                                      |
+| `--model, -m`                                        | `string`                                                      |         | Override the model set in configuration (for example `gpt-6-sol`).                                                                                                                                                          |
 | `--no-alt-screen`                                    | `boolean`                                                     | `false` | Disable alternate screen mode for the TUI (overrides `tui.alternate_screen` for this run).                                                                                                                                  |
 | `--oss`                                              | `boolean`                                                     | `false` | Use a local open source model provider. Codex uses `--local-provider`, your configured `oss_provider`, or prompts you to choose between LM Studio and Ollama.                                                               |
 | `--profile, -p`                                      | `string`                                                      |         | Layer `$CODEX_HOME/profile-name.config.toml` on top of the base user config.                                                                                                                                                |
@@ -15045,7 +15313,7 @@ information.
 | `--remote-auth-token-env`                            | `ENV_VAR`                                                     |         | Read a bearer token from this environment variable and send it when connecting with `--remote`. Requires `--remote`; tokens are only sent over `wss://` URLs or local-only `ws://` URLs.                                    |
 | `--sandbox, -s`                                      | `read-only \| workspace-write \| danger-full-access`          |         | Select the sandbox policy for model-generated shell commands.                                                                                                                                                               |
 | `--search`                                           | `boolean`                                                     | `false` | Enable live web search (sets `web_search = "live"` instead of the default `"cached"`).                                                                                                                                      |
-| `--strict-config`                                    | `boolean`                                                     | `false` | Error when `config.toml` contains fields this Codex version does not recognize. Supported by runtime commands such as `codex`, `exec`, `review`, `resume`, `fork`, `app-server`, `mcp-server`, and `exec-server`.           |
+| `--strict-config`                                    | `boolean`                                                     | `false` | Error when `config.toml` contains fields this Codex version does not recognize. Supported by runtime commands such as `codex`, `exec`, `review`, `resume`, `fork`, `app-server`, and `exec-server`.                         |
 | `PROMPT`                                             | `string`                                                      |         | Optional text instruction to start the session. Omit to launch the TUI without a pre-filled message.                                                                                                                        |
 
 These options apply to the base `codex` command. Most propagate to commands;
@@ -15059,36 +15327,35 @@ The Maturity column uses feature maturity labels such as Experimental, Beta,
 Stable, and Deprecated. See [Feature Maturity](https://learn.chatgpt.com/docs/feature-maturity) for
 how to interpret these labels.
 
-| Key                                                                                                                          | Maturity       | Default | Details                                                                                                                                                                                                                                       |
-| ---------------------------------------------------------------------------------------------------------------------------- | -------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`codex`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-interactive)                                                       | `stable`       |         | Launch the terminal UI. Accepts the global flags above plus an optional prompt or image attachments.                                                                                                                                          |
-| [`codex app`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app)                                                           | `stable`       |         | Launch the ChatGPT desktop app on macOS or Windows. On macOS, Codex can open a workspace path; on Windows, Codex prints the path to open.                                                                                                     |
-| [`codex app-server`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app-server)                                             | `experimental` |         | Launch the Codex app server for local development or debugging over stdio, WebSocket, or a Unix socket.                                                                                                                                       |
-| [`codex apply`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-apply)                                                       | `stable`       |         | Apply the latest diff generated by a Codex cloud chat to your local working tree. Alias: `codex a`.                                                                                                                                           |
-| [`codex archive`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-archive-and-codex-unarchive)                               | `stable`       |         | Archive a saved interactive session by session ID or session name.                                                                                                                                                                            |
-| [`codex cloud`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-cloud)                                                       | `experimental` |         | Browse or execute Codex cloud chats from the terminal without opening the TUI. Alias: `codex cloud-tasks`.                                                                                                                                    |
-| [`codex completion`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-completion)                                             | `stable`       |         | Generate shell completion scripts for Bash, Zsh, Fish, or PowerShell.                                                                                                                                                                         |
-| [`codex debug app-server send-message-v2`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-app-server-send-message-v2) | `experimental` |         | Debug app-server by sending a single V2 message through the built-in test client.                                                                                                                                                             |
-| [`codex debug models`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-models)                                         | `experimental` |         | Print the raw model catalog Codex sees, including an option to inspect only the bundled catalog.                                                                                                                                              |
-| [`codex debug prompt-input`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-prompt-input)                             | `experimental` |         | Render the model-visible prompt input list as JSON, optionally with a prompt and images.                                                                                                                                                      |
-| [`codex delete`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-delete)                                                     | `stable`       |         | Permanently delete a saved interactive session by session ID or session name.                                                                                                                                                                 |
-| [`codex doctor`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-doctor)                                                     | `stable`       |         | Generate a diagnostic report for local installation, config, auth, runtime, Git, terminal, app-server, and thread inventory issues.                                                                                                           |
-| [`codex exec`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-exec)                                                         | `stable`       |         | Run Codex non-interactively. Alias: `codex e`. Stream results to stdout or JSONL and optionally resume previous sessions.                                                                                                                     |
-| [`codex execpolicy`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-execpolicy)                                             | `experimental` |         | Evaluate execpolicy rule files and see whether a command would be allowed, prompted, or blocked.                                                                                                                                              |
-| [`codex features`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-features)                                                 | `stable`       |         | List feature flags and persistently enable or disable them in `config.toml`.                                                                                                                                                                  |
-| [`codex fork`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-fork)                                                         | `stable`       |         | Fork a previous interactive session into a new chat, preserving the original transcript.                                                                                                                                                      |
-| [`codex login`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-login)                                                       | `stable`       |         | Authenticate Codex using ChatGPT OAuth, device auth, an API key, or an access token piped over stdin.                                                                                                                                         |
-| [`codex logout`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-logout)                                                     | `stable`       |         | Remove stored authentication credentials.                                                                                                                                                                                                     |
-| [`codex mcp`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-mcp)                                                           | `stable`       |         | Manage Model Context Protocol servers (list, add, remove, authenticate).                                                                                                                                                                      |
-| [`codex mcp-server`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-mcp-server)                                             | `deprecated`   |         | Deprecated interface for running Codex as an MCP server over stdio. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) instead. To call Codex from Claude Code, use the [Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc). |
-| [`codex plugin`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-plugin)                                                     | `stable`       |         | Install, list, and remove plugins from configured marketplace sources.                                                                                                                                                                        |
-| [`codex plugin marketplace`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-plugin-marketplace)                             | `stable`       |         | Add, list, upgrade, or remove plugin marketplaces from Git or local sources.                                                                                                                                                                  |
-| [`codex remote-control`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-remote-control)                                     | `experimental` |         | Run or manage remote control for the local app-server, or create a short-lived pairing code.                                                                                                                                                  |
-| [`codex resume`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-resume)                                                     | `stable`       |         | Continue a previous interactive session by ID or resume the most recent chat.                                                                                                                                                                 |
-| [`codex review`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-review)                                                     | `stable`       |         | Run a non-interactive review of uncommitted changes, a base branch diff, a commit, or custom review instructions.                                                                                                                             |
-| [`codex sandbox`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-sandbox)                                                   | `stable`       |         | Run arbitrary commands inside Codex-provided macOS, Linux, or Windows sandboxes.                                                                                                                                                              |
-| [`codex unarchive`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-archive-and-codex-unarchive)                             | `stable`       |         | Restore an archived interactive session by session ID or session name.                                                                                                                                                                        |
-| [`codex update`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-update)                                                     | `stable`       |         | Check for and apply a Codex CLI update when the installed release supports self-update.                                                                                                                                                       |
+| Key                                                                                                                          | Maturity       | Default | Details                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------- | -------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [`codex`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-interactive)                                                       | `stable`       |         | Launch the terminal UI. Accepts the global flags above plus an optional prompt or image attachments.                                      |
+| [`codex app`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app)                                                           | `stable`       |         | Launch the ChatGPT desktop app on macOS or Windows. On macOS, Codex can open a workspace path; on Windows, Codex prints the path to open. |
+| [`codex app-server`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-app-server)                                             | `experimental` |         | Launch the Codex app server for local development or debugging over stdio, WebSocket, or a Unix socket.                                   |
+| [`codex apply`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-apply)                                                       | `stable`       |         | Apply the latest diff generated by a Codex cloud chat to your local working tree. Alias: `codex a`.                                       |
+| [`codex archive`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-archive-and-codex-unarchive)                               | `stable`       |         | Archive a saved interactive session by session ID or session name.                                                                        |
+| [`codex cloud`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-cloud)                                                       | `experimental` |         | Browse or execute Codex cloud chats from the terminal without opening the TUI. Alias: `codex cloud-tasks`.                                |
+| [`codex completion`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-completion)                                             | `stable`       |         | Generate shell completion scripts for Bash, Zsh, Fish, or PowerShell.                                                                     |
+| [`codex debug app-server send-message-v2`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-app-server-send-message-v2) | `experimental` |         | Debug app-server by sending a single V2 message through the built-in test client.                                                         |
+| [`codex debug models`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-models)                                         | `experimental` |         | Print the raw model catalog Codex sees, including an option to inspect only the bundled catalog.                                          |
+| [`codex debug prompt-input`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-debug-prompt-input)                             | `experimental` |         | Render the model-visible prompt input list as JSON, optionally with a prompt and images.                                                  |
+| [`codex delete`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-delete)                                                     | `stable`       |         | Permanently delete a saved interactive session by session ID or session name.                                                             |
+| [`codex doctor`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-doctor)                                                     | `stable`       |         | Generate a diagnostic report for local installation, config, auth, runtime, Git, terminal, app-server, and thread inventory issues.       |
+| [`codex exec`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-exec)                                                         | `stable`       |         | Run Codex non-interactively. Alias: `codex e`. Stream results to stdout or JSONL and optionally resume previous sessions.                 |
+| [`codex execpolicy`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-execpolicy)                                             | `experimental` |         | Evaluate execpolicy rule files and see whether a command would be allowed, prompted, or blocked.                                          |
+| [`codex features`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-features)                                                 | `stable`       |         | List feature flags and persistently enable or disable them in `config.toml`.                                                              |
+| [`codex fork`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-fork)                                                         | `stable`       |         | Fork a previous interactive session into a new chat, preserving the original transcript.                                                  |
+| [`codex login`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-login)                                                       | `stable`       |         | Authenticate Codex using ChatGPT OAuth, device auth, an API key, or an access token piped over stdin.                                     |
+| [`codex logout`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-logout)                                                     | `stable`       |         | Remove stored authentication credentials.                                                                                                 |
+| [`codex mcp`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-mcp)                                                           | `stable`       |         | Manage Model Context Protocol servers (list, add, remove, authenticate).                                                                  |
+| [`codex plugin`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-plugin)                                                     | `stable`       |         | Install, list, and remove plugins from configured marketplace sources.                                                                    |
+| [`codex plugin marketplace`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-plugin-marketplace)                             | `stable`       |         | Add, list, upgrade, or remove plugin marketplaces from Git or local sources.                                                              |
+| [`codex remote-control`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-remote-control)                                     | `experimental` |         | Run or manage remote control for the local app-server, or create a short-lived pairing code.                                              |
+| [`codex resume`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-resume)                                                     | `stable`       |         | Continue a previous interactive session by ID or resume the most recent chat.                                                             |
+| [`codex review`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-review)                                                     | `stable`       |         | Run a non-interactive review of uncommitted changes, a base branch diff, a commit, or custom review instructions.                         |
+| [`codex sandbox`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-sandbox)                                                   | `stable`       |         | Run arbitrary commands inside Codex-provided macOS, Linux, or Windows sandboxes.                                                          |
+| [`codex unarchive`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-archive-and-codex-unarchive)                             | `stable`       |         | Restore an archived interactive session by session ID or session name.                                                                    |
+| [`codex update`](https://learn.chatgpt.com/docs/developer-commands?surface=cli#cli-codex-update)                                                     | `stable`       |         | Check for and apply a Codex CLI update when the installed release supports self-update.                                                   |
 
 #### Command details
 
@@ -15446,12 +15713,8 @@ with `name`, `root`, and optional `marketplaceSource`; upgrade JSON includes
 
 #### `codex mcp-server`
 
-`codex mcp-server` is deprecated. Use the [Codex app
-server](https://learn.chatgpt.com/docs/app-server) instead. To call Codex from Claude Code, use the
-[Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc),
-which uses the app server.
-
-For existing integrations, the command runs Codex as an MCP server over stdio so that other tools can connect. It inherits global configuration overrides and exits when the downstream client closes the connection.
+The `codex mcp-server` command and standalone `codex-mcp-server` binary have
+been removed. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) instead.
 
 #### `codex resume`
 
@@ -16081,13 +16344,15 @@ Removing a domain from the allowlist means ChatGPT asks again before using it.
 Removing a domain from the blocklist means ChatGPT can ask again instead of
 treating the domain as blocked.
 
-#### Allow for all sites If you select **Allow for all sites**, ChatGPT no longer asks for confirmation
+#### Allow for all sites
 
+If you select **Allow for all sites**, ChatGPT no longer asks for confirmation
 before using websites. Only choose this option if you trust ChatGPT to use any
 website open in the browser.
 
-#### Browser history Browser history can include sensitive telemetry, internal URLs, search terms,
+#### Browser history
 
+Browser history can include sensitive telemetry, internal URLs, search terms,
 and activity from browser sessions on signed-in devices. If you allow ChatGPT to
 access browser history, relevant history entries can become part of the context
 ChatGPT uses for the task. Malicious or misleading page content can increase the
@@ -16429,11 +16694,12 @@ code fonts. You can also share your custom theme with friends.
 #### Pets
 
 Pets are optional animated companions for the app. In **Settings > Pets**,
-choose a built-in or custom pet, then use `/pet`, **Wake Pet**, or
-**Tuck Away Pet** to control the floating overlay.
+choose a built-in or custom pet, then use `/pet`, **Show pet**, or **Hide pet**
+to control the floating overlay. Choose **Mini** to keep the chat controls
+visible without a pet.
 
-    See [Pets](https://learn.chatgpt.com/docs/pets?surface=app) to understand pet status, follow
-    activity across chats, or create your own pet.
+    See [Pets](https://learn.chatgpt.com/docs/pets?surface=app) to start chats, use voice, follow
+    activity, or create your own pet.
 
 #### Browser
 
@@ -16566,17 +16832,7 @@ speech into prompt text before sending it.
 
 #### Limits and troubleshooting
 
-Only one voice chat can be active across the ChatGPT desktop app at a time.
-Voice conversations use a separate, plan-dependent allowance measured in rolling
-five-hour windows. Tasks started through Voice continue to use your Codex usage
-budget. ChatGPT notifies you when you reach either limit. See [Voice pricing and
-limits](https://learn.chatgpt.com/docs/pricing#chatgpt-voice-in-desktop).
-
-If you can't start a voice chat, confirm that ChatGPT Voice is available for your
-plan, rollout, and workspace. Then check microphone permissions and whether a
-voice chat is already active in another app window. If screen context isn't
-available, check **Settings > Voice**, Appshots permissions, and your
-organization's restrictions.
+Only one voice chat can be active across the ChatGPT desktop app at a time. If you can't start a voice chat, confirm that ChatGPT Voice is available for your plan, rollout, and workspace. Then check microphone permissions and whether a voice chat is already active in another app window. If screen context isn't available, check **Settings > Voice**, Appshots permissions, and your organization's restrictions.
 
 ### CLI customization
 
@@ -17899,7 +18155,7 @@ completion still works before you queue the command.
 | [`/logout`](#sign-out-with-logout)                                                          | Sign out of Codex.                                              | Clear local credentials when using a shared machine.                                                       |
 | [`/mcp`](#list-mcp-tools-with-mcp)                                                          | List configured Model Context Protocol (MCP) tools.             | Check which external tools Codex can call during the session; add `verbose` for server details.            |
 | [`/mention`](#highlight-files-with-mention)                                                 | Attach a file to the chat.                                      | Point Codex at specific files or folders you want it to inspect next.                                      |
-| [`/model`](#set-the-active-model-with-model)                                                | Choose the active model (and reasoning effort, when available). | Switch between models such as `gpt-5.6-luna` and `gpt-5.6-terra` before running a task.                    |
+| [`/model`](#set-the-active-model-with-model)                                                | Choose the active model (and reasoning effort, when available). | Switch between models such as `gpt-6-luna` and `gpt-6-sol` before running a task.                          |
 | [`/fast`](#toggle-fast-mode-with-fast)                                                      | Toggle a Fast service tier when the model catalog exposes one.  | Turn the current model's Fast tier on or off and persist the selection.                                    |
 | [`/plan`](#switch-to-plan-mode-with-plan)                                                   | Switch to plan mode and optionally send a prompt.               | Ask Codex to propose an execution plan before implementation work starts.                                  |
 | [`/goal`](#set-or-view-a-task-goal-with-goal)                                               | Set, edit, pause, resume, view, or clear a task goal.           | Give Codex a persistent target to track while a larger task runs.                                          |
@@ -17937,7 +18193,7 @@ The following workflows keep your session on track without restarting Codex.
 
 1. Start Codex and open the composer.
 2. Type `/model` and press Enter.
-3. Choose a model such as `gpt-5.6-luna` or `gpt-5.6-terra` from the popup.
+3. Choose a model such as `gpt-6-luna` or `gpt-6-sol` from the popup.
 
 Expected: Codex confirms the new model in the transcript. Run `/status` to verify the change.
 
@@ -18944,8 +19200,9 @@ Appshots let you send the frontmost app window to a chat in ChatGPT. Use them wh
 you're actively working in another app on your computer and want to provide
 ChatGPT with your current context so it can help you with the task.
 
-Appshots are available in the ChatGPT desktop app on macOS. Press both Command
-keys, or your custom Appshots hotkey, to take one.
+Appshots are available in the ChatGPT desktop app on macOS and Windows. Press
+both Command keys on macOS or both Alt keys on Windows to take one. You can
+also configure a custom Appshots hotkey.
 
 #### What appshots capture
 
@@ -18961,7 +19218,7 @@ manually.
 
 #### When to use appshots
 
-Use appshots when ChatGPT needs context from a Mac app before it can act.
+Use appshots when ChatGPT needs context from another app before it can act.
 
 Examples:
 
@@ -18975,20 +19232,30 @@ Examples:
 #### Take an appshot
 
 1. Bring the app window you want to share to the front.
-2. Press both Command keys, or the custom hotkey you configured in ChatGPT
-   settings.
-3. Allow macOS permissions if ChatGPT asks.
+2. Press both Command keys on macOS or both Alt keys on Windows, or use the
+   custom hotkey you configured in ChatGPT settings.
+3. Complete the permission setup if ChatGPT asks.
 4. Ask ChatGPT to perform a task with the appshot.
 
 By default, ChatGPT starts a new chat for the appshot. If you interacted with a
 chat in the last 60 seconds, ChatGPT adds the appshot to that recent
 chat instead. Taking consecutive appshots adds them to the same chat.
 
-You can change the Appshots hotkey in the app settings.
+You can change the hotkey and **Appshot destination** in the app settings.
+Choose **Current chat** or **New chat** to set a destination, or keep
+**Automatic** for the behavior described here.
+
+#### Use appshots from the floating controls
+
+On macOS, when the [floating pet controls](https://learn.chatgpt.com/docs/pets?surface=app#app-send-appshots-to-your-pet)
+are open and the main ChatGPT window is in the background, **Automatic** starts
+a new chat from those controls with the appshot. This also works when you select
+**Mini** as your pet. Complete Appshots permission setup in the main app
+first. On Windows, Appshots open in the main app.
 
 #### Permissions and safety
 
-ChatGPT may ask for permissions before it can take appshots:
+On macOS, ChatGPT may ask for these permissions before it can take appshots:
 
 - **Screen & System Audio Recording** lets ChatGPT capture an image of the
   frontmost window.
@@ -19003,9 +19270,9 @@ with ChatGPT.
 
 #### Limits and troubleshooting
 
-Appshots are available in the ChatGPT desktop app on macOS. If you resume a chat
-in the CLI that already contains an appshot, the attachment is part of the chat
-history, but the CLI can't create a new appshot.
+Appshots require the ChatGPT desktop app on macOS or Windows. If you resume a
+chat in the CLI that already contains an appshot, the attachment is part of
+the chat history, but the CLI can't create a new appshot.
 
 For some apps and websites, including Google Docs, Gmail, Google Sheets, and
 Google Slides, ChatGPT may receive only the visible screenshot and may not receive
@@ -19013,7 +19280,9 @@ the full document or off-screen text. In ChatGPT Work or Codex, ChatGPT can use 
 matching installed plugin to access the relevant app content and help with your
 request.
 
-If appshots don't work:
+If appshots don't work, update the desktop app, check the configured hotkey,
+and confirm that your organization allows Appshots. On macOS, also check
+permissions:
 
 1. Open **System Settings > Privacy & Security**.
 2. Check **Screen & System Audio Recording** and **Accessibility** for Codex
@@ -19299,21 +19568,58 @@ appearance, not how ChatGPT completes tasks.
 
 #### Use a floating pet
 
-In the ChatGPT desktop app, a pet can float above other app windows and help
-you follow activity across your chats.
+In the ChatGPT desktop app on macOS and Windows, a pet can float above other
+app windows. Use the controls below it to start a chat by typing or speaking,
+and follow activity while you work in other apps.
 
 #### Choose and wake a pet
 
 1. Open the profile menu at the bottom of the app and select **Pets**. You can
    also open [**Settings**](codex://settings) and go to **Pets**.
-2. Choose a built-in or custom pet.
-3. Enter `/pet`, or open the command menu and select **Wake Pet**.
+2. Choose a built-in or custom pet, or select **Mini** to show the chat controls
+   without a pet. If you haven't created a custom pet yet, select **Create pet**
+   first.
+3. Enter `/pet`, or open the command menu and select **Show pet**.
+   You can also right-click the pet and select **Hide** to hide it.
 
-Select **Tuck Away Pet** in **Settings > Pets** or the command menu, or enter
-`/pet` again, to hide the pet. Your selection and the pet's position persist
-when you reopen the app.
+To change your pet's size, select **Customize** in **Settings > Pets** and adjust
+**Pet size**. Select **Reset** to restore the default size.
 
 When you select a custom pet, it also appears in your **Profile** view.
+
+#### Show or hide the floating controls
+
+With the desktop app running, use the global shortcut to show the controls and
+focus Quick Chat:
+
+| Platform | Default shortcut  |
+| -------- | ----------------- |
+| macOS    | **Option+Space**  |
+| Windows  | **Windows+Alt+P** |
+
+You can change **Show pet** in **Settings > Keyboard shortcuts**. Pressing the
+shortcut again keeps the controls open and focuses Quick Chat.
+
+To hide the controls, right-click the pet and select **Hide**, select **Hide pet**
+in the command menu or **Settings > Pets**, or enter `/pet` again. Your pet
+selection and position persist when you reopen the app.
+If the controls aren't available, update the app and check whether your
+workspace allows pets.
+
+#### Start a chat
+
+1. Move the pointer over the controls below your pet and select the pencil icon.
+2. Enter your request and press **Enter** to send it. Use `@` to add context
+   and `$` to choose a skill.
+3. Select the bell icon to follow progress in your threads. Select a thread to
+   open the full conversation in ChatGPT, or select the chevron to collapse
+   your threads.
+
+A chat started from these controls is outside a project. To use a project's
+context, start the chat from that project in the main app.
+
+To speak instead, select the voice icon. See
+[ChatGPT Voice](https://learn.chatgpt.com/docs/features/voice) for voice availability and controls.
 
 #### Understand pet status
 
@@ -19325,21 +19631,34 @@ When you select a custom pet, it also appears in your **Profile** view.
 | **Blocked**     | A chat failed or encountered a system error.             |
 
 When more than one chat has activity, the pet prioritizes chats that need
-input, followed by blocked, ready, and running chats. Open the activity tray to
-choose a chat.
+input, followed by blocked, ready, and running chats. Select the bell icon to
+show your threads, then choose a thread to open its conversation. Select the
+chevron to collapse your threads.
 
-Select the pet to return to ChatGPT, or select an activity to open its chat.
 The activity tray is separate from [system
-notifications](https://learn.chatgpt.com/docs/notifications?surface=app).
+notifications](https://learn.chatgpt.com/docs/notifications?surface=app#app-configure-desktop-notifications).
+
+#### Send Appshots to your pet
+
+On macOS, press both **Command** keys at the same time while using an app to
+take an [Appshot](https://learn.chatgpt.com/docs/appshots). If your pet is visible and the main ChatGPT
+window is in the background, the appshot goes to your pet and starts a new chat.
+This also works when **Mini** is selected.
+
+Set **Appshot destination** to **Automatic** in settings and authorize Appshots
+permissions in the main app before using this shortcut.
+
+On Windows, Appshots open in the main ChatGPT app.
 
 #### Follow Computer Use
 
 On macOS, the [Computer Use](https://learn.chatgpt.com/docs/computer-use) picture-in-picture window can
-attach to an awake pet. Move the pet, and the window follows.
+attach to your pet. Move the pet, and the window follows. If your pet is hidden,
+sending the picture-in-picture window to it shows the pet automatically.
 
 #### Create a custom pet
 
-1. Open **Settings > Pets** and select **Create your own pet**.
+1. Open **Settings > Pets** and select **Create pet**.
 2. The app installs the bundled `hatch-pet` skill, reloads skills, and opens a
    new chat.
 3. Describe the pet you want and send the prompt.
@@ -19974,9 +20293,38 @@ untrusted input.
 In the ChatGPT desktop app, ask for current information in a chat. ChatGPT records
 search activity with the other tool calls in the transcript.
 
+#### Research a topic in Work
+
+Use the Deep research plugin in the desktop app for an investigation across
+multiple sources and a report you can review.
+
+1. Switch to **Work** and open [**Plugins**](https://learn.chatgpt.com/docs/plugins?surface=app).
+2. Select **Deep research**. Install or enable it if needed, then select
+   **Try now** to start a Work chat.
+3. Describe the question, scope, and result you need. Include relevant files
+   or connected app context.
+4. Review the report and its sources, then ask follow-up questions in the chat.
+
+Plugin availability depends on your account and workspace settings.
+
 In ChatGPT web, ask for current information or sources. Search results and
 citations appear in the chat when ChatGPT uses web search. Workspace
 settings can limit whether search is available.
+
+#### Research a topic in Work
+
+Use deep research in Work for a question that needs investigation across
+multiple sources and a report you can review.
+
+1. Start a chat in **Work**.
+2. Open the **+** menu and select **Deep research**, if it's available for
+   your account and workspace.
+3. Describe the question, scope, and result you need. Include relevant files
+   or connected app context.
+4. Review the report and its sources, then ask follow-up questions in the chat.
+
+For example: "Research three approaches to reducing food waste in office
+cafeterias. Compare the evidence, costs, and implementation requirements."
 
 In the CLI, pass `--search` to fetch live results for one run:
 
@@ -20812,6 +21160,13 @@ Declare the exact domains the component connects to or loads resources from:
 Nested frames are blocked by default. Keep each allowlist as narrow as possible.
 The plugin review process checks the declared policy against the UI behavior.
 
+You can embed an existing editor or admin interface from your MCP server's own
+registrable domain. For example, a server at `https://api.example.com/mcp` can
+declare `https://app.example.com` in `frameDomains`. Provide the required
+justification at submission and follow the
+[iframe policy](https://developers.openai.com/plugins/app-guidelines#iframes-and-embedded-pages), including
+its restrictions on shared hosting and its review requirements.
+
 Component UI templates are the recommended path for production.
 
 During development you can rebuild the component bundle whenever your React code changes and hot-reload the server.
@@ -21204,6 +21559,231 @@ Both Python and TypeScript MCP software development kits include helpers so you 
 
 - [Python](https://github.com/modelcontextprotocol/python-sdk?tab=readme-ov-file#authentication)
 - [TypeScript](https://github.com/modelcontextprotocol/typescript-sdk?tab=readme-ov-file#proxy-authorization-requests-upstream)
+
+#### Support multiple accounts
+
+Multi-account lets users connect more than one account to the same plugin—for example, personal and work accounts. OpenAI routes each tool call using the selected connection’s authenticated credentials. Users can connect multiple accounts without a profile tool. To help users distinguish connections and recognize the same profile after reconnection, provide an authenticated profile tool with a stable ID and useful display metadata.
+
+#### How multi-account works for users
+
+Users can connect additional accounts from the plugin’s settings page. All connected accounts are available to the model, which selects the relevant account or accounts when invoking tools based on the user’s request. Each tool call uses the selected account’s credentials and permissions.
+
+#### Improve account identification
+
+To help OpenAI recognize connected profiles and show useful labels:
+
+- Provide an authenticated profile tool that returns an opaque ID uniquely and stably identifying the profile represented by the request’s credentials. This lets OpenAI recognize the same profile across reconnections and distinguish it from other profiles. A field named `id` is useful for this only if its value meets those guarantees.
+- Designate the profile tool in MCP metadata so OpenAI can discover which tool to call for authenticated profile information.
+
+When profile information is needed, OpenAI discovers the designated tool at runtime, calls it with the connection’s credentials, and validates the response before using the profile data. Without a profile tool, users can still connect accounts, but account labels, recognition, or duplicate detection may be less reliable. If you declare a profile tool, return a valid identity; an invalid response can prevent account connection.
+
+#### Define a stable profile identity
+
+A profile identifies the identity represented by the request’s authenticated credentials. Your service defines which profiles can be connected independently; this contract does not prescribe your service’s organization or authorization model.
+
+Return an opaque profile ID that is unique within your app. The same profile must retain its ID across token refresh and reconnection; distinct profiles must have distinct IDs. OpenAI compares these IDs without interpreting their contents.
+
+Use an existing immutable, opaque provider ID when it identifies the full profile. Otherwise, assign an opaque ID once, persist its association with that profile, and retrieve the same ID on future requests. Keep any internal relationships in your service; do not encode names, email addresses, or organizational relationships into the returned ID.
+
+Your `id` must:
+
+- Be a non-empty, non-whitespace string. Serialize numeric provider IDs as strings.
+- Remain the same for the same profile across token refresh, reconnect, and scope upgrades.
+- Differ for distinct profiles that can connect through the app.
+- Remain unchanged when the profile’s email, name, or display label changes.
+- Never be reassigned to a different profile after deletion.
+
+Do not generate a new ID per login, token, session, or tool call. Keep email and editable names in display metadata: an email address that can change or be reassigned cannot serve as the stable profile ID. For Google OIDC, use the stable `sub` rather than the email claim; Google documents that email may change while `sub` remains unchanged and is never reused. See Google identity documentation.
+
+Preserve existing profile IDs when updating your integration. A display-name change, new token, or new connection must not create a new profile identity.
+
+#### Implement and declare your profile tool
+
+Expose an authenticated, read-only tool that accepts an empty argument object and returns the current profile. The tool may be named `get_profile`, `whoami`, or another name; its metadata identifies it as the profile tool for runtime discovery. The response must satisfy the identity requirements below so OpenAI can use it correctly.
+
+- Resolve identity from the request’s validated credentials.
+- Make the operation read-only and available with the normal connection’s permissions.
+- Return exactly one profile: the profile represented by the current request’s credentials.
+- Do not require the caller to supply a user ID, email, or account selector.
+- On authentication failure, return the appropriate auth error instead of a placeholder ID or another account’s profile.
+
+The profile response must conform to this JSON Schema:
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Opaque profile identifier, unique within this app and unchanged across token refresh, reconnection, and display-metadata changes. Never reassigned to another profile."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name for the authenticated profile."
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address for display; not used as the profile identity."
+    },
+    "nickname": {
+      "type": "string",
+      "description": "A useful label that helps users distinguish connected profiles."
+    }
+  },
+  "required": ["id"],
+  "additionalProperties": false
+}
+```
+
+The response must contain a non-empty, non-whitespace string `id`. Display fields are optional. The tool’s metadata tells OpenAI where to retrieve profile information; the response identifies the profile represented by the current credentials.
+
+Schema validation checks whether a response has the structure and field types needed for profile handling. Your service must also guarantee ID uniqueness, stability, and correct credential scoping; neither metadata nor a passing schema check proves those behavioral properties.
+
+Include `name`, `email`, and/or `nickname` when available so users can distinguish profiles. Omit unavailable optional values; do not invent them or add unrelated personal data. Put useful human-readable context in `nickname` rather than in the ID.
+
+Mark the tool with `_meta["openai/profile"]: true` and publish the profile response schema as its `outputSchema`. The marker tells OpenAI which tool supplies profile information; it does not enable the feature or grant eligibility. An absent or false marker means this tool is not designated as a profile source through this mechanism. Strings, numbers, and null are invalid marker values.
+
+```json
+{
+  "name": "get_profile",
+  "description": "Return the profile represented by this request's authenticated credentials. The opaque id is unique within this app and remains unchanged across token refresh, reconnection, and display-metadata changes.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "\\S",
+        "description": "Opaque profile identifier, unique within this app and unchanged across token refresh, reconnection, and display-metadata changes. Never reassigned to another profile."
+      },
+      "name": {
+        "type": "string",
+        "description": "Display name for the authenticated profile."
+      },
+      "email": {
+        "type": "string",
+        "description": "Email address for display; not used as the profile identity."
+      },
+      "nickname": {
+        "type": "string",
+        "description": "A useful label that helps users distinguish connected profiles."
+      }
+    },
+    "required": ["id"],
+    "additionalProperties": false
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "openWorldHint": false
+  },
+  "securitySchemes": [
+    {
+      "type": "oauth2",
+      "scopes": []
+    }
+  ],
+  "_meta": {
+    "openai/profile": true
+  }
+}
+```
+
+Use your integration’s actual OAuth scopes if profile access requires them. The declaration does not implement authentication; the server must validate credentials and enforce permissions. See [Implementing token verification](#implementing-token-verification) and the [tool reference](https://developers.openai.com/plugins/reference).
+
+Return the profile in `structuredContent` so it can be validated against `outputSchema`. For compatibility, also include the same profile serialized as JSON in a text content item:
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"id\":\"prf_8d7e4b19\",\"name\":\"Alex Chen\",\"email\":\"alex@example.com\",\"nickname\":\"Alex — Moonwaffle work\"}"
+    }
+  ],
+  "structuredContent": {
+    "id": "prf_8d7e4b19",
+    "name": "Alex Chen",
+    "email": "alex@example.com",
+    "nickname": "Alex — Moonwaffle work"
+  },
+  "isError": false
+}
+```
+
+Use a single JSON object with profile fields at the top level.
+
+**Already have a profile tool?** Keep its name, add the profile metadata declaration, and return the standard profile response. If the existing response has a different shape, adapt it on your server or expose a small wrapper tool that conforms to the schema. The standard integration path uses the same declaration and response shape for every app.
+
+#### Concrete example: Persistent Moonwaffle profiles
+
+Suppose Moonwaffle, a fictional service, lets Alex connect two profiles independently. Moonwaffle stores a different opaque ID for each profile. Request credentials resolve to one of those stored profiles, and the profile tool returns its existing ID.
+
+**Example stored profiles.** The labels can change; the identifiers remain the same:
+
+```text
+Alex — Moonwaffle personal: prf_42a9c6e0
+Alex — Moonwaffle work:     prf_8d7e4b19
+```
+
+These example IDs do not encode profile labels or internal relationships. They are persisted once per profile and reused across reconnection, token refresh, and changes to email or display name.
+
+**Build the response from the authenticated profile.** This JavaScript example shows handler logic you can connect to your MCP SDK. `loadAuthenticatedProfile` is your application’s integration code: it validates the request credentials, enforces their permissions, and retrieves the corresponding profile’s persisted ID and display metadata. `requestContext` comes from your server’s request handling; it is not a model-supplied tool argument.
+
+```javascript
+async function getProfile(requestContext) {
+  // Your auth/provider integration validates credentials and loads
+  // the existing profile. Auth failures use normal MCP auth handling.
+  const account = await loadAuthenticatedProfile(requestContext);
+  const id = account.profileId;
+
+  if (typeof id !== "string" || id.trim().length === 0) {
+    return {
+      isError: true,
+      content: [{ type: "text", text: "Profile identity unavailable." }],
+    };
+  }
+
+  // Return the persisted ID unchanged; do not generate an ID per call.
+  const profile = {
+    id,
+    ...(typeof account.name === "string" ? { name: account.name } : {}),
+    ...(typeof account.email === "string" ? { email: account.email } : {}),
+    ...(typeof account.nickname === "string"
+      ? { nickname: account.nickname }
+      : {}),
+  };
+
+  return {
+    isError: false,
+    structuredContent: profile,
+    content: [{ type: "text", text: JSON.stringify(profile) }],
+  };
+}
+```
+
+Register this handler with the metadata declaration and input/output schemas above. `loadAuthenticatedProfile` must resolve the same stored profile for equivalent credentials and after reconnection. It must not create a fresh profile ID for each OAuth grant or session. All other tools must use the request’s credentials to enforce the same profile’s permissions.
+
+**Verify identity behavior:**
+
+| Test                                                                | Expected result                                                      |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Moonwaffle work profile, called repeatedly                          | `prf_8d7e4b19` every time                                            |
+| The same profile after token refresh, reconnect, or a scope upgrade | `prf_8d7e4b19`                                                       |
+| The same profile after an email or display-label change             | `prf_8d7e4b19`; labels can change                                    |
+| Moonwaffle personal profile                                         | `prf_42a9c6e0`, distinct from the work profile                       |
+| The persisted profile ID is missing or blank                        | An error result; no invented identity or fallback to another profile |
+
+The identity guarantee must hold across all profiles and future changes to your integration. Preserve it independently of display metadata, token contents, and connection lifecycle events.
 
 #### Testing and rollout
 
@@ -21700,6 +22280,15 @@ model to decide whether a user has access.
 See [Authenticate users](https://developers.openai.com/plugins/build/auth) for OAuth discovery, security
 schemes, and authorization challenges.
 
+To improve the experience of using multiple accounts, expose an authenticated,
+read-only profile tool and mark it with `_meta["openai/profile"]: true`.
+OpenAI uses the profile information to identify connected accounts consistently
+and help users tell them apart. Resolve the profile from the request's validated
+credentials, and keep every tool call scoped to those credentials. Users can
+connect multiple accounts without a profile tool. See
+[Support multiple accounts](https://developers.openai.com/plugins/build/auth#support-multiple-accounts) for
+the schema and implementation example.
+
 #### Tool annotations and elicitation
 
 Set annotations according to actual behavior:
@@ -21896,7 +22485,8 @@ for optional files and directories.
 After it finishes:
 
 1. Review `.codex-plugin/plugin.json`.
-2. Check each bundled skill under `skills/`.
+2. Check each bundled skill under `skills/` against the
+   [instruction-following guidance](https://developers.openai.com/plugins/build/skills#review-instruction-following).
 3. Refresh ChatGPT or Codex and install the plugin from its local marketplace
    source.
 4. Test the plugin in a new conversation with representative requests.
@@ -22224,6 +22814,12 @@ following clear:
 Prefer one focused skill over a large collection of loosely related
 instructions. Split workflows when they have different triggers, inputs, or
 success criteria.
+
+#### Review instruction following
+
+When writing or importing skills for GPT-6 Astra, review the instruction-following guidance.
+Audit skills and supporting files for unclear or conflicting instructions, and
+make the priority of explicit user instructions over skill guidelines clear.
 
 #### Add supporting resources
 
@@ -22651,10 +23247,10 @@ or UI resources:
 5. Start a new conversation and rerun the affected tests.
 
 This refresh flow applies to MCP servers connected in developer mode.
-Published plugins with MCP use reviewed
-[metadata snapshots](https://developers.openai.com/plugins/deploy/submission#how-published-mcp-metadata-versions-work).
-To update published metadata, scan the server, submit a new version, and
-publish the approved version.
+Published plugins use
+[continuous review](https://developers.openai.com/plugins/deploy/app-review#continuous-review-and-tool-updates)
+for tool updates. Changes to submitted plugin information or imported skills
+still require a new version, review, and publication.
 
 Before packaging the plugin, confirm that:
 
@@ -26192,6 +26788,9 @@ people will install. Packaging gives the plugin a stable identity and tells
 ChatGPT and Codex which skills, MCP server connections, and other resources
 belong together.
 
+Before bundling skills, review the
+[instruction-following guidance](https://developers.openai.com/plugins/build/skills#review-instruction-following).
+
 For a portable Agent Plugins package, add `plugin.json` at the plugin root and
 declare the Agent Plugins schema. Depending on the plugin's architecture, its
 folder can also include:
@@ -26984,6 +27583,9 @@ skills into one installable experience.
 For example, a meeting follow-up plugin might include separate skills for
 drafting a recap, identifying action items, and preparing a customer email.
 
+When writing skill instructions, follow the
+[instruction-following guidance](https://developers.openai.com/plugins/build/skills#review-instruction-following).
+
 #### MCP servers
 
 Build an MCP server when your plugin must connect to a service, expose a
@@ -27289,14 +27891,26 @@ disparaging alternatives.
 
 #### Iframes and embedded pages
 
-Plugins with UI can opt in to iframe usage by setting `frameDomains` in the
-resource CSP (`_meta.ui.csp.frameDomains`), but we strongly encourage you to
-build the UI without this pattern. If you choose to use `frameDomains`, be
-aware that:
+Plugins with UI can embed pages from their MCP server's own registrable domain,
+including full existing editors and admin interfaces. For example, a server at
+`https://api.example.com/mcp` can embed `https://app.example.com`: both use the
+registrable domain `example.com`. Separate tenants on a shared hosting service
+count as different domains; using the same hosting provider does not establish
+ownership.
 
-- It is only intended for cases where embedding a third-party experience is essential (for example, a notebook, IDE, or similar environment).
-- Those plugins receive extra manual review and are often not approved for broad distribution.
-- During development, any developer can test `frameDomains` in developer mode, but approval for public listing is limited to trusted scenarios.
+Declare each required iframe origin in the resource CSP using
+`_meta.ui.csp.frameDomains` (or the legacy
+`_meta["openai/widgetCSP"].frame_domains`). For third-party domains, iframe
+embeds should be limited to cases where the embedded experience is essential.
+
+You must still provide a justification when submitting a plugin that uses
+iframes. Explain what each embedded page does, why the plugin embeds it, and
+who controls its domain. Iframe use can require additional review or
+escalation and may lead to slower approval or rejection if the content cannot
+be assessed. Sharing the MCP server's domain does not guarantee approval.
+
+All other plugin requirements still apply to embedded pages, including the
+[checkout](#checkout) and [privacy](#privacy) requirements.
 
 #### Privacy
 
@@ -28244,17 +28858,18 @@ Use these `_meta` fields on the tool descriptor. Prefer the MCP Apps standard
 key `_meta.ui.resourceUri` for linking a tool to a UI template. ChatGPT supports
 OpenAI-specific metadata for compatibility and optional extensions.
 
-| Key                                       |    Placement    | Type         | Limits                          | Purpose                                                                                                                         |
-| ----------------------------------------- | :-------------: | ------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `_meta["securitySchemes"]`                | Tool descriptor | array        | None                            | Back-compat mirror for clients that only read `_meta`.                                                                          |
-| `_meta.ui.resourceUri`                    | Tool descriptor | string (URI) | None                            | Standard resource URI for the UI template.                                                                                      |
-| `_meta.ui.visibility`                     | Tool descriptor | string[]     | default `["model", "app"]`      | Controls whether a tool is available to the model, the UI, or both. The `app` value is the MCP Apps protocol identifier for UI. |
-| `_meta["openai/outputTemplate"]`          | Tool descriptor | string (URI) | None                            | OpenAI-specific optional/compatibility alias for `_meta.ui.resourceUri` in ChatGPT.                                             |
-| `_meta["openai/widgetAccessible"]`        | Tool descriptor | boolean      | default `false`                 | OpenAI-specific compatibility field used by existing UI integrations; prefer `_meta.ui.visibility` + `tools/call`.              |
-| `_meta["openai/visibility"]`              | Tool descriptor | string       | `public` (default) or `private` | OpenAI-specific compatibility field used by existing UI integrations; prefer `_meta.ui.visibility`.                             |
-| `_meta["openai/toolInvocation/invoking"]` | Tool descriptor | string       | ≤ 64 chars                      | Short status text while the tool runs.                                                                                          |
-| `_meta["openai/toolInvocation/invoked"]`  | Tool descriptor | string       | ≤ 64 chars                      | Short status text after the tool completes.                                                                                     |
-| `_meta["openai/fileParams"]`              | Tool descriptor | string[]     | None                            | List of top-level input fields that represent files. Each field receives `{ download_url, file_id, mime_type?, file_name? }`.   |
+| Key                                       |    Placement    | Type         | Limits                                          | Purpose                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------- | :-------------: | ------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_meta["securitySchemes"]`                | Tool descriptor | array        | None                                            | Back-compat mirror for clients that only read `_meta`.                                                                                                                                                                                                                                      |
+| `_meta.ui.resourceUri`                    | Tool descriptor | string (URI) | None                                            | Standard resource URI for the UI template.                                                                                                                                                                                                                                                  |
+| `_meta.ui.visibility`                     | Tool descriptor | string[]     | default `["model", "app"]`                      | Controls whether a tool is available to the model, the UI, or both. The `app` value is the MCP Apps protocol identifier for UI.                                                                                                                                                             |
+| `_meta["openai/outputTemplate"]`          | Tool descriptor | string (URI) | None                                            | OpenAI-specific optional/compatibility alias for `_meta.ui.resourceUri` in ChatGPT.                                                                                                                                                                                                         |
+| `_meta["openai/profile"]`                 | Tool descriptor | boolean      | Optional; only `true` designates a profile tool | Identifies the authenticated, read-only tool that returns the current profile. Implement it to help users recognize and manage multiple connected accounts. Users can connect multiple accounts without it. See [Support multiple accounts](https://developers.openai.com/plugins/build/auth#support-multiple-accounts). |
+| `_meta["openai/widgetAccessible"]`        | Tool descriptor | boolean      | default `false`                                 | OpenAI-specific compatibility field used by existing UI integrations; prefer `_meta.ui.visibility` + `tools/call`.                                                                                                                                                                          |
+| `_meta["openai/visibility"]`              | Tool descriptor | string       | `public` (default) or `private`                 | OpenAI-specific compatibility field used by existing UI integrations; prefer `_meta.ui.visibility`.                                                                                                                                                                                         |
+| `_meta["openai/toolInvocation/invoking"]` | Tool descriptor | string       | ≤ 64 chars                                      | Short status text while the tool runs.                                                                                                                                                                                                                                                      |
+| `_meta["openai/toolInvocation/invoked"]`  | Tool descriptor | string       | ≤ 64 chars                                      | Short status text after the tool completes.                                                                                                                                                                                                                                                 |
+| `_meta["openai/fileParams"]`              | Tool descriptor | string[]     | None                                            | List of top-level input fields that represent files. Each field receives `{ download_url, file_id, mime_type?, file_name? }`.                                                                                                                                                               |
 
 Example:
 
@@ -28374,7 +28989,7 @@ The standard `_meta.ui.csp` object is generally preferred for new UI and support
 
 - `connectDomains`: `string[]`. Domains the widget may contact via fetch/XHR.
 - `resourceDomains`: `string[]`. Domains for static assets (images, fonts, scripts, styles).
-- `frameDomains?`: `string[]`. Optional list of origins allowed for iframe embeds. By default, widgets can't render subframes; adding `frameDomains` opts in to iframe usage and triggers stricter plugin review.
+- `frameDomains?`: `string[]`. Optional list of origins allowed for iframe embeds. By default, widgets can't render subframes. Plugins can embed their own domain, including existing editors and admin interfaces, under the [iframe policy](https://developers.openai.com/plugins/app-guidelines#iframes-and-embedded-pages). A justification is required at submission, and iframe use can require additional review or lead to slower approval.
 
 However, `_meta.ui.csp` does not support `redirect_domains` for `window.openai.openExternal(...)` links. To allowlist redirect targets, you must still set `_meta["openai/widgetCSP"].redirect_domains`.
 
@@ -28707,38 +29322,56 @@ communications team.
 Treat the metadata exposed by your MCP server as a versioned API contract for
 the plugin. When you scan the MCP endpoint in the plugin submission portal,
 OpenAI stores the discovered metadata with that draft version. Submitting the
-version sends that stored snapshot for review. The published plugin uses this
-metadata snapshot while tool calls and UI resources continue to use your live
-MCP server.
+version sends that stored snapshot for review. After publication, continuous
+review updates tool definitions without requiring a new plugin version. Tool
+calls and UI resources continue to use your live MCP server.
+
+#### Continuous review and tool updates
+
+OpenAI periodically fetches your MCP server's tools and compares them with the
+published definitions, including their descriptions, schemas, and annotations.
+
+- **Deleted tools:** Removed from the published tool list as soon as a scan
+  detects the deletion, without waiting for automated checks.
+- **New tools:** Made available after they pass automated checks. Until then,
+  they aren't available to users.
+- **Changed tools:** The previous definition stays live until the updated
+  definition passes automated checks or a scan detects that you removed the tool.
+  Passing updates replace the previous definition automatically.
+
+Each tool can pass independently. For example, you add `create_note`, change
+`search` to accept a `folder` parameter, and delete `archive_note`. The next
+scan removes `archive_note` immediately. If `create_note` passes but the
+`search` update is held, users get `create_note` and keep the old `search`
+definition without `folder`.
+
+Keep your server compatible with the live definition while an update is held.
+OpenAI retains the definition, not a copy of your server implementation.
+An incomplete check doesn't approve an update, even if it has no findings.
+
+#### Other changes
 
 Use this table to determine how to ship each change:
 
-| Change                                                                                                                                                                                                   | Required action                                                                                                                                                                 | When users see the change                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Tool list, names, titles, descriptions, input or output schemas, annotations, tool security schemes, tool `_meta` fields (including UI resource references and visibility), or MCP server `instructions` | Deploy the change, create or update a draft version, scan the endpoint, submit the version for review, and publish it after approval.                                           | After you publish the approved version. Until then, users continue to use the currently published snapshot. |
-| UI resource URI or linked resource metadata, including content security policy (CSP) settings                                                                                                            | Deploy the change, create or update a draft version, scan the endpoint, submit the version for review, and publish it after approval.                                           | After you publish the approved version.                                                                     |
-| Backward-compatible content update served from the same published UI resource URI                                                                                                                        | Deploy the content update. You don't need to scan, submit, or publish a new version if the URI and published contract remain compatible.                                        | After deployment. ChatGPT may continue serving cached resource contents for up to one hour.                 |
-| Server-only fix or change to live tool results, including result `_meta`, or business data                                                                                                               | Deploy the server change. You don't need to scan, submit, or publish a new version if the change preserves the published contract.                                              | Through your live endpoint after deployment.                                                                |
-| MCP server origin (`scheme`, `hostname`, or `port`)                                                                                                                                                      | To change the origin, create a new plugin, then complete its scan, submission, review, and publication flow. To change only the endpoint path, use the normal new-version flow. | After you publish the new plugin or approved version.                                                       |
+| Change                                                                                                                                            | Required action                                                                                                                                                                 | When users see the change                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Tool security schemes, tool `_meta` fields, UI resource references, or linked resource metadata, including content security policy (CSP) settings | Deploy the change. These fields are reviewed with the tool definition through continuous review.                                                                                | After the updated tool definition passes automated checks.                                                      |
+| MCP server `instructions`                                                                                                                         | Deploy the change. Shared instructions are reviewed with the affected tools.                                                                                                    | After the required checks complete without holding existing tool updates or finding issues in the instructions. |
+| Backward-compatible content update served from the same published UI resource URI                                                                 | Deploy the content update. You don't need to scan, submit, or publish a new version if the URI and published contract remain compatible.                                        | After deployment. ChatGPT may continue serving cached resource contents for up to one hour.                     |
+| Server-only fix or change to live tool results, including result `_meta`, or business data                                                        | Deploy the server change. You don't need to scan, submit, or publish a new version if the change preserves the published contract.                                              | Through your live endpoint after deployment.                                                                    |
+| MCP server origin (`scheme`, `hostname`, or `port`)                                                                                               | To change the origin, create a new plugin, then complete its scan, submission, review, and publication flow. To change only the endpoint path, use the normal new-version flow. | After you publish the new plugin or approved version.                                                           |
 
-Breaking changes to the MCP server contract inside a published plugin aren't
-currently supported. Removing or renaming a tool, making a schema incompatible,
-or serving incompatible content at or removing content from a published UI
-resource URI can break the current version as soon as the server change
-deploys. Make backward-compatible updates instead:
-
-1. Add new tools, fields, or UI resources while continuing to honor the published contracts.
-2. Submit the updated metadata as a new version.
-3. Publish the approved version and keep the old contracts available.
-
-You can deploy server-only fixes without submitting a new version if they preserve the published contract. If a deployment breaks the published version, roll back the server change rather than waiting for a new version to complete review.
+Server changes take effect before a scan can discover or approve them. Keep
+existing input schemas and each published UI resource URI working during that gap.
+If a deployment breaks the live contract, roll back the server change rather
+than waiting for review.
 
 #### Submitting new versions for review
 
-Once your plugin is published, its submitted information and reviewed metadata
-snapshot are locked for safety. To update either, create a new draft version of
-the existing plugin and resubmit that version for review. Each resubmission
-starts a new review. In the release notes, describe what changed.
+To change submitted plugin information or imported skills, create a new draft
+version of the existing plugin and resubmit it for review. Continuous tool
+review doesn't replace this process. Each resubmission starts a new review.
+In the release notes, describe what changed.
 
 The MCP server origin (`scheme`, `hostname`, or `port`) can't change between
 versions. To use a different origin, submit a new plugin with the new MCP
@@ -29327,10 +29960,10 @@ page and signed-in session.
 In the [built-in browser](https://learn.chatgpt.com/docs/browser) in the ChatGPT desktop app, ChatGPT
 Work and Codex can discover and use these tools when they are available.
 
-Use GPT-5.6 Sol or GPT-5.6 Terra for site tools. GPT-5.6 Luna currently has
-WebMCP disabled. Update the ChatGPT desktop app to the latest version. Site
-tools aren't available in Enterprise or Edu workspaces. Availability also
-depends on rollout and the tools provided by the current page.
+Use GPT-5.6 Sol or GPT-6 Sol for site tools. GPT-5.6 Luna currently has WebMCP
+disabled. Update the ChatGPT desktop app to the latest version. Site tools
+aren't available in Enterprise or Edu workspaces. Availability also depends on
+rollout and the tools provided by the current page.
 
 #### WebMCP vs. MCP
 
@@ -29906,11 +30539,14 @@ appear in the Plugins Directory.
 
 #### How published MCP metadata versions work
 
-Remote MCP plugins publish reviewed server metadata and imported skill
-snapshots. To change a remote snapshot, scan the MCP server, submit a new
-version for review, and publish the approved version. For metadata-specific
-maintenance rules, see
-[Remote MCP server review requirements](https://developers.openai.com/plugins/deploy/app-review#how-published-mcp-metadata-versions-work).
+After publication, OpenAI periodically fetches your MCP tools. Deleted tools
+are removed as soon as a scan detects them. New and changed tool definitions
+become available after automated checks pass; held updates keep the previous
+definition live. See
+[Continuous review and tool updates](https://developers.openai.com/plugins/deploy/app-review#continuous-review-and-tool-updates).
+
+Changes to submitted plugin information or imported skills still require a new
+version, review, and publication.
 
 #### Final checklist
 
@@ -30111,7 +30747,7 @@ Immersive experiences that expand beyond the inline card, giving users space for
 **Rules of thumb**
 
 - **Design your UX to work with the system composer**. The composer is always present in fullscreen, so make sure your experience supports conversational prompts that can trigger tool calls and feel natural for users.
-- **Use fullscreen to deepen engagement**, not to replicate your native app wholesale.
+- **Use fullscreen for work that benefits from more space.** Existing editors and admin interfaces can be embedded when they meet the [iframe policy](https://developers.openai.com/plugins/app-guidelines#iframes-and-embedded-pages).
 
 #### Picture-in-picture (PiP)
 
@@ -30458,7 +31094,7 @@ Source: [Plugins](https://learn.chatgpt.com/docs/plugins.md)
 #### Overview
 
 Plugins bundle capabilities into reusable workflows in ChatGPT and Codex. They
-can include skills, MCP servers, and lifecycle hooks. Both products use one universal plugin
+can include skills and MCP servers. Both products use one universal plugin
 directory, so the same public plugins are discoverable from their supported
 surfaces.
 
@@ -30922,7 +31558,7 @@ increasing delay and jitter.
 Requests include `method`, `params`, and `id`:
 
 ```json
-{ "method": "thread/start", "id": 10, "params": { "model": "gpt-5.6-terra" } }
+{ "method": "thread/start", "id": 10, "params": { "model": "gpt-6-sol" } }
 ```
 
 Responses echo the `id` with either `result` or `error`:
@@ -31002,7 +31638,7 @@ send({
   },
 });
 send({ method: "initialized", params: {} });
-send({ method: "thread/start", id: 1, params: { model: "gpt-5.6-terra" } });
+send({ method: "thread/start", id: 1, params: { model: "gpt-6-sol" } });
 ```
 
 #### Core primitives
@@ -31204,18 +31840,22 @@ those plugins.
 
 Call `model/list` to discover available models and their capabilities before rendering model or personality selectors.
 
+The response below illustrates the structure. Available models, reasoning
+efforts, and defaults depend on the client and account; use the returned
+values rather than hard-coding this example.
+
 ```json
 { "method": "model/list", "id": 6, "params": { "limit": 20, "includeHidden": false } }
 { "id": 6, "result": {
   "data": [{
-    "id": "gpt-5.6-sol",
-    "model": "gpt-5.6-sol",
-    "displayName": "GPT-5.6-Sol",
+    "id": "gpt-6-sol",
+    "model": "gpt-6-sol",
+    "displayName": "GPT-6 Sol",
     "hidden": false,
-    "defaultReasoningEffort": "low",
+    "defaultReasoningEffort": "medium",
     "supportedReasoningEfforts": [{
-      "reasoningEffort": "low",
-      "description": "Fast responses with lighter reasoning"
+      "reasoningEffort": "medium",
+      "description": "Balances speed and reasoning depth for everyday tasks"
     }],
     "inputModalities": ["text", "image"],
     "supportsPersonality": true,
@@ -31303,7 +31943,7 @@ Start a fresh thread when you need a new Codex conversation.
 
 ```json
 { "method": "thread/start", "id": 10, "params": {
-  "model": "gpt-5.6-terra",
+  "model": "gpt-6-sol",
   "cwd": "/Users/me/project",
   "approvalPolicy": "never",
   "sandbox": "workspaceWrite",
@@ -31788,7 +32428,7 @@ Examples:
     "writableRoots": ["/Users/me/project"],
     "networkAccess": true
   },
-  "model": "gpt-5.6-terra",
+  "model": "gpt-6-sol",
   "effort": "medium",
   "summary": "concise",
   "personality": "friendly",
@@ -33293,7 +33933,7 @@ Use the SDK when you need to:
 
 Use the Codex SDK to automate coding tasks, including jobs in CI. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) to build custom clients that handle authentication, conversation history, approvals, and streamed agent events.
 
-`codex mcp-server` is deprecated. The [MCP server guide](https://learn.chatgpt.com/docs/mcp-server) remains available for existing integrations.
+The `codex mcp-server` command and standalone `codex-mcp-server` binary have been removed. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) for existing integrations.
 
 If you have beta access and need repository or change scans with structured
 security findings and coverage, use the [Codex Security TypeScript
@@ -33375,7 +34015,7 @@ from openai_codex import Codex, Sandbox
 
 with Codex() as codex:
     thread = codex.thread_start(
-        model="gpt-5.6-terra",
+        model="gpt-6-sol",
         sandbox=Sandbox.workspace_write,
     )
     result = thread.run("Make a plan to diagnose and fix the CI failures")
@@ -33391,7 +34031,7 @@ from openai_codex import AsyncCodex
 
 async def main() -> None:
     async with AsyncCodex() as codex:
-        thread = await codex.thread_start(model="gpt-5.6-terra")
+        thread = await codex.thread_start(model="gpt-6-sol")
         result = await thread.run("Implement the plan")
         print(result.final_response)
 
@@ -33555,11 +34195,6 @@ Example final output (stdout):
 #### Authenticate in automation
 
 `codex exec` reuses saved CLI authentication by default. In CI, it's common to provide credentials explicitly:
-
-If your trusted cloud or CI runtime already receives short-lived workload
-tokens, use
-[workload identity federation](https://learn.chatgpt.com/docs/enterprise/workload-identity)
-instead of storing an OpenAI credential.
 
 #### Use API key auth
 
@@ -33824,6 +34459,13 @@ eligible plans can also run tasks from supported app events. Review active,
 paused, and completed tasks and recent runs in **Scheduled**. You can combine
 scheduled tasks with [skills](https://learn.chatgpt.com/docs/build-skills) for more complex work.
 
+GPT-5.5 retires from ChatGPT, ChatGPT Work, and Codex on all plans on
+October 14, 2026. Review scheduled tasks that use GPT-5.5 and choose an
+available replacement before that date. For Codex with ChatGPT sign-in, choose
+`gpt-6-sol` (GPT-6 Sol) if your plan and workspace provide access. The OpenAI API isn't
+affected. See [GPT-5.5 retirement](https://learn.chatgpt.com/docs/models#gpt-55-retirement) for
+plan-specific replacements.
+
 In the ChatGPT desktop app, scheduled tasks can work with local projects and
 run in the project directory or an isolated worktree. Keep the computer on and
 the app running when a scheduled task needs local files.
@@ -33911,9 +34553,8 @@ project directory.
 You can also leave the model and reasoning effort on their default settings, or
 choose them explicitly if you want more control over how the scheduled task runs.
 
-If a scheduled task uses `gpt-5.4` or `gpt-5.4-mini` with ChatGPT sign-in,
-update it before those models retire on August 31, 2026. Replace `gpt-5.4` with
-`gpt-5.6-terra` and `gpt-5.4-mini` with `gpt-5.6-luna`.
+If a scheduled task uses a retired model, update it to an available replacement.
+See [model migration guidance](https://learn.chatgpt.com/docs/models#deprecated-codex-models).
 
 Scheduled tasks run unattended with your default sandbox settings. Start with the
 narrowest access that lets the task succeed, and grant network or broader file
@@ -34045,415 +34686,6 @@ scheduled tasks fall back to the approval behavior of your selected permission
 mode.
 
 #### Examples
-
-### Use Codex with the Agents SDK
-
-Source: [Use Codex with the Agents SDK](https://learn.chatgpt.com/docs/mcp-server.md)
-
-`codex mcp-server` is deprecated. Use the [Codex app
-server](https://learn.chatgpt.com/docs/app-server) instead. To call Codex from Claude Code, use the
-[Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc),
-which uses the app server. This page documents the deprecated command for
-existing integrations.
-
-You can run Codex as an MCP server and connect it from other MCP clients (for example, an agent built with the [OpenAI Agents SDK MCP integration](https://developers.openai.com/api/docs/guides/agents/integrations-observability#mcp)).
-
-To start Codex as an MCP server, you can use the following command:
-
-```bash
-codex mcp-server
-```
-
-You can launch a Codex MCP server with the [Model Context Protocol Inspector](https://modelcontextprotocol.io/legacy/tools/inspector):
-
-```bash
-npx @modelcontextprotocol/inspector codex mcp-server
-```
-
-Send a `tools/list` request to see two tools:
-
-**`codex`**: Run a Codex session with the following prompt and configuration overrides:
-
-| Property                 | Type     | Description                                                                                              |
-| ------------------------ | -------- | -------------------------------------------------------------------------------------------------------- |
-| **`prompt`** (required)  | `string` | The initial user prompt to start the Codex conversation.                                                 |
-| `approval-policy`        | `string` | Approval policy for shell commands generated by the model: `on-request` or `never`.                      |
-| `base-instructions`      | `string` | The set of instructions to use instead of the default ones.                                              |
-| `compact-prompt`         | `string` | Prompt used when compacting the conversation.                                                            |
-| `config`                 | `object` | Individual configuration settings that override what's in `$CODEX_HOME/config.toml`.                     |
-| `cwd`                    | `string` | Working directory for the session. If relative, resolved against the server process's current directory. |
-| `developer-instructions` | `string` | Developer instructions injected as a developer-role message.                                             |
-| `model`                  | `string` | Optional override for the model name (for example, `gpt-5.6-terra`).                                     |
-| `sandbox`                | `string` | Sandbox mode: `read-only`, `workspace-write`, or `danger-full-access`.                                   |
-
-**`codex-reply`**: Continue a Codex session by providing the thread ID and prompt. The `codex-reply` tool takes these properties:
-
-| Property                      | Type   | Description                                               |
-| ----------------------------- | ------ | --------------------------------------------------------- |
-| **`prompt`** (required)       | string | The next user prompt to continue the Codex conversation.  |
-| **`threadId`** (required)     | string | The ID of the thread to continue.                         |
-| `conversationId` (deprecated) | string | Deprecated alias for `threadId` (kept for compatibility). |
-
-Use the `threadId` from `structuredContent.threadId` in the `tools/call` response. Approval prompts (exec/patch) also include `threadId` in their `params` payload.
-
-Example response payload:
-
-```json
-{
-  "structuredContent": {
-    "threadId": "019bbb20-bff6-7130-83aa-bf45ab33250e",
-    "content": "`ls -lah` (or `ls -alh`) — long listing, includes dotfiles, human-readable sizes."
-  },
-  "content": [
-    {
-      "type": "text",
-      "text": "`ls -lah` (or `ls -alh`) — long listing, includes dotfiles, human-readable sizes."
-    }
-  ]
-}
-```
-
-Note modern MCP clients generally report only `"structuredContent"` as the result of a tool call, if present, though the Codex MCP server also returns `"content"` for the benefit of older MCP clients.
-
-Codex CLI can do far more than run ad-hoc tasks. By exposing the CLI as a [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server and orchestrating it with the OpenAI Agents SDK, you can create deterministic, reviewable workflows that scale from a single agent to a complete software delivery pipeline.
-
-This guide walks through the same workflow showcased in the [OpenAI Cookbook](https://github.com/openai/openai-cookbook/blob/main/examples/codex/codex_mcp_agents_sdk/building_consistent_workflows_codex_cli_agents_sdk.ipynb). You will:
-
-- launch Codex CLI as a long-running MCP server,
-- build a focused single-agent workflow that produces a playable browser game, and
-- orchestrate a multi-agent team with hand-offs, guardrails, and full traces you can review afterwards.
-
-Before starting, make sure you have:
-
-- [Codex CLI](https://learn.chatgpt.com/docs/codex/cli) installed locally so the `codex` command is available.
-- Python 3.10+ with `pip`.
-- Node.js 18+ if you want to run the MCP Inspector example above.
-- An OpenAI API key stored locally. You can create or manage keys in the [OpenAI dashboard](https://platform.openai.com/account/api-keys).
-
-Create a working directory for the guide and add your API key to a `.env` file:
-
-```bash
-mkdir codex-workflows
-cd codex-workflows
-printf "OPENAI_API_KEY=sk-..." > .env
-```
-
-#### Install dependencies
-
-The Agents SDK handles orchestration across Codex, hand-offs, and traces. Install the latest SDK packages:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install --upgrade openai openai-agents python-dotenv
-```
-
-Activating a virtual environment keeps the SDK dependencies isolated from the
-rest of your system.
-
-#### Initialize Codex CLI as an MCP server
-
-Start by turning Codex CLI into an MCP server that the Agents SDK can call. The server exposes two tools (`codex()` to start a conversation and `codex-reply()` to continue one) and keeps Codex alive across multiple agent turns.
-
-Create a file called `codex_mcp.py` and add the following:
-
-```python
-import asyncio
-
-from agents import Agent, Runner
-from agents.mcp import MCPServerStdio
-
-async def main() -> None:
-    async with MCPServerStdio(
-        name="Codex CLI",
-        params={
-            "command": "codex",
-            "args": ["mcp-server"],
-        },
-        client_session_timeout_seconds=360000,
-    ) as codex_mcp_server:
-        print("Codex MCP server started.")
-        # More logic coming in the next sections.
-        return
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Run the script once to verify that Codex launches successfully:
-
-```bash
-python codex_mcp.py
-```
-
-The script exits after printing `Codex MCP server started.`. In the next sections you will reuse the same MCP server inside richer workflows.
-
-#### Build a single-agent workflow
-
-Let’s start with a scoped example that uses Codex MCP to ship a small browser game. The workflow relies on two agents:
-
-1. **Game Designer**: writes a brief for the game.
-2. **Game Developer**: implements the game by calling Codex MCP.
-
-Update `codex_mcp.py` with the following code. It keeps the MCP server setup from above and adds both agents.
-
-```python
-import asyncio
-import os
-
-from dotenv import load_dotenv
-
-from agents import Agent, Runner, set_default_openai_api
-from agents.mcp import MCPServerStdio
-
-load_dotenv(override=True)
-set_default_openai_api(os.getenv("OPENAI_API_KEY"))
-
-async def main() -> None:
-    async with MCPServerStdio(
-        name="Codex CLI",
-        params={
-            "command": "codex",
-            "args": ["mcp-server"],
-        },
-        client_session_timeout_seconds=360000,
-    ) as codex_mcp_server:
-        developer_agent = Agent(
-            name="Game Developer",
-            instructions=(
-                "You are an expert in building simple games using basic html + css + javascript with no dependencies. "
-                "Save your work in a file called index.html in the current directory. "
-                "Always call codex with \"approval-policy\": \"never\" and \"sandbox\": \"workspace-write\"."
-            ),
-            mcp_servers=[codex_mcp_server],
-        )
-
-        designer_agent = Agent(
-            name="Game Designer",
-            instructions=(
-                "You are an indie game connoisseur. Come up with an idea for a single page html + css + javascript game that a developer could build in about 50 lines of code. "
-                "Format your request as a 3 sentence design brief for a game developer and call the Game Developer coder with your idea."
-            ),
-            model="gpt-5",
-            handoffs=[developer_agent],
-        )
-
-        await Runner.run(designer_agent, "Implement a fun new game!")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Execute the script:
-
-```bash
-python codex_mcp.py
-```
-
-Codex will read the designer's brief, create an `index.html` file, and write the full game to disk. Open the generated file in a browser to play the result. Every run produces a different design with unique play-style twists and polish.
-
-#### Expand to a multi-agent workflow
-
-Now turn the single-agent setup into an orchestrated, traceable workflow. The system adds:
-
-- **Project Manager**: creates shared requirements, coordinates hand-offs, and enforces guardrails.
-- **Designer**, **Frontend Developer**, **Server Developer**, and **Tester**: each with scoped instructions and output folders.
-
-Create a new file called `multi_agent_workflow.py`:
-
-```python
-import asyncio
-import os
-
-from dotenv import load_dotenv
-
-from agents import (
-    Agent,
-    ModelSettings,
-    Runner,
-    WebSearchTool,
-    set_default_openai_api,
-)
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
-from agents.mcp import MCPServerStdio
-from openai.types.shared import Reasoning
-
-load_dotenv(override=True)
-set_default_openai_api(os.getenv("OPENAI_API_KEY"))
-
-async def main() -> None:
-    async with MCPServerStdio(
-        name="Codex CLI",
-        params={"command": "codex", "args": ["mcp-server"]},
-        client_session_timeout_seconds=360000,
-    ) as codex_mcp_server:
-        designer_agent = Agent(
-            name="Designer",
-            instructions=(
-                f"""{RECOMMENDED_PROMPT_PREFIX}"""
-                "You are the Designer.\n"
-                "Your only source of truth is AGENT_TASKS.md and REQUIREMENTS.md from the Project Manager.\n"
-                "Do not assume anything that is not written there.\n\n"
-                "You may use the internet for additional guidance or research."
-                "Deliverables (write to /design):\n"
-                "- design_spec.md – a single page describing the UI/UX layout, main screens, and key visual notes as requested in AGENT_TASKS.md.\n"
-                "- wireframe.md – a simple text or ASCII wireframe if specified.\n\n"
-                "Keep the output short and implementation-friendly.\n"
-                "When complete, handoff to the Project Manager with transfer_to_project_manager."
-                "When creating files, call Codex MCP with {\"approval-policy\":\"never\",\"sandbox\":\"workspace-write\"}."
-            ),
-            model="gpt-5",
-            tools=[WebSearchTool()],
-            mcp_servers=[codex_mcp_server],
-        )
-
-        frontend_developer_agent = Agent(
-            name="Frontend Developer",
-            instructions=(
-                f"""{RECOMMENDED_PROMPT_PREFIX}"""
-                "You are the Frontend Developer.\n"
-                "Read AGENT_TASKS.md and design_spec.md. Implement exactly what is described there.\n\n"
-                "Deliverables (write to /frontend):\n"
-                "- index.html – main page structure\n"
-                "- styles.css or inline styles if specified\n"
-                "- main.js or game.js if specified\n\n"
-                "Follow the Designer’s DOM structure and any integration points given by the Project Manager.\n"
-                "Do not add features or branding beyond the provided documents.\n\n"
-                "When complete, handoff to the Project Manager with transfer_to_project_manager_agent."
-                "When creating files, call Codex MCP with {\"approval-policy\":\"never\",\"sandbox\":\"workspace-write\"}."
-            ),
-            model="gpt-5",
-            mcp_servers=[codex_mcp_server],
-        )
-
-        backend_developer_agent = Agent(
-            name="Backend Developer",
-            instructions=(
-                f"""{RECOMMENDED_PROMPT_PREFIX}"""
-                "You are the Backend Developer.\n"
-                "Read AGENT_TASKS.md and REQUIREMENTS.md. Implement the backend endpoints described there.\n\n"
-                "Deliverables (write to /backend):\n"
-                "- package.json – include a start script if requested\n"
-                "- server.js – implement the API endpoints and logic exactly as specified\n\n"
-                "Keep the code as simple and readable as possible. No external database.\n\n"
-                "When complete, handoff to the Project Manager with transfer_to_project_manager_agent."
-                "When creating files, call Codex MCP with {\"approval-policy\":\"never\",\"sandbox\":\"workspace-write\"}."
-            ),
-            model="gpt-5",
-            mcp_servers=[codex_mcp_server],
-        )
-
-        tester_agent = Agent(
-            name="Tester",
-            instructions=(
-                f"""{RECOMMENDED_PROMPT_PREFIX}"""
-                "You are the Tester.\n"
-                "Read AGENT_TASKS.md and TEST.md. Verify that the outputs of the other roles meet the acceptance criteria.\n\n"
-                "Deliverables (write to /tests):\n"
-                "- TEST_PLAN.md – bullet list of manual checks or automated steps as requested\n"
-                "- test.sh or a simple automated script if specified\n\n"
-                "Keep it minimal and easy to run.\n\n"
-                "When complete, handoff to the Project Manager with transfer_to_project_manager."
-                "When creating files, call Codex MCP with {\"approval-policy\":\"never\",\"sandbox\":\"workspace-write\"}."
-            ),
-            model="gpt-5",
-            mcp_servers=[codex_mcp_server],
-        )
-
-        project_manager_agent = Agent(
-            name="Project Manager",
-            instructions=(
-                f"""{RECOMMENDED_PROMPT_PREFIX}"""
-                """
-                You are the Project Manager.
-
-                Objective:
-                Convert the input task list into three project-root files the team will execute against.
-
-                Deliverables (write in project root):
-                - REQUIREMENTS.md: concise summary of product goals, target users, key features, and constraints.
-                - TEST.md: tasks with [Owner] tags (Designer, Frontend, Backend, Tester) and clear acceptance criteria.
-                - AGENT_TASKS.md: one section per role containing:
-                  - Project name
-                  - Required deliverables (exact file names and purpose)
-                  - Key technical notes and constraints
-
-                Process:
-                - Resolve ambiguities with minimal, reasonable assumptions. Be specific so each role can act without guessing.
-                - Create files using Codex MCP with {"approval-policy":"never","sandbox":"workspace-write"}.
-                - Do not create folders. Only create REQUIREMENTS.md, TEST.md, AGENT_TASKS.md.
-
-                Handoffs (gated by required files):
-                1) After the three files above are created, hand off to the Designer with transfer_to_designer_agent and include REQUIREMENTS.md and AGENT_TASKS.md.
-                2) Wait for the Designer to produce /design/design_spec.md. Verify that file exists before proceeding.
-                3) When design_spec.md exists, hand off in parallel to both:
-                   - Frontend Developer with transfer_to_frontend_developer_agent (provide design_spec.md, REQUIREMENTS.md, AGENT_TASKS.md).
-                   - Backend Developer with transfer_to_backend_developer_agent (provide REQUIREMENTS.md, AGENT_TASKS.md).
-                4) Wait for Frontend to produce /frontend/index.html and Backend to produce /backend/server.js. Verify both files exist.
-                5) When both exist, hand off to the Tester with transfer_to_tester_agent and provide all prior artifacts and outputs.
-                6) Do not advance to the next handoff until the required files for that step are present. If something is missing, request the owning agent to supply it and re-check.
-
-                PM Responsibilities:
-                - Coordinate all roles, track file completion, and enforce the above gating checks.
-                - Do NOT respond with status updates. Just handoff to the next agent until the project is complete.
-                """
-            ),
-            model="gpt-5",
-            model_settings=ModelSettings(
-                reasoning=Reasoning(effort="medium"),
-            ),
-            handoffs=[designer_agent, frontend_developer_agent, backend_developer_agent, tester_agent],
-            mcp_servers=[codex_mcp_server],
-        )
-
-        designer_agent.handoffs = [project_manager_agent]
-        frontend_developer_agent.handoffs = [project_manager_agent]
-        backend_developer_agent.handoffs = [project_manager_agent]
-        tester_agent.handoffs = [project_manager_agent]
-
-        task_list = """
-Goal: Build a tiny browser game to showcase a multi-agent workflow.
-
-High-level requirements:
-- Single-screen game called "Bug Busters".
-- Player clicks a moving bug to earn points.
-- Game ends after 20 seconds and shows final score.
-- Optional: submit score to a simple backend and display a top-10 leaderboard.
-
-Roles:
-- Designer: create a one-page UI/UX spec and basic wireframe.
-- Frontend Developer: implement the page and game logic.
-- Backend Developer: implement a minimal API (GET /health, GET/POST /scores).
-- Tester: write a quick test plan and a simple script to verify core routes.
-
-Constraints:
-- No external database—memory storage is fine.
-- Keep everything readable for beginners; no frameworks required.
-- All outputs should be small files saved in clearly named folders.
-"""
-
-        result = await Runner.run(project_manager_agent, task_list, max_turns=30)
-        print(result.final_output)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Run the script and watch the generated files:
-
-```bash
-python multi_agent_workflow.py
-ls -R
-```
-
-The project manager agent writes `REQUIREMENTS.md`, `TEST.md`, and `AGENT_TASKS.md`, then coordinates hand-offs across the designer, frontend, server, and tester agents. Each agent writes scoped artifacts in its own folder before handing control back to the project manager.
-
-#### Trace the workflow
-
-Codex automatically records traces that capture every prompt, tool call, and hand-off. After the multi-agent run completes, open the [Traces dashboard](https://platform.openai.com/trace) to inspect the execution timeline.
-
-The high-level trace highlights how the project manager verifies hand-offs before moving forward. Click into individual steps to see prompts, Codex MCP calls, files written, and execution durations. These details make it straightforward to audit every hand-off and understand how the workflow evolved turn by turn.
-These traces make it straightforward to debug workflow hiccups, audit agent behavior, and measure performance over time without requiring extra instrumentation.
 
 ## Platform, Enterprise, and Caveats
 
@@ -34898,10 +35130,12 @@ scope and administrator guidance when those signals change.
 
 Source: [Analytics API](https://learn.chatgpt.com/docs/enterprise/analytics-api.md)
 
-The Codex Analytics API provides aggregated Codex usage and activity metrics for
-a ChatGPT workspace.
+The Analytics APIs provide aggregated usage and activity metrics for a ChatGPT
+workspace. The unified Daily Usage Analytics API reports daily ChatGPT, Codex,
+and Work usage. Confirm that the endpoint is enabled for your workspace before
+using it.
 
-The [Codex Analytics API reference](https://chatgpt.com/public/admin/api-reference#tag/Codex%20Enterprise%20Analytics)
+The Admin API reference
 is the source of truth for current access requirements, routes, request and
 response schemas, metrics, time semantics, and pagination.
 
@@ -34909,8 +35143,8 @@ response schemas, metrics, time semantics, and pagination.
 
 The Analytics API is appropriate when you need to:
 
-- Automate recurring Codex reporting.
-- Join aggregated Codex metrics with internal organizational data.
+- Automate recurring workspace usage reporting.
+- Join aggregated usage metrics with internal organizational data.
 - Build a controlled reporting layer for approved audiences.
 - Avoid coupling an integration to an interactive dashboard.
 
@@ -34920,9 +35154,10 @@ auditable activity records.
 
 #### Confirm the administration boundaries
 
-Analytics API results are scoped to a ChatGPT workspace, but requests
-authenticate with a Platform organization API key. The key's organization must
-match the organization associated with the workspace.
+Analytics API results are scoped to a ChatGPT workspace. For the unified Daily
+Usage Analytics API, use a workspace-scoped Admin key with
+`enterprise.analytics.usage.read`. The Codex scope
+`codex.enterprise.analytics.read` doesn't grant access to that endpoint.
 
 The API reference owns current key provisioning, scope requirements,
 routes, schemas, fields, time semantics, and pagination behavior. This page
@@ -35766,9 +36001,13 @@ A local task can work with information the user provides or makes available, inc
 
 Granting local Work access does not automatically approve every application, grant administrator rights, or bypass the permissions of the account used to reach another system. An approved shared connection can have different privileges from the user's personal account.
 
+Direct file reads, file edits, and shell commands follow the task's sandbox and approval settings. Computer Use accesses content through an approved native application under that application's permissions. A restriction on direct file access does not by itself establish the same restriction on files the application can open.
+
 #### Computer Use and application approvals
 
-[Computer Use](https://learn.chatgpt.com/docs/computer-use) can interact with supported desktop applications only when the capability is available, the required operating-system permissions are granted, and the user authorizes the application. Depending on the available options, approval can apply to the current session or future tasks.
+Workspace permissions determine who can use Work Local. Administrator policies can further restrict which native applications [Computer Use](https://learn.chatgpt.com/docs/computer-use) may operate and whether application approvals can be saved for future sessions. Required operating-system permissions and application approvals still apply. When a task uses an application or signed-in account, that account's permissions determine which information and actions are available.
+
+Allowing an application through administrator policy does not install the required plugin, grant operating-system permissions, or approve an action that still requires review. For supported controls and configuration examples, see [Managed browser and Computer Use controls](https://learn.chatgpt.com/docs/enterprise/managed-configuration#control-browser-and-computer-use).
 
 On macOS, Screen Recording allows Computer Use to see application content, and Accessibility allows it to click, type, and navigate. Supported macOS tasks can run in the background. On Windows, Computer Use operates on the active, visible desktop and cannot run in the background while the user continues using that same session.
 
@@ -35776,33 +36015,35 @@ Users can stop a task at any time. Computer Use cannot approve operating-system 
 
 #### Locked devices
 
-Supported macOS configurations can optionally allow an approved Computer Use task to continue while the Mac is locked. Availability depends on the app version, feature rollout, applicable requirements, and remote-control eligibility.
+Supported macOS configurations can optionally allow an approved Computer Use task to continue after the Mac locks. Availability depends on the app version, feature rollout, applicable requirements, and remote-control eligibility.
 
-Administrators can disable locked-device operation through supported managed configuration. Windows Computer Use requires an active, unlocked desktop; macOS locked-use behavior does not establish equivalent Windows support.
+Enabling Locked Use installs a macOS authorization plugin that can temporarily unlock the Mac for an active, trusted Computer Use turn. ChatGPT covers every display during the temporary unlock. If it detects local keyboard or pointer input, it relocks the Mac and pauses automatic unlock until the user unlocks it manually. See [How Locked Use works](https://learn.chatgpt.com/docs/computer-use#locked-use).
+
+Administrators can prevent users from enabling Locked Use on managed Macs. This requirement does not turn off Locked Use if it is already enabled. Windows Computer Use requires an active, unlocked desktop. See [Locked Use restrictions](https://learn.chatgpt.com/docs/enterprise/managed-configuration#restrict-locked-computer-use).
 
 #### Browser sessions and existing sign-ins
 
 Work Local does not automatically gain access to every browser or company account. Access depends on the browser used, the signed-in account, and the approvals required for that browser experience.
 
-| Browser path                                | Session and security boundary                                                                                                                                                                                                 |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Desktop in-app browser](https://learn.chatgpt.com/docs/browser)    | Uses a browser profile separate from the user's regular browser. The user can sign in within that profile, and supported website access may require approval. The built-in browser cannot automate file uploads.              |
-| [Chrome extension](https://learn.chatgpt.com/docs/chrome-extension) | Can interact with existing browser tabs and accounts when the extension and website access are approved. Users can approve a site once or allow future access; browser-history and local-file access require separate review. |
-| Computer Use operating a browser            | Uses a browser approved as a desktop application, including accounts already signed in to that browser. Operating-system permissions, application approval, and the existing account's permissions still apply.               |
+| Browser path                                | Session and security boundary                                                                                                                                                                                                                                                                           |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Desktop in-app browser](https://learn.chatgpt.com/docs/browser)    | Uses a profile separate from the user's regular browser. Users can sign in within that profile. On supported clients, managed Browser Use policies restrict agent access to sites and available browser capabilities. The built-in browser cannot automate file uploads.                                |
+| [Chrome extension](https://learn.chatgpt.com/docs/chrome-extension) | Can interact with existing tabs and signed-in accounts when the extension and website access are approved. On supported clients, the same managed Browser Use policies apply to agent actions through the extension.                                                                                    |
+| Computer Use operating a browser            | Operates the browser as an approved native application and can use accounts already signed in. **Browser Use's site and capability policies do not apply to this path.** Native-app policies, operating-system permissions, application approvals, and the signed-in account's permissions still apply. |
 
-Website approval options and sensitive-action confirmations vary by browser experience. Allowing all sites reduces future approval prompts, so users should review that choice before enabling it.
+Supported Browser Use policies can restrict site access, uploads, downloads, browser-history access, and full Chrome DevTools Protocol (CDP) access for browser debugging. Administrators can also restrict automatic approval review, saved approvals, and how long site-access approvals last. A user approval cannot override an administrator's denial. See [Managed browser controls](https://learn.chatgpt.com/docs/enterprise/managed-configuration#control-browser-and-computer-use).
 
-A hosted cloud browser is separate from the user's local browsers and does not automatically inherit their existing sign-ins. Supported cloud workflows can request a separate, user-authorized sign-in.
+A hosted cloud browser is separate from the user's local browsers and does not automatically inherit their existing sign-ins. Website sign-in through the cloud browser is not available in Enterprise or Edu workspaces.
 
 #### Apps, plugins, and connected accounts
 
 A connected app can provide access to information or actions in another system. A plugin can use an app as an underlying tool. Making a plugin available does not automatically enable the required app, authorize an account, or permit every action.
 
-Plugin and app availability depend on the workspace plan and configuration. The [ChatGPT Work overview](https://learn.chatgpt.com/docs/enterprise/chatgpt-work-overview) describes plugins and their underlying apps as off by default for Enterprise and Edu workspaces and on by default for Business workspaces. Verify the actual settings for the relevant workspace and product experience.
+Plugin and app defaults depend on the plan and whether the workspace is new or existing. New Enterprise and Edu workspaces start with a selected set of apps enabled; those defaults do not change existing workspace settings and do not apply to Healthcare workspaces. In general, new plugins and apps are disabled by default in Enterprise and Edu. Business apps are enabled by default. Administrators can change availability. See the current plugin and app defaults and the [ChatGPT Work overview](https://learn.chatgpt.com/docs/enterprise/chatgpt-work-overview).
 
 Before a task uses a connected system, confirm that the workspace allows the app and any required plugin, the connection is authorized, and the connected account can access the requested information or action. Read-only settings, allowed actions, and confirmation requirements vary by integration.
 
-Desktop-only plugins, local tools, and other locally provided capabilities can follow different installation or approval paths. Do not assume that every local tool uses the same administrative approval process.
+Plugins that provide browser or Computer Use capabilities require their own availability and installation review. Making a plugin available does not override managed browser or native-app policies, operating-system permissions, or required approvals. Desktop-only plugins and locally provided tools may follow different installation paths. See [Plugin controls](https://learn.chatgpt.com/docs/enterprise/apps-and-connectors).
 
 #### Personal and shared connections
 
@@ -35820,22 +36061,31 @@ Workspace permissions determine who can use Work. Administrators can also restri
 
 Enforced requirements cannot be overridden by individual users. Managed defaults, by contrast, establish initial settings that users may be able to change. Neither replaces workspace roles or operating-system permissions.
 
-| Managed setting                                       | Security purpose                                                             |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `features.computer_use = false`                       | Disable supported Computer Use capabilities.                                 |
-| `allow_appshots = false`                              | Prevent supported Appshot capture.                                           |
-| `features.in_app_browser = false`                     | Disable the desktop app's built-in browser.                                  |
-| `features.browser_use = false`                        | Disable supported browser automation; review other browser paths separately. |
-| `features.apps = false` or `features.plugins = false` | Restrict supported connected applications or plugins.                        |
-| `computer_use.allow_locked_computer_use = false`      | Prevent supported Computer Use while a Mac is locked.                        |
+Supported local clients load managed requirements during configuration loading. A background refresh can make newer cloud-managed requirements available for a later configuration load; it does not by itself demonstrate that an existing task is using the new policy. macOS MDM requirement changes are read at the next client launch. After changing managed requirements, restart the applicable local client and verify its effective settings before relying on the restriction. Workspace permission changes can follow a different activation path. See [How local clients apply cloud-managed requirements](https://learn.chatgpt.com/docs/enterprise/managed-configuration#how-local-clients-apply-cloud-managed-requirements).
+
+| Managed setting                                       | Security purpose                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `features.computer_use = false`                       | Disable native Computer Use capabilities.                                                     |
+| `allow_appshots = false`                              | Prevent supported Appshot capture.                                                            |
+| `features.in_app_browser = false`                     | Disable the desktop app's built-in browser.                                                   |
+| `features.browser_use = false`                        | Disable supported Browser Use capabilities; external Browser Use has a separate flag.         |
+| `features.browser_use_external = false`               | Disable agent-driven Browser Use through supported browser extensions.                        |
+| `features.apps = false` or `features.plugins = false` | Restrict supported connected applications or plugins.                                         |
+| `computer_use.allow_locked_computer_use = false`      | Prevent users from enabling Locked Use on managed Macs; does not disable existing Locked Use. |
+
+These are restriction examples, not a list of enabled defaults. Omitting a feature requirement leaves normal client, platform, rollout, and user settings in effect. Browser Use feature flags, the built-in browser pane, and native Computer Use are separate controls; validate each browser path independently.
 
 Available settings and delivery methods depend on the client, operating system, workspace, and deployment configuration. Validate restrictions on a representative managed device. For supported policy settings, configuration examples, and MDM setup instructions, see [Managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration).
 
 #### Local networking and private resources
 
-A task can reach company information through paths such as a device browser, an approved desktop application, or a connected app. Existing device, proxy, VPN, source-system, and endpoint controls may apply differently to each path.
+Work Local can reach company information through a browser, a native application, a connected app, or another supported tool. Network controls apply differently to each path, and access to a corporate VPN does not itself authorize a task to use an internal resource.
 
-Access to a corporate VPN does not automatically authorize every tool to use every internal resource. Likewise, a cloud Work browser or cloud-network control is not a universal restriction on local device networking. Review the actual connection, identity, destination, and action required by the workflow.
+Managed network requirements and Browser Use origin policies are separate checks. Validate both on the app versions and operating systems in your deployment before relying on a network restriction to limit Browser Use. Browser policy checks do not mean browser traffic is routed through the command-network proxy, and Browser Use policies do not govern traffic from native applications.
+
+Managed network requirements under `[experimental_network]` are experimental and may change. Windows support is limited; test the exact client and environment before applying them to Windows users. Domain rules alone do not activate the managed proxy; `experimental_network.enabled = true` is required and does not override a sandbox that keeps networking off.
+
+Review the connection, signed-in account, destination, and action required by the workflow. For configuration details and platform limitations, see [Network access requirements](https://learn.chatgpt.com/docs/enterprise/managed-configuration#configure-network-access-requirements).
 
 #### Data handling and retention
 
@@ -35860,6 +36110,10 @@ Do not apply a hosted-conversation, temporary-upload, or compliance-log retentio
 #### Audit and compliance visibility
 
 Available reporting depends on the workspace plan, product experience, event, connected application, and deployed configuration. Verify Work Local coverage before relying on a workspace export for incident response or regulatory review.
+
+In supported versions, Browser Use can emit OpenTelemetry events for capability checks, including site access, uploads, and downloads. These events record the decision and decision source, with policy details where available. The decision source can be unknown. When export is configured, they are sent to the customer's OpenTelemetry endpoint alongside other local-runtime telemetry.
+
+OpenTelemetry export is separate from Compliance API records and must be configured independently. These events do not establish a complete record of every browser or native-app action. See [OpenTelemetry configuration](https://learn.chatgpt.com/docs/config-file/config-advanced#observability-and-telemetry).
 
 Determine whether the relevant systems record the task identity, supported prompts and responses, connected-app calls, browser approvals, application actions, local file activity, or endpoint events. Source-system and device records can provide different visibility from ChatGPT workspace records.
 
@@ -36285,6 +36539,11 @@ Review these customer-measured outcomes alongside observed credit consumption
 and any actual billing impact. Usage alone doesn't establish savings, and
 projected time improvements aren't guaranteed financial returns.
 
+To explore the activity behind your usage, see
+[Usage Insights](https://learn.chatgpt.com/docs/enterprise/usage-insights).
+Learn how to interpret the Insights overview and category details, then use the
+findings in a conversation with your team.
+
 #### Start with a controlled rollout
 
 Before expanding access:
@@ -36400,79 +36659,277 @@ This page doesn't duplicate that contract.
 
 Source: [Deploy the Windows app](https://learn.chatgpt.com/docs/enterprise/windows-deployment.md)
 
-Users can install the ChatGPT desktop app themselves, or your IT team can
-deploy it with an enterprise management tool. The app is Store-signed, but
-users don't need to open the Microsoft Store to install or update it.
+Choose how your organization installs apps.
 
-#### Let users install and update the app
+{/_ prettier-ignore _/}
 
-If users can manage their own applications, direct them to the
-[web installer](https://get.microsoft.com/installer/download/9PLM9XGG6VKS?cid=website_cta_psi).
-The installer provides the standard installation and automatic-update
-experience. Microsoft Store components may appear during installation or
-updates, but users don't need to browse the Store themselves.
+Package source
 
-You can also install the app from the command line:
+#### Deploy through Microsoft Store
+
+Use Intune's Microsoft Store integration to install and update the app.
+
+1. In the Intune admin center, go to **Apps** > **All apps** >
+   **Create**. Select **Microsoft Store app (new)**.
+2. Search for **ChatGPT** from **OpenAI**, or enter the Store
+   product ID `9PLM9XGG6VKS`. Select the app and review its installation settings.
+3. On **App information**, set **Install behavior** to **System**.
+4. Under **Required**, add your target group so Intune installs the app
+   automatically, then select **Create**.
+
+For optional installation through Company Portal, use **Available for enrolled
+devices** instead.
+
+Devices need access to the Microsoft Store and Windows Update endpoints in
+Microsoft's network requirements.
+If your network blocks these endpoints, select **Offline MSIX**.
+
+For installation context, network requirements, and deployment monitoring, see
+Microsoft's Intune Store app guide.
+
+#### Deploy an offline package with Intune
+
+Use a downloaded MSIX when devices can't use Microsoft's distribution services
+or you need to deploy a specific approved version. Choose a **Required**
+assignment so Intune installs the app automatically.
+
+If you've only blocked access to the Microsoft Store app, you can still deploy
+through Intune's Microsoft Store integration. Select **Microsoft Store
+(recommended)** above.
+
+Assignment
+
+1. Download the x64 MSIX or Arm64 MSIX for your devices.
+2. In the Intune admin center, go to **Apps** > **All apps** > **Create**.
+   Select **Line-of-business app**, upload the MSIX, and review the package
+   information.
+3. On **Assignments**, add your target device group under **Required**.
+4. In that assignment's **Install Context** column, select **User context**,
+   change it to **Device context**, and save.
+5. Review and create the app. Confirm successful installation in **Device
+   install status**, then have employees launch ChatGPT normally.
+
+If the app doesn't appear, have users sign out and back in.
+
+For more information, see Microsoft's LOB app deployment guide.
+
+To let users choose when to install the offline package, use a **Windows app
+(Win32)** with an **Available for enrolled devices** assignment:
+
+1. Download the x64 MSIX or Arm64 MSIX, plus the offline license. Rename the package to `ChatGPT.msix` and keep both files in the same
+   folder.
+2. Save the following as `Install-ChatGPT.ps1`
+   beside the downloaded files:
+
+   ```powershell
+   #Requires -RunAsAdministrator
+   $ErrorActionPreference = 'Stop'
+
+   Add-AppxProvisionedPackage -Online `
+     -PackagePath "$PSScriptRoot\ChatGPT.msix" `
+     -LicensePath "$PSScriptRoot\ChatGPT-License.xml" `
+     -Regions all
+   ```
+
+3. Use Microsoft's Win32 app workflow to package these files and add a **Windows app (Win32)** in Intune. Set
+   **Install behavior** to **System**, target the package's architecture, and
+   run the script with 64-bit Windows PowerShell. Assign it as
+   **Available for enrolled devices**.
+
+Win32 installation and detection settings
+
+Use this install command:
+
+```text
+%SystemRoot%\Sysnative\WindowsPowerShell\v1.0\powershell.exe -NoProfile -File .\Install-ChatGPT.ps1
+```
+
+For the custom detection rule, run the following script in 64-bit PowerShell.
+It reports success when Windows has provisioned the app on the device. If you deploy a
+specific version, also compare its `Version` with your approved version.
+
+```powershell
+$package = Get-AppxProvisionedPackage -Online -ErrorAction Stop |
+  Where-Object DisplayName -eq 'OpenAI.Codex'
+
+if ($package) {
+  Write-Output $package.PackageName
+  exit 0
+}
+exit 1
+```
+
+For the uninstall command, package an `Uninstall-ChatGPT.ps1` script with these
+commands and run it in the same System context. This removes the provisioned
+package and the app registrations for all users on the device.
+
+```powershell
+#Requires -RunAsAdministrator
+$ErrorActionPreference = 'Stop'
+
+Get-AppxProvisionedPackage -Online |
+  Where-Object DisplayName -eq 'OpenAI.Codex' |
+  Remove-AppxProvisionedPackage -Online -AllUsers
+
+Get-AppxPackage -AllUsers -Name 'OpenAI.Codex' |
+  Remove-AppxPackage -AllUsers
+```
+
+Follow your organization's PowerShell script-signing policy for both scripts.
+
+The app becomes available to users when Windows registers the provisioned
+package at sign-in. Have users sign out and back in if it doesn't appear.
+
+#### Deploy with Microsoft Configuration Manager (SCCM)
+
+Deploy the downloaded MSIX through Configuration Manager and Software Center.
+
+1. Download the x64 MSIX or Arm64 MSIX for your devices. Put it on a network share accessible to Configuration
+   Manager.
+2. Go to **Software Library** > **Application
+   Management** > **Applications** > **Create Application**. Select **Windows app
+   package** and enter the MSIX path. Review the detected package information and
+   enable **Provision this application for all users on the device**.
+3. Distribute the content to your distribution points
+   and deploy to a device collection. Choose **Required** to install
+   automatically, or **Available** to let users install from Software Center.
+
+Use the Windows app package deployment type, rather than the Store-link
+deployment type. For package requirements and all-user provisioning, see
+Microsoft's Configuration Manager guide.
+
+If your deployment workflow requires it, download the offline license alongside the package.
+
+#### Deploy with another management tool
+
+Use your management tool's MSIX deployment workflow to install the app on managed
+Windows devices.
+
+1. Download the x64 MSIX or Arm64 MSIX for your devices.
+2. Add the MSIX to your deployment tool. Configure installation for the device,
+   using Local System or administrator privileges.
+3. Assign automatic installation to a pilot device group. Confirm that employees
+   can open ChatGPT under their normal Windows accounts before expanding deployment.
+
+If the app doesn't appear, have users sign out and back in.
+
+Install with a PowerShell script
+
+If your tool requires an installation command, download the offline license alongside the MSIX.
+Rename the package to `ChatGPT.msix` and save this script as
+`Install-ChatGPT.ps1` in the same folder:
+
+```powershell
+#Requires -RunAsAdministrator
+$ErrorActionPreference = 'Stop'
+
+Add-AppxProvisionedPackage -Online `
+  -PackagePath "$PSScriptRoot\ChatGPT.msix" `
+  -LicensePath "$PSScriptRoot\ChatGPT-License.xml" `
+  -Regions all
+```
+
+Package the script and both files together. Configure your tool to run the script
+with 64-bit Windows PowerShell as Local System or an administrator.
+
+Package source
+
+#### Let users install the app
+
+Use this option when users can install applications themselves or get help
+from an administrator.
+
+1. Direct users to the ChatGPT Windows installer.
+2. Run the installer and follow the Windows installation
+   prompts. An administrator must approve the installation.
+3. Open ChatGPT and sign in with a work account to get started.
+
+Users can also install from the command line:
 
 ```powershell
 winget install --id 9PLM9XGG6VKS -s msstore
 ```
 
-#### Deploy the app with an enterprise management tool
+The installer provides automatic updates. Microsoft Store components may appear
+during installation or updates, but users don't need to browse the Store.
 
-If your organization centrally manages software, use Microsoft Intune or
-another compatible mobile device management (MDM) or software-deployment
-platform. If your platform supports Microsoft Store app deployment, search for
-ChatGPT from OpenAI in the Store app flow, or use this Store product ID:
+#### Install from an offline package
 
-```text
-9PLM9XGG6VKS
-```
+Download the files on a connected machine, then copy them to the target device.
+An administrator must perform the installation.
 
-For setup details, see the following Microsoft documentation:
+1. Download the x64 MSIX or Arm64 MSIX, plus the offline license. Rename the package to `ChatGPT.msix` and keep both files in the same
+   folder.
+2. Open Windows PowerShell as an administrator in that
+   folder and run:
 
-- [Enterprise deployment guide](https://1drv.ms/b/c/123ec1ed6c72a14a/IQDVdo5pE5P3QKg5r0eieSvfAeE7cW0yy58ncBFW7OYajwU?e=dGH94F)
-- [Intune deployment guide](https://1drv.ms/b/c/123ec1ed6c72a14a/IQDh_5o31T6XT7bUn5RPldEJAZX58gEuRr8YnJD7d2IMpec?e=nByKw6)
-- [MECM deployment guide](https://1drv.ms/b/c/123ec1ed6c72a14a/IQB829f_TSbkR7-H9qA4Q9ntAa9D2He3qMjXksWi2ozdeg8?e=GTKgAl)
-- [Add Microsoft Store apps to Microsoft Intune](https://learn.microsoft.com/en-us/intune/app-management/deployment/add-microsoft-store)
+   ```powershell
+   Add-AppxProvisionedPackage -Online `
+     -PackagePath .\ChatGPT.msix `
+     -LicensePath .\ChatGPT-License.xml `
+     -Regions all
+   ```
+
+3. Sign out and back in if the app doesn't appear, then open
+   ChatGPT and sign in with a work account.
+
+These links provide the latest Store-signed package for each architecture.
+Offline installation doesn't provide offline access to ChatGPT. Standalone
+MSI and non-Store EXE packages aren't available.
 
 #### Manage app updates
 
-For setup instructions and rollout guidance, see
-[Manage app updates](https://learn.chatgpt.com/docs/enterprise/manage-app-updates).
+The app checks for updates by default, including after an offline
+installation. To enable automatic updates, allow devices to reach
+`persistent.oaistatic.com`. If you disable automatic updates, deploy newer
+packages through your management tool.
 
-#### Install without Microsoft distribution services
+For update policy and rollout guidance, see
+[Manage app updates](https://learn.chatgpt.com/docs/enterprise/manage-app-updates). Disabling the built-in
+updater doesn't disable updates from the Microsoft Store or your management tool.
 
-If your environment can't use Microsoft app-distribution services for the
-initial installation, download the Store-signed MSIX package for each device
-architecture:
+#### Troubleshooting
 
-| Device architecture | Package                                                                                  |
-| ------------------- | ---------------------------------------------------------------------------------------- |
-| x64                 | [ChatGPT-x64.msix](https://persistent.oaistatic.com/codex-app-prod/ChatGPT-x64.msix)     |
-| Arm64               | [ChatGPT-arm64.msix](https://persistent.oaistatic.com/codex-app-prod/ChatGPT-arm64.msix) |
+Users are prompted for administrator credentials when installing
 
-These stable links point to the latest published Store-signed package for each
-architecture. For offline deployment workflows that require a license file,
-also download the
-[offline license (`ChatGPT-License.xml`)](https://persistent.oaistatic.com/codex-app-prod/ChatGPT-License.xml).
-Ingest the appropriate MSIX and, when required, the license file into your MDM
-or software-deployment platform.
+For self-install, this is expected. An administrator must approve the installation.
 
-After the initial installation, devices that can reach
-`persistent.oaistatic.com` can install updates automatically unless managed
-configuration disables the app's built-in updater. If you disable in-app
-updates, deploy newer packages through your MDM or software-deployment tool.
+For an Intune deployment through the Microsoft Store:
 
-This deployment path:
+1. In the Intune admin center, go to **Apps** > **All apps** and select ChatGPT.
+2. Check **Install behavior** in the app's **Properties**. If it's **User**, add
+   the app again as a **Microsoft Store app (new)** and select **System** on
+   **App information**.
+3. Assign the app to your target group under **Required** or **Available for
+   enrolled devices**. If you added a new app, remove that group's assignment
+   from the original app.
+4. Sync the affected device with Intune, then check **Device install status**.
+   For an available assignment, retry the installation in Company Portal.
 
-- Supports initial installation in restricted environments.
-- Supports x64 and Arm64 devices.
-- Doesn't provide a standalone MSI or non-Store EXE.
+If the app is already installed, deploying it with **System** install behavior may
+cause Intune to report `0x87D1041C`. Installation still succeeds in this scenario.
+Verify the app on the affected device.
+
+Installation fails with error 0x80073D28
+
+Windows returns `0x80073D28` (ERROR_PACKAGED_SERVICE_REQUIRES_ADMIN_PRIVILEGES)
+when it can't install a packaged service without administrator privileges.
+Run the installation as an administrator, or configure your deployment tool to
+install in device or System context.
+
+For an existing SCCM deployment:
+
+1. Open the application's **Properties** > **Deployment Types**.
+2. Edit the **Windows app package** deployment type and open **User Experience**.
+3. Enable **Provision this application for all users on the device** and save.
+4. Refresh the client's machine policy, then retry the installation in Software
+   Center.
+
+For more information about the provisioning setting, see Microsoft's application deployment settings.
 
 #### Related resources
 
-- [Manage app updates](https://learn.chatgpt.com/docs/enterprise/manage-app-updates)
+- [Managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration)
 - [ChatGPT desktop app for Windows](https://learn.chatgpt.com/docs/windows/windows-app)
 
 ### Governance
@@ -37621,11 +38078,15 @@ startup, they override the user's local `config.toml` and any CLI `--config`
 overrides. Users can still change those settings during the current run, and the
 defaults apply again the next time the client starts.
 
-If a managed default, macOS MDM profile, or saved configuration pins `gpt-5.4`
-or `gpt-5.4-mini` for users signed in with ChatGPT, update it before August 31, 2026. Replace `gpt-5.4` with `gpt-5.6-terra` and `gpt-5.4-mini` with
-`gpt-5.6-luna`. The OpenAI API and Codex authenticated with your own API key
-aren't affected. See [workspace model
-availability](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability#prepare-for-the-gpt-54-retirement).
+If a managed default, macOS MDM profile, or saved configuration pins
+`gpt-5.5` for Codex users signed in with ChatGPT, replace it with an available
+model before October 14, 2026. Choose `gpt-6-sol` once an administrator has
+enabled it for the affected users. GPT-5.5 retires from ChatGPT,
+ChatGPT Work, and Codex on all plans on that date. The OpenAI API isn't
+affected. See [workspace model availability](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability#prepare-for-the-gpt-55-retirement).
+
+For configurations that still pin `gpt-5.4` or `gpt-5.4-mini`, follow the
+[GPT-5.4 migration guidance](https://learn.chatgpt.com/docs/enterprise/workspace-model-availability#prepare-for-the-gpt-54-retirement).
 
 Make sure your managed defaults meet your requirements; the local runtime
 rejects disallowed values.
@@ -37717,6 +38178,11 @@ supported surfaces, while admins decide which plugins are available in their wor
 Learn more about [plugins](https://learn.chatgpt.com/docs/plugins),
 [skills](https://learn.chatgpt.com/docs/skills-and-plugins), and
 [connected services](https://help.openai.com/en/articles/11487775).
+
+In this guide, **app** and **MCP server** refer to the same connected
+integration and are interchangeable terms. We use **MCP server** in the prose,
+but preserve **app** in UI labels such as **Workspace apps** and
+**App permissions**, and in CSV column names.
 
 A member can use an MCP server's capabilities only when the plugin and MCP server are
 available to their role and they have access to the connected service.
@@ -38520,6 +38986,147 @@ owns it.
 - [Admin rollout guide](https://learn.chatgpt.com/docs/enterprise/admin-setup)
 - [Plugin controls](https://learn.chatgpt.com/docs/enterprise/apps-and-connectors)
 
+### Usage Insights for ChatGPT Work in Codex
+
+Source: [Usage Insights for ChatGPT Work in Codex](https://learn.chatgpt.com/docs/enterprise/usage-insights.md)
+
+Insights in the Admin Console helps you understand what teams use ChatGPT Work and Codex for and where credits are spent. Open a category in the workspace overview to see its tasks and usage. Check the scope shown in each view before comparing results.
+
+Use these views to identify workflows to assess with the people responsible for them. Pair usage and spend with team records to understand whether the work takes less effort, meets quality standards, or produces better results.
+
+#### Analytics views
+
+The Admin Console includes analytics for ChatGPT Work and Codex. Usage shows activity and consumption. Insights groups usage into categories and tasks. For engineering work, Code review shows review activity and findings.
+
+If you're looking at tokens, use the token measures available in Usage. Message share, credit share, and token share describe different things; keep those labels intact when comparing or sharing a result.
+
+#### Open Insights
+
+In the Admin Console, select your workspace and open **Analytics > Insights**. You'll need access to the analytics for that workspace; the views and data you see depend on your permissions and enabled features.
+
+Check the workspace, date range, and available filters before reading the results. Keep them consistent when comparing activity. Insights history is available only from when classification began.
+
+#### Use cases and tasks
+
+On Overview, use the Use cases / Tasks toggle to switch between broad categories and more specific activity. In the Use cases tab, expand a category to see its tasks.
+
+Select a use case or task in the chart to open its details. Use the Use cases table to compare categories and tasks beyond the top 10.
+
+A category may include several workflows. Check its tasks before treating it as a single business process. If some activity is unclassified, note that limitation when describing the results.
+
+#### Messages, credits, and active users
+
+Read the table's Messages, Credits, and Active users together to understand each category or task. If a sampling notice appears, the counts shown reflect sampled activity. Don't scale them up to estimate total workspace activity.
+
+**Messages** shows the number of messages associated with a category or task. A message count doesn't tell you how much work the team finished.
+
+**Share of credits** shows the portion of credit consumption associated with a category or task. Read it alongside Credits and Messages to understand where consumption is concentrated.
+
+**Active users** shows the number of people active in a category or task. Read it alongside Messages to compare how many people use a category with how much activity it generates.
+
+If a category accounts for a large share of credits, check its tasks, models, and settings. More complex work or different model choices may explain the category's credit use. Review what the team accomplished before deciding whether that consumption is worthwhile.
+
+If a category has few active users, ask them how they're using it and where they're having difficulty. They may have a workflow worth sharing or need more support.
+
+#### Category details
+
+Open a category's details to see its tasks and usage breakdowns in a drawer on the right.
+
+Review the tasks in the category and the credits used by each one. The model, reasoning, and speed breakdowns show each option's share of credits within the selected category or task. If consumption changes, ask the team whether the work or these settings changed.
+
+Where available, review plugin and skill invocations for the category or task. These counts include activity across ChatGPT Work and Codex within the selected dates and filters. Invocations aren't the same as messages or completed tasks.
+
+Keep estimates labeled as estimates when you share a finding. Plugin and skill credit allocations can overlap, so don't add those views together to calculate total investment. For more on interpreting credits and billing impact, see [ChatGPT Work usage and cost](https://learn.chatgpt.com/docs/enterprise/chatgpt-work-usage-and-cost).
+
+#### Code review
+
+If you're reviewing engineering work, open **Code review** to see the review measures available to your workspace.
+
+- **PRs reviewed** shows pull-request review activity. A reviewed pull request isn't necessarily merged or deployed.
+- **Issues found** shows findings from those reviews. Check with reviewers to understand which findings were useful and acted on.
+- **Issues by priority, reactions, and reaction sentiment** add context about the findings and how people responded.
+
+A zero count can reflect no activity or a gap in reporting. Check the date range and whether the relevant reviews are included before interpreting the count.
+
+#### Assessing value
+
+Choose a workflow your team uses in ChatGPT Work or Codex. Agree with the business owner on the result to improve and how you'll measure it. Review Insights alongside team records, such as account briefs, inventory plans, or pull requests. Include the people doing the work in the assessment.
+
+Use a consistent reporting period and check any sampling notice. Categories can include several workflows, and activity counts don't measure completed work. The examples below show how to investigate value using both usage data and evidence from the workflow.
+
+#### Fixing bugs
+
+Is Codex helping engineers resolve bugs with less investigation and rework?
+
+Choose a recurring bug type in one service, such as incorrect input handling. Review the issues, fixes, and regression tests with an engineer who knows that code.
+
+    How to investigate
+
+1. **Compare similar fixes.** Record investigation, implementation, and review time for bugs of similar complexity. Separate hands-on effort from time waiting for a review or release.
+2. **Check Insights.** Open Software engineering and look for tasks relevant to the investigation. Review credits and active users for the period you're comparing.
+3. **Confirm the result.** Check that the test reproduces the bug and passes with the fix. Ask what engineers corrected, and note reopened issues or regressions.
+4. **If confirmed fixes need less total effort, share the workflow.** If rework stays high, improve the reproduction steps or repository context and compare again.
+
+#### Adding tests
+
+Is Codex helping the team cover important failure cases with less manual effort?
+
+Choose a module with a known coverage gap. Agree which behaviors and failure cases need tests before comparing the results.
+
+    How to investigate
+
+1. **Define the gap.** List the missing behaviors and record the effort needed to add comparable tests. Use your test reports to capture the starting coverage.
+2. **Check Insights.** Find relevant tasks under Software engineering. Review credits and the available model and reasoning breakdowns for the same period.
+3. **Inspect the tests.** Have an engineer check that assertions catch the intended failures. Note flaky results, added runtime, and time spent rewriting or maintaining the tests.
+4. **Reuse the approach if useful tests take less effort to land.** If they pass without catching the failure, clarify the expected behavior and try again.
+
+#### Refactoring code
+
+Is Codex helping the team finish a refactor while preserving expected behavior?
+
+Choose one bounded change, such as replacing a deprecated API across a package. Agree which call sites are in scope and how the team will verify the result.
+
+    How to investigate
+
+1. **Set the scope.** Record the call sites to update and the effort for a comparable manual change. Label estimates, especially if the work was previously deferred.
+2. **Check Insights.** Review relevant Software engineering tasks and their credits for the same period. Check the available model and reasoning breakdowns if consumption stands out.
+3. **Validate the change.** Review the diff, run the relevant checks, and look for missed call sites or behavior changes. Include review, corrections, and follow-up fixes in the effort.
+4. **Expand to another package if the refactor meets the agreed checks.** If too much cleanup remains, narrow the change or provide a working example first.
+
+#### Account research
+
+Is ChatGPT Work helping sellers prepare accurate account briefs with less effort?
+
+Choose a sales team that prepares briefs regularly. Agree what each brief should include, such as account history, current priorities, and questions for the customer.
+
+    How to investigate
+
+1. **Compare similar briefs.** Record preparation and review time before and during the trial. Use the same quality criteria and accounts that need a similar level of research.
+2. **Check Insights.** Look for account research and planning under Sales. Use the available group filter to focus on the team. Review credits, model choices, and any available plugin or skill activity for the same period.
+3. **Review the briefs with sellers.** Check the facts against source records and assess whether the research helps prepare for the conversation. Include corrections in the effort, and track whether time saved goes into customer conversations or follow-up.
+4. **Share the approach if accurate briefs take less effort.** If important context is missing, improve the source material or provide a shared skill. Use CRM records to assess any later change in qualified opportunities or sales; Insights alone doesn't establish that connection.
+
+#### Inventory planning
+
+Is ChatGPT Work helping the team prepare reliable inventory plans with less manual work?
+
+Choose a recurring planning cycle, such as stock for an event. Agree which products and locations are in scope and which sales and stock records the team will use.
+
+    How to investigate
+
+1. **Record the current process.** Measure time spent gathering records, preparing the plan, and correcting it. Note stock shortages or excess stock from comparable cycles.
+2. **Check Insights.** Find the category and tasks that match the team's planning work. Review credits and active users for the same period. Confirm the match with the team before attributing the category's usage to this workflow.
+3. **Check the plan against actual results.** Have the inventory owner verify quantities, assumptions, and missing data. Include review and corrections in the effort. After the cycle, compare planned stock with sales and remaining inventory.
+4. **Reuse the workflow if plans are reliable and take less effort.** If stock shortages or excess stock increase, revisit the inputs and assumptions. Use inventory and purchasing records to assess any cost reduction.
+
+**Record the assessment.** Note the use case, owner, and reporting period. Include the baseline, results, credits, and limitations. Record any changes agreed with the team and a date to review them. Count completed work from team records, and label estimates.
+
+To assess ROI, compare the value of the improvement with the costs of AI, setup, training, and ongoing support. Include time spent reviewing and correcting the work. Time saved isn't automatically a cash saving; check how the team uses that capacity.
+
+Before raising usage limits, review current limits, consumption, and the work that needs more capacity. Credits consumed aren't automatically an additional invoice charge. See [ChatGPT Work usage and cost](https://learn.chatgpt.com/docs/enterprise/chatgpt-work-usage-and-cost).
+
+Usage insights are one part of understanding the return on your investment in ChatGPT Work and Codex. They show usage and credit consumption within the selected scope. The teams doing the work can explain what changed, whether results improved, and what that improvement is worth. Use both to decide which workflows to expand and where the team needs more support.
+
 ### User lifecycle management
 
 Source: [User lifecycle management](https://learn.chatgpt.com/docs/enterprise/user-lifecycle.md)
@@ -39122,348 +39729,6 @@ Start with a defined admin task: identify the required inputs and permissions, r
 - [ChatGPT workspace Analytics API](https://learn.chatgpt.com/docs/enterprise/analytics-api)
 - [ChatGPT workspace Compliance API](https://learn.chatgpt.com/docs/enterprise/compliance-api)
 
-### Workload identity federation
-
-Source: [Workload identity federation](https://learn.chatgpt.com/docs/enterprise/workload-identity.md)
-
-Workload identity federation lets trusted automation use Codex without storing
-a personal access token or another long-lived OpenAI credential. Your workload
-presents a short-lived identity token from a provider you already operate.
-OpenAI verifies that token and returns a short-lived access token for a user or
-service account in your managed ChatGPT workspace.
-
-Use workload identity for unattended Codex processes in cloud platforms,
-Kubernetes, CI systems, and other environments that can issue OIDC tokens or
-SPIFFE JWT-SVIDs. For the shared trust model and the separate OpenAI API flow,
-see the [workload identity overview](https://developers.openai.com/api/docs/guides/workload-identity-federation).
-
-Codex workload identity federation is in beta and must be enabled for your
-workspace. To request access, contact your OpenAI representative or [OpenAI
-Support](https://help.openai.com/en/articles/6614161-how-can-i-contact-support).
-
-#### Before you begin
-
-You need:
-
-- Permission to manage workload identity in the OpenAI Admin Portal.
-- A managed ChatGPT workspace.
-- A ChatGPT user or service account that is an active member of that workspace,
-  or permission to create one during setup.
-- An OIDC token or SPIFFE JWT-SVID whose issuer, audience, and identifying
-  claims you know.
-- A runtime that can keep that token current in a protected file at an absolute
-  path.
-- Codex 0.148.0 or later.
-- An effective Codex authentication policy that permits ChatGPT authentication
-  and the workspace selected by the federation rule. See [Enforce a login
-  method or workspace](https://learn.chatgpt.com/docs/auth#enforce-a-login-method-or-workspace).
-
-OpenAI does not create a principal or workspace membership during token
-exchange. An administrator selects or creates the principal before the workload
-connects. Creating a human user consumes a workspace seat and follows the
-membership rules for that workspace.
-
-On native Windows, use the **elevated**
-[Windows sandbox](https://learn.chatgpt.com/docs/windows/windows-sandbox). Other Windows sandbox modes
-cannot protect the identity-token file from model-controlled commands.
-
-#### Get an identity token
-
-Your workload runtime gets and refreshes the upstream identity token. Codex does
-not call cloud metadata services or identity-provider client libraries on your
-behalf.
-
-| Runtime                          | Recommended token-file source                                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Kubernetes, AKS, EKS, or GKE     | Mount a projected service-account token and point Codex at that file. The platform rotates it.                                  |
-| Microsoft Entra managed identity | Run a trusted host process or sidecar that requests a token from Azure IMDS and replaces the file before expiry.                |
-| AWS outbound identity federation | Run a trusted host process that calls regional STS `GetWebIdentityToken` and replaces the file before expiry.                   |
-| Google Cloud                     | Run a trusted host process that requests an identity token from the metadata server and replaces the file before expiry.        |
-| Oracle Cloud Infrastructure      | Run a trusted host process that uses an instance principal to request an IDCS access token and replaces the file before expiry. |
-| GitHub Actions                   | Request the job's OIDC token, write it to a protected file, and request a new token before a later exchange.                    |
-| SPIFFE                           | Use the SPIFFE Workload API or an approved helper to write a current JWT-SVID to the file.                                      |
-| Custom OIDC provider             | Use the issuer's workload flow to get a JWT, then refresh the protected file before the JWT expires.                            |
-
-Follow the guide for your provider to configure token issuance and inspect a
-sample token:
-
-- [Microsoft Azure](https://developers.openai.com/api/docs/guides/workload-identity-federation/microsoft-azure)
-- [AWS](https://developers.openai.com/api/docs/guides/workload-identity-federation/aws)
-- [Google Cloud](https://developers.openai.com/api/docs/guides/workload-identity-federation/google-cloud)
-- [Oracle Cloud Infrastructure](https://developers.openai.com/api/docs/guides/workload-identity-federation/oracle-cloud)
-- [GitHub Actions](https://developers.openai.com/api/docs/guides/workload-identity-federation/github-actions)
-- [Kubernetes](https://developers.openai.com/api/docs/guides/workload-identity-federation/kubernetes)
-- [SPIFFE](https://developers.openai.com/api/docs/guides/workload-identity-federation/spiffe)
-
-Decode a sample token locally and record its `iss`, `aud`, `sub`, and any other
-claims you plan to trust. Decoding does not verify the signature. Do not paste a
-production token into a website or write it to logs.
-
-#### Connect the workload
-
-An administrator creates the provider and federation rule before starting
-Codex.
-
-1. Open [Workload identity](https://admin.openai.com/workload-identity) in the
-   OpenAI Admin Portal, then select **Connect workload**.
-2. Reuse a provider configured for Codex, or create one. Provider presets fill
-   in common settings for GitHub Actions, Microsoft Entra ID, Google Cloud,
-   AWS, Kubernetes, SPIFFE, and custom OIDC providers.
-3. Select **Codex** and the managed workspace the workload may use.
-4. Add the narrowest conditions that identify the workload. Match a subject,
-   exact claims, a CEL condition, or a combination. Add accepted audiences to
-   restrict which tokens the rule accepts. Every configured matcher must pass.
-5. Map the rule to one existing ChatGPT user or service account, or create one
-   during setup.
-6. Review the provider, conditions, workspace, principal, scopes, and access
-   token lifetime. Select **Connect workload**, then **Download config**.
-
-The downloaded file contains a non-secret federation rule ID and the path where
-Codex will read the identity token. It does not contain a credential.
-
-To automate setup, use the [workload identity Admin
-API](https://developers.openai.com/api/docs/guides/workload-identity-federation/admin-api). For matcher
-behavior and examples, see [Federation rule
-reference](https://developers.openai.com/api/docs/guides/workload-identity-federation/federation-rules).
-
-#### Configure the Codex process
-
-The process that starts Codex requires these two workload identity variables:
-
-```bash
-export OPENAI_FEDERATION_RULE_ID="idpm_..."
-export OPENAI_IDENTITY_TOKEN_FILE="/var/run/secrets/openai.com/identity-token"
-```
-
-`OPENAI_FEDERATION_RULE_ID` is not a secret. The token file is. Use an absolute
-path in a dedicated directory, such as `/var/run/secrets/openai.com`, owned by
-the workload account with mode `0700`. Only trusted host processes should write
-there. Keep the directory outside repositories and other paths available to
-Codex tools. Keep credentials out of logs, shell history, and build artifacts.
-
-#### Add audit attribution
-
-When runtime instances share a federation rule, you can identify each instance
-in token-issuance audit events. Set the optional
-`OPENAI_WORKLOAD_IDENTITY_CONTEXT` variable to a JSON object encoded as a
-string:
-
-```bash
-export OPENAI_WORKLOAD_IDENTITY_CONTEXT='{
-  "instance_id": "runner-42",
-  "display_name": "payments-prod",
-  "labels": {
-    "environment": "production",
-    "region": "us-west-2"
-  }
-}'
-```
-
-The object requires `instance_id`. It can also contain `display_name` and up to
-eight labels. The encoded object can be up to 1,024 bytes. `instance_id` and
-`display_name` can be up to 128 characters. Label keys can be up to 64
-characters, and label values can be up to 256 characters.
-
-Identifiers must start with an ASCII letter or number. Values can then contain
-letters, numbers, `.`, `_`, `:`, `/`, `@`, and `-`. Label keys support letters,
-numbers, `.`, `_`, and `-`.
-
-OpenAI treats this context as client-reported audit attribution, not as verified
-workload identity. It does not affect authentication, authorization, rule
-matching, scopes, rate limits, revocation, feature gates, or metrics. Do not put
-credentials, secrets, personal data, prompts, model output, or other Customer
-Content in it.
-
-For valid context, OpenAI derives a stable attribution ID scoped to the tenant,
-provider, federation rule, and `instance_id`. For attribution, the access token
-contains the ID but not the context. The successful token-issuance audit event
-contains the ID and the normalized context. Context that exceeds a limit or
-violates this schema makes the exchange fail with `invalid_grant`.
-
-Codex reads the context when the process starts and does not pass it, the rule
-ID, or the token-file path to model-controlled shells, hooks, or MCP servers.
-Restart Codex after changing the context.
-
-#### Protect and rotate the token file
-
-For managed Linux, macOS, and WSL deployments, add the entire token directory to
-[`permissions.filesystem.deny_read`](https://learn.chatgpt.com/docs/enterprise/managed-configuration#enforce-deny-read-requirements)
-in managed requirements:
-
-```toml
-[permissions.filesystem]
-deny_read = ["/var/run/secrets/openai.com"]
-```
-
-This blocks model-controlled commands from reading the active token or a
-temporary replacement while the Codex host process can still use the token for
-exchange. For projected-token volumes, deny the entire token mount and any
-backing or resolved target paths outside it. File modes and environment-variable
-scrubbing alone do not protect credentials from another process running as the
-same user. On native Windows, use the elevated sandbox described above.
-
-For token sources that do not project a file, have a trusted host process write
-each replacement inside that protected directory and rename it into place. An
-atomic rename prevents Codex from reading a partial token. For example, adapt
-this host-owned refresh script to your provider's token command. Provision the
-directory before running the script:
-
-```bash
-set -eu
-TOKEN_DIR="/var/run/secrets/openai.com"
-TOKEN_FILE="$TOKEN_DIR/identity-token"
-umask 077
-TOKEN_TEMP="$(mktemp "$TOKEN_DIR/.identity-token.XXXXXX")"
-trap 'rm -f -- "$TOKEN_TEMP"' EXIT
-trap 'exit 1' HUP INT TERM
-your-identity-provider-command > "$TOKEN_TEMP"
-test -s "$TOKEN_TEMP"
-mv -f -- "$TOKEN_TEMP" "$TOKEN_FILE"
-```
-
-Run the refresh process outside any shell or tool that Codex can control. Keep
-the read denial in place during refresh and cleanup. Even if a forced stop
-leaves a temporary file behind, that file must remain inside the denied
-directory. Do not put workload identity settings in `config.toml`.
-
-#### Verify the connection
-
-Load the downloaded environment and inspect the selected authentication method:
-
-```bash
-. ./workload-identity-idpm_example.env
-codex login status
-```
-
-In PowerShell:
-
-```powershell
-$env:OPENAI_FEDERATION_RULE_ID = "idpm_..."
-$env:OPENAI_IDENTITY_TOKEN_FILE = "C:\run\openai\identity-token"
-codex login status
-```
-
-A successful check prints `Logged in using workload identity`. This confirms
-that Codex exchanged a token through the configured federation rule. The command
-does not print the resolved workspace, principal, or rule. Confirm those values
-in the Admin Portal before you start the workload. If Codex reports another
-authentication method, the two required WIF variables did not reach the process.
-
-If the provider uses **Prevent assertion replay** and the assertion has a `jti`
-claim, this check consumes that `jti`. Write a newly issued assertion with a new
-`jti` before starting another Codex process.
-
-Run a small request from the same environment:
-
-```bash
-codex exec "Reply with only: workload identity is working"
-```
-
-Codex exchanges the upstream token and keeps the OpenAI access token in memory.
-It does not write either credential to `auth.json`, the system keyring, or
-`config.toml`.
-
-#### Keep the token current
-
-Refresh the identity-token file before the upstream token expires. Codex rereads
-the file when it needs another OpenAI access token. The OpenAI token expires at
-the earlier of the upstream token's expiry or the federation rule's lifetime,
-and never lasts longer than one hour.
-
-When an administrator turns on replay protection, each upstream JWT must have a
-unique `jti`. Write a newly issued assertion with a new `jti` before each
-exchange, including refreshes in a long-running process. Assertions without
-`jti` do not receive replay protection.
-
-Codex shares one in-memory exchange session inside each host process. Concurrent
-requests in that process reuse a valid OpenAI access token and share one refresh
-when it expires. Separate processes perform separate exchanges, so they need
-assertions that the provider permits them to use.
-
-#### Credential precedence
-
-The two required workload identity variables take precedence over every other
-credential source:
-
-1. If either `OPENAI_FEDERATION_RULE_ID` or
-   `OPENAI_IDENTITY_TOKEN_FILE` is present, Codex selects workload identity.
-2. If only one required variable is present, Codex returns an error. It does not
-   fall back to an API key, access token, or stored login.
-3. `OPENAI_WORKLOAD_IDENTITY_CONTEXT` alone does not select workload identity.
-4. When neither required WIF variable is present, Codex applies the normal
-   credential rules for that surface. For surfaces that allow API key
-   authentication, `CODEX_API_KEY` takes precedence on `codex exec`,
-   `codex review`, the TypeScript SDK, and `codex exec-server --remote`. Other
-   surfaces can use `CODEX_ACCESS_TOKEN` or a stored login.
-
-An SDK `apiKey` option becomes `CODEX_API_KEY`, but WIF still takes precedence
-when either required WIF variable is present. Omit the option when using WIF so
-the workload does not carry an unused long-lived credential.
-
-To move an existing workload without downtime, configure WIF while its current
-credential is still available. Start a new process with both required WIF
-variables; WIF takes precedence even if the old credential is still present.
-After the workload succeeds with WIF, remove the old credential from its runtime
-and secrets store, then revoke it. Before revocation, you can roll back by
-removing both required WIF variables and starting a new process.
-
-#### Supported Codex surfaces
-
-Configure workload identity on the machine that owns the Codex process.
-
-| Surface                                         | Support and host boundary                                                                               |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Interactive `codex`, `resume`, and `fork`       | Supported. Start the CLI in the configured environment.                                                 |
-| `codex exec`, `exec resume`, and `codex review` | Supported. Either required WIF variable makes WIF take precedence.                                      |
-| TypeScript SDK                                  | Supported. The parent process supplies the required WIF variables and any optional attribution context. |
-| `codex app-server`                              | Supported. Configure WIF on the app-server host, not on a remote client.                                |
-| `codex exec-server --remote`                    | Supported for authentication to the remote environment registry. Configure WIF on the exec-server host. |
-| Local exec-server process operations            | Do not use WIF authentication. They run through the local exec-server protocol.                         |
-| `codex mcp-server`                              | Not supported.                                                                                          |
-
-Remote app-server and exec-server clients never send the upstream identity
-token over their protocols.
-
-#### Change or remove access
-
-Changes to a rule's subjects, audiences, claims, CEL condition, scopes, or token
-lifetime apply to new exchanges. A token issued before the change can remain
-valid until its lifetime ends.
-
-Disable a provider or rule to stop access immediately. Disablement blocks new
-exchanges and revokes OpenAI access tokens already issued through that resource.
-Archiving has the same access effect and cannot be undone. Changing provider
-trust also revokes issued tokens before the new trust takes effect.
-
-#### Audit changes
-
-Provider and federation rule creation, updates, and archival generate audit
-events. Use the [Compliance API and audit event
-guidance](https://learn.chatgpt.com/docs/enterprise/compliance-api) to export the events your workspace
-supports. Correlate them with your identity provider's issuance logs, and do not
-record upstream assertions or OpenAI access tokens in either system.
-
-When the process supplies `OPENAI_WORKLOAD_IDENTITY_CONTEXT`, successful
-token-issuance audit events also contain the stable attribution ID and
-normalized context described above.
-
-#### Troubleshoot
-
-| Symptom                                                               | Check                                                                                                              |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Codex reports incomplete workload identity configuration              | Set both required variables in the same process and use an absolute token-file path.                               |
-| Codex reports that its login policy does not permit workload identity | Allow ChatGPT authentication in the effective policy and include the rule's workspace in its permitted workspaces. |
-| Codex reports another credential                                      | Load both required WIF variables into the Codex process, then start a new process and rerun `codex login status`.  |
-| OpenAI rejects workload context                                       | Check its JSON shape, size, allowed characters, and field limits. Remove sensitive or Customer Content.            |
-| OpenAI rejects the token                                              | Compare `iss`, `aud`, expiry, signature key, and assertion lifetime with the provider configuration.               |
-| The rule does not match                                               | Confirm the client uses the intended rule ID and that every subject, audience, exact-claim, and CEL check passes.  |
-| OpenAI rejects the principal                                          | Confirm the user or service account is active and is an active member of the selected workspace.                   |
-| OpenAI rejects a repeated assertion                                   | Get a new JWT with a new `jti`; do not retry the same replay-protected assertion.                                  |
-| A long-running process stops refreshing                               | Confirm the host refresh process is still replacing the token file before expiry.                                  |
-
-For provider verification, limits, and CEL details, see the [federation rule
-reference](https://developers.openai.com/api/docs/guides/workload-identity-federation/federation-rules).
-
 ### Workspace analytics
 
 Source: [Workspace analytics](https://learn.chatgpt.com/docs/enterprise/workspace-analytics.md)
@@ -39504,6 +39769,11 @@ The authenticated [Codex analytics dashboard](https://admin.openai.com/analytics
 focuses on Codex reporting. Use it for interactive exploration, not as a stable
 schema contract. Dashboard categories, fields, filters, and export formats can
 change independently of this page.
+
+For a walkthrough of the Insights dashboard, see
+[Usage Insights](https://learn.chatgpt.com/docs/enterprise/usage-insights).
+Explore Use cases and Tasks, compare activity with consumption and reach, and
+open a category to understand its details.
 
 For automated reporting, use the [Analytics API](https://learn.chatgpt.com/docs/enterprise/analytics-api)
 and follow its API reference. For auditable records, use the
@@ -39568,6 +39838,14 @@ enforced `features.fast_mode` setting in
 This setting can pin Fast mode on or off for managed local Codex clients; it
 isn't a starting default and can't override workspace or product availability.
 
+#### GPT-6 Sol and Luna in Enterprise
+
+GPT-6 Sol and GPT-6 Luna are off by default in Enterprise workspaces at
+launch. An administrator must enable each model before members can select
+it. Review your [workspace model settings](https://help.openai.com/en/articles/8411955)
+and confirm access on each client. Choosing a model in local configuration
+doesn't override workspace controls.
+
 #### GPT-6 Astra in Enterprise
 
 During the initial rollout, your organization must have Daybreak access before
@@ -39590,14 +39868,35 @@ API access. Early access with an API key also requires client configuration;
 ask your OpenAI account team for setup instructions. Selecting a
 model or changing local configuration doesn't grant access by itself.
 
+#### Prepare for the GPT-5.5 retirement
+
+On October 14, 2026, GPT-5.5 will retire from ChatGPT, ChatGPT Work, and Codex
+on all plans, including consumer, Business, Enterprise, and Edu plans. This
+retirement does not apply to the OpenAI API.
+
+Before October 14, review workspace defaults for ChatGPT, ChatGPT Work, and
+Codex and choose an available replacement for each surface. For Work and Codex
+with ChatGPT sign-in, choose `gpt-6-sol` (GPT-6 Sol) once an administrator has
+enabled it for the affected users. Replace `gpt-5.5` in workspace defaults,
+saved model settings, managed configurations, custom agents, and scheduled
+tasks. Check scripts and commands that explicitly select `gpt-5.5` too.
+
+Changing a default doesn't grant model access. Confirm that the replacement
+is available to the affected users on each client. See
+[Codex models](https://learn.chatgpt.com/docs/models#gpt-55-retirement) and
+[managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration)
+for migration guidance.
+
 #### Prepare for the GPT-5.4 retirement
 
-On August 31, 2026, GPT-5.4 and GPT-5.4 mini retire from Codex for users signed
-in with ChatGPT. Update affected workspace defaults, saved model settings,
-managed configurations, custom agents, and scheduled tasks before then:
+GPT-5.4 and GPT-5.4 mini retired from Codex for users signed in with ChatGPT
+on August 31, 2026. Update any remaining workspace defaults, saved model
+settings, managed configurations, custom agents, and scheduled tasks with
+models available to the affected users' plans and clients:
 
-- Replace `gpt-5.4` with `gpt-5.6-terra` (GPT-5.6 Terra).
-- Replace `gpt-5.4-mini` with `gpt-5.6-luna` (GPT-5.6 Luna).
+- Replace `gpt-5.4` with `gpt-6-sol` (GPT-6 Sol) when available.
+- Replace `gpt-5.4-mini` with `gpt-6-luna` (GPT-6 Luna) when available. In
+  Enterprise and Edu, an administrator must enable Luna first.
 
 The OpenAI API and Codex authenticated with your own API key aren't affected.
 See [Codex models](https://learn.chatgpt.com/docs/models#deprecated-codex-models) and
@@ -39676,8 +39975,6 @@ Choose how people sign in and issue credentials for programmatic workflows.
 
 - [Authentication overview](https://learn.chatgpt.com/docs/auth): Compare sign-in methods, credential storage, and enforcement controls.
 
-- [Workload identity](https://learn.chatgpt.com/docs/enterprise/workload-identity): Let trusted workloads use Codex without long-lived credentials.
-
 - [Personal Access Tokens](https://learn.chatgpt.com/docs/enterprise/access-tokens): Create and manage tokens for programmatic access.
 
 - [Service accounts](https://learn.chatgpt.com/docs/enterprise/service-accounts): Create and manage workspace identities for automated workflows.
@@ -39722,6 +40019,8 @@ Measure adoption and route reporting or audit data to the system that owns it.
 
 - [Workspace analytics](https://learn.chatgpt.com/docs/enterprise/workspace-analytics): Review workspace-level ChatGPT adoption and Codex usage.
 
+- [Usage Insights](https://learn.chatgpt.com/docs/enterprise/usage-insights): Explore usage across ChatGPT Work and Codex and assess workflow results with your team.
+
 - [Analytics API](https://learn.chatgpt.com/docs/enterprise/analytics-api): Automate developer activity and code review reporting with the Codex Analytics API.
 
 - [Compliance API and audit events](https://learn.chatgpt.com/docs/enterprise/compliance-api): Export activity records for audit and investigation workflows.
@@ -39753,6 +40052,7 @@ The preview supports the desktop versions of these Linux distributions:
 - Ubuntu 24.04 LTS and 26.04 LTS
 - Debian 13
 - Fedora 43 and 44
+- Arch Linux (current, fully updated rolling releases)
 
 Each supported distribution has packages for x64 and ARM64 processors. To check
 your processor architecture, run:
@@ -39766,7 +40066,8 @@ The output `x86_64` identifies an x64 processor. The output `aarch64` or
 
 #### Download the right package
 
-Choose `.deb` for Ubuntu or Debian, and `.rpm` for Fedora:
+Choose `.deb` for Ubuntu or Debian, `.rpm` for Fedora, or the installation script
+for Arch Linux:
 
 | Distribution     | Architecture | Download                                                                                                          |
 | ---------------- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
@@ -39774,6 +40075,8 @@ Choose `.deb` for Ubuntu or Debian, and `.rpm` for Fedora:
 | Ubuntu or Debian | ARM64        | [Download `.deb` for ARM64](https://persistent.oaistatic.com/codex-app-prod/linux/deb/latest/chatgpt_arm64.deb)   |
 | Fedora           | x64          | [Download `.rpm` for x64](https://persistent.oaistatic.com/codex-app-prod/linux/rpm/latest/chatgpt.x86_64.rpm)    |
 | Fedora           | ARM64        | [Download `.rpm` for ARM64](https://persistent.oaistatic.com/codex-app-prod/linux/rpm/latest/chatgpt.aarch64.rpm) |
+| Arch Linux       | x64          | [Install using the script](#install-on-arch-linux)                                                                |
+| Arch Linux       | ARM64        | [Install using the script](#install-on-arch-linux)                                                                |
 
 #### Install on Ubuntu or Debian
 
@@ -39809,9 +40112,26 @@ Open **ChatGPT** from your applications menu, or run `chatgpt` in a terminal.
 Sign in with your ChatGPT account and follow the
 [desktop app quickstart](https://learn.chatgpt.com/docs/quickstart?setup=app).
 
+#### Install on Arch Linux
+
+On Arch Linux, open a terminal, download the installation script, and run it:
+
+```bash
+curl --proto '=https' --tlsv1.2 -fL -o install-arch.sh \
+  https://persistent.oaistatic.com/codex-app-prod/linux/install-arch.sh
+sudo bash install-arch.sh
+```
+
+The script detects your architecture, configures the signed OpenAI package
+repository, and installs ChatGPT. Installation performs a full system upgrade
+and prompts for confirmation.
+
+Open **ChatGPT** from your applications menu. Sign in with your ChatGPT account
+and follow the [desktop app quickstart](https://learn.chatgpt.com/docs/quickstart?setup=app).
+
 #### Update the app
 
-The package configures the signed OpenAI package repository during installation.
+Installation configures a signed OpenAI package repository.
 Use your distribution's package manager to install later updates.
 
 On Ubuntu or Debian, run:
@@ -39825,6 +40145,12 @@ On Fedora, run:
 
 ```bash
 sudo dnf upgrade --refresh chatgpt
+```
+
+On Arch Linux, update the app as part of a full system upgrade:
+
+```bash
+sudo pacman -Syu
 ```
 
 #### Compatibility and limitations
@@ -39918,25 +40244,40 @@ provider.
 
 Make sure you have:
 
+- Credentials for the AWS account you want to use
 - Access to supported OpenAI models in Amazon Bedrock.
-- An AWS Region where the selected model is available.
-- Authentication for the Amazon Bedrock Mantle path configured for the AWS
-  account.
+- Access to an AWS Region where the selected model is available.
 
 #### Configure the provider
 
-Add the `amazon-bedrock` model provider for the Amazon Bedrock Mantle path to
-`~/.codex/config.toml`. The ChatGPT desktop app, Codex CLI, IDE extension, and
-SDK read the same local configuration layers. Supplying a model is optional.
-Select a supported model explicitly when needed.
+Codex allows you to configure the provider by setting `model_provider` in `~/.codex/config.toml`. The ChatGPT desktop app, Codex CLI, IDE extension, and SDK read the same local configuration layers.
+
+Choose the provider for the Amazon Bedrock endpoint you want to use: Bedrock
+Runtime for cross-Region inference (CRIS), or Bedrock Mantle for in-Region inference.
+
+For the Bedrock Runtime endpoint:
+
+```toml
+model_provider = "amazon-bedrock-runtime"
+```
+
+For the Bedrock Mantle endpoint:
 
 ```toml
 model_provider = "amazon-bedrock"
 ```
 
-This guide covers the Amazon Bedrock Mantle path in supported commercial AWS
-Regions. Local ChatGPT Work and Codex surfaces don't support Bedrock Mantle
-endpoints in AWS GovCloud Regions.
+#### Choose a model
+
+Codex uses the configured `model_provider` to choose which models appear in the
+model picker: models supported through the Bedrock Runtime endpoint for
+`amazon-bedrock-runtime`, or through the Bedrock Mantle endpoint for
+`amazon-bedrock`.
+
+You can optionally specify a [supported model](#supported-models) in the
+configuration file.
+
+Model availability varies by AWS Region. Refer to AWS Regional availability by models. Local ChatGPT Work and Codex surfaces don't support Bedrock Mantle endpoints in AWS GovCloud Regions.
 
 #### Authentication options
 
@@ -40017,8 +40358,9 @@ export AWS_REGION=us-east-2
 
 #### Verify setup
 
-- In Codex CLI, open `/status` and confirm Codex is using the
-  `amazon-bedrock` model provider.
+- In Codex CLI, open `/status` and confirm the model provider matches your
+  endpoint: `amazon-bedrock` for Mantle in-Region inference, or
+  `amazon-bedrock-runtime` for Runtime Global or Geo cross-Region inference.
 - In the ChatGPT desktop app, select Work or Codex and start a new task after
   restarting the app.
 - In the IDE extension, start a new session after restarting the extension.
@@ -40027,19 +40369,73 @@ export AWS_REGION=us-east-2
 
 #### Supported models
 
-Use exact model IDs:
+Use an inference profile ID for Bedrock Runtime provider or a model ID for Bedrock Mantle provider.
+The selected model or profile must be available in your AWS Region and accessible to your
+AWS identity.
 
-```text
-openai.gpt-5.6-sol
-openai.gpt-5.6-terra
-openai.gpt-5.6-luna
-openai.gpt-5.5
-openai.gpt-5.4
+#### Global and Geo cross-Region inference using the Bedrock Runtime endpoint
+
+Global CRIS can route requests to supported
+commercial AWS Regions worldwide, whereas Geo CRIS routes requests within the profile's geography.
+
+Use `model_provider = "amazon-bedrock-runtime"` with the optional `model` configuration set to an inference profile ID from the following lists. The provider uses
+`https://bedrock-runtime.{region}.amazonaws.com/openai/v1`, where `{region}` is
+the supported source AWS Region from which you send requests. Both Global and Geo CRIS use this endpoint address.
+
+#### Global CRIS
+
+Supported models and inference profile IDs:
+
+- GPT-6 Astra: `global.openai.gpt-6-astra`
+- GPT-6 Sol: `global.openai.gpt-6-sol`
+- GPT-6 Luna: `global.openai.gpt-6-luna`
+- GPT-5.6 Sol: `global.openai.gpt-5.6-sol`
+- GPT-5.6 Terra: `global.openai.gpt-5.6-terra`
+- GPT-5.6 Luna: `global.openai.gpt-5.6-luna`
+
+For example, configure Astra with Global CRIS in `~/.codex/config.toml`:
+
+```toml
+model_provider = "amazon-bedrock-runtime"
+model = "global.openai.gpt-6-astra"
 ```
 
-Model availability varies by AWS Region. Before selecting a model, see [model
-support by AWS
-Region](https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html).
+#### United States Geo CRIS
+
+Supported models and inference profile IDs:
+
+- GPT-6 Astra: `us.openai.gpt-6-astra`
+- GPT-6 Sol: `us.openai.gpt-6-sol`
+- GPT-6 Luna: `us.openai.gpt-6-luna`
+- GPT-5.6 Sol: `us.openai.gpt-5.6-sol`
+- GPT-5.6 Terra: `us.openai.gpt-5.6-terra`
+- GPT-5.6 Luna: `us.openai.gpt-5.6-luna`
+
+Codex's built-in Runtime model picker lists the United States Geo and Global
+variants. AWS also lists India geographic inference profile IDs `in.openai.gpt-5.6-terra` and
+`in.openai.gpt-5.6-luna` for `ap-south-1` (Mumbai) and `ap-south-2` (Hyderabad). Refer to Bedrock model cards for GPT-5.6 Terra and GPT-5.6 Luna for details.
+
+Model and CRIS availability vary by source AWS Region. See AWS Supported Regions and models for inference profiles, which links to each model's exact inference profile IDs and regional
+availability, and AWS Regional availability by models before selecting a provider and a model.
+
+#### In-Region inference using the Bedrock Mantle endpoint
+
+Use `model_provider = "amazon-bedrock"` with an optional model ID. The provider uses
+`https://bedrock-mantle.{region}.api.aws/openai/v1`.
+
+Supported models and model IDs:
+
+- GPT-6 Astra: `openai.gpt-6-astra`
+- GPT-6 Sol: `openai.gpt-6-sol`
+- GPT-6 Luna: `openai.gpt-6-luna`
+- GPT-5.6 Sol: `openai.gpt-5.6-sol`
+- GPT-5.6 Terra: `openai.gpt-5.6-terra`
+- GPT-5.6 Luna: `openai.gpt-5.6-luna`
+- GPT-5.5: `openai.gpt-5.5`
+- GPT-5.4: `openai.gpt-5.4`
+
+GPT-6 Sol and Luna are available through Mantle in `us-east-1` (N. Virginia).
+Model availability varies by AWS Region. See AWS Regional availability by models before selecting a provider and a model. For GPT-6 Astra, refer to the Bedrock model page for GPT-6 Astra.
 
 #### Feature availability
 
@@ -40067,6 +40463,7 @@ inference only.
 If setup fails, check the following:
 
 - The model ID exactly matches a supported model.
+- You use the correct model provider for the endpoint: `amazon-bedrock-runtime` for Runtime endpoint or `amazon-bedrock` for Mantle endpoint.
 - You specify an AWS Region where the model is available.
 - The Bedrock API key or AWS credentials are valid and not expired.
 - The AWS identity has permission to access the selected Bedrock model.
@@ -40402,7 +40799,7 @@ codex
 
 #### Work on code inside WSL
 
-- Working in Windows-mounted paths like /mnt/c/... can be slower than working in Windows-native paths. Keep your repositories under your Linux home directory (like ~/code/my-app) for faster I/O and fewer symlink and permission issues:
+- Working in Windows-mounted paths like `/mnt/c/...` can be slower than working in Windows-native paths. Keep your repositories under your Linux home directory (like ~/code/my-app) for faster I/O and fewer symlink and permission issues:
   ```bash
   mkdir -p ~/code && cd ~/code
   git clone https://github.com/your/repo.git
@@ -40414,7 +40811,7 @@ codex
 
 Large repositories feel slow in WSL
 
-- Make sure you're not working under /mnt/c. Move the repository to WSL (for example, ~/code/...).
+- Make sure you're not working under /mnt/c. Move the repository to WSL (for example, `~/code/...`).
 - Increase memory and CPU for WSL if needed; update WSL to the latest version:
   ```powershell
   wsl --update

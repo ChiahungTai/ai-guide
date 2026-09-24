@@ -22,8 +22,7 @@
 
 #### 使用 Claude Code
 
-- [Claude 如何记住你的项目](https://code.claude.com/docs/zh-CN/memory.md): 使用 CLAUDE.md 文件为 Claude 提供持久指令，并让 Claude 通过自动记忆功能自动积累学习内容。
-- [选择权限模式](https://code.claude.com/docs/zh-CN/permission-modes.md): 控制 Claude 在编辑文件或运行命令前是否需要征求您的同意。在 CLI 中使用 Shift+Tab 循环切换模式，或在 VS Code、Desktop 和 claude.ai 中使用模式选择器。
+- [Claude 如何记住您的项目](https://code.claude.com/docs/zh-CN/memory.md): 使用 CLAUDE.md 或 AGENTS.md 文件为 Claude 提供持久指令，并让 Claude 通过自动记忆自动积累学习。
 - [管理会话](https://code.claude.com/docs/zh-CN/sessions.md): 命名、恢复、分支和在 Claude Code 对话之间切换。涵盖 `--continue`、`--resume`、`--from-pr`、`/resume` 选择器、会话命名、导出文本记录和文本记录存储位置。
 - [常见工作流程](https://code.claude.com/docs/zh-CN/common-workflows.md): 使用 Claude Code 探索代码库、修复错误、重构、测试和其他日常任务的分步指南。
 - [提示词库](https://code.claude.com/docs/zh-CN/prompt-library.md): 复制粘贴提示词到 Claude Code，按任务和角色标记。
@@ -33,17 +32,20 @@
 
 - [平台和集成](https://code.claude.com/docs/zh-CN/platforms.md): 选择在哪里运行 Claude Code 以及连接什么工具。比较 CLI、Desktop、VS Code、JetBrains、Web 以及 Chrome、Slack 和 CI/CD 等集成。
 - [使用 Remote Control 从任何设备继续本地会话](https://code.claude.com/docs/zh-CN/remote-control.md): 使用 Remote Control 从您的手机、平板电脑或任何浏览器继续本地 Claude Code 会话。适用于 claude.ai/code 和 Claude 移动应用。
+- [让 Claude 通过 Projects 协调持续进行的工作](https://code.claude.com/docs/zh-CN/claude-projects.md): 在一个对话中为 Claude 提供一组相关工作，让它协调共享存储库、说明和内存的并行云会话。
+- [Claude Code 移动版](https://code.claude.com/docs/zh-CN/mobile.md): 从您的手机使用 Claude 应用程序启动、监控和指导 Claude Code 任务，支持 iOS 和 Android。
 - [在 Chrome 中使用 Claude Code](https://code.claude.com/docs/zh-CN/chrome.md): 将 Claude Code 连接到 Chrome 浏览器，以测试网络应用、使用控制台日志进行调试、自动填充表单以及从网页中提取数据。
 - [让 Claude 从 CLI 使用您的计算机](https://code.claude.com/docs/zh-CN/computer-use.md): 在 Claude Code CLI 中启用 computer use，使 Claude 能够在 macOS 上打开应用、点击、输入和查看您的屏幕。测试原生应用、调试视觉问题，以及自动化仅限 GUI 的工具，无需离开您的终端。
 - [在 VS Code 中使用 Claude Code](https://code.claude.com/docs/zh-CN/vs-code.md): 安装和配置 VS Code 的 Claude Code 扩展。获得 AI 编码协助，包括内联差异、@-提及、计划审查和快捷键。
 - [JetBrains IDEs](https://code.claude.com/docs/zh-CN/jetbrains.md): 在 JetBrains IDE（包括 IntelliJ、PyCharm、WebStorm 等）中使用 Claude Code
-- [Slack 中的 Claude Code](https://code.claude.com/docs/zh-CN/slack.md): 直接从 Slack 工作区委派编码任务
+- [Slack 中的 Claude Code](https://code.claude.com/docs/zh-CN/slack.md): 直接从 Slack 工作区委派编码任务。Anthropic 正在为 Team 和 Enterprise 工作区停用此早期版本，转而使用 Claude Tag；它仍然是 Pro 和 Max 计划上的设置路径。
+- [Claude Tag](https://code.claude.com/docs/zh-CN/claude-tag.md): 通过 Claude Tag 将 Claude 引入您团队的 Slack 频道，并在 claude.com 上查找其设置和使用文档。
 
-##### Claude Code 网页版
+##### Claude Code 云端版
 
-- [在网络上开始使用 Claude Code](https://code.claude.com/docs/zh-CN/web-quickstart.md): 从浏览器或手机在云中运行 Claude Code。连接 GitHub 仓库、提交任务，并在无需本地设置的情况下审查 PR。
-- [在网络上使用 Claude Code](https://code.claude.com/docs/zh-CN/claude-code-on-the-web.md): 配置云环境、设置脚本、网络访问和 Docker，在 Anthropic 的沙箱中运行。使用 `--cloud` 和 `--teleport` 在网络和终端之间移动会话。
-- [使用例程自动化工作](https://code.claude.com/docs/zh-CN/routines.md): 让 Claude Code 自动运行。定义在计划上运行、通过 API 调用触发或对来自 Anthropic 管理的云基础设施的 GitHub 事件做出反应的例程。
+- [在云中开始使用 Claude Code](https://code.claude.com/docs/zh-CN/web-quickstart.md): 从浏览器或手机在云中运行 Claude Code。连接 GitHub 仓库、提交任务，并在无需本地设置的情况下审查 PR。
+- [在云端使用 Claude Code](https://code.claude.com/docs/zh-CN/claude-code-on-the-web.md): 从浏览器、手机、桌面应用或终端在云端运行 Claude Code 会话，使用 --cloud 和 --teleport 移动会话，以及自动修复拉取请求。
+- [使用例程自动化工作](https://code.claude.com/docs/zh-CN/routines.md): 让 Claude Code 自动运行。定义在计划上运行、通过 API 调用触发或对来自云基础设施的 GitHub 事件做出反应的例程。
 - [使用 Ultrareview 查找错误](https://code.claude.com/docs/zh-CN/ultrareview.md): 使用 /code-review ultra 在云中运行深度多代理代码审查，在合并前查找和验证错误。
 
 ##### Claude Code 桌面版
@@ -53,23 +55,27 @@
 - [Linux 上的 Claude Desktop（测试版）](https://code.claude.com/docs/zh-CN/desktop-linux.md): 在 Ubuntu 和 Debian 上安装和更新 Claude 桌面应用
 - [Claude Code Desktop 在 WSL 中](https://code.claude.com/docs/zh-CN/desktop-wsl.md): 在 Windows 上的 WSL 2 发行版内运行 Code 会话
 - [在 Claude Code Desktop 中安排定期任务](https://code.claude.com/docs/zh-CN/desktop-scheduled-tasks.md): 在 Claude Code Desktop 中设置定期任务，以定期自动运行 Claude 进行日常代码审查、依赖项审计或早晨简报。
+- [在模拟器中测试 iOS 应用](https://code.claude.com/docs/zh-CN/desktop-ios-simulator.md): Claude Code Desktop 在 Claude 构建、运行或检查应用时，会在 iOS Simulator 窗格中打开你的应用，每个会话都有一个单独的模拟器。
 
 ##### 代码审查与 CI/CD
 
 - [在 Claude 编写代码时捕获安全问题](https://code.claude.com/docs/zh-CN/security-guidance.md): 安装 security-guidance 插件，让 Claude 在编写代码时自动审查其代码更改中的漏洞，并在同一会话中修复这些问题。
+- [扫描代码库中的漏洞](https://code.claude.com/docs/zh-CN/claude-security.md): 安装 Claude Security 插件以在 Claude Code 会话中扫描代码库中的漏洞，并将发现的问题转化为您可以审查和应用的补丁。
 - [Code Review](https://code.claude.com/docs/zh-CN/code-review.md): 设置自动化 PR 审查，通过对完整代码库的多代理分析来捕获逻辑错误、安全漏洞和回归问题
-- [Claude Code GitHub Actions](https://code.claude.com/docs/zh-CN/github-actions.md): 了解如何将 Claude Code 集成到您的开发工作流中，使用 Claude Code GitHub Actions
-- [Claude Code 与 GitHub Enterprise Server](https://code.claude.com/docs/zh-CN/github-enterprise-server.md): 将 Claude Code 连接到自托管的 GitHub Enterprise Server 实例，用于网络会话、代码审查和插件市场。
+- [Claude Code GitHub Actions](https://code.claude.com/docs/zh-CN/github-actions.md): 在 GitHub Actions 工作流中运行 Claude Code，响应 @claude 提及、自动化任务并将 issue 转换为拉取请求
+- [通过云提供商使用 Claude Code GitHub Actions](https://code.claude.com/docs/zh-CN/github-actions-cloud-providers.md): 通过 Amazon Bedrock、Google Cloud 的 Agent Platform 或 Microsoft Foundry 而不是 Claude API 运行 Claude Code GitHub Actions
+- [Claude Code 与 GitHub Enterprise Server](https://code.claude.com/docs/zh-CN/github-enterprise-server.md): 将 Claude Code 连接到自托管的 GitHub Enterprise Server 实例，用于云会话、代码审查和插件市场。
 - [Claude Code GitLab CI/CD](https://code.claude.com/docs/zh-CN/gitlab-ci-cd.md): 了解如何将 Claude Code 集成到您的 GitLab CI/CD 开发工作流中
 
 ### 使用 Claude Code 构建
 
 #### 代理和并行工作
 
-- [并行运行代理](https://code.claude.com/docs/zh-CN/agents.md): 比较 Claude Code 同时处理多个任务的方式：子代理、代理视图、代理团队和动态工作流。
+- [并行运行代理](https://code.claude.com/docs/zh-CN/agents.md): 比较 Claude Code 同时处理多个任务的方式：子代理、代理视图、代理团队、动态工作流和项目。
 - [创建自定义 subagents](https://code.claude.com/docs/zh-CN/sub-agents.md): 在 Claude Code 中创建和使用专门的 AI subagents，用于特定任务的工作流和改进的上下文管理。
 - [使用 agent view 管理多个代理](https://code.claude.com/docs/zh-CN/agent-view.md): 从一个屏幕调度和管理多个 Claude Code 会话。Agent view 显示每个会话正在做什么以及哪些会话需要你的输入。
 - [协调 Claude Code 会话团队](https://code.claude.com/docs/zh-CN/agent-teams.md): 协调多个 Claude Code 实例作为一个团队一起工作，具有共享任务、代理间消息传递和集中管理。
+- [消息传递到您的其他 Claude Code 会话](https://code.claude.com/docs/zh-CN/cross-session-messaging.md): 让 Claude 列出并消息传递到您在此机器上的其他 Claude Code 会话，并到达您在其他机器或网络上的会话。
 - [使用动态工作流大规模编排子代理](https://code.claude.com/docs/zh-CN/workflows.md): 动态工作流从 Claude 编写的脚本中编排许多子代理，您可以重新运行。用于代码库审计、大型迁移和交叉检查研究。
 - [使用 worktrees 运行并行会话](https://code.claude.com/docs/zh-CN/worktrees.md): 在单独的 git worktrees 中隔离并行 Claude Code 会话，以便更改不会相互冲突。涵盖 `--worktree` 标志、子代理隔离、`.worktreeinclude`、清理和非 git VCS hooks。
 
@@ -80,23 +86,24 @@
 
 #### 技能
 
-- [使用 skills 扩展 Claude](https://code.claude.com/docs/zh-CN/skills.md): 创建、管理和共享 skills 以在 Claude Code 中扩展 Claude 的功能。包括自定义命令和捆绑 skills。
+- [使用 skills 扩展 Claude](https://code.claude.com/docs/zh-CN/skills.md): 创建、管理和共享 skills 以在 Claude Code 中扩展 Claude 的功能。包括自定义命令和捆绑的 skills。
 
 #### 插件
 
 - [通过市场发现和安装预构建插件](https://code.claude.com/docs/zh-CN/discover-plugins.md): 从市场发现和安装插件，以使用新 skills、agents 和功能扩展 Claude Code。
 - [创建插件](https://code.claude.com/docs/zh-CN/plugins.md): 创建自定义插件以使用 skills、agents、hooks 和 MCP servers 扩展 Claude Code。
+- [使用 evals 测试插件](https://code.claude.com/docs/zh-CN/plugin-evals.md): 为您的 Claude Code 插件编写 eval 用例，使用 claude plugin eval 运行它们，对结果进行评分，与无插件基线进行比较，并在 CI 中基于分数进行门控。
 
-#### 制品
+#### 制品库
 
-- [将会话输出作为 artifacts 共享](https://code.claude.com/docs/zh-CN/artifacts.md): Artifacts 将 Claude Code 的工作转化为实时交互式页面，可在 claude.ai 上保持私密、与您的组织共享或发布到公开链接。
+- [将会话输出作为 artifacts 共享](https://code.claude.com/docs/zh-CN/artifacts.md): Artifacts 将 Claude Code 的工作转化为 claude.ai 上的实时交互式页面，您可以将其保持私密、与您的组织共享或发布到公开链接。
 
 #### 自动化
 
 - [使用 hooks 自动化操作](https://code.claude.com/docs/zh-CN/hooks-guide.md): 当 Claude Code 编辑文件、完成任务或需要输入时自动运行 shell 命令。格式化代码、发送通知、验证命令并强制执行项目规则。
 - [使用 channels 将事件推送到运行中的会话](https://code.claude.com/docs/zh-CN/channels.md): 使用 channels 从 MCP 服务器将消息、警报和 webhooks 推送到您的 Claude Code 会话中。转发 CI 结果、聊天消息和监控事件，以便 Claude 在您离开时做出反应。
 - [按计划运行提示词](https://code.claude.com/docs/zh-CN/scheduled-tasks.md): 使用 /loop 和 cron 调度工具在 Claude Code 会话中重复运行提示词、轮询状态或设置一次性提醒。
-- [让 Claude 朝着目标工作](https://code.claude.com/docs/zh-CN/goal.md): 使用 /goal 设置完成条件，Claude 会在多个回合中持续工作，直到条件满足。
+- [让 Claude 朝着目标工作](https://code.claude.com/docs/zh-CN/goal.md): 使用 /goal 设置完成条件，Claude 会持续工作直到条件满足、模型判断其不可能实现或需要修复的错误清除目标。
 - [以编程方式运行 Claude Code](https://code.claude.com/docs/zh-CN/headless.md): 使用 Agent SDK 从 CLI、Python 或 TypeScript 以编程方式运行 Claude Code。
 - [从链接启动会话](https://code.claude.com/docs/zh-CN/deep-links.md): 从 URL 打开 Claude Code 终端会话。在运行手册、警报和仪表板中嵌入 `claude-cli://` 链接，这样点击即可在正确的仓库中打开 Claude Code，并使用正确的提示。
 
@@ -118,8 +125,9 @@
 - [为您的组织设置 Claude Code](https://code.claude.com/docs/zh-CN/admin-setup.md): 针对部署 Claude Code 的管理员的决策地图，涵盖 API 提供商、托管设置、策略执行、使用情况监控和数据处理。
 - [高级设置](https://code.claude.com/docs/zh-CN/setup.md): Claude Code 的系统要求、特定平台安装、版本管理和卸载。
 - [身份验证](https://code.claude.com/docs/zh-CN/authentication.md): 登录 Claude Code 并为个人、团队和组织配置身份验证。
-- [配置服务器管理的设置](https://code.claude.com/docs/zh-CN/server-managed-settings.md): 通过 Claude.ai 上基于网络的界面为您的组织集中配置 Claude Code，无需设备管理基础设施。
-- [控制组织的 MCP 服务器访问权限](https://code.claude.com/docs/zh-CN/managed-mcp.md): 使用托管配置文件、允许列表和拒绝列表限制用户可以添加或连接的 MCP 服务器。
+- [部署托管设置](https://code.claude.com/docs/zh-CN/managed-settings.md): 将托管设置部署到每个开发者的机器上：按操作系统的交付机制、Claude Code 如何组合托管源，以及如何验证强制执行。
+- [配置服务器管理的设置](https://code.claude.com/docs/zh-CN/server-managed-settings.md): 通过服务器交付的设置为您的组织集中配置 Claude Code，无需设备管理基础设施。
+- [控制组织的 MCP 服务器访问权限](https://code.claude.com/docs/zh-CN/managed-mcp.md): 使用托管配置文件、托管设置、允许列表和拒绝列表，限制用户可以添加或连接的 MCP 服务器，或为每个用户提供服务器。
 - [配置自动模式](https://code.claude.com/docs/zh-CN/auto-mode-config.md): 告诉自动模式分类器您的组织信任哪些代码库、存储桶和域。设置环境上下文，覆盖默认的阻止和允许规则，并使用自动模式 CLI 子命令检查您的有效配置。
 
 #### 部署
@@ -131,7 +139,7 @@
 - [Google Cloud 的 Agent Platform 上的 Claude Code](https://code.claude.com/docs/zh-CN/google-vertex-ai.md): 了解如何通过 Google Cloud 的 Agent Platform（原 Vertex AI）配置 Claude Code，包括设置、IAM 配置和故障排除。
 - [Microsoft Foundry 上的 Claude Code](https://code.claude.com/docs/zh-CN/microsoft-foundry.md): 了解如何通过 Microsoft Foundry 配置 Claude Code，包括设置、配置和故障排除。
 - [企业网络配置](https://code.claude.com/docs/zh-CN/network-config.md): 为企业环境配置 Claude Code，支持代理服务器、自定义证书颁发机构 (CA) 和相互传输层安全 (mTLS) 身份验证。
-- [在企业启动器后面运行 Claude Code](https://code.claude.com/docs/zh-CN/corporate-launcher.md): 通过 CLAUDE_CODE_PROCESS_WRAPPER 使用必需的启动器路由 Claude Code 从其自身二进制文件启动的进程，包括后台服务和每个代理视图会话。
+- [在企业启动器后面运行 Claude Code](https://code.claude.com/docs/zh-CN/corporate-launcher.md): 通过 CLAUDE_CODE_PROCESS_WRAPPER 或 processWrapper 设置，使用必需的启动器路由 Claude Code 从其自身二进制文件启动的进程，包括后台服务和每个代理视图会话。
 - [开发容器](https://code.claude.com/docs/zh-CN/devcontainer.md): 在开发容器中运行 Claude Code，为您的团队提供一致、隔离的环境。
 
 #### 网关
@@ -144,14 +152,15 @@
 - [Claude 应用网关配置](https://code.claude.com/docs/zh-CN/claude-apps-gateway-config.md): 每个 gateway.yaml 选项的参考：监听器和 TLS、OIDC、会话、Postgres 存储、Amazon Bedrock、Claude Platform on AWS、Google Cloud 的 Agent Platform 和 Microsoft Foundry 上游、模型路由、托管策略和遥测。
 - [Claude 应用网关支出限制](https://code.claude.com/docs/zh-CN/claude-apps-gateway-spend-limits.md): 通过 Claude 应用网关为每个开发者按天、周或月设置支出上限。使用 Admin API 设置限制，网关在每个请求上实时执行这些限制。
 - [Claude 应用网关部署和运维](https://code.claude.com/docs/zh-CN/claude-apps-gateway-deploy.md): 向身份提供商注册网关，构建容器，在 Kubernetes 或 Cloud Run 上部署，并运维它：健康检查、密钥轮换、升级和安全。
-- [在 Google Cloud 上部署 Claude apps gateway](https://code.claude.com/docs/zh-CN/claude-apps-gateway-on-gcp.md): 在 Google Cloud 上运行 Claude apps gateway 的实际示例：Cloud Run 或 GKE、Cloud SQL for PostgreSQL、Secret Manager 和 Agent Platform 的服务账户身份验证。
+- [在 AWS 上部署 Claude apps gateway](https://code.claude.com/docs/zh-CN/claude-apps-gateway-on-aws.md): 在 AWS 上运行 Claude apps gateway 的完整示例：ECS Fargate 或 EKS、Amazon RDS for PostgreSQL、AWS Secrets Manager 和 IAM 角色身份验证到 Amazon Bedrock。
+- [在 Google Cloud 上部署 Claude apps gateway](https://code.claude.com/docs/zh-CN/claude-apps-gateway-on-gcp.md): 在 Google Cloud 上运行 Claude apps gateway 的实际示例：Cloud Run 或 GKE、Cloud SQL for PostgreSQL、Secret Manager 和 Google Cloud 的 Agent Platform 的服务账户身份验证。
 
 ##### 其他网关
 
 - [其他 LLM 网关](https://code.claude.com/docs/zh-CN/llm-gateway.md): 通过您的组织已运行的 LLM 网关路由 Claude Code。涵盖将 Claude Code 连接到网关、为您的组织部署网关以及 Claude Code 发送到网关的内容。
 - [将 Claude Code 连接到 LLM 网关](https://code.claude.com/docs/zh-CN/llm-gateway-connect.md): 将 Claude Code 指向您组织的 LLM 网关。检查您的管理员是否已配置它，或自行设置基础 URL 和凭证，然后验证连接并修复网关错误。
 - [为您的组织推出 LLM 网关](https://code.claude.com/docs/zh-CN/llm-gateway-rollout.md): 为 Claude Code 部署网关产品：配置它以转发 Claude Code 发送的内容，颁发开发者凭证，通过托管设置分发配置，并验证推出。
-- [Gateway 协议参考](https://code.claude.com/docs/zh-CN/llm-gateway-protocol.md): Claude Code 与 LLM gateway 之间的 API 契约：端点、要转发的请求头和请求体字段、字段被删除时的功能降级、用于成本跟踪的归属请求头以及模型发现。
+- [Claude Code 网关兼容性指南](https://code.claude.com/docs/zh-CN/llm-gateway-protocol.md): 保持 LLM 网关与 Claude Code 兼容：它调用的端点、必须转发的标头和正文字段，以及删除它们时会破坏的功能。
 
 #### 使用情况和成本
 
@@ -179,23 +188,43 @@
 
 ### 配置
 
-#### 设置和权限
+#### 设置
 
-- [Claude Code 设置](https://code.claude.com/docs/zh-CN/settings.md): 使用全局和项目级设置以及环境变量配置 Claude Code。
+- [设置文件和优先级](https://code.claude.com/docs/zh-CN/settings.md): 更改 Claude Code 设置，选择键所属的作用域，验证更改，并了解当键在多个位置设置时 Claude Code 使用哪个值。
+- [所有设置](https://code.claude.com/docs/zh-CN/settings-reference.md): Claude Code settings.json 的完整参考：每个键的位置、类型和默认值，以及可直接粘贴的示例，包含每个键的索引。
+- [示例设置文件](https://code.claude.com/docs/zh-CN/settings-example.md): 为开发者、团队和组织提供的现实 settings.json 文件：复制一个，保留你想要的键，并更改值。
+
+#### 权限和沙箱隔离
+
 - [配置权限](https://code.claude.com/docs/zh-CN/permissions.md): 通过细粒度权限规则、模式和托管策略来控制 Claude Code 可以访问和执行的操作。
-- [选择沙箱环境](https://code.claude.com/docs/zh-CN/sandbox-environments.md): 比较 Claude Code 沙箱选项：内置沙箱化 Bash 工具、沙箱运行时、开发容器、Docker 和虚拟机。为您的威胁模型选择合适的隔离方案。
+- [选择权限模式](https://code.claude.com/docs/zh-CN/permission-modes.md): 控制 Claude 在采取行动前是否需要征求您的同意。在 CLI 中使用 Shift+Tab 切换权限模式，在 VS Code 中使用模式指示器，或在 Desktop 中使用模式选择器。
 - [配置沙箱化 Bash 工具](https://code.claude.com/docs/zh-CN/sandboxing.md): 了解 Claude Code 的沙箱化 Bash 工具如何提供文件系统和网络隔离，以实现更安全、更自主的代理执行。
+- [选择沙箱环境](https://code.claude.com/docs/zh-CN/sandbox-environments.md): 比较 Claude Code 沙箱选项：内置沙箱化 Bash 工具、沙箱运行时、开发容器、Docker 和虚拟机。为您的威胁模型选择合适的隔离方案。
+
+#### 环境
+
+- [配置云环境](https://code.claude.com/docs/zh-CN/cloud-environments.md): 为 Claude Code 云会话配置云环境：网络访问级别、环境变量、设置脚本和环境缓存。
+
+##### 自托管环境
+
+- [自托管环境](https://code.claude.com/docs/zh-CN/self-hosted-environments.md): 在您控制的基础设施上运行 Claude Code 云会话：设置自托管环境、部署运行器，并将会话路由到您自己的计算资源。
+- [自托管环境快速入门](https://code.claude.com/docs/zh-CN/self-hosted-environments-quickstart.md): 设置您的第一个自托管环境：安装 Claude Code、创建环境、启动运行器，并将会话路由到该环境。
+- [将自托管环境部署到生产环境](https://code.claude.com/docs/zh-CN/self-hosted-environments-deploy.md): 在生产环境中运行自托管运行器：安全加固、网络出站流量控制、git 凭证、Kubernetes 和 Compose 配方以及故障排除。
+- [在自托管环境中自定义会话](https://code.claude.com/docs/zh-CN/self-hosted-environments-configuration.md): 使用包装脚本在自托管环境会话中自定义每个会话的凭证、生命周期钩子和按需运行程序生成。
+- [端到端测试自托管环境](https://code.claude.com/docs/zh-CN/self-hosted-environments-testing.md): 从 CI 验证自托管运行器镜像：使用 CLI 分派会话，通过 Stop hook 读取 Claude 的回复，并编写完整循环脚本。
+- [自托管环境参考](https://code.claude.com/docs/zh-CN/self-hosted-environments-reference.md): 自托管运行器和编排器的完整参考：CLI 标志、环境变量和 Prometheus 指标。
+- [在自托管环境中验证会话身份](https://code.claude.com/docs/zh-CN/self-hosted-environments-identity.md): 验证 CLAUDE_CODE_SESSION_ACCESS_TOKEN JWT，以便网络上的服务可以信任来自自托管环境中会话的请求。
 
 #### 模型和响应
 
-- [模型配置](https://code.claude.com/docs/zh-CN/model-config.md): 了解 Claude Code 模型配置，包括模型别名如 `opusplan`
+- [模型配置](https://code.claude.com/docs/zh-CN/model-config.md): 配置 Claude Code 使用的模型、工作量级别、扩展上下文和自动压缩窗口
 - [使用快速模式加快响应速度](https://code.claude.com/docs/zh-CN/fast-mode.md): 通过切换快速模式在 Claude Code 中获得更快的 Opus 响应。
 - [使用顾问工具升级困难决策](https://code.claude.com/docs/zh-CN/advisor.md): 将您的主模型与更强大的顾问模型配对，Claude 在任务期间的关键时刻咨询该模型。
-- [输出样式](https://code.claude.com/docs/zh-CN/output-styles.md): 将 Claude Code 适配用于软件工程之外的用途
+- [输出样式](https://code.claude.com/docs/zh-CN/output-styles.md): 通过内置输出样式（如简洁或解释性）或自定义样式来改变 Claude Code 的角色、语气和响应格式。
 
 #### 界面
 
-- [为 Claude Code 配置您的终端](https://code.claude.com/docs/zh-CN/terminal-config.md): 修复 Shift+Enter 以实现换行、在 Claude 完成时获得终端铃声、配置 tmux、匹配颜色主题，以及在 Claude Code CLI 中启用 Vim 模式。
+- [为 Claude Code 配置您的终端](https://code.claude.com/docs/zh-CN/terminal-config.md): 修复 Shift+Enter 以插入新行、在 Claude 完成时获得终端铃声、配置 tmux、匹配颜色主题，以及在 Claude Code CLI 中启用 Vim 模式。
 - [全屏渲染](https://code.claude.com/docs/zh-CN/fullscreen.md): 启用更流畅、无闪烁的渲染模式，支持鼠标操作，在长对话中保持稳定的内存使用。
 - [使用 Claude Code 与屏幕阅读器](https://code.claude.com/docs/zh-CN/accessibility.md): 为 VoiceOver 和 NVDA 等屏幕阅读器设置 Claude Code，以及屏幕放大镜、减少动画和色盲友好主题的设置。
 - [语音听写](https://code.claude.com/docs/zh-CN/voice-dictation.md): 在 Claude Code CLI 中使用按住录音或点击录音的语音听写功能来说出你的提示词。
@@ -207,13 +236,13 @@
 #### 参考
 
 - [CLI 参考](https://code.claude.com/docs/zh-CN/cli-reference.md): Claude Code 命令行界面的完整参考，包括命令和标志。
-- [命令](https://code.claude.com/docs/zh-CN/commands.md): Claude Code 中可用命令的完整参考，包括内置命令和捆绑的 skills。
-- [环境变量](https://code.claude.com/docs/zh-CN/env-vars.md): 控制 Claude Code 行为的环境变量完整参考。
+- [Commands](https://code.claude.com/docs/zh-CN/commands.md): Claude Code 中可用命令的完整参考，包括内置命令和捆绑的 skills。
+- [环境变量](https://code.claude.com/docs/zh-CN/env-vars.md): 控制 Claude Code 行为的环境变量参考。
 - [工具参考](https://code.claude.com/docs/zh-CN/tools-reference.md): Claude Code 可以使用的工具的完整参考，包括权限要求和每个工具的行为。
 - [交互模式](https://code.claude.com/docs/zh-CN/interactive-mode.md): Claude Code 会话中键盘快捷键、输入模式和交互功能的完整参考。
 - [Checkpointing](https://code.claude.com/docs/zh-CN/checkpointing.md): 跟踪、回溯和总结 Claude 的编辑和对话以管理会话状态。
 - [Hooks 参考](https://code.claude.com/docs/zh-CN/hooks.md): Claude Code hook 事件、配置架构、JSON 输入/输出格式、退出代码、异步 hooks、HTTP hooks、提示 hooks 和 MCP 工具 hooks 的参考。
-- [Plugins 参考](https://code.claude.com/docs/zh-CN/plugins-reference.md): Claude Code 插件系统的完整技术参考，包括架构、CLI 命令和组件规范。
+- [Plugins 参考](https://code.claude.com/docs/zh-CN/plugins-reference.md): Claude Code 插件系统的完整技术参考，包括模式、CLI 命令和组件规范。
 - [Channels 参考](https://code.claude.com/docs/zh-CN/channels-reference.md): 构建一个 MCP 服务器，将 webhooks、警报和聊天消息推送到 Claude Code 会话中。频道合约的参考：能力声明、通知事件、回复工具、发送者门控和权限中继。
 
 #### 术语表
@@ -226,13 +255,20 @@
 
 - [Agent SDK 概览](https://code.claude.com/docs/zh-CN/agent-sdk/overview.md): 使用 Claude Code 作为库构建生产级 AI 代理
 - [快速开始](https://code.claude.com/docs/zh-CN/agent-sdk/quickstart.md): 使用 Python 或 TypeScript Agent SDK 开始构建能够自主工作的 AI 代理
+- [迁移到 Claude Agent SDK](https://code.claude.com/docs/zh-CN/agent-sdk/migration-guide.md): 将 Claude Code TypeScript 和 Python SDK 迁移到 Claude Agent SDK 的指南
+- [Agent SDK 故障排除](https://code.claude.com/docs/zh-CN/agent-sdk/troubleshooting.md): 通过您看到的确切错误消息修复 Agent SDK 错误，包括 TypeScript 和 Python SDK 中每个错误的原因和修复方法。
+
+#### 构建代理
+
+- [配置你的代理](https://code.claude.com/docs/zh-CN/agent-sdk/configuration.md): 配置 Agent SDK 会话：组合选项对象、设置模型、环境和限制，并找到每个功能选项的页面。
+- [示例](https://code.claude.com/docs/zh-CN/agent-sdk/examples.md): 查找完整的、可运行的 Agent SDK 项目或 Claude Cookbook 中的指导食谱，以匹配您想要构建的内容。
 
 #### 核心概念
 
 - [代理循环如何工作](https://code.claude.com/docs/zh-CN/agent-sdk/agent-loop.md): 了解消息生命周期、工具执行、上下文窗口和支持 SDK 代理的架构。
 - [在 SDK 中使用 Claude Code 功能](https://code.claude.com/docs/zh-CN/agent-sdk/claude-code-features.md): 将项目说明、skills、hooks 和其他 Claude Code 功能加载到您的 SDK 代理中。
 - [使用会话](https://code.claude.com/docs/zh-CN/agent-sdk/sessions.md): 会话如何保持代理对话历史记录，以及何时使用 continue、resume 和 fork 返回到之前的运行。
-- [将会话持久化到外部存储](https://code.claude.com/docs/zh-CN/agent-sdk/session-storage.md): 将会话记录镜像到 S3、Redis 或您自己的后端，以便任何主机都可以恢复它们。
+- [将会话持久化到外部存储](https://code.claude.com/docs/zh-CN/agent-sdk/session-storage.md): 将 Agent SDK 会话记录镜像到您自己的对象存储、键值存储或数据库，以便其他主机可以恢复您的会话。
 
 #### 输入和输出
 
@@ -251,7 +287,7 @@
 #### 自定义行为
 
 - [修改系统提示词](https://code.claude.com/docs/zh-CN/agent-sdk/modifying-system-prompts.md): 在 `claude_code` 预设和自定义系统提示词之间进行选择，并通过 CLAUDE.md、输出样式、追加或完全自定义提示词来自定义行为。
-- [SDK 中的 Agent Skills](https://code.claude.com/docs/zh-CN/agent-sdk/skills.md): 使用 Claude Agent SDK 中的 Agent Skills 扩展 Claude 的专业能力
+- [使用 skills 扩展 agents](https://code.claude.com/docs/zh-CN/agent-sdk/skills.md): 控制 Claude 在 Claude Agent SDK 会话中可以调用哪些 skills，按名称分派命令，以及编写会话发现的 skills
 - [SDK 中的 Plugins](https://code.claude.com/docs/zh-CN/agent-sdk/plugins.md): 通过 Agent SDK 加载自定义 plugins，以向 agent 会话添加 skills、agents、hooks 和 MCP servers
 
 #### 控制和可观测性
@@ -259,13 +295,13 @@
 - [配置权限](https://code.claude.com/docs/zh-CN/agent-sdk/permissions.md): 使用权限模式、hooks 和声明式允许/拒绝规则来控制您的代理如何使用工具。
 - [使用 hooks 拦截和控制代理行为](https://code.claude.com/docs/zh-CN/agent-sdk/hooks.md): 在代理执行的关键点使用 hooks 拦截和自定义代理行为
 - [使用checkpointing回滚文件更改](https://code.claude.com/docs/zh-CN/agent-sdk/file-checkpointing.md): 在agent会话期间跟踪文件更改，并将文件恢复到任何之前的状态
-- [跟踪成本和使用情况](https://code.claude.com/docs/zh-CN/agent-sdk/cost-tracking.md): 了解如何跟踪令牌使用情况、估计成本，以及使用 Claude Agent SDK 配置提示缓存。
+- [追踪成本和使用情况](https://code.claude.com/docs/zh-CN/agent-sdk/cost-tracking.md): 了解如何追踪令牌使用情况、估算成本，以及使用 Claude Agent SDK 配置 prompt caching。
 - [使用 OpenTelemetry 进行可观测性](https://code.claude.com/docs/zh-CN/agent-sdk/observability.md): 使用 OpenTelemetry 将来自 Agent SDK 的跟踪、指标和事件导出到您的可观测性后端。
-- [待办事项列表](https://code.claude.com/docs/zh-CN/agent-sdk/todo-tracking.md): 使用 Claude Agent SDK 跟踪和显示待办事项，实现有组织的任务管理
+- [跟踪待办事项](https://code.claude.com/docs/zh-CN/agent-sdk/todo-tracking.md): 在 Agent SDK 会话中跟踪待办事项，并从结构化工具调用中呈现 Claude 的进度
 
 #### 部署
 
-- [托管 Agent SDK](https://code.claude.com/docs/zh-CN/agent-sdk/hosting.md): 在生产环境中部署 Agent SDK：子进程架构、会话持久化、扩展、可观测性和 Docker、Kubernetes 及沙箱提供商的多租户隔离。
+- [托管 Agent SDK](https://code.claude.com/docs/zh-CN/agent-sdk/hosting.md): 在生产环境中部署 Agent SDK：子进程架构、会话持久化、扩展、可观测性以及针对 Docker、Kubernetes 和沙箱提供商的多租户隔离。
 - [安全部署 AI 代理](https://code.claude.com/docs/zh-CN/agent-sdk/secure-deployment.md): 关于使用隔离、凭证管理和网络控制来保护 Claude Code 和 Agent SDK 部署的指南
 
 #### SDK 参考
@@ -273,13 +309,20 @@
 - [Agent SDK 参考 - TypeScript](https://code.claude.com/docs/zh-CN/agent-sdk/typescript.md): TypeScript Agent SDK 的完整 API 参考，包括所有函数、类型和接口。
 - [TypeScript SDK V2 session API（已移除）](https://code.claude.com/docs/zh-CN/agent-sdk/typescript-v2-preview.md): 已移除的 V2 TypeScript Agent SDK session API 参考，具有用于多轮对话的基于会话的 send/stream 模式。
 - [Agent SDK 参考 - Python](https://code.claude.com/docs/zh-CN/agent-sdk/python.md): Python Agent SDK 的完整 API 参考，包括所有函数、类型和类。
-- [迁移到 Claude Agent SDK](https://code.claude.com/docs/zh-CN/agent-sdk/migration-guide.md): 将 Claude Code TypeScript 和 Python SDK 迁移到 Claude Agent SDK 的指南
 
 ### 最新动态
 
 #### 最新动态
 
 - [最新动态](https://code.claude.com/docs/zh-CN/whats-new/index.md): Claude Code 功能的每周摘要，包含代码片段、演示和背景信息，说明为什么这些功能很重要。
+- [第37周 · 2026年9月7日–11日](https://code.claude.com/docs/zh-CN/whats-new/2026-w37.md): 使用 claude plugin eval 测试您的插件，并将 Claude Code Desktop 窗格弹出到各自的窗口中。
+- [第 36 周 · 8 月 31 日 – 9 月 4 日，2026 年](https://code.claude.com/docs/zh-CN/whats-new/2026-w36.md): 切换到 Claude Fable 5.1，让计算机使用在 Desktop 上后台运行，并在实时 /diff 面板中观看 Claude 的编辑。
+- [第 35 周 · 2026 年 8 月 24–28 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w35.md): 在 Claude Code Desktop 应用中恢复终端会话，查看 Claude 为您起草的反馈报告，并在受限模式下启动会话。
+- [第 34 周 · 2026 年 8 月 17–21 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w34.md): 使用 /design skill 草拟可编辑的 UI 画板，设置 Concise 输出样式，并从手机在您的机器上启动 Claude Code 会话。
+- [第 33 周 · 2026 年 8 月 10–14 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w33.md): Claude Code Desktop 在使用限制重置后自动继续，fork 模式默认启用，GitLab 合并请求和市场加入 GitHub。
+- [第 32 周 · 2026 年 8 月 3–7 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w32.md): Claude Code 会话可以相互发送消息，自托管环境在您的基础设施上运行云会话，自动模式成为默认权限模式。
+- [第 30 周 · 7 月 20–24 日，2026 年](https://code.claude.com/docs/zh-CN/whats-new/2026-w30.md): Opus 5 成为默认的 Opus 模型，Claude Code Desktop 添加了 iOS 模拟器窗格，Claude Security 插件扫描您的代码以查找漏洞。
+- [第29周 · 2026年7月13–17日](https://code.claude.com/docs/zh-CN/whats-new/2026-w29.md): 通过MCP连接器将实时数据拉入已发布的工件中，并在新的屏幕阅读器模式下使用Claude Code。
 - [第 28 周 · 2026 年 7 月 6–10 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w28.md): 从 Desktop 应用的内置浏览器浏览外部网站，使用 /doctor 运行完整的设置检查，并获取自动模式的文本记录保护和代理视图升级。
 - [第 27 周 · 6 月 29 日 – 7 月 3 日，2026 年](https://code.claude.com/docs/zh-CN/whats-new/2026-w27.md): Claude Sonnet 5 成为默认模型，Claude in Chrome 正式推出，子代理默认在后台运行，Claude Desktop 在 Linux 上推出测试版，/radio 调入 Claude FM。
 - [第 26 周 · 2026 年 6 月 22–26 日](https://code.claude.com/docs/zh-CN/whats-new/2026-w26.md): 使用 claude mcp login 从 shell 中对 MCP 服务器进行身份验证，使用 ! 前缀获取对 shell 模式命令输出的响应，以及使用 /rewind 从 /clear 之前恢复对话。

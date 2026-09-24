@@ -40,7 +40,7 @@ Hooks
 下载
 立即下载 ZCode
 适用于 macOS (Apple Silicon)
-v3.11.2·最新版本
+v3.14.3·最新版本
 其他平台
 macOSIntelWindowsx64WindowsARM64Linuxx64
 支持 macOS（Apple Silicon / Intel）、Windows（x64 / ARM64）、Linux（x64 / ARM64，AppImage、DEB、RPM）。

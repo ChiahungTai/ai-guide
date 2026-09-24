@@ -5,7 +5,7 @@
 ## Overview
 
 Plugins bundle capabilities into reusable workflows in ChatGPT and Codex. They
-can include skills, MCP servers, and lifecycle hooks. Both products use one universal plugin
+can include skills and MCP servers. Both products use one universal plugin
 directory, so the same public plugins are discoverable from their supported
 surfaces.
 

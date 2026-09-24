@@ -7,6 +7,17 @@ eligible plans can also run tasks from supported app events. Review active,
 paused, and completed tasks and recent runs in **Scheduled**. You can combine
 scheduled tasks with [skills](https://learn.chatgpt.com/docs/build-skills) for more complex work.
 
+<ContentModeSwitch group="codex-surface" ids="app,web">
+
+GPT-5.5 retires from ChatGPT, ChatGPT Work, and Codex on all plans on
+October 14, 2026. Review scheduled tasks that use GPT-5.5 and choose an
+available replacement before that date. For Codex with ChatGPT sign-in, choose
+`gpt-6-sol` (GPT-6 Sol) if your plan and workspace provide access. The OpenAI API isn't
+affected. See [GPT-5.5 retirement](https://learn.chatgpt.com/docs/models#gpt-55-retirement) for
+plan-specific replacements.
+
+</ContentModeSwitch>
+
 
 
 [Watch: Schedule tasks with ChatGPT](https://www.youtube.com/watch?v=CToxp125mhc)
@@ -139,13 +150,12 @@ project directory.
 You can also leave the model and reasoning effort on their default settings, or
 choose them explicitly if you want more control over how the scheduled task runs.
 
-If a scheduled task uses `gpt-5.4` or `gpt-5.4-mini` with ChatGPT sign-in,
-update it before those models retire on August 31, 2026. Replace `gpt-5.4` with
-`gpt-5.6-terra` and `gpt-5.4-mini` with `gpt-5.6-luna`.
+If a scheduled task uses a retired model, update it to an available replacement.
+See [model migration guidance](https://learn.chatgpt.com/docs/models#deprecated-codex-models).
 
 
 
-> Illustration: ChatGPT composer ready to create a scheduled task with 5.6 Sol Extended selected.
+> Illustration: ChatGPT composer ready to create a scheduled task with 6 Sol Medium selected.
 
 
 

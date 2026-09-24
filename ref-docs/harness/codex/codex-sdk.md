@@ -13,7 +13,7 @@ Use the SDK when you need to:
 
 Use the Codex SDK to automate coding tasks, including jobs in CI. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) to build custom clients that handle authentication, conversation history, approvals, and streamed agent events.
 
-`codex mcp-server` is deprecated. The [MCP server guide](https://learn.chatgpt.com/docs/mcp-server) remains available for existing integrations.
+The `codex mcp-server` command and standalone `codex-mcp-server` binary have been removed. Use the [Codex app server](https://learn.chatgpt.com/docs/app-server) for existing integrations.
 
 If you have beta access and need repository or change scans with structured
 security findings and coverage, use the [Codex Security TypeScript
@@ -95,7 +95,7 @@ from openai_codex import Codex, Sandbox
 
 with Codex() as codex:
     thread = codex.thread_start(
-        model="gpt-5.6-terra",
+        model="gpt-6-sol",
         sandbox=Sandbox.workspace_write,
     )
     result = thread.run("Make a plan to diagnose and fix the CI failures")
@@ -112,7 +112,7 @@ from openai_codex import AsyncCodex
 
 async def main() -> None:
     async with AsyncCodex() as codex:
-        thread = await codex.thread_start(model="gpt-5.6-terra")
+        thread = await codex.thread_start(model="gpt-6-sol")
         result = await thread.run("Implement the plan")
         print(result.final_response)
 

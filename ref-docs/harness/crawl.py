@@ -238,6 +238,34 @@ def fetch_codex(page: Page) -> tuple[str, bytes]:
     return "fail", b""
 
 
+XAI_BASE = "https://docs.x.ai"
+XAI_LLM = "https://docs.x.ai/llms.txt"  # root-level index; Grok Build pages under /build/
+
+_XAI_DOC_LINK = re.compile(r"\]\((https?://docs\.x\.ai/build/[^)]+\.md)\)")
+
+
+def discover_grok_build() -> list[Page]:
+    # docs.x.ai exposes a root llms.txt listing every page as a verbatim .md
+    # link (same scheme as codex/meta); filter to the Grok Build section.
+    llms = fetch_until_ok(XAI_LLM)
+    if not llms:
+        print("[WARN] grok-build: /llms.txt unreachable; docs skipped")
+        return []
+    pages: list[Page] = []
+    for url in _XAI_DOC_LINK.findall(llms):
+        # Strip base + the redundant leading "build/" (source dir already names it).
+        rel = url.removeprefix(XAI_BASE).lstrip("/").removeprefix("build/")
+        pages.append(Page(url, rel))
+    return _dedup(pages)
+
+
+def fetch_grok_build(page: Page) -> tuple[str, bytes]:
+    status, body = http_get(page.url)
+    if 200 <= status < 300:
+        return "ok", _norm(body)
+    return "fail", b""
+
+
 META_BASE = "https://dev.meta.ai"
 META_LLM = "https://dev.meta.ai/docs/llms.txt"  # docs-wide index (no root llms.txt)
 
@@ -270,6 +298,7 @@ SOURCES = {
     "claude-code": (CLAUDE_BASE, discover_claude_code, fetch_claude_code),
     "zcode": (ZCODE_BASE, discover_zcode, fetch_zcode),
     "codex": (CODEX_BASE, discover_codex, fetch_codex),
+    "grok-build": (XAI_BASE, discover_grok_build, fetch_grok_build),
     "meta": (META_BASE, discover_meta, fetch_meta),
 }
 

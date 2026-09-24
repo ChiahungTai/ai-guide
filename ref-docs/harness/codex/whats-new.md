@@ -6,6 +6,64 @@ This weekly digest highlights ChatGPT and Codex features that can change how you
 work, with examples and links to learn more. For every versioned update, bug fix,
 and minor improvement, see the [Codex changelog](https://learn.chatgpt.com/docs/changelog).
 
+## September 21–25, 2026
+
+### Choose GPT-6 Sol and Luna
+
+GPT-6 Sol and GPT-6 Luna are rolling out in Codex at lower token prices than
+their GPT-5.6 predecessors. Start with **Sol Medium** for everyday and complex
+coding, or **Luna High** for focused, repeatable tasks. Availability depends
+on your plan, client, and workspace settings.
+
+See [Models](https://learn.chatgpt.com/docs/models) for model selection, [Pricing](https://learn.chatgpt.com/docs/pricing) for
+usage and credit rates, and the [launch announcement](https://learn.chatgpt.com/docs/changelog#codex-2026-09-22-gpt-6-sol-luna)
+for availability details.
+
+## September 14–18, 2026
+
+### Prepare for GPT-5.5 retirement
+
+GPT-5.5 will retire from ChatGPT, ChatGPT Work, and Codex on October 14, 2026,
+across all plans. The OpenAI API isn't affected.
+
+For Codex with ChatGPT sign-in, switch to **GPT-5.6 Sol** (`gpt-5.6-sol`).
+Update saved model settings, workspace defaults, custom agents, scheduled
+tasks, and scripts that still select GPT-5.5 before the retirement date.
+[Read the retirement notice](https://learn.chatgpt.com/docs/changelog#codex-2026-09-14-gpt-55-retirement)
+for details.
+
+## September 7–11, 2026
+
+### Start a quick chat from your pet
+
+Type a request or start a voice conversation from the floating
+[Pets controls](https://learn.chatgpt.com/docs/pets?surface=app) in the ChatGPT desktop app on macOS
+and Windows. Keep working in another app while you follow progress, then open
+the full conversation when you need it.
+
+Choose a companion in **Settings > Pets**, or select **Mini** to use the
+controls without a pet. Press **Option+Space** on macOS or **Windows+Alt+P** on
+Windows to show the controls and focus Quick Chat. Use `@` to add context and
+`$` to choose a skill, then press **Enter** to send your request.
+
+### Share an app window on Windows
+
+[Appshots](https://learn.chatgpt.com/docs/appshots?surface=app) bring a screenshot and available text
+from the frontmost Windows app into ChatGPT. Press both **Alt** keys at the
+same time, then ask a question about the window or describe what you want to
+do. Windows Appshots open in the main ChatGPT app.
+
+On macOS, Appshots can also start a new chat in the floating Pets controls
+when they're visible and the main ChatGPT window is in the background. Set
+**Appshot destination** to **Automatic** and authorize Appshots permissions
+in the main app first.
+
+Update the desktop app to use these features. Availability depends on rollout
+and workspace settings.
+
+[Read the September 11 release notes](https://learn.chatgpt.com/docs/changelog#codex-2026-09-11-app)
+for the full update and smaller improvements.
+
 ## August 31–September 4, 2026
 
 ### Take on demanding work with GPT-6 Astra

@@ -61,8 +61,10 @@ Each binding block specifies a **context** where the bindings apply:
 | `DiffDialog`      | Diff viewer navigation                                       |
 | `DiffPanel`       | The [diff panel](/docs/en/interactive-mode#diff-panel) is open    |
 | `ModelPicker`     | Model picker effort level                                    |
+| `EffortSlider`    | Effort slider opened by `/effort`                            |
 | `Select`          | Generic select/list components                               |
 | `Plugin`          | Plugin dialog (browse, discover, manage)                     |
+| `Agents`          | [Agent view](/docs/en/agent-view) (`claude agents`)               |
 | `Scroll`          | Conversation scrolling and text selection in fullscreen mode |
 
 Before v2.1.205, a `Doctor` context and a `doctor:fix` action existed for the `/doctor` diagnostics screen.
@@ -97,23 +99,24 @@ Actions for navigating command history:
 
 Actions available in the `Chat` context:
 
-| Action                | Default                           | Description                                                                                                                                                                                                                                                                                              |
-| :-------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `chat:cancel`         | Escape                            | Cancel current input                                                                                                                                                                                                                                                                                     |
-| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input and conversation. In [fullscreen rendering](/docs/en/fullscreen#clear-the-conversation), also clear the screen                                                                                                                                                   |
-| `chat:clearScreen`    | Cmd+K                             | Same as `chat:clearInput`. See [Clear the conversation](/docs/en/fullscreen#clear-the-conversation) for how Cmd+K behaves on iTerm2 and Terminal.app                                                                                                                                                          |
-| `chat:killAgents`     | Ctrl+X Ctrl+K                     | Stop all running [background subagents](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in this session and turn off [artifact auto-replies](/docs/en/artifacts#let-claude-reply-to-comments-on-its-own) for the rest of it                                                                         |
-| `chat:cycleMode`      | Shift+Tab\*                       | Cycle permission modes                                                                                                                                                                                                                                                                                   |
-| `chat:modelPicker`    | Meta+P                            | Open model picker                                                                                                                                                                                                                                                                                        |
-| `chat:fastMode`       | Meta+O                            | Toggle fast mode                                                                                                                                                                                                                                                                                         |
-| `chat:thinkingToggle` | Meta+T                            | Toggle extended thinking                                                                                                                                                                                                                                                                                 |
-| `chat:submit`         | Enter                             | Submit message                                                                                                                                                                                                                                                                                           |
-| `chat:queueSubmit`    | Ctrl+X Enter                      | Submit the message, marked to wait its turn: while Claude is working, Claude Code [queues it](/docs/en/interactive-mode#queue-messages-while-claude-works) and never interrupts the turn. Unlike `chat:submit`, it submits the draft even while autocomplete suggestions are open. Requires v2.1.247 or later |
-| `chat:newline`        | Ctrl+J                            | Insert a newline without submitting                                                                                                                                                                                                                                                                      |
-| `chat:undo`           | Ctrl+\_, Ctrl+Shift+-             | Undo last action                                                                                                                                                                                                                                                                                         |
-| `chat:externalEditor` | Ctrl+G, Ctrl+X Ctrl+E             | Open in external editor                                                                                                                                                                                                                                                                                  |
-| `chat:stash`          | Ctrl+S                            | Stash current prompt                                                                                                                                                                                                                                                                                     |
-| `chat:imagePaste`     | Ctrl+V (Alt+V on Windows and WSL) | Paste image from clipboard. On WSL, both shortcuts are bound by default                                                                                                                                                                                                                                  |
+| Action                | Default                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| :-------------------- | :-------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chat:cancel`         | Escape                            | Cancel current input                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input and conversation                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `chat:clearScreen`    | Cmd+K                             | Same as `chat:clearInput`. See [Clear the conversation](/docs/en/fullscreen#clear-the-conversation) for how Cmd+K behaves on iTerm2 and Terminal.app                                                                                                                                                                                                                                                                                                                                                  |
+| `chat:killAgents`     | Ctrl+X Ctrl+K                     | Stop all running [background subagents](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in this session and turn off [artifact auto-replies](/docs/en/artifacts#let-claude-reply-to-comments-on-its-own) for the rest of it                                                                                                                                                                                                                                                                 |
+| `chat:cycleMode`      | Shift+Tab\*                       | Cycle permission modes                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `chat:modelPicker`    | Meta+P                            | Open model picker                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `chat:fastMode`       | Meta+O                            | Toggle fast mode                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `chat:thinkingToggle` | Meta+T                            | Toggle extended thinking                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `chat:submit`         | Enter                             | Submit message                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `chat:queueSubmit`    | Ctrl+X Enter                      | Submit the message, marked to wait its turn: while Claude is working, Claude Code [queues it](/docs/en/interactive-mode#queue-messages-while-claude-works) and never interrupts the turn. Unlike `chat:submit`, it submits the draft even while an autocomplete suggestion is highlighted. Requires v2.1.247 or later                                                                                                                                                                                 |
+| `chat:sendNow`        | Ctrl+Enter, Ctrl+X Ctrl+S         | Interrupt the running turn so your [queued messages](/docs/en/interactive-mode#queue-messages-while-claude-works), and your draft with them, go out right away. When nothing is running, it submits the draft, and in [shell mode](/docs/en/interactive-mode#shell-mode-with-prefix) it queues the command without interrupting. Terminals that don't report extended keys deliver `Ctrl+Enter` as plain `Enter`, so `Ctrl+X Ctrl+S` is the binding that works in any terminal. Requires v2.1.275 or later |
+| `chat:newline`        | Ctrl+J                            | Insert a newline without submitting                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `chat:undo`           | Ctrl+\_, Ctrl+Shift+-             | Undo last action                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `chat:externalEditor` | Ctrl+G, Ctrl+X Ctrl+E             | Open in external editor. The [agent view dispatch input](/docs/en/agent-view#keyboard-shortcuts) follows this action's single-keystroke bindings too                                                                                                                                                                                                                                                                                                                                                  |
+| `chat:stash`          | Ctrl+S                            | Stash current prompt                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `chat:imagePaste`     | Ctrl+V (Alt+V on Windows and WSL) | Paste image from clipboard. On WSL, both shortcuts are bound by default                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 \*On Windows without VT mode (Node \<24.2.0/\<22.17.0, Bun \<1.2.23), defaults to Meta+M.
 
@@ -134,8 +137,8 @@ Actions available in the `Confirmation` context:
 
 | Action                  | Default     | Description                                                                                                                                                                                                                                                                           |
 | :---------------------- | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `confirm:yes`           | Y, Enter    | Confirm action                                                                                                                                                                                                                                                                        |
-| `confirm:no`            | N, Escape   | Decline action                                                                                                                                                                                                                                                                        |
+| `confirm:yes`           | Enter       | Confirm action                                                                                                                                                                                                                                                                        |
+| `confirm:no`            | Escape      | Decline action                                                                                                                                                                                                                                                                        |
 | `confirm:previous`      | Up          | Previous option                                                                                                                                                                                                                                                                       |
 | `confirm:next`          | Down        | Next option                                                                                                                                                                                                                                                                           |
 | `confirm:nextField`     | Tab         | Next field                                                                                                                                                                                                                                                                            |
@@ -146,6 +149,26 @@ Actions available in the `Confirmation` context:
 \*On Windows without VT mode (Node \<24.2.0/\<22.17.0, Bun \<1.2.23), defaults to Meta+M.
 
 Before v2.1.257, a `confirm:toggleExplanation` action, bound to `Ctrl+E` by default, showed a model-generated explanation of the command on Bash and PowerShell permission prompts.
+
+Dialogs use `confirm:yes` and `confirm:no` to accept and cancel even when they don't ask a yes-or-no question. If you bind a bare letter such as `y` or `n` in this context, the letter also acts on dialogs that never show it as a key. A dialog that shows `y` and `n` as its keys reads those letters itself and needs no binding.
+
+This example binds `y` to `confirm:yes` and `n` to `confirm:no`:
+
+```json theme={null}
+{
+  "bindings": [
+    {
+      "context": "Confirmation",
+      "bindings": {
+        "y": "confirm:yes",
+        "n": "confirm:no"
+      }
+    }
+  ]
+}
+```
+
+Before v2.1.280, `y` was also bound to `confirm:yes` and `n` to `confirm:no` by default. If you created your `keybindings.json` with `/keybindings` before v2.1.280, the file lists both bindings and they stay in effect until you delete those two lines.
 
 ### Permission actions
 
@@ -184,9 +207,9 @@ The `historySearch:next`, `historySearch:accept`, `historySearch:cancel`, and `h
 
 Actions available in the `Task` context:
 
-| Action            | Default               | Description                                                                                                     |
-| :---------------- | :-------------------- | :-------------------------------------------------------------------------------------------------------------- |
-| `task:background` | Ctrl+B, Ctrl+X Ctrl+B | Background current task. The Ctrl+X Ctrl+B chord requires v2.1.169 or later and avoids the tmux prefix conflict |
+| Action            | Default               | Description                                                                      |
+| :---------------- | :-------------------- | :------------------------------------------------------------------------------- |
+| `task:background` | Ctrl+B, Ctrl+X Ctrl+B | Background current task. The Ctrl+X Ctrl+B chord avoids the tmux prefix conflict |
 
 ### Theme actions
 
@@ -237,6 +260,10 @@ Actions available in the `Footer` context:
 | `footer:openSelected`   | Enter             | Open selected footer item                                                                                                                                                                     |
 | `footer:clearSelection` | Escape            | Clear footer selection                                                                                                                                                                        |
 | `footer:dismiss`        | Backspace, Delete | Dismiss the selected [artifact](/docs/en/artifacts) link from the footer; the published artifact itself is unaffected. On other footer rows, these keys have no effect. Requires v2.1.217 or later |
+
+While a footer item is selected, such as a row in the agent panel below the prompt, `Enter` opens it even when you rebind `Enter` in the `Chat` context to `chat:queueSubmit` or `chat:newline`.
+
+`Chat` bindings on keys the `Footer` context doesn't bind, such as `Shift+Tab` for `chat:cycleMode`, keep working while an item is selected.
 
 ### Message selector actions
 
@@ -298,6 +325,14 @@ Actions available in the `ModelPicker` context:
 | `modelPicker:increaseEffort`  | Right   | Increase effort level                        |
 | `modelPicker:thisSessionOnly` | s       | Apply highlighted model to this session only |
 
+### Effort slider actions
+
+Actions available in the `EffortSlider` context, the slider that opens when you run `/effort` with no arguments. The slider's Left, Right, Enter, and Escape keys can't be rebound.
+
+| Action                         | Default | Description                                                                                                             |
+| :----------------------------- | :------ | :---------------------------------------------------------------------------------------------------------------------- |
+| `effortSlider:thisSessionOnly` | s       | Apply the focused [effort level](/docs/en/model-config#adjust-effort-level) to this session only. Requires v2.1.257 or later |
+
 ### Select actions
 
 Actions available in the `Select` context:
@@ -313,7 +348,9 @@ Actions available in the `Select` context:
 | `select:accept`   | Enter           | Accept selection              |
 | `select:cancel`   | Escape          | Cancel selection              |
 
-Claude Code applies your `select:pageUp`, `select:pageDown`, `select:first`, and `select:last` bindings in the `/skills` menu. In most other lists, such as the `/model` picker, Claude Code pages with PageUp and PageDown regardless of your bindings and ignores Home and End.
+Claude Code applies your `select:pageUp`, `select:pageDown`, `select:first`, and `select:last` bindings in the `/skills` menu. In most other lists, such as the `/model` picker, your `select:first` and `select:last` bindings apply. PageUp and PageDown page through the options in those lists regardless of your bindings.
+
+Before v2.1.280, those other lists ignored Home, End, and your `select:first` and `select:last` bindings.
 
 ### Plugin actions
 
@@ -335,6 +372,21 @@ Actions available in the `Settings` context. The `select:accept` and `confirm:no
 | `settings:retry`  | R            | Retry loading usage data on error               |
 | `select:accept`   | Enter, Space | Change the selected setting or open its submenu |
 | `confirm:no`      | Escape       | Close the panel. Changes are already saved      |
+
+### Agents actions
+
+Actions available in the `Agents` context, which applies in [agent view](/docs/en/agent-view), opened with `claude agents`. Requires v2.1.257 or later.
+
+| Action              | Default | Description                                                                             |
+| :------------------ | :------ | :-------------------------------------------------------------------------------------- |
+| `agents:switchView` | Ctrl+S  | Switch [session grouping](/docs/en/agent-view#organize-the-list) between state and directory |
+| `agents:togglePin`  | Ctrl+T  | [Pin or unpin](/docs/en/agent-view#organize-the-list) the selected session                   |
+
+While agent view is open, Claude Code uses the `Agents` binding for any key the `Agents` context binds, and it ignores a `Chat` or `Global` binding on the same key. For example, pressing Ctrl+S in agent view switches the session grouping rather than triggering the default `chat:stash`.
+
+The dispatch input's external-editor shortcut isn't an `Agents` action. Agent view follows the `Chat` context's `chat:externalEditor` binding, Ctrl+G by default.
+
+Bindings fire on single keystrokes in agent view, so the Ctrl+X Ctrl+E chord bound to `chat:externalEditor` doesn't open the editor there.
 
 ### Voice actions
 
@@ -414,6 +466,8 @@ Chords are sequences of keystrokes separated by spaces:
 ctrl+k ctrl+s   Press Ctrl+K, release, then Ctrl+S
 ```
 
+Press each keystroke within 3 seconds of the one before it. If you wait longer, Claude Code cancels the chord and shows a brief notice saying so.
+
 ### Special keys
 
 * `escape` or `esc` - Escape key
@@ -445,7 +499,9 @@ Set an action to `null` to unbind a default shortcut:
 
 This also works for chord bindings. Unbinding every chord that shares a prefix frees that prefix for use as a single-key binding. A chord in any active context keeps its prefix reserved, so you must unbind each chord in the context that defines it.
 
-Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, and `ctrl+x enter` in `Chat`, `ctrl+x ctrl+b` in `Task`, and `ctrl+x b` in `DiffPanel`. The `ctrl+x enter` chord requires v2.1.247 or later, and `ctrl+x b` requires v2.1.260 or later. To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
+Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, `ctrl+x enter`, `ctrl+x ctrl+a`, `ctrl+x ctrl+s`, and `ctrl+x tab` in `Chat`, `ctrl+x ctrl+b` in `Task`, and `ctrl+x b` in `DiffPanel`. The `ctrl+x enter` chord requires v2.1.247 or later, `ctrl+x b`, `ctrl+x ctrl+a`, and `ctrl+x tab` require v2.1.260 or later, and `ctrl+x ctrl+s` requires v2.1.275 or later.
+
+To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
 
 ```json theme={null}
 {
@@ -468,6 +524,9 @@ Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, 
         "ctrl+x ctrl+k": null,
         "ctrl+x ctrl+e": null,
         "ctrl+x enter": null,
+        "ctrl+x ctrl+a": null,
+        "ctrl+x ctrl+s": null,
+        "ctrl+x tab": null,
         "ctrl+x": "chat:newline"
       }
     }

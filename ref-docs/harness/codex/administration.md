@@ -85,13 +85,6 @@
           icon: "key",
         },
         {
-          title: "Workload identity",
-          description:
-            "Let trusted workloads use Codex without long-lived credentials.",
-          href: "/codex/enterprise/workload-identity",
-          icon: "key",
-        },
-        {
           title: "Personal Access Tokens",
           description: "Create and manage tokens for programmatic access.",
           href: "/codex/enterprise/access-tokens",
@@ -220,6 +213,13 @@
           description:
             "Review workspace-level ChatGPT adoption and Codex usage.",
           href: "/codex/enterprise/workspace-analytics",
+          icon: "dataControls",
+        },
+        {
+          title: "Usage Insights",
+          description:
+            "Explore usage across ChatGPT Work and Codex and assess workflow results with your team.",
+          href: "/codex/enterprise/usage-insights",
           icon: "dataControls",
         },
         {

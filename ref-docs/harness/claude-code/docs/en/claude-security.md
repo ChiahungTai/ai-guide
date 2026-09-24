@@ -36,11 +36,7 @@ If the install fails, the fix depends on which message Claude Code reports:
 * If it reports `Marketplace "claude-plugins-official" not found`, add the marketplace with `/plugin marketplace add anthropics/claude-plugins-official`, then retry the install.
 * If it reports that it [can't find the plugin in the marketplace](/docs/en/discover-plugins#install-plugins), check the plugin name for a typo.
 
-Check the install summary. If it reports `Run /reload-plugins to activate.`, apply the pending change without a restart:
-
-```text theme={null}
-/reload-plugins
-```
+Check the install summary. If it reports `Run /reload-plugins to activate.`, see [Apply plugin changes without restarting](/docs/en/discover-plugins#apply-plugin-changes-without-restarting) to activate the plugin in your current session.
 
 Once the plugin is active, you're ready to [scan and fix your codebase](#scan-and-fix-your-codebase).
 
@@ -66,11 +62,11 @@ The plugin adds one command, `/claude-security`, which opens a menu of its three
   </Step>
 
   <Step title="Read the report">
-    While the scan runs, it reports each stage as it starts, with the detail available under [`/workflows`](/docs/en/workflows). Results land in a timestamped directory in your repository, described in [Read the scan results](#read-the-scan-results).
+    While the scan runs, it reports each stage as it starts, with the detail available under [`/workflows`](/docs/en/workflows). Results are written to a timestamped directory in your repository, described in [Read the scan results](#read-the-scan-results).
   </Step>
 
   <Step title="Turn findings into patches">
-    Run `/claude-security` again and pick **Suggest patches**, then choose which findings to address. Reviewed patches land in the report's `patches/` folder; [Fix findings](#fix-findings) covers how each patch is built and reviewed.
+    Run `/claude-security` again and pick **Suggest patches**, then choose which findings to address. Reviewed patches are written to the report's `patches/` folder; [Fix findings](#fix-findings) covers how each patch is built and reviewed.
   </Step>
 
   <Step title="Apply the patches you accept">
@@ -111,7 +107,7 @@ Before delivery, each patch is reviewed by an agent independent of the one that 
 
 ### Patches are never applied automatically
 
-Applying a patch is always your decision. Patches land in the report's `patches/` folder, one `F<n>.patch` per finding with a note beside it explaining the change. Apply one from your shell, or ask Claude to apply it and open a pull request:
+Applying a patch is always your decision. Patches are written to the report's `patches/` folder, one `F<n>.patch` per finding with a note beside it explaining the change. Apply one from your shell, or ask Claude to apply it and open a pull request:
 
 ```bash theme={null}
 git apply CLAUDE-SECURITY-<timestamp>/patches/F1.patch
@@ -138,7 +134,7 @@ The plugin doesn't replace your existing source-code security tools. Run it alon
 
 **The `/claude-security` menu opens with a Python warning.** The plugin needs `python3` 3.9 or later on your `PATH`. When it can't find `python3` at all, the menu warns that Claude Security won't work until one is installed; when the first `python3` on your `PATH` is older, the warning names the version it found. Install Python 3, or put a newer `python3` first on your `PATH`, then start a new session.
 
-**You may see "Fable 5.1's safeguards flagged this message" or "Fable 5's safeguards flagged this message" when using a Fable model.** Due to Fable's cybersecurity safety classifiers, certain model activities will be blocked and automatically downgraded to Opus.  This is expected, and the scan should still complete successfully.
+**You may see a "safeguards flagged this message" notice when scanning on a Fable model.** The message names the model, for example "Fable 5.1's safeguards flagged this message". Fable's cybersecurity safety classifiers flag certain requests, and Claude Code re-runs a flagged request on an Opus model through [automatic model fallback](/docs/en/model-config#automatic-model-fallback). This is expected, and the scan should still complete successfully.
 
 ## Related resources
 

@@ -32,7 +32,7 @@ for examples and approval tradeoffs.
     {
       key: "model",
       type: "string",
-      description: "Model to use (e.g., `gpt-5.5`).",
+      description: "Model to use (e.g., `gpt-6-sol`).",
     },
     {
       key: "review_model",
@@ -1089,15 +1089,15 @@ for examples and approval tradeoffs.
     },
     {
       key: "model_reasoning_effort",
-      type: "minimal | low | medium | high | xhigh",
+      type: "string",
       description:
-        "Adjust reasoning effort for supported models (Responses API only; `xhigh` is model-dependent).",
+        "Reasoning effort advertised by the selected model, such as `low`, `medium`, `high`, `xhigh`, `max`, or `ultra`. Available levels depend on the model and client.",
     },
     {
       key: "plan_mode_reasoning_effort",
-      type: "none | minimal | low | medium | high | xhigh",
+      type: "string",
       description:
-        "Plan-mode-specific reasoning override. When unset, Plan mode uses its built-in preset default.",
+        "Plan-mode-specific reasoning override using a level supported by the selected model. When unset, Plan mode uses its built-in preset default.",
     },
     {
       key: "model_reasoning_summary",
@@ -1788,9 +1788,9 @@ stricter approval behavior Codex derives when a project uses
 `approval_policy = "untrusted"`.
 
 The `[models.new_thread]` table supplies managed defaults, not enforcement.
-Explicit launch choices from dedicated CLI flags or `--config` overrides take
-precedence. An explicit model or reasoning-effort override skips both managed
-model fields; `service_tier` is independent.
+If you explicitly override the model or reasoning effort with `--model`,
+`--config`, or `--profile`, Codex ignores both `model` and
+`model_reasoning_effort` in `[models.new_thread]`. `service_tier` is independent.
 
 The browser requirements cover three separate surfaces. `in_app_browser`
 controls the browser pane that a person opens and uses directly. `browser_use`
@@ -1911,32 +1911,31 @@ from either one wins.
     {
       key: "models",
       type: "table",
-      description:
-        "Managed model defaults for new threads. These values take priority over user and project defaults, but an explicit selection for the new thread can override them.",
+      description: "Contains the `[models.new_thread]` table.",
     },
     {
       key: "models.new_thread",
       type: "table",
       description:
-        "Defaults to apply when a new local thread starts. Each model setting is optional.",
+        "Optional defaults to apply when a new local thread starts. They take priority over user and project defaults, but can be superseded by explicit overrides.",
     },
     {
       key: "models.new_thread.model",
       type: "string",
       description:
-        "Default model for new threads. An explicit `--model` or model/reasoning `--config` override takes precedence.",
+        "Default model for new threads. An explicit override of either the model or reasoning effort causes both fields to be ignored.",
     },
     {
       key: "models.new_thread.model_reasoning_effort",
       type: "string",
       description:
-        "Default reasoning effort for new threads. An explicit model or reasoning-effort override skips both managed model fields.",
+        "Default reasoning effort for new threads. An explicit override of either the model or reasoning effort causes both fields to be ignored.",
     },
     {
       key: "models.new_thread.service_tier",
       type: "string",
       description:
-        "Default service tier for new threads. An explicit service-tier override takes precedence independently of the model fields.",
+        "Default service tier for new threads. An explicit service-tier override causes this field to be ignored.",
     },
     {
       key: "permissions",

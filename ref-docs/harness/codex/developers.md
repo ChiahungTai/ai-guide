@@ -120,13 +120,6 @@
           icon: "storage",
         },
         {
-          title: "MCP Server",
-          description:
-            "Expose Codex capabilities through Model Context Protocol.",
-          href: "/codex/mcp-server",
-          icon: "connect",
-        },
-        {
           title: "GitHub Action",
           description: "Run Codex from GitHub Actions workflows.",
           href: "/codex/github-action",
