@@ -145,6 +145,20 @@ def test_raw_md_on_6421_dedup_single_violation(tmp_path):
     assert "viewer URL 形態已退役" in issues[0]
 
 
+def test_no_ep_shell_skipped_not_stale(tmp_path, capsys):
+    """no-EP 弧（card-first resolver）：殼頭 SHA 無 ep.md 對驗 → 明確 [SKIP]，禁靜默當 stale。"""
+    shell, root = _shell(tmp_path, "projection deadbeefdeadbeef（EP content SHA）", ep=None)
+    assert lint.lint_shell(shell, root) == []
+    assert "[SKIP] no-EP arc" in capsys.readouterr().out
+
+
+def test_no_ep_no_sha_no_skip(tmp_path, capsys):
+    """殼未宣告 SHA 也無 ep.md：無對驗對象，不印 SKIP。"""
+    shell, root = _shell(tmp_path, '<a href="ep.md">EP</a>', ep=None)
+    assert lint.lint_shell(shell, root) == []
+    assert "[SKIP]" not in capsys.readouterr().out
+
+
 def test_raw_md_http_flagged_with_new_contract_message(tmp_path):
     """raw http .md（非 6421 host、非 viewer 形態）仍是 violation，訊息教新合約＝repo 相對路徑。"""
     shell, root = _shell(

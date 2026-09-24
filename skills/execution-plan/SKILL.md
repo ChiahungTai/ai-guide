@@ -489,7 +489,7 @@ EP review 修訂寫回後（定稿），生成 **task brief**——EP 的人類�
 
 ## 輸出
 
-- **位置**：任務家 `YYYY-MM/<MM-DD-主題>/ep.md`（AIR-77 起永不搬；相對於專案根目錄；**任務家探測**：`ai-analysis/_tasks/` 在場→雜項家、session 從線 context 來→`ai-analysis/_projects/<線>/tasks/`、否則 repo-root `00-tasks/`——單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」；與 Report Shell 同 task 目錄——一弧全生命檔案同處；`ai-analysis/execution-plans/` 慣例退役）
+- **位置**：任務家 `YYYY-MM/<MM-DD-主題>/ep.md`（AIR-77 起永不搬；相對於專案根目錄；**任務家探測（card-first）**：弧身份第一優先＝TaskRef（backlog 卡）——本 skill 為 EP 誕生點，`<task>/ep.md` 路徑＝條件分支（該弧原有 EP 時照舊），EP 寫入後掛卡 references（雙 ref 合約＝[kanban-board](../kanban-board/SKILL.md)）；探測細節與無 EP 弧對接＝單一源 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」任務家探測 resolver；與 Report Shell 同 task 目錄——一弧全生命檔案同處；`ai-analysis/execution-plans/` 慣例退役）
 - **檔名**：固定 `ep.md`（task 名已在目錄名，檔名不重複）
 - **結構**：實作總覽 → **UC 盤點** → Scenario Matrix → **測試規劃段**（適用時）→ 段落劃分原則 → 各段落（Context → 要點 → Pseudo Code → 驗證）→ 整合策略 → 收尾步驟
 - **整合策略必含 baseline 記錄**：一行 `baseline: <hash>`（`git rev-parse HEAD`，EP 建立當下）——下游 `/post-build`/`/code-review` 任務弧審查的範圍邊界，由 EP 攜帶跨 session 不重新推導（缺漏由 implement 階段 1 補記；模式見 [code-review](../code-review/SKILL.md)「任務弧模式」）

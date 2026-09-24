@@ -70,7 +70,12 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
 
 **產物位置分流（user 裁決「開心目錄」——一弧一殼、隨生命週期生長；AIR-74 起殼一律進版控）**：
 
-- **流程性 brief（EP 計畫導讀＋實作完成結果）→ 任務家（task home）下 `YYYY-MM/<MM-DD-主題>/`**（AIR-77 起：新弧出生即落月份層、永不搬移；完結態＝卡 status，不搬目錄；歷史完成弧一次性收入同家 `_archived/` 凍結；歸檔判定單一源見 [metadata-sync](../metadata-sync/SKILL.md) EP 歸檔項）。**任務家探測（2026-09-02 三池重構定案，各 skill 放置規則共用本源）**：`<repo>/ai-analysis/_tasks/` 在場 → 雜項任務家＝它（**線任務另居 `ai-analysis/_projects/<線>/tasks/`**——session 從線 context 來時；完成→同線 `done/`）；否則 repo-root `00-tasks/`（`00-` 前綴 VSCode/`ls` 排最前）。spec（`spec.md`）與 EP 本體（`ep.md`）同 task 目錄——一弧全生命檔案同處。與 debrief（文字簡報）/delta tour（行級走讀）三層互補：殼=high-level 圖形、debrief=模組/檔案文字、tour=行級；殼實作章節吸收日常判斷材料，debrief 為深度選配
+- **流程性 brief（EP 計畫導讀＋實作完成結果）→ 任務家（task home）下 `YYYY-MM/<MM-DD-主題>/`**（AIR-77 起：新弧出生即落月份層、永不搬移；完結態＝卡 status，不搬目錄；歷史完成弧一次性收入同家 `_archived/` 凍結；歸檔判定單一源見 [metadata-sync](../metadata-sync/SKILL.md) EP 歸檔項）。**任務家探測 resolver（本節＝任務家探測單一源，各 skill 放置規則共用；card-first 語序，AIR-135.2 AC#4——2026-09-02 三池重構定案沿用為 EP 分支）**：
+  1. **弧身份第一優先＝TaskRef**：backlog 卡 id（`backlog/tasks/<id>….md`）——有卡弧的路徑對接先以卡為準；無 EP 弧的殼／報表回源對接改用卡 references／卡 notes 指針（卡＝plan of record）
+  2. **`<task>/ep.md` 探測＝條件分支（該弧原有 EP 時照舊）**：`<repo>/ai-analysis/_tasks/` 在場 → 雜項任務家＝它（**線任務另居 `ai-analysis/_projects/<線>/tasks/`**——session 從線 context 來時；完成→同線 `done/`）；否則 repo-root `00-tasks/`（`00-` 前綴 VSCode/`ls` 排最前）。spec（`spec.md`）與 EP 本體（`ep.md`）同 task 目錄——一弧全生命檔案同處
+  3. 殼頭對接隨分支：有 EP 殼頭聲明 EP 路徑＋projection source（hook 1 列照舊）；無 EP 殼頭聲明卡 TaskRef、回源連結指卡 references——機械 stale 對驗現行＝`check_report_shells.py` 對 no-EP 弧印 `[SKIP]`（卡 baseline hash 對驗待 PlanSource snapshot 契約，AIR-135.2 AC#4 後續批次）
+
+  **消費端（改本節須同步）**：[execution-plan](../execution-plan/SKILL.md)「輸出」、[implement](../implement/SKILL.md) 階段 1、[metadata-sync](../metadata-sync/SKILL.md) EP 歸檔項＋EP 歸檔漏偵測、`scripts/check_report_shells.py`。與 debrief（文字簡報）/delta tour（行級走讀）三層互補：殼=high-level 圖形、debrief=模組/檔案文字、tour=行級；殼實作章節吸收日常判斷材料，debrief 為深度選配
 - **按需性視覺產物（codebase 架構/module 現況/目錄導覽）與決策 viewport → `ai-analysis/<域>/`**（與裁決 report 同域——先例：`blueprint/`、`test-contract/`）；**殼 `index.html` 進 git**（authored 殼不可再生——AIR-74 定案；舊 repo-root 渲染目錄慣例已退役）
 - git 慣例**同一原則、條目隨任務家**：`.mmd` 源＋殼 `index.html`＋mermaid 渲染（svg）全進 git（AIR-74——舊「渲染產物不進」慣例已取消）；殼 `index.html` 一律進（排過寬 `**/*.html` 會連殼一起 ignore——規格↔實作分歧實證：殼蒸發死鏈）
 

@@ -6,6 +6,8 @@ kanban-board 開工 refs 出生即寫——AIR-77 起任務目錄永不搬，結
 本 lint 把三類已發生的失真變機械閘門（codex 09-06 全 repo 審查 I-7）：
 1. 同殼宣告多個互斥 projection SHA（一殼只能有一個 current identity）；
 2. projection SHA 與同目錄 ep.md 的 content SHA 不符（stale projection）；
+   no-EP 弧（同目錄無 ep.md——card-first resolver，AIR-135.2）＝印 [SKIP] 明示跳過，
+   不靜默當 stale（無法判定 ≠ stale；卡 baseline 對驗待 PlanSource snapshot 契約）；
 3. 回源連結失效：`file:///Users/` 絕對路徑（跨 worktree/clone 必斷）、
    `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔/月份層未同步）；
 4. 連結合約（09-14 裁決：ai-guide 退出 :6421 report server）：殼內 .md 連結
@@ -59,6 +61,12 @@ def lint_shell(shell: Path, repo_root: Path) -> list[str]:
             f"同殼宣告多個互斥 projection SHA: {sorted(shas)}（只能有一個 current identity）"
         )
     ep = shell.parent / "ep.md"
+    if shas and not ep.exists():
+        # no-EP 弧（card-first resolver）：無 ep.md 可對驗＝無法判定，明確 skip——禁靜默當 stale
+        print(
+            f"[SKIP] no-EP arc: {shell.relative_to(repo_root).as_posix()}"
+            "（殼頭 SHA 無 ep.md 對驗；回源對接＝卡 TaskRef/references）"
+        )
     if shas and ep.exists():
         digest = hashlib.sha256(ep.read_bytes()).hexdigest()
         if not any(digest.startswith(s) for s in shas):
