@@ -6,7 +6,7 @@ predicate 不能只靠 prompt 建議——由 AIR-135.1 compiler 編譯進 Dispa
 機器欄；本工具把該產出面接進 W2 期望登記台帳（scripts/dispatch_ledger.py 的
 register 面），上游首例＝批量夜 #2 mini-batch 的 dispatch-W1.md（唯讀對接）。
 
-兩個子命令：
+三個子命令：
 
 - extract：從 dispatch artifact 抽機器欄（```json fenced block、schema
   dispatch-slice/1），欄位級機驗單一源＝arc_spec.validate（compiler 自己的
@@ -16,6 +16,10 @@ register 面），上游首例＝批量夜 #2 mini-batch 的 dispatch-W1.md（�
   checkpoint_contract 溯源塊）。dispatch_id 為 JIT 佔位（JIT-AT-DISPATCH／
   UNRESOLVABLE*）時必須由 --dispatch-id 提供 marshal 派工當下的真實 id——
   fail loud，禁把佔位串寫進台帳。
+- show：唯讀查詢台帳單一期望（--ledger＋--id），stdout 印 entry pretty JSON。
+  id 解析：exact 命中 → `-` 邊界前綴恰一對應（語義平移自
+  scripts/dispatch_ledger.py resolve_row）；零／多對應、台帳缺／毀／
+  schema_version 非 1 皆 fail loud。show 禁寫台帳。
 
 映射語義（欄位軸對照）：
 - sink.mode=artifact → 台帳 sink 路徑＋anchor=首錨點（W2 sink 三步機驗消費
@@ -28,7 +32,8 @@ register 面），上游首例＝批量夜 #2 mini-batch 的 dispatch-W1.md（�
   以 --collection-mode 決定（詞彙收斂前為已知 drift，發現即回報）。
 
 exit 0＝成功；2＝契約／環境錯（artifact 缺、無／多 dispatch-slice block、
-schema 不合、validator 未過、JIT id 未解析、台帳毀損）——fail loud 禁靜默修復。
+schema 不合、validator 未過、JIT id 未解析、台帳缺／毀／schema_version 非 1、
+show id 無／多對應）——fail loud 禁靜默修復。
 """
 
 import argparse
@@ -224,6 +229,40 @@ def build_entry(
     return entry
 
 
+# ---------- 台帳唯讀查詢（show 面——禁寫台帳） ----------
+
+
+def load_expectation_ledger(path: Path) -> dict:
+    """show 面唯讀載入：缺檔／毀損／schema_version 非 1 → LinkError（CLI exit 2）."""
+    led = ledger_mod()
+    try:
+        doc = led.load_ledger(path)  # 台帳解析 schema 單一源＝dispatch_ledger.load_ledger
+    except led.LedgerError as exc:  # LedgerMissing（缺檔）在 show 面同為環境錯
+        raise LinkError(str(exc)) from exc
+    version = doc.get("schema_version")
+    if isinstance(version, bool) or version != 1:  # bool 是 int 子類——JSON true 不得冒充 1
+        raise LinkError(f"台帳 schema_version 非 1（實際 {version!r}）：{path}")
+    return doc
+
+
+def find_expectation(ledger: dict, dispatch_id: str) -> dict:
+    """--id 解析：exact 命中 key，否則 `-` 邊界前綴恰一對應；零／多對應 fail loud.
+
+    語義平移自 dispatch_ledger.resolve_row（該處吃 dict[str, ActualRow]，台帳
+    key 面型別不合故平移）；前綴軸同為 `id + "-"` 邊界（與 resolve_row 一致）
+    ——兩處禁各自漂移，改語義須對照單一源同步。
+    """
+    expectations = ledger["expectations"]
+    if dispatch_id in expectations:
+        return expectations[dispatch_id]
+    matches = sorted(full for full in expectations if full.startswith(dispatch_id + "-"))
+    if len(matches) == 1:
+        return expectations[matches[0]]
+    if matches:
+        raise LinkError(f"台帳 id `{dispatch_id}` 前綴撞多（前 3：{matches[:3]}）——禁靜默擇一")
+    raise LinkError(f"台帳無此期望 id `{dispatch_id}`（exact 與 `-` 邊界前綴皆無對應）")
+
+
 # ---------- CLI ----------
 
 
@@ -246,6 +285,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     reg.add_argument("--liveness-source", default=None, help="預設＝slice ledger 欄逐字，次選 bridge:jobs.json")
     reg.add_argument("--at", default=None, help="dispatch 時間 ISO（預設現在；wall-clock UTC 語意）")
     reg.add_argument("--ledger", type=Path, default=led.DEFAULT_LEDGER)
+
+    shw = sub.add_parser("show", help="唯讀查詢台帳單一期望（pretty JSON；禁寫台帳）")
+    shw.add_argument("--ledger", type=Path, required=True, help="W2 台帳路徑（show 面必填）")
+    shw.add_argument("--id", dest="dispatch_id", required=True, help="dispatch id（exact 或 `-` 邊界前綴恰一對應）")
     return parser.parse_args(argv)
 
 
@@ -313,10 +356,23 @@ def cmd_register(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_show(args: argparse.Namespace) -> int:
+    try:
+        ledger = load_expectation_ledger(args.ledger)
+        entry = find_expectation(ledger, args.dispatch_id)
+    except LinkError as exc:
+        print(f"[FAIL] w3_checkpoint_link: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(entry, ensure_ascii=False, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if args.command == "extract":
         return cmd_extract(args)
+    if args.command == "show":
+        return cmd_show(args)
     return cmd_register(args)
 
 
