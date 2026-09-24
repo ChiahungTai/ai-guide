@@ -23,6 +23,10 @@
 - delivery（選填）：caller 親驗的 delivery（manual-anchor 案例）；與 collection
   並存＝雙 authoritative delivery，fail-loud（AC#1 同構）
 - status_override（選填）：帳本狀態歧義時的 caller 裁決（canonical terminal 值）
+- intent_review（選填 dict）：Intent Review 驗收腿回寫面——原樣透傳進 receipt
+  （verdict 枚舉 GO／GO-WITH-FIXES／NO-GO 由下游 arc_spec validator 驗）
+- plan_hash_source（選填 str）：被 hash 的來源檔指針——透傳進 receipt 同名欄
+  （muse N-2：receipt 只存 hash 不存源；ad-hoc＝brief 檔 path、正式＝ArcPlan 檔 path）
 - top_findings／blockers／unverified／pending_human_decision（選填 list[str]）：
   llm-guidance pass-through（語義判定歸 caller；normalize 只加自己可證的條目）
 
@@ -48,6 +52,8 @@ _ENVELOPE_OPTIONAL = (
     "terminal",
     "delivery",
     "status_override",
+    "intent_review",
+    "plan_hash_source",
     "top_findings",
     "blockers",
     "unverified",
@@ -567,6 +573,24 @@ def normalize(family: str, raw: dict) -> dict:
         receipt["usage"] = usage
     if final_text is not None:
         receipt["final_text_excerpt"] = _excerpt(final_text)
+
+    # 改版批次擴鍵（machine-invariant 選填，缺席＝不寫 key——現行 None 慣例）
+    intent_review = raw.get("intent_review")
+    if intent_review is not None:
+        if not isinstance(intent_review, dict):
+            raise NormalizeError(
+                f"`intent_review` must be an object for receipt_normalize, "
+                f"got {type(intent_review).__name__}"
+            )
+        receipt["intent_review"] = intent_review
+    plan_hash_source = raw.get("plan_hash_source")
+    if plan_hash_source is not None:
+        if not isinstance(plan_hash_source, str):
+            raise NormalizeError(
+                f"`plan_hash_source` must be a string for receipt_normalize, "
+                f"got {type(plan_hash_source).__name__}"
+            )
+        receipt["plan_hash_source"] = plan_hash_source
 
     return receipt
 

@@ -174,7 +174,9 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("work_units", "machine-invariant", "always",
                       "工作單元列表——unit_id 錨 card node id（唯一）、role 枚舉、phase 引用 135.3 六站語彙（不重定）、depends_on 拓撲"),
             FieldSpec("budget_context", "machine-invariant", "always",
-                      "預算 context——revert_exposure_cap（敞口帽）＋usage_cap（用量帽）分欄（AC#6）；數值須有限且 ≥0"),
+                      "預算 context——revert_exposure_cap（敞口帽，純數值有限 ≥0）＋"
+                      "usage_cap（用量帽三態：有限數 ≥0＝具體帽、null＝未設、"
+                      "\"unlimited\"＝無帽）分欄（AC#6）"),
             FieldSpec("terminal_semantics", "machine-invariant", "always",
                       "終態語義（D6）：on_budget_exhausted=budget-limited、raise_cap=human-action、settle_gate=human"),
             FieldSpec("plan_changes", "machine-invariant", "always",
@@ -218,7 +220,9 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("accept", "machine-invariant", "conditional",
                       "accept 機驗：{predicate, anchors}——sink 為 artifact 時必帶（預設 exists+readable+nonempty；terminal≠complete）"),
             FieldSpec("budget_context", "machine-invariant", "always",
-                      "超支即停機械判準（AC#6）：revert_remaining＋slice_budget（有限 ≥0）＋debit_events 指針"),
+                      "超支即停機械判準（AC#6）：revert_remaining（純數值有限 ≥0）＋"
+                      "slice_budget（三態：有限數 ≥0＝具體帽、null＝未設、"
+                      "\"unlimited\"＝無帽）＋debit_events 指針"),
             FieldSpec("terminal_semantics", "machine-invariant", "always", "終態語義（D6，承 plan）"),
             FieldSpec("carrier", "machine-invariant", "always", "承載載體（如 zcode-agent／bridge job）"),
             FieldSpec("collection_mode", "machine-invariant", "always",
@@ -271,6 +275,9 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
                       "——verdict 枚舉 GO／GO-WITH-FIXES／NO-GO、leg＝審查腿身份、read_set_exclusion＝"
                       "chain-exclusion 自述；選填（required_at=never，同 receipt_sink N6 慣例）＝"
                       "閘外小弧自報為足，閘內獨立腿缺失＝exit Align 未過關"),
+            FieldSpec("plan_hash_source", "machine-invariant", "never",
+                      "被 hash 的來源檔指針（muse N-2：receipt 只存 hash 不存源——"
+                      "ad-hoc 慣例＝brief 檔 path；正式＝ArcPlan 檔 path）"),
             FieldSpec("top_findings", "llm-guidance", "never", "語義欄——判定歸 caller（bridge_waiter 慣例）"),
             FieldSpec("blockers", "llm-guidance", "never", "阻礙清單"),
             FieldSpec("unverified", "llm-guidance", "never", "未驗面誠實申報（Fail Loud）"),
@@ -362,6 +369,51 @@ def _check_budget_num(
             f"— 非有限值 fail-closed（NaN 比較恆 False，禁 fail-open）"
         )
     elif not float(value) >= 0:
+        errors.append(
+            f"Budget field `{field_path}` must be >= 0 for {kind}, got {value}"
+        )
+
+
+_BUDGET_CAP_AVAILABLE = (
+    'Available cap values: a finite number >= 0, null (unset), "unlimited"'
+)
+
+
+def _check_budget_cap(
+    field_path: str,
+    value: object,
+    kind: str,
+    errors: list[str],
+    *,
+    present: bool,
+) -> None:
+    """cap 欄三態（晨間合議定案——0-佔位同值異義防再犯）：有限數（≥0）＝具體帽
+    （0＝零自治）、null（key 在場）＝未設（消費端自行判讀，不當無帽用）、
+    "unlimited"＝無帽（decision-5「無額度帽」政策語義的顯式形）；其他型別/值或
+    key 缺席＝fail-loud 列可用值。"""
+    if not present:
+        errors.append(
+            f"Budget field `{field_path}` missing for {kind} — "
+            f"cap 態須顯式（禁 key 缺席歧義）. {_BUDGET_CAP_AVAILABLE}"
+        )
+        return
+    if value is None:
+        return  # 未設——消費端自行判讀；不當無帽用
+    if isinstance(value, str) and value == "unlimited":
+        return  # 無帽——decision-5 政策語義的顯式形
+    if not _is_num(value):  # str 其他值／bool／list 等皆此路
+        errors.append(
+            f"Unknown budget cap `{value}` for {kind} field `{field_path}`. "
+            f"{_BUDGET_CAP_AVAILABLE}"
+        )
+        return
+    if not math.isfinite(float(value)):
+        errors.append(
+            f"Budget field `{field_path}` must be finite for {kind}, got {value} "
+            f"— 非有限值 fail-closed（NaN 比較恆 False，禁 fail-open）"
+        )
+        return
+    if not float(value) >= 0:
         errors.append(
             f"Budget field `{field_path}` must be >= 0 for {kind}, got {value}"
         )
@@ -469,8 +521,19 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
     _require_object("budget_context", data.get("budget_context"), kind, errors)
     budget = data.get("budget_context")
     if isinstance(budget, dict):
-        for key in ("revert_exposure_cap", "usage_cap"):
-            _check_budget_num(f"budget_context.{key}", budget.get(key), kind, errors)
+        _check_budget_num(
+            "budget_context.revert_exposure_cap",
+            budget.get("revert_exposure_cap"),
+            kind,
+            errors,
+        )
+        _check_budget_cap(
+            "budget_context.usage_cap",
+            budget.get("usage_cap"),
+            kind,
+            errors,
+            present="usage_cap" in budget,
+        )
 
     _check_terminal_semantics("terminal_semantics", data.get("terminal_semantics"), kind, errors)
 
@@ -599,8 +662,19 @@ def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:
 
     budget = data.get("budget_context")
     if isinstance(budget, dict):
-        for key in ("revert_remaining", "slice_budget"):
-            _check_budget_num(f"budget_context.{key}", budget.get(key), kind, errors)
+        _check_budget_num(
+            "budget_context.revert_remaining",
+            budget.get("revert_remaining"),
+            kind,
+            errors,
+        )
+        _check_budget_cap(
+            "budget_context.slice_budget",
+            budget.get("slice_budget"),
+            kind,
+            errors,
+            present="slice_budget" in budget,
+        )
         if "debit_events" in budget and not isinstance(budget["debit_events"], list):
             errors.append(
                 f"`budget_context.debit_events` must be a list for {kind}（扣款事件指針）"
@@ -661,6 +735,13 @@ def _check_receipt(data: dict, stage: str, errors: list[str]) -> None:
                 f"delivery.verdict=`{verdict}` — terminal≠complete（機驗面 fail-loud；"
                 f"完成判定＝sink 存在＋anchor 命中，D7 receipt minimum）"
             )
+        if status == "completed" and verdict == "manual-anchor":
+            anchor_hits = delivery.get("anchor_hits")
+            if not (isinstance(anchor_hits, list) and anchor_hits):
+                errors.append(
+                    f"manual-anchor verdict requires at least one anchor hit for {kind} "
+                    f"— 人工驗收逃生口須附錨證（J-3 收緊；delivered 面 anchors 契約同構）"
+                )
 
     projection = data.get("bounded_receipt_projection")
     if isinstance(projection, dict):

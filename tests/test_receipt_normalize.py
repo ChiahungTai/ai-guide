@@ -618,6 +618,77 @@ class TestUsageFaceCorruption:
         assert "`carrierUsage` must be an object" in str(ei.value)
 
 
+class TestEnvelopeExtendedKeys:
+    """改版批次：envelope 擴鍵 intent_review／plan_hash_source——透傳＋缺席不寫 key。"""
+
+    def test_intent_review_passthrough(self) -> None:
+        env = _env_s1_flash()
+        env["intent_review"] = {
+            "verdict": "GO",
+            "leg": "local fresh-context agent",
+            "read_set_exclusion": "chain-exclusion 自述",
+        }
+        out = _mod.normalize("glm", env)
+        assert out["intent_review"] == env["intent_review"]
+        assert _mod.validate_normalized(out) == []
+
+    def test_intent_review_non_dict_fails(self) -> None:
+        env = _env_s1_flash()
+        env["intent_review"] = "GO"
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("glm", env)
+        assert "`intent_review` must be an object" in str(ei.value)
+
+    def test_intent_review_bad_verdict_passes_normalize_fails_validator(self) -> None:
+        """verdict 枚舉單一源＝下游 arc_spec validator——normalize 只透傳不驗枚舉。"""
+        env = _env_s1_flash()
+        env["intent_review"] = {
+            "verdict": "MAYBE",
+            "leg": "x",
+            "read_set_exclusion": "y",
+        }
+        out = _mod.normalize("glm", env)
+        assert out["intent_review"]["verdict"] == "MAYBE"
+        errs = _mod.validate_normalized(out)
+        assert any("intent review verdict" in e for e in errs)
+
+    def test_plan_hash_source_passthrough(self) -> None:
+        env = _env_s1_flash()
+        env["plan_hash_source"] = ".agent-tmp/air-135.1/mini-batch/AIR-135.7/arc-plan.md"
+        out = _mod.normalize("glm", env)
+        assert out["plan_hash_source"] == env["plan_hash_source"]
+        assert _mod.validate_normalized(out) == []
+
+    def test_plan_hash_source_non_str_fails(self) -> None:
+        env = _env_s1_flash()
+        env["plan_hash_source"] = 42
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("glm", env)
+        assert "`plan_hash_source` must be a string" in str(ei.value)
+
+    def test_absent_keys_not_written(self) -> None:
+        out = _mod.normalize("glm", _env_s1_flash())
+        assert "intent_review" not in out
+        assert "plan_hash_source" not in out
+
+    def test_null_value_treated_as_absent(self) -> None:
+        """現行 None 慣例：key 在場值 None＝缺席，不寫 key。"""
+        env = _env_s1_flash()
+        env["intent_review"] = None
+        env["plan_hash_source"] = None
+        out = _mod.normalize("glm", env)
+        assert "intent_review" not in out
+        assert "plan_hash_source" not in out
+
+    def test_typo_key_still_rejected(self) -> None:
+        """擴鍵後未知鍵閘不鬆——typo 禁靜默丟棄。"""
+        env = _env_s1_flash()
+        env["intent_revew"] = {"verdict": "GO"}
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("glm", env)
+        assert "Unknown envelope key(s) intent_revew" in str(ei.value)
+
+
 class TestGlmUsageUnmappedKeys:
     """muse NB-2 回歸釘：glm usage 未映射鍵原樣保留＋unverified 註記（禁靜默丟棄）。"""
 

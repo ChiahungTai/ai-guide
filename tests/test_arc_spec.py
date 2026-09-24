@@ -355,6 +355,96 @@ class TestArcPlanValidation:
         assert any("settle_gate" in e and "human" in e for e in errs)
 
 
+class TestBudgetCapThreeState:
+    """改版批次（晨間合議定案）：budget cap 欄三態——number／null／"unlimited"。
+
+    同值異義防再犯（0-佔位覆轍）：0＝零自治（具體帽）、null（key 在場）＝未設
+    （消費端自行判讀，非無帽）、"unlimited"＝無帽（decision-5 政策語義顯式形）；
+    revert 欄維持純數值（可逆預算必須具體）。
+    """
+
+    def _plan_capped(self, cap: object) -> dict:
+        p = _plan_with_valid_hash()
+        p["budget_context"]["usage_cap"] = cap
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        return p
+
+    # --- arc-plan.usage_cap 三態 ---
+
+    def test_plan_usage_cap_number_passes(self) -> None:
+        assert _errors("arc-plan", self._plan_capped(5)) == []
+
+    def test_plan_usage_cap_zero_still_specific_cap(self) -> None:
+        """0＝零自治（具體帽）——現行行為不變。"""
+        assert _errors("arc-plan", self._plan_capped(0)) == []
+
+    def test_plan_usage_cap_null_passes(self) -> None:
+        assert _errors("arc-plan", self._plan_capped(None)) == []
+
+    def test_plan_usage_cap_unlimited_passes(self) -> None:
+        assert _errors("arc-plan", self._plan_capped("unlimited")) == []
+
+    def test_plan_usage_cap_other_string_lists_available(self) -> None:
+        p = self._plan_capped("lots")
+        errs = _errors("arc-plan", p)
+        assert any("Unknown budget cap `lots`" in e and "unlimited" in e for e in errs)
+
+    def test_plan_usage_cap_missing_key_fails(self) -> None:
+        """key 缺席≠null 未設——三態須顯式（禁靜默當未設）。"""
+        p = _plan_with_valid_hash()
+        del p["budget_context"]["usage_cap"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p)
+        assert any("usage_cap" in e and "missing" in e for e in errs)
+
+    def test_plan_usage_cap_bool_fails(self) -> None:
+        assert any("usage_cap" in e for e in _errors("arc-plan", self._plan_capped(True)))
+
+    def test_plan_usage_cap_nonfinite_fails(self) -> None:
+        p = self._plan_capped(float("nan"))
+        assert any("usage_cap" in e and "finite" in e for e in _errors("arc-plan", p))
+
+    def test_plan_usage_cap_negative_fails(self) -> None:
+        p = self._plan_capped(-1)
+        assert any("usage_cap" in e and ">= 0" in e for e in _errors("arc-plan", p))
+
+    def test_plan_revert_exposure_cap_null_fails(self) -> None:
+        """revert 敞口帽維持純數值（可逆預算必須具體）——null 拒。"""
+        p = _plan_with_valid_hash()
+        p["budget_context"]["revert_exposure_cap"] = None
+        errs = _errors("arc-plan", p)
+        assert any("revert_exposure_cap" in e and "NoneType" in e for e in errs)
+
+    # --- dispatch-slice.slice_budget 三態 ---
+
+    def test_slice_budget_three_states_pass(self) -> None:
+        for value in (0, 5, None, "unlimited"):
+            s = _slice()
+            s["budget_context"]["slice_budget"] = value
+            assert _errors("dispatch-slice", s) == [], value
+
+    def test_slice_budget_bad_string_lists_available(self) -> None:
+        s = _slice()
+        s["budget_context"]["slice_budget"] = "no-cap"
+        errs = _errors("dispatch-slice", s)
+        assert any(
+            "Unknown budget cap `no-cap`" in e and "null (unset)" in e for e in errs
+        )
+
+    def test_slice_budget_missing_key_fails(self) -> None:
+        s = _slice()
+        del s["budget_context"]["slice_budget"]
+        errs = _errors("dispatch-slice", s)
+        assert any("slice_budget" in e and "missing" in e for e in errs)
+
+    def test_slice_revert_remaining_null_fails(self) -> None:
+        """revert_remaining 維持純數值——null 拒。"""
+        s = _slice()
+        s["budget_context"]["revert_remaining"] = None
+        errs = _errors("dispatch-slice", s)
+        assert any("revert_remaining" in e and "NoneType" in e for e in errs)
+
+
 # ---------------------------------------------------------------------------
 # DispatchSlice
 # ---------------------------------------------------------------------------
@@ -520,6 +610,76 @@ class TestReceiptValidation:
         r = _receipt()
         r["bounded_receipt_projection"]["final_text_non_empty"] = "yes"
         assert any("boolean" in e for e in _errors("receipt", r))
+
+
+class TestManualAnchorTightening:
+    """改版批次（J-3 收緊）：manual-anchor 逃生口須附錨證；delivered 路徑行為不變。"""
+
+    def test_manual_anchor_zero_hits_fails(self) -> None:
+        r = _receipt()
+        r["delivery"]["verdict"] = "manual-anchor"
+        r["delivery"]["anchor_hits"] = []
+        errs = _errors("receipt", r)
+        assert any(
+            "manual-anchor verdict requires at least one anchor hit" in e for e in errs
+        )
+
+    def test_manual_anchor_missing_anchor_hits_fails(self) -> None:
+        r = _receipt()
+        r["delivery"]["verdict"] = "manual-anchor"
+        del r["delivery"]["anchor_hits"]
+        errs = _errors("receipt", r)
+        assert any(
+            "manual-anchor verdict requires at least one anchor hit" in e for e in errs
+        )
+
+    def test_manual_anchor_with_one_hit_passes(self) -> None:
+        r = _receipt()
+        r["delivery"]["verdict"] = "manual-anchor"
+        r["delivery"]["anchor_hits"] = ["JUDGE-VERDICT"]
+        assert _errors("receipt", r) == []
+
+    def test_delivered_path_unaffected(self) -> None:
+        """delivered 不走 manual-anchor 錨證閘（行為不變）。"""
+        r = _receipt()
+        r["delivery"]["anchor_hits"] = []
+        errs = _errors("receipt", r)
+        assert not any("manual-anchor verdict requires" in e for e in errs)
+
+    def test_gate_bound_to_completed_status(self) -> None:
+        """閘綁 status=completed——非 completed 不觸發錨證要求。"""
+        r = _receipt()
+        r["status"] = "failed"
+        r["delivery"]["verdict"] = "manual-anchor"
+        r["delivery"]["anchor_hits"] = []
+        errs = _errors("receipt", r)
+        assert not any("manual-anchor verdict requires" in e for e in errs)
+
+
+class TestPlanHashSourceField:
+    """改版批次：receipt.plan_hash_source 選填欄（muse N-2——receipt 只存 hash 不存源）。"""
+
+    def test_field_is_optional_machine_invariant(self) -> None:
+        fields = {f.name: f for f in _mod.ARTIFACTS["receipt"].fields}
+        f = fields["plan_hash_source"]
+        assert f.kind == "machine-invariant"
+        assert f.required_at == "never"  # 選填不進 required 集（同 receipt_sink 慣例）
+
+    def test_absent_still_valid(self) -> None:
+        r = _receipt()
+        assert "plan_hash_source" not in r
+        assert _errors("receipt", r) == []
+
+    def test_present_valid(self) -> None:
+        r = _receipt()
+        r["plan_hash_source"] = ".agent-tmp/air-135.1/mini-batch/AIR-135.7/arc-plan.md"
+        assert _errors("receipt", r) == []
+
+    def test_blank_fails(self) -> None:
+        r = _receipt()
+        r["plan_hash_source"] = "   "
+        errs = _errors("receipt", r)
+        assert any("`plan_hash_source`" in e and "blank" in e for e in errs)
 
 
 # ---------------------------------------------------------------------------
