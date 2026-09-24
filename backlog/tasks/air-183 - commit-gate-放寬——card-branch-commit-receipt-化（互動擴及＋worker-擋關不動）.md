@@ -1,10 +1,10 @@
 ---
 id: AIR-183
 title: commit-gate-放寬——card-branch-commit-receipt-化（互動擴及＋worker-擋關不動）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-24 06:17'
-updated_date: '2026-09-24 06:18'
+updated_date: '2026-09-24 06:26'
 labels: []
 dependencies: []
 ordinal: 169000
@@ -31,6 +31,16 @@ flowchart LR
 **背景事實**：DB-41 muse writer 越權三連（0924 delegate-bridge f951c83 記帳＋C 裁定）——muse 腿越權 commit／自跑 post-build／自行標 Done；本卡放寬範圍明文限 marshal 主 session commit 授權，worker 面 fence 一律不碰（user「不一貫」疑慮的對答案）。
 <!-- SECTION:DESCRIPTION:END -->
 
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 rules Commit 段 delegation 適用面改 session-agnostic＋三層邊界宣告（①receipt-predicate 委任／②merge 恆人 gate／③push 恆停）；一次授權≠永久授權正典不動（rg 驗證）
+- [ ] #2 skills/commit/SKILL.md：conditional delegation 去 autonomous-only＋新增互動 receipt-gate 驗收程序節（七項 predicate 逐項：active arc／receipt verdict ok／legs 收斂零 open／identity fresh／scope manifest 對帳／🔴高風險例外／commit 後 head_sha 刷新＋receipt id 記帳）
+- [ ] #3 投影三處同步：skills/deep-work/SKILL.md『/commit 等 user 確認』drift 行修復＋repo AGENTS.md git 慣例收尾條三層邊界明文＋skills/kanban-board/SKILL.md 結案兩步節 merge 授權點對齊
+- [ ] #4 drift 掃描：rg『conditional commit delegation』＋rg『等 user 確認』全 repo 逐檔對帳，零落後投影殘留（掃描輸出落卡 notes）
+- [ ] #5 落地前審查閘（boundary 級全套）：worker diff 經 fresh＋intent 分離腿＋跨家族 muse/codex external second-opinion（tri panel）——verdict 記卡；回執四欄（classification/review/session-freshness/deployment-surfaces）入 notes；有不確定＝tri 開會（user 0924 指令）
+- [ ] #6 部署對帳：deploy_agents.py 三面 bundle 重部署（muse 面 byte≤30,720）＋session freshness 注記（生效後新 session 重讀）；memory commit-consent-in-autonomous-mode 蒸餾更新（歷史裁定鏈保留）
+<!-- AC:END -->
+
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
@@ -46,3 +56,9 @@ flowchart LR
 
 〔規模分級〕standard——authorization 語義變更、跨五檔契約同步；無新 boundary 決策（三腿已收斂方向）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0924 user 開工指令】『這件事很重要，好好跟 muse codex 討論，有不確定就 tri 開會…commit 這件事也是老規矩做完』——執行約束：所有判斷類未決經 tri（muse+codex+5.3）收斂；boundary 審查閘 tri panel 即此形態。
+<!-- SECTION:NOTES:END -->
