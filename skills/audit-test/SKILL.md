@@ -150,6 +150,8 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 
 **核心原則**：凍結 TC 是契約，測試是契約的消費——本域機械對帳「測試忠實消費契約且 provenance 完整」。TC 格式（claim／Given-When／oracle／oracle_source／evidence class／uncovered）定義源＝[execution-plan](../execution-plan/SKILL.md) 測試規劃段（引用不重複定義）；三 gate 語彙（STRUCT_OK／SEM_OK／BEFORE_GREEN）與 [implement](../implement/SKILL.md) RED provenance 精確同名——對帳鍵單一套。**有凍結 TC 時本對帳是域 2 第一 gate**——先對帳再談其他覆蓋查詢。
 
+**觸發探測語序（card-first，AIR-135.2 AC#4）**：第一優先＝**active card**（TaskRef 在場）——卡 AC／Plan 有 TC 對帳面（凍結 TC／predicate-ID 對帳約定）→ 啟用本子節；`ep.md` 探測降為條件分支（**該弧原有 EP 時照舊**）；card 無 TC 對帳面 → 續下句 EP/session context 判定（皆缺才跳過）。
+
 **觸發輸入（operationalize）**：任務家 `ep.md` 探測（arc/獨立跑形態——讀 EP 整合策略有無凍結 TC 段）或 session context EP（in-context 形態）；兩者皆缺 → 對帳子節跳過（standalone 無 EP 的存量測試不適用），改走出生證明查核（下下方）。
 
 | # | 對帳項 | 機械操作 |

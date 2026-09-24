@@ -31,7 +31,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 | work unit | Role | authority | judgment_floor | qualifications | 說明 |
 |---|---|---|---|---|---|
-| 實作主腿（各段落執行） | Implementer | apply（accepted EP 後）／evidence | execution | implement_from_accepted_ep | `implement_from_accepted_ep + execution + apply`——進場受 accepted-EP predicate 約束（階段 0）；card Planning Contract 任務走 contract 分支（六欄齊備代檢查，同在階段 0） |
+| 實作主腿（各段落執行） | Implementer | apply（accepted EP 後）／evidence | execution | implement_from_accepted_ep | `implement_from_accepted_ep + execution + apply`——進場受 accepted-EP predicate 約束（階段 0）；card Planning Contract 任務走 contract 分支（六欄齊備代檢查，同在階段 0）；card-first 主路徑（AIR-135.2 AC#4）＝active card（TaskRef）為第一優先，accepted EP 為「該弧原有 EP 時」條件分支（PlanSource predicate 語序見階段 0） |
 | 機械驗證腿（ruff/mypy/pytest／rg 殘留對帳） | Verifier | evidence artifact（無 disposition/apply） | execution | evidence_retrieval | 組合命令形態；lite 測試＝規格陳述，驗收證據由 full 複驗 |
 | Agent Review Reviewer legs（階段 4） | Reviewer | findings（無 disposition/apply） | execution（預設；高保護面／跨邊界語義面升 decision） | review_findings | 執行形態照 [review-engine](../review-engine/SKILL.md)「review 執行預設」 |
 | finding 裁決（invoke /judge-review） | Arbiter | final disposition | decision | adjudication | seat 非 decision-qualified 時外派 decision-qualified candidate；無 candidate 禁 self-downgrade |
@@ -53,7 +53,9 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 快速確認 EP 品質，**僅嚴重矛盾才停下**，其餘自行判斷並記錄。
 
-**card Planning Contract 任務**：卡 plan 段六欄齊備＝進場資格（六欄定義見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）——免 accepted-EP 四條檢查，直行 execution；六欄缺一＝停在決策層補齊，不開工。
+**PlanSource predicate（進場資格語序——card-first，AIR-135.2 AC#4）**：進場第一優先＝**active card**（TaskRef 在場；卡＝plan of record，卡持 Plan／Planning Contract 六欄）；`accepted EP` 為條件分支（**該弧原有 EP 時照舊**）；兩者皆缺＝無進場資格，停在決策層。任務家／卡探測依單一源 resolver（[illustrate html-mode](../_common/illustrate-html-mode.md)「任務家探測 resolver」）——本段不複製探測邏輯。
+
+**card Planning Contract 任務**：卡 plan 段六欄齊備＝進場資格（六欄定義見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）——免 accepted-EP 四條檢查，直行 execution；六欄缺一＝停在決策層補齊，不開工。card-first 六欄代檢查對應**卡的 Planning Contract 欄構造**（AIR-135.2 AC#3 存儲分配）：intent verbatim＋成功謂詞住 Description／AC、non-goals＋revert 預算＋預授權類住 AC 約束區、假設台帳住 Plan；EP 分支（accepted-EP 四條代檢查）照舊。
 
 **accepted-EP predicate（進場硬閘門——AIR-91 S3）**：實作腿（execution/apply）進場前四條全要，任一不成立＝**禁止 execution/apply**：
 
