@@ -5,11 +5,18 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 
 # Model Routing — 解析表與 provider 事實
 
-> 本 skill 是 `rules/model-routing.md` 的 on-demand 深層載體：rule 端保留 always-on 骨架（precedence 七步、hard invariants、external-runtime routing 段頭＋pointer——內容在本檔）；本檔承載 glossary／WorkUnitContract schema／resolver protocol、dispatch 預設與額度 failover policy、external-runtime family→(model, effort, 容量) 解析表、eligibility gate、reviewer 交接契約、套用三路徑、rate limit 與並發上限表、thoughtLevel 但書與 classifier 處置。model wire token／effort encoding／transport 供給事實單一源＝同目錄 [catalog.toml](catalog.toml)；registry 部署預設（pins）單一源＝[agents/presets.toml](../../agents/presets.toml)（default binding FK→catalog，`sync_agents.py --map` 機械對帳）——本檔不重抄 wire token／effort encoding／transport 供給事實（dispatch 政策敘述中的 model 具名除外）。
+> 本 skill 是 `rules/model-routing.md` 的 on-demand 深層載體：rule 端保留 always-on 骨架（resolver 指針＋catalog 單一源＋no-silent-downgrade 一句＋external-runtime 必載——0924 bundle 瘦身後 precedence 七步與 hard invariants 全文只住本檔）；本檔承載 glossary／WorkUnitContract schema／resolver protocol、hard invariants、dispatch 預設與額度 failover policy、external-runtime family→(model, effort, 容量) 解析表、eligibility gate、reviewer 交接契約、套用三路徑、rate limit 與並發上限表、thoughtLevel 但書與 classifier 處置。model wire token／effort encoding／transport 供給事實單一源＝同目錄 [catalog.toml](catalog.toml)；registry 部署預設（pins）單一源＝[agents/presets.toml](../../agents/presets.toml)（default binding FK→catalog，`sync_agents.py --map` 機械對帳）——本檔不重抄 wire token／effort encoding／transport 供給事實（dispatch 政策敘述中的 model 具名除外）。
 
 ## AIR-91 doctrine：vocabulary／WorkUnitContract／resolver protocol（派工權威）
 
 > 本節是 instruction resolver 的唯一源（glossary／schema／precedence／輸出契約）；機械可驗證的供給事實（ModelIdentity／DispatchBinding／qualification records／allow-list metadata）單一源＝同目錄 [catalog.toml](catalog.toml)——`sync_agents.py` loader 驗 schema（token 分欄／enum／FK／唯一性／volatile 欄位拒斥），本檔不重抄 wire token／effort encoding／transport 供給事實（dispatch 政策敘述中的 model 具名除外）。resolver 是 LLM instruction protocol，不是 Python runtime router；TOML 與 sync_agents 只承擔可機械驗證的 supply 與（S2 起）deployment projection。
+
+**hard invariants（違反＝路由錯誤；0924 自 rules 收編全文，rule 端僅存 no-silent-downgrade 一句）**：
+
+- **token provenance**：wire token 帶 kind，native/alias/slug 分欄禁混型；bridge/prose 委派一律 provider native ID。
+- **effective effort**：candidate 四元組；effort 無法確認僅 conditional、不滿足 decision gate；effort 不補 qualification（glossary judgment_floor＋precedence 步驟 2）。
+- **model fact single source**：identity/binding/capability/qualification 只住 catalog；rule／workflow／模板禁雙寫（parity gate＝`sync_agents.py --check`）。
+- **volatile state**：訂閱/quota/availability 不住 catalog——dispatch 前由 spine/probe 形成 AvailabilitySnapshot；stale/unknown≠available（見 AvailabilitySnapshot 節）。
 
 ### glossary（vocabulary）
 
@@ -232,7 +239,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 1. **model 詞彙＝native-ID-only（VR-1）**：`--model` 只收 provider-table native GLM ID（不分大小寫 canonicalize）；**裸委派＝預設 `GLM-5.3-Flash`**（省額度腿可不帶）；旗艦腿必顯式 `--model GLM-5.3`。**呼叫端擁 tier→native 映射**——派發前把口語檔位（flash／旗艦）正規化成 native ID，bridge 不代解 habit 詞；禁用 CC 詞彙 `sonnet`/`opus`（**fail-closed：prepare-throw→terminal failure entry、exit 1、永不 completed**——terminal 不可當 completed 誤判成功）。
 2. **寫入與唯讀檔位（write-mode）**：寫入委派＝`--write-mode edit`（headless 唯一寫檔檔位）；缺席≡`plan`（read-only）；`build`＝**唯讀收緊檔——headless 不可寫**（勿教 `build` 當寫檔腿）；`yolo` fail-closed。
 3. **flag 面**：收 `--model`／`--write-mode`／`--background`／`--caller-session`／`--json`／`--resume`／`--disallowed-tools`（透傳）＋positional prompt（**`--prompt` flag 拒收**——三 family 同拒：flag parser＝family-neutral core（delegate-bridge `rust/crates/bridge-core/src/task.rs` `parse_task_flags`），`--prompt` 不在旗標集；長 prompt＝`--prompt-file <path>`）；拒收 `--trust-workspace`／`--steps`／`--effort`／`--allow-workspace-switch`／`--network`——muse 形的 flag 組合（如 `--trust-workspace --steps 800`）照抄即炸，委派範例須標 family 差異。**`--yolo` bridge 2.0.20 起轉收——glm family 映射 carrier `--mode yolo`（headless Bash 等執行類工具放行；未帶時 `--write-mode edit` 下執行類命令拒行），為 implement 預設旗標（生效前提見 dispatch 預設段；probe 實證 exit 0、ledger `mode: yolo`）**
-4. **resume 契約已驗證（model-match）／fork 仍 unverified**：glm 定向接續必帶建立時 `--model <id>`（probe 實證 completed／mismatch fail-closed；契約條文單一源＝rules/bridge-dispatch.md「glm resume model-match」）；`--resume` 為布林、session id 走 `--session-id`（誤接 token 有 exit 2 guard）；**fork semantics 仍 unverified**——do not infer fork support from muse/codex。
+4. **resume 契約已驗證（model-match）／fork 仍 unverified**：glm 定向接續必帶建立時 `--model <id>`（probe 實證 completed／mismatch fail-closed；契約條文單一源＝bridge-dispatch skill「Canonical dispatch runbook」步驟 5——0924 自 rules 收編）；`--resume` 為布林、session id 走 `--session-id`（誤接 token 有 exit 2 guard）；**fork semantics 仍 unverified**——do not infer fork support from muse/codex。
 5. **ledger 語義**：`model`＝caller 原始拼法、`effectiveModel`＝canonical native（parsed-success attestation）、`mode`＝handed——analytics 鍵 `(family, model, effectiveModel)`、身份認 `effectiveModel`；兩欄不合并。
 
 ### 顧問觸發兩層語義（「跟 codex(,5.3) 討論」）
@@ -279,7 +286,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | review | muse | `muse review --json`（bridge `review` 子命令——**git-diff 審查工具**：`--base <ref>` 定 diff 範圍；非文件審查形態——EP 等文件審查走 `task`＋read-only 紅線，`--schema` flag 不存在〔bridge 0.2.5 實測〕；**不收自由文字 prompt**——`--` 分隔與 positional 皆拒〔bridge 2.0.7 實測〕，無 prompt 即全 diff 預設審查，scope 限縮做不到） | diff 審查產出 verdict |
 | review | codex | `codex review --json`（bridge `--family codex`——`--output-schema` 注入＝verdict schema 原生機制，POC 實證） | 同上，codex 形態 |
 
-**bridge 必經（external-runtime 家族委派唯一入口——muse／codex／glm 三家）**：委派外部 runtime 跑 repo 任務一律經 bridge 入口（上表列＝`delegate-bridge.mjs` 子命令的抽象形態，`--family` 選家族），禁直呼 `muse exec`／`codex exec` 或其他繞過 bridge 的入口。**caller surface → 合法 bridge 路徑對照（registry pin 唯一源、禁手拼版本化 cache 路徑）＝[rules/bridge-dispatch.md](../../rules/bridge-dispatch.md)**。**派發前正規化**：user 對話中的模型／檔位口語詞（flash／max…）不是值——派發前經 family 表正規化為 `--model`／`--effort` 顯式旗標；非表內詞＝查表觸發訊號，禁猜測直接套用（flash 對 muse 非合法 effort 值，本身就是該查表的訊號）——bridge 落 per-repo `.delegate-bridge/jobs.json` ledger（jobId／sessionId／status／text／family 欄；v1.0.0 前舊 ledger dir 相容雙讀、id 去重——新者勝），非 bridge 入口的產出 ledger 查無，事後只能從副作用側考古（真實案例：mosaic post-build 鏈同鏈兩段 muse 委派一走 bridge 一繞道，繞道段收尾不可考）。完成回報攜帶 ledger jobId（reviewer 交接契約欄位）；委派了外部 runtime 而 jobId 缺席＝入口違規，補查或標明。
+**bridge 必經（external-runtime 家族委派唯一入口——muse／codex／glm 三家）**：委派外部 runtime 跑 repo 任務一律經 bridge 入口（上表列＝`delegate-bridge.mjs` 子命令的抽象形態，`--family` 選家族），禁直呼 `muse exec`／`codex exec` 或其他繞過 bridge 的入口。**caller surface → 合法 bridge 路徑對照（registry pin 唯一源、禁手拼版本化 cache 路徑）＝bridge-dispatch skill「Caller surface → 合法入口對照表」節（0924 自 rules 收編）**。**派發前正規化**：user 對話中的模型／檔位口語詞（flash／max…）不是值——派發前經 family 表正規化為 `--model`／`--effort` 顯式旗標；非表內詞＝查表觸發訊號，禁猜測直接套用（flash 對 muse 非合法 effort 值，本身就是該查表的訊號）——bridge 落 per-repo `.delegate-bridge/jobs.json` ledger（jobId／sessionId／status／text／family 欄；v1.0.0 前舊 ledger dir 相容雙讀、id 去重——新者勝），非 bridge 入口的產出 ledger 查無，事後只能從副作用側考古（真實案例：mosaic post-build 鏈同鏈兩段 muse 委派一走 bridge 一繞道，繞道段收尾不可考）。完成回報攜帶 ledger jobId（reviewer 交接契約欄位）；委派了外部 runtime 而 jobId 缺席＝入口違規，補查或標明。
 
 ### session 定向接續（`--session-id` resume／fork；L4 實測）
 

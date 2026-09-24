@@ -14,7 +14,7 @@ producer 宣稱「不影響 X」（accounting/risk/invariant）須有獨立機�
 
 ### oracle authority 分級（S/H/I/N 正典）
 
-oracle 權威四級：**S**＝具獨立 authoritative oracle_source（規格/領域恆等式/歷史數據，禁待測實作）的 frozen spec/TC——frozen 本身不授予 S；**H**＝歷史真實數據/真實 carrier 行為（anchor＝dataset/version/hash/record-id；text 類才 file:line）；**I**＝impl 衍生；**N**＝無 oracle——**I/N 禁 autonomous 補強授權**。細則（H anchor 形態例、S 判定流程）見 acceptance-evidence skill。
+oracle 權威四級：**S**（獨立 authoritative oracle_source 的 frozen spec/TC）、**H**（歷史真實數據/carrier 行為）、**I**（impl 衍生）、**N**（無 oracle）——**I/N 禁 autonomous 補強授權**；frozen 本身不授予 S。判定流程、anchor 形態例＝acceptance-evidence skill。
 
 ## 證據階層
 

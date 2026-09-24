@@ -297,9 +297,9 @@ def test_targets_keep_neutral_rules_with_independent_size_gates(tmp_path):
     # 非 muse 端 gate 不動（既有 90KiB 語義）
     assert targets["zcode"].max_bytes == da.BUNDLE_MAX_BYTES
     assert targets["codex"].max_bytes == da.BUNDLE_MAX_BYTES
-    # 留出 project instructions 與 startup 包裝的空間（64KiB 共享線內自限）。
+    # 自限依實測 per-file cap ~32,000B（0924 muse 自省實證）留 margin；64KiB shared 為 sum 次約束。
     assert targets["muse"].max_bytes == da.MUSE_USER_BUDGET
-    assert da.MUSE_USER_BUDGET == 36 * 1024
+    assert da.MUSE_USER_BUDGET == 30 * 1024
 
 
 def test_muse_bundle_contains_every_neutral_rule(tmp_path):

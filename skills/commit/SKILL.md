@@ -160,6 +160,15 @@ staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-wr
 
 Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/commit 階段 6 成功後刷新 receipt `head_sha`——兩道閘共用同一判定源。
 
+### 互動 session 機械例外（①–④；0924 自 outward-action-consent rule「Commit 專屬段」收編——rule 檔保留全文予 Claude 端，bundle 端以本節為可達副本）
+
+- ① backlog 建卡：**Description 經 user 確認後**即 commit 僅新增卡檔（message 帶 id 防撞）；共享 WT 停活躍弧 branch 時走暫時 worktree 直進 main——例外①只及該初始 commit，不自動涵蓋後補 AC/Plan（走②或弧結算；流程與落點細節＝kanban-board skill）。
+- ② 開工 metadata（user 拍板）：In Progress＋refs 後即 commit 僅 backlog/；結算物不隨此。
+- ③ 結案兩步（user 拍板）：precheck 綠且結算物＋卡狀態同 commit 才豁免，否則走確認 gate。
+- ④ 純 ruff format/check --fix style 可 commit；混語義改動走確認 gate。
+
+board 細節單一源＝kanban-board skill；核心正典（一次授權≠永久授權、每次 commit 重新驗 gate）見 rule 端 always-on 一行。
+
 ### conditional commit delegation 驗收程序（autonomous session——outward rule 0921 條的 predicate 細節）
 
 用戶確認豁免的主張成立，須**五件齊**（任一缺＝回退互動確認 gate，禁寬認）：
@@ -191,7 +200,7 @@ Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/c
 
 **留審時必附檢視指令**：user 要求「先不要 commit 我看一下」→ 變更留 working tree，報告附逐檔檢視指令（`git diff <path>`）與行號定位——user 要能一鍵看到改了什麼，不自行猜路徑。
 
-**遵守 `outward-action-consent` rule（commit 場景）**：未收到確認絕不執行 git commit（例外形態見該 rule「Commit 專屬段」，此處不枚舉——rule 增刪即漂）。
+**遵守 `outward-action-consent` rule（commit 場景）**：未收到確認絕不執行 git commit（互動機械例外①–④見上「互動 session 機械例外」節；rule 端「Commit 專屬段」保留全文予 Claude 端）。
 
 ### 階段 6：執行 Commit
 
@@ -213,7 +222,7 @@ Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/c
 
 ## 執行約束
 
-- **遵守 `outward-action-consent` rule（commit 場景）**：未經確認絕不 commit（例外形態見該 rule「Commit 專屬段」，此處不枚舉——rule 增刪即漂）
+- **遵守 `outward-action-consent` rule（commit 場景）**：未經確認絕不 commit（互動機械例外①–④見上「互動 session 機械例外」節；rule 端「Commit 專屬段」保留全文予 Claude 端）
 - **ruff + mypy 必須雙通過才 commit**（pre-existing 問題也需在此時處理：加 per-file-ignores / type: ignore 或直接修）
 - **docs 單檔閘門**（任何路徑 `.md`，含 `backlog/` 卡；捷徑／直 commit 路徑皆適用）：本次弧未跑 post-build/consistency → commit 執行前對變更的 `.md` 檔跑 `/consistency`（單檔輕量）——ruff/mypy 對 `.md` 不適用，此為純 docs 直 commit 的唯一品質閘門（實證：孤兒結算收編直 commit 跳過收尾鏈，補跑才發現無閘門）
 - **TEMP diagnostic log 掃描**（防殘留）：commit 前掃描 diff 有無 debug-only log 模式（`Diagnostic:`、`[OK] ...`、症狀導向 debug 變數如 `<debug_var> =` 等 ad-hoc 偵錯輸出）。命中 → flag 給用戶確認移除。未移除的 debug log 不得進 commit（違反 llm-output-convention：print 只用於 state transition）。

@@ -47,9 +47,12 @@ Claude reads the full file via ~/.claude/rules/ symlink; non-Claude bundles
 get the slimmed version. No-op for rules without markers.
 
 Size gate: ZCode truncates each instruction file at 102,400 bytes;
-Muse delegation startup shares 65,536 bytes across global/project rules
-and loader framing. Each target has a global-bundle gate; this does not
-replace checking the actual workspace's combined startup context.
+Muse truncates each instruction file at ~32,000 bytes (measured
+2026-09-24 via delegate-bridge marshal muse introspection: the cut lands
+at byte 32000, not 32,768); the 64KiB shared across global+project+
+framing is a secondary sum constraint (deploy only validates the global
+side). Each target has a global-bundle gate; this does not replace
+checking the actual workspace's combined startup context.
 Over the target limit -> refuse that deployment with
 guidance: slim rules/ (encoder-philosophy) or demote on-demand-grade
 content to a reference skill (rule keeps an always-on core + pointer).
@@ -132,7 +135,7 @@ def resolve_targets(home: pathlib.Path) -> list[DeployTarget]:
             home / ".config" / "muse" / "AGENTS.md",
             frozenset({"neutral"}),
             frozenset(),
-            MUSE_USER_BUDGET,  # user 層自限；合併專案指令仍須驗 64KiB startup limit。
+            MUSE_USER_BUDGET,  # user 層自限（per-file ~32K 實測 cap）；合併專案指令仍須驗 64KiB shared sum。
             "muse",
         ),
     ]
@@ -144,12 +147,12 @@ def resolve_targets(home: pathlib.Path) -> list[DeployTarget]:
 # so tail rules never land in the silent-truncation zone.
 BUNDLE_MAX_BYTES = 90 * 1024
 
-# Muse startup shares 64KiB across global+project rules and loader framing;
-# the global bundle self-limits to 36KiB so a project layer (mosaic: ~24.1KiB)
-# + framing (~0.8KiB) stays under the shared line with ~3KiB buffer.
-# Broke once at 40,092B (2026-09-09, tail rules silently truncated) before
-# this budget existed.
-MUSE_USER_BUDGET = 36 * 1024
+# 實測 per-file cap ≈32,000B（2026-09-24 delegate-bridge marshal muse 自省
+# 實證：截斷點在 byte 32000，非 32,768）；30,720 留 1,280B margin。
+# 64KiB shared 降為次要 sum 約束（global＋project＋framing；部署側僅驗
+# global 側）。歷史：09-09 破 40,092B（tail rules 靜默截斷）立預算 36,864，
+# 但瞄錯 cap（仍超 32,000）；0924 依實測再修。
+MUSE_USER_BUDGET = 30 * 1024
 
 # Early-warning threshold (fraction of BUNDLE_MAX_BYTES). Deploy-time visibility
 # only -- the weekly bundle-watch advisory owns per-rule composition analysis
@@ -399,7 +402,8 @@ def check_broken_refs(
 # 機械檢查清單 (which until 2026-08-30 existed only as prose commands nobody
 # ran; two live violations had shipped to all three deployed bundles).
 # 已知限制：(1) 掃描面 = 全文，build_bundle 的 slim skip 段不 ship 但仍被掃
-# （repo 現無 marker；首個 skip marker 出現時重訪此差異）。(2) bare-slash
+# （首個 marker＝outward-action-consent 的 Commit 專屬段，0924——現況該段
+# 無 pattern 命中；新增 skip 段時重訪此差異）。(2) bare-slash
 # pattern 與 checklist 的 rg 原文逐字等價（僅攔 backtick 形態）。(3)
 # claude-wrapper 的豁免詞「Claude 端」為列舉制——寫「Claude Code」等其他
 # 措辭會誤抓，屬可接受的 heuristic。
@@ -801,7 +805,8 @@ def _deploy(args: argparse.Namespace) -> int:
             print(f"[FAIL] {gate_msg}", file=sys.stderr)
             print(
                 "     Harness lanes truncate (ZCode: 102,400B hard line; "
-                "muse: 64KiB shared with project layer). Slim rules/ per "
+                "muse: ~32,000B per-file cap, measured 2026-09-24 -- cut "
+                "lands at byte 32000, not 32,768). Slim rules/ per "
                 "encoder-philosophy, or demote on-demand content to a "
                 "reference skill (rule keeps always-on core + pointer; "
                 "see rules/AGENTS.md size-gate note).",

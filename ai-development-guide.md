@@ -31,7 +31,7 @@
 
 UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
-規模：simple（單檔小 tweak/bug）→card AC 直行不寫 EP；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→建立或更新 owning 卡＋**card Planning Contract**（六欄，定義見 execution-plan skill 流程規模分級節）；full（架構/跨模組/🔴高風險/新 boundary：state ownership、public contract、跨 context invariant、控制面 authority）→execution-plan standalone EP；accepted EP 的 bounded child→引用 parent EP＋card Planning Contract。實作中發現新 boundary 決策→升 EP amendment/子 EP（promotion）。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。public contract 契約面新增／變更（含 additive）屬 full；既有 contract 純實作修復不升級（開卡時判定，詳＝execution-plan skill）。
+規模：simple（單檔小 tweak/bug）→card AC 直行；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→owning 卡＋**card Planning Contract**；full（架構/跨模組/🔴高風險/新 boundary）→standalone EP。promotion／public contract 判準、bounded child、六欄定義＝execution-plan skill 流程規模分級節。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
 
 動卡第一動設 In Progress；銜接機制（建卡即 commit 防 id 撞、結案兩步、precheck）單一源 kanban-board skill。
 
@@ -48,7 +48,7 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 定義源：條 1/4＝所指 skill；條 2 freshness 判準＝本節。
 
 1. **instruction owner**：durable mechanism 誕生弧必取 owner；coverage 看 owner 不看文件數。predicate 單一源＝[instruction-writing](skills/instruction-writing/SKILL.md)；接線＝implement 5b＋post-build coverage gate。
-2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`——consumer identity 含 dirty WT/content，HEAD-only ≠ fresh；機械求值＝code-reality `freshness` face（算法真相源歸 code-reality repo；消費語法單一源＝cr-query「Stale graph check」）。消費面＝review-engine＋cr-query。
+2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。freshness 判準＝indexed identity 對比（含 dirty WT/content；HEAD-only ≠ fresh）；機械求值＝code-reality `freshness` face，消費語法單一源＝cr-query「Stale graph check」。消費面＝review-engine＋cr-query。
 3. **advisory startup**：startup hook 只 advisory；correctness gate 在 consumer boundary。
 4. **supervision fence**：弱訊號只 wake；hard death／redispatch 需 authoritative evidence＋scope fence。契約＝[agent-workflow](skills/agent-workflow/SKILL.md)。
 
