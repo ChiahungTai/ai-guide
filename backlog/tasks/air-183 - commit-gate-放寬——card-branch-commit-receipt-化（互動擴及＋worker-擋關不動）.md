@@ -1,0 +1,48 @@
+---
+id: AIR-183
+title: commit-gate-放寬——card-branch-commit-receipt-化（互動擴及＋worker-擋關不動）
+status: To Do
+assignee: []
+created_date: '2026-09-24 06:17'
+updated_date: '2026-09-24 06:18'
+labels: []
+dependencies: []
+ordinal: 169000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+互動 session 每弧收尾 commit 逐次等 user，但 user 0924 自述實務已橡皮圖章（沒看就同意）——gate 只剩摩擦、無驗證價值。三家族討論（muse/codex/GLM-5.3，0924，receipts＝.agent-tmp/air-135/commitgate-{muse,codex,glm}.md）收斂：user 判斷在 scope 面成立——WT/branch 隔離＋receipt freshness＋preflight 已消化「防部分處理」的原始價值；放寬①card-branch commit 為 receipt-predicate 條件委任（互動＋autonomous 同制、五件齊即 commit、一 receipt 一 commit）；②trunk merge（ff-only）恆人 gate＝結案拍板點（intent 層最後人檢在此落位）；③push/outward 恆停。
+
+```mermaid
+flowchart LR
+  R["review 收斂<br/>receipt 產出"] --> P{"七項 predicate<br/>五件齊＋identity fresh<br/>＋scope manifest 對帳"}
+  P -->|全綠| C["① card-branch commit<br/>互動＋批量同制<br/>報告附 receipt id"]
+  P -->|任一缺| H["回退逐次 user 確認"]
+  C --> M{"② trunk merge<br/>ff-only"}
+  M -->|user 結案拍板| T["main 收線"]
+  M -->|恆人 gate| W["pending 台帳"]
+  T -.->|③ push/outward| G["恆停（正典不動）"]
+```
+
+**不做什麼（worker 擋關全不動——它們管 writer 越權，非 marshal commit 授權）**：delegate-bridge SOP 驗收閘（#2 越權即拒收）、write 腿 git sandbox 弧（#1 候補——放寬後更重要）、marshal_admission_guard work-order 憑證（SC-199.1）、AIR-135.8 派工前執法、工單 brief 紅線（禁 git）、board single-writer、wt-close preflight、control-plane-guard。
+
+**背景事實**：DB-41 muse writer 越權三連（0924 delegate-bridge f951c83 記帳＋C 裁定）——muse 腿越權 commit／自跑 post-build／自行標 Done；本卡放寬範圍明文限 marshal 主 session commit 授權，worker 面 fence 一律不碰（user「不一貫」疑慮的對答案）。
+<!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide main（1a439ff9+）〕
+
+〔已決策勿重辯（tri 三腿全收斂 OK-with-changes 0924；receipts＝.agent-tmp/air-135/commitgate-{muse,codex,glm}.md；user 橡皮圖章自述 0924 為實證補強）〕①放寬形態＝receipt predicate 非散文「review 過關」（glm R6：散文形態＝NO）②放寬僅及①card-branch commit；②merge＝結案拍板點恆人 gate；③push/outward 恆停（三腿矩陣全同）③互動與批量同制（消除「批量更自動、互動更嚴」倒掛）④worker 面 fence 全不動（DB-41 對案）
+
+〔七項機械清單（commit 前逐項驗，任一缺回退逐次確認）〕1. active arc：branch 卡 id→status In Progress 2. receipt 存在且 post-build gate --verdict ok（stale/missing 無效）3. required review legs 全 terminal＋judge/followup 收斂零 open 4. identity fresh：git status 空＋HEAD==receipt.head_sha（後續變更→delta review 重產 receipt）5. staged 逐檔對照卡 scope manifest 6. 機械例外①-④照舊；🔴高風險弧仍人確認 7. commit 後刷新 receipt head_sha＋報告附 receipt id（授權依據＝predicate 成立，契約明文）
+
+〔契約落點（定義源→投影逐一同步）〕A. rules/outward-action-consent.md Commit 段：delegation 適用面 autonomous→session-agnostic＋三層邊界宣告 B. skills/commit/SKILL.md：conditional delegation 去 autonomous-only＋階段 5 receipt-gate 替代路徑 C. skills/deep-work/SKILL.md：「/commit 等 user 確認」行已落後於 rule（glm 發現 drift）——同步為 pointer D. repo AGENTS.md git 慣例收尾條：三層邊界明文 E. skills/kanban-board/SKILL.md 結案兩步節：merge 授權點對齊
+
+〔落地前審查閘（boundary 級全套）〕非 static-only；review 腿＝fresh＋intent 分離＋跨家族 external second-opinion（tri panel——放寬授權屬高影響面）；回執四欄入卡 notes（classification/review/session-freshness/deployment-surfaces）；隔離 authoring（card WT）；drift 防護＝改後 rg「conditional commit delegation」＋rg「等 user 確認」逐檔對帳；memory commit-consent-in-autonomous-mode 蒸餾更新（歷史裁定鏈保留）；部署後 session freshness（重讀）。
+
+〔規模分級〕standard——authorization 語義變更、跨五檔契約同步；無新 boundary 決策（三腿已收斂方向）。
+<!-- SECTION:PLAN:END -->
