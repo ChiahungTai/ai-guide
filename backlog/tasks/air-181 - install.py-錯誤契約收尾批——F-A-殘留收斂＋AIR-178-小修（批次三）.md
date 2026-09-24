@@ -37,13 +37,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 F-A 收斂：manifest 缺席 FileNotFoundError／surfaces+registrations 其餘 KeyError 家族／模板檔缺席 → _exec_error（EXIT_EXEC(4)；build_plan 階段 journal_hint=False；邊界＝預期 lookup 失敗，禁全域 catch）——每實例回歸案例
-- [ ] #2 F-E：dead assignment exit_code＋兩處不可達 rc 檢查移除＋契約測試（apply_plan 回 EXIT_OK 或 raise，永不回非零）
-- [ ] #3 F7 缺 uv 訊息補安裝指引＋F4 journal 檔名加 pid（仿 backup_target 形態；prune 仍按 mtime）
-- [ ] #4 F6 codex_group_units：per-unit tomllib.loads 包 GovernanceError＋縮排 header 行為立約（byte-parity 禁重排）
-- [ ] #5 F3 codex 面 JSON 殘留掃描＋F5 sudo/HOME 守衛——語義變更，規格裁定先記卡 notes
-- [ ] #6 D decision note：codex 覆蓋 capability-bound rationale＋擴面前置三問記卡 notes
-- [ ] #7 全量 pytest＋ruff 綠＋L4 行為聲明（F3/F5 語義變更顯式列出）
+- [x] #1 F-A 收斂：manifest 缺席 FileNotFoundError／surfaces+registrations 其餘 KeyError 家族／模板檔缺席 → _exec_error（EXIT_EXEC(4)；build_plan 階段 journal_hint=False；邊界＝預期 lookup 失敗，禁全域 catch）——每實例回歸案例〔0925 代勾：實作在場 governance/install.py:52,81-92,323,329（_exec_error/EXIT_EXEC/journal_hint）；commit dd6834e5〕
+- [x] #2 F-E：dead assignment exit_code＋兩處不可達 rc 檢查移除＋契約測試（apply_plan 回 EXIT_OK 或 raise，永不回非零）〔0925 代勾：dd6834e5 F-E 清理〕
+- [x] #3 F7 缺 uv 訊息補安裝指引＋F4 journal 檔名加 pid（仿 backup_target 形態；prune 仍按 mtime）〔0925 代勾：dd6834e5〕
+- [x] #4 F6 codex_group_units：per-unit tomllib.loads 包 GovernanceError＋縮排 header 行為立約（byte-parity 禁重排）〔0925 代勾：dd6834e5〕
+- [x] #5 F3 codex 面 JSON 殘留掃描＋F5 sudo/HOME 守衛——語義變更，規格裁定先記卡 notes〔0925 代勾：dd6834e5＋結案 notes〕
+- [x] #6 D decision note：codex 覆蓋 capability-bound rationale＋擴面前置三問記卡 notes〔0925 代勾：卡 notes＋6e2f955d 結案〕
+- [x] #7 全量 pytest＋ruff 綠＋L4 行為聲明（F3/F5 語義變更顯式列出）〔0925 代勾：結案流 6e2f955d Final Summary 齊——前 session 實作與結案真、勾格漏tick，本批補齊〕
 <!-- AC:END -->
 
 ## Implementation Plan
