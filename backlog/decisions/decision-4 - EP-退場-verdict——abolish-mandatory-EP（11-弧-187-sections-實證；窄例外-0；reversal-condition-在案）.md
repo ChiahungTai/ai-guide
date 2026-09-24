@@ -19,7 +19,7 @@ user 方向裁決在先（0919 走查 Step 2：「EP 本來我就要消除」—
 
 ## Consequences
 
-- 新弧省去 EP 儀式（Scenario Matrix／pseudo-code／report shell 類 0/47 消費的塊直接不再產）；規劃品質不減（六欄契約＋AC 驗證式替代）。
+- 新弧省去 EP 儀式（Scenario Matrix／pseudo-code／report shell 類 0/45 消費的塊直接不再產；per-arc 口徑勘正 0924——原 0/47 表列含 2 筆 per-arc 未覆蓋，headline 不變）；規劃品質不減（六欄契約＋AC 驗證式替代）。
 - 遷移成本尖峰＝EP Review Findings 的 finding→裁定→偏差鏈，落 decision entity 時 rejected alternatives＋supersedes 為必填（AIR-29／AIR-48 實證的消費密度尖峰）。
 - status：**accepted**（0924 翻正）。Align 結果＝一致，無 intent diff：Q1 誤分類／Q3 承接漏項由兩條獨立驗證腿查證（muse job-muelmli7-7lek7p＋glm/flash job-muelo1e0-8a2r3w，sink＝`.agent-tmp/air-135/dogfood/decision4-verify-{muse}.md`＋glm receipt——user 裁定承重分類驗證歸實作端非 user 體感）；Q2 逆轉條件門＝user 0924 親核「OK」。翻正生效條件（驗證腿 findings，入 AIR-135.2 遷移批次）：①doc entity 晉升義務明文化（AIR-94 investigation.md 已腐爛實證）②findings 鏈遷移執法 rejected alternatives＋supersedes 必填（本文已載）③review-baseline Plan 版本身份約定補 AC#4 ④ac1 儀式計數小帳勘正（per-arc 口徑 0/45）。
 
