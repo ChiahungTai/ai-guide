@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.org/DTDs/PropertyList-1.0.dtd">
+<!-- dispatch 期望台帳日頻 sweep（AIR-135.7 AC#3/#6 日頻排程面；形態照 backlog-cleanup 先例）。
+     行為主體＝scripts/dispatch_ledger.py sweep（唯讀 reporter；只報轉移不報存量；
+     台帳缺場 fail-loud 進 err log——漂移即訊號語義，晨間開場可見）。
+     路徑參數化：{{REPO}} 與 {{HOME}} 佔位，裝載前須 render（governance/install.py render 同款）。
+     安裝形態（清單列出、user 手動裝載同 AIR-110 決策）：
+       1. render：{{REPO}}→repo 絕對路徑、{{HOME}}→家目錄
+       2. cp <rendered> ~/Library/LaunchAgents/com.ai-guide.dispatch-ledger-sweep.plist
+       3. launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.ai-guide.dispatch-ledger-sweep.plist
+     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.dispatch-ledger-sweep</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-lc</string>
+        <string>cd {{REPO}} &amp;&amp; uv run python scripts/dispatch_ledger.py sweep</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>5</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-dispatch-sweep.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-dispatch-sweep-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>PATH</key>
+        <string>{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>600</integer>
+</dict>
+</plist>
