@@ -1,10 +1,10 @@
 ---
 id: AIR-182
 title: catalog qualification 沉澱——sc-router AIR-168 實測證據＋class-body lesson
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-23 23:25'
-updated_date: '2026-09-23 23:26'
+updated_date: '2026-09-24 05:38'
 labels: []
 dependencies: []
 references:
@@ -42,7 +42,7 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 #1 catalog.toml implement_from_accepted_ep 附近補三筆註解行（codex-web 寫測試失敗＝webgpt 內聯規則可預測的工單形狀錯實例——不記 unqualified；muse caveats：class-body 陷阱＋prose-strip；GLM-5.3 adjudication corroboration 指針）＋muse-spark-1.3 記錄加 minimum_effective_effort="xhigh"
+- [x] #1 #1 catalog.toml implement_from_accepted_ep 附近補三筆註解行（codex-web 寫測試失敗＝webgpt 內聯規則可預測的工單形狀錯實例——不記 unqualified；muse caveats：class-body 陷阱＋prose-strip；GLM-5.3 adjudication corroboration 指針）＋muse-spark-1.3 記錄加 minimum_effective_effort="xhigh"
 #2 flash implement_from_accepted_ep 維持 conditional——升 qualified gate＝sc-router 弧 implement 段 bridge job id 在手且 binding=bridge-glm-5.3-flash（找到→升＋binding_scope 補 bridge-glm-5.3-flash＋SKILL:122 定義源對帳；找不到→只補註解並記 residue）
 #3 test-driven-development SKILL「測試反模式自檢」表加一行：class body 不捕獲函式 scope——外部家族寫 pytest helper 以 factory 函式或 kwargs 注入（prose-strip caveat 併同行後半或明示放棄）
 #4 uv run python scripts/sync_agents.py --check exit 0；數字錨定 jobid＋檔案（371 tests 以 completion-report 為準，禁 prose 計數）
@@ -62,3 +62,26 @@ flowchart LR
 
 〔規模分級〕simple~standard——資料層編輯＋一行 lesson，零新 boundary
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0924 marshal 收線】AC#1 機驗：worker diff 63699489 含 catalog 四註解（codex-web 工單形狀錯不記 unqualified／muse class-body＋prose-strip caveats／GLM-5.3 adjudication 指針 job-mueq12g4-lj1iy1／AIR-182 residue conditional）＋minimum_effective_effort=xhigh＋TDD 反模式表 class-body 行；sync_agents --check exit 0。AC#2 judge 裁決：flash implement_from_accepted_ep 維持 conditional（residue 分支正確）——證據＝0923 弧查無 bridge GLM-5.3-Flash write-mode job（worker 調查）＋0924 marshal 獨立對帳 ai-guide .delegate-bridge/jobs.json（批量夜三弧 135.6/135.8/musebundle 亦無 glm edit job；musebundle 兩 job=muse/codex READ-ONLY 設計討論；唯一 flash edit job=0919 唯讀調查）。checkpoint/STATE「今夜三弧 bridge write-mode PASS」宣稱經機械對帳證偽——SKILL:122 定義源 gate（首次 bridge 實測 PASS）未滿足，不升級。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+結案：worker commit 63699489（catalog.toml＋TDD SKILL 兩檔，7 行）即全部交付；judge 裁決 flash 維持 conditional（notes 詳證據）；merge 回 main 待 user 授權（ephemeral/air-182-impl @ WT ai-guide-air-182-impl）。
+
+as-built 終態圖：
+
+```mermaid
+flowchart LR
+  EV["sc-router AIR-168 實測<br/>六段 TDD 371 tests"] --> W["worker 63699489<br/>catalog 註解＋muse xhigh＋TDD lesson"]
+  W --> J{"judge 裁決 AC#2：<br/>bridge flash write-mode<br/>首次 PASS？"}
+  J -->|"查無 job<br/>（0923 弧＋批量夜三弧皆無）"| N["flash 維持 conditional<br/>（residue 分支；SKILL:122 gate 未滿足）"]
+  J -.->|"gate 滿足時"| Q["才升 qualified<br/>＋binding_scope bridge-glm-5.3-flash"]
+  N --> M["merge 回 main<br/>待 user 授權"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
