@@ -169,9 +169,9 @@ Branch 檔名編碼（`/`→`__`）與 Stop hook（同腳本 B 腿）一致；/c
 
 board 細節單一源＝kanban-board skill；核心正典（一次授權≠永久授權、每次 commit 重新驗 gate）見 rule 端 always-on 一行。
 
-### conditional commit delegation 驗收程序（autonomous session——outward rule 0921 條的 predicate 細節）
+### conditional commit delegation 驗收程序（session-agnostic——outward rule「Commit 專屬段」的 predicate 細節）
 
-用戶確認豁免的主張成立，須**五件齊**（任一缺＝回退互動確認 gate，禁寬認）：
+委任主張成立（autonomous＝work order 承諾制；互動＝下節「互動 receipt-gate 驗收程序」替代路徑），須**五件齊**（任一缺＝回退逐次 user 確認，禁寬認）：
 
 1. **active arc**：branch 名卡 id 對應的卡 status＝In Progress（非 To Do／Done）；
 2. **當次有效 receipt**：post-build receipt 存在且 `--verdict`＝`ok`（`stale`／`missing` 即無效）；
@@ -180,6 +180,20 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 5. **委任面核對**：commit 內容屬該弧範圍（staged 逐檔對照 EP／卡 scope）。
 
 每次 commit 獨立驗五件；commit 後刷新 receipt `head_sha`（同上段機制，下一 commit 須重產 receipt 重驗）。push／deploy／跨 repo 寫不在委任內恆停；verdict（旗艦裁決）非本程序輸入。
+
+### 互動 receipt-gate 驗收程序（AIR-183——conditional delegation 擴及互動弧收尾，session-agnostic 同制）
+
+互動 session 弧收尾 commit 不逐次等 user OK——改以 receipt-predicate 委任：**七項 predicate 全綠即 commit**（任一缺＝回退逐次 user 確認，禁寬認）。授權依據＝predicate 成立（契約明文，沿 conditional delegation 豁免邏輯），非 user 原話 AUTH line：
+
+1. **active arc 卡狀態**：`backlog task view <branch 卡 id> --plain` → status＝`In Progress`（非 To Do／Done）；
+2. **receipt 有效**：`uv run python hooks/post-build-gate.py --verdict`（cwd＝repo）→ stdout JSON `state`＝`ok`（`stale`／`missing` 即無效），且 receipt `head_sha` 欄位在場；
+3. **review legs 收斂**：receipt 內 required review legs 全 terminal＋judge/followup 收斂、open findings 計數＝0；`.review/<branch>.md` 在場時 `uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md --stage converged` exit 0；
+4. **identity fresh**：`git status --porcelain` 零 worktree-side 髒條目（僅存 staged 條目）＋ `git rev-parse HEAD` == `receipt.head_sha`——receipt 後新變更（HEAD 前進或樹髒）＝補 delta review 重產 receipt 方可 commit；
+5. **scope manifest 對帳**：`git diff --cached --name-only` 逐檔對照卡 scope manifest（EP／卡宣告的本次弧檔案集）——逐一命中、零清單外檔案（清單外 → `git restore --staged` 移出或回退逐次確認）；
+6. **高風險與機械例外**：🔴高風險弧（boundary／核心架構／會計風控）不走本程序——仍人確認；互動機械例外①–④照舊；
+7. **commit 後記帳**：刷新 receipt `head_sha`＝新 HEAD（同階段 6 機制）＋報告附 receipt id（一 receipt 一 commit，跨弧不延伸）。
+
+trunk merge（ff-only）＝結案拍板點恆 user gate；push／deploy／跨 repo outward 恆停（三層邊界＝outward rule「Commit 專屬段」）。
 
 ### 階段 4：生成 Commit Message
 
@@ -200,7 +214,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 
 **留審時必附檢視指令**：user 要求「先不要 commit 我看一下」→ 變更留 working tree，報告附逐檔檢視指令（`git diff <path>`）與行號定位——user 要能一鍵看到改了什麼，不自行猜路徑。
 
-**遵守 `outward-action-consent` rule（commit 場景）**：未收到確認絕不執行 git commit（互動機械例外①–④見上「互動 session 機械例外」節；rule 端「Commit 專屬段」保留全文予 Claude 端）。
+**遵守 `outward-action-consent` rule（commit 場景）**：未收到確認絕不執行 git commit（互動機械例外①–④見上「互動 session 機械例外」節；rule 端「Commit 專屬段」保留全文予 Claude 端）。**receipt-gate 替代路徑（AIR-183）**：互動弧收尾 commit 經「互動 receipt-gate 驗收程序」七項全綠→receipt-predicate 委任成立，免逐次等 user OK；任一缺→回退本節逐次確認。
 
 ### 階段 6：執行 Commit
 
@@ -222,7 +236,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 
 ## 執行約束
 
-- **遵守 `outward-action-consent` rule（commit 場景）**：未經確認絕不 commit（互動機械例外①–④見上「互動 session 機械例外」節；rule 端「Commit 專屬段」保留全文予 Claude 端）
+- **遵守 `outward-action-consent` rule（commit 場景）**：未經確認絕不 commit（互動機械例外①–④見上「互動 session 機械例外」節；receipt-predicate 委任＝「互動 receipt-gate 驗收程序」七項全綠，session-agnostic 同制；rule 端「Commit 專屬段」保留全文予 Claude 端）
 - **ruff + mypy 必須雙通過才 commit**（pre-existing 問題也需在此時處理：加 per-file-ignores / type: ignore 或直接修）
 - **docs 單檔閘門**（任何路徑 `.md`，含 `backlog/` 卡；捷徑／直 commit 路徑皆適用）：本次弧未跑 post-build/consistency → commit 執行前對變更的 `.md` 檔跑 `/consistency`（單檔輕量）——ruff/mypy 對 `.md` 不適用，此為純 docs 直 commit 的唯一品質閘門（實證：孤兒結算收編直 commit 跳過收尾鏈，補跑才發現無閘門）
 - **TEMP diagnostic log 掃描**（防殘留）：commit 前掃描 diff 有無 debug-only log 模式（`Diagnostic:`、`[OK] ...`、症狀導向 debug 變數如 `<debug_var> =` 等 ad-hoc 偵錯輸出）。命中 → flag 給用戶確認移除。未移除的 debug log 不得進 commit（違反 llm-output-convention：print 只用於 state transition）。
@@ -230,7 +244,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 - **基於實際 diff 分析**，不憑猜測
 - **遵循 git log 風格**
 
-禁止：未確認就 commit / 全英文 description / 跳過 ruff 或 mypy / 無意義 message
+禁止：未確認就 commit（receipt-predicate 委任除外——「互動 receipt-gate 驗收程序」七項全綠）/ 全英文 description / 跳過 ruff 或 mypy / 無意義 message
 
 ---
 

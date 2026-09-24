@@ -87,7 +87,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
   │   /execution-plan（UC 盤點＋EP；流程規模分級在此裁定——simple 邊界不寫 EP 直接 build、
   │   standard 走 card Planning Contract、大型自動建 backlog 卡（full 寫 standalone EP））→（可選 /ep-validate、/ep-review）→ /implement → /post-build
   │   （收尾鏈：code-review〔風險 profile 派發〕→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
-  │   → 收尾報告；變更留 working tree，commit 等 user 確認（自主紅線不 override）
+  │   → 收尾報告；變更留 working tree，commit 走 receipt-predicate 委任（receipt-gate；merge 恆 user gate；自主紅線不 override）
   │   例外＝非開發流程任務（純研究/調查、環境修復、一次性維護操作）→ 自身階段 1-5（complex；
   │   可自癒接 /fix-test（含 lint/type 修復）；完成後自主品質閘門 → /audit-test、/code-review）
   │
@@ -242,7 +242,7 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 ## 與其他命令的協作
 
 **自主可調度**：`/execution-plan`（無 EP 時 deep-work 任務中自主產，非 user 前置）、`/implement`、`/post-build`（pipeline 預設終段——收尾鏈編排）、`/code-review`、`/ep-review`、`/ep-validate`、`/audit-test`
-**後續**：`/commit`（等 user 確認——自主模式不豁免 commit consent）→ `/instruction-sync`
+**後續**：`/commit`（receipt-predicate 委任——「互動 receipt-gate 驗收程序」七項全綠即 commit，互動＋批量同制；trunk merge（ff-only）＝結案拍板恆 user gate；單一源＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」＋[commit skill](../commit/SKILL.md)）→ `/instruction-sync`
 **接續/換手**：`/at`（跨 session reset 接續）、`/handoff`（跨 provider 交接）
 
 **收尾前觸發檢查（AIR-131——在 commit 判定前執行，codex finding：宣告式掛點不構成 orchestration）**：
