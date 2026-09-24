@@ -1,10 +1,10 @@
 ---
 id: AIR-195
 title: at-skill-known-gap-兩道牆更新＋CronCreate-provider-序列化-upstream-提案
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-24 22:52'
-updated_date: '2026-09-24 22:52'
+updated_date: '2026-09-24 23:41'
 labels: []
 dependencies: []
 ordinal: 181000
@@ -29,7 +29,29 @@ flowchart LR
 **A（upstream proposal 代轉 ZCode——Patch A 模式）**：carrier CronCreate 序列化點應把呼叫端 provider 視角解析成 registry canonical 形式（builtin:zai-coding-plan→account:zai-individual-coding-plan；映射知識＝carrier 自家 zcode-builtin.json providerRules 既有內容）。證據：registry 只列 account: 形式（builtin: 零出現）；7v1 對照；user 系統性痛點「程式化建的排程常要在 desktop 重選模型」。SC 約束聲明：不改 zcode、spawn-only、automations 表禁直寫——故只能提案。代轉＝起草 proposal 文檔交 user 上游通道（跨 repo 寫入恆停）。
 
 ## Acceptance Criteria
-- [ ] #1 skills/at known-gap 改兩道牆（SC 證據全文吸收；走 instruction-writing gate）
-- [ ] #2 usage-ping known-gap 同步
-- [ ] #3 Patch A upstream proposal 文檔定稿（交 user 上游通道）
+- [x] #1 skills/at known-gap 改兩道牆（SC 證據全文吸收；走 instruction-writing gate）
+- [x] #2 usage-ping known-gap 同步
+- [x] #3 Patch A upstream proposal 文檔定稿（交 user 上游通道）
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0925 marshal seal——全綠 merge】①worker（glm flash job-mug6189q）交付：at/usage-ping 兩道牆＋patch-a-proposal.md（.agent-tmp/air-195/）。②marshal fresh-eyes：diff 全文審（gate 段未動、處置流程不變、純事實/workaround/驗證準據記載）＋drift rg 掃描（sc-231/一道牆/builtin: 引用僅兩檔皆已同步）。③回執四欄：classification=ordinary（事實記載更新；decision/authority/gate/authorization 條文零變更——「禁靜默降級」gate 原樣）；review=independent-context 腿（writer＝bridge spawn worker fresh context＋marshal diff 審＋drift 掃描）；session-freshness=fresh（skill 現況 Read 後改、SC 證據 BRIEF/CONVERGED-muse 全文路徑在 brief）；deployment-surfaces=healthy（merge 後 canonical 探針補錄）。④AC#3 proposal 定稿＝.agent-tmp/air-195/patch-a-proposal.md（英文一頁：Problem/Root cause/Evidence/Proposed change/Scope constraints），待 user 上游通道轉呈。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**交付**：skills/at＋usage-ping known-gap 一道牆→兩道牆（merge be69b2a8）；Patch A upstream proposal 定稿（`.agent-tmp/air-195/patch-a-proposal.md`，待 user 上游通道轉呈 ZCode）。回執四欄齊（classification=ordinary／review=independent-context／freshness=fresh／deployment=healthy——canonical 探針 rg 實證）。
+
+```mermaid
+flowchart LR
+  A[sc-231.1 決議] --> B[AT known-gap 兩道牆<br/>merge be69b2a8]
+  A --> C[usage-ping 同步<br/>指針不重刻]
+  A --> D[Patch A proposal 定稿<br/>待 user 上游轉呈]
+  B --> E[Done]
+  C --> E
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
+
