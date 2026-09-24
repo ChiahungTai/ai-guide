@@ -319,8 +319,8 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 | 情境 | 結算 |
 |------|------|
-| **情境 A** EP 最後段、UC 全完成 | **Built 結算（5a）**：Capabilities ✅ 行寫入（導航職責——正式 ✅ 完成宣稱時點仍是收斂後結案兩步，此處語義＝Built 🟡）＋ 消費場景寫入 ＋ SYSTEM-MAP 預覽（Built）；**final 結案（收斂後——post-build hook 2／無 post-build 弧走階段 6 fallback）**：backlog 結案兩步＋弧結案蒸餾第三動（`-s Done --final-summary`，`--ref` 沿用開工既有路徑、結案補寫可選，卡留 Done 欄；本弧 memory 條目蒸餾終態 facts；見 [kanban-board](../kanban-board/SKILL.md)）＋ SYSTEM-MAP 升級 ＋ EP 歸檔（ai-guide：不搬，卡 Done 即歸檔） ＋ flow-feedback 歸檔 |
-| **情境 B** EP 中間段 | **預覽 only**：SYSTEM-MAP `📋→✅ Built`（不寫 ✅、不升 Verified）；loop 未收斂（達 3 輪上限）→ 阻止升級 + ⚠️ |
+| **情境 A** EP 最後段、UC 全完成；card-first＝卡 Plan 最後 slice／AC 全完成（該弧原有 EP 時照 EP 段落判定） | **Built 結算（5a）**：Capabilities ✅ 行寫入（導航職責——正式 ✅ 完成宣稱時點仍是收斂後結案兩步，此處語義＝Built 🟡）＋ 消費場景寫入 ＋ SYSTEM-MAP 預覽（Built）；**final 結案（收斂後——post-build hook 2／無 post-build 弧走階段 6 fallback）**：backlog 結案兩步＋弧結案蒸餾第三動（`-s Done --final-summary`，`--ref` 沿用開工既有路徑、結案補寫可選，卡留 Done 欄；本弧 memory 條目蒸餾終態 facts；見 [kanban-board](../kanban-board/SKILL.md)）＋ SYSTEM-MAP 升級 ＋ EP 歸檔（ai-guide：不搬，卡 Done 即歸檔） ＋ flow-feedback 歸檔 |
+| **情境 B** EP 中間段；card-first＝卡 Plan 中間 slice（該弧原有 EP 時照 EP 段落判定） | **預覽 only**：SYSTEM-MAP `📋→✅ Built`（不寫 ✅、不升 Verified）；loop 未收斂（達 3 輪上限）→ 阻止升級 + ⚠️ |
 | **情境 C** simple 變更（bug fix／單檔小 tweak，無新 UC） | **跳過** Capabilities／Kanban 結算（純 refactor 不自動歸此——依規模，見下方 simple 變更段） |
 | **情境 D** docs-mode EP（無 .py UC，EP 完成） | **EP 歸檔 only** |
 | **情境 E** standard 變更（card Planning Contract，無 standalone EP） | **以卡 plan 段 Planning Contract 為結算基準**：六欄驗證式（結晶為卡 AC 欄）逐條機械驗證替代 EP 段落驗收；結算範圍依卡六欄（Baseline／Scope／Scenarios）裁定，Capabilities／SYSTEM-MAP 結算比照情境 A／C 依規模分流 |

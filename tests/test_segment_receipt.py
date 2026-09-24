@@ -173,6 +173,50 @@ def test_verify_missing_ep_and_missing_receipt(git_repo: Path) -> None:
         _mod.verify_receipt(receipt=git_repo / "nope.md", repo=git_repo)
 
 
+def test_baseline_card_first_generate_and_verify(git_repo: Path) -> None:
+    """card-first 模式：--baseline 帶 Plan 版本 hash、--card 記 provenance——EP 欄為 None。
+
+    AIR-135.2 AC#4 模式 4（結算基準）：baseline 為 caller-declared 凍結指針
+    （卡 Plan／work-order §3 的 Plan snapshot hash），verify 不對 baseline 做
+    world re-derive 比對；head／tracked／untracked 照常驗分叉。
+    """
+    baseline = _git(git_repo, "rev-parse", "HEAD")
+    card = git_repo / "backlog" / "tasks" / "air-9999 - test.md"
+    card.parent.mkdir(parents=True)
+    card.write_text("# card\n")
+    path = _mod.generate_receipt(
+        repo=git_repo, segment="C1", baseline=baseline, card=card,
+        out_dir=git_repo / ".agent-tmp" / "segment-receipts",
+    )
+    data = json.loads(path.read_text().split("```json")[1].split("```")[0])
+    assert data["ep"] is None
+    assert data["baseline_head"] == baseline
+    assert data["card"] == str(card)
+
+    fresh, keys = _mod.verify_receipt(receipt=path, repo=git_repo)
+    assert fresh is True
+    assert keys == []
+
+    (git_repo / "app.py").write_text("x = 4\n")  # card-first receipt 仍抓 tracked drift
+    fresh, keys = _mod.verify_receipt(receipt=path, repo=git_repo)
+    assert fresh is False
+    assert "tracked_diff_hash" in keys
+    assert "baseline_head" not in keys  # declared baseline 無 world 可 re-derive——不比對
+
+
+def test_baseline_format_validation_fail_loud(git_repo: Path) -> None:
+    """--baseline 格式驗證＝hex 7-40 位；不合 fail-loud（ReceiptError／CLI exit 2）。"""
+    for bad in ("notahex!", "abc123", "g" * 8, ""):
+        with pytest.raises(_mod.ReceiptError):
+            _mod.compute_identity(git_repo, baseline=bad)
+    assert _mod.main(
+        ["--repo", str(git_repo), "--segment", "C2", "--baseline", "notahex!"]
+    ) == 2
+
+    # 邊界內：7 位 hex 接受；explicit --baseline 優先於 --ep 解析（card-first 顯式聲明勝）
+    assert _mod.compute_identity(git_repo, baseline="abc1234")["baseline_head"] == "abc1234"
+
+
 def test_cli_exit_contract(git_repo: Path) -> None:
     baseline = _git(git_repo, "rev-parse", "HEAD")
     ep = _write_ep(git_repo, baseline)

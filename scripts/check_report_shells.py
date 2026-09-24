@@ -6,8 +6,10 @@ kanban-board 開工 refs 出生即寫——AIR-77 起任務目錄永不搬，結
 本 lint 把三類已發生的失真變機械閘門（codex 09-06 全 repo 審查 I-7）：
 1. 同殼宣告多個互斥 projection SHA（一殼只能有一個 current identity）；
 2. projection SHA 與同目錄 ep.md 的 content SHA 不符（stale projection）；
-   no-EP 弧（同目錄無 ep.md——card-first resolver，AIR-135.2）＝印 [SKIP] 明示跳過，
-   不靜默當 stale（無法判定 ≠ stale；卡 baseline 對驗待 PlanSource snapshot 契約）；
+   no-EP 弧（同目錄無 ep.md——card-first resolver，AIR-135.2）＝從殼頭擷取
+   TaskRef（`AIR-<n>` 形態 token）以 fd 探測 `backlog/tasks/` 卡檔存在性——
+   在場＝印 [OK] 對帳線（內容 hash 對驗延後：PlanSource snapshot 契約）、
+   不在場＝violation；殼頭無可辨 TaskRef＝維持 [SKIP]（無法判定 ≠ stale）；
 3. 回源連結失效：`file:///Users/` 絕對路徑（跨 worktree/clone 必斷）、
    `/ai-guide/<task path>` route 指向 repo 內不存在的路徑（歸檔/月份層未同步）；
 4. 連結合約（09-14 裁決：ai-guide 退出 :6421 report server）：殼內 .md 連結
@@ -19,7 +21,7 @@ kanban-board 開工 refs 出生即寫——AIR-77 起任務目錄永不搬，結
 不進 git，自然排除）；存在性檢查限 .md/.json（svg 等渲染產物可重建，不查）。
 
 Run: uv run python scripts/check_report_shells.py
-Exit: 0=clean、1=有 violation、2=無法列舉（git 失敗）。
+Exit: 0=clean、1=有 violation、2=無法列舉（git／fd 失敗）。
 """
 
 import hashlib
@@ -32,6 +34,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 _SHA_MENTION = re.compile(r"\b([0-9a-f]{7,64})（EP content SHA")
+_TASKREF = re.compile(r"\bAIR-(\d+(?:\.\d+)?)\b")
+# 殼頭範圍：真實殼的 title／sidebar meta／SHA 宣告與卡指涉落於前 ~170 行
+# （例：`task baseline：… · projection source：… · 卡：AIR-51`），取 200 行為
+# header envelope——深於此的 body／JS 不視為殼頭。
+_SHELL_HEADER_LINES = 200
 _FILE_URL = re.compile(r'(?:href|src)="(file:///Users/[^"]+)"')
 _ROUTE = re.compile(r"""/(?:ai-rules|ai-guide)/((?:_tasks|_projects)/[^"'<>\s#]+)""")
 _RAW_MD_ROUTE = re.compile(r'href="([^"]*/(?:ai-rules|ai-guide)/[^"]*\.md)"')
@@ -50,6 +57,32 @@ def _is_historical(shell: Path, repo_root: Path) -> bool:
     return rel.startswith(_HISTORICAL_PREFIXES)
 
 
+class ShellLintError(Exception):
+    """lint 基建錯（fd 不可用／失敗）——fail loud，禁靜默當「卡不存在」。"""
+
+
+def _card_exists(taskref: str, repo_root: Path) -> bool:
+    """fd 探測 `backlog/tasks/` 下對應卡檔（kanban 慣例檔名＝`air-<id> - <slug>.md`）。
+
+    glob 兩臂：`air-<id>.md`（無 slug）＋`air-<id>[- ]*.md`（慣例形態）——
+    `[- ]*` 邊界防跨 id 前綴誤匹配（`air-135` 不吃 `air-135.2 - …`）。
+    """
+    tasks = repo_root / "backlog" / "tasks"
+    if not tasks.is_dir():
+        return False
+    glob = f"air-{taskref}{{.md,[- ]*.md}}"
+    try:
+        proc = subprocess.run(
+            ["fd", "--glob", glob, ".", str(tasks)],
+            capture_output=True, text=True, check=False,
+        )
+    except FileNotFoundError as e:
+        raise ShellLintError(f"fd 不可用（TaskRef 存在性對帳需要）: {e}") from e
+    if proc.returncode != 0:
+        raise ShellLintError(f"fd failed（glob={glob}）: {proc.stderr.strip()}")
+    return bool(proc.stdout.strip())
+
+
 def lint_shell(shell: Path, repo_root: Path) -> list[str]:
     """對單一殼跑各類檢查，回傳 violation 敘述清單（空＝通過）。"""
     text = shell.read_text(encoding="utf-8")
@@ -62,11 +95,30 @@ def lint_shell(shell: Path, repo_root: Path) -> list[str]:
         )
     ep = shell.parent / "ep.md"
     if shas and not ep.exists():
-        # no-EP 弧（card-first resolver）：無 ep.md 可對驗＝無法判定，明確 skip——禁靜默當 stale
-        print(
-            f"[SKIP] no-EP arc: {shell.relative_to(repo_root).as_posix()}"
-            "（殼頭 SHA 無 ep.md 對驗；回源對接＝卡 TaskRef/references）"
-        )
+        # no-EP 弧（card-first resolver）：從殼頭擷取 TaskRef 對帳卡檔存在性
+        # （AIR-135.2 AC#4 模式 4；內容 hash 對驗延後＝PlanSource snapshot 契約）
+        rel = shell.relative_to(repo_root).as_posix()
+        header = "\n".join(text.splitlines()[:_SHELL_HEADER_LINES])
+        refs = sorted(set(_TASKREF.findall(header)))
+        if refs:
+            for ref in refs:
+                if _card_exists(ref, repo_root):
+                    print(
+                        f"[OK] TaskRef AIR-{ref} 對帳"
+                        "（內容 hash 對驗延後：PlanSource snapshot 契約）"
+                        f": {rel}"
+                    )
+                else:
+                    issues.append(
+                        f"TaskRef AIR-{ref} 卡檔不存在"
+                        f"（backlog/tasks/ 無 air-{ref}* 卡檔）"
+                    )
+        else:
+            # 殼頭無可辨 TaskRef：無法判定 ≠ stale——維持 [SKIP]
+            print(
+                f"[SKIP] no-EP arc: {rel}"
+                "（殼頭 SHA 無 ep.md 對驗；回源對接＝卡 TaskRef/references）"
+            )
     if shas and ep.exists():
         digest = hashlib.sha256(ep.read_bytes()).hexdigest()
         if not any(digest.startswith(s) for s in shas):
@@ -127,7 +179,12 @@ def main() -> int:
         shell = REPO_ROOT / line
         if not shell.exists():
             continue
-        for issue in lint_shell(shell, REPO_ROOT):
+        try:
+            issues = lint_shell(shell, REPO_ROOT)
+        except ShellLintError as e:
+            print(f"[FAIL] lint infra: {e}", file=sys.stderr)
+            return 2
+        for issue in issues:
             print(f"[FAIL] {line}: {issue}")
             findings += 1
     if findings:

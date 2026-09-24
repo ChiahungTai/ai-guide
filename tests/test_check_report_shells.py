@@ -159,6 +159,51 @@ def test_no_ep_no_sha_no_skip(tmp_path, capsys):
     assert "[SKIP]" not in capsys.readouterr().out
 
 
+def _make_card(root, name: str) -> None:
+    d = root / "backlog" / "tasks"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / name).write_text("# card\n", encoding="utf-8")
+
+
+def test_no_ep_taskref_card_exists_ok_line(tmp_path, capsys):
+    """no-EP 殼頭帶 TaskRef 且卡檔在 backlog/tasks/ → [OK] 對帳線（存在性檢查；hash 對驗延後）。"""
+    _make_card(tmp_path, "air-9999 - test card.md")
+    shell, root = _shell(
+        tmp_path,
+        "projection deadbeefdeadbeef（EP content SHA）\n卡：AIR-9999",
+        ep=None,
+    )
+    assert lint.lint_shell(shell, root) == []
+    out = capsys.readouterr().out
+    assert "[OK] TaskRef AIR-9999 對帳" in out
+    assert "PlanSource snapshot 契約" in out
+    assert "[SKIP]" not in out
+
+
+def test_no_ep_taskref_dotted_id_card_exists(tmp_path, capsys):
+    """子卡 id（AIR-135.2 形態點號）同樣對帳。"""
+    _make_card(tmp_path, "air-135.2 - card first.md")
+    shell, root = _shell(
+        tmp_path,
+        "projection deadbeefdeadbeef（EP content SHA）\n卡：AIR-135.2",
+        ep=None,
+    )
+    assert lint.lint_shell(shell, root) == []
+    assert "[OK] TaskRef AIR-135.2 對帳" in capsys.readouterr().out
+
+
+def test_no_ep_taskref_card_missing_violation(tmp_path):
+    """TaskRef 指向不存在卡＝violation（存在性對帳，非 hash 對驗）。"""
+    (tmp_path / "backlog" / "tasks").mkdir(parents=True)
+    shell, root = _shell(
+        tmp_path,
+        "projection deadbeefdeadbeef（EP content SHA）\n卡：AIR-9998",
+        ep=None,
+    )
+    issues = lint.lint_shell(shell, root)
+    assert any("TaskRef AIR-9998 卡檔不存在" in i for i in issues)
+
+
 def test_raw_md_http_flagged_with_new_contract_message(tmp_path):
     """raw http .md（非 6421 host、非 viewer 形態）仍是 violation，訊息教新合約＝repo 相對路徑。"""
     shell, root = _shell(
