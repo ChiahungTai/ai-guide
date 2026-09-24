@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-24 13:53'
+updated_date: '2026-09-24 17:13'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -174,6 +174,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0924 receipt 錨更新（135.7 判讀腿附帶發現）】批量夜 #1 兩張匯總 receipt 引用的 commit 61f9b205／700bbb1f 已成孤兒（收線 merge 換 hash、無 ref 包含、僅 reflog 可達＝GC 風險）。內容新錨：135.6 內容＝22663e62（card-first recovery ownership 遷移）、135.8 內容＝b0fb2945（correction 迴路四步）。本節即錨修正記錄。
 
 【0924 cookbook r2 雙腿收納（flash job-mufl0vu5＋muse job-mufl0vw9；findings＝oss-survey/cookbook-r2-{flash,muse}.md）】治理六面地毯掃描（registry 319 條全枚舉＋8 漏掃項補讀）。雙腿交叉 Top 共識五項（改進輸入，待 135.8/各 skill 修正週期消化，非立即動作）：①sandboxed-code-migration 全包→implement/agent-workflow/135.1（隔離＋receipt 機驗三層獨立同構＋work-order 範本）②記憶三連（context_personalization 領銜）→memory-audit（Memory Evals 三類＋Guardrails 三層〔instruction-shaped payload 拒收〕＋「只存 lessons 不存 facts」獨立佐證）③skills_in_api 三分框架→instruction-writing 載體選擇外部對照＋skill 版本 pinning vs symlink live 的 freshness 取捨待評④eval 方法論群（Optimize_Prompts golden pairs／分類式 judge 勝於打分／eval 三起點：冷啟動→自動迴圈→離線巨觀）→135.8 資產化⑤sev_bot 治理模式群（approval≠execution 句式／skills≠credentials／fail-closed）→outward-consent 佐證與句式借入。次選：what_makes_documentation_good→instruction-writing 體例（AI 讀者轉換點已標）；gpt-5-2 guide 四構件→post-build runbook；per_run_spending_controller→autonomous 預算記帳算法。
+
+【0925 批量夜 #2 Final Summary（多卡匯總 receipt——135.7 AC#7 載體慣例）】■範圍：AIR-135.1 S1-S4 全鏉×3 輪＋mini-batch＋W1 真執行＋135.5 #3 proposal＋135.7 AC#7 首例。■交付物（全 merge main，HEAD c5720da1 後＋S3）：①scripts/arc_spec.py——四物 schema＋fail-loud 校驗＋CLI（S1）②scripts/receipt_normalize.py——三家族回執 canonical 正規化（S2）③scripts/intent_review.py——Intent Review 工單機械生產（S3）④2280 tests 全綠（seal 模式：worker 無 Bash 誠實申報→marshal 實跑→RED 即修→ALL GREEN 才 commit）⑤mini-batch：兩真卡八檔＋誠實標注 13 筆＋摩擦 top3（compiler 改版輸入）⑥W1 真執行：compiler 產工單→marshal 編排→belief-update 首例＋Intent Review 腿 GO——135.7 AC#7 勾選（批量 Settle 迴圈機制全運轉實證）。■品質鏉：每 slice 老規矩（flash implement→codex+muse post-build→GLM-5.3 judge）——judge 三輪全 GO；跨腿抓真 bug 累計：nullable 矛盾／blockers 漏合併／巢狀型別 silent-pass／sink.mode 無枚舉／NB-1 型別沙拉／usage 鍵靜默丟／marshal 自己 NB-1 修 3/4 被 judge 抓。■機制學習入帳：worker 無 Bash 面誠實申報＋seal 模式／judge 落盤須 --write-mode／單發禁內部 agent 條款／watcher 四層佈防。■晨間裁決清單（pending 台帳——user 一次掃）：(1)135.1 改版候補：budget null=未設 分流（belief-update decision）／sealed stage／card_status 欄／envelope 加 intent_review（JN-1）(2)135.7 轉入：J-3 manual-anchor 零錨收緊／muse N-2 plan_hash 源檔路徑／extras 收編 (3)135.5 #3 proposal 待 SC 確認（三子項）(4)135.4 解凍排程（canonical 側主線）(5)cookbook r2 五項共識→skill 修正候補 (6)舊台帳：closeout 機械化／muse bundle 21B／鏡像孤兒 3 頁。■未做（誠實）：AIR-135.7 W2-W8 未派（卡級 AC 全閉待後續批量）／135.4 主線未動工／cookbook r2 修正未實施。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
