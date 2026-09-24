@@ -576,6 +576,47 @@ class TestSliceRef:
             _mod.normalize("codex", env)
         assert "需正整數" in str(ei.value)
 
+    def test_blank_slice_ref_value_fails(self) -> None:
+        """muse NB-3 回歸釘：空白 slice_ref 值＝碼面有閘、測試面補釘。"""
+        env = _env_codex()
+        env["slice_ref"]["slice_id"] = "   "
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("codex", env)
+        assert "Blank slice_ref key(s)" in str(ei.value)
+        assert "slice_id" in str(ei.value)
+
+
+class TestPassThroughTypeGate:
+    """muse NB-1 回歸釘：pass-through 欄非 list 即 fail-loud（禁字元沙拉）。"""
+
+    def test_blockers_string_input_fails(self) -> None:
+        env = _env_judge()
+        env["blockers"] = "oops-string"
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("glm", env)
+        assert "`blockers` must be a list" in str(ei.value)
+        assert "str" in str(ei.value)
+
+    def test_top_findings_dict_input_fails(self) -> None:
+        env = _env_codex()
+        env["top_findings"] = {"a": 1}
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("codex", env)
+        assert "`top_findings` must be a list" in str(ei.value)
+
+
+class TestGlmUsageUnmappedKeys:
+    """muse NB-2 回歸釘：glm usage 未映射鍵原樣保留＋unverified 註記（禁靜默丟棄）。"""
+
+    def test_unmapped_key_preserved_and_annotated(self) -> None:
+        env = _env_judge()
+        env["ledger"]["resultUsage"]["cacheWriteTokens"] = 5000
+        out = _mod.normalize("glm", env)
+        assert out["usage"]["cacheWriteTokens"] == 5000
+        assert any(
+            "cacheWriteTokens" in u and "未映射鍵原樣保留" in u for u in out["unverified"]
+        )
+
 
 # ---------------------------------------------------------------------------
 # 三家族真實案例——canonical 語義

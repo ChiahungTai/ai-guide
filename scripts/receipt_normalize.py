@@ -170,13 +170,17 @@ def _terminal_text(family: str, terminal: dict, errors: list[str]) -> str | None
     return None
 
 
-def _usage_extra(family: str, ledger: dict) -> dict | None:
-    """家族帳本 usage 面 → canonical usage extras（無面者回 None——缺席非 0）。"""
+def _usage_extra(family: str, ledger: dict) -> tuple[dict | None, list[str]]:
+    """家族帳本 usage 面 → canonical usage extras（無面者回 (None, [])——缺席非 0）。
+
+    回傳 (usage, unmapped_keys)——未映射鍵原樣保留進 usage（鍵名不轉換）並由
+    呼叫端記 unverified（muse NB-2：禁靜默丟棄計量面）。
+    """
     if family == "codex":
         usage = ledger.get("carrierUsage")
         if isinstance(usage, dict):
-            return dict(usage)
-        return None
+            return dict(usage), []
+        return None, []
     if family == "glm":
         usage = ledger.get("resultUsage")
         if isinstance(usage, dict):
@@ -192,9 +196,12 @@ def _usage_extra(family: str, ledger: dict) -> dict | None:
             for src, dst in key_map.items():
                 if src in usage:
                     mapped[dst] = usage[src]
-            return mapped
-        return None
-    return None  # muse：帳本無 usage 面（今晚實證）——由呼叫端記 unverified
+            unmapped = sorted(k for k in usage if k not in key_map)
+            for k in unmapped:
+                mapped[k] = usage[k]
+            return mapped, unmapped
+        return None, []
+    return None, []  # muse：帳本無 usage 面（今晚實證）——由呼叫端記 unverified
 
 
 # ---------------------------------------------------------------------------
@@ -471,7 +478,7 @@ def normalize(family: str, raw: dict) -> dict:
         raise NormalizeError("\n".join(errors))
 
     # --- 組裝 canonical（過此線＝契約面已全綠） ---
-    usage = _usage_extra(family, ledger)
+    usage, usage_unmapped = _usage_extra(family, ledger)
 
     receipt: dict = {"schema": SCHEMA_RECEIPT, **slice_fields}
     receipt["job_id"] = job_id
@@ -482,7 +489,13 @@ def normalize(family: str, raw: dict) -> dict:
 
     # llm-guidance pass-through（caller 語義）＋normalize 自證條目
     def _merge_list(key: str, extra: str | None = None) -> None:
-        items = [str(x) for x in raw.get(key) or []]
+        value = raw.get(key)
+        if value is not None and not isinstance(value, list):
+            raise NormalizeError(
+                f"`{key}` must be a list for caller pass-through, "
+                f"got {type(value).__name__}"
+            )
+        items = [str(x) for x in value or []]
         if extra:
             items.append(extra)
         if items:
@@ -511,6 +524,11 @@ def normalize(family: str, raw: dict) -> dict:
     if family == "muse" and usage is None:
         unverified_caller.append(
             "muse 帳本無 usage 欄——計量面缺席（非 0；今晚 job-mufn1cw6-f4fmzx 實證）"
+        )
+    if usage_unmapped:
+        unverified_caller.append(
+            f"usage 未映射鍵原樣保留（{', '.join(usage_unmapped)}）——canonical 無對應欄，"
+            f"值未丟棄但語義未轉換（muse NB-2 修正）"
         )
     receipt["unverified"] = unverified_caller
 
