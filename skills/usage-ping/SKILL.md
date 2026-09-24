@@ -62,10 +62,7 @@ allowed-tools: ["Bash", "CronCreate", "CronDelete", "CronList"]
 - **host 開啟前提**（同 /at）：dispatch 由 host 在觸發時刻執行——host 關閉期間到點不觸發（ZCode 記「跳過」不補跑），需要就把 host 開到觸發時刻
 - **失敗消耗假設**（一次性）：fire 失敗（配額仍死）也消耗該 one-shot（兩端文檔皆未記載 retry，保守假設）→ 靠多 rungs 有界取樣，不依賴單發重試（ZCode 僅 1 rung，miss 即無重試）；網格 recurring 恆存續（miss 週期 = 0 call）
 - **生命週期**（同 /at）：Claude Code 綁 session（session 結束排程消失）；ZCode workspace 持久——殘留 completed 記錄佔 20 條名額，下次 supersede 清
-- **已知缺口（真實案例：southchariot sc-231）——ZCode VS Code extension（chtai.southchariot）環境 `CronCreate` 恆失敗**：報錯「Cannot verify whether this session belongs to a scheduled task」（建階梯／supersede 後重建都撞）
-  - **根因（逆向實證）**：CronCreate 前置需 App 代答 carrier→App 反向請求 `automation/checkTaskBinding`／`automation/list`（handler 住 desktop host）；SC extension 只實作四個 server-request handler（runtimePrefs／MCP auth／permission／userInput），automation/* 恆回 -32601——**永久 capability gap 非暫態**，「Try again later」文案誤導，重試無效
-  - **繞道**：排程走 ZCode desktop app 內建 Automations UI（desktop host 實作全部 automation handler，desktop scheduler 為唯一 authority）；本命令不自造 session 內替代
-  - **出路（條件式，非承諾）**：carrier 端 Patch（app-server 直呼官方 AutomationService）已 probe 可行（~3 檔百行級），待 user 拍板另案——落地前本 gap 不變
+- **已知缺口（真實案例：southchariot sc-231.1）——程式化建排程（CronCreate）依 session host 分兩道牆**：extension-chat-hosted——arm 即死 -32601；CLI-hosted——arm 成功但 desktop dispatch 失敗「Automation 模型选择不可用」（providerId 前綴 `builtin:` vs registry canonical `account:`；desktop Automations UI 重選模型可救）。完整兩道牆事實（症狀／根因／出路）單一源＝[at](../at/SKILL.md) known-gap 節；本命令不自造 session 內替代，**arm 成功不證明 ping 會落地**——落地即確認的驗證點在 fire 不在 arm
 
 ## 使用範例
 

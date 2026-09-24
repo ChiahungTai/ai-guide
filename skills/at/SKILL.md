@@ -90,11 +90,12 @@ context: {ticket_path}
 
 > **禁靜默降級（gate）**：arm 失敗後**禁**退背景 sleep／`sleep`+喚醒等 session 內替代——sleep 綁 session 存活，session 死＝保險全滅（三連敗實證）；CronCreate 被拒與 session 內 sleep 是兩個 failure domain，**不可互為 fallback**。處置只有兩條：向 user 回報 arm 失敗原因，或 `transition --to CANCELLED` 結案（Phase 0 已 checkpoint 的狀態照舊在 durable owner，不受影響）。替代 scheduler adapter 須為獨立 failure domain 且經驗證——沒有就標 unsupported，**不自造 scheduler primitive**。SCHEDULER_REJECTED 票非 terminal 禁清（sweep 會持續回報 past-due 直到明示處置）。
 
-> **已知缺口（真實案例：southchariot sc-231）**：ZCode VS Code extension（chtai.southchariot）環境 `CronCreate` 恆失敗——「Cannot verify whether this session belongs to a scheduled task」。
+> **已知缺口（真實案例：southchariot sc-231.1）——CronCreate 行為依 session host 分兩道牆**：
 >
-> - **根因（逆向實證）**：CronCreate 前置需 App 代答 carrier→App 反向請求 `automation/checkTaskBinding`／`automation/list`（handler 住 desktop host）；SC extension 只實作四個 server-request handler（runtimePrefs／MCP auth／permission／userInput），automation/* 恆回 -32601——**永久 capability gap 非暫態**，「Try again later」文案誤導，重試無效。
-> - **繞道**：排程走 ZCode desktop app 內建 Automations UI（desktop host 實作全部 automation handler，desktop scheduler 為唯一 authority）；本命令 arm 失敗照上 gate 落 SCHEDULER_REJECTED，禁重試轟炸。
-> - **出路（條件式，非承諾）**：carrier 端 Patch（app-server 直呼官方 AutomationService）已 probe 可行（~3 檔百行級），待 user 拍板另案——落地前本 gap 不變。
+> - **牆一（extension-chat-hosted session）——arm 即死**：`CronCreate` 恆失敗「Cannot verify whether this session belongs to a scheduled task」。**根因（逆向實證）**：CronCreate 前置需 App 代答 carrier→App 反向請求 `automation/checkTaskBinding`／`automation/list`（handler 住 desktop host）；SC extension（chtai.southchariot）只實作四個 server-request handler（runtimePrefs／MCP auth／permission／userInput），automation/* 恆回 -32601——**永久 capability gap 非暫態**，「Try again later」文案誤導，重試無效。
+> - **牆二（CLI-hosted session）——arm 成功、fire 失敗**：CronCreate 回 automationId、automations 表有 row，但 desktop dispatch 失敗「Automation 模型选择不可用，请重新选择模型与思考档位」（`dispatch_status=failed_to_dispatch`）——ticket 落 ARMED 後永不 FIRED，sweep 報 missed-candidate。**arm 成功≠會 fire**，排程是否可用以 desktop Automations UI 的 dispatch 狀態為準。**根因（automations 表 7 vs 1 對照實證）**：CronCreate 把呼叫端 provider 視角 `builtin:zai-coding-plan` 原樣序列化進 `model_selection.providerId`，desktop dispatcher 只解析 registry canonical `account:zai-individual-coding-plan`——desktop UI／舊 session 建的 7 筆（`account:`）全 dispatched、程式化建的 1 筆（`builtin:`）failed；同 model 同 mode 同 cron 慣例，唯一差異 providerId 前綴。**繞道**：desktop Automations UI 對該排程重選模型。
+> - **共通繞道**：排程走 ZCode desktop app 內建 Automations UI（desktop host 實作全部 automation handler，desktop scheduler 為唯一 authority）；arm 失敗照上 gate 落 SCHEDULER_REJECTED（禁重試轟炸）；arm 成功但屬牆二的排程，用 UI 重選模型救回。
+> - **出路（條件式，非承諾）**：牆一＝carrier 端 Patch（app-server 直呼官方 AutomationService）已 probe 可行（~3 檔百行級）；牆二＝upstream proposal（CronCreate 序列化點把呼叫端 provider 視角解析成 registry canonical `account:` 形式——映射知識＝carrier 自家 provider registry 既有內容，非新發明）。兩者均待 user 拍板沿上游通道轉呈，落地前本 gap 不變。
 
 ### Phase 4：確認 + 通知
 
