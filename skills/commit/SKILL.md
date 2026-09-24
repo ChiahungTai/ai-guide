@@ -183,14 +183,14 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 
 ### 互動 receipt-gate 驗收程序（AIR-183——conditional delegation 擴及互動弧收尾，session-agnostic 同制）
 
-互動 session 弧收尾 commit 不逐次等 user OK——改以 receipt-predicate 委任：**七項 predicate 全綠即 commit**（任一缺＝回退逐次 user 確認，禁寬認）。授權依據＝predicate 成立（契約明文，沿 conditional delegation 豁免邏輯），非 user 原話 AUTH line：
+互動 session 弧收尾 commit 不逐次等 user OK——改以 receipt-predicate 委任：**七項 predicate 全綠即 commit**（任一缺＝回退逐次 user 確認，禁寬認）。授權依據＝predicate 成立（契約明文，沿 conditional delegation 豁免邏輯），非 user 原話 AUTH line。**驗證順序釘死**：先完成弧內變更全量 `git add`（staging 完整），才依序跑 4→5；空 staged 集合＝缺件 fail，禁視為「零清單外」空真通過。**範圍排除**：結案 metadata commit（僅 `backlog/`＋結算搬移檔、同 commit）走 kanban-board「結案 metadata commit 特赦③」路徑（precheck 綠即行）——非弧 code commit，不在本程序範圍。**user 否決權恆優先**：user 明示否決（「先不要 commit」等）與本程序全綠競合時，否決贏——當次 commit 停、走確認：
 
 1. **active arc 卡狀態**：`backlog task view <branch 卡 id> --plain` → status＝`In Progress`（非 To Do／Done）；
 2. **receipt 有效**：`uv run python hooks/post-build-gate.py --verdict`（cwd＝repo）→ stdout JSON `state`＝`ok`（`stale`／`missing` 即無效），且 receipt `head_sha` 欄位在場；
 3. **review legs 收斂**：receipt 內 required review legs 全 terminal＋judge/followup 收斂、open findings 計數＝0；`.review/<branch>.md` 在場時 `uv run python skills/post-build/scripts/review_ledger.py lint .review/<branch>.md --stage converged` exit 0；
 4. **identity fresh**：`git status --porcelain` 零 worktree-side 髒條目（僅存 staged 條目）＋ `git rev-parse HEAD` == `receipt.head_sha`——receipt 後新變更（HEAD 前進或樹髒）＝補 delta review 重產 receipt 方可 commit；
-5. **scope manifest 對帳**：`git diff --cached --name-only` 逐檔對照卡 scope manifest（EP／卡宣告的本次弧檔案集）——逐一命中、零清單外檔案（清單外 → `git restore --staged` 移出或回退逐次確認）；
-6. **高風險與機械例外**：🔴高風險弧（boundary／核心架構／會計風控）不走本程序——仍人確認；互動機械例外①–④照舊；
+5. **scope manifest 對帳**：manifest 機械來源＝卡 scope 宣告（Plan〔Scope〕段／AC 約束區／work-order §3）列明的本次弧檔案集——**manifest 缺失或無法解析＝predicate fail，回退逐次 user 確認**（禁自行 hunting 構造）；`git diff --cached --name-only` 逐檔對照——逐一命中、零清單外檔案（清單外 → `git restore --staged` 移出或回退逐次確認）。已知極限（AIR-183 審查登記）：manifest 本身過寬非本程序機械可判——由 review receipt 的 scope 確認＋晨間否決承接；
+6. **高風險與機械例外**：🔴高風險弧（boundary／核心架構／會計風控）不走本程序——仍人確認；**分類記錄缺失或無法判定＝fail-closed 走人確認**（禁自判「非高風險」繞道；分類錨＝卡 AC 約束區／Plan 規模分級）；互動機械例外①–④照舊；
 7. **commit 後記帳**：刷新 receipt `head_sha`＝新 HEAD（同階段 6 機制）＋報告附 receipt id（一 receipt 一 commit，跨弧不延伸）。
 
 trunk merge（ff-only）＝結案拍板點恆 user gate；push／deploy／跨 repo outward 恆停（三層邊界＝outward rule「Commit 專屬段」）。
