@@ -49,6 +49,7 @@ Every test must encode **why** the behavior matters. A test that can't fail when
 | **空殼覆蓋** | 有 test function 但用 `@skip` 跳過或 body 只有 `pass` | 要麼刪要麼補實作 |
 | **過度 mock** | test file 中 mock 數量 > assert 數量 | 改用繼承式 mock 或 real impl |
 | **標題不符** | test 名稱暗示測某行為，但 assert 驗證的是另一件事 | 名稱和斷言必須一致 |
+| **class body scoping** | pytest helper 寫在 class body 直接引用外層函式參數→NameError | helper 用 factory 函式或 kwargs 注入；外部家族寫測試常犯（muse S3 四紅根因）；回覆混散文落檔前須 strip |
 
 **自檢時機**：每個 test function 寫完後立即對照此表。RED 階段就該發現反模式，不要等到 GREEN。
 

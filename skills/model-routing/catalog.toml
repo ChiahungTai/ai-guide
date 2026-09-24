@@ -330,6 +330,12 @@ model_identity = "muse-spark-1.3"
 status = "qualified"
 evidence_source = "repo_observed"
 binding_scope = ["bridge-muse-spark-1.3"]
+minimum_effective_effort = "xhigh"
+
+# AIR-168 repo_observed（sc-router 0923 TDD 六段）：codex chatgpt-web/high 寫測試失敗＝工單形狀錯（路徑非內聯；webgpt 內聯規則既有實例），不記 unqualified
+# muse xhigh 寫測試 caveat：class-body scoping 陷阱（見 test-driven-development 反模式表）＋回覆混散文須 strip
+# GLM-5.3 adjudication corroboration：bridge judge/resume PASS（sc-router 0923 弧；tri adjudication＝job-mueq12g4-lj1iy1）
+# AIR-182 residue（0924 調查）：0923 弧實作段查無 bridge GLM-5.3-Flash write-mode job（sc-router ledger 0923 僅 muse/codex/GLM-5.3-plan；工單候選四 id 實為 0921 SC-187/190 弧）——實作承載＝in-harness spawn flash（zcode-registry 面），上方 bridge 腿記錄維持 conditional
 
 [[qualification]]
 workload = "evidence_retrieval"
