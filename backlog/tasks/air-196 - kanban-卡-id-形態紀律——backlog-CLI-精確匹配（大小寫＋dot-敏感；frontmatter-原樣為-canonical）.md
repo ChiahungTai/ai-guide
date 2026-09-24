@@ -1,7 +1,7 @@
 ---
 id: AIR-196
 title: kanban 卡 id 形態紀律——backlog CLI 精確匹配（大小寫＋dot 敏感；frontmatter 原樣為 canonical）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-24 23:02'
 updated_date: '2026-09-24 23:03'
