@@ -587,22 +587,35 @@ class TestSliceRef:
 
 
 class TestPassThroughTypeGate:
-    """muse NB-1 回歸釘：pass-through 欄非 list 即 fail-loud（禁字元沙拉）。"""
+    """muse NB-1＋judge J-1 回歸釘：四個 pass-through 欄非 list 即 fail-loud（禁字元沙拉）。"""
 
-    def test_blockers_string_input_fails(self) -> None:
+    @pytest.mark.parametrize(
+        "key,bad_value", [("blockers", "oops-string"), ("top_findings", {"a": 1}), ("unverified", "not-a-list"), ("pending_human_decision", 42)]
+    )
+    def test_non_list_input_fails(self, key: str, bad_value: object) -> None:
+        env = _env_judge() if key == "blockers" else _env_codex()
+        env[key] = bad_value
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("codex" if key != "blockers" else "glm", env)
+        assert f"`{key}` must be a list" in str(ei.value)
+
+
+class TestUsageFaceCorruption:
+    """judge J-2 回歸釘：glm/codex usage 面非 dict＝fail-loud（禁靜默缺席）。"""
+
+    def test_glm_result_usage_string_fails(self) -> None:
         env = _env_judge()
-        env["blockers"] = "oops-string"
+        env["ledger"]["resultUsage"] = "corrupted"
         with pytest.raises(_mod.NormalizeError) as ei:
             _mod.normalize("glm", env)
-        assert "`blockers` must be a list" in str(ei.value)
-        assert "str" in str(ei.value)
+        assert "`resultUsage` must be an object" in str(ei.value)
 
-    def test_top_findings_dict_input_fails(self) -> None:
+    def test_codex_carrier_usage_string_fails(self) -> None:
         env = _env_codex()
-        env["top_findings"] = {"a": 1}
+        env["ledger"]["carrierUsage"] = "corrupted"
         with pytest.raises(_mod.NormalizeError) as ei:
             _mod.normalize("codex", env)
-        assert "`top_findings` must be a list" in str(ei.value)
+        assert "`carrierUsage` must be an object" in str(ei.value)
 
 
 class TestGlmUsageUnmappedKeys:

@@ -178,11 +178,21 @@ def _usage_extra(family: str, ledger: dict) -> tuple[dict | None, list[str]]:
     """
     if family == "codex":
         usage = ledger.get("carrierUsage")
+        if usage is not None and not isinstance(usage, dict):
+            raise NormalizeError(
+                f"`carrierUsage` must be an object for codex usage face, "
+                f"got {type(usage).__name__}（計量面損壞禁靜默缺席——J-2）"
+            )
         if isinstance(usage, dict):
             return dict(usage), []
         return None, []
     if family == "glm":
         usage = ledger.get("resultUsage")
+        if usage is not None and not isinstance(usage, dict):
+            raise NormalizeError(
+                f"`resultUsage` must be an object for glm usage face, "
+                f"got {type(usage).__name__}（計量面損壞禁靜默缺席——J-2）"
+            )
         if isinstance(usage, dict):
             mapped: dict = {}
             key_map = {
@@ -511,7 +521,13 @@ def normalize(family: str, raw: dict) -> dict:
     _merge_list("blockers", blockers_extra)
     _merge_list("top_findings")
     _merge_list("pending_human_decision")
-    unverified_caller = [str(x) for x in raw.get("unverified") or []]
+    unverified_raw = raw.get("unverified")
+    if unverified_raw is not None and not isinstance(unverified_raw, list):
+        raise NormalizeError(
+            f"`unverified` must be a list for caller pass-through, "
+            f"got {type(unverified_raw).__name__}"
+        )
+    unverified_caller = [str(x) for x in unverified_raw or []]
     unverified_caller.append(
         "plan_hash 回指面由 caller 提供（正式＝ArcPlan content hash；ad-hoc 慣例＝"
         "brief 檔 sha256）——normalize 不驗 hash 對應檔案內容"
