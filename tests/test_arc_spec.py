@@ -269,6 +269,25 @@ class TestArcPlanValidation:
         assert any("`supersedes`" in e for e in errs)
         assert any("`plan_changes`" in e for e in errs)
 
+    def test_nested_scalar_guards_fail(self) -> None:
+        """muse N1：巢狀欄純量型態原為靜默跳過（silent-pass）——guard 補後須報。"""
+        for key, scalar in (
+            ("work_units", "all"),
+            ("budget_context", "unlimited"),
+            ("plan_changes", "none"),
+        ):
+            p = _plan_with_valid_hash()
+            p[key] = scalar
+            errs = _errors("arc-plan", p)
+            assert any(f"`{key}`" in e for e in errs), (key, errs)
+
+    def test_plan_hash_golden_vector(self) -> None:
+        """muse N5：golden vector 釘死序列化形——impl 內部序列化漂移即紅（防 self-referential 全綠）。"""
+        fixed = {"schema": "arc-plan/1", "card_id": "GOLDEN", "version": 1, "plan_hash": "ignored"}
+        assert _mod.plan_content_hash(fixed) == (
+            "dbcac2c947e03f5317bf00b99049a8111eab32d1e557cb1b8d0d81355de9b724"
+        )
+
     def test_plan_hash_deterministic_regardless_of_key_order(self) -> None:
         """AC#2：決定性內容 hash——canonical JSON（sort_keys），禁 process-salted。"""
         p1 = _plan_with_valid_hash()
@@ -345,6 +364,19 @@ class TestDispatchSliceValidation:
     def test_compile_stage_passes_without_resolver_fields(self) -> None:
         data = _slice(with_resolver=False)
         assert _errors("dispatch-slice", data, stage="compile") == []
+
+    def test_sink_mode_unknown_fails(self) -> None:
+        """muse N2：sink.mode 無枚舉時 carrier-pigeon 也 VALID——補 codex 式列可用值。"""
+        s = _slice()
+        s["sink"] = {"mode": "carrier-pigeon"}
+        errs = _errors("dispatch-slice", s)
+        assert any("Unknown sink mode" in e and "carrier-pigeon" in e for e in errs)
+
+    def test_read_set_without_pointers_valid(self) -> None:
+        """muse N3 顯式決策（b）：pointers 選填（S1——receipt-only 通知型 slice 合法；S2 覆核）。"""
+        s = _slice()
+        s["read_set"] = {"policy": "full-context"}
+        assert _errors("dispatch-slice", s) == []
 
     def test_dispatch_stage_passes_with_resolver_fields(self) -> None:
         assert _errors("dispatch-slice", _slice()) == []

@@ -207,7 +207,7 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("owning_wt", "machine-invariant", "always",
                       "owning WT identity：{path, branch}（AC#6；跨 worktree 正規化沿 AIR-141 basename 收斂）"),
             FieldSpec("read_set", "machine-invariant", "always",
-                      "role-dependent read-set：{policy, pointers}（AC#2：same page ≠ same projection；review/verify/test=problem-contract-only、intent-review=chain-exclusion）"),
+                      "role-dependent read-set：{policy, pointers}（AC#2：same page ≠ same projection；review/verify/test=problem-contract-only、intent-review=chain-exclusion；pointers 選填＝S1 顯式決策：dispatch 當下無讀指針的 slice 合法（如 receipt-only 通知型），S2 覆核）"),
             FieldSpec("sink", "machine-invariant", "always",
                       "artifact 預期路徑或 receipt-only：{mode, path?}（AC#2；欄位語義 owner＝135.7）"),
             FieldSpec("accept", "machine-invariant", "conditional",
@@ -312,6 +312,14 @@ def _require_object(label: str, value: object, kind: str, errors: list[str]) -> 
         )
 
 
+def _require_list(label: str, value: object, kind: str, errors: list[str]) -> None:
+    """list 型 machine-invariant 欄的型別 guard——非 list 即歧義值，fail-loud（muse N1）。"""
+    if value is not None and not isinstance(value, list):
+        errors.append(
+            f"`{label}` must be a list for {kind}, got {type(value).__name__}"
+        )
+
+
 def _required_names(art: ArtifactSpec, stage: str) -> list[str]:
     return [
         f.name
@@ -412,6 +420,7 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
             f"Invalid plan_hash `{recorded}` for {kind} — 需 hex 64 位（sha256）"
         )
 
+    _require_list("work_units", data.get("work_units"), kind, errors)
     work_units = data.get("work_units")
     if isinstance(work_units, list):
         seen: set[str] = set()
@@ -447,6 +456,7 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
                     f"work_units[{i}].depends_on must be a list for {kind}"
                 )
 
+    _require_object("budget_context", data.get("budget_context"), kind, errors)
     budget = data.get("budget_context")
     if isinstance(budget, dict):
         for key in ("revert_exposure_cap", "usage_cap"):
@@ -454,6 +464,7 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
 
     _check_terminal_semantics("terminal_semantics", data.get("terminal_semantics"), kind, errors)
 
+    _require_list("plan_changes", data.get("plan_changes"), kind, errors)
     changes = data.get("plan_changes")
     if isinstance(changes, list):
         for i, ch in enumerate(changes):
@@ -536,6 +547,11 @@ def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:
     if isinstance(sink, dict):
         mode = sink.get("mode")
         path = sink.get("path")
+        if mode is not None and mode not in ("artifact", "receipt-only"):
+            errors.append(
+                f"Unknown sink mode `{mode}` for {kind}. "
+                f"Available sink modes: artifact, receipt-only"
+            )
         if mode == "artifact" and not _present_nonempty(path):
             errors.append(
                 f"`sink.path` 不得為空 for {kind} — mode=`artifact` 須帶 artifact 預期路徑"
