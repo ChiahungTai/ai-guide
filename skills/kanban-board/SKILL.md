@@ -131,6 +131,7 @@ bash <skills 根>/kanban-board/scripts/backlog_precheck.sh [卡id ...]   # skill
 
 **🔴 卡編輯前查驗**（凡 `task edit`——開工/結案/改 refs/註記同；非跨線掃描 precheck〔那是 `task complete` 前置〕）：
 - **對時卡 id 歸屬**：只引用建卡 CLI 回報的 id，禁假設下一號（編號會被平行 session 佔走——真實案例：假設下一號 AIR-26 實配 AIR-28，`task edit -s --ref` 打在平行 session 的**已結案卡**上，refs 被整組替換毀掉、status 被覆蓋）；對非本 session 建的卡操作前先讀卡（status/refs 對時）——「本 session 無其他寫入者」保證可能數小時內過時
+- **id 形態：dot 必須原樣、大小寫不敏感；查卡子命令是 `view` 非 `show`**（AIR-196）：backlog CLI（backlog.md 1.50.1 實測）id 比對 **dot-significant**——缺 dot（`db43.3`）→ `Task not found`，帶 dot 大小寫皆命中（`db-43.3`／`DB-43.3` 同卡）；**無 `task show` 子命令**，誤用回 argument error（真實案例：以 `task show` 查卡得空輸出，誤判卡不存在——實為子命令錯，非 id 錯）。檔名小寫形（`air-196`）≠frontmatter id 顯示形（`AIR-196`）——操作 id 一律用建卡 CLI 回報的原樣；`wt-open.sh` 走**檔名形**（折疊小寫 grep 檔名前綴；dot 已放行——91a8354f），與 CLI 的 id 形方向不同
 - **`--ref` 整組替換即毀原 refs**：誤打他卡＝直接毀卡（結案兩步靠此語義換路徑——見上結案 bash 註解）
 - **誤改復原**：已 commit 卡被誤改 → **先確認該卡 diff 全屬本次誤改**（共享 WT 下他人合法未提交變更在同檔＝停，依 collaboration-constraints 機械衝突訊號確認）→ 才 `git checkout HEAD -- <卡檔>` 全量復原（反向 CLI 操作不夠——格式化差異會留 diff）
 - **SECTION marker 雙包裹檢查**：`task edit` 類操作可把 `<!-- SECTION:*:BEGIN/END -->` 成對寫成兩層嵌套（CLI 讀卡正常不報錯、肉眼易漏——真實案例：結案複審以「marker 重複」抓到）；檢查＝`rg -c "SECTION:FINAL_SUMMARY:BEGIN" backlog/tasks/*.md` 任一檔 >1＝dup（其他 SECTION marker 同型風險）；修法＝去重留一對，發現一例後全板掃描確認是否孤例；commit 前複審抓「格式重複」類 finding 先機械驗證再修
