@@ -82,6 +82,7 @@ backlog task edit <id> --ref "<EP repo 相對路徑>[,<shell index.html 相對�
 
 **🔴 雙 ref 合約**（09-11 新制：只掛 repo 相對路徑——ext／VSCode 直接消費：`.md`→編輯器、`.html`→外部瀏覽器；新卡不掛 http URL）：
 - 第一值＝EP（無 standalone EP 的卡——simple／standard——掛主交付物；parent-EP bounded child 掛 parent EP）的 repo 相對路徑（必備）
+- **card-first 分支（AIR-135.2 AC#4）**：card-first 弧（卡即 plan of record、無 standalone EP）references 第一值＝TaskRef（卡 id 或依賴卡 id——依賴承接鏈對接）；EP 弧第一值＝EP repo 相對路徑照舊
 - 第二值＝report shell `index.html` 的 repo 相對路徑（有殼才並列；殼未建不寫 viewer 過渡 URL——EP 路徑一點即編輯器／preview）
 - 既有卡 http 值由批次遷移清除（pilot MOS-93）；過渡期殘留視為待遷，不視為錯誤
 - 已知取捨：browser（on-demand 後備）上相對路徑不可點（`TaskDetailsModal.tsx:1362-1375` 只 linkify http(s)）；主力 UI＝ext 直接開檔不受影響
@@ -151,7 +152,7 @@ board server **常駐已退役**（09-11 三方裁定：state ownership 在 prim
 
 ## 與官方工作流的差異宣告（兩條）
 
-1. **full tier：PLAN 不寫進卡**——實作計畫唯一源＝standalone EP（任務家 `<task>/ep.md`）；卡用 `references` 指回 EP/殼（EP 深度＝baseline hash/Report Shell/post-build 鏈，是卡 PLAN 欄位的超集）；standard 的規劃住卡 plan 段（card Planning Contract，見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）
+1. **full tier：PLAN 不寫進卡**——實作計畫唯一源＝standalone EP（任務家 `<task>/ep.md`）；卡用 `references` 指回 EP/殼（EP 深度＝baseline hash/Report Shell/post-build 鏈，是卡 PLAN 欄位的超集）；card-first full 弧（無 standalone EP，AIR-135.2 AC#4）→ 計畫住卡 Plan（Planning Contract），`references` 指回 TaskRef（依賴卡 id）＋殼（照雙 ref 合約 card-first 分支）；EP full 弧指回 EP 照舊；standard 的規劃住卡 plan 段（card Planning Contract，見 [execution-plan](../execution-plan/SKILL.md) 流程規模分級）
 2. **任務與分支預設解耦；採卡 branch 的 repo 以其 AGENTS.md「git 慣例」節為準**（多 worktree 紀律由各 repo 自訂）；spawned／automation session 的 owning-WT 約束單一源＝[collaboration-constraints rule](../../rules/collaboration-constraints.md)「Agent 派發與產出回收」（always-load 層—— spawned session 不載本 skill 也約束得到）
 
 ## 容錯

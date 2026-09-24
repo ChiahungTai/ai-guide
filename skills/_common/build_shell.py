@@ -115,7 +115,7 @@ class ShellMeta:
     mode: str = "lossless"
     task_type: str = DIAGRAM_PRESET_NONE
     status: str = "plan"
-    ep_path: str | None = None
+    ep_path: str | None = None  # 自由字串渲染（不讀檔不驗存在）；card-first 弧此欄載卡路徑或 TaskRef（AIR-135.2 AC#4）
     diagram_heights: dict[str, int] = field(default_factory=dict)
 
 
