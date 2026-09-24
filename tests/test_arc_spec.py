@@ -463,6 +463,30 @@ class TestDispatchSliceValidation:
         assert any("Unknown family `weixin`" in e and "glm" in e for e in errs)
 
 
+class TestReceiptSinkField:
+    """N6（AIR-135.1 S2）：dispatch-slice.receipt_sink 選填欄——slice 回執落點。"""
+
+    def test_receipt_sink_is_optional_machine_invariant(self) -> None:
+        fields = {f.name: f for f in _mod.ARTIFACTS["dispatch-slice"].fields}
+        f = fields["receipt_sink"]
+        assert f.kind == "machine-invariant"
+        assert f.required_at == "never"  # 選填不進 required 集
+
+    def test_receipt_sink_absent_still_valid(self) -> None:
+        """未填＝慣例路徑 <wt>/.agent-tmp/<卡id>/<slice-id>-receipt.md 生效，不擋派工。"""
+        s = _slice()
+        assert "receipt_sink" not in s
+        assert _errors("dispatch-slice", s) == []
+
+    def test_receipt_sink_present_valid_blank_fails(self) -> None:
+        s = _slice()
+        s["receipt_sink"] = ".agent-tmp/air-135.1/s1-receipt.md"
+        assert _errors("dispatch-slice", s) == []
+        s["receipt_sink"] = "   "
+        errs = _errors("dispatch-slice", s)
+        assert any("`receipt_sink`" in e and "blank" in e for e in errs)
+
+
 # ---------------------------------------------------------------------------
 # receipt（D7：CollectionReceipt 欄位集＋plan 回指；terminal≠complete）
 # ---------------------------------------------------------------------------

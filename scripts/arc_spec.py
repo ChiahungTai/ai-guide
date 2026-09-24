@@ -210,6 +210,9 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
                       "role-dependent read-set：{policy, pointers}（AC#2：same page ≠ same projection；review/verify/test=problem-contract-only、intent-review=chain-exclusion；pointers 選填＝S1 顯式決策：dispatch 當下無讀指針的 slice 合法（如 receipt-only 通知型），S2 覆核）"),
             FieldSpec("sink", "machine-invariant", "always",
                       "artifact 預期路徑或 receipt-only：{mode, path?}（AC#2；欄位語義 owner＝135.7）"),
+            FieldSpec("receipt_sink", "machine-invariant", "never",
+                      "slice 回執落點（N6：muse 審查腿——回執欄位集有 schema、落點無欄可指）；"
+                      "選填不進 required 集；未填＝慣例路徑 <wt>/.agent-tmp/<卡id>/<slice-id>-receipt.md"),
             FieldSpec("accept", "machine-invariant", "conditional",
                       "accept 機驗：{predicate, anchors}——sink 為 artifact 時必帶（預設 exists+readable+nonempty；terminal≠complete）"),
             FieldSpec("budget_context", "machine-invariant", "always",
