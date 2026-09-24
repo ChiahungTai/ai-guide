@@ -142,6 +142,8 @@ build 可能由不同 LLM session 執行，無法存取審查報告。因此：
 
 ### 回寫格式
 
+**回寫錨（card-first，AIR-135.2 AC#4）**：card-first 弧的 findings 表「段落」欄載**卡 id＋卡 section 錨**（AC 編號／Plan 段／約束區，如 `AIR-135.2 AC#4`；卡 section 即錨，存儲分配見 AIR-135.2 AC#3，本 skill 不另立格式）；review 區段不插 EP 開頭——findings 記卡 comments（時序流水）、採納修正回寫卡對應 section（supersedes＋reason）、結算面進 Final Summary。EP 弧照舊（該弧原有 EP 時）——下方原文保留：
+
 在 EP 開頭(研究摘要之後、UC 盤點之前)加 review 區段,用 Finding Record 表格(欄位定義見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md))。EP 場景「檔案:行」欄填「EP 段落」(如 S2):
 
 ```

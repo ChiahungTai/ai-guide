@@ -115,6 +115,8 @@ EP 段落已驗證過的假設，`/ep-validate` 可跳過或做更深入的邊�
 
 **EP 回寫**（回寫原則同 [ep-review.md](../ep-review/SKILL.md)）：
 
+card-first 弧（AIR-135.2 AC#4）：回寫錨改載**卡 id＋卡 section 錨**——findings 表「EP 段落」欄載卡 section（AC 編號／Plan 段／約束區），POC 結果記卡 comments、採納修正回寫卡對應 section（supersedes＋reason）、結算面進 Final Summary（回寫語序單一源＝[ep-review](../ep-review/SKILL.md)「回寫格式」card-first 段）；EP review 區段回寫＝條件分支（該弧原有 EP 時照舊）——
+
 在 EP review 區段用 Finding Record 表格(同 ep-review,欄位定義見 [workflow-review-pattern.md](../_common/workflow-review-pattern.md)),「問題」欄填 POC 驗證結果:
 
 ```
@@ -152,6 +154,8 @@ EP 段落: S{N}
 來源: [假設來源，如 path/to/file.py:ClassName 或用戶確認]
 """
 ```
+
+**POC↔plan linkage（card-first，AIR-135.2 AC#4）**：card-first 弧的檔頭標注改載**卡 id＋section 錨**——`TaskRef: <卡id> <section>`（如 `TaskRef: AIR-135.2 AC#4`；卡 section 即錨，存儲分配見 AIR-135.2 AC#3，不另立格式）；`EP 段落: S{N}` 標注形態對 EP 弧保留（上方檔頭照舊）。
 
 **生命週期**：POC 為暫時性驗證產物，僅存活到該 EP 的 build+commit 完成。
 - 驗證期間：保留供 build 提煉驗證意圖

@@ -123,6 +123,8 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 ### 階段 2：逐段實作
 
+**映射源（card-first，AIR-135.2 AC#4）**：card-first 弧＝**卡 Plan 段／AC 逐項 → TDD 步驟映射**——Plan 段一 slice 對應一段 TDD 循環、AC 項對應驗證策略（RED）與完成檢查（REFACTOR）；段錨＝卡 id＋卡 section（存儲分配見 AIR-135.2 AC#3，本 skill 不另立錨格式）。EP 段落映射＝條件分支（**該弧原有 EP 時照舊**——下方 EP 元素表適用）。
+
 **EP 段落元素 → TDD 步驟**：
 
 | EP 元素 | TDD 步驟 | 說明 |

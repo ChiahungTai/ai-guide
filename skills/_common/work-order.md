@@ -44,7 +44,8 @@
 
 > 按序列出，確保可執行讀取（`cat`／`Read` 可達）；路徑一律絕對路徑。
 
-1. `.../ep.md`——指定段落（核心原則、S1/S2/S3 等）
+1. card-first（AIR-135.2 AC#4）＝**指定卡＋卡 section（AC 編號／Plan 段／約束區／Notes 指針）**——backlog 卡路徑 `.../backlog/tasks/<卡id>….md`；卡 section 即錨（存儲分配單一源＝AIR-135.2 AC#3，本模板不另立錨格式）
+   - EP 指定段落＝條件分支（該弧原有 EP 時照舊）：`.../ep.md`——指定段落（核心原則、S1/S2/S3 等）
 2. `.../rules/<rule>.md`——對應段落
 3. `.../skills/<skill>/SKILL.md`——解析表結構
 4. `.../agents/AGENTS.md`——治理段現況
@@ -155,7 +156,7 @@
 > 十節結構不變；review/advisory 形態（read-only、無 EP、無 writer、無預期改檔——external second-opinion、[/state-review](../state-review/SKILL.md) 深審腿）以下欄位**替換**而非豁免，缺替換欄位一樣＝未就緒。implementation 形態缺 §4 EP／§10 落實說明仍為未就緒（兩形態互不冒充）。
 
 - **§3 Baseline identity** 增：環境凍結證據——clean tree 聲明，或 dirty 模式的 tracked diff hash＋untracked 清單/content hash（審查端前後比對，不一致標 stale）
-- **§4 必讀**：EP 段落項替換為 **scope manifest**——審查範圍逐 path 分類（core 逐檔讀／leaf 機械掃＋異常深讀／generated 驗投影不當源／mirror 驗 manifest 帳），每 path 恰屬一 bucket、exclusions 明列；方法論 bundle 照舊（§4 既有 review 注記）
+- **§4 必讀**：EP 段落項替換為 **scope manifest**——審查範圍逐 path 分類（core 逐檔讀／leaf 機械掃＋異常深讀／generated 驗投影不當源／mirror 驗 manifest 帳），每 path 恰屬一 bucket、exclusions 明列；方法論 bundle 照舊（§4 既有 review 注記）。card-first 弧（AIR-135.2 AC#4）＝§4 卡必讀項（指定卡＋卡 section）同樣替換為 scope manifest；EP 段落項替換語義對 EP 弧照舊
 - **§6 範圍限定**：動＝零（read-only）；不動＝全部（含 backlog 卡狀態）——交付以 `git diff --name-only` 空 + `git status` 前後一致舉證
 - **§8 驗收**：逐條「查證命令＋預期證據形態」（錨點存在性、hash 對帳、coverage 分類帳完備性）；**驗證 baseline 用正式檔的副本**（collector 每次比較推進 baseline——唯讀驗收直接跑正式 baseline-dir 會消耗下一輪比較起點，codex 09-08 實證）。Contract completeness invariant 於唯讀 variant 同樣適用：mandatory gate＝review-engine review profile——工單須標 `profile=<ordinary|boundary>`（review-engine 判定表）且所需 context／lens 配置在場；用跨家族腿時**另記** `panel=<tri|bi|single>`（組合詞彙見 model-routing 陪審團表，與 profile 不同軸、互不替代）。profile 或所需配置缺席＝`contract-incomplete`
 - **§10 交付報告**：逐段落落實說明替換為 **findings schema**——每 finding 附 file:line 錨點、嚴重度（review-engine 三級）、信心水準、**remedy 三分類**（bug＝行為違反意圖且無文檔宣稱刻意／drift＝兩處宣稱或實作不一致／design-reversal＝文檔化的刻意設計但設計本身該反轉——反轉需 user 拍板）、Important 以上附**可機械化驗收設計**（failure-injection 形態最佳）；**每條 finding 附驗證式**（可機械複驗的 rg 命令／pytest case——external reviewer 工單標準要求；與 review-engine／workflow-review-pattern 同詞，定義單一源在彼處；followup 驗收逐條重跑；工單標準嚴於鏈內——鏈內 Important+ 附，工單每條附）；另附環境前提自曝（worktree identity／HEAD／工具新鮮度）與方法論限制段（用了什麼、什麼無法驗證）
