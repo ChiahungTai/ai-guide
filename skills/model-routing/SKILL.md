@@ -48,7 +48,7 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 | Role | 允許 authority |
 |---|---|
 | Planner | plan／EP synthesis（無 apply） |
-| Implementer | apply（accepted EP 後）／evidence |
+| Implementer | apply（accepted 計畫載體——卡 Planning Contract 或 EP——後）／evidence |
 | Reviewer | findings（無 disposition／apply） |
 | Verifier | evidence artifact（無 disposition／apply） |
 | Arbiter | final disposition／adjudication |

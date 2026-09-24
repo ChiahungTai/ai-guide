@@ -207,7 +207,7 @@ producer 的 case_X 處理（從沒被觸發 — 死碼）
 
 `must-execute-before-complete.md` 把 `.py / demo / poc/ / example` 全歸為「可執行 → 必須 uv run」是**生產側視角**(確保 AI 跑過),完全缺**消費側視角**(給誰看、怎麼看)。B 軸的演進方向:
 
-1. **UC 場景執行驗收(B 軸核心)**:驗收單位是 UC 場景(execution-plan,Claude command)(EP Scenario Matrix,下稱 SM),不是泛泛 demo。SM 欄位「觸發 / 預期行為」是現成的可執行輸入 + 人類可判讀預期,且必須涵蓋 happy / 錯誤 / 邊界 / 效能。**人的角色**:debrief 第 6 段(驗證證據+清單完整性)審「該驗哪些」(範圍,不親跑);LLM 跑場景、人觀察產出 = L6。素材 EP 已產出,不需另發明。
+1. **UC 場景執行驗收(B 軸核心)**:驗收單位是 UC 場景(execution-plan,Claude command)(EP Scenario Matrix,下稱 SM),不是泛泛 demo。SM 欄位「觸發 / 預期行為」是現成的可執行輸入 + 人類可判讀預期,且必須涵蓋 happy / 錯誤 / 邊界 / 效能。**人的角色**:debrief 第 6 段(驗證證據+清單完整性)審「該驗哪些」(範圍,不親跑);LLM 跑場景、人觀察產出 = L6。素材 EP 已產出,不需另發明。card-first 弧以卡 Planning Contract（AC／驗收式）代 SM 為素材,欄位對應照六欄。
 2. **可觀察性合約**:SM 的「預期行為」欄位 = 人類可判讀的結論。執行 SM 場景的 stdout 必須對應預期行為,且至少跑一個錯誤/邊界場景(避免只演 happy path 的 AI 公關稿)。
 3. **自動化對照(A/B diff)**:跑新舊版 / 兩 branch / 兩參數比對,人類只判讀 diff 合理性。把「讀」外包給機器,這是長期最該投資的模式。
 4. **流程末端驗收步驟**:build / deep-work(Claude commands)在 commit 前缺「執行 SM 代表性場景讓人判讀」的步驟;現有 demo/POC 驗證只驗 exit code 0,不驗輸出內容(silent failure / 語義錯誤偵測不到)。

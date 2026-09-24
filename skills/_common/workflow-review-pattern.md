@@ -171,6 +171,7 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 |------|------|
 | **工作鏈**（post-build 編排、standalone code-review→judge→followup） | `.review/<branch>.md`（工作帳本，代表一次變更的 finding 清單；**caller 指定可覆寫**） |
 | **規劃期**（EP Review Cycle——ep-review/ep-validate，EP 未歸檔） | EP review 區段（EP 5a 歸檔後結構性不可用——工作鏈一律走 `.review`） |
+| **規劃期無 EP**（card-first 弧——計畫載體＝card Planning Contract） | owning 卡 notes／`.review/` |
 
 `.review/` 為 ephemeral 工作產物,須加入 `.gitignore`;**`/commit` 階段 6 成功後清除**（commit 結算點，同 POC 生命週期）。`status` 機制靠 LLM 更新會漏，僅作提醒線索，非可靠閘門 —— 最終把關靠人（commit 確認對照 diff）。
 

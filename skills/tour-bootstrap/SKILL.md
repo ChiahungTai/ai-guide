@@ -16,7 +16,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit", "Grep", "Glob"]
 
 - **`arcId`＝materialization canonical key**；`cardId` 只是 join 屬性（一卡可多弧——以 arcId 對齊不以卡對齊）。
 - **兩階段**：`tour register`（pending row 立即持久化——ask-once 略過路徑）→ `tour materialize`（row 補 `tourPath`）。row 缺席＝消費端無觸發 UI（ask-once 略過仍必須 register 的原因）。
-- 每次 materialize 落一列：`{arcId, cardId, base commit, target commit, EP 路徑, quality: full|degraded}`；已 materialize 的 row **保留不刪**——`tourPath` 指向產物，消費端靠 row 尋回已產 tour（同 arcId 重產＝覆蓋同 tourPath，歷史交 git）。**quality＝claims 完整度**（row 有 ep provenance＝full；anchor 可用性是另一軸——repo-外 EP 不作 step anchor 但 claims 仍可 full）。
+- 每次 materialize 落一列：`{arcId, cardId, base commit, target commit, EP 路徑, quality: full|degraded}`；已 materialize 的 row **保留不刪**——`tourPath` 指向產物，消費端靠 row 尋回已產 tour（同 arcId 重產＝覆蓋同 tourPath，歷史交 git）。**quality＝claims 完整度**（row 有 ep provenance＝full；card-first 弧以卡／TaskRef provenance 計 full（ep 欄缺席合法）；anchor 可用性是另一軸——repo-外 EP 不作 step anchor 但 claims 仍可 full）。
 - **替換語義分兩形**：`register`／materialize 註冊形（帶 --base/--target）＝**tool-owned authoritative full replace**（未帶 optional 欄清掉、未知欄不保留）；**row-driven materialize＝cardId 保留、ep 由 provenance 重解析**（ep spec 以 canonical 形持久化——repo 內 repo-relative、repo 外絕對——意圖式重產冪等）。人工策展欄請放 `[tour.*]` row（unknown-key roundtrip 保護只涵蓋該層）。
 - 消費端（ai-lifecycle）**容忍式讀取**：欄缺席＝無觸發 UI，不 fail。
 
