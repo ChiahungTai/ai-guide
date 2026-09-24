@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-18 07:14'
-updated_date: '2026-09-24 13:29'
+updated_date: '2026-09-24 13:53'
 labels: []
 dependencies: []
 ordinal: 117000
@@ -172,6 +172,8 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 【0924 user 資源約束】GLM 並發上限 3 線（含主 seat；codex/muse bridge 腿不計）——marshal 派工前機械盤點：seat＋在跑 GLM subagent（impl-lite=flash、Explore/general-purpose 繼承 5.3）＋bridge glm job，合計 ≤3 才派，超過排隊等回收。本批量剩餘弧一體適用。
 
 【0924 receipt 錨更新（135.7 判讀腿附帶發現）】批量夜 #1 兩張匯總 receipt 引用的 commit 61f9b205／700bbb1f 已成孤兒（收線 merge 換 hash、無 ref 包含、僅 reflog 可達＝GC 風險）。內容新錨：135.6 內容＝22663e62（card-first recovery ownership 遷移）、135.8 內容＝b0fb2945（correction 迴路四步）。本節即錨修正記錄。
+
+【0924 cookbook r2 雙腿收納（flash job-mufl0vu5＋muse job-mufl0vw9；findings＝oss-survey/cookbook-r2-{flash,muse}.md）】治理六面地毯掃描（registry 319 條全枚舉＋8 漏掃項補讀）。雙腿交叉 Top 共識五項（改進輸入，待 135.8/各 skill 修正週期消化，非立即動作）：①sandboxed-code-migration 全包→implement/agent-workflow/135.1（隔離＋receipt 機驗三層獨立同構＋work-order 範本）②記憶三連（context_personalization 領銜）→memory-audit（Memory Evals 三類＋Guardrails 三層〔instruction-shaped payload 拒收〕＋「只存 lessons 不存 facts」獨立佐證）③skills_in_api 三分框架→instruction-writing 載體選擇外部對照＋skill 版本 pinning vs symlink live 的 freshness 取捨待評④eval 方法論群（Optimize_Prompts golden pairs／分類式 judge 勝於打分／eval 三起點：冷啟動→自動迴圈→離線巨觀）→135.8 資產化⑤sev_bot 治理模式群（approval≠execution 句式／skills≠credentials／fail-closed）→outward-consent 佐證與句式借入。次選：what_makes_documentation_good→instruction-writing 體例（AI 讀者轉換點已標）；gpt-5-2 guide 四構件→post-build runbook；per_run_spending_controller→autonomous 預算記帳算法。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
