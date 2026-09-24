@@ -1,10 +1,10 @@
 ---
 id: AIR-184
 title: webgpt-composer-邊界對齊——雙軸預算＋envelope-口徑＋fat-AGENTS-路由（bridge-0924-調查沉澱）
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-24 06:48'
-updated_date: '2026-09-24 06:48'
+updated_date: '2026-09-24 07:06'
 labels: []
 dependencies: []
 ordinal: 170000
@@ -38,3 +38,27 @@ flowchart LR
 
 〔規模分級〕simple~standard——三檔文檔編輯
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0924 marshal 收線】worker receipt 全 DONE-WHEN 過（三檔恰如工單；model-routing 指針零數字＝偏差①裁定正確；skill 舊『只派路徑』句與 09-16 內聯規則矛盾＝偏差②一併收編為材料軸未驗形態）。部署閘事件：rule 一行使 muse bundle 30,772B 超 30,720 gate（fail-loud 攔住）→hotfix 657f3d08 預算行合併壓縮→30,699B 回落 gate 內 3/3 部署。residue：muse bundle 餘裕僅 21B——下次 rules 變更前先瘦身（歸後續維護批）。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+as-built 終態圖：
+
+```mermaid
+flowchart LR
+  B["bridge 0924 調查<br/>死亡線 ~100K–126K"] --> D{"雙軸預算<br/>派 codex web 前"}
+  D --> A["材料軸：inline ≤8KB<br/>超→chunk／改形態"]
+  D --> W["整包軸：工單＋AGENTS 鏈<br/>＋~30K＋~20K < 100K<br/>超→fat-AGENTS 替代"]
+  W --> R["①降 payload→②native codex<br/>→③muse/glm→④in-harness"]
+  A --> L["rules 一行預算值＋<br/>skill 單一源＋觀察項三筆"]
+  W --> L
+```
+
+Final Summary：三檔落地（rule 預算行＋skill webgpt 節雙軸與替代路由與觀察項＋model-routing 指針）；muse/codex 雙腿事前收斂＋marshal 親驗；部署閘 hotfix 一輪（30,699B）。residue：muse bundle 餘裕 21B 記後續瘦身。
+<!-- SECTION:FINAL_SUMMARY:END -->
