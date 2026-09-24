@@ -4,7 +4,7 @@ title: closeout-機械化——結案收尾-checklist-腳本化
 status: To Do
 assignee: []
 created_date: '2026-09-24 22:05'
-updated_date: '2026-09-24 22:06'
+updated_date: '2026-09-24 22:30'
 labels: []
 dependencies: []
 ordinal: 179000
@@ -31,3 +31,9 @@ flowchart LR
 - [ ] #2 腳本實作＋對四張已關卡回放驗證（抓得到 181 式漏 tick）
 - [ ] #3 掛點決策（hook vs skill 條文）經載體三判準
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0925 切片一完成——手工 checklist 全集盤點】survey 全文＝.agent-tmp/air-193/survey.md（54 行；GLM-5.3 腿 job-mug3qitt）。核心發現：18 項手工檢查散 3 skill＋2 hook＋條文；僅 4 項已機械化（同 pre-commit guard）；**兩實證破口（181 漏 tick／135.3 status）都落在卡面結構 predicate 零 catcher 帶——與 guard 閘二觸發面重疊，擴充即可吸收（禁二刻，消費其判定）**。重複帶：In Progress 語義三處無共享 predicate。腳本化 top3 候選在 survey 表。
+<!-- SECTION:NOTES:END -->
