@@ -1,10 +1,10 @@
 ---
 id: AIR-196
 title: kanban 卡 id 形態紀律——dot 原樣、大小寫不敏感、view 非 show（backlog CLI 操作面）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-24 23:02'
-updated_date: '2026-09-24 23:14'
+updated_date: '2026-09-24 23:16'
 labels: []
 dependencies: []
 ordinal: 182000
@@ -25,3 +25,23 @@ flowchart LR
   E -->|"show"| G["argument error"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+結案 commit 走 CARD_DIAGRAM_SKIP=1：終態圖已存在 Final Summary（mermaid），diagram guard 偵測面不覆蓋該節＝誤判攔截；依同日 AIR-194（7cb6aa3f）先例繞行並記錄，其他閘照跑
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AIR-196 完成：kanban-board SKILL.md 卡編輯前查驗節＋一條 id 形態紀律（dot 原樣／大小寫不敏感／view 非 show／檔名形≠id 形／wt-open 走檔名形）。審查：fresh-eyes 獨立腿 adopt-after-fix——初版『精確匹配/大小寫敏感』宣稱被機械反證並重寫（F1-F5 全處置）；修正後事實核心自證（no-dot exit 1、雙大小寫 exit 0、show argument error）。終態圖：```mermaid
+flowchart LR
+  A["caller 查卡/編卡"] --> B{"id 帶 dot？"}
+  B -->|"帶 dot"| C["CLI 命中"]
+  B -->|"缺 dot"| D["Task not found"]
+  A --> E{"子命令？"}
+  E -->|"view/edit"| F["OK"]
+  E -->|"show"| G["argument error"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
