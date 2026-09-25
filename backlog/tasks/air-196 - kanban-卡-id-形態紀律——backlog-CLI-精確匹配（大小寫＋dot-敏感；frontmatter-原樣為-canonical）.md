@@ -26,6 +26,12 @@ flowchart LR
 ```
 <!-- SECTION:DESCRIPTION:END -->
 
+## Acceptance Criteria
+
+<!-- AC:BEGIN -->
+- [x] #1 backlog CLI 卡操作（show/edit）id 匹配改精確形態（大小寫＋dot 敏感；dot 原樣保留、view 非 show——0925 追記：本卡以 Description 為契約，AC 結案後補列 as-built）
+<!-- AC:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->

@@ -44,6 +44,7 @@ flowchart LR
 
 ## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
 ```mermaid
 flowchart TD
   F[SC finding 信<br/>工具憑證被 hook 拒收] --> D[合議：muse＋codex<br/>scope 兩形＋單一源＋範例]
