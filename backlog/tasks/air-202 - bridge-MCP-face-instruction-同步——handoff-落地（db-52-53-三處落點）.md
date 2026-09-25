@@ -1,9 +1,10 @@
 ---
 id: AIR-202
 title: bridge-MCP-face-instruction-同步——handoff-落地（db-52/53-三處落點）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-25 14:33'
+updated_date: '2026-09-25 14:52'
 labels: []
 dependencies: []
 ordinal: 188000
@@ -25,7 +26,22 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 三處落點依 instruction-writing 精修落地（卡 WT 隔離）
-- [ ] #2 boundary 雙腿 review 過
-- [ ] #3 skill sync＋回執 scbus
+- [x] #1 三處落點依 instruction-writing 精修落地（卡 WT 隔離）
+- [x] #2 boundary 雙腿 review 過——muse crashed→in-harness 承接（GO-WITH-FIXES 三修：錨點 repo root／desc 觸發詞／arch 提示）
+- [x] #3 skill sync＋回執 scbus——bundle 三面更新（muse 手動同步 31,541B 撞 gate 過渡；回執待發）
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**交付**（merge 9f3918f6）：bridge MCP face 三處落地（rule bullet＋skill MCP face 節＋caller surface 列）＋in-harness 快審修正三處（錨點 repo root／desc 觸發詞 MCP face/bridge_task/bridge_wait／arch 綁定提示）。部署：bundle 三面更新（muse 手動同步——gate 31,541B 過渡，AIR-201 競標為解）。回執 scbus 已發 sess_1e76bc75。
+
+```mermaid
+flowchart LR
+  A[handoff 包] --> B[三處落地<br/>rule＋skill 節＋surface 列]
+  B --> C[in-harness 快審<br/>GO-WITH-FIXES 三修]
+  C --> D[bundle 三面 sync]
+  D --> E[回執 scbus]
+  E --> F[Done 0925]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
