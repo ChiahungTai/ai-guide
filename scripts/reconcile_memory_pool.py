@@ -18,16 +18,20 @@ consolidation。合法流程下池 HEAD＝已審核基線；繞閘寫入（muse 
 消費端：consolidation 開頭／memory-audit 機械層（exit 契約）。
 exit code：0＝clean/not_governed；1＝infra/contract 錯（fail loud）；
 2＝dirty（flag——consolidation 先補審這批 delta 再跑正常流程）。
+AIR-187 S3：dirty 輸出逐檔附加 guard 分流標籤（instruction-shaped／
+review／clean——memory_guard_rules 三級判定；只附加在 quarantine 明細，
+exit 語義零漂移）。
 
 用法：uv run python scripts/reconcile_memory_pool.py <repo-root> [--json]
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 MARKER_REL = Path(".agents") / "memory-governance.json"
@@ -48,6 +52,7 @@ class ReconcileError(Exception):
 class PoolDelta:
     code: str
     path: str
+    guard: str = ""  # AIR-187 S3：exit-2 附加分流標籤；""＝guard 層缺席（未分類）
 
 
 @dataclass(frozen=True)
@@ -123,6 +128,76 @@ def _is_self_produced(path: str, pool_rel: str) -> bool:
     return path in allowed
 
 
+def _load_guard_rules():
+    """AIR-187 S3：載入同目錄 memory_guard_rules（scripts 非 package，依 __file__ 定位）。
+
+    缺席或載入失敗回 None——分類是 exit-2 的附加面，標註層故障不得上拋
+    反寫 exit 契約（0/1/2 零漂移硬閘），只退回無標籤輸出＋stderr 警告。
+    """
+    path = Path(__file__).resolve().parent / "memory_guard_rules.py"
+    if not path.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("air187_guard_rules", path)
+        if spec is None or spec.loader is None:
+            return None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+    except Exception:
+        return None
+    return mod
+
+
+def _annotate_guard_labels(
+    entries: list[PoolDelta], git_root: Path, pool_rel: str
+) -> list[PoolDelta]:
+    """AIR-187 S3：dirty entries 逐檔過 guard 三級判定，附加分流標籤。
+
+    只附加標籤，不改變 status/exit 判定（0/1/2 契約零漂移硬閘）：
+    - trusted 標記＝HEAD 基線成員（ls-tree——已過 consolidation 晉升的池內
+      tracked 條目）；untracked 與 staged-add/rename 目的地不在 HEAD＝來源
+      未審核，meta 不帶 trusted（S1 來源分層語義：裸 payload 照 black 進
+      quarantine）。ls-tree 失敗＝無法證明 tracked→全體無 trusted（fail-closed）。
+    - meta.name＝pool 條目名慣例（檔名 stem，對齊 golden meta 形態）。
+    - 刪除/不可讀 delta 無內容可分類→空文本 classify 回 clean（無 payload
+      在場；mutation 本身已由 dirty 承接）。
+    """
+    guard = _load_guard_rules()
+    if guard is None or not hasattr(guard, "classify"):
+        print(
+            "[WARN] reconcile_memory_pool: memory_guard_rules unavailable——"
+            "quarantine unlabeled",
+            file=sys.stderr,
+        )
+        return entries
+    try:
+        head_files = set(
+            _git(
+                "-C",
+                str(git_root),
+                "ls-tree",
+                "-r",
+                "HEAD",
+                "--name-only",
+                "--",
+                pool_rel,
+            ).splitlines()
+        )
+    except ReconcileError:
+        head_files = set()
+    annotated: list[PoolDelta] = []
+    for e in entries:
+        meta: dict[str, str] = {"name": Path(e.path).stem}
+        if e.path in head_files:
+            meta["trusted"] = "true"
+        try:
+            text = (git_root / e.path).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        annotated.append(replace(e, guard=guard.classify(text, meta)))
+    return annotated
+
+
 def reconcile_pool(repo_root: Path) -> ReconcileResult:
     """對單一 governed repo 的 pool 做唯讀對帳；無法判定時 raise ReconcileError。
 
@@ -164,7 +239,9 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
             )
         )
         if entries:
-            return ReconcileResult(status="dirty", entries=entries)
+            return ReconcileResult(
+                status="dirty", entries=_annotate_guard_labels(entries, git_root, rel)
+            )
         return ReconcileResult(
             status="clean",
             detail="pool directory absent and no tracked deletion signal——pool never tracked or never existed",
@@ -189,7 +266,9 @@ def reconcile_pool(repo_root: Path) -> ReconcileResult:
     # 是最大級 mutation，豁免不得稀釋其偵測）。
     entries = [e for e in entries if not _is_self_produced(e.path, rel)]
     if entries:
-        return ReconcileResult(status="dirty", entries=entries)
+        return ReconcileResult(
+            status="dirty", entries=_annotate_guard_labels(entries, git_root, rel)
+        )
     return ReconcileResult(status="clean", detail="pool working tree matches HEAD")
 
 
@@ -223,14 +302,18 @@ def main(argv: list[str] | None = None) -> int:
                     "status": result.status,
                     "repo": str(args.repo),
                     "entries": [
-                        {"code": e.code, "path": e.path} for e in result.entries
+                        {"code": e.code, "path": e.path, "guard": e.guard}
+                        for e in result.entries
                     ],
                 },
                 ensure_ascii=False,
             )
         )
     elif result.status == "dirty":
-        lines = "\n".join(f"  {e.code} {e.path}" for e in result.entries)
+        lines = "\n".join(
+            f"  {e.code} {e.path}" + (f" [{e.guard}]" if e.guard else "")
+            for e in result.entries
+        )
         print(
             f"[FAIL] reconcile_memory_pool: unapproved pool delta ({len(result.entries)} entries)——consolidation 補審後收編或丟棄\n{lines}"
         )
