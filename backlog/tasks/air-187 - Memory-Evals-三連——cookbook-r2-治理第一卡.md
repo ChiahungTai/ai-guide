@@ -1,10 +1,10 @@
 ---
 id: AIR-187
 title: Memory-Evals-三連——cookbook-r2-治理第一卡
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-24 22:03'
-updated_date: '2026-09-25 10:20'
+updated_date: '2026-09-25 12:45'
 labels: []
 dependencies: []
 ordinal: 173000
