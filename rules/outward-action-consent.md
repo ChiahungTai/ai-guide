@@ -10,7 +10,7 @@ LLM 僅在用戶明確授權後執行 outward action：另一人/系統能在 un
 
 ## Reversibility test（判定 outward）
 
-另一人/系統能在 undo 前觀察到？否→自主；是→查本次對話 user 原話是否涵蓋該具體動作。有→執行並附 AUTH line；無→不執行，報 `PENDING: <action> - awaiting your authorization`。
+另一人/系統能在 undo 前觀察到？否→自主；是→查本次對話 user 原話是否涵蓋該具體動作。有→執行並附 AUTH line；無→不執行，報 `PENDING: <action> - awaiting your authorization`。**approval ≠ execution（AIR-192）**：AUTH 只滿足該具體 action 的 consent gate——不豁免該 action 自身的其他 prerequisite/gate，也不延伸授權至後續不同 action（批准 commit ≠ 授權 push；批准調查 ≠ 授權 live write）。
 
 ## AUTH line 模板
 
