@@ -163,11 +163,14 @@ def section_marker_violations(blob_text):
     air-194/196）；PLAN/NOTES 缺失降 warning（section_marker_warnings），不擋。
     """
     lines = blob_text.splitlines()
+    # AC fallback 判準行精確（與 ac_residue_violations 同款）——子字串會讓散文提及
+    # 「## Acceptance Criteria」即冒充段在場（muse/腿二雙 finding 1 合議：繞過縫）
+    has_ac_heading = any(l.strip() == "## Acceptance Criteria" for l in lines)
     out = []
     for name in CARD_SECTIONS:
         if name == "AC":
             b_lit, e_lit = AC_BEGIN, AC_END
-            has_fallback = "## Acceptance Criteria" in blob_text
+            has_fallback = has_ac_heading
         else:
             b_lit = f"SECTION:{name}:BEGIN"
             e_lit = f"SECTION:{name}:END"
@@ -329,8 +332,14 @@ def hooks_path_warning():
     if root.returncode != 0:
         return  # 非 repo 等——探針自身不添亂
     cfg = sh("git", "config", "core.hooksPath")
-    # unset（returncode!=0、stdout 空）＝「未設」非「無法判定」——兩者分流（探針死碼修正）
-    configured = cfg.stdout.strip() if cfg.returncode == 0 else ""
+    # 三分流（muse finding 3 合議）：exit 0＝已設（比對值）；exit 1＝unset（「未設」警告）；
+    # 其他非零＝讀取異常——探針自身不添亂，不誤報 fail-open
+    if cfg.returncode == 0:
+        configured = cfg.stdout.strip()
+    elif cfg.returncode == 1:
+        configured = ""
+    else:
+        return
     toplevel = os.path.abspath(root.stdout.strip())
     if not configured:
         print(

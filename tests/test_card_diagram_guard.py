@@ -479,9 +479,93 @@ def test_refs_tracked_path_no_warning(tmp_path):
 
 
 def test_hooks_path_unset_warns(tmp_path):
-    """#2 探針：tmp repo 未設 core.hooksPath＝fail-open 面顯性警告一行（不擋）。"""
+    """#2 探針：tmp repo 未設 core.hooksPath＝fail-open 面顯性警告一行（不擋）。
+
+    GIT_CONFIG_GLOBAL/SYSTEM 隔離（F5：繼承外層 global config 會讓本測試環境相依）。"""
     repo = _repo(tmp_path)
+    _stage_card(repo, "To Do", DESC_WITH_DIAGRAM, None)
+    r = _run_guard(
+        repo,
+        env_extra={
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+            "GIT_CONFIG_NOSYSTEM": "1",
+        },
+    )
+    assert r.returncode == 0
+    assert "core.hooksPath 未設" in r.stderr
+
+
+def test_hooks_path_wrong_value_warns(tmp_path):
+    """#2 探針 wrong-value 腿（muse finding 3）：設了但非本 repo .githooks——警告不擋。"""
+    repo = _repo(tmp_path)
+    _git(repo, "config", "core.hooksPath", "/elsewhere/hooks")
     _stage_card(repo, "To Do", DESC_WITH_DIAGRAM, None)
     r = _run_guard(repo)
     assert r.returncode == 0
-    assert "core.hooksPath 未設" in r.stderr
+    assert "非本 repo .githooks" in r.stderr
+
+
+def test_struct_ac_heading_fallback_residue_blocks(tmp_path):
+    """fallback 腿 a（F3 補測）：無 AC marker＋精確 `## Acceptance Criteria` 標題——
+    c 靠 fallback 過、a 掃標題區塊，殘留照擋（Backlog CLI 建卡 AC 無 marker 實證格式）。"""
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(
+        repo,
+        "Done",
+        DESC_WITH_DIAGRAM,
+        FS_WITH_DIAGRAM,
+        ac="",
+    )
+    # 手動在卡尾補標題式 AC 區塊（helper 的 ac="" 會整段省略——直接改寫 staged 檔）
+    card = repo / "backlog/tasks/air-900 - test.md"
+    text = card.read_text(encoding="utf-8")
+    text += "\n## Acceptance Criteria\n- [ ] #1 標題式殘留項\n- [x] #2 已勾\n"
+    card.write_text(text, encoding="utf-8")
+    _git(repo, "add", "backlog/tasks/air-900 - test.md")
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 殘留" in r.stderr
+
+
+def test_struct_ac_heading_fallback_all_ticked_passes(tmp_path):
+    """fallback 腿 b（F3 補測）：標題式 AC 全勾——過（194 型存量卡的合規形）。"""
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    card = repo / "backlog/tasks/air-900 - test.md"
+    text = card.read_text(encoding="utf-8")
+    text += "\n## Acceptance Criteria\n- [x] #1 全勾項\n"
+    card.write_text(text, encoding="utf-8")
+    _git(repo, "add", "backlog/tasks/air-900 - test.md")
+    assert _run_guard(repo).returncode == 0
+
+
+def test_struct_ac_fallback_needs_exact_heading(tmp_path):
+    """F1 繞過縫釘住（雙腿合議 finding 1）：散文提及「## Acceptance Criteria」子字串
+    （非行精確標題）不得冒充 AC 段在場——無 marker 無標題照擋缺失。"""
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(
+        repo,
+        "Done",
+        DESC_WITH_DIAGRAM,
+        FS_WITH_DIAGRAM,
+        ac="",
+        notes="待補 ## Acceptance Criteria 段（散文提及——不得算段在場）\n",
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC section 缺失" in r.stderr
+
+
+def test_struct_done_missing_fs_blocks_even_without_diagram_baseline(tmp_path):
+    """muse finding 5 釘住：無圖 baseline 的 Done-transition 缺 FS markers——
+    predicate c 照擋（五段地板有意；舊閘二對此形狀的豁免不延續到結構 predicate）。"""
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_NO_DIAGRAM, None)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, None)
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "FINAL_SUMMARY section 缺失" in r.stderr

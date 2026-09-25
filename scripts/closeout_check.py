@@ -113,6 +113,10 @@ def main(argv=None):
         cards = args.cards
     bad = 0
     for path in cards:
+        if not os.path.exists(path):
+            print(f"ERROR: 卡檔不存在：{path}", file=sys.stderr)
+            bad += 1
+            continue
         violations, warnings, status = check_card(g, path, root)
         if status != "Done":
             print(f"SKIP {path}——status={status}，非結案對象")
@@ -126,7 +130,7 @@ def main(argv=None):
             print(f"PASS {path}")
         for w in warnings:
             print("  警告（不擋）：" + w, file=sys.stderr)
-    return bad
+    return min(bad, 255)  # shell exit 收斂（>255 會 wrap）
 
 
 if __name__ == "__main__":
