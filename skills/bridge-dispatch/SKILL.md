@@ -19,8 +19,21 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 | Codex bare shell | **無 pin resolver**——禁猜 cache 路徑；走 plugin surface 或 repo checkout |
 | Muse session | plugin-less caller kit（delegate-bridge repo `docs/muse-caller-kit.md`） |
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
+| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（2.2.0+；codex 端不走此面——走 db-52 wiring） |
 
 禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
+
+## MCP face 接線與 MCP tool dispatch（2.2.0+，DB-40 Stage 2／db-52＋db-53）
+
+兩種合法接線，按 harness 分流：
+- ZCode／Claude Code：plugin 樹自帶 `.mcp.json`（`delegate-bridge` → `${CLAUDE_PLUGIN_ROOT}/bin/<arch>/delegate-bridge mcp`）——安裝即註冊九個 `bridge_*` tools（plugin 安裝＝pin transition，免 rot）。已實證：CC canary server 連線＋9 tools；ZCode process 層 spawn（app 重啟即載入）。限制：command 綁 arch（aarch64 先行）；ZCode MCP 面變數展開 mirror-silent（hooks 面已實證注入）——fresh session tools/list probe 為驗收手段。
+- codex：無 plugin MCP 聲明機制 → `scripts/codex-mcp-wiring.mjs` apply/verify/doctor/remove 將 stanza 接進 `~/.codex/config.toml`（surgical 手術保留他 section byte-for-byte＋時間戳備份＋原子寫入）。config.toml 易腐：codex 整檔重寫＋launcher 更新拆自訂段——每次 codex 更新後重跑 apply＋doctor。`--args` 後至 bare `--` 或 argv 結束屬 server args；吞到 wiring-flag token（--config/--command/--binary）＝exit 2 fail-loud。
+
+MCP tool dispatch 紀律（與 CLI dispatch 同構、入口不同）：
+- `bridge_task` 恆 `--background`：呼叫即得 receipt（jobId＋status）→ `bridge_wait` 回收 → `bridge_show`/`bridge_save_result` 收尾。
+- codex-web known false-negative（upstream #674，DB-51）：terminal row 帶 `knownFalseNegative` extra（web transport＋disconnect 簽名）＝回應可能已完整渲染在 ChatGPT tab——**先查 tab／worktree 產物再論重派**（re-dispatch trap：ledger 記 failed、工作已完成）。muse/glm/native-codex 不受影響。
+
+錨點：delegate-bridge `docs/ep.md`（MCP face 節頭 known false-negative 條款、`plugin MCP declaration (DB-53)` 節、`codex config.toml wiring tool (DB-40 Stage 2)` 節）；`plugins/delegate/.mcp.json`；`.agent-tmp/REPORT-DB47.md`（sandbox 盤點——MCP 消費端的 sandbox 情報）。
 
 ## codex web pool（webgpt）大內容
 
