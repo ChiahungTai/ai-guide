@@ -1,10 +1,10 @@
 ---
 id: AIR-192
 title: sev-bot-治理模式——cookbook-r2-第二卡（approval-execution-授權語義）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-24 22:04'
-updated_date: '2026-09-25 14:03'
+updated_date: '2026-09-25 14:05'
 labels: []
 dependencies: []
 ordinal: 178000
