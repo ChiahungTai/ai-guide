@@ -11,8 +11,9 @@
 #   （git -C "$WT_PATH" rev-parse --git-common-dir）——跨 repo 誤調用時鎖對 repo、動對 repo。
 # - --preflight＝全檢查零變更（零變更＝內容面；鎖面有短暫副作用——mkdir lock 仍會開關）：
 #   檢查本身只讀（identity／clean／commits scope／owning 線前進／收斂可行性），exit 0/1。
-#   trunk 收斂由 marshal 收線時在 user 授權下執行（outward-action-consent「Commit 專屬
-#   段」）——本腳本 full 模式即 marshal 收線工具，--preflight 供其先驗。
+#   trunk 收斂由 marshal 收線時自主執行（AIR-200：predicate delegation——fresh receipt＋
+#   ff-only＋控制面 landing eligible；正典＝outward-action-consent「Commit 專屬段」邊界
+#   宣告）——本腳本 full 模式即 marshal 收線工具，--preflight 供其先驗。
 # - 收斂沿既有規則（repo AGENTS.md「git 慣例」＋workflow.md §wt-close）：owning 線沒前進
 #   → ff-only candidate；已前進 → 先 rebase card branch onto owning 線再 ff-only 吸收；
 #   ff 失敗即停。trunk 永不被 rebase、永不 force。main 未被任何 WT checkout 時（wave 形態
@@ -191,7 +192,7 @@ if [ "$PREFLIGHT" = "1" ]; then
     printf '[wt-close] preflight 未過（零變更）\n' >&2; exit 4
   fi
   receipt "pass"
-  info "✅ preflight 全過（零變更＝內容面；鎖面有短暫副作用）——收斂由 marshal 收線時在 user 授權下執行"
+  info "✅ preflight 全過（零變更＝內容面；鎖面有短暫副作用）——收斂由 marshal 收線時自主執行（AIR-200 predicate delegation）"
   exit 0
 fi
 [ "$FAIL" = "0" ] || { receipt "fail(preflight-checks)"; printf '[wt-close] preflight 未過，停止（零變更）——先處理 FAIL 項或改跑 --preflight 檢視\n' >&2; exit 4; }
@@ -210,6 +211,22 @@ if [ "$NEED_REBASE" = "1" ]; then
 fi
 
 MERGE_TARGET_BRANCH="$CUR_BR"
+# receipt freshness gate（AIR-200——merge-time enforcement）：full 收斂前驗卡 branch 的
+# post-build receipt head_sha 與 branch HEAD 一致——rebase 後 receipt stale＝收線前置失敗
+# （fail loud；predicate 正典＝outward rule「Commit 專屬段」邊界宣告①）。receipt 缺席＝
+# 警告不擋（純文檔/卡務弧無 receipt 是合法形態）
+BRANCH_HEAD=$(git -C "$WT_PATH" rev-parse --short HEAD)
+RECEIPT_FILE="$PRIMARY/.agent-tmp/post-build-receipts/$MERGE_TARGET_BRANCH.json"
+if [ -f "$RECEIPT_FILE" ]; then
+  RECEIPT_SHA=$(python3 -c "import json,sys;print(json.load(open('$RECEIPT_FILE')).get('head_sha',''))" 2>/dev/null || true)
+  if [ -n "$RECEIPT_SHA" ] && [ "$RECEIPT_SHA" != "$BRANCH_HEAD" ]; then
+    die "receipt stale：${MERGE_TARGET_BRANCH}.json head_sha=${RECEIPT_SHA} ≠ branch HEAD=${BRANCH_HEAD}——rebase 後須重驗（post-build receipt 刷新）再收線（AIR-200 邊界宣告①）"
+  fi
+  receipt "receipt-fresh(sha=$RECEIPT_SHA)"
+else
+  warn "post-build receipt 缺席（${RECEIPT_FILE}）——非 receipt 弧照收，落 receipt 標注"
+  receipt "receipt-absent"
+fi
 # CR freshness（AIR-164）：merge 前先捕捉 trunk 是否已含 card branch——未含＝本次收斂
 # 將實際前進 trunk（供收尾條件式提醒；非正確性依賴）
 TRUNK_ADVANCED=0

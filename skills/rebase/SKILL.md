@@ -27,6 +27,7 @@ Feature branch rebase。多 worktree 共用同一 `.git`，rebase 即時本地�
    - feature 先 `rebase <trunk>`（feature 變成 trunk 的後代）
    - 在 trunk worktree：`git merge --ff-only <feature>`（fast-forward 吸收）
 4. **為何 `merge --ff-only` 而非 `rebase`**：若 trunk 不是 feature 的祖先（你漏了上一步、或 trunk 自己有 feature 沒有的新 commit），`merge --ff-only` **大聲拒絕**；`git rebase` 同情況會**靜默改寫 trunk** —— trunk 已 push 時就是 force-push 災難。`--ff-only` 是安全欄杆。
+5. **吸收的授權語義**（機制在本節；誰可執行）＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」邊界宣告——本地 ff-only merge 為 marshal 自主（AIR-200 predicate delegation），rebase 後 receipt stale 須重驗；本 skill 不複刻 predicate。
 
 > **rerere**：feature 反覆 rebase（onto trunk 或彼此）時，相同衝突自動套用前次解析。建議 `git config --global rerere.enabled true`。
 

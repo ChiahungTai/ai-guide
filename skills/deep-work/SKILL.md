@@ -87,7 +87,7 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
   │   /execution-plan（UC 盤點＋EP；流程規模分級在此裁定——simple 邊界不寫 EP 直接 build、
   │   standard 走 card Planning Contract、大型自動建 backlog 卡（full 寫 standalone EP））→（可選 /ep-validate、/ep-review）→ /implement → /post-build
   │   （收尾鏈：code-review〔風險 profile 派發〕→judge-review→修正迴圈→consistency→metadata-sync→殼 refresh）
-  │   → 收尾報告；變更留 working tree，commit 走 receipt-predicate 委任（receipt-gate；merge 恆 user gate；自主紅線不 override）
+  │   → 收尾報告；變更留 working tree，commit＋本地 ff-only merge 走 receipt-predicate 委任（receipt-gate＋AIR-200 邊界宣告；push 恆停；自主紅線不 override）
   │   例外＝非開發流程任務（純研究/調查、環境修復、一次性維護操作）→ 自身階段 1-5（complex；
   │   可自癒接 /fix-test（含 lint/type 修復）；完成後自主品質閘門 → /audit-test、/code-review）
   │
@@ -233,7 +233,7 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 2. **goal 條件編譯**：只取有明確 verifier 的 AC（command+expected、artifact 驗收、schema invariant、state transition）——生成＝投影既有 verification spec，非 LLM 解讀；無明確 verifier 的 AC fail-closed 成 judgment-required 留 reviewer，不入 goal 也不靜默丟失。C5b goal compiler（predicate compiler，歸 AIR-135.1 amendment）落地前，由 invoking session 進場時手動編譯。
 3. **停法三選一**（無額度帽——停機僅由下列三者觸發）：**cap-stop**（額度自然耗盡＝換班非收工，排 `/at` 接續）／**stall-stop**（連續兩輪無 evidence delta 即停——delta 定義單一源＝AIR-135.7 題六⑤：predicate states＋artifact 錨＋reviewer verdict id；停後縮小 slice，禁原樣重派）／**紅線-stop**（強 outward／破壞性紅線——停該卡、續下一卡；紅線定義單一源＝[autonomous-execution](../autonomous-execution/SKILL.md)）。
 4. **批量模式**：跨卡依次推進，每卡 `/goal` replace 輪換（goal 輪換協議）；不逐卡回報／斷言視圖，收線只產一張多卡匯總 receipt——住 parent 卡 Final Summary。
-5. **lane 可決不上拋**：已有卡、已定案（勿重辯區）的事——卡序、做法方向、優先序、既有常設授權的協調動作——自主決定並記錄；新承諾、跨 repo 寫入、merge（trunk 收線）、outward 才問 user；無人值守批量下非紅線 human gate 入 pending 台帳套 safe default 續跑（AIR-135.7 AC#7）。
+5. **lane 可決不上拋**：已有卡、已定案（勿重辯區）的事——卡序、做法方向、優先序、既有常設授權的協調動作——自主決定並記錄；新承諾、跨 repo 寫入、outward 才問 user；本地 trunk merge（ff-only）＝marshal 自主（AIR-200 predicate delegation——fresh receipt＋landing eligible，rebase 即重驗）；無人值守批量下非紅線 human gate 入 pending 台帳套 safe default 續跑（AIR-135.7 AC#7）。
 6. **dw 承諾制**：接到 deep-work 指令即承諾做完卡 AC；判斷阻塞→bi/tri（雙腿／三腿多家族審查）取結論→續做；報告僅終場一次。語義單一源＝AIR-135.7，數值不在此重刻。
 7. **harness 中立**：Settle predicate 為主體；native `/goal`（ZCode／muse）與外部 driver（codex／claude，bridge_waiter 形態）皆為 adapter 投影。bridge 派的 worker 無 goal 接點——編譯責任在 invoking session。
 
@@ -242,7 +242,7 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 ## 與其他命令的協作
 
 **自主可調度**：`/execution-plan`（無 EP 時 deep-work 任務中自主產，非 user 前置）、`/implement`、`/post-build`（pipeline 預設終段——收尾鏈編排）、`/code-review`、`/ep-review`、`/ep-validate`、`/audit-test`
-**後續**：`/commit`（receipt-predicate 委任——「互動 receipt-gate 驗收程序」七項全綠即 commit，互動＋批量同制；trunk merge（ff-only）＝結案拍板恆 user gate；單一源＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」＋[commit skill](../commit/SKILL.md)）→ `/instruction-sync`
+**後續**：`/commit`（receipt-predicate 委任——「互動 receipt-gate 驗收程序」七項全綠即 commit，互動＋批量同制；trunk merge（ff-only）＝marshal 自主（AIR-200 predicate delegation）；單一源＝[outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」＋[commit skill](../commit/SKILL.md)）→ `/instruction-sync`
 **接續/換手**：`/at`（跨 session reset 接續）、`/handoff`（跨 provider 交接）
 
 **收尾前觸發檢查（AIR-131——在 commit 判定前執行，codex finding：宣告式掛點不構成 orchestration）**：

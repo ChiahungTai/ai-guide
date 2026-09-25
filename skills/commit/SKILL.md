@@ -148,7 +148,7 @@ Ruff 或 MyPy 有錯誤 → **嘗試手動修正**（不直接放棄）：
 
 ### 階段 2.9：控制面回執彙集（AIR-106）
 
-staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern——無 guard 檔的 repo 以 instruction-writing 同節的家族描述為判定）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
+staged 觸及控制面路徑（判定照 [instruction-writing](../instruction-writing/SKILL.md)「落地前審查閘」節；機械路徑清單單一源＝`.githooks/control-plane-guard.sh` 的 grep pattern——無 guard 檔的 repo 以 instruction-writing 同節的家族描述為判定）時執行，否則跳過。**閘存活探針先跑**：`git config core.hooksPath` 非 `.githooks`＝本 clone 隔離閘未上線（fail-open）——提案須揭露此事。從本弧卡 notes／EP 抓回執四欄 `classification／review／session-freshness／deployment-surfaces`（值域定義源＝instruction-writing「落地前審查閘」第 5 點；deployment 欄可由 post-build 部署面對帳 verdict 供應）——四欄附**階段 5 提案**與 commit message body（`Receipt:` 一行）。四欄不齊 → 提案如實標「回執未齊（缺何欄）」，不偽裝完備；user 確認時可退回補審——缺審查腿的 commit 先於審查回收＝activation-before-review 洞（F8）。**本階段同時輸出 landing verdict（AIR-200）：四欄齊＋receipt fresh＝`landing eligible`；缺欄或 deferred＝`landing blocked`——blocked 的弧不得走自主 trunk merge（outward rule 邊界宣告③）。**非控制面 commit 此階段空跳——判定**恆以 guard pattern 為準**（backlog 卡檔、scripts 一般工具、ai-analysis 內非 AGENTS/CLAUDE 檔等不命中者空跳；`ai-analysis/blueprint/AGENTS.md` 這類深層 AGENTS.md 命中家族規則＝控制面，不空跳）。
 
 ### 階段 2.95：Post-Build Receipt 閘（AIR-119）
 
@@ -193,7 +193,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 6. **高風險與機械例外**：🔴高風險弧（boundary／核心架構／會計風控）不走本程序——仍人確認；**分類記錄缺失或無法判定＝fail-closed 走人確認**（禁自判「非高風險」繞道；分類錨＝卡 AC 約束區／Plan 規模分級）；互動機械例外①–④照舊；
 7. **commit 後記帳**：刷新 receipt `head_sha`＝新 HEAD（同階段 6 機制）＋報告附 receipt id（一 receipt 一 commit，跨弧不延伸）。
 
-trunk merge（ff-only）＝結案拍板點恆 user gate；push／deploy／跨 repo outward 恆停（三層邊界＝outward rule「Commit 專屬段」）。
+trunk merge（ff-only）＝**marshal 自主（AIR-200 predicate delegation；正典＝outward rule「Commit 專屬段」邊界宣告）**：前置四件＝fresh receipt（rebase 即失效）＋ff-only＋控制面弧 landing receipt 四欄成立＋merge 後 canonical-only surface 輕量 probe；rebase 前須重驗 receipt；merge 後 main 崩＝marshal 責任（立即 revert＋揭露＋依賴傳播）。git 收線移轉 marshal、卡 Done 翻牌仍 user；push／deploy／跨 repo outward 恆停。
 
 ### 階段 4：生成 Commit Message
 
