@@ -1,7 +1,7 @@
 ---
 id: AIR-200
 title: trunk-merge-放寬為-marshal-自主——本地-ff-only-即合、user-驗證不需再等
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-25 05:51'
 updated_date: '2026-09-25 06:13'
