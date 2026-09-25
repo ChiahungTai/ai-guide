@@ -4,7 +4,7 @@ title: cross-repo-morning-patrol——六-repo-晨間巡檢聚合器（launchd-0
 status: Done
 assignee: []
 created_date: '2026-09-25 02:33'
-updated_date: '2026-09-25 02:38'
+updated_date: '2026-09-25 15:07'
 labels:
   - 巡檢
 dependencies: []
@@ -33,6 +33,12 @@ flowchart LR
 - [x] #2 報告含 per-repo：To Do/In Progress 計數、超齡 To Do（>30d）、髒樹、WT 殘留
 - [x] #3 安裝 launchd 0810＋kickstart 驗證
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0925 補審修正（跳過 review 的洞由補腿收回——GO-WITH-FIXES）】F1 Critical：WT 殘留偵測 awk 雙缺陷（比較永不成立＋找不到 path 當無殘留）＝永久 no-op——今晨報告全 0 為假綠燈；重寫兩段式（porcelain 建 branch→dir 映射＋反轉判定），修後實跑 southchariot 抓到 1 殘留（alerts=1 假綠燈解除）。F2：branch 前綴表參數化（六 repo 全蓋——原 air-*只蓋 1/6）。F3：osascript 失敗落 stderr 進 err log（漏報向量封）。F4：超齡嚴格 >30d。F5 cosmetic／F6 髒樹不通知＝設計選擇（腳本頭註解已明）——記帳。補審腿＝199 跳過 review 的洞收回。
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
