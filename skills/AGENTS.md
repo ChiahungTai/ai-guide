@@ -134,6 +134,7 @@
 - `diagram-selection` — 畫圖前選載體的判準與跨載體共性（判準四問：通道/交錯/是否圖論問題/成本軸；載體對照 mermaid/HTML 塊/表格/domain 渲染器；vision 三段式契約＋分批上限＋全樣本錨定；渲染/判讀分離）
 - `rules-reminder` — 常被違反的規則（rg/fd、無 `#`、`uv run`、無 `$` 展開、獨立呼叫批次化、改檔前先 Read）
 - `llm-output-convention` — 雙通道輸出細則載體（reference skill：print tag 全表〔[OK]/[WARN]/[FAIL]/[LOG]/[ACTION]/[progress]〕、print/Logger 慣例細則與閉環、stdlib logging 與框架 Logger 並存、遷移注意；rule 端留核心原則＋Namespace——rule+skill 分層控制 bundle 尺寸）
+- `python-standards` — Python 規範深層載體（reference skill：命名與 demo 生命周期、`__init__.py` re-export 例外判準與遷移程序、Python 3.12+ typing 四禁令細則與 Any 查證流程、IEEE 754 fail-open gate 語義、hook 相容例外；rule 端留核心禁令於 bootstrap-pointer——rule+skill 分層控制 bundle 尺寸）
 - `symbol-query-routing` — 符號查詢路由深層參考（reference skill：LSP operation 速查表、驗證 workflow/輸出格式、rg 陷阱案例群、方法論限制 loopback、Agent prompt 工具指定模板、跨 harness 載體對照、workspace staleness/reindex 處置；rule 留 cr-first 路由/任務啟動 gate 核心——rule+skill 分層控制 bundle 尺寸）
 - `modern-cli-preference` — 搜尋工具陷阱細則（reference skill：fd/rg 旗標與 alternation 陷阱、grep 旗標遷移、glob 錨定、git pathspec 三陷阱、統計用途禁 head 截斷、盤點執行點雙掃；rule 退為指針——分工權威＝symbol-query-routing rule，rule+skill 分層控制 bundle 尺寸）
 - `tool-discipline` — 工具紀律深層載體（reference skill：Edit 失敗處置階梯全文、zsh 動態 flag 細則、Read 紀律細則；rule 端留 uv run／pipe gate／檔案修改禁令／背景執行核心——rule+skill 分層控制 bundle 尺寸）

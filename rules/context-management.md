@@ -8,16 +8,14 @@ harness-scope: neutral
 
 不同任務重置 context；大範圍探索用獨立 context agent 回摘要，Writer/Reviewer 分離。**會話查證外派**：廣度探索／多檔查證先判外派；唯讀查證腿可自主派——判準表載入 `skills/conversation-dispatch/SKILL.md`。同題連續糾正兩次仍失敗就換 prompt＋重置 context，超過兩次應檢討 prompt。
 
-**Session freshness**：governing rules/bundle 在 session 中變更後（redeploy、slimming、刪除、政策反轉），下一個依賴該規則的 consequential action 前必 refresh context（重讀新版）；**涉及刪除/反轉/衝突語義時重讀不是充分條件**——舊文已在 context 不會因重讀消失，須 reset/new session＋恢復主題材料（read-set 單一源＝`skills/_common/task-recovery.md`）。
+**Session freshness**：governing rules/bundle 在 session 中變更後（redeploy、slimming、刪除、政策反轉），下一個依賴該規則的 consequential action 前必 refresh context（重讀新版）；**刪除/反轉/衝突語義時重讀不充分**——舊文不會因重讀消失，須 reset/new session＋恢復主題材料（read-set 單一源＝`skills/_common/task-recovery.md`）。
 
 ## 想法即時落盤（durable checkpoint）
-
-context 揮發且 quota 可能突然耗盡。
 
 - 關鍵發現/理由、排除路徑/原因、下一步意圖產生即記，附「中間檢查點／最終」＋尚待事項，防未驗收被當完成。
 - 有卡→`task edit --append-notes`；該弧原有 EP→併 append EP 進度節；都無→`.agent-tmp/session-journal.md`。長任務 spawn prompt 注入落盤要求。
 - **唯讀/工單限制優先**：不得自行寫 EP/卡/筆記；以進度訊息交有權寫入者。checkpoint 不擴張授權。
-- quota 中斷接手先讀卡 notes／EP（該弧原有 EP 時）／journal，按檔案現況續行；恢復順序／checkpoint 欄位單一源＝`skills/_common/task-recovery.md`，此處不重抄清單。
+- quota 中斷接手先讀卡 notes／EP（該弧原有 EP 時）／journal，按檔案現況續行；恢復順序／checkpoint 欄位單一源＝`skills/_common/task-recovery.md`。
 - journal 可記未定案工作，不觸發 memory；memory 須一句話測試＋確定才寫。
 
 ## STATE.md（Last session 觀察層）

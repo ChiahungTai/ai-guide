@@ -63,6 +63,8 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 
 > glm writer（implementation）派發的全命令模板鏈——把 bridge-dispatch 紀律收斂成單一序列；條文語義單一源：always-on 核心在 rule 端，caller surface 對照表與 resume model-match 契約在本檔（0924 收編；步驟 1/5 引用）。
 
+**三家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）。
+
 1. **registry pin 解析**：plugin surface 用 `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`；bare shell 讀 `~/.zcode/cli/plugins/installed_plugins.json` 取 `installPath` 拼 `bin/delegate-bridge`——禁手拼版本化 cache 路徑（第二 pin，見本檔上方 caller surface 對照表）
 2. **provision 前置**：workspace 首次 glm 委派前 `delegate-bridge provision --family glm`（**唯一 sanctioned config write**；0924 自 rules 收編）；spawn verify-only（缺漏／drift＝fail-loud 附指引，不自動補）
 3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）

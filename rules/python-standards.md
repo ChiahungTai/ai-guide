@@ -2,6 +2,9 @@
 harness-scope: neutral
 paths:
   - "**/*.py"
+bundle-projection: pointer
+pointer-target: python-standards
+bootstrap-pointer: "撰寫或修改 Python 前先載入 `python-standards` skill 並以其為單一源——核心禁令：demo 用 demo_ 禁 test_（測試 test_）；`__init__.py` 禁 re-export（含 __all__），消費端 `from package.module import Class`（例外判準與遷移程序＝skill）；Python 3.12+ 禁 `from __future__ import annotations`、禁 TYPE_CHECKING、禁 List/Dict/Set/Tuple/Optional/Union 舊 typing（回傳自身/子類用 Self；typing import 白名單＝skill）；Any 限 JSON/第三方外部邊界並註明理由；正值驗證 gate 用 `if not (x > 0): reject`——`<= 0` 漏擋 NaN，非有限值先 `math.isfinite`（NaN 語義＝skill）。Python 命令執行單一源＝tool-discipline。"
 ---
 
 # Python 程式設計規範
