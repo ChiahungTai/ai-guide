@@ -1,7 +1,7 @@
 ---
 id: AIR-203
 title: bridge-MCP-face-收編進-skill——rule-body-drift-補洞（AIR-201-judge-觀察1）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-25 22:56'
 updated_date: '2026-09-25 23:51'
