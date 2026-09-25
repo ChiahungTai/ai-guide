@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.org/DTDs/PropertyList-1.0.dtd">
+<!-- cross-repo morning patrol（AIR-199）——六 repo 晨間巡檢聚合器，每日 08:10
+     （sweep 08:05 之後；晨間訊號一起看）。形態照 dispatch-ledger-sweep 先例。
+     行為主體＝scripts/cross_repo_patrol.sh（唯讀巡檢——backlog 計數＋超齡＋髒樹＋
+     WT 殘留；報告寫 ~/.agents/cross-repo-patrol/latest.md；偵測與處置分離）。
+     路徑參數化：{{REPO}} 與 {{HOME}} 佔位，裝載前須 render（governance/install.py 同款）。
+     安裝形態：render → cp ~/Library/LaunchAgents/com.ai-guide.cross-repo-patrol.plist
+     → launchctl bootstrap gui/$(id -u) <rendered>。
+     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.cross-repo-patrol</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>{{REPO}}/scripts/cross_repo_patrol.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-cross-repo-patrol.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-cross-repo-patrol-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>PATH</key>
+        <string>{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>600</integer>
+</dict>
+</plist>
