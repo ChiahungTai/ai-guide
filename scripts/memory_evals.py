@@ -214,12 +214,18 @@ def main(argv: list[str] | None = None) -> int:
     results: list[dict] = []
     for entry in entries:
         meta = entry.get("meta") or {}
+        try:
+            got = module.classify(entry["text"], meta)
+            detail = module.classify_detail(entry["text"], meta)
+        except Exception as exc:  # 工具崩≠golden 內容錯——exit 2 fail-loud 分流（final sweep F5）
+            print(f"[FAIL] classify 例外（{entry.get('id', '?')}）：{exc}", file=sys.stderr)
+            return EXIT_FAIL_LOUD
         results.append(
             {
                 "entry": entry,
                 "expect": entry["expect"],
-                "got": module.classify(entry["text"], meta),
-                "detail": module.classify_detail(entry["text"], meta),
+                "got": got,
+                "detail": detail,
             }
         )
 

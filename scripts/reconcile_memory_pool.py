@@ -175,6 +175,8 @@ def _annotate_guard_labels(
             _git(
                 "-C",
                 str(git_root),
+                "-c",
+                "core.quotePath=off",
                 "ls-tree",
                 "-r",
                 "HEAD",

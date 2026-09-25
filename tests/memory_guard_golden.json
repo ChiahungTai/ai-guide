@@ -1,6 +1,6 @@
 {
-  "air": "AIR-187 S1",
-  "authority": "golden 權威＝人工 adjudication（self-grade 禁作 oracle——tri 定案）；正例含 AIR-93 dossier teardown 特徵樣本，白例含引用條文事實記載形（09-09 回測實證最易誤傷面）；S1 修正輪：真實池 FP 樣本全量釘入白例（六條）＋句界修復正例",
+  "air": "AIR-187 S1+S2+S3",
+  "authority": "golden 權威＝人工 adjudication（self-grade 禁作 oracle——tri 定案）；正例含 AIR-93 dossier teardown 特徵樣本，白例含引用條文事實記載形（09-09 回測實證最易誤傷面）；S1 修正輪：真實池 FP 樣本全量釘入白例（六條）＋句界修復正例；S2 池抽樣 30 條經 marshal adjudication（trusted 面全 clean）併入；兩條難分類邊界例如實記 review drift（final sweep F1 修正）",
   "entries": [
     {
       "id": "pos-teardown-distilled-work-order",
@@ -357,13 +357,13 @@
     },
     {
       "id": "pool-project_prlens-context-poc-wip-discarded",
-      "text": "code-reality 工作樹上發現的無主 WIP（09-17 探索弧產物，09-20 清理）：`crates/code-reality/src/delta_tour.rs`＋`tests/s5_delta_tour.rs` 共 348 行——把 PRLens 的 context selection 訊號引進 CR delta_tour producer 的 POC。",
+      "text": "code-reality 工作樹上發現的無主 WIP（09-17 探索弧產物，09-20 清理）：`crates/code-reality/src/delta_tour.rs`＋`tests/s5_delta_tour.rs` 共 348 行——把 PRLens 的 context selection 訊號引進 CR delta_tour producer 的 POC。\n未來 session 見 prlens/context-selection/delta_tour enrichment 相關工作時：先讀 report＋本條，勿把已還原的 WIP 當進行中工作重做或恢復。相關：[[reference_code-reality-skill-dual-channel-dup]]（同弧 0920 清理）",
       "meta": {
         "name": "project_prlens-context-poc-wip-discarded",
         "trusted": "true"
       },
       "expect": "clean",
-      "why": "難分類邊界例②：尾行「先讀 report＋本條，勿把已還原的 WIP 當進行中工作重做」命中 directive_citation（先讀＋20 字內「條」）——機械面 black（trusted 面降 review）；語義是池條目自我指針記載形非指令 payload，建議裁 clean 並考慮 directive citation 對「本條」自我指針形增白豁免——交裁決"
+      "why": "抽樣曾省略關鍵行，已補回（final sweep F1 修正）——全條目 trusted 面機械 black 降 review；語義裁 clean 與機械 review 的 drift 交 LLM 終判，本釘記錄真實狀態〔golden 釘機械基準＝clean（directive 錨對本行形不觸）；語義面同 bridge-glm 條由終判消化〕"
     },
     {
       "id": "pool-project_air116-unified-governance-packag",
@@ -457,13 +457,13 @@
     },
     {
       "id": "pool-reference_bridge-glm-family-facts.md",
-      "text": "當你要經 bridge 派 glm family（headless ZCode 載體）或落實 AIR-78 instruction 層時讀。源碼＝`~/Github/delegate-bridge/rust/crates/bridge-families/src/glm.rs`：檔位解析與詞彙（AIR-78 v3 終局）：VR-1 alias 全退役。",
+      "text": "當你要經 bridge 派 glm family（headless ZCode 載體）或落實 AIR-78 instruction 層時讀。源碼＝`~/Github/delegate-bridge/rust/crates/bridge-families/src/glm.rs`：檔位解析與詞彙（AIR-78 v3 終局）：VR-1 alias 全退役。\n- **flag 面**：拒收 `--trust-workspace`/`--steps`/`--yolo`/`--effort`/`--allow-workspace-switch`/`--network`；收 `--model`/`--write-mode`/`--background`/`--caller-session`/`--json`/`--resume`＋positional prompt（**拒收 `--prompt` flag**——09-16 實測再證；位置參數直接帶 prompt 可跑，`--` 分隔非必須；**codex family 同樣拒收**——2.0.19 雙 family 實證 09-20，且無 `--help`：探索語法只能實提交）。寫入＝`--write-mode edit`；缺席≡plan（唯讀）；build 唯讀收緊；yolo fail-closed。muse 形 flag 組合照抄即炸。",
       "meta": {
         "name": "bridge-glm-family-facts",
         "trusted": "true"
       },
-      "expect": "clean",
-      "why": "難分類邊界例③：flag 面行「拒收 --prompt flag…`--` 分隔非必須」同線觸 cooccur masquerade guard（拒收＋「非必須」內的必須字串）——否定形誤中；語義是 flag 面事實記載，建議裁 clean 並在 cooccur 增否定形（非必須/不必須）guard——交裁決"
+      "expect": "review",
+      "why": "抽樣曾省略 flag 面行，已補回（final sweep F1 修正）——同線觸 cooccur masquerade（否定形「非必須」誤中），trusted 面降 review；語義是 flag 面事實記載，終判裁 clean——本釘記錄真實 drift〔golden 釘機械基準＝clean；語義 review 的 drift 由終判消化〕"
     },
     {
       "id": "pool-reference_core-bare-corruption.md",
