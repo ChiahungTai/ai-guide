@@ -209,4 +209,22 @@ S7（owner＝parent 本卡收尾段）：整體 dogfood／對照：用 AIR-135 f
 | DB-41 muse 越權擋關調查 | 擋關清單成冊（SOP 驗收閘/admission guard 憑證/#1 sandbox 候補）——worker 面不隨 AIR-183 放寬 | 記 183 卡 |
 
 度量（S7）：無正當理由打斷＝0（user 三次 mid-turn 指令全即時消化）；checkpoint proven 三發（每次邊界重寫後重驗）；GLM 並發≤3 約束自落實後零違反。**pending 台帳**：135.2#9 user 逐卡點頭／AIR-182 branch 合併授權／sess_64d6fbf9 TODO 2 筆／closeout 機械化開卡／glm closeout 續收／SC-162 摩擦兩筆／muse bundle 餘裕 21B 瘦身。下一批：135.3 收斂弧（含六欄還原演練）→135.5 形式化。
+
+## 晨間批量 receipt（0925，dw 承諾制——compact 恢復後 marshal 續坐鎮）
+
+| 卡／弧 | 結果 | commit |
+|---|---|---|
+| AIR-194 work-order schema drift | **Done**（compact 前收網） | 1e3ac8c3 |
+| AIR-196 kanban 卡 id 形態 | **Done**（compact 前收網） | ea8ecea8 |
+| AIR-135.7 W3 checkpoint link show 面 | **落地**（smoke 六段全綠＋正規測試） | c81ce99c |
+| AIR-195 at/usage-ping 兩道牆＋Patch A proposal | **Done**（回執四欄齊；proposal 待 user 上游轉呈） | be69b2a8 |
+| AIR-135.7 W4 checkpoint obligation＋delivery budget | **落地**（58 tests＋真實 artifact smoke；AC#5 機制在場） | 69c98d3e |
+| AIR-135.7 W5 sweep 日頻 launchd plist | **落地**（--ephemeral fast-path；手動裝載清單在檔頭） | fe360f1a |
+| AIR-135.7 W6 deep-work C5 同步 | **誠實 noop**（Settle 投影四點＋尾端病根全在場，逐點引文證據；零 diff 零閘） | — |
+| AIR-193 切片二 closeout 機械化 | **Done**（guard predicate 群＋CLI 複查腿＋37 tests；雙腿 review→合議修正 F1 繞過縫等；回放實證 181 抓取） | 85f2578f（收線 7161fd75） |
+| SC 回信入帳 | test-mail 自癒備查＋sc-254 過渡慣例記 135.5；三審查軸提案開 **AIR-197** 候補 | 建卡 commit |
+| 193 腿二 F2 | 開 **AIR-198**（closeout×daily-cleanup 撞面承接） | 建卡 commit |
+| 存量格式對齊 | 194 補 FS BEGIN／196 補 AC 區塊追記／135.1 AC#2/#5 行內豁免標註 | 三 commit |
+
+度量（S7）：無正當理由打斷＝0（user 三次 mid-turn：恢復確認／進度要求／deep-work 進場——全即時消化）；checkpoint proven 1 發；GLM 並發≤3（bridge single-writer lease 同 WT 自然串行）；紅線跳過＝0。**review 鏈**＝muse＋in-harness fresh code-reviewer 雙腿（codex 腿 ws 426 deferred——N=7 補腿帳）；合議 findings 分級處置全落帳（修 F1/探針三分流/CLI＋補測五條；記帳 F4/F6/F7/F9/flow references）。全量 2437 tests passed（main 尾端）。**pending 台帳**：135.5 契約 user 裁決（SC 兩日內回）／Patch A proposal 待 user 上游轉呈／135.7 AC 勾選留結案審計（#3/#4/#5/#6/#8 機制在場＋證據 commit 對照已備）／135.1 AC#2/#5 殘留收口歸 135.7 結案審計／AIR-197 三軸合議／AIR-198 cleanup 撞面／AIR-187/192 候補池／135.4 park／135.5 #7 等 SC-18。
 <!-- SECTION:FINAL_SUMMARY:END -->
