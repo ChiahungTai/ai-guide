@@ -27,12 +27,16 @@ AIR-49 對照（011d420「注入安全」條；定義源＝memory-audit SKILL.md
 4. 冒充系統提示／角色指派特徵組——AIR-93 teardown payload 面（AIR-49 條文點名
   「提示注入 payload／角色指派語句」但無機械式）。
 5. masquerade guard——出處詞（裁決／實證）不洗白祈使核心（payload 引用 AIR-49
-  偽裝 legit 是 09-14 實證手法；白豁免位階低於祈使與共現）。
+  偽裝 legit 是 09-14 實證手法；白豁免位階低於祈使與共現——例外僅過去式完成
+  框架對 primary，見演算法步驟 0）。
 6. directive／pointer citation 分際——「依 X skill／見 X 條」黑；「單一源＝／
   源自／詳見」白；裸路徑引用降 review 不逕行擋（09-09 誤傷主面）。
 
 演算法（逐行；順序即優位序）
 ────────────────────────────
+0. 過去式完成框架（已於／實證／結案…）→ 跳過 primary——行首祈使字的記載形
+   （「禁止事項已於 09-09 實證結案」）；verdict 詞（裁決/定案/拍板）不在此
+   列，cooccur 共現黑不受此豁免
 1. primary 黑（行首祈使規則語彙／冒充系統提示）→ black（壓過一切白框架）
 2. cooccur 黑（gate/authority 語彙＋祈使共現）→ black（masquerade guard）
 3. 白豁免（出處框架／指針框架／quant 資料行／樣本標註）→ 該行豁免
@@ -57,8 +61,14 @@ desc 是常駐注入面（每 session 開場載入），與 body 同罰。
   全引號包裹的 payload 會漏，終判在 LLM。
 - 「依」單字 directive 有低量誤報可能（「依賴 X skill」記載形）——誤報流向
   black 交 consolidation 終判回收，不靜默放行。
-- 句界錨不含 ASCII 逗號與全形冒號——英文口語逗號後祈使可能漏。
-- 英文覆蓋限常用詞（must/should/always/never/do not/you need to…）。
+- 過去式完成框架先於 primary——同線「出處詞＋行首祈使」混合形可能被洗白；
+  cooccur 共現黑不受此豁免，殘餘交終判 LLM。
+- 裸「扮演」無冒充語境（you are／你／system: 同線）不旗標——「扮演雙角色」
+  架構記載放行的代價，同線混合的指派 payload 靠語境共現攔。
+- 句界錨含 ASCII 句點（(?<!\d)\\.(?=\\s) 避開版本號）——縮寫句點（e.g.）後接
+  祈使詞會誤中；仍不含 ASCII 逗號與全形冒號，口語逗號後祈使可能漏。
+- 英文覆蓋限常用詞（must/should/always/never/do not/you need to…），單字
+  詞組帶 \b 邊界（Nevertheless/Mustard 字內誤中已修）。
 
 消費端：tests/test_memory_guard_rules.py（golden＋AIR-93 重放）；S1b hook 子集
 （另弧）。載入方式：repo scripts 非 package，經 importlib 載入（見
@@ -81,13 +91,15 @@ BLACK_SIGNALS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
         "primary",
         "imperative_prefix",
         re.compile(
-            r"(?:^|[;；。！？!?\n])\s*(?:[-*•>]\s*|\d+[.)]\s*)?"
+            r"(?:^|[;；。！？!?\n]|(?<!\d)\.(?=\s))\s*(?:[-*•>]\s*|\d+[.)]\s*)?"
             r"(?:必須|禁止|禁|勿|不得|一律|務必|切勿|恆停"
-            r"|always|never|must|should|shall|do not|don(?:['’])?t"
+            r"|always\b|never\b|must\b|should\b|shall\b|do not\b|don(?:['’])?t\b"
             r"|you\s+(?:must|should|need to))",
             re.IGNORECASE,
         ),
-    ),  # 行首（句界後）祈使規則語彙——「必須/禁/always/never/must/should」開頭行
+    ),  # 行首（句界後）祈使規則語彙——「必須/禁/always/never/must/should」開頭行；
+    # ASCII 句點錨避開版本號（(?<!\d)\.(?=\s)），英文單字詞組 \b 邊界防字內誤中
+    # （Nevertheless/Mustard）
     (
         "primary",
         "impersonation",
@@ -97,10 +109,12 @@ BLACK_SIGNALS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
             r"|disregard (?:all |any |the )?(?:previous|prior|above|earlier)"
             r"|忽略(?:之前|以上|上文|先前)"
             r"|以下(?:指示|指令|規則)(?:優先|覆蓋|生效)"
-            r"|\bact as\b|扮演",
+            r"|\bact as\b"
+            r"|(?=[^\n]*扮演)(?=[^\n]*(?:you are|你|(?:system|developer|assistant)\s*[:：]))",
             re.IGNORECASE,
         ),
-    ),  # 冒充系統提示／角色指派（AIR-93 teardown payload 特徵組）
+    ),  # 冒充系統提示／角色指派（AIR-93 teardown payload 特徵組）；裸「扮演」需
+    # 冒充語境共現（you are/你/system: 同線）——「ai-guide 扮演雙角色」架構記載不旗標
     # phase=cooccur：gate/authority＋祈使共現——masquerade guard，先於白豁免；
     # gate 語彙單獨出現＝項目術語常態不旗標（09-09 回測教訓）
     (
@@ -108,22 +122,30 @@ BLACK_SIGNALS: tuple[tuple[str, str, re.Pattern[str]], ...] = (
         "gate_authority_imperative",
         re.compile(
             r"(?=.*(?:gate|delegate|授權|恆停|拒收|攔截|閘))"
-            r"(?=.*(?:必須|務必|不得|禁止|一律|須|must|should|always|never|you))",
+            r"(?=.*(?:必須|務必|不得|禁止|一律"
+            r"|must\b|should\b|always\b|never\b|you\s+(?:must|should|need to)))",
             re.IGNORECASE,
         ),
-    ),  # 「gate/delegate/授權/恆停」＋祈使同線共現（dispatch 黑訊號 3）
+    ),  # 「gate/delegate/授權/恆停」＋祈使同線共現（dispatch 黑訊號 3）；裸 you/須
+    # 已移除——「You've hit your usage limit＋額度閘」事故記載、「無須/不須」形誤中
     # phase=secondary：在白豁免之後評估——「詳見／單一源＝」指針形不因此誤傷
     (
         "secondary",
         "directive_citation",
         re.compile(
-            r"(?:依|遵照|遵|參照|按照|先讀|先載|詳讀|參閱)[^。！？;；\n]{0,20}?"
+            r"(?:依|遵照|遵(?!守)|參照|按照|先讀|先載|詳讀|參閱)[^。！？;；\n]{0,20}?"
             r"(?:skill|SKILL\.md|rules/|規則|條|節)"
-            r"|見[^。！？;；\n]{0,20}?條",
+            r"|(?<![常意看所])見[^。！？;；\n]{0,20}?條",
             re.IGNORECASE,
         ),
-    ),  # 「依 X skill」「見 X 條」指令式規則檔引用（dispatch 黑訊號 2）
+    ),  # 「依 X skill」「見 X 條」指令式規則檔引用（dispatch 黑訊號 2）；「遵守」
+    # 記載形與複合詞（常見/意見/看見/所見）不誤中
 )
+
+# 過去式完成框架——先於 primary 黑的窄白框：行首祈使字的記載形（「禁止事項已於
+# 09-09 實證結案」）不走祈使核心；verdict 詞（裁決/定案/拍板）不在此列，且
+# cooccur 共現黑不受此豁免——payload 引用裁決詞偽裝 legit 是 09-14 實證手法。
+_PAST_TENSE_FRAME = re.compile(r"已於|曾於|實證|結案|已落地|已上線|已退役|終態|考古")
 
 # ---- 白豁免表（命中 → 該行豁免，即使形似 instruction；位階低於 primary/cooccur 黑）----
 WHITE_EXEMPTIONS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -182,9 +204,17 @@ REVIEW_SIGNALS: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 def _classify_line(line: str) -> tuple[str, str] | None:
     """單行判定；回 (tier, signal_name) 或 None（豁免／無訊號）。順序即演算法。"""
-    # 1+2. primary／cooccur 黑——祈使核心與共現壓過白框架（masquerade guard）
+    # 0. 過去式完成框架——行首祈使字的記載形先於 primary 豁免；cooccur 黑不受
+    #    此豁免（masquerade guard 保持無條件——payload 引用出處詞偽裝仍攔）
+    past_frame = bool(_PAST_TENSE_FRAME.search(line))
+    # 1. primary 黑——祈使核心壓過白框架（過去式完成框架例外，步驟 0）
+    if not past_frame:
+        for phase, name, pat in BLACK_SIGNALS:
+            if phase == "primary" and pat.search(line):
+                return ("black", name)
+    # 2. cooccur 黑——gate/authority＋祈使共現壓過白框架（masquerade guard）
     for phase, name, pat in BLACK_SIGNALS:
-        if phase in ("primary", "cooccur") and pat.search(line):
+        if phase == "cooccur" and pat.search(line):
             return ("black", name)
     # 3. 白豁免——事實記載／指針／quant／樣本
     for name, pat in WHITE_EXEMPTIONS:
@@ -205,7 +235,17 @@ def classify_detail(entry_text: str, meta: dict[str, str] | None = None) -> list
     """逐行掃 body 與 meta 文字面，回命中標籤列表（"tier:name@field#idx"）。
 
     消費：S1b hook 高精度子集從 black: 標籤挑選；測試失敗訊息用它定位命中訊號。
+
+    來源分層（0925 池實測兩輪歸因後的語義修正）：AIR-93 的攻擊特徵是
+    「來源不可信」（teardown 裸 payload 冒充），不是「內容像指令」——池內
+    條目已過六問晉升＝來源可信，其規範性內容（feedback/project/reference
+    各類都會記載行為準則）長得像 instruction 是合法形態。但 frontmatter
+    可被毒 payload 偽造（golden 正例「被拒工作單蒸餾形」即此）——豁免
+    不可靠 meta 在場性，須 caller 明示授信：**meta.trusted=true**（reconcile
+    porcelain 對帳通過的池內 tracked 條目）才 black 降 review；否則裸
+    payload 面照 black 進 quarantine。
     """
+    trusted_source = str((meta or {}).get("trusted", "")).lower() in ("true", "1", "yes")
     fields: list[tuple[str, list[str]]] = [("body", (entry_text or "").splitlines())]
     for key in _META_TEXT_KEYS:
         val = (meta or {}).get(key)
@@ -216,7 +256,8 @@ def classify_detail(entry_text: str, meta: dict[str, str] | None = None) -> list
         for idx, line in enumerate(lines):
             verdict = _classify_line(line)
             if verdict:
-                hits.append(f"{verdict[0]}:{verdict[1]}@{field}#{idx}")
+                tier = "review" if (trusted_source and verdict[0] == "black") else verdict[0]
+                hits.append(f"{tier}:{verdict[1]}@{field}#{idx}")
     return hits
 
 

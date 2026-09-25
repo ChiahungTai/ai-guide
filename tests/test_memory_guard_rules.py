@@ -156,7 +156,8 @@ def test_classify_detail_tier_consistency() -> None:
             f"golden {e['id']}：classify={got} 與 detail（{detail}）不一致"
         )
         for h in detail:
-            assert h.split(":")[0] in ("black", "white", "review"), (
+            # 白豁免回 None 不產標籤——label tier 只有 black/review
+            assert h.split(":")[0] in ("black", "review"), (
                 f"golden {e['id']} 標籤形態異常：{h}"
             )
 
