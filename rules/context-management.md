@@ -10,6 +10,8 @@ harness-scope: neutral
 
 **Session freshness**：governing rules/bundle 在 session 中變更後（redeploy、slimming、刪除、政策反轉），下一個依賴該規則的 consequential action 前必 refresh context（重讀新版）；**刪除/反轉/衝突語義時重讀不充分**——舊文不會因重讀消失，須 reset/new session＋恢復主題材料（read-set 單一源＝`skills/_common/task-recovery.md`）。
 
+**跨 session 回信紀律**：收協作信（scbus／handoff）須實質回覆——先 semantic ACK（reply_type＋in_reply_to；manual paste 無 message_id 則免）再 completed（result_pointer＋evidence）；hook 自動 drain／recv 消化不等於回（真實案例：他端 hook 已收信、漏實質回覆）。閉環欄位照 handoff skill Phase 5 四段表。
+
 ## 想法即時落盤（durable checkpoint）
 
 - 關鍵發現/理由、排除路徑/原因、下一步意圖產生即記，附「中間檢查點／最終」＋尚待事項，防未驗收被當完成。

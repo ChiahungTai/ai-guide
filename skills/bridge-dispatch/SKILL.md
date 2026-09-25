@@ -19,7 +19,9 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 | Codex bare shell | **無 pin resolver**——禁猜 cache 路徑；走 plugin surface 或 repo checkout |
 | Muse session | plugin-less caller kit（delegate-bridge repo `docs/muse-caller-kit.md`） |
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
-| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（2.2.0+） |
+| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（短等；長工 arm watcher）（2.2.0+） |
+
+入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。
 
 禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
 
@@ -30,7 +32,7 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 - codex：無 plugin MCP 聲明機制 → `scripts/codex-mcp-wiring.mjs` apply/verify/doctor/remove 將 stanza 接進 `~/.codex/config.toml`（surgical 手術保留他 section byte-for-byte＋時間戳備份＋原子寫入）。config.toml 易腐：codex 整檔重寫＋launcher 更新拆自訂段——每次 codex 更新後重跑 apply＋doctor。`--args` 後至 bare `--` 或 argv 結束屬 server args；吞到 wiring-flag token（--config/--command/--binary）＝exit 2 fail-loud。
 
 MCP tool dispatch 紀律（與 CLI dispatch 同構、入口不同）：
-- `bridge_task` 恆 `--background`：呼叫即得 receipt（jobId＋status）→ `bridge_wait` 回收 → `bridge_show`/`bridge_save_result` 收尾。
+- `bridge_task` 恆 `--background`：呼叫即得 receipt（jobId＋status）→ `bridge_wait` 回收（短等；長工 arm watcher——見 caller surface 節「入口偏好」）→ `bridge_show`/`bridge_save_result` 收尾。
 - codex-web known false-negative（upstream #674，DB-51 issue／db-53 落地）：terminal row 帶 `knownFalseNegative` extra（web transport＋disconnect 簽名）＝回應可能已完整渲染在 ChatGPT tab——**先查 tab／worktree 產物再論重派**（re-dispatch trap：ledger 記 failed、工作已完成）。muse/glm/native-codex 不受影響。
 
 錨點：delegate-bridge `docs/ep.md`（MCP face 節頭 known false-negative 條款、`plugin MCP declaration (DB-53)` 節、`codex config.toml wiring tool (DB-40 Stage 2)` 節）；`plugins/delegate/.mcp.json`；delegate-bridge repo root `REPORT-DB47.md`（sandbox 盤點——MCP 消費端的 sandbox 情報）。
