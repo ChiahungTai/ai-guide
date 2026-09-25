@@ -1,10 +1,10 @@
 ---
 id: AIR-202
 title: bridge-MCP-face-instruction-同步——handoff-落地（db-52/53-三處落點）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-25 14:33'
-updated_date: '2026-09-25 14:52'
+updated_date: '2026-09-25 14:53'
 labels: []
 dependencies: []
 ordinal: 188000
