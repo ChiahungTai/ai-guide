@@ -4,7 +4,7 @@ title: at-skill-known-gap-兩道牆更新＋CronCreate-provider-序列化-upstre
 status: Done
 assignee: []
 created_date: '2026-09-24 22:52'
-updated_date: '2026-09-25 01:09'
+updated_date: '2026-09-25 01:27'
 labels: []
 dependencies: []
 ordinal: 181000
@@ -40,6 +40,8 @@ flowchart LR
 【0925 marshal seal——全綠 merge】①worker（glm flash job-mug6189q）交付：at/usage-ping 兩道牆＋patch-a-proposal.md（.agent-tmp/air-195/）。②marshal fresh-eyes：diff 全文審（gate 段未動、處置流程不變、純事實/workaround/驗證準據記載）＋drift rg 掃描（sc-231/一道牆/builtin: 引用僅兩檔皆已同步）。③回執四欄：classification=ordinary（事實記載更新；decision/authority/gate/authorization 條文零變更——「禁靜默降級」gate 原樣）；review=independent-context 腿（writer＝bridge spawn worker fresh context＋marshal diff 審＋drift 掃描）；session-freshness=fresh（skill 現況 Read 後改、SC 證據 BRIEF/CONVERGED-muse 全文路徑在 brief）；deployment-surfaces=healthy（merge 後 canonical 探針補錄）。④AC#3 proposal 定稿＝.agent-tmp/air-195/patch-a-proposal.md（英文一頁：Problem/Root cause/Evidence/Proposed change/Scope constraints），待 user 上游通道轉呈。
 
 【0925 proposal 錨點升級（SC spec-mining 回饋併入）】patch-a-proposal.md 升級：Root cause 併四行級錨點；Proposed change 改 write 邊界（migrateLegacyModelProviderId 語義，zcodeAgentService ~2501 或 CLI 序列化點）＋read 邊界次選；未知 builtin:* fail-visible。已回執 SC（cebf26b4 直達 sess_d6e3e495）。另：契約三預設 user 裁決同意已記 135.5。附帶實測：codex/webgpt 帳號額度滿（10:36 AM 重置）——上游轉呈時機不受影響。
+
+【0925 user 裁決——不上游】Patch A proposal 與牆一 carrier Patch 兩條修復路均不轉呈 upstream：proposal 說帖保留卡 WT .agent-tmp/air-195/patch-a-proposal.md（不轉呈、無遺留）；skills/at known-gap 出路節已更新為「出路已關閉——gap 轉永久已知限制，workaround 維持 desktop UI 建排程／UI 重選模型救回，carrier 自行修復前不重評」（merge canonical 探針過）。AC#1-#3 交付不變，本卡結案無新遺留。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
