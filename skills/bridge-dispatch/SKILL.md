@@ -19,7 +19,7 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 | Codex bare shell | **無 pin resolver**——禁猜 cache 路徑；走 plugin surface 或 repo checkout |
 | Muse session | plugin-less caller kit（delegate-bridge repo `docs/muse-caller-kit.md`） |
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
-| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（2.2.0+；codex 端不走此面——走 db-52 wiring） |
+| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（2.2.0+） |
 
 禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
 
@@ -31,7 +31,7 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 
 MCP tool dispatch 紀律（與 CLI dispatch 同構、入口不同）：
 - `bridge_task` 恆 `--background`：呼叫即得 receipt（jobId＋status）→ `bridge_wait` 回收 → `bridge_show`/`bridge_save_result` 收尾。
-- codex-web known false-negative（upstream #674，DB-51）：terminal row 帶 `knownFalseNegative` extra（web transport＋disconnect 簽名）＝回應可能已完整渲染在 ChatGPT tab——**先查 tab／worktree 產物再論重派**（re-dispatch trap：ledger 記 failed、工作已完成）。muse/glm/native-codex 不受影響。
+- codex-web known false-negative（upstream #674，DB-51 issue／db-53 落地）：terminal row 帶 `knownFalseNegative` extra（web transport＋disconnect 簽名）＝回應可能已完整渲染在 ChatGPT tab——**先查 tab／worktree 產物再論重派**（re-dispatch trap：ledger 記 failed、工作已完成）。muse/glm/native-codex 不受影響。
 
 錨點：delegate-bridge `docs/ep.md`（MCP face 節頭 known false-negative 條款、`plugin MCP declaration (DB-53)` 節、`codex config.toml wiring tool (DB-40 Stage 2)` 節）；`plugins/delegate/.mcp.json`；delegate-bridge repo root `REPORT-DB47.md`（sandbox 盤點——MCP 消費端的 sandbox 情報）。
 
