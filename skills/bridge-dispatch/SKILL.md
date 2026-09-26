@@ -1,6 +1,6 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（turn body 計算含整個 turn、session 歷史計入；雙軸預算——材料軸 inline 線／整包軸 composer 整包線——與 fat-AGENTS 替代路由；失敗勿原樣重派——carrier 自動重試同 payload 放大限流；觀測值與失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知、waiter exit 即通知；單顆短工前景 shell vs N 顆平行 --background＋fan-in wait 場景；wait exit 124 re-arm 禁重派；--stuck-after family 起跳值；重啟後恢復 playbook——runs 禁盲重派、show --json 收完成、重掛 wait；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait。"
+description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability。"
 ---
 
 # bridge-dispatch — delegate-bridge 委派深層
@@ -65,13 +65,25 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 
 > glm writer（implementation）派發的全命令模板鏈——把 bridge-dispatch 紀律收斂成單一序列；條文語義單一源：always-on 核心在 rule 端，caller surface 對照表與 resume model-match 契約在本檔（0924 收編；步驟 1/5 引用）。
 
-**三家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）。brief 步驟須配 carrier 工具面：非 `--yolo` 的 glm spawn 被 bridge 注入 `--disallowed-tools Bash`、plain（plan tier）另無 Write——派 git／命令步驟或 Write 產出給這類 carrier＝空轉（0926 judge v1 空轉 6.5h 實證）；材料預落 repo 檔案、唯讀產出以 final text 承載由 marshal 落盤（seal 模式）。
+**三家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）。brief 步驟須配 carrier 工具面：非 `--yolo` 的 glm spawn 被 bridge 注入 `--disallowed-tools Bash`、plain（plan tier）另無 Write——派 git／命令步驟或 Write 產出給這類 carrier＝空轉（0926 judge v1 空轉 6.5h 實證）；材料預落 repo 檔案；唯讀產出處置（seal 模式）定義單一源＝下方「Brief capability contract」要素 4。
 
 1. **registry pin 解析**：plugin surface 用 `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`；bare shell 讀 `~/.zcode/cli/plugins/installed_plugins.json` 取 `installPath` 拼 `bin/delegate-bridge`——禁手拼版本化 cache 路徑（第二 pin，見本檔上方 caller surface 對照表）
 2. **provision 前置**：workspace 首次 glm 委派前 `delegate-bridge provision --family glm`（**唯一 sanctioned config write**；0924 自 rules 收編）；spawn verify-only（缺漏／drift＝fail-loud 附指引，不自動補）
 3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）
 4. **watcher 配對（cwd＝job workspace）**：派工同 step arm `uv run python <ai-guide repo>/scripts/bridge_waiter.py <jobId>`——**waiter 的 cwd 必須＝job 的 workspace**：job ledger 是 per-workspace（`<ws>/.delegate-bridge/`），cwd 錯位＝查無 job（not-found 誤入 reconcile 分支）
 5. **定向 resume（glm resume model-match 契約；0924 自 rules 收編，條文單一源＝本步驟）**：接續必帶**建立時** `--model <id>`（不帶＝落 manifest `defaultModel`；ledger row 有記；不符＝carrier `Select a model` fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`。定義源＝delegate-bridge repo `AGENTS.md`「Build loop」glm provisioning 段＋`docs/ep.md` S1（僅指針）
+
+## Brief capability contract（派工前工具面契約——空轉預防；bridge db-58/59/60 對端條款）
+
+派工 brief 的每條工作腿須附能力契約五要素（語意 gate 歸 caller——bridge 只做 declared↔derived 機械一致性驗證，矛盾 exit 2（pre-ledger 前置閘，非 watcher exit 2）；0926 judge v1 空轉 6.5h 事故的契約化）：
+
+1. **capability manifest**：brief 逐腿宣告預期工具面（開放列，如 Bash／Write／Read／Grep／Glob 有無；例：唯讀裁定腿 `[tools: Read/Grep/Glob only]`）。
+2. **availability lint**：動詞指令只可引用 availability 集合內的工具（衍生 surface；`--bash-allow` 白名單為 db-58 增補，落地前 availability＝衍生 surface；命令級比對）。引用集合外工具的動詞＝brief 缺陷，禁派（caller 側 lint 標籤，非 bridge 錯誤碼——db-59 落地後以其實際碼為準）。
+3. **materialize-first 排序（分腿型明示主語）**：唯讀腿＝dispatcher 預先落檔、隨單附路徑（read-only 腿不製造需要 execution capability 的證據；對端模板 §6 同義）；寫腿 diff 形＝carrier 落檔為預設，`--bash-allow` 為例外通道（allow-exception），不作預設。
+4. **one-shot＋具名 sink**：唯讀裁定腿走 one-shot 產出＋具名 sink 檔；plan tier 無 Write 面——verdict 以 final text 承載由 marshal 落盤（seal 模式定義單一源＝本要素），sink 登記驗收。
+5. **envelope 給值**：預算／kill 封頂走 opt-in envelope 顯式給值（bounded kill），不依賴隱式預設。
+
+對端：bridge 側 declared-surface consistency gate（db-59）＋budget envelope/bounded kill（db-60）＋`--bash-allow` stamp 與 consistency 條款（db-58）；brief 模板六→八節擴充由 delegate-bridge repo 承接。
 
 ## 下沉細節（自 rules 精煉遷入——on-demand 參考）
 
