@@ -1,7 +1,7 @@
 ---
 id: AIR-204
 title: brief-capability-contract-落地——bridge-prevention-contract-(a)-側條文（scbus-收帳）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-25 23:42'
 updated_date: '2026-09-26 00:14'
@@ -26,6 +26,11 @@ F[對端機制卡×3] -.->|契約對端| C
 
 證據指針：對方來信 message id 與裁決／事實兩腿 job 帳本，均可於 delegate-bridge workspace 的 bridge show 查得；對端機制條款以其 repo commit 為錨。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 五要素契約落 bridge-dispatch skill 新節＋rules 指針；fresh 腿 GO-WITH-FIXES 全修；desc 過 D3 預算閘；三面部署 healthy
+<!-- AC:END -->
 
 ## Final Summary
 
