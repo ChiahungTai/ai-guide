@@ -1,10 +1,10 @@
 ---
 id: AIR-204
 title: brief-capability-contract-落地——bridge-prevention-contract-(a)-側條文（scbus-收帳）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-25 23:42'
-updated_date: '2026-09-25 23:50'
+updated_date: '2026-09-26 00:14'
 labels: []
 dependencies: []
 ordinal: 190000
@@ -26,3 +26,20 @@ F[對端機制卡×3] -.->|契約對端| C
 
 證據指針：對方來信 message id 與裁決／事實兩腿 job 帳本，均可於 delegate-bridge workspace 的 bridge show 查得；對端機制條款以其 repo commit 為錨。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+結案：brief capability contract 五要素落地（skill 新節＋rules pointer 84B）。fresh reviewer GO-WITH-FIXES 九項全修——F1(🔴) materialize-first 主語矛盾（唯讀腿=dispatcher 落檔／寫腿=carrier 落檔，對端模板 §6 對齊）、F2 bash-allow 未落地 as-of 標記、F3 自創錯誤碼錨刪除、F4 description/觸發詞/索引同步、F5 seal 定義收斂單一源、F6 pre-ledger exit 2 限定、F7 指針語順、F8 枚舉開放列、F9 具名 sink 用語統一。審查腿實證：db-58 In Progress/59-60 To Do（對端未落地事實已 as-of 標記）；模板 v2 六→八節 bridge 側已 landing。回執：classification=ordinary／review=in-harness fresh GO-WITH-FIXES→修／session-freshness=fresh／deployment-surfaces=healthy。
+
+結案：brief capability contract 五要素落地（skill 新節＋rules pointer）——manifest 開放列、availability lint（bash-allow 為 db-58 增補，落地前 availability＝衍生 surface，as-of 標記）、materialize-first 分腿型主語（唯讀腿=dispatcher 落檔附路徑／寫腿=carrier 落檔，對端模板 §6 對齊）、one-shot 具名 sink＋seal 模式定義單一源收斂、envelope 給值。fresh reviewer GO-WITH-FIXES 九項全修（F1🔴 主語矛盾／F2 as-of／F3 自創錯誤碼刪／F4 desc+觸發詞+索引同步——desc 撞 D3 1024 預算閘後壓縮冗餘括注解決／F5 seal 單一源／F6 pre-ledger 限定／F7-F9 語順枚舉用語）。部署 29,448B 三面 healthy。回執：classification=ordinary／review=in-harness fresh GO-WITH-FIXES→修／session-freshness=fresh／deployment-surfaces=healthy。事故自省：收線鏈管線遮蔽 commit 失敗（pre-commit 1 測試紅被 tail 吃掉）——更正信已發 bridge 對端。
+
+```mermaid
+graph LR
+A[bridge 裁決信五要素] --> B[skill 新節＋rules 指針]
+B --> C[fresh 腿 GO-WITH-FIXES 九項]
+C --> D[desc 撞 D3 閘→壓縮解]
+D --> E[merge＋三面部署 29,448B]
+E --> F[Done]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
