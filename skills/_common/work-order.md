@@ -69,9 +69,10 @@
 
 - 讀查：`bash`（`cat`／`rg`／`ls`）、`Read`；字串搜尋一律 `rg`
 - external runtime 接線（available-face 階梯，以 runtime 實際能力為準——禁從 role/template 宣告推定 runtime 實際具有 MCP）：① runtime/role 實際暴露 CR MCP query tools → 優先 MCP；② 否則 runtime 可執行 code-reality CLI → 唯讀 query face；③ 兩者皆不可用 → `rg` degraded，交付報告標 `[WARN] structural context degraded`
-- carrier 分流 guard（0926 CR 使用率調查共識）：codex carrier 工單一律發 **CLI 指令字串**、禁發 MCP 工具名（codex spawn 面 MCP surface 未接線——wiring 對照實驗另卡）；muse/glm 依實際 surface 發 MCP 名。CR 契約值指路不重抄（owner＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）
+- carrier 分流 guard（0926 CR 使用率調查；同日探測更新，AIR-206）：carrier 的 CR 指令形態以**當次 surface 探測**為準、禁以歷史結論推定——codex 0922-26 調查窗口曾實測 MCP 名錯配，0926 探測（bridge 2.3.0）實測 **both**（`mcp__code_reality__*` server＋CLI binary 都在）；muse/glm 依實際 surface 發 MCP 名。CR 契約值指路不重抄（owner＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）
 - fallback 可見化：CR query transient failure → 同 face 重試一次；capability 缺場／binary missing／auth 明確拒絕 → 記 reason 往下降階（禁盲重試、禁靜默漂移到純文字查證）；external runtime spawn auth failure 屬 dispatch 層處置，不與 CR query fallback 混同
 - 最小可用：不引入非必要工具
+- 事實軸（cross-verify investigator）cr 軸工單必填 `repo_root` 與 CLI 命令字串（禁只給 MCP 工具名——該 role 去 MCP 化，見 agents/AGENTS.md roles 表；AIR-207 同源）
 - 三禁令：
   - 禁 code-reality 寫入面（`build`／`snapshot`／`delta_tour`／`project`）；查詢面可用可不用
   - 禁把任何工具輸出寫到 repo 外（含 `/tmp`）

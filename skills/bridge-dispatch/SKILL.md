@@ -21,7 +21,7 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
 | MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（短等；長工 arm watcher）（2.2.0+） |
 
-入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。
+入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。跨家族 review 語義派工優先 bridge review face（`review --base` 四態消費契約，owner＝review-engine「bridge review 的 CR 證據分類與消費」節）；attach 不可用時 `crsurface` 註記已涵蓋，不另造 marker（AIR-206 術語對帳）。
 
 禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
 
