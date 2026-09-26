@@ -4,7 +4,7 @@ title: CR-機制組落地——review-face-收斂、wiring-實驗、借用索引
 status: Done
 assignee: []
 created_date: '2026-09-26 00:16'
-updated_date: '2026-09-26 03:43'
+updated_date: '2026-09-26 03:48'
 labels: []
 dependencies: []
 ordinal: 192000
@@ -47,6 +47,8 @@ scbus 機制縫隙（0926 發現，user 追問 hook 是否生效時確診）：a
 SCR-6 裁定更正（sc-router owner 否證，收訖）：719fdfe8 為 legacy --to 直寄非位址面（queue_next_turn＝legacy DELIVERY_MODE 常數）；「重複注入機制」不存在——drain 消費即終態 cur/ 永不再掃，重複出現感知來自我方恢復鏈引用信件內容；「借用過期租約位址」假設同否證（envelope 從未進位址信箱）。本側已照 §指引 scbus acquire ai-guide-primary（lease 24h）。sc-router 已落 protocol v2.2 amendment（§5.5/§3.11/§5.8）。我方先前 note 的「address-face 縫隙」診斷撤回。
 
 V1 codex MCP 實呼驗證矩陣（0926 上午四發）：default/明示 web-high＝approval review usage limit（11:37、11:5x 跨越宣稱重置點 11:48 仍擋）；sol＝本機 ws 426＋limit；astra＝usage limit。共通死因＝codex 帳號面 approval-review 額度狀態（非 wiring、非 CR server——discovery 每發都成功）。V1 維持 pending-external：user 確認 chatgpt.com/codex/settings/usage 後一發即驗。stall 兩連敗停止重派。
+
+V1 假設檢定終局（0926）：B 態（codex config model 停用）probe 同撞 usage limit——「config 寫死 gpt-6-luna」假設否證；連同 CR MCP server 源碼審查乾淨（model 命中全是 rmcp 協議型別）——本機所有可動槓桿（binding×3／config model／時間窗）全數排除，死因確證＝codex 雲端帳號 approval-review 額度狀態，唯 user 側可解（settings/usage、升級或 re-auth）。config 已還原原狀（備份已清）。V1 維持 pending-external。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
