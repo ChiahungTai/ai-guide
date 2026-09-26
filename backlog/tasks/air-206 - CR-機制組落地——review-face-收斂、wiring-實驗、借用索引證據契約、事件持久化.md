@@ -1,10 +1,10 @@
 ---
 id: AIR-206
 title: CR-機制組落地——review-face-收斂、wiring-實驗、借用索引證據契約、事件持久化
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-26 00:16'
-updated_date: '2026-09-26 00:28'
+updated_date: '2026-09-26 02:14'
 labels: []
 dependencies: []
 ordinal: 192000
