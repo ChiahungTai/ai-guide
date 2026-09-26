@@ -4,7 +4,7 @@ title: CR-機制組落地——review-face-收斂、wiring-實驗、借用索引
 status: Done
 assignee: []
 created_date: '2026-09-26 00:16'
-updated_date: '2026-09-26 03:48'
+updated_date: '2026-09-26 03:54'
 labels: []
 dependencies: []
 ordinal: 192000
@@ -49,6 +49,8 @@ SCR-6 裁定更正（sc-router owner 否證，收訖）：719fdfe8 為 legacy --
 V1 codex MCP 實呼驗證矩陣（0926 上午四發）：default/明示 web-high＝approval review usage limit（11:37、11:5x 跨越宣稱重置點 11:48 仍擋）；sol＝本機 ws 426＋limit；astra＝usage limit。共通死因＝codex 帳號面 approval-review 額度狀態（非 wiring、非 CR server——discovery 每發都成功）。V1 維持 pending-external：user 確認 chatgpt.com/codex/settings/usage 後一發即驗。stall 兩連敗停止重派。
 
 V1 假設檢定終局（0926）：B 態（codex config model 停用）probe 同撞 usage limit——「config 寫死 gpt-6-luna」假設否證；連同 CR MCP server 源碼審查乾淨（model 命中全是 rmcp 協議型別）——本機所有可動槓桿（binding×3／config model／時間窗）全數排除，死因確證＝codex 雲端帳號 approval-review 額度狀態，唯 user 側可解（settings/usage、升級或 re-auth）。config 已還原原狀（備份已清）。V1 維持 pending-external。
+
+V1 驗證完成（VERIFIED）：codex web session 實呼 code_reality MCP list_communities 成功回傳 12 communities（repo_root 參數自糾）。因果對照：同時段舊 config（gpt-6-luna）對照發同樣成功——變因是額度窗恢復而非 config model；config 實驗值已還原 gpt-6-luna。啟示：codex approval-review 的 limit 是帳號級時間窗，與 binding／config model 無關（四 binding 矩陣＋A/B 全記錄在案）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
