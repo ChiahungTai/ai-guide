@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AIR-187 S1——instruction-shaped payload 規則 v0（廣譜疑訊號機械判定）。
+r"""AIR-187 S1——instruction-shaped payload 規則 v0（廣譜疑訊號機械判定）。
 
 定位（tri 定案「閘快拒、審終判」）：本模組是廣譜 signal producer——機械
 regex/字串判定，產三級訊號（instruction-shaped／review／clean）；語義終判
