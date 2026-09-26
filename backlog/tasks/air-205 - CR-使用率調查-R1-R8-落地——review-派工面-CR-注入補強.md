@@ -1,10 +1,10 @@
 ---
 id: AIR-205
 title: CR-使用率調查-R1-R8-落地——review-派工面-CR-注入補強
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-25 23:54'
-updated_date: '2026-09-25 23:54'
+updated_date: '2026-09-26 00:30'
 labels: []
 dependencies: []
 ordinal: 191000
@@ -26,3 +26,19 @@ D --> E
 
 證據指針：調查報告全文與八條建議詳 code-reality repo 的 .agent-tmp/cr-usage-investigation/report.md（第 6 節有逐條證據連結）；調查 ticket at-20260926-0011。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+結案：CR 使用率八條建議經 muse＋codex 雙顧問獨立討論（共識 AGREE-WITH-CHANGES）修正後落地四處——①review-engine C10 改雙通道表述（可及必要＋spawn 注入觸發器，604 jobs 梯度證據）②agent-workflow dispatch preview 增 crsurface=<mcp|attach|cli|absent> 欄＋review 語義派工 CR materialization boundary（dispatcher 事實聲明非自報；非 review 派工恆 absent 免理由）③work-order §7 carrier 分流 guard（codex 發 CLI 字串禁 MCP 名）④cr-query Detect「Graph DB exists ≠ graph usable」＋freshness exit 0/1/2 映射（1=合法 verdict 非 shell failure；判 stale 佐 stdout/stderr）。共識裁決：(a) DROP（零使用是正確軸紀律＋MCP 白名單觸發 spawn 炸彈）、R6 提前、R3 拆半、R4 不提前（borrowed-index 證據語義未收緊）。機制組尾款→AIR-206。數字校準：review face 5/604（muse 限定）非 0/604。回執：classification=ordinary／review=muse＋codex 雙顧問共識＋in-harness fresh GO-WITH-FIXES 七項全修／session-freshness=fresh／deployment-surfaces=N/A（全 skills 面，bundle 不變）。
+
+```mermaid
+graph LR
+A[CR 調查八條建議] --> B[muse＋codex 雙顧問共識]
+B --> C[修正案：DROP a＋R6 提前＋R3 拆半]
+C --> D[四處落地 review-engine/agent-workflow/work-order/cr-query]
+D --> E[fresh 腿 GO-WITH-FIXES 七項全修]
+E --> F[merge 19999029]
+F --> G[機制組尾款→AIR-206]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

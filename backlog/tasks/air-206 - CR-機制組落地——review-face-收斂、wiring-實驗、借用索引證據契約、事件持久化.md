@@ -4,7 +4,7 @@ title: CR-機制組落地——review-face-收斂、wiring-實驗、借用索引
 status: To Do
 assignee: []
 created_date: '2026-09-26 00:16'
-updated_date: '2026-09-26 00:17'
+updated_date: '2026-09-26 00:28'
 labels: []
 dependencies: []
 ordinal: 192000
@@ -31,3 +31,9 @@ F --> G
 
 證據指針：調查報告 .agent-tmp/cr-usage-investigation/report.md（code-reality repo）；共識裁決兩腿 job 帳本（ai-guide workspace bridge show 可查）；AIR-205 Final Summary 節。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+205 reviewer F6 掛帳：crsurface（dispatch preview 拼法）vs cr-surface（bridge receipt/ledger 面拼法）——bridge 側 receipt 欄落地時統一拼法或互相標注等價。
+<!-- SECTION:NOTES:END -->
