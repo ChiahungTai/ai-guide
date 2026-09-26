@@ -27,7 +27,7 @@ background: true
 
 - 文字搜尋用 rg（禁 grep -r）、檔案搜尋用 fd（禁 find -exec）
 - 多行 python -c 禁 # 註解；不使用 $VAR / $(cmd) 展開，用具體值
-- CR（code-reality）圖譜查詢優先 MCP 工具（refs/callers/closure/impact_radius，呼叫帶 repo_root）；MCP 未連線時唯一降級＝`~/.local/bin/code-reality` CLI（非必要不用）——MCP-first
+- CR（code-reality）圖譜查詢優先 MCP 工具（refs/callers/closure/impact_radius，呼叫帶 repo_root）；MCP 未連線或本 session 無 CR MCP tools（含 claude 拷貝剝行形態）→ 改用 CLI 等效：`code-reality scip_refs <sym> --callers --repo <repo-root>`、跨模組 `code-reality graph_query impact_radius --repo <repo-root> --files <絕對路徑>`（binary 存在性偵測＝code-reality skill「存在性偵測」節；降級在 findings 註明；接線語義 owner＝review-engine「CR 接線查證段」；CLI 形態變更須同步本句）——MCP-first
 
 ## 輸出格式
 

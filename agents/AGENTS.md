@@ -67,7 +67,7 @@ agents/
 
 | agent | requirement | zcode | claude | 備註 |
 |-------|-------------|-------|--------|------|
-| code-reviewer | lite | ✅ | ✅ | claude 拷貝 tools 減 CR MCP 行（生成器承載的已知分歧） |
+| code-reviewer | lite | ✅ | ✅ | claude 拷貝 tools 減 CR MCP 行（生成器承載的已知分歧）——兩端 body 帶 MCP→CLI 降級指引（AIR-207），剝行＝降級路徑非缺陷 |
 | code-reviewer-primed | lite | ✅ | ✅ | 同上 |
 | cross-verify-investigator | lite | ✅ | ✅ | 軸＝prompt 參數（AIR-28 S3）；**去 MCP 化**（tools 不掛 CR MCP 全名——cr 軸走 CLI，避免 spawn 綁死「CR plugin 在啟動快照在場」，見下方 tools 清單陷阱） |
 | cr-research | full | ✅ | ✅ | decision／global-research（AIR-76 v3.1 裁升；zcode default binding＝`glm-5.3`、claude＝`opus` 別名——此行曾 drift 為 lite，AIR-91 S2 修正） |
@@ -88,6 +88,8 @@ agents/
 | muse code | meta | **雙身分**：user 直用開發 harness（該弧主力，muse-spark-1.3 全棧）＋ ZCode 端 bridge 工單委派（`task`／`review`，必經） | 直用＝repo AGENTS.md 載入（全域部署點未查證）；委派＝roles/ body 填工單 Role contract（work-order §2） | repo-observed |
 | codex | OpenAI | **經 delegate-bridge `task --family codex` 工單**（AIR-47 吸收；raw CLI 語義留 memory reference） | 同上 | repo-observed |
 | grok-build | xai | 工單（同族委派 plugin 形態） | 同上 | 安裝與 dispatch contract 須查 caller 的 plugin registry／runtime；未查證不得假設可用，不以 hooks 文件推定安裝狀態 |
+
+> 派工面註記軸（與 model 軸正交）：review 語義派工 preview 帶 `crsurface=<mcp|attach|cli|absent>`——dispatcher 事實聲明＋spawn 相容性前置（session 無 CR 面禁派 CR 白名單 role）；定義單一源＝[agent-workflow](../skills/agent-workflow/SKILL.md) dispatch preview 條。
 
 ## 定義檔慣例
 
