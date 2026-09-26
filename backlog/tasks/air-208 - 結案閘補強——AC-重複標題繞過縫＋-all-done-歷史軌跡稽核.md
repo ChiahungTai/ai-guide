@@ -1,10 +1,10 @@
 ---
 id: AIR-208
 title: 結案閘補強——AC 重複標題繞過縫＋--all-done 歷史軌跡稽核
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-26 07:34'
-updated_date: '2026-09-26 07:36'
+updated_date: '2026-09-26 09:11'
 labels: []
 dependencies: []
 ordinal: 194000
@@ -40,11 +40,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 F1 攻擊形態（第一 AC 段全勾＋第二重複標題段藏未勾）→ guard 與 CLI 同報 duplicate＋residue、exit 非零
-- [ ] #2 單標題存量卡零新 violation——全 repo dry-run 重複標題數 0 萬 notes；F1 討論測試清單 11 條落 tests（fence 條 pin 現狀）
-- [ ] #3 F2 正測：hook 缺席期間 To Do→Done 已 commit、clean checkout 後 --all-done 報軌跡 violation 含 commit hash；baseline 前非法跳 grandfather 通過
-- [ ] #4 rename（tasks→completed）合法軌跡通過；D/A 無法唯一配對與 shallow clone → fail-closed 非零 exit 非 pass
-- [ ] #5 CARDCLOSE_STRUCT_SKIP 行為不變；python3.9 相容；歷史稽核不進 pre-commit；heads[0] 慣性全 repo rg 檢查結果記 notes；全量 uv run pytest 綠
+- [x] #1 F1 攻擊形態（第一 AC 段全勾＋第二重複標題段藏未勾）→ guard 與 CLI 同報 duplicate＋residue、exit 非零
+- [x] #2 單標題存量卡零新 violation——全 repo dry-run 重複標題數 0 萬 notes；F1 討論測試清單 11 條落 tests（fence 條 pin 現狀）
+- [x] #3 F2 正測：hook 缺席期間 To Do→Done 已 commit、clean checkout 後 --all-done 報軌跡 violation 含 commit hash；baseline 前非法跳 grandfather 通過
+- [x] #4 rename（tasks→completed）合法軌跡通過；D/A 無法唯一配對與 shallow clone → fail-closed 非零 exit 非 pass
+- [x] #5 CARDCLOSE_STRUCT_SKIP 行為不變；python3.9 相容；歷史稽核不進 pre-commit；heads[0] 慣性全 repo rg 檢查結果記 notes；全量 uv run pytest 綠
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -60,3 +60,27 @@ flowchart LR
 ⑥muse 風險#4 納入驗證步：rg 掃 heads[0]-only 慣性全 repo（唯讀，命中另記不擴 scope）〕
 範圍：.githooks/card-diagram-guard.py＋scripts/closeout_check.py＋tests/test_card_diagram_guard.py；禁碰 CARDCLOSE_STRUCT_SKIP 語義與其他 predicate。雙腿設計全文：.agent-tmp/air193-fix/muse-design.md＋codex-design.md（設計出處，實作前必讀）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0926 結案——tri review＋round-2 全記錄】panel：muse job-mui40ups（GO-WITH-FIXES 8f）／codex job-mui40uqo（NO-GO 4f：M/R identity 繼承縫【高】經機驗成立 closeout_check m_events 丟 id）／in-harness fresh code-reviewer（GO 4 低，3.9.6 ast.parse 實測）→ round-2 job-mui4m6v0 修 7 組（M/R id 配對 fail-closed、稽核 gate/scope 解耦、error/gap 分流、used_d 刪、range strip 對稱、測試補 12 條）→ followup resume GO×2（job-mui5lnbt/mui5lncx，逐條 resolved 附 file:line）。機驗：全量 2642 passed＋1 skipped；dry-run 重複標題 0/204（AC#2 落帳）；heads[0] 慣性 rg＝可執行碼路徑 0 殘留（AC#5 落帳）；--all-done exit 97 全存量 legacy（新舊 CLI FAIL 集合一致）、歷史軌跡違規 0、ERROR 0。muse#7 測試檔 X|Y 記帳接受（pyproject requires-python ≥3.12；runtime 檔 3.9 乾淨已 ast 驗證）。遺留候補：fence 內標題解析（muse 風險#1＝in-harness R4 同族，pre-existing 非本卡引入）。證據檔：.agent-tmp/air193-fix/review-*.md＋followup-*.md＋muse/codex-design.md。receipt：.agent-tmp/post-build-receipts/air-208.json。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+結案：F1（fallback 重複 AC 標題繞過縫）＋F2（--all-done 歷史軌跡盲區）修復落地——tri review（muse GWF／codex NO-GO／in-harness GO）→ round-2 修 7 組 → followup GO×2；全量 2642 tests 綠；--all-done exit 97 全存量 legacy、歷史軌跡 0 違規；判定單一源＝guard、fail-closed 全程保持。
+
+```mermaid
+flowchart LR
+  A["codex 補審腿<br/>2 findings"] --> B["round-1 writer<br/>TDD 62 tests 綠"]
+  B --> C["tri review<br/>GWF／NO-GO／GO"]
+  C --> D["round-2 writer<br/>7 組修正＋12 tests"]
+  D --> E["followup GO×2<br/>resume 原 reviewer"]
+  E --> F["guard：duplicate 即擋<br/>＋殘留掃全段聯集"]
+  E --> G["CLI：baseline OID 後<br/>歷史軌跡稽核"]
+  F --> H["判定單一源＝guard<br/>fail-closed＋legacy 祖父化"]
+  G --> H
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
