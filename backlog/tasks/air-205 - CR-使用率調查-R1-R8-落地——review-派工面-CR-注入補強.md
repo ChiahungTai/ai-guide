@@ -1,7 +1,7 @@
 ---
 id: AIR-205
 title: CR-使用率調查-R1-R8-落地——review-派工面-CR-注入補強
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-25 23:54'
 updated_date: '2026-09-26 00:30'
@@ -26,6 +26,11 @@ D --> E
 
 證據指針：調查報告全文與八條建議詳 code-reality repo 的 .agent-tmp/cr-usage-investigation/report.md（第 6 節有逐條證據連結）；調查 ticket at-20260926-0011。
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 共識修正案四處落地（review-engine C10／agent-workflow crsurface／work-order 分流 guard／cr-query Detect exit 映射）；fresh 腿 GO-WITH-FIXES 全修；(a) DROP＋機制組尾款移交 AIR-206
+<!-- AC:END -->
 
 ## Final Summary
 
