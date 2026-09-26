@@ -21,7 +21,7 @@ description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）�
 | 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
 | MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（短等；長工 arm watcher）（2.2.0+） |
 
-入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。跨家族 review 語義派工優先 bridge review face（`review --base` 四態消費契約，owner＝review-engine「bridge review 的 CR 證據分類與消費」節）；attach 不可用時 `crsurface` 註記已涵蓋，不另造 marker（AIR-206 術語對帳）。
+入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。跨家族 review 語義派工優先 bridge review face（`review --base` 四態消費契約，owner＝review-engine「bridge review 的 CR 證據分類與消費」節）；attach 不可用時 `crsurface` 註記已涵蓋，不另造 marker（AIR-206 術語對帳）。MCP server 斷線（如 plugin 自動更新後「MCP server is not connected」）→ 續作走 CLI face，重啟紀律單一源＝delegate-bridge repo SOP（本 skill 不重抄步驟；0926 2.2.0→2.3.0 自動升級斷線實證）。
 
 禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
 
@@ -78,7 +78,7 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 派工 brief 的每條工作腿須附能力契約五要素（語意 gate 歸 caller——bridge 只做 declared↔derived 機械一致性驗證，矛盾 exit 2（pre-ledger 前置閘，非 watcher exit 2）；0926 judge v1 空轉 6.5h 事故的契約化）：
 
 1. **capability manifest**：brief 逐腿宣告預期工具面（開放列，如 Bash／Write／Read／Grep／Glob 有無；例：唯讀裁定腿 `[tools: Read/Grep/Glob only]`）。
-2. **availability lint**：動詞指令只可引用 availability 集合內的工具（衍生 surface；`--bash-allow` 白名單為 db-58 增補，落地前 availability＝衍生 surface；命令級比對）。引用集合外工具的動詞＝brief 缺陷，禁派（caller 側 lint 標籤，非 bridge 錯誤碼——db-59 落地後以其實際碼為準）。
+2. **availability lint**：動詞指令只可引用 availability 集合內的工具（衍生 surface；`--bash-allow` 白名單為 db-58 增補，落地前 availability＝衍生 surface、db-62 homeMode 落地後端到端可用——屆時本 as-of 標記翻正（bridge release 追蹤）；命令級比對）。引用集合外工具的動詞＝brief 缺陷，禁派（caller 側 lint 標籤，非 bridge 錯誤碼——db-59 落地後以其實際碼為準）。
 3. **materialize-first 排序（分腿型明示主語）**：唯讀腿＝dispatcher 預先落檔、隨單附路徑（read-only 腿不製造需要 execution capability 的證據；對端模板 §6 同義）；寫腿 diff 形＝carrier 落檔為預設，`--bash-allow` 為例外通道（allow-exception），不作預設。
 4. **one-shot＋具名 sink**：唯讀裁定腿走 one-shot 產出＋具名 sink 檔；plan tier 無 Write 面——verdict 以 final text 承載由 marshal 落盤（seal 模式定義單一源＝本要素），sink 登記驗收。
 5. **envelope 給值**：預算／kill 封頂走 opt-in envelope 顯式給值（bounded kill），不依賴隱式預設。
