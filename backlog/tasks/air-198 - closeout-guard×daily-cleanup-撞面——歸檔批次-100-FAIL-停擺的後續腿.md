@@ -1,10 +1,10 @@
 ---
 id: AIR-198
 title: closeout-guard×daily-cleanup-撞面——歸檔批次-100-FAIL-停擺的後續腿
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-25 00:26'
-updated_date: '2026-09-25 02:01'
+updated_date: '2026-09-26 04:54'
 labels: []
 dependencies: []
 ordinal: 184000
@@ -40,4 +40,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【0925 裁定＋實作落地（lane 可決——選項組合 G＋輕量補段路徑）】①裁定：批次 commit 前跑 closeout_check 前置過濾（判定單一源＝guard 經複查腿消費，禁二刻）——結構 FAIL 卡跳過歸檔＋[待補段-跳過] 訊息（含缺項清單）＋struct_skip 計數入 summary；fail-closed 保持（不降級、不觀察期），補段後次日自動重試。②實作：run-backlog-cleanup.sh +10 行（候選迴圈內 precheck PASS 後過濾；CLOSEOUT_CHECK 缺場 loud 預檢；bash 3.2 變數邊界修正）。③驗證：tmp repo 冒煙——結構 FAIL 卡正確被擋（訊息列缺項）、PASS 卡走到 complete 步、summary 乾淨；bash -n 綠。merge 644a0286。④AC 帳：#1 ✓（本 notes 即裁定）；#3 ✓（隔離機制＝待補清單留存 tasks/，漸進消化）；#2 部分——機制落地＋冒煙綠，『連續三晚綠燈』須 launchd 自然驗證（明起 23:50），餘兩晚綠燈後結案。⑤twin 提醒：mosaic_alpha/deploy/scripts/ 同邏輯副本——跨 repo 同步歸 mosaic 線（本端不動）。
+
+【0926 handover 核對】launchd 三 job 載入✓（末次 exit 0）；第一晚 0925 23:50 自然觸發綠：moved=0 skipped=0 結構待補=0 failed=0——0 過齡候選（真空綠，closeout 過濾腿未經實彈）；餘 0926/0927 兩晚綠後結案。附註：卡檔 status 實為 To Do（前段 STATE 記 In Progress 係觀察層失實），本段補正。
 <!-- SECTION:NOTES:END -->
