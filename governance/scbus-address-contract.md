@@ -3,6 +3,11 @@
 > 提案方：ai-guide marshal（consumer 側）。實作歸 sc-router 主權，本契約為提議，審後可改可收。
 > 審查：codex＋muse 雙腿 GO-with-amendments（報告同目錄 air168-contract-{codex,muse}-review.md），amendments 全數併入。
 
+> **Superseded（consumer 操作語義）**：本檔為 AIR-168 歷史提案。位址持有/takeover 的
+> operator 正典＝[scbus-address-ownership.md](scbus-address-ownership.md)（AIR-210
+> pin 制租約模型）——尤其 §1「crash 走 lease expiry → reclaim」已精修：expired
+> binding 用普通 `acquire` 即接管；`force-reclaim` 僅用於異身分搶活 pin。
+
 ## 0. 身分模型：既有三層 identity ＋ 新增 logical address abstraction
 
 | identity | 是什麼 | owner | 禁止事 |
