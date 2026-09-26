@@ -216,21 +216,21 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 > 三條 user 裁定；約束對象＝web 形態（`chatgpt-web/*`），原生 slug 派發政策不變（見 dispatch 預設段）。
 
 1. **審查／規劃專責，禁大型實作**：窗口雖大（現值見上表），**單則訊息上限遠小於窗口**——review 大 diff 單發必死（真實案例：delegate-bridge ledger 4 筆 `ran out of room in the model's context window`，全數 turn-0 死亡）。**第二死亡形態（09-16 實證）**：大型 prompt 經 daemon multipart ack-chain 拆送後仍可在**回應段**死（`ChatGPT displayed an error for this response`——20KB 與 134KB diff 同死、同窗 tiny prompt 成功；分頁端錯誤 UI 渲染成 1×1 隱形空殼＝user 看不到任何錯誤；codex CLI 對 retryable 502 自動重試 5 次放大成無聲重送迴圈）——**bridge 端已裁定保守閥值防護（user 09-16）**，閾值取 daemon 實測最嚴邊界（`~/Github/codex-chatgpt-web` `chatgpt-web-models.ts`/`input-tokens.ts`）。派發前提（裁定原文「僅段落級評估確認可完成**才派**」）：範圍段落級＋派發前評估確認單則 payload 可完成，不滿足不派——是前提不是例外條款，不從「限 review／規劃」開出實作授權。**材料必須內聯**：webgpt agent 讀不到 caller 機本地檔——工單只帶 repo 檔案路徑＝agent 無從審起（09-16 實證：唯讀審查工單下 Read 被擋，agent 誠實回報未驗而非編造）；可行形態＝待審材料直接內聯 prompt（≤8KB 為實測安全線），同一工作改形態重派屬修因重派非盲目重試。webgpt 整包預算與 fat-AGENTS 替代路由＝[bridge-dispatch](../bridge-dispatch/SKILL.md) webgpt 節雙軸預算（材料軸／整包軸），派 codex web 前必核。
-2. **額度池意識（usage 查詢盲點）**：原生 `gpt-5.6-sol` 走 Codex credits 池（＝上表「原生 pool」／訂閱 Codex 額度；會耗盡、有 reset 日）——ChatGPT 帳號路徑下 native slug 全不可派（帳號路徑分界機制見 family 表；現行帳號面 as-of 查 spine `model-runtime-entitlements`）；`chatgpt-web/*` 走 ChatGPT web 訊息額度（web 池）、不吃 credits；**`wham/usage` 只回報原生訂閱池、看不見 web 池**——額度判斷禁依賴 usage 查詢（對 web 池等於沒查）。
+2. **額度池意識（usage 查詢盲點）**：原生 `gpt-5.6-sol` 走 Codex credits 池（＝上表「原生 pool」／訂閱 Codex 額度；會耗盡、有 reset 日）——ChatGPT 帳號路徑下 native slug 全不可派（帳號路徑分界機制見 family 表；現行帳號面 as-of 查 spine `model-runtime-entitlements`）；`chatgpt-web/*` 走 ChatGPT web 訊息額度（web 池）、不吃 credits；**`wham/usage` 只回報原生訂閱池、看不見 web 池**——額度判斷禁依賴 usage 查詢（對 web 池等於沒查）；附帶實證（mosaic 0926）：web transport 不吃原生池（Codex credits／訂閱）5h 額度——native 池 allowed:false 狀態下 web job 照樣跑通（原生池與 web 池完全分帳）。
 3. **失敗態辨識（八類：user 裁定五類＋09-16 回應段一類＋09-12 續證二類）**：處置分流如下，禁盲目重試。
 
 | 錯誤簽名 | 機制 | 處置 |
 |---------|------|------|
 | `ran out of room in the model's context window` | 單則訊息超 web 池上限（同約束 1） | 切 chunk／降 payload 再派；**禁同 payload 重試**（必再撞） |
 | `ChatGPT displayed an error for this response` | **multipart 大 payload 回應段 server-error**（09-16 新形態；分頁端錯誤 UI 隱形、user 看不到錯誤；CLI 重試 5 次放大） | **查分頁無效**；薄切 payload／換 carrier（native／in-harness）；禁同 payload 重派（deterministic 必死）；恢復訊號＝大 payload 成功一次 |
-| `stopped responding after the task started` | launcher 側 ChatGPT 分頁失聯，非任務本身失敗 | 先查 launcher 分頁健康再判；盲目重派＝雙跑風險 |
+| `stopped responding after the task started` | relay／tab 失聯，非任務本身失敗 | 排障順序：先 `curl 127.0.0.1:17841/healthz` 查 relay codex-chatgpt-web 版本——relay 6.1.0 於 mosaic 機上實證 mid-stream bug（as-of 0926；升 6.1.1＋重啟 daemon 即癒，job-muhx8gw5），是否跨機通則未證；carrier 錯誤訊息建議「Check the ChatGPT tab」屬誤導，tab 為二線嫌疑。盲目重派＝雙跑風險 |
 | `connector menu ... no row named "Codex Native2"` | connector 環境缺損 | 環境修復（建 connector）後再派；重派無效 |
 | `personalization preflight exceeded its readiness deadline` | ChatGPT UI／登入狀態未就緒 | 查 UI／登入狀態，修因後重派 |
 | `You've hit your usage limit ... try again at <time>` | **native 訂閱池**訊號——codex CLI exec-approval 層查 native 訂閱額度，**非 web 池耗盡**（web 池無額度閘；09-16 實證：同 job 模型回應照常走完、同日重派成功） | 判讀＝native 面限制（影響 exec approval，不影響 web 派工）；**單次重派驗證無效再考慮排程**；解析 `<time>` 僅約束 native 面派工 |
 | `Selected model is at capacity` | web 池模型容量拒絕 turn-0（與上行 usage-limit 屬不同失敗分類——signature 辨識 failure class，非帳號額度證明） | bounded 序列化重試（實證可成功）；持續不退 → 換 alternate carrier；禁並發盲重派 |
 | `turn token is invalid, expired, or revoked` | 工具呼叫層 turn token／continuation state 失效（任務側誠實棄審、零編造）；**原始訊號只在 daemon stderr（`broker claim ... valid=false`）——rollout 事件流乾淨收尾、此形態 error surface 無文可配（片語表攔不到；09-12 有拒絕文的形態才可配）** | 禁帶同一失效 token 原樣重試（失效的是 token 非 payload）；現行可用 recovery＝換 carrier（實證：muse 承接）；**bridge ledger 會誤判 completed（fail-closed 拒絕以 `turn.completed` 乾淨收尾＝上游契約缺口，修正建議歸 codex-chatgpt-web repo）——收法必須 L1/L2 receipt 檢查（程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節）** |
 
-> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 6 類歸因修訂（0921）實證源＝AIR-123 決策⑤＋`tests/fixtures/availability_spine_fresh.md`:13；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
+> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 6 類歸因修訂（0921）實證源＝AIR-123 決策⑤＋`tests/fixtures/availability_spine_fresh.md`:13；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes；第 3 行排障順序修訂（0926）實證源＝mosaic scbus 信 message 64b87ec9／job-muhx8gw5，AIR-209 卡）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
 
 ### glm（bridge）委派契約
 
