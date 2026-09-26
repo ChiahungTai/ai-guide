@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.org/DTDs/PropertyList-1.0.dtd">
-<!-- CR usage archive（AIR-206）——bridge jobs 的 code-reality 工具呼叫每日歸檔，08:20
-     （patrol 08:10 之後、錯開 backlog cleanup）。形態照 dispatch-ledger-sweep 先例。
+<!-- CR usage archive（AIR-206）——bridge jobs 的 code-reality 工具呼叫每日歸檔，05:00
+     （work 前完成；與 patrol 08:10／backlog cleanup 23:50 無共享資源。0927 自 08:20 改，
+     user 裁定）。形態照 dispatch-ledger-sweep 先例。
      行為主體＝scripts/cr_usage_archive.py（唯讀掃描 job jsonl、append 持久 sink
      ~/.local/share/cr-usage/events.jsonl；偵測與處置分離，只歸檔不分析）。
      路徑參數化：{{REPO}} 與 {{HOME}} 佔位，裝載前須 render（governance/install.py 同款）。
@@ -24,9 +25,9 @@
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>8</integer>
+        <integer>5</integer>
         <key>Minute</key>
-        <integer>20</integer>
+        <integer>0</integer>
     </dict>
 
     <key>EnvironmentVariables</key>
