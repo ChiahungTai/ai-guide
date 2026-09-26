@@ -4,7 +4,7 @@ title: CR-機制組落地——review-face-收斂、wiring-實驗、借用索引
 status: Done
 assignee: []
 created_date: '2026-09-26 00:16'
-updated_date: '2026-09-26 02:39'
+updated_date: '2026-09-26 03:31'
 labels: []
 dependencies: []
 ordinal: 192000
@@ -43,6 +43,8 @@ F --> G
 205 reviewer F6 掛帳：crsurface（dispatch preview 拼法）vs cr-surface（bridge receipt/ledger 面拼法）——bridge 側 receipt 欄落地時統一拼法或互相標注等價。
 
 scbus 機制縫隙（0926 發現，user 追問 hook 是否生效時確診）：address-face queue_next_turn 信（to.name=null）注入後，legacy --to 回信不清隊列——清除需位址面 ack（--address），但信無 address mailbox、兩端 session 都 name=null，ack 無可指位址（本 session 已 claim durable address ai-guide-primary 供未來位址面收發）——淨效果＝重複注入到 TTL。owner＝sc-router 契約（scbus-address-contract）；已回報橋端。hook delivery 本身正常（首輪即注入全文）。
+
+SCR-6 裁定更正（sc-router owner 否證，收訖）：719fdfe8 為 legacy --to 直寄非位址面（queue_next_turn＝legacy DELIVERY_MODE 常數）；「重複注入機制」不存在——drain 消費即終態 cur/ 永不再掃，重複出現感知來自我方恢復鏈引用信件內容；「借用過期租約位址」假設同否證（envelope 從未進位址信箱）。本側已照 §指引 scbus acquire ai-guide-primary（lease 24h）。sc-router 已落 protocol v2.2 amendment（§5.5/§3.11/§5.8）。我方先前 note 的「address-face 縫隙」診斷撤回。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
