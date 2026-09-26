@@ -23,16 +23,20 @@
 - 活著就永續：holder 定期 renew，lease 恆 now+24h（ext 45s tick；renew 不 bump
   generation、不是 ownership transition）。**renew-failed log 是 pin 鬆動預警，
   不可忽視**；renew 成功靜默是約定。
-- 死後 24h 自動拔 pin（惰性判定、無 reaper）——**僅對「異身分接手者」存在**：
-  - ext 位址的同 workspace 繼承者恆同身分 → plain acquire 冪等秒接，24h 路徑
-    結構上不可達；
+- 死後 24h 自動拔 pin（惰性判定、無 reaper）——分面按**接手者身分與 binding 狀態**：
+  - ext 位址（realpath 不變前提下恆同身分）：重開視窗恆**秒接**——24h 內＝
+    live same-holder 冪等 renew（generation 不變）；逾 24h＝binding 已過期，
+    plain acquire 仍立即接管但 **generation+1**（新 ownership 邊界，舊
+    generation 受 fencing）。24h 對 ext 通常不造成 availability wait，但
+    generation 語義有別（ack CAS／ fencing 讀者注意）。
   - CLI 位址換 session＝異身分 → 撞活 pin 才有 force-reclaim／等 24h 之別。
 
 ## 切換動詞（三態）
 
 | 情境 | 動詞 | generation |
 |---|---|---|
-| 同身分（同 workspace ext） | plain `acquire`（冪等常態，含重啟） | 不變 |
+| 同身分（同 workspace ext）＋binding live | plain `acquire`（renew 冪等常態，含重啟） | 不變 |
+| 同身分＋binding 已過期（逾 24h 重開） | plain `acquire`（立即接管） | +1 |
 | 異身分＋死 pin／無 pin | plain `acquire` | +1 |
 | 異身分＋活 pin（明確要求換手） | `force-reclaim` | +1 |
 | 活 holder 可協作交接 | `transfer` | +1 |
@@ -44,6 +48,8 @@
 - ack 權綁 live lease＋holder 複合鍵（防 zombie ack）；duty 轉送 B1 gate 讀
   leaseHeld（single-holder 路由）；`name_conflict`＝異身分搶活 pin 的 fail-loud
   正確行為（與視窗數無關）。
+- release／transfer／force-reclaim／過期後 acquire 皆 ownership 邊界——
+  舊 generation 受 fencing（renew/drain/ack 被擋）。
 - queue 信過期照送（park 30 天 body 保留）；steer/notify 過期 fail-loud，
   fallback 僅限 envelope 明示——無靜默降級。
 
@@ -52,7 +58,8 @@
 - 預設走 raw session-id direct routing（`send --to <session_id>`），不維護
   logical-address lease。
 - 要收某位址的信才 `scbus acquire`（過期 binding 即重綁）；撞 `name_conflict`
-  ＝異身分搶活 pin，二選一：`force-reclaim`（顯式接管）或等 24h 惰性過期。
+  ＝異身分搶活 pin，二選一：`force-reclaim`（僅當確認活 pin 應讓位——會 bump
+  generation＋產生審計事件＋搶走路由）或等 24h 惰性過期。
 - **禁教 renew**：renew 綁 holder 身分，新 session 執行必失敗（identity mismatch）。
 - 只有明確 address-consumer UC 的 owner 才 claim/renew；一般 session workflow
   不加入 renew chore。
@@ -60,7 +67,8 @@
 ## 證據錨點
 
 southchariot：`src/scbus/controlChannel.ts:75-94`（身分決定論）、`:938-941`（B1）、
-`:1029-1046`（ack holder-limit）、`:1057-1068`（name_conflict warn-once）、
+`src/scbus/client.ts:1029-1046`（ack holder-limit——ScbusAckCall deps）、
+`:1057-1068`（name_conflict warn-once）、
 `:1077-1101`（renewIfHeld＋crash backstop）；`src/extension.ts:3619-3631`（ownSid
 register→acquireOnce）。
 sc-router：`docs/protocol.md:828-867`（binding/lease/acquire 三態）、`:1720-1725`
