@@ -1,9 +1,10 @@
 ---
 id: AIR-209
 title: codex web 排障——relay 版本診斷入八類表＋額度池附帶實證
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-26 09:20'
+updated_date: '2026-09-26 09:20'
 labels: []
 dependencies: []
 ordinal: 195000
