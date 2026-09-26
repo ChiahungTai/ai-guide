@@ -4,7 +4,7 @@ title: sev-bot-治理模式——cookbook-r2-第二卡（approval-execution-授�
 status: Done
 assignee: []
 created_date: '2026-09-24 22:04'
-updated_date: '2026-09-25 14:05'
+updated_date: '2026-09-26 07:12'
 labels: []
 dependencies: []
 ordinal: 178000
@@ -37,6 +37,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【0925 落地審查證據指針】雙腿合議 job id：muse job-muh0xxo0-7crp9j（NO-GO 逐塊論證）、codex job-muh0xxpg-bmicro（GO-WITH-CHANGES 修正版——落地內容即其改寫）。bridge 2.2.0（pin 更新後首派）。
+
+【0926 user 裁定——第三方 skill trust boundary 候補結案】本卡 AC#4 拆出的「第三方 skill trust boundary」候補：user 明示不處理（「等之後真的問題很多再說，我覺得是可控的」）——既有防線（skill 優先序＋outward documentation≠authorization＋harness permission gate）視為足夠，供應鏈更新面（如 delegate plugin 半夜自動升版事件）累積到實害再立卡。本候補不再列 pending 台帳。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
