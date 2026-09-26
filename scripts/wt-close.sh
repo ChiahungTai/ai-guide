@@ -215,7 +215,7 @@ MERGE_TARGET_BRANCH="$CUR_BR"
 # post-build receipt head_sha 與 branch HEAD 一致——rebase 後 receipt stale＝收線前置失敗
 # （fail loud；predicate 正典＝outward rule「Commit 專屬段」邊界宣告①）。receipt 缺席＝
 # 警告不擋（純文檔/卡務弧無 receipt 是合法形態）
-BRANCH_HEAD=$(git -C "$WT_PATH" rev-parse --short HEAD)
+BRANCH_HEAD=$(git -C "$WT_PATH" rev-parse HEAD)
 RECEIPT_FILE="$PRIMARY/.agent-tmp/post-build-receipts/$MERGE_TARGET_BRANCH.json"
 if [ -f "$RECEIPT_FILE" ]; then
   RECEIPT_SHA=$(python3 -c "import json,sys;print(json.load(open('$RECEIPT_FILE')).get('head_sha',''))" 2>/dev/null || true)
