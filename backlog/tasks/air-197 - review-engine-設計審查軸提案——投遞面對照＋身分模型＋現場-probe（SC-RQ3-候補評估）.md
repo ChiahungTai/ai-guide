@@ -4,7 +4,7 @@ title: review-engine-設計審查軸提案——投遞面對照＋身分模型�
 status: Done
 assignee: []
 created_date: '2026-09-24 23:31'
-updated_date: '2026-09-25 01:43'
+updated_date: '2026-09-26 07:09'
 labels:
   - 候補
 dependencies: []
@@ -41,6 +41,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【0925 雙腿合議裁定——三軸全不收（reject×3）】①雙腿：muse（job-mugadij9 rewrite/rewrite/reject）＋in-harness fresh code-reviewer（codex ws 426 二連敗 deferred，承接腿 reject/reject/reject）。②合議收斂：muse 的 rewrite 是條件式（若收則凍 bridge-dispatch/arch-thinking 觸發表），腿二逐檔查證證明那些位置已以更強形式凍結且消費者已接線——AIR-168 governance/scbus-address-contract §0-1/§8＝軸2（holder/lease/fencing/CAS/對抗案例）嚴格超集；handoff Phase 5（receipt≠ACK 禁互升格）＋AIR-168 §2/3（三態投遞）＝軸1 kernel；acceptance-evidence（L1-L6/綠燈只證自洽/oracle 分級）＋validation-strategy（e2e 優先/mock 循環論證）＝軸3 全覆蓋。③根本裁定：scbus 事故根因＝既有條文（design-thinking 間接消費者追蹤）未被執行，非條文缺口——收通則版違 review-engine 收進判準（非全命令適用）＋single-source drift 防護（第二定義源）。④腿二可選建議（marshal 裁量）：scbus 案例以 case 非判準補進 acceptance-evidence skill 案例庫——列候補不即做（YAGNI，bundle 零 bytes 但本卡範圍外）。⑤AC#2 不觸發（不 adopt）；AC#3 回執 SC 已送達（message 05dbc4c0，queue 直達）。
+
+【0926 codex 補腿回收——deferred 債務本筆結清】job-mui1q421-loqeb5（chatgpt-web/high，exit 0，receipt delivered；verdict 全文 .agent-tmp/codex-deferred/air197-verdict.md，sha256 af792d8f…）。blind 獨立裁定：軸1 rewrite／軸2 rewrite／軸3 reject＋跨家族觀察（應上移的是 condition→obligation 觸發形式；「規則缺口」vs「規則 activation 缺口」區別——已有正確規則但 reviewer 未 instantiate，加第四五條不改善）。與原 muse 腿判定（rewrite/rewrite/reject）獨立收斂——reject 總裁定獲第三腿支持。disposition（軸1/2 rewrite 案是否立候補）留 user＋互動 session。授權：user「現在補來做」；實證：web 池純推理 job 不受 native 5h 窗閘。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
