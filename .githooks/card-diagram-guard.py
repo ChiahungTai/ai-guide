@@ -36,6 +36,11 @@
 # 豁免——逃生口另設 CARDCLOSE_STRUCT_SKIP=1（stderr 大聲標注，須 user 同意並記卡 notes）。
 # hooksPath 探針（AIR-193）：core.hooksPath 未指向本 repo .githooks＝閘未上線的 fail-open
 # 面——stderr 顯性警告一行，探針性質不擋。
+# AC fallback 收緊（v6／AIR-208 F1）：精確 `## Acceptance Criteria` 標題命中 >1＝
+# duplicate 擋（與 markers 有無無關——雙重事實來源即錯）；markers 缺損時殘留 fallback
+# 掃全部標題段聯集（取代 heads[0]-only——第二段藏未勾項的繞過縫）。F2（AIR-208）：
+# --all-done 歷史軌跡稽核 baseline 常數住本檔（消費端 scripts/closeout_check.py；
+# 僅慢路徑稽核，不進 pre-commit）。
 # runtime：系統 python3（3.9）——禁 3.10+ 語法（pre-commit 同款約束）。
 import os
 import re
@@ -151,6 +156,37 @@ STRUCT_REMEDY = (
     "結案結構 predicate（AIR-193）：補齊後重 commit；本類 fail-closed，CARD_DIAGRAM_SKIP "
     "豁免不到——user 明示同意放行時 CARDCLOSE_STRUCT_SKIP=1 git commit 並記卡 notes。"
 )
+# F1（AIR-208）：AC fallback 判準行單一源——predicate 原樣沿用（strip()== 精確、
+# 大小寫敏感；小寫／變體標題不觸發，防意外收緊）
+AC_HEADING = "## Acceptance Criteria"
+# F2（AIR-208）：--all-done 歷史軌跡稽核 baseline＝status 軌跡閘上線 commit
+# （immutable OID——日期有 rebase／時區歧義故用 OID）。語義：只審嚴格在其後的
+# Done-entry，之前非法跳變全部祖父化。單一源在此；CLI import 消費，禁二刻。
+STATUS_TRAJECTORY_AUDIT_BASELINE = "f1f022386c9863a993a999e32154bdf9ff14d14e"
+
+
+def _ac_heading_ranges(lines):
+    """每個精確 AC 標題的行 range (heading_i, next_##__i_or_EOF)——F1 縫修共用
+    helper：duplicate 判定與 fallback 殘留掃描同一切法，防 drift。predicate 與
+    舊碼逐字同款（strip()== 精確、大小寫敏感）；fence 內標題照計數（現狀 pin，
+    fence-aware 解析 deferred）。終止條件與標題判定同款 strip 對稱（AIR-208
+    round-2：縮排「## 」標題行也終止 range——舊碼只認 col-0，與 strip()== 計數
+    不對稱，縮排標題後的他段未勾項被過擋掃進殘留）。"""
+    heads = [i for i, l in enumerate(lines) if l.strip() == AC_HEADING]
+    return [
+        (
+            h,
+            next(
+                (
+                    j
+                    for j in range(h + 1, len(lines))
+                    if lines[j].strip().startswith("## ")
+                ),
+                len(lines),
+            ),
+        )
+        for h in heads
+    ]
 
 
 def section_marker_violations(blob_text):
@@ -161,12 +197,19 @@ def section_marker_violations(blob_text):
     存量相容（marshal seal 裁定 0925）：AC 缺失以 markdown 標題 `## Acceptance
     Criteria` fallback（Backlog CLI 建卡 AC 落 DESCRIPTION 區內無 marker——實證
     air-194/196）；PLAN/NOTES 缺失降 warning（section_marker_warnings），不擋。
+    F1（AIR-208）：精確 AC 標題命中 >1＝duplicate violation，與 markers 有無、
+    checkbox 勾選狀態無關——結構重複即錯（雙重事實來源＝編輯分叉溫床）。
     """
     lines = blob_text.splitlines()
-    # AC fallback 判準行精確（與 ac_residue_violations 同款）——子字串會讓散文提及
-    # 「## Acceptance Criteria」即冒充段在場（muse/腿二雙 finding 1 合議：繞過縫）
-    has_ac_heading = any(l.strip() == "## Acceptance Criteria" for l in lines)
+    ac_ranges = _ac_heading_ranges(lines)
+    has_ac_heading = bool(ac_ranges)
     out = []
+    # F1（AIR-208）：duplicate 判定 unconditional——legacy fallback 須恰一個精確標題
+    if len(ac_ranges) > 1:
+        out.append(
+            f"AC 標題重複（{len(ac_ranges)} 處「{AC_HEADING}」）——"
+            "legacy fallback 須恰一個精確標題，重複段須併為單一段（duplicate-ac-heading）"
+        )
     for name in CARD_SECTIONS:
         if name == "AC":
             b_lit, e_lit = AC_BEGIN, AC_END
@@ -202,34 +245,38 @@ def section_marker_warnings(blob_text):
         b_lit = f"SECTION:{name}:BEGIN"
         e_lit = f"SECTION:{name}:END"
         if not any(b_lit in l or e_lit in l for l in lines):
-            out.append(f"{name} section 缺失（存量卡相容）——補段以合「卡即 handoff」五段齊")
+            out.append(
+                f"{name} section 缺失（存量卡相容）——補段以合「卡即 handoff」五段齊"
+            )
     return out
 
 
 def ac_residue_violations(blob_text):
     """predicate a：AC 區塊內 `- [ ]` 殘留——未勾行同行帶豁免標註者不計（AIR-181 破口）。
 
-    全部未勾行都帶標註＝不擋。AC markers 缺損時 fallback 掃 `## Acceptance Criteria`
-    標題區塊（到下一個 `## ` 標題為止——Backlog CLI 建卡 AC 在 DESCRIPTION 區內無
-    marker 的實證格式，air-194/196；fallback 亦無＝回 [] 歸 predicate c 擋）。
+    全部未勾行都帶標註＝不擋。AC markers 恰一組＝authoritative（marker-span 不動）；
+    markers 缺損時 fallback 掃全部 `## Acceptance Criteria` 標題段聯集（AIR-208 F1：
+    取代 heads[0]-only——第二段藏未勾項的繞過縫；未勾項跨段累計。fallback 亦無＝
+    回 [] 歸 predicate c 擋）。
     """
     lines = blob_text.splitlines()
     begins = [i for i, l in enumerate(lines) if AC_BEGIN in l]
     ends = [i for i, l in enumerate(lines) if AC_END in l]
-    if len(begins) != 1 or len(ends) != 1 or begins[0] >= ends[0]:
-        heads = [i for i, l in enumerate(lines) if l.strip() == "## Acceptance Criteria"]
-        if not heads:
+    if len(begins) == 1 and len(ends) == 1 and begins[0] < ends[0]:
+        scan_ranges = [(begins[0], ends[0])]
+    else:
+        scan_ranges = _ac_heading_ranges(lines)
+        if not scan_ranges:
             return []
-        tail = next((j for j in range(heads[0] + 1, len(lines)) if lines[j].startswith("## ")), len(lines))
-        begins, ends = [heads[0]], [tail]
     residue = []
-    for i in range(begins[0] + 1, ends[0]):
-        line = lines[i]
-        if "- [ ]" not in line:
-            continue
-        if any(m in line for m in AC_EXEMPT_MARKERS):
-            continue
-        residue.append((i + 1, line.strip()))
+    for start, end in scan_ranges:
+        for i in range(start + 1, end):
+            line = lines[i]
+            if "- [ ]" not in line:
+                continue
+            if any(m in line for m in AC_EXEMPT_MARKERS):
+                continue
+            residue.append((i + 1, line.strip()))
     if not residue:
         return []
     detail = "\n".join(f"      line {ln}: {txt[:100]}" for ln, txt in residue)
@@ -268,7 +315,7 @@ def frontmatter_references(blob_text):
         if s == "---":
             break
         if s.startswith("references:"):
-            val = s[len("references:"):].strip()
+            val = s[len("references:") :].strip()
             if val and val != "[]":
                 out.append(val.strip("'\""))
             in_refs = True

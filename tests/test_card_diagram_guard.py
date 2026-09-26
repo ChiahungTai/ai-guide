@@ -569,3 +569,225 @@ def test_struct_done_missing_fs_blocks_even_without_diagram_baseline(tmp_path):
     r = _run_guard(repo)
     assert r.returncode == 1
     assert "FINAL_SUMMARY section 缺失" in r.stderr
+
+
+# ── AIR-208 F1：AC 重複標題繞過縫（muse 設計測試清單 1-11）──────────
+# 攻擊形態：老式卡（無 AC marker、只有 markdown 標題）出現兩個精確
+# `## Acceptance Criteria` 標題，舊殘留掃描只掃 heads[0] 段——第二段藏未勾項溜過。
+# 修法雙層：(a) 重複標題本身＝violation（與 markers 無關）；(b) markers 缺損時
+# 殘留掃描掃全部標題段聯集。
+
+
+def _append_raw(repo: Path, raw: str) -> None:
+    """卡尾附加原文（標題式 AC 段——無 marker 的 Backlog CLI legacy 格式）並 re-stage。"""
+    card = repo / "backlog/tasks/air-900 - test.md"
+    text = card.read_text(encoding="utf-8")
+    card.write_text(text + raw, encoding="utf-8")
+    _git(repo, "add", "backlog/tasks/air-900 - test.md")
+
+
+def _heading_section(checkbox: str) -> str:
+    return "\n## Acceptance Criteria\n" + checkbox
+
+
+# 清單 1：單標題、全勾、無 markers → pass（存量合法形態，迴歸錨）
+
+
+def test_f1_single_heading_all_ticked_passes(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(repo, _heading_section("- [x] #1 全勾項\n"))
+    assert _run_guard(repo).returncode == 0
+
+
+# 清單 2：單標題、有未勾 → ac_residue violation（舊行為不變）
+
+
+def test_f1_single_heading_unticked_residue_blocks(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(repo, _heading_section("- [ ] #1 沒勾項\n"))
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 殘留" in r.stderr
+    assert "AC 標題重複" not in r.stderr
+
+
+# 清單 3：雙標題、兩段都全勾 → duplicate violation（新擋；殘留無報）
+
+
+def test_f1_dup_heading_both_ticked_blocks_no_residue(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        _heading_section("- [x] #1 全勾\n") + _heading_section("- [x] #2 也全勾\n"),
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+    assert "AC 殘留" not in r.stderr
+
+
+# 清單 4：雙標題、第一段全勾＋第二段藏未勾（題述攻擊形態）→ 兩碼都報
+
+
+def test_f1_dup_heading_hidden_unticked_both_codes(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        _heading_section("- [x] #1 全勾\n") + _heading_section("- [ ] #2 藏洞項\n"),
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+    assert "AC 殘留" in r.stderr
+    assert "藏洞項" in r.stderr
+
+
+# 清單 5：雙標題、第一段未勾＋第二段全勾 → 同上（順序無關，union 證明）
+
+
+def test_f1_dup_heading_unticked_first_both_codes(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        _heading_section("- [ ] #1 藏洞項\n") + _heading_section("- [x] #2 全勾\n"),
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+    assert "AC 殘留" in r.stderr
+    assert "藏洞項" in r.stderr
+
+
+# 清單 6：三標題 → duplicate 照報；殘留掃三段聯集
+
+
+def test_f1_triple_heading_union_residue(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        _heading_section("- [x] #1 全勾\n")
+        + _heading_section("- [x] #2 全勾\n")
+        + _heading_section("- [ ] #3 三段聯集藏洞\n"),
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+    assert "3 處" in r.stderr
+    assert "三段聯集藏洞" in r.stderr
+
+
+# 清單 7：零標題零 marker → 既有 section_marker violation（不變）
+
+
+def test_f1_no_heading_no_marker_missing_blocks(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC section 缺失" in r.stderr
+    assert "AC 標題重複" not in r.stderr
+
+
+# 清單 8：markers 在場＋雙標題 → duplicate 照報（與 markers 無關）
+
+
+def test_f1_dup_heading_with_valid_markers_still_blocks(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac=AC_TICKED)
+    _append_raw(
+        repo,
+        _heading_section("- [x] #1 全勾\n") + _heading_section("- [x] #2 也全勾\n"),
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+    assert "AC 殘留" not in r.stderr  # markers 恰一組＝authoritative——標題段不掃殘留
+
+
+# 清單 9：尾空白雙份 → duplicate 照報（predicate 含 strip()，與舊一致）
+
+
+def test_f1_dup_heading_trailing_whitespace_blocks(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        "\n## Acceptance Criteria   \n- [x] #1 全勾\n"
+        + "\n## Acceptance Criteria\t\n- [x] #2 也全勾\n",
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+
+
+# 清單 10：小寫雙份 → 不報 duplicate（predicate 不變的證明，防意外收緊）；
+# 無精確標題無 markers → 既有 section 缺失照擋
+
+
+def test_f1_lowercase_heading_not_duplicate(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        "\n## acceptance criteria\n- [x] #1 全勾\n"
+        + "\n## acceptance criteria\n- [ ] #2 沒勾\n",
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" not in r.stderr
+    assert "AC section 缺失" in r.stderr
+
+
+# 清單 11：code fence 內的精確標題 → 照計數（pin 現狀；fence-aware 解析 deferred
+# 另立後續卡——muse 風險#1，同時證明 fence 湊數面存在）
+
+
+def test_f1_heading_in_code_fence_counted_status_quo(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        _heading_section("- [x] #1 全勾\n")
+        + "\n```text\n## Acceptance Criteria\n```\n",
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 標題重複" in r.stderr
+
+
+# round-2（muse finding 5）：heading range 終止條件與標題判定 strip 對稱——
+# 縮排標題行也終止 AC range（舊碼終止只認 col-0「## 」，與 strip()== 計數不對稱：
+# 縮排標題計為標題卻不終止 range，其後他段未勾項被過擋掃進殘留）
+
+
+def test_f1_indented_heading_terminates_ac_range(tmp_path):
+    repo = _repo(tmp_path)
+    _commit_baseline(repo, "In Progress", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM)
+    _stage_card(repo, "Done", DESC_WITH_DIAGRAM, FS_WITH_DIAGRAM, ac="")
+    _append_raw(
+        repo,
+        "\n## Acceptance Criteria\n- [ ] #1 沒勾項\n"
+        "  ## 備註（縮排標題）\n- [ ] #2 屬備註段非 AC\n",
+    )
+    r = _run_guard(repo)
+    assert r.returncode == 1
+    assert "AC 殘留" in r.stderr
+    assert "#1 沒勾項" in r.stderr
+    assert "#2 屬備註段非 AC" not in r.stderr  # 縮排標題終止 range——不過擋
