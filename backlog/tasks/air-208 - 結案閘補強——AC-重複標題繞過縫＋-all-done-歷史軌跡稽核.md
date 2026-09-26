@@ -1,10 +1,10 @@
 ---
 id: AIR-208
 title: 結案閘補強——AC 重複標題繞過縫＋--all-done 歷史軌跡稽核
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-26 07:34'
-updated_date: '2026-09-26 07:35'
+updated_date: '2026-09-26 07:36'
 labels: []
 dependencies: []
 ordinal: 194000
