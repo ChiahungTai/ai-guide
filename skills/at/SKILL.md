@@ -159,7 +159,7 @@ flowchart LR
 
 /at 場景落點＝讀 ticket（狀態應為 ARMED）→ `transition --to FIRED` → 按 [task-recovery](../_common/task-recovery.md) 恢復順序執行（定位任務→核對實物→恢復→接續）→ 恢復成功即 `transition --to RESTORE_PROVEN` → 工作完成或進度 re-checkpoint 回 durable owner 後 `transition --to SETTLED`。恢復失敗＝`transition --to RESTORE_FAILED`＋診斷（fail-loud，禁吞錯續行）。完成通知沿用 [voice-notification](../voice-notification/SKILL.md)「任務完成」樣板（隨機稱謂）＋清 sentinel。
 
-capsule 第 4 條的刪檔時機＝對應 ticket 到達 SETTLED（或 CANCELLED）——刪除與狀態推進同輪完成，禁刪未達 terminal 的 ticket。
+capsule 第 4 條的關檔時機＝對應 ticket 到達 SETTLED（或 CANCELLED）——狀態關閉與狀態推進同輪完成；檔的物理刪除依下方「清理」節 grace 規則，不在同輪。
 
 ---
 
@@ -173,6 +173,12 @@ uv run python /Users/ctai/Github/ai-guide/scripts/at_ticket.py classify --dir .a
 - 判準＝**resume_at＋state＋grace**，mtime 不參與——舊制以檔案 mtime 年齡掃描（7 天線）會**誤刪長程排程的未到期 ticket**（已知缺口已閉合：改機械判準）
 - 非 terminal 永不清：`missed-candidate`／`past-due` 由 classify 上 stderr 大聲回報，處置權在 session（MISSED 標記／CANCELLED 結案）——**sweep 只分類不刪**
 - 損壞票＝TicketCorrupt fail-loud（禁靜默跳過）——數據完整性優先，先處置損壞票再談清淤
+
+**雙軌清理表**（ticket 檔與 automation row 是兩個生命週期，勿混）：
+
+- **軌一 ticket 檔**：terminal（SETTLED/CANCELLED）＋ grace 7 天 → session 顯式刪（本節機械判準）
+- **軌二 automation row（cron）**：不自動清——`CronList` 對照發現 one-shot `completed` 超過 30 天 → 顯式 `CronDelete`（carrier 會跳確認）；recurring standing crons 永不自動刪
+- 兩軌判準、grace 值、清理動作互不套用（cron row 的 grace 不是 7 天、ticket 檔不用 CronDelete）
 
 ---
 
