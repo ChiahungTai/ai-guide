@@ -28,7 +28,7 @@
     live same-holder 冪等 renew（generation 不變）；逾 24h＝binding 已過期，
     plain acquire 仍立即接管但 **generation+1**（新 ownership 邊界，舊
     generation 受 fencing）。24h 對 ext 通常不造成 availability wait，但
-    generation 語義有別（ack CAS／ fencing 讀者注意）。
+    generation 語義有別（ack CAS／fencing 讀者注意）。
   - CLI 位址換 session＝異身分 → 撞活 pin 才有 force-reclaim／等 24h 之別。
 
 ## 切換動詞（三態）
@@ -68,8 +68,8 @@
 
 southchariot：`src/scbus/controlChannel.ts:75-94`（身分決定論）、`:938-941`（B1）、
 `src/scbus/client.ts:1029-1046`（ack holder-limit——ScbusAckCall deps）、
-`:1057-1068`（name_conflict warn-once）、
-`:1077-1101`（renewIfHeld＋crash backstop）；`src/extension.ts:3619-3631`（ownSid
+`src/scbus/controlChannel.ts:1057-1068`（name_conflict warn-once）、
+`src/scbus/controlChannel.ts:1077-1101`（renewIfHeld＋crash backstop）；`src/extension.ts:3619-3631`（ownSid
 register→acquireOnce）。
 sc-router：`docs/protocol.md:828-867`（binding/lease/acquire 三態）、`:1720-1725`
 （同 repo 多窗凍結慣例）、`:665-673`（claimed identity 非 authN）。
