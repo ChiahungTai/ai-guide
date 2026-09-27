@@ -1,10 +1,10 @@
 ---
 id: AIR-210
 title: scbus 位址 pin 制租約心智模型落地——ownership 文檔正典＋STATE renew 慣例退役（三方討論 R1/R2 裁定）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-26 23:36'
-updated_date: '2026-09-27 00:08'
+updated_date: '2026-09-27 00:09'
 labels:
   - scbus
   - governance
@@ -32,7 +32,7 @@ flowchart LR
 - [x] #1 governance/scbus-address-ownership.md 落地：pin 綁身分不綁視窗（ext=scbus-ext-sha256(realpath)[:16] per-workspace 決定論）＋活著永續/死後 24h 分面（ext 面 24h 結構不可達）＋切換動詞三態（同身分冪等 acquire/異身分死 pin plain acquire/異身分活 pin force-reclaim）＋routing-ownership 非 authN 紅線＋CLI 惰性 recipe
 - [x] #2 STATE.md：renew 交接行退役改惰性 recipe（一行）；pending 台帳刪 ai-guide-primary renew 項
 - [x] #3 AIR-168 舊契約（scbus-address-contract.md）檔頭 superseded 指針一行——歷史內容零改動
-- [ ] #4 memory 補身分粒度事實（marshal 執行，memory-audit 紀律）：ext 位址同 workspace 重開＝冪等秒接；name_conflict 僅異身分搶活 pin
+- [x] #4 memory 補身分粒度事實（marshal 執行，memory-audit 紀律）：ext 位址同 workspace 重開＝冪等秒接；name_conflict 僅異身分搶活 pin
 - [x] #5 零行為變更負斷言：southchariot src/sc-router/skills 零改動（rg 對帳）
 <!-- AC:END -->
 
@@ -40,4 +40,19 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 ✅ judge rejected→一行修→accept 免再審（job-muj1sd7m，GLM-5.3）：r2 忠實關閉雙席兩 P1（generation 語義對 protocol.md:848-867 逐字複核通過；「ext 24h 結構不可達」源於 GLM R2 單席措辭、非 user 裁定——修回文檔自宣告單一源）；judge 否證腿抓到 r2 自引入 P1（client.ts 錨點插中間斷裸錨點繼承鏈）——r3 補回 controlChannel.ts 前綴（:71-72 已驗）。P2 處置足夠；AC#4 memory 隨結案補。
+
+結案：judge rejected→r3 一行修→accept 免再審；merge 前 3 commits（ownership 正典 r1+r2+r3）；STATE.md/legacy 括號主 WT 落地；memory scbus-address-handover-facts 更新（三態接手＋ext 身分粒度＋正典指針，索引已 regen）。零行為變更——southchariot/sc-router/skills 全未動。
 <!-- SECTION:NOTES:END -->
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+三方討論（R1/R2，muse/codex/GLM-5.3）裁定 user 的「不會到期的租約，切換條件＝pinned」模型 adopt-with-refinement，本卡落地為文檔正典：①新建 `governance/scbus-address-ownership.md`（67→78 行 operator 正典——pin 綁身分不綁視窗、活著永續、死後 24h 惰性拔 pin、切換動詞三態、routing-ownership≠authN 紅線、CLI 惰性 recipe 禁教 renew）②AIR-168 舊契約檔頭 superseded 指針（歷史內容零改動）③STATE.md renew 交接行退役改惰性 recipe。審查三輪收斂：muse P1（ack 錨點檔名）＋codex 部分審 auth-failed 降級如實記錄（P1×2：generation 語義——同身分逾期 acquire＝generation+1；錨點同 muse）→r2 修→judge 否證腿抓 r2 自引入 P1（錨點繼承鏈斷裂）→r3 一行修→accept 免再審。memory `scbus-address-handover-facts` 同步更新。零行為變更：southchariot/sc-router/skills 全未動。
+
+```mermaid
+flowchart LR
+    A["活 holder"] -->|"45s renew｜live same-holder acquire 冪等（gen 不變）"| P["pin 持有"]
+    D["holder 死亡"] -->|"≤24h 惰性 expiry（crash backstop）"| U["binding 過期"]
+    U -->|"任何人 plain acquire（gen+1）"| N["新 holder"]
+    L["活 pin＋異身分要換手"] -->|"force-reclaim（gen+1）"| N
+    S["同 workspace ext 重開"] -->|"realpath 決定論＝同身分秒接（live 冪等/逾期 gen+1）"| P
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
