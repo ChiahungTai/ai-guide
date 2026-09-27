@@ -107,6 +107,64 @@ def test_generator_e2e_check_does_not_write(tmp_path):
     assert not (pool / "MEMORY.md").exists()
 
 
+def test_generator_refuses_write_on_zero_entries(tmp_path):
+    """空池拒寫（fail-closed——0927 誤跑事故 hardening）。
+
+    generator 就地寫出（腳本所在目錄＝目標）——repo 資產源副本被誤跑在無條目
+    目錄時，舊行為寫出 header-only 空索引＋exit 0（2026-09-27
+    skills/memory-audit/scripts/ 實證 stray MEMORY.md）。0 合法條目幾乎必然是
+    誤標的（非池目錄）或全池 frontmatter 損壞——拒寫＋fail-loud；
+    --check 零副作用語義不變（本 guard 不觸 check 路徑）。
+    """
+    pool = make_pool(tmp_path, n=0)
+    r = subprocess.run(
+        [sys.executable, str(pool / "_generate_index.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert r.returncode == 1
+    assert "[FAIL]" in r.stdout
+    assert "拒寫" in r.stdout
+    assert not (pool / "MEMORY.md").exists()  # 拒寫——不留 stray 空索引
+
+
+def test_generator_refuses_write_with_all_frontmatter_violations(tmp_path):
+    """全池損壞（entries=0＋errs>0）→ 拒寫＋違規清單在場（review F2 釘分支）。
+
+    errs 分支在 write 模式被 guard 攔住（0 合法條目不寫空投影），
+    違規清單隨 guard 訊息輸出供自救。
+    """
+    pool = make_pool(tmp_path, n=0)
+    (pool / "bad.md").write_text("no frontmatter here\n", encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, str(pool / "_generate_index.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert r.returncode == 1
+    assert "拒寫" in r.stdout
+    assert "bad.md" in r.stdout  # frontmatter 違規清單在場
+    assert not (pool / "MEMORY.md").exists()
+
+
+def test_generator_refuses_write_b_form_empty_pool(tmp_path):
+    """B 形態空池（resident set 在場、0 條目）→ exit 1＋雙檔皆不寫（review F2 釘分支）。"""
+    pool = make_pool(tmp_path, n=0)
+    (pool / "_resident-set.md").write_text("`proj-000`\n", encoding="utf-8")
+    r = subprocess.run(
+        [sys.executable, str(pool / "_generate_index.py")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert r.returncode == 1
+    assert "拒寫" in r.stdout
+    assert not (pool / "MEMORY.md").exists()
+    assert not (pool / "_inventory.md").exists()
+
+
 def test_generator_e2e_gate_fail_loud(tmp_path):
     """SM-1：超限（n=200 > 190 行 gate）→ 索引**照寫出**＋exit 1＋行動訊息。
 

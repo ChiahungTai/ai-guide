@@ -239,6 +239,27 @@ def main() -> int:
         )
     # fail-soft 載入序：type 分組 × rank 層 × 組內 mtime 新在前（name 尾鍵可重現）。
     entries.sort(key=sort_key)
+    # 空池拒寫（0927 誤跑 hardening）：generator 就地寫出（腳本所在目錄＝目標）——
+    # 0 合法條目幾乎必然是誤標的（repo 資產源被就地跑、非池目錄）或全池 frontmatter
+    # 損壞；寫出空投影會覆蓋既有索引（損壞比缺失危險）。--check 零副作用語義不變
+    # （0 條目時僅加一行 [WARN] 訊號，exit code 與既有輸出不動——review F1）。
+    if not entries and not check_only:
+        msg = (
+            "[FAIL] 合法條目 0——拒寫投影（空投影會覆蓋既有索引；損壞比缺失危險）\n"
+            f"目標目錄＝{here}\n"
+            "誤跑防護：本 generator 就地寫出——repo 資產源"
+            "（skills/memory-audit/scripts/generate_index.py）勿就地跑，"
+            "池內副本名 _generate_index.py；若這確是池且條目全數違規，修 frontmatter 後重跑；"
+            "若池確已合法清空：刪除 stale MEMORY.md／_inventory.md 或移除 generator 副本（review F4）"
+        )
+        if errs:
+            msg += "\nfrontmatter 違規清單：\n" + "\n".join(errs)
+        print(msg)
+        return 1
+    if not entries and check_only:
+        print(
+            "[WARN] 合法條目 0——全新池 bootstrap 以外，疑似誤跑（非池目錄）或全池 frontmatter 損壞"
+        )
     resident_set = here / RESIDENT_SET_NAME
     b_form = resident_set.exists()
 
@@ -267,7 +288,12 @@ def main_a_form(here, check_only, errs, entries) -> int:
             + "[FAIL] frontmatter 違規（需 name/description/type∈user|feedback|project|reference）"
             f"——{len(errs)} 檔跳過、未進索引：\n"
             + "\n".join(errs)
-            + "\n[提示] 索引已以合法條目照常寫出（CC 式——壞條目不擋投影，AIR-27）；修好後重跑"
+            + (
+                # check 模式未寫入——照寫出措辭在 check 路徑失真（review F3）
+                "\n[提示] --check 未寫入；修好後重跑"
+                if check_only
+                else "\n[提示] 索引已以合法條目照常寫出（CC 式——壞條目不擋投影，AIR-27）；修好後重跑"
+            )
         )
         if not check_only:  # --check 零副作用（與 size gate 同 guard）
             write_index(here, content)
