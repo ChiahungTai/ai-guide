@@ -4,7 +4,7 @@ title: tour 走讀協同 skill——AI 跟著你在 VS Code 走的 tour 邊走�
 status: In Progress
 assignee: []
 created_date: '2026-09-28 13:07'
-updated_date: '2026-09-28 13:08'
+updated_date: '2026-09-28 13:12'
 labels: []
 dependencies: []
 references:
@@ -53,3 +53,9 @@ flowchart LR
 〔已決策勿重辯：①載體＝skill 非 rule（on-demand、多階段程序、有觸發語、harness 雙形態——muse 01a0e6ad 調查裁定）②位置＝ai-guide 全域 skills/tour-collab/（走讀消費與 mosaic 無關，非 repo-local）③thin 單一源——line schema／source enum／anchor 語義／rotation／多 writer 邊界一律指針 ~/Github/southchariot/docs/tour-action-log.md（sc-281），本 skill 不重抄④行為哲學繼承 ui-collab（觀察→等待→上下文感知→記錄），記錄走 llm-discussions/ 慣例⑤corpus 生產歸 tour-bootstrap、工作台操作歸 annotate-collab，本 skill 不跨界⑥控制面 authoring 走 persistent card WT（AIR-106 隔離閘），landing（merge/deploy）前須審查分類＋審查腿回執〕
 範圍：新增 skills/tour-collab/SKILL.md＋skills/AGENTS.md 索引行＋desc gate（scripts/scan_skills_desc.py）；mosaic annotate-collab Phase 2 縮指針＝跨 repo 連動另辦（mosaic 側動手，本卡只報）
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+09-28 接續 muse 01a0e6ad（其結案建議＝立薄 tour-collab skill，本卡承接其起草）。authoring WT＝ai-guide-air-212（branch air-212，base 6f816e28）。已起草 skills/tour-collab/SKILL.md（WT 內未 commit）＋skills/AGENTS.md UI/協作節索引行；desc gate FAIL=0（282 chars）；引用四目標存在（tour-bootstrap/ui-collab/annotate-collab/southchariot 契約文檔）。checkpoint 下一步：①user 點卡確認 desc＋draft ②WT 內 commit skill 檔（走 commit skill receipt-gate）③落地前審查閘——分類＋審查腿回執，landing（merge/deploy）前補齊 ④ff-only 收線＋結案兩步。mosaic 連動（annotate-collab Phase 2 第二事件源縮為指針）＝跨 repo 另辦，mosaic 側動手。
+<!-- SECTION:NOTES:END -->
