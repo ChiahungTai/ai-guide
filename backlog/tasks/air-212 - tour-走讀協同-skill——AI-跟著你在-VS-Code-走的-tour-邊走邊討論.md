@@ -4,7 +4,7 @@ title: tour 走讀協同 skill——AI 跟著你在 VS Code 走的 tour 邊走�
 status: Done
 assignee: []
 created_date: '2026-09-28 13:07'
-updated_date: '2026-09-28 14:26'
+updated_date: '2026-09-28 22:15'
 labels: []
 dependencies: []
 references:
@@ -70,6 +70,8 @@ bi panel verdict 收線（muse job-mulak9hd＝B 自描述 header；codex job-mul
 【delivery 回執】scbus 直送 southchariot-marshal 成功（AUTH：user『送吧』）——message_id=8c86f2a1-6f2f-4ca0-9c93-1aa5df8205a9、envelope_id=92ca36e3-9f85-4480-b936-395e8dad2caa、deliverability=queued（stage 2 queued-visible ✓）。completion 四段追蹤：段 3（對方 semantic ACK in_reply_to=8c86f2a1）與段 4（completed＋result_pointer=SC 卡 id）待 SC 側 drain——僅 receipt 不算對方收到後承接，禁記完成。correlation 查詢鍵＝message_id。
 
 【receipt 四欄（landing 前）】classification=boundary（控制面 instruction actionable 條文新增——review-engine 判定表正典行）。review=三腿全綠：fresh code-reviewer 7 findings（F1 Critical 採納修復——rg 裸呼叫 gitignore 靜默零命中，67269da6）＋intent primed 5 Low/Info 零 intent-drift＋跨家族 muse bridge review job-mulbsxau（4 findings——2 stale-card 否決、2 部分採納）；ledger=.review/air-212.md（WT）；CR 接線查證 N/A（純 markdown）。session-freshness=fresh（authoring＋review 同 session、governing rules 無中途變更）。deployment-surfaces=healthy（merge 即 live——skills symlink 母鏈目錄級；desc gate FAIL=0 151 chars；pre-commit 2644 tests 綠 ×2）。
+
+【交接閉環】段 3/4 完成——SC-288 結案回執到（經 ai-guide-marshal，message 4c952eca relay）：result_pointer=sc-288、southchariot main 8959e72 起 sc-288 commits、judge r3 PASS、AC 全勾。機驗：契約文檔 §2/§4/§6/§7 四處同步實在、header 三行 # 註解＋七紅線內嵌、消費演算法含跳過 # 行（零破壞）。四段全閉：packet→queued→承接（SC-288 開卡）→completed。剩餘：ui-collab 檔頭說明句＝ai-guide 自行決定（處理中）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
