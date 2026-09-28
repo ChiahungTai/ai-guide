@@ -1,6 +1,6 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability。"
+description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability、review face 28K、承載形、transport stamp、thin-slice。"
 ---
 
 # bridge-dispatch — delegate-bridge 委派深層
@@ -48,6 +48,10 @@ ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷
 
 **fat-AGENTS 替代**：判準以估算式為準、不以 repo AGENTS.md 單一數字為準（教訓正在於工單小＋fat AGENTS 才爆）——repo AGENTS.md ≳50K 即進估算參考錨（dispatch 前 `wc -c AGENTS.md` 為低成本可選機械檢查；實例：62K AGENTS.md＋3KB 工單已死）。順序＝①降 payload（改 repo 檔案路徑交付〔材料軸未驗形態，採用前先驗 agent 可達〕／減 inline／用既有 artifact）→②native codex（credits 訂閱池——帳號路徑分界與額度現值依 model-routing）→③muse／glm（依 model-routing resolver）→④in-harness。
 
+**review face 28K 閘——換承載形，不是換 model**：review diff 走 o200k 單則上限（28K），60K-token 級弧 diff 被擋是常態——**派工前先概估：`git diff <base> | wc -c`，code 主導 diff 粗略 chars÷3.5 保守取**；閘實際消費 assembled prompt（diff 為主項，另計工單與 CR 附加段），近邊界或估不準寧可直接走 (b)，不試錯燒次數。命中後階梯＝(a) `--base` thin-slice（較窄 diff 範圍）→(b) **改 task face＋work-order（WO）檔案承載**：工單派 repo 檔路徑、reviewer 自跑 `git diff` 讀（db-69 實證：62K-token 弧 diff 走此形完全可用，job-mulsjljd-q71eco；WO 照 Brief 動詞紀律帶唯讀宣告——task face 預設可寫，`no git` 限定 mutation 面，唯讀 git 檢視經 capability manifest 顯式宣告）→(c) in-harness subagent。(b) 與材料軸「路徑＝未驗形態」的表面張力＝工具面差異——task face 帶執行工具可自跑 git 讀（db-69 實證），09-16 被擋形是唯讀 review；採用前照材料軸慣例先驗 agent 可達。
+
+**額度牆 transport 池判讀**：native slug 撞 ChatGPT plan 額度（usage 頁 reset 時間）≠ web pool 28K payload 閘——判讀面＝ledger row 的 transport stamp＋錯誤文案，禁一杆打翻成 codex 全家不可用；native 掛→web 續用（(b) 形），非棄家族——transport 降級由 ledger stamp 機錄，跨家族降級另照 dual-family 顯性記錄。
+
 **觀察項**（單次實測值不升格永久規格）：
 - CLI 注入量 drift：估算式的全域 instructions 與 envelope 兩項綁當前 CLI 版本，升級即過時——條文只認 as-of 標記，精確觀測值留 delegate-bridge AGENTS.md。
 - envelope buffer 漂移：buffer 佔比隨版本增加，估算式逐項須定期對照。
@@ -89,5 +93,5 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 
 - provision 機制細節：user-invoked；stage per-model read-only configs＋sha256 manifest。glm 建立 job 的 model 記在 ledger row（resume 對帳用）；fail-closed 錯誤附 actionable hint。
 - 第二 pin 形態例：stable symlink、「latest」 shim——殘留靠 prune 清。
-- **Brief 動詞紀律（可寫 carrier；0924 自 rules 收編）**：brief 的動詞決定可寫 carrier 的行為——審查／調查／盤點類 brief 必帶顯式 `READ-ONLY / no writes / no git`（work-order 模板 review/advisory variant，§6 動＝零），實作類 brief 必帶 scope fence（格式＝work-order 模板範圍限定節）＋禁 commit（commit 恆為主 session gate）；**省略動詞約束＋brief 內出現 CHANGE/ADD/DELETE 條目＝實質實作授權**。各 carrier 寫檔能力表單一源＝delegate-bridge repo `AGENTS.md`，禁兩 repo 重刻。案例：muse 審查 job 收到全 CHANGE 條目的 spec brief、漏 read-only 指令→muse 讀完逕行實作 444 行（Writer/Reviewer 分離被打破）。
+- **Brief 動詞紀律（可寫 carrier；0924 自 rules 收編）**：brief 的動詞決定可寫 carrier 的行為——審查／調查／盤點類 brief 必帶顯式 `READ-ONLY / no writes / no git`（work-order 模板 review/advisory variant，§6 動＝零），實作類 brief 必帶 scope fence（格式＝work-order 模板範圍限定節）＋禁 commit（commit 恆為主 session gate）；**省略動詞約束＋brief 內出現 CHANGE/ADD/DELETE 條目＝實質實作授權**。`no git` 限定 mutation 面（checkout／commit／push）——唯讀 git 檢視（diff/log/show）經 capability manifest 顯式宣告後可用（先例＝db-69 WO「git diff/log 只讀」）。各 carrier 寫檔能力表單一源＝delegate-bridge repo `AGENTS.md`，禁兩 repo 重刻。案例：muse 審查 job 收到全 CHANGE 條目的 spec brief、漏 read-only 指令→muse 讀完逕行實作 444 行（Writer/Reviewer 分離被打破）。
 - Dispatch prompt 禁以 `/` 開頭——zcode 系 carrier 會當 slash command 拒執→exit 0 假完成（AIR-165 實證，DB-26 bridge 側修復中）。
