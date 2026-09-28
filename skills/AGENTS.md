@@ -143,7 +143,7 @@
 - `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知）
 
 ### UI / 協作
-- `ui-collab` — 互動式 UI 的 LLM 協作模式（`[ACTION]` 操作日誌）
+- `ui-collab` — 互動式 UI 的 LLM 協作模式（`[ACTION]` 操作日誌）；SC tour 走讀跟隨（Tour 走讀流節——消費契約單一源指針）
 - `ui-visual-verify` — UI 開發/健檢**驗收**編排（啟動就緒判定 → playwright 截圖＋shadow DOM 量測 → vision-review 盲判讀 → findings 合流 → 契約沉澱 pytest；與 ui-collab 分工＝驗收期 vs 互動期）
 
 ### 領域特定

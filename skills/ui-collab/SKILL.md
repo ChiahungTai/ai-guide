@@ -1,6 +1,6 @@
 ---
 name: ui-collab
-description: "UI-LLM 協作模式。當使用者啟動互動式 UI（Bokeh/Panel 等）並希望 LLM 觀察操作、提供上下文感知的協助時觸發。適用於任何有 [ACTION] 操作日誌的 UI 協作場景；亦涵蓋 SC tour 走讀跟隨（user 說「跟著我走 tour」「邊走讀邊討論」）。"
+description: "UI-LLM 協作模式。當使用者啟動互動式 UI（Bokeh/Panel 等）並希望 LLM 觀察操作、提供上下文感知的協助時觸發。適用於任何有 [ACTION] 操作日誌的 UI 協作場景；亦涵蓋 SC tour 走讀跟隨（user 說「跟著我走 tour」「邊走讀邊討論」「tour 協同」）。"
 ---
 
 # UI-LLM 協作模式
@@ -10,10 +10,10 @@ LLM 作為觀察者角色，透過監控 UI 操作日誌理解使用者行為，
 ## Tour 走讀流（SC CodeTour）
 
 - **觸發**：user 說「跟著我走 tour」「邊走讀邊討論」「tour 協同」，或 workspace 根 `.agent-tmp/tour-actions.log` 在場；不在場且 user 提走 tour → 說明前置未滿，禁輪詢不存在的檔案假裝協同。
-- **消費契約單一源**＝`~/Github/southchariot/docs/tour-action-log.md`（§5 語義錨 vs display 位置、§6 消費演算法）——**先讀契約再消費**，本 skill 不重述 schema／anchor／rotation 規則；契約變更 drift 以該文檔為準。
-- **trajectory 一次性**：log 是暫存流（`.agent-tmp/`、rotation 截頭留尾、清暫存勿誤刪）——當場消耗即丟，不入檔；僅實質討論（user 提問產生結論）才按下方「討論記錄」慣例記錄，走讀軌跡本身永不入檔。
-- 輪詢形態：CC＝`tail -F .agent-tmp/tour-actions.log | grep --line-buffered "ui_action:"`；ZCode＝每輪 user 訊息先 `rg "ui_action:"` 整檔重讀再回話。
-- 討論與記錄照本 skill 既有節（觀察→等待→上下文感知→記錄；上下文以契約的語義錨為準）。
+- **消費契約單一源**＝`~/Github/southchariot/docs/tour-action-log.md`（Read 前把 `~` 展開為絕對路徑；§5 語義錨 vs display 位置、§6 消費演算法）——**先讀契約再消費**，本 skill 不重述 schema／anchor／rotation 規則；契約變更 drift 以該文檔為準。
+- **trajectory 一次性**：log 是暫存流（`.agent-tmp/`，rotation 行為由契約 §6 管；它是消費契約資料——清理暫存時不得刪它，但它不是 durable 資料）——當場消耗即丟，不入檔；僅實質討論（user 提問產生結論）才按下方「討論記錄」慣例記錄，走讀軌跡本身永不入檔。
+- 輪詢形態：CC＝`tail -F .agent-tmp/tour-actions.log | grep --line-buffered "ui_action:"`（於 workspace 根執行；`-F` 跟檔名、rotation 自動重開，與整檔重讀等價的串流形）；ZCode＝每輪 user 訊息先 `rg "ui_action:" .agent-tmp/tour-actions.log` 整檔重讀再回話——**檔案路徑必寫**（`.agent-tmp/` 在 gitignore，裸 rg 會靜默零命中）。
+- 討論與記錄照本 skill 既有節（觀察→讀取→等待→上下文感知→記錄；本流的「讀取」＝讀契約與 log；上下文以契約的語義錨為準）。corpus 生產（.tour 製作）歸 tour-bootstrap；工作台複合場景歸 mosaic annotate-collab。
 
 ## 背景執行模式
 
