@@ -4,7 +4,7 @@ title: tour 走讀協同 skill——AI 跟著你在 VS Code 走的 tour 邊走�
 status: In Progress
 assignee: []
 created_date: '2026-09-28 13:07'
-updated_date: '2026-09-28 13:49'
+updated_date: '2026-09-28 13:56'
 labels: []
 dependencies: []
 references:
@@ -64,4 +64,6 @@ user 釐清（裁定約束，蓋過 brief 的存在性問題）：skill 留在 g
 bi panel verdict 收線（muse job-mulak9hd＝B 自描述 header；codex job-mulak9in＝E+ ui-collab 極薄指針）。收斂：A（新全域 skill）兩家皆否——草稿內容與 SC 契約文檔 §5-6 重疊＝第二 operational truth；缺口僅 discovery；annotate-collab 8 行＝既有重複該縮指針（mosaic 側）。分歧：muse 推 B（log header，生產側改動）、codex 反 B（producer 契約+rotation+parser 三驗證面，現階段成本高）。user 釐清約束（skill 留 guide＋trajectory 一次性）與 panel 收斂的張力點＝『有 skill』指獨立檔還是 guide 承載能力——待 user 裁決後縮卡/續卡。verdict 全文在 .delegate-bridge/jobs/ 兩 jobId jsonl。
 
 縮卡執行（WT ai-guide-air-212，未 commit 待 user 過目）：ui-collab 加 Tour 走讀流節（觸發＋單一源指針＋trajectory 一次性＋輪詢兩行，共 7 行）＋desc 補觸發詞（142 chars）；tour-collab 草稿已 rm、skills/AGENTS.md 已還原；desc gate FAIL=0。desc 已 semantic 修改——待 user 點卡確認。
+
+【SC 生產側交接 packet（待 AUTH 直送 southchariot-marshal）】主題：tour-actions.log 自描述 header（bi panel B 案歸生產側）。目標：log 自描述——任何 LLM 撿到檔即自服消費，ai-guide 側零 SC 特定耦合。規格草案（SC 側裁定細節）：①header 寫檔首（建檔＋每次 rotation rewrite 重建），建議形為 # 註解行（不合 ui_action: 文法）：用途行（一次性暫存、rotation 截頭留尾）＋契約指針（southchariot/docs/tour-action-log.md §5/§6）＋紅線五條內嵌（只信語義錨 step_file+anchor_status+resolved_line+ref、display_* 僅 UI context、none=敘事頁非 code、ref 非 null 一律 git show 禁 HEAD、整檔重讀禁 offset＋identity=(writer_id,seq)＋tour_stop=會話邊界）。②既有消費者零破壞＝驗收硬條件：rg 'ui_action.*seq=' 工具鏈與 §6 演算法零改動可用——header 行禁含 ui_action 前綴、禁含 seq= kv 對。③同 change 同步契約文檔 §2/§4/§6（header 例外段＋rotation 重建語義）——文檔自稱改契約三處同步，此次加第四處。④驗收建議：rotation 單元測試含 header 保留斷言、seq bootstrap 不受 header 影響、既有 547 tests 綠。⑤卡歸屬＝SC repo 自己的卡（SC-28x，照該 repo 治理）；ai-guide AIR-212 只留指針。對帳注記：ai-guide ui-collab 薄節現以契約文檔為單一源——header 出貨後是否加「檔頭說明優先」一句，待 SC 結案 receipt 後再決。回信慣例：semantic ACK（in_reply_to）＋completed＋result_pointer。
 <!-- SECTION:NOTES:END -->
