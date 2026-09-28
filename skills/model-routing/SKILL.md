@@ -200,6 +200,8 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 工單／trace 用法：`panel=tri`、`panel=tri-flash`。bi 額度不足：缺額那家的 findings 腿換 `GLM-5.3-flash`，工單註明哪家（例：`bi（muse→flash）`），或降 `single`——不用 `bi-flash` 詞（bi 無 GLM 腿可降、組合歧義）。codex 不可派時 `bi` 塌縮為 `single`（muse＋in-harness full 雙 context）。codex 腿須 user 顯式指定（explicit-only 既有政策不因 panel 名稱繞過）。此表是組合詞彙層，各腿的 model／effort 解析仍走上方 family 表。
 
+**塌縮前置判準（「不可派」的邊界）**：「不可派」＝carrier 面不可用——availability tri-state 的 `unavailable`（額度／帳號面）或顯式政策不派。**payload 面拒收（web 池閘／單則上限）≠ 不可派**——禁塌縮：先走①降 payload＋**重測**（拒收結論屬舊 payload，禁跨 payload 重用），①後仍拒才走②→④替代路由（[bridge-dispatch](../bridge-dispatch/SKILL.md)「webgpt 大內容」節；組合變更照 panel 詞彙顯式記錄）；codex 腿走完仍無法交付才可塌縮（顯式記錄降級）。**兩面皆非的拒收**（transport／environment／`at capacity` bounded-retry 類）不觸發塌縮——照「webgpt 失敗態」表分流，分類前禁塌縮；tri-state `unknown` 先 probe（resolver 步驟 4），不得逕行塌縮。carrier 錯誤訊息自帶的**修法**提示（thin-slice／another carrier）優先於陪審團規則——診斷／排障判讀仍照失敗態表（表內即有 carrier 提示誤導的反例）。真實案例：web-pool 閘拒（41K>28K）被誤讀為 codex 不可派、直接套 `bi`→`single` 塌縮，diff 瘦身 30 倍後也未重試——而 codex 腿整晚實際可用（實證源＝delegate-bridge STATE 教訓節）。
+
 ### family → (model, effort, 容量現值)
 
 | family | model | effort | 容量現值 | 備註 |
