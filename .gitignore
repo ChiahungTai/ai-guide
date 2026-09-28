@@ -70,3 +70,5 @@ DECISIONS-PENDING.md
 
 # AIR-151 KPI funnel（append-only runtime state，跨 WT 單一副本——同 DECISIONS-PENDING.md 不進版控）
 /.agents/improvement-kpi.jsonl
+# correction KPI runtime state（corrections-weekly machinery——同 improvement-kpi 不進版控）
+/.agents/correction-kpi.jsonl
