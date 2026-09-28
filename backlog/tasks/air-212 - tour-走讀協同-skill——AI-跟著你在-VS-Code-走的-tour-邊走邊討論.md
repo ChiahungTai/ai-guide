@@ -4,7 +4,7 @@ title: tour 走讀協同 skill——AI 跟著你在 VS Code 走的 tour 邊走�
 status: In Progress
 assignee: []
 created_date: '2026-09-28 13:07'
-updated_date: '2026-09-28 13:40'
+updated_date: '2026-09-28 13:41'
 labels: []
 dependencies: []
 references:
@@ -62,4 +62,6 @@ flowchart LR
 09-28 晚 user 設計挑戰：走讀協同＝session 內一次性 context 傳遞（讓 LLM 知道 user 在看哪），不需永久化載體；質疑形態＝類 stdout 流＋ui-collab 泛用模式已足。已派 panel=bi 跨家族討論（muse job-mulak9hd-ekf5o9＋codex job-mulak9in-z4guia，brief＝.agent-tmp/air212-design-brief.md，材料全內聯含 A-E 方案空間）。skill 草稿凍結於 card WT ai-guide-air-212（未 commit）；裁定前不推進 commit/審查腿。裁定後處置：E=撤卡／B=SC ext 加 log header（southchariot 側）／C=併 ui-collab／A=續原案。
 
 user 釐清（裁定約束，蓋過 brief 的存在性問題）：skill 留在 guide（方法論面可重複＝永久化合理）；trajectory（走讀軌跡）＝一次性 LLM 消耗、不需永久化——log 已是 .agent-tmp 暫存天然 ephemeral，設計不得把軌跡入檔。草稿待修：討論記錄段改為「僅實質討論才記 llm-discussions，走讀本身零記錄」。SC 側顯示強化（移動時顯示 repo/檔案/tour/行）＝southchariot 連動回報項。bi 兩腿（job-mulak9hd/job-mulak9in）回來後以此為準繩綜合，草稿一次改到位。
+
+bi panel verdict 收線（muse job-mulak9hd＝B 自描述 header；codex job-mulak9in＝E+ ui-collab 極薄指針）。收斂：A（新全域 skill）兩家皆否——草稿內容與 SC 契約文檔 §5-6 重疊＝第二 operational truth；缺口僅 discovery；annotate-collab 8 行＝既有重複該縮指針（mosaic 側）。分歧：muse 推 B（log header，生產側改動）、codex 反 B（producer 契約+rotation+parser 三驗證面，現階段成本高）。user 釐清約束（skill 留 guide＋trajectory 一次性）與 panel 收斂的張力點＝『有 skill』指獨立檔還是 guide 承載能力——待 user 裁決後縮卡/續卡。verdict 全文在 .delegate-bridge/jobs/ 兩 jobId jsonl。
 <!-- SECTION:NOTES:END -->
