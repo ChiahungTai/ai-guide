@@ -4,7 +4,7 @@ title: codex webgpt 審查 28K 閘——承載形階梯與派工前預估（D-00
 status: Done
 assignee: []
 created_date: '2026-09-28 22:50'
-updated_date: '2026-09-28 23:07'
+updated_date: '2026-09-28 23:13'
 labels: []
 dependencies: []
 references:
@@ -55,6 +55,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【receipt 四欄（landing 前）】classification=boundary（dispatch policy 條文新增——review-engine 判定表 skills 條文正典行）。review=三腿：fresh 3I+3S（內部張力 :94 no git vs (b)、跨檔 drift model-routing:220、估量無機械法——全採納修復 a80017df）＋intent 1I+4 零 intent-drift（(b) 缺唯讀 WO 掛鉤——db-69 WO 實帶唯讀宣告，採納；跨 repo AGENTS.md 張力記卡交 delegate-bridge 側 follow-up）＋跨家族 muse approve（job-muluebk1-1d8059）。CR N/A（純 markdown）。session-freshness=fresh。deployment-surfaces=healthy（merge 即 live，desc gate FAIL=0 911/1007 chars）。【scope 偏離記錄】Plan 原範圍 bridge-dispatch 一節——fresh F2 跨檔 drift（model-routing:220 材料必須內聯未同步 task face 例外）依單一源 drift 防護條強制同步，擴為兩檔；已回寫本記錄。【跨 repo follow-up】delegate-bridge AGENTS.md:515 big-reviews-go-in-harness 表述與 task-face WO 形的調和補寫＝該 repo 側事項（intent F2）。
+
+【ACK 回執】D-005 收編回信已送 sess_a71e7e3b（message_id=cadb4b7f，in_reply_to=2de711db，AUTH『回，都回喔』）——四條落地 AIR-213＋跨 repo follow-up 交還。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
