@@ -1,12 +1,14 @@
 ---
 id: AIR-211
 title: 修正委派 skill 裡一句會失敗的 waiter 啟動指令
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-28 07:44'
 updated_date: '2026-09-28 07:45'
 labels: []
 dependencies: []
+references:
+  - skills/bridge-dispatch/SKILL.md
 ordinal: 197000
 ---
 
