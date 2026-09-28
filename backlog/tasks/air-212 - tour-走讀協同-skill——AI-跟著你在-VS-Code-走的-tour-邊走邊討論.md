@@ -1,14 +1,14 @@
 ---
 id: AIR-212
 title: tour 走讀協同 skill——AI 跟著你在 VS Code 走的 tour 邊走邊討論
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-28 13:07'
-updated_date: '2026-09-28 14:06'
+updated_date: '2026-09-28 14:26'
 labels: []
 dependencies: []
 references:
-  - skills/tour-collab/SKILL.md
+  - skills/ui-collab/SKILL.md
 ordinal: 198000
 ---
 
@@ -37,11 +37,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 skills/ui-collab/SKILL.md 含「Tour 走讀流（SC CodeTour）」節：零契約重述（schema/anchor/rotation 一律指針 SC 契約文檔）、trajectory 一次性聲明在場、harness 輪詢形態兩行
-- [ ] #2 ui-collab desc 含 tour 觸發詞（跟著我走 tour／邊走讀邊討論），desc gate FAIL=0
-- [ ] #3 repo 無新增 skill 檔——tour-collab 草稿撤除不落地
-- [ ] #4 五維檢查通過（引用目標存在、無元資訊、術語一致、無矛盾）
-- [ ] #5 落地前審查閘回執四欄（classification/review/session-freshness/deployment-surfaces）landing 前補齊
+- [x] #1 skills/ui-collab/SKILL.md 含「Tour 走讀流（SC CodeTour）」節：零契約重述（schema/anchor/rotation 一律指針 SC 契約文檔）、trajectory 一次性聲明在場、harness 輪詢形態兩行
+- [x] #2 ui-collab desc 含 tour 觸發詞（跟著我走 tour／邊走讀邊討論），desc gate FAIL=0
+- [x] #3 repo 無新增 skill 檔——tour-collab 草稿撤除不落地
+- [x] #4 五維檢查通過（引用目標存在、無元資訊、術語一致、無矛盾）
+- [x] #5 落地前審查閘回執四欄（classification/review/session-freshness/deployment-surfaces）landing 前補齊
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -68,4 +68,20 @@ bi panel verdict 收線（muse job-mulak9hd＝B 自描述 header；codex job-mul
 【SC 生產側交接 packet（待 AUTH 直送 southchariot-marshal）】主題：tour-actions.log 自描述 header（bi panel B 案歸生產側）。目標：log 自描述——任何 LLM 撿到檔即自服消費，ai-guide 側零 SC 特定耦合。規格草案（SC 側裁定細節）：①header 寫檔首（建檔＋每次 rotation rewrite 重建），建議形為 # 註解行（不合 ui_action: 文法）：用途行（一次性暫存、rotation 截頭留尾）＋契約指針（southchariot/docs/tour-action-log.md §5/§6）＋紅線五條內嵌（只信語義錨 step_file+anchor_status+resolved_line+ref、display_* 僅 UI context、none=敘事頁非 code、ref 非 null 一律 git show 禁 HEAD、整檔重讀禁 offset＋identity=(writer_id,seq)＋tour_stop=會話邊界）。②既有消費者零破壞＝驗收硬條件：rg 'ui_action.*seq=' 工具鏈與 §6 演算法零改動可用——header 行禁含 ui_action 前綴、禁含 seq= kv 對。③同 change 同步契約文檔 §2/§4/§6（header 例外段＋rotation 重建語義）——文檔自稱改契約三處同步，此次加第四處。④驗收建議：rotation 單元測試含 header 保留斷言、seq bootstrap 不受 header 影響、既有 547 tests 綠。⑤卡歸屬＝SC repo 自己的卡（SC-28x，照該 repo 治理）；ai-guide AIR-212 只留指針。對帳注記：ai-guide ui-collab 薄節現以契約文檔為單一源——header 出貨後是否加「檔頭說明優先」一句，待 SC 結案 receipt 後再決。回信慣例：semantic ACK（in_reply_to）＋completed＋result_pointer。
 
 【delivery 回執】scbus 直送 southchariot-marshal 成功（AUTH：user『送吧』）——message_id=8c86f2a1-6f2f-4ca0-9c93-1aa5df8205a9、envelope_id=92ca36e3-9f85-4480-b936-395e8dad2caa、deliverability=queued（stage 2 queued-visible ✓）。completion 四段追蹤：段 3（對方 semantic ACK in_reply_to=8c86f2a1）與段 4（completed＋result_pointer=SC 卡 id）待 SC 側 drain——僅 receipt 不算對方收到後承接，禁記完成。correlation 查詢鍵＝message_id。
+
+【receipt 四欄（landing 前）】classification=boundary（控制面 instruction actionable 條文新增——review-engine 判定表正典行）。review=三腿全綠：fresh code-reviewer 7 findings（F1 Critical 採納修復——rg 裸呼叫 gitignore 靜默零命中，67269da6）＋intent primed 5 Low/Info 零 intent-drift＋跨家族 muse bridge review job-mulbsxau（4 findings——2 stale-card 否決、2 部分採納）；ledger=.review/air-212.md（WT）；CR 接線查證 N/A（純 markdown）。session-freshness=fresh（authoring＋review 同 session、governing rules 無中途變更）。deployment-surfaces=healthy（merge 即 live——skills symlink 母鏈目錄級；desc gate FAIL=0 151 chars；pre-commit 2644 tests 綠 ×2）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+縮卡結案：tour 走讀協同由 ui-collab「Tour 走讀流」薄節承載——SC 契約單一源指針（先讀契約再消費、零重述）＋trajectory 一次性不入檔＋rg 路徑必寫防 gitignore 靜默零命中；零新檔。SC log header（B 案）已交接 southchariot-marshal（message 8c86f2a1，待 SC 側施工回信）。終態圖：
+
+```mermaid
+flowchart LR
+    U["user 在 VS Code 走 tour"] --> SC["SC ext 寫 tour-actions.log"]
+    SC --> LLM["ui-collab Tour 節：先讀 SC 契約再消費"]
+    LLM --> CODE["語義錨定位討論；軌跡當場消耗即丟"]
+    SC -. "B 案已交接，未出貨" .-> HDR["log header 自描述（SC 側）"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
