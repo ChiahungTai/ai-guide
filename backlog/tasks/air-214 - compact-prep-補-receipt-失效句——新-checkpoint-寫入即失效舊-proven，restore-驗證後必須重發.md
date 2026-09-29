@@ -1,12 +1,14 @@
 ---
 id: AIR-214
 title: compact-prep 補 receipt 失效句——新 checkpoint 寫入即失效舊 proven，restore 驗證後必須重發
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-28 23:01'
-updated_date: '2026-09-28 23:13'
+updated_date: '2026-09-29 00:11'
 labels: []
 dependencies: []
+references:
+  - skills/compact-prep/SKILL.md
 ordinal: 200000
 ---
 
@@ -28,6 +30,23 @@ flowchart LR
     R -.->|"漏重發（本卡防的坑）"| LOOP["hook 每輪注入 re-restore，無人理"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 compact-prep「checkpoint 檔」段含「再落盤即失效舊 proven」句：bytes sha256 漂移→proven 失效→restore 驗證後必須重發 write_restore_proven——與源碼 grounding 一致
+- [ ] #2 真實案例 marker 在場（southchariot 兩次 compact 漏重發）
+- [ ] #3 零重述：不重抄 hook truth table／script 判準（指針式指涉）
+- [ ] #4 desc gate FAIL=0＋五維檢查通過
+- [ ] #5 落地前審查閘回執四欄 landing 前補齊
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide f80ffd9f〕
+〔已決策勿重辯：①最便宜形——skill 一句話（checkpoint 落盤面），不動 hook、不做 write_checkpoint 自動 invalidate（c7c571ea 發信端兩選項，值星裁決＋user 點卡確認）②位置＝compact-prep「checkpoint 檔」段——失效發生在寫入時，消費端在落盤當下即須知道③句子已源碼 grounding：scripts/compact_checkpoint.py `_checkpoint_digest`＝bytes sha256（:143）、`verify_restore_proven` 比對 sha（:209）、hook truth table「hash 漂移→proven 失效→re-restore 注入」（hooks/compact-restore-inject.py :26/37-38）④boundary 條文——三腿閘照走（fresh＋intent＋跨家族 muse）⑤ACK 已回（3662d915）⑥authoring card WT；landing 前回執四欄〕
+範圍：skills/compact-prep/SKILL.md「checkpoint 檔」段一句；不新增檔案
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
