@@ -27,6 +27,8 @@ when_to_use: "① session 工作中——維護 checkpoint 與 durable owner（�
 
 **checkpoint 檔**：落點由 `scripts/compact_checkpoint.py` 的 `checkpoint_paths(cwd, session_id)` 給出（單一源，禁手拼）——`<cwd>/.agent-tmp/compact-checkpoints/<session_id>/checkpoint.json`，與 restore-proven receipt 成對同目錄。欄位照 task-recovery 十欄映射（四問必要：objective/completed/next_action/pending；弧起點空 list 是合法回答）。**寫入即驗證**：`validate_checkpoint(load_checkpoint(...))`——壞檔 fail-loud 禁靜默續行。
 
+**再落盤即失效舊 proven**：同一 session 重寫 checkpoint（第二次 compact 或任何內容更新）→ 檔案 bytes sha256 漂移 → 在場 proven receipt 立即失效（`verify_restore_proven` 綁 bytes sha256、另核路徑）——消費狀態無法證明。對策：restore 驗證通過後**必須重新 `write_restore_proven`**，禁忽視注入。hook 注入有閘：proven baseline 之後**又有新 compaction** 時才恢復注入 thin pointer（照未消費處理）；僅內容更新無新 compaction 時維持靜默（誤拿防護）——但 proven 已失效，重發義務不變。真實案例：southchariot 兩次 compact 漏重發 proven，注入多日未處理（AIR-214）。
+
 **內容政策**（承接 preserve-list）：脈絡壓縮非時序流水帳；素材範圍＝全 session 非尾端窗口；需逐字保存的錯誤／findings 原文例外於「引用不重抄」；選擇標準是相關性不是對話位置。
 
 **lessons（十欄之外 optional，觸發式建議非義務）**：觸發——本 session 發生同錯重犯或 user 糾正致行為變更時，checkpoint 加 `lessons: string[]`：≤5 條、一行一條、「下次做 X 而非 Y」形（mistake→correction 語義）；無傷疤 session 省略合法。抽源判準：journal 已記＋實際發生＋correction 已確認或行為已變更，且「接續者不看會重犯」；排除 transient failure、純風格偏好、未驗證風險、設計內行為（如介面記憶歸零）。隱私：路徑一律 repo-relative、禁 secret/home 名。分界：lessons 是 session-local scar，checkpoint lessons 永不自動晉升——跨 session 教訓走 rules/skills/memory 晉升（memory-audit）。讀取面：lessons 被讀到靠恢復流程 step 1 讀 checkpoint 全文，非 hook 注入（hook 只給 thin pointer）。
