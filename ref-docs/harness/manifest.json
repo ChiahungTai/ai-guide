@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-24T10:57:05+00:00",
+  "generated_at": "2026-09-30T11:46:04+00:00",
   "sources": {
     "claude-code": {
       "base": "https://code.claude.com",
@@ -2572,7 +2572,7 @@
     },
     "grok-build": {
       "base": "https://docs.x.ai",
-      "generated_at": "2026-09-24T10:56:30+00:00",
+      "generated_at": "2026-09-30T11:46:04+00:00",
       "page_count": 24,
       "pages": [
         {
