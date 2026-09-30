@@ -1,10 +1,10 @@
 ---
 id: AIR-217
 title: grok-build 試用驗證——相容面實測與後續導入建議
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-30 12:00'
-updated_date: '2026-09-30 13:06'
+updated_date: '2026-09-30 13:38'
 labels: []
 dependencies: []
 references:
@@ -74,4 +74,26 @@ flowchart LR
 **judge（5.3）裁決：GO——分階段三閘**。Gate A 量產前置＝free tier 限額/user 裁決 SuperGrok＋b 形 bundle（token 成本 8 倍省）；Gate B hooks 適配＝ai-guide 側 hooks 雙讀 adapter（camelCase+snake_case 相容 CC/grok 單源）＋本機 grok import 修復（13 條零載入/4 條 dangling）；Gate C read-only 環境修（docker.sock symlink）——L2 review 腿依賴它。
 **L1/L2 開卡建議**：L1=治理納管卡（b 形 bundle target＋hooks adapter＋import 修復＋ref-docs 四處登記＋catalog xai binding——grok-4.7/effort 值域已實測）；L2=bridge family 卡（歸 delegate-bridge；NDJSON schema 已凍結可直供）——YAGNI gate 維持：等 L1 落地＋真實消費需求＋訂閱裁決。
 **AC 勾稽**：#1✓#2✓#3✓#4✓#5✓（本 notes 即 GO/NO-GO＋建議）#6✓（全程 tracked clean）。安全註記：B5 一次 jq 誤印 token 進 agent 終端（未落地任何 evidence 檔，B6 精確值複掃零命中）；temp homes 已清。
+
+AC#6 精確化：verifier＝before/after baseline delta（evidence/axis0-baseline.txt 對照），非全 tree clean——.agent-tmp 證據產物屬預期變更
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+grok-build L0 試用驗證完成：八軸全收證（契約面＋行為面雙層、lite-verify 9/9 VERIFIED），judge 裁決 GO——分階段三閘（SuperGrok 限額／hooks adapter／read-only 環境修復）。關鍵結論：①你的 AGENTS.md 假說成立——GROK_HOME/AGENTS.md 單檔部署可行，等語義對照省約 1.8 倍 token（b-full 7,383 vs claude-compat 13,355；原「省 8 倍」為不等語義比較經 HOLD 補測修正）②hooks 在 grok 下確定性 no-op（camelCase 外層鍵致命層＋runtime fail-open 契約；行為直證閉環）——L1 adapter 範圍＝14 支中 8 支雙讀＋2 支 sessionId③headless NDJSON schema 凍結（L2 直供；工具失敗＝事件流 status:failed 而 CLI exit 0）④marketplace github 型通/directory 型不匯入⑤池零污染⑥read-only sandbox 本機 fail-closed（docker.sock symlink 待修）⑦計費＝grok.com OAuth 訂閱（free tier 6 發觸頂，user 將訂 SuperGrok）⑧grok 文檔＝binary-bundled（新鮮度軸隨版本）。遺留：H2 fail-open 行為直證 BLOCKED-QUOTA（rig 就緒，quota 窗口/SuperGrok 後一發即收）；GROK_MEMORY 語義 UNKNOWN。L1/L2 開卡建議已產出（卡 Notes）。終態圖：
+
+```mermaid
+flowchart LR
+    G["grok 1.0.44 實測"] --> A1["①規則 CC 相容 22 檔"]
+    G --> A2["②hooks no-op 直證"]
+    G --> A4["④NDJSON 凍結"]
+    G --> A8["⑧部署三形"]
+    A8 --> BF["b 形單檔 bundle<br/>等語義省 1.8x"]
+    A2 --> ADP["L1 hooks adapter<br/>8 支雙讀"]
+    A4 --> L2X["L2 bridge family<br/>（schema 直供）"]
+    BF --> GOJ["judge GO 三閘<br/>SuperGrok/adapter/環境"]
+    GOJ -.->|"L1 開卡"| NEXT["L1 治理納管卡"]
+    GOJ -.->|"平行"| BR["bridge L2（delegate-bridge）"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
