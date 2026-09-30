@@ -4,7 +4,7 @@ title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面�
 status: In Progress
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 10:44'
+updated_date: '2026-09-30 11:19'
 labels: []
 dependencies: []
 references:
@@ -37,10 +37,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 bridge-dispatch skill：WO/範本含必填「工具路由＋cr 可用性宣告」節（在場點名 cr-query／缺場標 unverified-by-graph 兩分支條文）＋收線核對節（jsonl tool histogram vs manifest）
-- [ ] #2 symbol-query-routing（rule 或 skill）：isolated-worker／bridge 無 MCP 形態列為降級源，降級產出標記義務（未 index 驗證同款語義）
-- [ ] #3 三腿審查照走（fresh＋intent＋跨家族 muse）；落地前審查閘回執四欄齊
-- [ ] #4 L1 轉介蹤跡：mosaic 信 ACK（d2c0d056）＋本卡 plan 記分工裁定——bridge 線承接後本卡 notes 補指針
+- [x] #1 bridge-dispatch skill：WO/範本含必填「工具路由＋cr 可用性宣告」節（在場點名 cr-query／缺場標 unverified-by-graph 兩分支條文）＋收線核對節（jsonl tool histogram vs manifest）
+- [x] #2 symbol-query-routing（rule 或 skill）：isolated-worker／bridge 無 MCP 形態列為降級源，降級產出標記義務（未 index 驗證同款語義）
+- [x] #3 三腿審查照走（fresh＋intent＋跨家族 muse）；落地前審查閘回執四欄齊
+- [x] #4 L1 轉介蹤跡：mosaic 信 ACK（d2c0d056）＋本卡 plan 記分工裁定——bridge 線承接後本卡 notes 補指針
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -59,4 +59,6 @@ flowchart LR
 【L1 轉介】提案已投 delegate-bridge-marshal 位址（scbus message 5ab32561，queue/inform；user 原話「bridge scbus傳給他，我叫他處理」）——含症狀複核證據、root cause 定位（AGENTS.md:232-251 isolated staged home 無 MCP 注入）、blast radius（glm 預設 DARK）、L2-L4 分工互補說明。bridge 線承接後本 notes 補承接指針。
 
 【開工】①mosaic 補充已收（1ca57596）：雙計數口徑 tool events 16,428／tool.updated 7,304＝Read 3,650 呼叫+TodoWrite 2；MOS-158 起工單帶「結構事實查證」節（無 cr 時 rg+LSP 降級路徑明示）＝L3 有效形態 field 實作，本卡以其範本為輸入參照（wo-cr-gap.md）②開工流程＝muse+codex 雙家族討論（user 指示）→ persistent card WT 實作（控制面弧）→ 三腿審查（AC#3）→ 落地前審查閘回執四欄 → merge。
+
+【0930 結算——post-build 收斂＋回執四欄】實作＝flash（impl-lite）七編輯落地；審查＝fresh 腿 GO-WITH-FIXES（F1-F9，最高價值 F1：toolName 僅 glm ledger 形——muse/codex 為 payload_type，防收線誤判）＋跨家族 muse 腿 GO-WITH-FIXES（job-muo002xs，F1-F6）；judge＝5.3 marshal 裁決 9 採納/2 摺結案/0 否決；修復驗證腿九項全 PASS 零修正。回執四欄：classification=boundary／review=fresh+muse+intent+設計雙腿（evidence refs .agent-tmp/air-216/）／session-freshness=fresh／deployment-surfaces=healthy（deploy 3/3，unverified-by-graph 三 bundle 在場）。judge 裁決記錄：①AC#1 措辭『必填節』vs landed 條件節——與討論輪雙腿裁決一致（條件節＋要素 1 指針），AC 以條件節表述勾稽（muse-F6/fresh-F8）②既有 [WARN] graph-not-available 變體與 cr_usage regex 不匹配——後續弧收编（fresh-F9）③muse bundle 96%/30KiB gate 既有壓力上報（非本弧引入）。收線：merge 425ebf3c（wt-close full，WT+branch 已清）；CR telemetry 基線＝call-evidence 2 jobs/4 calls、evidence-bearing 25 jobs（src=11/unverified=22/degraded=3）；correction mining 0 候選；improvement admission=0（全跨弧歷史）；tour corpus no-op；post-build receipt＝.agent-tmp/post-build-receipts/air-216.json。
 <!-- SECTION:NOTES:END -->
