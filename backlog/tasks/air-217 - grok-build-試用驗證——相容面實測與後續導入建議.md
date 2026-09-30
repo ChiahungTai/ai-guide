@@ -4,7 +4,7 @@ title: grok-build 試用驗證——相容面實測與後續導入建議
 status: In Progress
 assignee: []
 created_date: '2026-09-30 12:00'
-updated_date: '2026-09-30 12:28'
+updated_date: '2026-09-30 13:06'
 labels: []
 dependencies: []
 references:
@@ -43,12 +43,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 八軸逐項 receipt（命令＋輸出指針）——hooks 兩類空轉源（欄位名不一致／runtime fail-open）分開各有負向測試
-- [ ] #2 streaming-json 三形 fixture（成功／工具呼叫／失敗）＋--model/--effort 值域表凍結存證
-- [ ] #3 四支重點 hooks（marshal_admission_guard／block-memory-index-write／kanban-skill-gate／memory-write-sensor）camelCase 判定——需 adapter 清單或確認 grok 轉譯
-- [ ] #4 部署最小形三形對照結論（token 數／重複載入 receipt）
-- [ ] #5 GO/NO-GO＋L1/L2 開卡建議（NO-GO 附理由止步）
-- [ ] #6 零正式治理面新增改動——before/after baseline delta 證明（開跑前 status 快照；結束後無新增治理面 diff，既存 dirty 不計）
+- [x] #1 八軸逐項 receipt（命令＋輸出指針）——hooks 兩類空轉源（欄位名不一致／runtime fail-open）分開各有負向測試
+- [x] #2 streaming-json 三形 fixture（成功／工具呼叫／失敗）＋--model/--effort 值域表凍結存證
+- [x] #3 四支重點 hooks（marshal_admission_guard／block-memory-index-write／kanban-skill-gate／memory-write-sensor）camelCase 判定——需 adapter 清單或確認 grok 轉譯
+- [x] #4 部署最小形三形對照結論（token 數／重複載入 receipt）
+- [x] #5 GO/NO-GO＋L1/L2 開卡建議（NO-GO 附理由止步）
+- [x] #6 零正式治理面新增改動——before/after baseline delta 證明（開跑前 status 快照；結束後無新增治理面 diff，既存 dirty 不計）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -67,4 +67,11 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【開工】①流程＝L0 評估弧（無 repo 檔編輯→不開 card WT；實作工作單照 spawn flash）②前置查核：grok CLI 在場性＋auth 形態——開跑前由實作腿回報，未安裝即停卡回報 user（安裝＋login 屬 user 動作）③baseline delta 快照：git status --porcelain > .agent-tmp/air-217/baseline-status.txt（AC#6 用）。
+
+【L0 完成結算——八軸全收證＋judge 裁決】契約面（muse/codex 兩輪）＋行為面（flash 兩段）＋證據審計（lite-verify 9/9 VERIFIED）齊。環境註記：行為面在 grok 1.0.44＋登入態收證（1.0.13 契約面仍有效——flag/事件形態一致）。
+**八軸終表**：①規則載入 PASS（CC 相容完整：22 檔 13,360 tok）②hooks 直證 PASS——no-op 行為閉環（保護路徑寫入成功＋零 deny 事件＋hooks 在場 trusted）；致命層＝外層 toolName/toolInput camelCase 鍵；read_file 映射 target_file ③marketplace PARTIAL——github 型辨識、delegate-market directory 型不匯入（補救=add local path）④headless PASS——三形 NDJSON 凍結；事件型別 7 種；tool 事件全 camelCase（L2 schema 輸入）；default model=grok-4.7；effort=xhigh/high/medium/low ⑤記憶 PASS——池零污染（行為面覆核）⑥sandbox BLOCKED-ENV——read-only 在本機起不來（docker.sock symlink→socket-deny resolution fail→fail-closed 拒啟動；設計正向但本機不可用）⑦認證 PASS——grok.com 訂閱 session（OAuth/free tier）非 API key；autoUpdate 可關；**headless 單發 ~46.5k input tok（規則全量注入）＝6 發觸頂 free tier** ⑧部署三形 PASS——b 形（$GROK_HOME/AGENTS.md 單檔）成立且最精簡：1,652 vs 13,360（a 形）/15,004（c 形）tok。
+**意外發現**：import marker 二元組（json+config flag）；nested git checkout 不承襲 trust；跨源同命令 hooks dedup。
+**judge（5.3）裁決：GO——分階段三閘**。Gate A 量產前置＝free tier 限額/user 裁決 SuperGrok＋b 形 bundle（token 成本 8 倍省）；Gate B hooks 適配＝ai-guide 側 hooks 雙讀 adapter（camelCase+snake_case 相容 CC/grok 單源）＋本機 grok import 修復（13 條零載入/4 條 dangling）；Gate C read-only 環境修（docker.sock symlink）——L2 review 腿依賴它。
+**L1/L2 開卡建議**：L1=治理納管卡（b 形 bundle target＋hooks adapter＋import 修復＋ref-docs 四處登記＋catalog xai binding——grok-4.7/effort 值域已實測）；L2=bridge family 卡（歸 delegate-bridge；NDJSON schema 已凍結可直供）——YAGNI gate 維持：等 L1 落地＋真實消費需求＋訂閱裁決。
+**AC 勾稽**：#1✓#2✓#3✓#4✓#5✓（本 notes 即 GO/NO-GO＋建議）#6✓（全程 tracked clean）。安全註記：B5 一次 jq 誤印 token 進 agent 終端（未落地任何 evidence 檔，B6 精確值複掃零命中）；temp homes 已清。
 <!-- SECTION:NOTES:END -->
