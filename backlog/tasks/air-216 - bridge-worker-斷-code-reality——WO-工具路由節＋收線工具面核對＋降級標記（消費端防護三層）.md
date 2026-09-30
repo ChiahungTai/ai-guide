@@ -4,7 +4,7 @@ title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面�
 status: To Do
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 09:55'
+updated_date: '2026-09-30 10:19'
 labels: []
 dependencies: []
 ordinal: 202000
@@ -51,4 +51,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 證據指針：mosaic MOS-157 通報信（message f4667717，scbus；ACK 回執 d2c0d056）；job jsonl＝mosaic .delegate-bridge/jobs/job-munnl6dr-0rg8rh.jsonl（Read tool events 16,428、code-reality 0 命中——值星獨立複核）；WO 缺口工作單＝mosaic .agent-tmp/flowlab2/wo-cr-gap.md；bridge 側 isolated staged home 無 MCP 注入記載＝delegate-bridge AGENTS.md:232-251。
+
+【L1 轉介】提案已投 delegate-bridge-marshal 位址（scbus message 5ab32561，queue/inform；user 原話「bridge scbus傳給他，我叫他處理」）——含症狀複核證據、root cause 定位（AGENTS.md:232-251 isolated staged home 無 MCP 注入）、blast radius（glm 預設 DARK）、L2-L4 分工互補說明。bridge 線承接後本 notes 補承接指針。
 <!-- SECTION:NOTES:END -->
