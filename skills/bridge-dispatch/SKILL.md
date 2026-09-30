@@ -1,6 +1,6 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability、review face 28K、承載形、transport stamp、thin-slice。"
+description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability、review face 28K、承載形、transport stamp、thin-slice、structural-evidence route、unverified-by-graph、收線工具面核對。"
 ---
 
 # bridge-dispatch — delegate-bridge 委派深層
@@ -63,6 +63,8 @@ delegated job 完成時**不會通知任何人**——`task --background` detach
 
 完整模式（場景表＋sh 範例＋family 起跳值＋重啟後恢復 playbook：先 `runs` 禁盲重派、`show <id> --json` 收完成、running 重掛 `wait <id> --stuck-after`——綠 runs 不證健康）→ delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Dispatch ⇄ collection discipline」節。**terminal ≠ complete**：有 sink 登記者以 artifact 機驗（存在＋非空＋錨點）為完成，無登記者以 bounded receipt 非空為完成（0924 自 rules 收編；驗收程序見上段 sink 三步驗收）。
 
+**結構證據收線核對（terminal collection；AIR-216；as-of 2026-09-30——rg pattern 隨 bridge jsonl schema 漂移以實際欄位為準，且各 family ledger 事件鍵不同：`"toolName"` 為 glm 形，muse/codex 為 `payload_type`（tool.result／tool.search／tool.bash 等）——先判讀該 job 的 schema 再核，0 命中 floor 以 schema 確認後為準）**：對 brief 宣告的 structural-evidence route 核實際 evidence channel——live-cr:MCP 核 job tool events（glm 形例：`rg -o '"toolName":"[^"]+"' <job workspace>/.delegate-bridge/jobs/<id>.jsonl | sort | uniq -c`；ledger per-workspace，cwd 須＝job workspace）；live-cr:CLI 核 command payload 是否實際呼叫 code-reality 查詢（toolName=Bash 不代表零 CR；例：`rg -o 'code-reality (refs|callers|closure|impact-radius)' <job>.jsonl | sort | uniq -c`）；preprovided-cr 核 read-set artifact／provenance receipt（cr-query `[SRC]` provenance 戳）；degraded 核受影響的結構 finding／claim 是否逐條帶 unverified-by-graph，降級原因記 `no-cr-query-face`。**宣告 live-cr 卻無相應 evidence channel（0 命中＝fail-loud floor；零星命中＋Read 主導＝實質違反 live-cr 禁令〔禁逐檔 Read 重建結構事實〕，照該禁令條判）、或宣告 degraded 卻漏標記＝delivery defect**——處置：逐條補標或退回；histogram 行貼進卡 notes／receipt（證據非自報；loopback 紀律管報告內部一致性，不涉 histogram 語義）。本核對只證 route 遵循，**不證 query 正確或 graph freshness**（CR hit>0 不洗白 stale graph 上的負存在斷言——仍依 cr-query／symbol-query-routing 判定）。腳本化門檻：需自動阻擋 collection、跨 MCP／CLI／family tool-name normalization、或 parser 誤報出現時再議；此前禁腳本化。
+
 watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄collection 配對——完整模式」段；watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；bare shell 呼叫 watcher 須帶 `DELEGATE_BRIDGE_BIN=<bridge 絕對路徑>`（watcher 預設只查 PATH，找不到即 clean fail-loud exit 2 附修法——路徑由 installed_plugins.json registry pin 解析，見本檔上方 caller surface 對照表；0921 dogfood 實證）；雙軸 stalled 判準已對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」——0921 codex 腿 drift finding 修復）；**codex web 長生成期 heartbeat 滯後→worker 軸 5m floor 常態性誤報**（0921 高強度研究工單實證×3，job 本體活躍）——研究類派工帶 `--kind research` 抬 runtime floor 並容忍 advisory；watcher 增量定位＝124 透明 re-arm＋advisory wake＋CollectionReceipt 機驗（native wait 已原生支援 N-job batch fan-in 與雙軸 stuck 觀察——勿重複實作，長期 liveness 語義下沉回 producer）；0921 消費同步已落地：bridge ≥2.0.23 時 waiter 內部自動走 native wake（版本閘自選，arm 命令不帶 wake 參數——`--wake-on-stuck/--wake-axis` 是 bridge `wait` 的旗，由 waiter 內部傳遞），exit 3 wake JSON 轉譯為現行 stalled-advisory（自算雙軸輪詢退役；124 re-arm／terminal collect／exit 2 分流保留）——選 runtime 軸不選 worker，因 codex web 長生成期 heartbeat 滯後誤報×3（前述），選軸即把誤報消化在 producer；<2.0.23 維持自算雙軸（版本閘控雙模，MIN pin 不變 2.0.22——ZCode pin 翻轉後自動走 native）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝delegate-run-output「Receipt acceptance」節，本檔引用不自創）；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
 
 ## Canonical dispatch runbook（glm writer lane）
@@ -81,13 +83,23 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 
 派工 brief 的每條工作腿須附能力契約五要素（語意 gate 歸 caller——bridge 只做 declared↔derived 機械一致性驗證，矛盾 exit 2（pre-ledger 前置閘，非 watcher exit 2）；0926 judge v1 空轉 6.5h 事故的契約化）：
 
-1. **capability manifest**：brief 逐腿宣告預期工具面（開放列，如 Bash／Write／Read／Grep／Glob 有無；例：唯讀裁定腿 `[tools: Read/Grep/Glob only]`）。
+1. **capability manifest**：brief 逐腿宣告預期工具面（開放列，如 Bash／Write／Read／Grep／Glob 有無；例：唯讀裁定腿 `[tools: Read/Grep/Glob only]`）。結構查證腿另須宣告 structural-evidence route——見下方「結構查證腿——evidence route 宣告」節（要素 1＋2 之實例化）。
 2. **availability lint**：動詞指令只可引用 availability 集合內的工具（衍生 surface；`--bash-allow` 白名單為 db-58 增補，落地前 availability＝衍生 surface、db-62 homeMode 落地後端到端可用——屆時本 as-of 標記翻正（bridge release 追蹤）；命令級比對）。引用集合外工具的動詞＝brief 缺陷，禁派（caller 側 lint 標籤，非 bridge 錯誤碼——db-59 落地後以其實際碼為準）。
 3. **materialize-first 排序（分腿型明示主語）**：唯讀腿＝dispatcher 預先落檔、隨單附路徑（read-only 腿不製造需要 execution capability 的證據；對端模板 §6 同義）；寫腿 diff 形＝carrier 落檔為預設，`--bash-allow` 為例外通道（allow-exception），不作預設。
 4. **one-shot＋具名 sink**：唯讀裁定腿走 one-shot 產出＋具名 sink 檔；plan tier 無 Write 面——verdict 以 final text 承載由 marshal 落盤（seal 模式定義單一源＝本要素），sink 登記驗收。
 5. **envelope 給值**：預算／kill 封頂走 opt-in envelope 顯式給值（bounded kill），不依賴隱式預設。
 
 對端：bridge 側 declared-surface consistency gate（db-59）＋budget envelope/bounded kill（db-60）＋`--bash-allow` stamp 與 consistency 條款（db-58）；brief 模板六→八節擴充由 delegate-bridge repo 承接。
+
+## 結構查證腿——evidence route 宣告（條件節；AIR-216）
+
+brief 含結構事實查證（callers／refs／closure／impact radius／符號事實）時，capability manifest 旁必須明示該腿的 structural-evidence route，三態擇一（**按 carrier 當次實際 surface 宣告，禁空願望、禁按家族推定**；live-cr 依 query face 再分 MCP／CLI 兩形——見收線核對）。宣告形態（brief 逐腿一行，機械可掃）：`route：live-cr[:MCP|:CLI]`｜`route：preprovided-cr`｜`route：degraded`。surface 判定＝work-order §7 carrier 分流 guard（當次探測為準）；「glm 腿默認 degraded」是可反駁起點非推定——探測到 CR face 即升 live-cr：
+
+- **live-cr**——worker 當次 surface 有可用 CR query face（MCP 在場，或唯讀 CLI `code-reality` 經 Bash 可達）：結構事實須由 CR 取得；Read 僅可在結構範圍縮小後查行為／語義（分工語義＝cr-query「LSP vs code-reality — the division」），**禁以逐檔／逐行 Read 重建 callers／impact 等結構事實**（違＝brief 缺陷，禁派——要素 1＋2 之實例化）。
+- **preprovided-cr**——dispatcher 已先跑 CR、evidence artifact（含 provenance receipt）附於 read-set：worker 不必重查，收線核 read-set 所列 artifact。
+- **degraded**——無可用 CR query face（例：glm isolated home MCP 不隨行，bridge L1 未落地前 glm 腿默認此態）：依 symbol-query-routing／`skills/_common/work-order.md` §7 既有 fallback 宣告實際降級面（rg／Grep；LSP 僅在可用時列入，禁預設），**受影響的結構 finding／claim 逐條標 `unverified-by-graph`（未經結構圖驗證）**；報告頂層 `[WARN] structural context degraded` 只作匯總，不取代逐條標記。
+
+工具路由階梯與 freshness 語義以 symbol-query-routing／cr-query 為單一源，本節不重刻。**降級不可靜默**——選到無 CR query face 的 carrier 時，unverified-by-graph 標記是強制義務（carrier 選擇與 capability 篩選歸 model-routing，本節不設家族偏好）。
 
 ## 下沉細節（自 rules 精煉遷入——on-demand 參考）
 

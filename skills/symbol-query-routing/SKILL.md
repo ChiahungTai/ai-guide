@@ -1,6 +1,6 @@
 ---
 name: symbol-query-routing
-description: "符號查詢路由深層參考 — LSP operation 速查表（自 rule 下沉）、驗證任務 workflow 與輸出格式、rg 陷阱真實案例群（truncation/masking/local import/覆蓋判斷 false negative）、方法論限制 loopback、Agent prompt 工具指定模板（spawn agent 必填工具選擇）、跨 harness LSP 載體對照（Claude native vs ZCode bridge）、workspace staleness/reindex 與條件式 fallback。always-on 核心（cr-first 路由、任務啟動 gate、fallback/zero-hit 紀律）在 rules/symbol-query-routing.md；做依賴審計/符號查證/review 需要反例論證、operation 對照、spawn agent 工具指定或跨 harness 呼叫細節時載入。觸發詞：符號查詢路由、LSP、findReferences、reindex、workspace stale、rg 陷阱、載體對照、operation 速查、agent prompt 工具指定。"
+description: "符號查詢路由深層參考 — LSP operation 速查表（自 rule 下沉）、驗證任務 workflow 與輸出格式、rg 陷阱真實案例群（truncation/masking/local import/覆蓋判斷 false negative）、方法論限制 loopback、Agent prompt 工具指定模板（spawn agent 必填工具選擇）、跨 harness LSP 載體對照（Claude native vs ZCode bridge）、workspace staleness/reindex 與條件式 fallback。always-on 核心（cr-first 路由、任務啟動 gate、fallback/zero-hit 紀律）在 rules/symbol-query-routing.md；做依賴審計/符號查證/review 需要反例論證、operation 對照、spawn agent 工具指定或跨 harness 呼叫細節時載入。觸發詞：符號查詢路由、LSP、findReferences、reindex、workspace stale、rg 陷阱、載體對照、operation 速查、agent prompt 工具指定、CR query face、no-cr-query-face、unverified-by-graph、bridge worker 降級。"
 ---
 
 # 符號／型別查詢路由 — 深層參考
@@ -21,6 +21,8 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 | 檔案搜尋（按名稱模式） | fd | LSP 不處理檔案系統 |
 
 （`goToDefinition`／`workspaceSymbol`／`documentSymbol`／`incoming·outgoingCalls` 等標準 operation 語義跨 harness 一致、可推導；ZCode 端型別面由 code-reality-lsp-bridge 承接，非原生 LSP）
+
+- **委派 worker 無 CR query face（bridge worker 降級源；AIR-216）**：CR query face 以 worker 當次實際能力判定——MCP 缺席不等於 CR 缺席（唯讀 CLI `code-reality` 經 Bash 可達即為合法 query face）；工具在場亦不等於 current-tree graph 可用（freshness／provenance 仍按 cr-query 判定）。降級 cause＝`no-cr-query-face`；標記＝結構 finding／claim 級逐條 `unverified-by-graph`＋方法段匯總（報告級 `[WARN] structural context degraded` 只作摘要）；負存在結論（「無呼叫者→可刪」類）不得憑降級證據直接收敛——改寫句式參照 loopback 表「toplevel 未發現，local import 未驗證」。收線核對面見 bridge-dispatch skill「結構證據收線核對」。
 
 ## LSP 驗證任務 workflow（5 步）
 
