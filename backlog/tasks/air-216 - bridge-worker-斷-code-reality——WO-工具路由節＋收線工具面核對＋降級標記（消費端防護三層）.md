@@ -1,12 +1,16 @@
 ---
 id: AIR-216
 title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面核對＋降級標記（消費端防護三層）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 10:19'
+updated_date: '2026-09-30 10:44'
 labels: []
 dependencies: []
+references:
+  - >-
+    backlog/tasks/air-216 -
+    bridge-worker-斷-code-reality——WO-工具路由節＋收線工具面核對＋降級標記（消費端防護三層）.md
 ordinal: 202000
 ---
 
@@ -53,4 +57,6 @@ flowchart LR
 證據指針：mosaic MOS-157 通報信（message f4667717，scbus；ACK 回執 d2c0d056）；job jsonl＝mosaic .delegate-bridge/jobs/job-munnl6dr-0rg8rh.jsonl（Read tool events 16,428、code-reality 0 命中——值星獨立複核）；WO 缺口工作單＝mosaic .agent-tmp/flowlab2/wo-cr-gap.md；bridge 側 isolated staged home 無 MCP 注入記載＝delegate-bridge AGENTS.md:232-251。
 
 【L1 轉介】提案已投 delegate-bridge-marshal 位址（scbus message 5ab32561，queue/inform；user 原話「bridge scbus傳給他，我叫他處理」）——含症狀複核證據、root cause 定位（AGENTS.md:232-251 isolated staged home 無 MCP 注入）、blast radius（glm 預設 DARK）、L2-L4 分工互補說明。bridge 線承接後本 notes 補承接指針。
+
+【開工】①mosaic 補充已收（1ca57596）：雙計數口徑 tool events 16,428／tool.updated 7,304＝Read 3,650 呼叫+TodoWrite 2；MOS-158 起工單帶「結構事實查證」節（無 cr 時 rg+LSP 降級路徑明示）＝L3 有效形態 field 實作，本卡以其範本為輸入參照（wo-cr-gap.md）②開工流程＝muse+codex 雙家族討論（user 指示）→ persistent card WT 實作（控制面弧）→ 三腿審查（AC#3）→ 落地前審查閘回執四欄 → merge。
 <!-- SECTION:NOTES:END -->
