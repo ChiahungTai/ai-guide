@@ -1,12 +1,14 @@
 ---
 id: AIR-218
 title: grok L1a 工程接線——規則 bundle＋hooks 雙讀＋文檔登記＋xAI direct binding
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-30 13:44'
 updated_date: '2026-09-30 13:45'
 labels: []
 dependencies: []
+references:
+  - ref-docs/harness/grok-build
 ordinal: 204000
 ---
 
