@@ -327,7 +327,7 @@ def test_verify_probe_set_mismatch_guard():
     """S-3：manifest 新增 probe 未排程 → fail-loud 非靜默跳過。"""
     manifest = {
         "probes": {
-            "claude": {"type": "pipe-payload", "script": "x"},
+            "grok": {"type": "pipe-payload", "script": "x"},
             "zcode": {"type": "pipe-payload", "script": "x"},
             "muse": {"type": "muse-inspect", "plugin_id": "x"},
             "codex": {"type": "codex-three-layer"},
@@ -392,15 +392,19 @@ def _boom_resolver():
 def test_hooks_uninstall_does_not_require_hook_python(tmp_path, monkeypatch):
     """C1: rollback identity (matcher+script) must not resolve the interpreter.
 
-    CC/ZCode/Codex owned registrations uninstall cleanly with the resolver
-    forced to raise; unrelated external groups survive byte-identical."""
+    grok(render-file)/ZCode/Codex owned registrations uninstall cleanly with the
+    resolver forced to raise; unrelated external groups survive byte-identical."""
     monkeypatch.setattr(mod, "_HOOK_PYTHON_CACHE", "/virtual/runtime/bin/python3.12")
     monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
     manifest = mod.load_manifest()
     reg = manifest["registrations"]
     rendered = {}
-    for harness in ("cc", "zcode"):
-        raw = (mod.MANIFEST_PATH.parent / reg[harness]["template"]).read_text()
+    # cc.json＝dormant 歷史模板（AIR-215 退役）仍可作 plain-form render fixture
+    for harness, template in (
+        ("cc", "registrations/cc.json"),
+        ("zcode", reg["zcode"]["template"]),
+    ):
+        raw = (mod.MANIFEST_PATH.parent / template).read_text()
         rendered[harness] = json.loads(mod.render(raw))
     codex_live = mod.render_codex(
         (mod.MANIFEST_PATH.parent / reg["codex"]["template"]).read_text()
@@ -426,6 +430,9 @@ def test_hooks_uninstall_does_not_require_hook_python(tmp_path, monkeypatch):
     cc_target.write_text(json.dumps({"hooks": rendered["cc"], "other": 1}))
     zc_target = tmp_path / "zc.json"
     zc_target.write_text(json.dumps({"hooks": rendered["zcode"]}))
+    gr_target = tmp_path / "ai-guide.json"
+    # 外包 {"hooks": ...} 與 live 檔形 mirror（registrations/grok.json 結構；審查 Info-3）
+    gr_target.write_text(json.dumps({"hooks": rendered["cc"]}))  # grok 面＝套件獨佔整檔
     ext_cx = (
         '[[hooks.PreToolUse]]\nmatcher = "External"\n\n'
         '[[hooks.PreToolUse.hooks]]\ntype = "command"\ncommand = "/bin/echo hi"\n'
@@ -435,11 +442,22 @@ def test_hooks_uninstall_does_not_require_hook_python(tmp_path, monkeypatch):
     # managed 3.12 gone at rollback time — resolver must not be consulted
     monkeypatch.setattr(mod, "_HOOK_PYTHON_CACHE", None)
     monkeypatch.setattr(mod, "resolve_hook_python", lambda: _boom_resolver())
-    for harness, target in (("cc", cc_target), ("zcode", zc_target)):
+    t = {
+        "kind": "render-file",
+        "target": str(gr_target),
+        "template": reg["grok"]["template"],
+        "action": "remove",
+    }
+    assert mod._apply_target(reg, t, "uninstall") == "removed"
+    assert not gr_target.exists()  # 套件獨佔整檔——uninstall 即刪檔
+    for harness, target, template in (
+        ("cc", cc_target, "registrations/cc.json"),
+        ("zcode", zc_target, reg["zcode"]["template"]),
+    ):
         t = {
             "kind": f"json-subtree:{harness}",
             "target": str(target),
-            "template": reg[harness]["template"],
+            "template": template,
             "merge_root": "hooks",
             "action": "remove",
         }

@@ -36,7 +36,7 @@ def _all_face_manifest() -> dict:
             "agents": {"argv": ["wrap-agents"]},
             "memory": {"plugin_path": "p", "plugin_id": "x", "pool_setup": "s"},
         },
-        "registrations": {"cc": {}, "zcode": {}, "codex": {}},
+        "registrations": {"grok": {}, "zcode": {}, "codex": {}},
     }
 
 
@@ -214,7 +214,7 @@ def test_f2_load_manifest_malformed_toml_converged(tmp_path, monkeypatch):
 
 def test_f2_build_plan_missing_registration_converged():
     """build_plan 的 reg[harness] KeyError → GovernanceError（含補齊指引）。"""
-    with pytest.raises(mod.GovernanceError, match=r"registrations\.?\s*cc|cc"):
+    with pytest.raises(mod.GovernanceError, match=r"registrations\.?\s*grok|grok"):
         mod.build_plan({"registrations": {}}, "hooks", "install")
 
 
@@ -250,7 +250,7 @@ def test_f2_missing_registration_exits_exec_not_traceback(
     assert rc == mod.EXIT_EXEC
     err = capsys.readouterr().err
     assert "FAIL" in err
-    assert "cc" in err
+    assert "grok" in err
     assert "Traceback" not in err
 
 

@@ -910,14 +910,19 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
     targets: list[dict] = []
     reg = manifest.get("registrations", {})
     if surface in ("hooks", "all"):
-        for harness in ("cc", "zcode", "codex"):
+        for harness in ("grok", "zcode", "codex"):  # AIR-215：grok 遞補 cc（刪除式）
             try:
                 cfg = reg[harness]
+                # AIR-125 merge=file 新 kind：整檔 render（grok 全域個人層）。
+                if cfg.get("merge") == "file":
+                    kind = "render-file"
+                elif harness == "codex":
+                    kind = "toml-groups"
+                else:
+                    kind = f"json-subtree:{harness}"
                 targets.append(
                     {
-                        "kind": f"json-subtree:{harness}"
-                        if harness != "codex"
-                        else "toml-groups",
+                        "kind": kind,
                         "target": cfg["target"],
                         "template": cfg["template"],
                         "merge_root": cfg.get("merge_root", "hooks"),
@@ -1051,6 +1056,20 @@ def apply_plan(manifest: dict, plan: dict, *, journal: bool = True) -> int:
 
 
 def _apply_target(reg: dict, t: dict, mode: str) -> str:
+    if t["kind"] == "render-file":
+        # AIR-215 merge="file"：套件獨佔整檔（grok ~/.grok/hooks/ai-guide.json）
+        # ——install＝render→JSON 驗證→canonical serialize→原子寫；uninstall＝刪檔
+        # （不經 resolver——rollback 不依賴 managed 3.12 在場，C1 對稱語義）。
+        target = real_target(home_path(t["target"]))
+        if mode == "uninstall":
+            if not target.exists():
+                return "not-present（leave）"  # 乾淨機器 uninstall＝零動作（EP Q3）
+            target.unlink()
+            return "removed"
+        tmpl = render_template_json(
+            _read_template(t["template"]), label=t["template"]
+        )
+        return apply_text_change(target, serialize_json(tmpl))
     if t["kind"].startswith("json-subtree:"):
         target = real_target(home_path(t["target"]))
         if mode == "uninstall" and not target.exists():
@@ -1204,7 +1223,7 @@ def _apply_launchd_plist(t: dict) -> str:
 def print_manual_steps(surface: str) -> None:
     if surface in ("hooks", "memory", "all"):
         print("\n手動步驟（approve 分欄——README「approve 分欄」節為單一源）：")
-        print("  - Claude Code：/hooks UI 審查新增條目（無 CLI 替代）")
+        print("  - grok：無（全域個人層 Always trusted——AIR-215）")
         print(
             "  - codex：新 session startup review 或 /hooks TUI approve（installer 不代寫 [hooks.state]）"
         )
@@ -1582,6 +1601,89 @@ def check_json_face(
                 )
 
 
+def _canonical_json(obj: object) -> str:
+    """語義比對形態：key 排序＋無空白（AIR-215 grok 面 check 契約——非 byte）。"""
+    return json.dumps(obj, sort_keys=True, ensure_ascii=False)
+
+
+def _json_face_diff(live: object, tmpl: object) -> str:
+    """語義差定位摘要（事件層鍵差列舉；同鍵內容差彙總）——drift 訊息供修復定位。"""
+    if not isinstance(live, dict) or not isinstance(tmpl, dict):
+        return "（根非 object）"
+    live_ev = live.get("hooks") if isinstance(live.get("hooks"), dict) else {}
+    tmpl_ev = tmpl.get("hooks") if isinstance(tmpl.get("hooks"), dict) else {}
+    missing = sorted(set(tmpl_ev) - set(live_ev))
+    extra = sorted(set(live_ev) - set(tmpl_ev))
+    diff = sorted(
+        k
+        for k in set(live_ev) & set(tmpl_ev)
+        if _canonical_json(live_ev[k]) != _canonical_json(tmpl_ev[k])
+    )
+    parts = []
+    if missing:
+        parts.append(f"缺 {missing}")
+    if extra:
+        parts.append(f"多 {extra}")
+    if diff:
+        parts.append(f"內容差 {diff}")
+    return f"：{'；'.join(parts)}" if parts else ""
+
+
+def check_grok_file_face(
+    manifest: dict, drifts: list[tuple[str, str]]
+) -> None:
+    """grok（AIR-215 merge="file"）：live 整檔 vs render(模板)——canonical JSON
+    語義比對（鍵序/排版差非 drift）；套件獨佔整檔，任何語義差＝drift。"""
+    try:  # F-A：registrations KeyError 家族（check 面不帶 journal 指針）
+        reg = manifest["registrations"]["grok"]
+    except KeyError as exc:
+        raise _exec_error(
+            "manifest 缺 registrations.grok（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 後重跑",
+            journal_hint=False,
+        ) from exc
+    try:  # F-4（judge 修正輪）：registration 欄位 KeyError 同家族
+        reg_target, reg_template = reg["target"], reg["template"]
+    except KeyError as exc:
+        raise _exec_error(
+            "manifest registrations.grok 缺必要欄位 target/template（check 面）",
+            exc,
+            "補齊 governance/manifest.toml 對應 registration 欄位後重跑",
+            journal_hint=False,
+        ) from exc
+    raw = home_path(reg_target)
+    if not raw.exists():
+        drifts.append(
+            ("grok", f"live config 缺席：{reg_target}（新機器？跑 install）")
+        )
+        return
+    target = real_target(raw)
+    try:
+        live = json.loads(target.read_text())
+    except (json.JSONDecodeError, OSError) as exc:
+        drifts.append(("grok", f"malformed config：{exc}"))
+        return
+    try:
+        tmpl = render_template_json(
+            _read_template(reg_template, journal_hint=False),
+            label=reg_template,
+            journal_hint=False,
+        )
+    except GovernanceError as exc:
+        # M3：--check 維持 exit-1 drift-list 契約（install/apply 仍 fail-loud）。
+        drifts.append(("grok", f"模板 render/parse 失敗：{exc}"))
+        return
+    if _canonical_json(live) != _canonical_json(tmpl):
+        drifts.append(
+            (
+                "grok",
+                f"內容差（整檔語義比對）{_json_face_diff(live, tmpl)}"
+                "——跑 install --surface hooks",
+            )
+        )
+
+
 def check_codex_face(
     manifest: dict, drifts: list[tuple[str, str]], codex_home: Path | None = None
 ) -> None:
@@ -1937,7 +2039,7 @@ def cmd_check(manifest: dict, surface: str) -> int:
             check_skills_face(manifest, drifts)
         elif face == "hooks":
             check_hooks_scripts(manifest, drifts)
-            check_json_face(manifest, "cc", drifts)
+            check_grok_file_face(manifest, drifts)  # AIR-215：grok 遞補 cc
             check_json_face(manifest, "zcode", drifts)
             check_codex_face(manifest, drifts)
         elif face == "agents":
@@ -2230,8 +2332,9 @@ def run_probe(manifest: dict, name: str, probe: dict) -> tuple[str, str, list[st
 
 
 # probe 跑序：快的先（pipe/muse），codex L3 fixture（真 codex exec）最後。
-PROBE_ORDER = ("claude", "zcode", "muse", "codex")
-PROBE_SURFACES = {"hooks": ("claude", "zcode", "codex"), "memory": ("muse",)}
+# AIR-215：claude probe 退役，grok（pipe-payload 同款）遞補。
+PROBE_ORDER = ("grok", "zcode", "muse", "codex")
+PROBE_SURFACES = {"hooks": ("grok", "zcode", "codex"), "memory": ("muse",)}
 
 
 def cmd_verify(manifest: dict, surface: str) -> int:
@@ -2273,7 +2376,8 @@ def cmd_verify(manifest: dict, surface: str) -> int:
             worst = EXIT_GUARD
     if worst == EXIT_OK:
         print(
-            "[verify] 全部 PASS（CC/ZCode actual-runtime firing 未測——AIR-100 deferred 總驗卡承接）"
+            "[verify] 全部 PASS（grok/ZCode actual-runtime firing 未測——AIR-100 "
+            "deferred 總驗卡承接；grok L0 deny 由 AIR-215 rig 另證）"
         )
     return worst
 

@@ -1,0 +1,126 @@
+{
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{REPO}}/hooks/notification.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{REPO}}/hooks/stop-notification.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/memory-index-regen.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/post-build-gate.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{REPO}}/hooks/stop-notification.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/compact-tail-inject.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/block-python-c-comment.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/block-python-file-write.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/kanban-skill-gate.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/block-memory-index-write.py",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/marshal_admission_guard.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/memory-write-sensor.py --source grok",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/kanban-skill-gate.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ harness-scope: meta
 
 rules/ 是 ai-guide 的行為規範庫。**Claude 與非 Claude 的 rules 載入架構不同**（成因：rules auto-load 是 Claude 獨有功能，非 Claude 沒有）：
 
-- **Claude 端**（雙路徑）：`~/.claude/CLAUDE.md` 是檔案 symlink → `ai-development-guide.md`（guide）；`~/.claude/rules/` 是**目錄 symlink** → `rules/`（rules auto-load，每 session 全載）。repo 改 → 即時生效，**不需 deploy**。
+- **Claude 端**（已退役——AIR-215）：原雙路徑（`~/.claude/CLAUDE.md` 檔案 symlink → guide＋`~/.claude/rules/` 目錄 symlink → rules auto-load）的兩條 symlink 已拆除（CC coding plan 不再使用）；`claude-specific` rules 與 `paths:` 投影軸保留供歷史／回滾（回滾＝重建 symlink）。
 - **非 Claude 端**（ZCode/Codex/Muse/grok，單檔）：無 rules auto-load 機制 → 靠 `scripts/deploy_agents.py` 把 **guide + neutral rules 拼裝成單一 AGENTS.md**（snapshot），部署到 `~/.{zcode,codex,config/muse,grok}/AGENTS.md`（muse＝machine-wide user rules，probe 實證 always load，專案 AGENTS.md 衝突時贏；grok＝global rules 路徑，AIR-218 起入第 4 target）。改 rule 後須重跑 deploy 才同步。
 
 ## 部署紀律（authoring 驗證與正式部署分開）
@@ -20,7 +20,7 @@ uv run python scripts/deploy_agents.py --dry-run
 **正式落地**：依 instruction-writing skill「落地前審查閘」完成風險分類、所需獨立審查與四欄回執，並取得 [outward-action-consent](outward-action-consent.md) 要求的授權後，才可 merge canonical 或 deploy；dry-run 成功不授予落地權。正式部署須從 canonical 的已接受 revision 執行 `uv run python scripts/deploy_agents.py`，並確認該來源內容與審查回執一致（含 working tree，不能只看 HEAD）；不得從未驗收 authoring WT 部署。
 
 → 正式部署重新 bundle guide + neutral rules → 寫入 `~/.{zcode,codex,config/muse,grok}/AGENTS.md`（非 Claude 端的 rules 唯一來源）。
-→ Claude 端不需 deploy，但 canonical merge 會更新 `~/.claude/rules/` symlink 指向的內容，因此同樣先過落地閘。
+→ Claude 端面已退役（AIR-215）——deploy 不涉及；`claude-specific` rule 修改僅影響 repo source 與未來回滾形態，落地閘仍適用（instruction 檔變更一律過閘）。
 → 注意：deploy 會將非 Claude 端的 AGENTS.md 從 symlink（live-sync）轉為 generated snapshot — 改 rule 後需重跑 generator 才同步。
 → 投影軸（AIR-85）：rule frontmatter 三鍵 `bundle-projection: pointer`＋`pointer-target`＋`bootstrap-pointer`＝非 CC bundle 投影——body 不進 bundle、作者 pointer 句逐字投影；deploy 全域 preflight（repo source＋`~/.agents/skills` runtime 可達）fail-closed、identical 重跑零寫入；`paths:` 是 CC runtime 軸，deploy 不解析（三軸分離）。
 → redeploy 後若本 session 續作，依 [context-management](context-management.md)「Session freshness」refresh/reset 後再繼續（刪除/反轉弧重讀不足，須 reset＋恢復主題材料）。
@@ -39,9 +39,9 @@ uv run python scripts/deploy_agents.py --dry-run
 dry-run 只驗 authoring 產物，不能要求 deployed 檔已含尚未落地的修改。正式 deploy exit 0 也**不證明「各端讀到正確內容」**；正式落地後必須獨立驗證**每一端**（架構不同 → 驗證方式不同）：
 
 - **非 Claude 端**（rules 唯一來源是 bundle）：`rg` 抽查 deployed AGENTS.md（如 `~/.zcode/AGENTS.md`）含新/改 rule 的 section marker + 關鍵內容；排除應排除的 claude-specific rule。**漏驗這端 = 非 Claude LLM 讀不到該 rule**（無其他載入途徑）。
-- **Claude 端**（rules 來源是 `~/.claude/rules/` dir symlink）：`rg` 抽查 `~/.claude/rules/<rule>.md`（透過 symlink 讀 repo）含完整內容 — 瘦身後的 claude-specific rule 仍保留 Claude 專屬段。
+- **Claude 端**：已退役（AIR-215）——無部署面需驗；`claude-specific` rule 正確性由 repo source 的 lint/測試面守。
 - **多端一致性（per-target）**：逐端與 `expected_bundle_for(target)` 重建 bytes 比對；目前四端相同，但只比部署檔彼此 hash 抓不到「四端一起過時」。idempotence 是同端重跑前後 hash 相同；純簽名重構才要求改前/後 bundle 不變。
-- **機械替代（部署新鮮度）**：`/sync-sources`（`check_single_source.py` REGISTRY `deploy_bundle_freshness`）逐 target 用 `expected_bundle_for` 重建並 byte 比對，stale 即 critical。真實案例：部署落後多條 rule，靠外部 session 才發現。此檢查涵蓋非 Claude 四端（目標不存在＝該機器未用該 harness，skip）；Claude 另驗 symlink 內容。
+- **機械替代（部署新鮮度）**：`/sync-sources`（`check_single_source.py` REGISTRY `deploy_bundle_freshness`）逐 target 用 `expected_bundle_for` 重建並 byte 比對，stale 即 critical。真實案例：部署落後多條 rule，靠外部 session 才發現。此檢查涵蓋非 Claude 四端（目標不存在＝該機器未用該 harness，skip）。
 
 禁止：只看 deploy stdout 的 `[OK]` 就宣稱部署完成；只驗單端就推論其他端正常。
 
@@ -92,14 +92,14 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 | `../skills/xxx/SKILL.md` 跨域 ref | 描述該 skill 名稱（slash `/xxx` 語意跨 harness 有效）；或泛化為「跨 harness 機制，路徑從略」 |
 | 未標註的 `CLAUDE.md wrapper` | 「Claude 端 CLAUDE.md wrapper」或「instruction 檔（AGENTS.md source；Claude 端 CLAUDE.md wrapper）」 |
 | `~/Github/ai-guide/rules/xxx.md` user-specific 絕對路徑 | repo-relative markdown link `[xxx.md](xxx.md)`（同目錄）或 `xxx.md`（純名 + 「source 在 ai-guide repo」） |
-| 「Claude 端 `~/.claude/rules/` symlink auto-load」作為主要描述 | 標準載入機制註記（見下方）|
+| 「Claude 端 `~/.claude/rules/` symlink auto-load」作為主要描述（該面已退役，AIR-215） | 標準載入機制註記（見下方）|
 
 ### 標準載入機制註記
 
 載入機制集中在 guide 與本檔；neutral rule 不需每檔重複。確需描述 Claude 特例時可用：
 
 ```
-> **載入機制**: 本檔 source 在 ai-guide repo `rules/`；各家 harness 經全域 guide 部署載入（Claude 端另有 `~/.claude/rules/` symlink auto-load）
+> **載入機制**: 本檔 source 在 ai-guide repo `rules/`；各家 harness 經全域 guide 部署載入（Claude 端 auto-load 面已退役——AIR-215）
 ```
 
 ### 通用模式：括號註隔離 Claude 機制

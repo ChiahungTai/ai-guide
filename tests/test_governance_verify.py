@@ -168,7 +168,7 @@ def test_cmd_verify_resolver_failure_is_guard_not_crash(monkeypatch):
                 "type": "pipe-payload",
                 "script": "hooks/block-memory-index-write.py",
             }
-            for name in ("claude", "zcode", "codex")
+            for name in ("grok", "zcode", "codex")
         }
     }
     assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_GUARD
@@ -291,7 +291,7 @@ def test_cmd_verify_fail_dominates_guard(monkeypatch):
     """GUARD 不得吞 FAIL——worst 語義（install.py cmd_verify docstring 契約）釘住。"""
     manifest = {
         "probes": {
-            "claude": {"type": "pipe-payload", "script": "x"},
+            "grok": {"type": "pipe-payload", "script": "x"},
             "zcode": {"type": "pipe-payload", "script": "x"},
             "codex": {"type": "codex-three-layer"},
         }

@@ -67,26 +67,8 @@ INVARIANTS = [
         "note": "CLAUDE.md 分類為 layer 3 的命令本體必須自標受眾 —— 與 /code-review axis 3 "
         "共用 arch-thinking skill 的消歧對稱（外部分類 + 命令不自知 = drift 溫床）",
     },
-    {
-        "id": "skill_allowlist_coverage",
-        "type": "coverage",
-        "source_glob": "skills/*/SKILL.md",  # 定義源：每個 skill 的 frontmatter name
-        "source_field": "name",
-        "enforced_by": {
-            "file": "settings.json",
-            "extract": r"Skill\(([^)]+)\)",  # 從 allow-list 提取已授權 skill name 集合
-        },
-        # AIR-140：settings.json 是 gitignored local-only（只有 main checkout
-        # 在場），缺場時落 tracked 鏡像照驗——rename drift 不因 checkout 而盲
-        "tracked_mirror": "governance/registrations/cc-allowlist.json",
-        "note": "skills/*/SKILL.md 的 name 是 skill 唯一定義源；settings.json allow-list 必須覆蓋每個 "
-        "Skill(<name>) — rename 後新名缺 allow-list = drift（memory code-review-settings-sync "
-        "反覆性，靠機械閘門根治）。單向：只抓 missing；dead entry（舊名殘留）因 settings 含 "
-        "commands/built-in/plugin 需分類不抓，危害僅 noise 且 rename 必伴隨 missing 觸發修復。"
-        "AIR-140 tracked 鏡像：cc-allowlist.json 是 settings.json permissions.allow 的投影"
-        "（settings 變更時人工同步）——live 缺場（非 main checkout）落鏡像照驗，兩面都在場"
-        "比對 allow 集合，不一致＝鏡像 stale（important）。",
-    },
+    # skill_allowlist_coverage 已退役（AIR-215 決策④）：CC 權限模型的 live 面
+    # 隨 CC face 刪除式縮編消失，無對照物；cc-allowlist.json 留 repo 作歷史。
     {
         "id": "base_perspective",
         "type": "source_contains",
@@ -101,7 +83,8 @@ INVARIANTS = [
         "type": "deploy_freshness",
         "note": "部署 bundle 是 rules/ + guide（單一源）的衍生 snapshot；非 Claude 四端"
         "（~/.zcode、~/.codex、~/.config/muse、~/.grok 的 AGENTS.md）只讀 bundle，stale = "
-        "session 讀舊規則。Claude 端 ~/.claude/rules/ 目錄 symlink 即時，不在檢查範圍。"
+        "session 讀舊規則。Claude 端 rules symlink 面已退役（AIR-215）——不再有 bundle 外"
+        "的即時載入面，四端部署檔即全部活載入面。"
         "真實案例：2026-08-18 發現部署版落後 source 六條 rules（tool-discipline 新紀律"
         "缺席）——編輯 rules 的 ZCode session 讀不到部署紀律（紀律在 meta rule，不進 "
         "bundle），drift 靠外部 session 偶然發現。此檢查把「編輯後須 deploy」從散文"
@@ -121,18 +104,20 @@ INVARIANTS = [
         "id": "hook_registration",
         "type": "hook_registration",
         "registrations": [
-            "settings.json",
-            # 0919 誤報更正（bi 雙腿一致）：cc.json＝Claude 端 repo 模板
-            # （tracked，任何 checkout 在場）——settings.json 是 gitignored
-            # local-only，非 main checkout 缺場時 CC-only hooks（memory-*）
-            # 全被誤判孤兒；cc.json 進場後證據池不含 checkout-dependent 檔案
-            "governance/registrations/cc.json",
+            # AIR-215 後活躍面＝grok（原生檔）＋zcode＋codex；~ 開頭＝live
+            # 絕對路徑，缺場（未裝機器）skip 不 false positive
+            "governance/registrations/grok.json",
             "governance/registrations/zcode.json",
-            # AIR-120：codex 第三面（誤報實例 codex_memory_path_deny.py 已註冊
-            # 於 codex.toml 卻被報孤兒 CRITICAL）；~ 開頭 = live 絕對路徑，
-            # 缺場（非 codex 機器）skip 不 false positive
             "governance/registrations/codex.toml",
             "~/.codex/config.toml",
+            "~/.grok/hooks/ai-guide.json",
+            # CC face 退役（AIR-215）dormant 證據面：cc.json 模板（tracked，
+            # 任何 checkout 在場）與 settings.json（gitignored local-only，
+            # 僅 main checkout 在場）仍持 FileChanged／watch-seed 兩支
+            # grok-omitted 腳本的接線——留在註冊池防誤報孤兒（CC 偶用＝
+            # 舊 guards 照 fire；回滾＝補回 manifest 三節）
+            "settings.json",
+            "governance/registrations/cc.json",
         ],
         # 豁免＝缺席-證據 guard 非 allowlist（0919 bi 雙腿收緊）：加名於此＝
         # 宣稱該 hook 有意缺席所有 repo 模板面；已收編進 cc.json 等模板者
@@ -180,21 +165,18 @@ INVARIANTS = [
         "結構比對（event/matcher/檔名三元組）——掛錯 matcher 或 .bak 殘字樣不算已部署",
     },
     {
-        "id": "cc_live_parity",
-        "type": "cc_live_parity",
-        "template": "governance/registrations/cc.json",
-        # tri F1：live 指 CC 實讀路徑（~/.claude/settings.json，經 HOME symlink
-        # hop）——指 repo 相對檔會在 symlink 斷鏈/改指時盲綠（check 過但 CC 讀的
-        # 不是它）；expanduser 後斷鏈＝缺場 skip，忠實反映「CC 讀不到」
-        "live": "~/.claude/settings.json",
-        "note": "governance/registrations/cc.json（repo 模板）的每個 hook 接線必須已部署到 "
-        "live settings.json——template 有、live 無 = hook 不會 fire（F8 形狀；"
-        "zcode_live_parity／codex_live_parity 的 CC 對應面，AIR-141）。JSON 解析＋"
-        "wiring 三元組（event＋matcher＋script basename）：cc.json 頂層事件鍵、live 的 "
-        "hooks 鍵下同構事件陣列，template 的 {{REPO}} 佔位符與 live 絕對路徑由 basename "
-        "收斂。live 缺場（非本機／symlink 斷——CC 部署＝symlink 型，檔案不存在或斷鏈）"
-        "skip；單向 template→live（live 端手加不誤報）；CC 無 hooks.enabled 全域開關，"
-        "故無 enabled 檢查。",
+        "id": "grok_live_parity",
+        "type": "grok_live_parity",
+        "template": "governance/registrations/grok.json",
+        "live": "~/.grok/hooks/ai-guide.json",
+        "note": "governance/registrations/grok.json（repo 模板）的每個 hook 接線必須已"
+        "部署到 live ~/.grok/hooks/ai-guide.json——template 有、live 無 = hook 不會 "
+        "fire（F8 形狀；cc_live_parity 的退役替代面，AIR-215——CC face 刪除式縮編後 "
+        "grok 是 primary hooks 消費端）。JSON 解析＋wiring 三元組（event＋matcher＋"
+        "script basename）：兩面皆 {\"hooks\": {<event map>}} 包裝形（模板 {{REPO}} "
+        "佔位符與 live 絕對路徑由 basename 收斂）。live 缺場（未 install 機器）skip "
+        "不 false positive；單向 template→live（live 端手加不誤報）；grok 無 "
+        "hooks.enabled 全域開關，故無 enabled 檢查。",
     },
     {
         "id": "agents_projection_sync",
@@ -369,10 +351,10 @@ def check_enforced_by(inv: dict) -> list[tuple[str, str, str]]:
     """定義在 source、強制 schema 在 enforced_by.file → schema 必須真的含該欄位。
 
     抓「定義源 / schema 源分離」的 drift：review-engine 定義了信心水準，
-    但 DimensionVerdict schema 沒欄位 → 高規格 Workflow 審查結構性丟棄該訊號。
+    但 DimensionVerdict schema 沒欄位 → 高規格 Workflow 審查結構性丟棄此訊號。
     """
     if inv.get("type") != "enum":
-        return []  # check_enforced_by 是 enum 專屬（定義 values + schema 強制欄位）；coverage 的 enforced_by 語意不同（extract pattern），由 check_coverage 處理
+        return []  # check_enforced_by 是 enum 專屬（定義 values + schema 強制欄位）
     eb = inv.get("enforced_by")
     if not eb:
         return []
@@ -427,92 +409,6 @@ def check_classification(inv: dict) -> list[tuple[str, str, str]]:
                     f"{cmd} 被 {inv['source']} 分類但本體未自標受眾（需含其一: {must}）",
                 )
             )
-    return out
-
-
-def _allow_entries(p: Path) -> tuple[list[str] | None, str | None]:
-    """讀 settings／tracked 鏡像的 permissions.allow 條目列表。
-
-    回 (條目, None)＝可讀；(None, 原因)＝檔案壞或結構缺（呼叫端轉 important
-    fail loud，不得靜默當零覆蓋或 skip）。
-    """
-    try:
-        data = json.loads(read_text(p))
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        return None, f"{rel(p)} 非 JSON（手改壞？）: {exc}"
-    perms = data.get("permissions") if isinstance(data, dict) else None
-    allow = perms.get("allow") if isinstance(perms, dict) else None
-    if not isinstance(allow, list):
-        return None, f"{rel(p)} 缺 permissions.allow 陣列（結構變了？）"
-    return [str(e) for e in allow], None
-
-
-def check_coverage(inv: dict) -> list[tuple[str, str, str]]:
-    """source_glob 下每個檔案的 source_field（frontmatter name）必須被 enforced_by 的 extract 覆蓋。
-
-    抓「定義源目錄 ↔ 執行源 allow-list」覆蓋 drift：skills/ 定義 skill name，allow-list
-    漏了 → 顯式呼叫觸發權限提示（rename 後最常見）。
-
-    證據面三態（AIR-140）：live settings.json（gitignored，只有 main checkout 在場）
-    優先；缺場落 tracked 鏡像 cc-allowlist.json（rename drift 在非 main checkout 可見）；
-    兩面都在場比對 allow 集合，不一致＝鏡像 stale（important）；兩面皆缺（不預期）
-    skip 不 false positive。鏡像壞（非 JSON／結構缺）→ important fail loud。
-
-    單向（定義源 → 執行源）：只抓 missing；不抓 dead entry（執行源有定義源無的）——
-    settings 含 commands/built-in/plugin，精確判 dead 需 external allowlist，危害僅 noise，
-    且 rename 必伴隨 missing 觸發修復。
-    """
-    if inv.get("type") != "coverage":
-        return []
-    src_files = sorted(REPO_ROOT.glob(inv["source_glob"]))
-    field_pat = re.compile(
-        rf"^{re.escape(inv['source_field'])}:\s*(.+?)\s*$", re.MULTILINE
-    )
-    defined: dict[str, str] = {}
-    for f in src_files:
-        m = field_pat.search(read_text(f))
-        if m:
-            defined[m.group(1).strip().strip('"').strip("'")] = rel(f)
-    eb = inv["enforced_by"]
-    ef = REPO_ROOT / eb["file"]
-    mirror_path = REPO_ROOT / inv["tracked_mirror"]
-    live_entries, live_err = _allow_entries(ef) if ef.exists() else (None, None)
-    mirror_entries, mirror_err = (
-        _allow_entries(mirror_path) if mirror_path.exists() else (None, None)
-    )
-    out: list[tuple[str, str, str]] = []
-    for err in (live_err, mirror_err):
-        if err:
-            out.append((inv["id"], "important", err))
-    if live_entries is None and mirror_entries is None:
-        return out  # 兩面皆缺場（不預期）或皆不可讀 → 不再往下驗
-    if live_entries is not None and mirror_entries is not None:
-        diff = sorted(set(live_entries) ^ set(mirror_entries))
-        if diff:
-            head = ", ".join(diff[:5]) + ("…" if len(diff) > 5 else "")
-            out.append(
-                (
-                    inv["id"],
-                    "important",
-                    f"tracked 鏡像（{inv['tracked_mirror']}）與 live allow-list 不一致"
-                    f"——鏡像 stale，settings.json permissions 變更未同步鏡像"
-                    f"（差集前 5: {head}）",
-                )
-            )
-    entries = live_entries if live_entries is not None else mirror_entries
-    where = eb["file"] if live_entries is not None else inv["tracked_mirror"]
-    assert entries is not None  # narrowing：上方已排除雙 None
-    allowed = set(re.findall(eb["extract"], "\n".join(entries)))
-    out += [
-        (
-            inv["id"],
-            "important",
-            f"skill '{name}'（{src}）未在 {where} allow-list 找到 "
-            f"（缺 Skill({name}) — rename 後新名未同步 allow-list？）",
-        )
-        for name, src in defined.items()
-        if name not in allowed
-    ]
     return out
 
 
@@ -934,14 +830,16 @@ def check_codex_live_parity(
     return out
 
 
-def _cc_wiring(events: dict) -> set[tuple[str, str, str]]:
-    """CC hooks 的 (event, matcher, basename) wiring 三元組（_wiring 的 CC 形）。
+def _eventmap_wiring(events: dict) -> set[tuple[str, str, str]]:
+    """裸 event map 的 (event, matcher, basename) wiring 三元組（_wiring 的
+    泛型形；AIR-215 前名 _cc_wiring）。
 
-    與 ZCode 的 `hooks.events.<Event>` 兩層不同：cc.json 模板＝頂層事件鍵、
-    live settings.json＝`hooks` 鍵下同構事件陣列——呼叫端先取到 events dict
-    再傳入。CC 無 hooks.enabled 全域開關（無 enabled 面）；單條 enabled:false
-    照 _wiring 語義不算已部署。basename 以 negative lookahead 收尾（`x.py.bak`
-    不算 x.py）；template 的 {{REPO}} 佔位符與 live 絕對路徑由 basename 收斂。
+    與 ZCode 的 `hooks.events.<Event>` 兩層不同：本形吃「事件鍵→group 陣列」
+    的裸 map（grok.json 模板/live 的 `hooks` 鍵下即此形——cc.json 模板頂層
+    亦同形，dormant 保留）。無 hooks.enabled 全域開關（無 enabled 面）；單條
+    enabled:false 照 _wiring 語義不算已部署。basename 以 negative lookahead
+    收尾（`x.py.bak` 不算 x.py）；template 的 {{REPO}} 佔位符與 live 絕對路徑
+    由 basename 收斂。
     """
     out: set[tuple[str, str, str]] = set()
     for event, groups in events.items():
@@ -964,20 +862,20 @@ def _cc_wiring(events: dict) -> set[tuple[str, str, str]]:
     return out
 
 
-def check_cc_live_parity(
+def check_grok_live_parity(
     inv: dict, live_path: Path | None = None
 ) -> list[tuple[str, str, str]]:
-    """governance/registrations/cc.json（repo 模板）的 hook 接線必須已部署到 live settings.json。
+    """governance/registrations/grok.json（repo 模板）的 hook 接線必須已部署到
+    live ~/.grok/hooks/ai-guide.json（cc_live_parity 的退役替代面，AIR-215）。
 
-    抓「註冊≠fire」的部署漂移：cc.json 加了接線、live settings.json 沒 merge →
-    hook 從未執行（F8 形狀；zcode/codex 面皆有此防線，CC 面補齊——AIR-141）。
-    結構比對（event＋matcher＋檔名三元組）：cc.json 頂層事件鍵、live 的 hooks 鍵下
-    同構事件陣列，{{REPO}} 佔位符與 live 絕對路徑由 basename 收斂。
-    單向 template→live（live 端手加不誤報）；live 缺場（非本機／symlink 斷——
-    CC 部署＝symlink 型）skip 不 false positive。CC 無 hooks.enabled 全域開關，
-    故無 enabled 檢查。
+    抓「註冊≠fire」的部署漂移：grok.json 加了接線、live 檔沒重 render → hook
+    從未執行（F8 形狀）。結構比對（event＋matcher＋檔名三元組）：兩面皆
+    {"hooks": {<event map>}} 包裝形，取 hooks 鍵後走 _eventmap_wiring；
+    {{REPO}} 佔位符與 live 絕對路徑由 basename 收斂。
+    單向 template→live（live 端手加不誤報）；live 缺場（未 install 機器）skip
+    不 false positive。grok 無 hooks.enabled 全域開關，故無 enabled 檢查。
     """
-    if inv.get("type") != "cc_live_parity":
+    if inv.get("type") != "grok_live_parity":
         return []
     tpl = REPO_ROOT / inv["template"]
     if not tpl.exists():
@@ -988,11 +886,9 @@ def check_cc_live_parity(
                 f"template 檔不存在: {inv['template']}（INVARIANTS 路徑 typo？）",
             )
         ]
-    live = (
-        Path(live_path) if live_path else Path(inv["live"]).expanduser()
-    )  # tri F1：live 指 CC 實讀路徑（~/.claude/settings.json），expanduser 走 HOME hop
+    live = Path(live_path) if live_path else Path(inv["live"]).expanduser()
     if not live.exists():
-        return []  # live 缺場（非本機／symlink 斷）→ skip 不 false positive
+        return []  # live 缺場（未 install 機器）→ skip 不 false positive
     try:
         tpl_data = json.loads(read_text(tpl))
         live_data = json.loads(read_text(live))
@@ -1006,12 +902,13 @@ def check_cc_live_parity(
         ]
     if not isinstance(tpl_data, dict) or not isinstance(live_data, dict):
         return [(inv["id"], "important", "template/live JSON 非 object")]
-    hooks_live = live_data.get("hooks")
-    if not isinstance(hooks_live, dict):
+    tpl_hooks = tpl_data.get("hooks")
+    live_hooks = live_data.get("hooks")
+    if not isinstance(tpl_hooks, dict) or not isinstance(live_hooks, dict):
         return [
-            (inv["id"], "important", f"live settings.json hooks 區塊非 object: {live}")
+            (inv["id"], "important", f"hooks 區塊非 object: {tpl} / {live}")
         ]
-    missing = _cc_wiring(tpl_data) - _cc_wiring(hooks_live)
+    missing = _eventmap_wiring(tpl_hooks) - _eventmap_wiring(live_hooks)
     out: list[tuple[str, str, str]] = []
     for event, matcher, name in sorted(missing):
         where = f"{event}/{matcher}" if matcher else event
@@ -1019,7 +916,7 @@ def check_cc_live_parity(
             (
                 inv["id"],
                 "critical",
-                f"{name}（{where}）在 cc.json 模板的接線未部署到 live settings.json"
+                f"{name}（{where}）在 grok.json 模板的接線未部署到 {live}"
                 "——hook 不會 fire（F8 形狀：防線存在但從未攔截）",
             )
         )
@@ -1147,14 +1044,13 @@ def main() -> int:
     for inv in INVARIANTS:
         findings += check_enforced_by(inv)
         findings += check_classification(inv)
-        findings += check_coverage(inv)
         findings += check_source_contains(inv)
         findings += check_forbidden_pattern(inv)
         findings += check_deploy_freshness(inv)
         findings += check_hook_registration(inv)
         findings += check_zcode_live_parity(inv)
         findings += check_codex_live_parity(inv)
-        findings += check_cc_live_parity(inv)
+        findings += check_grok_live_parity(inv)
         findings += check_agents_projection_sync(inv)
         findings += check_shell_provenance(inv)
 

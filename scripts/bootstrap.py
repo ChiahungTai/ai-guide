@@ -14,8 +14,9 @@
   Phase 2 core——primary 依次跑 installer --surface all → --surface monitor
   （monitor＝顯式排程面，all 成功後單獨裝載，R2 codex#1；exit 透傳）；
   secondary 本弧僅介面（拍板②）。
-  Phase 3 approve 暫停點——三項手動 approve（CC /hooks、codex trust、ZCode
-  重開 session）；approve 恆手動（拍板④），無 --approved 停此 exit 0；
+  Phase 3 approve 暫停點——手動 approve（codex trust、ZCode 重開 session；
+  CC /hooks 已隨 CC face 退役〔AIR-215〕，grok 全域個人層免 trust 無步驟）；
+  approve 恆手動（拍板④），無 --approved 停此 exit 0；
   --approved＝resume 語義——跳過 Phase 2 直接 Phase 4（--check 自證
   Phase 2 產物在場，禁「先裝再當已批准」路徑，R2 codex#2）。
   Phase 4 verify 編排——installer --verify／--check（all＋monitor）、
@@ -164,7 +165,8 @@ def preflight() -> bool:
             "FAIL",
             "G1-secrets",
             f"從舊機拷貝 settings.json（含 API keys）到 {settings}"
-            "（fail-loud：不自動建、不代寫；CC ~/.claude/settings.json symlink 前置鏈依賴它）",
+            "（fail-loud：不自動建、不代寫；dormant 歷史資產——CC face 已退役"
+            "〔AIR-215〕，但保留供偶用回滾與歷史 sessions 參照）",
         )
         ok = False
 
@@ -186,13 +188,11 @@ def preflight() -> bool:
 
 def _print_approve_steps() -> None:
     print(
-        "手動 approve 三項（approve 分欄單一源＝governance/README.md「approve 分欄」節）："
+        "手動 approve 兩項（approve 分欄單一源＝governance/README.md「approve 分欄」節）："
     )
-    print("  1. Claude Code：開 /hooks UI 目視審查新增條目（無 CLI 替代）")
-    print(
-        "  2. codex：新 session startup review 或 /hooks TUI trust approve（installer 不代寫 [hooks.state]）"
-    )
-    print("  3. ZCode：重開 session 生效（per-session 快照，舊 session 不生效非失敗）")
+    print("  1. codex：新 session startup review 或 /hooks TUI trust approve（installer 不代寫 [hooks.state]）")
+    print("  2. ZCode：重開 session 生效（per-session 快照，舊 session 不生效非失敗）")
+    print("  - grok：無（全域個人層 Always trusted——AIR-215 原生 hooks 面）")
 
 
 def verify_probes() -> bool:

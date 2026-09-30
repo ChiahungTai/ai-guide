@@ -1103,162 +1103,45 @@ def test_doctrine_dead_scan_entry_important(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# skill_allowlist_coverage 的 tracked 鏡像（AIR-140）：settings.json 是
-# gitignored local-only（只有 main checkout 在場），非 main checkout 缺場
-# 時舊 check_coverage 靜默 return []（false negative：rename drift 不可見）
-# ——補 tracked 鏡像 governance/registrations/cc-allowlist.json 三態證據面
+# grok_live_parity（AIR-215）：grok.json 模板接線必須已部署 live
+# ~/.grok/hooks/ai-guide.json——cc_live_parity 的退役替代面（CC face 刪除式
+# 縮編，F8 防線轉移到 grok 原生面）。
 # ---------------------------------------------------------------------------
 
 
-def _coverage_inv():
-    return next(i for i in css.INVARIANTS if i["id"] == "skill_allowlist_coverage")
+def test_grok_parity_inv_registered():
+    inv = next(i for i in css.INVARIANTS if i["id"] == "grok_live_parity")
+    assert inv["type"] == "grok_live_parity"
+    assert inv["template"] == "governance/registrations/grok.json"
+    assert inv["live"] == "~/.grok/hooks/ai-guide.json"
 
 
-def _write_skill(tmp_path, name="my-skill"):
-    d = tmp_path / "skills" / name
-    d.mkdir(parents=True)
-    (d / "SKILL.md").write_text(f"---\nname: {name}\n---\nbody", encoding="utf-8")
+def test_grok_parity_wired_into_main_loop():
+    src = inspect.getsource(css.main)
+    assert "check_grok_live_parity(inv)" in src
 
 
-def _write_mirror(tmp_path, entries):
-    d = tmp_path / "governance" / "registrations"
-    d.mkdir(parents=True)
-    (d / "cc-allowlist.json").write_text(
-        json.dumps({"permissions": {"allow": entries}}), encoding="utf-8"
-    )
+def test_hook_registration_inv_includes_grok_face():
+    regs = _hook_inv()["registrations"]
+    assert "governance/registrations/grok.json" in regs
 
 
-def _write_live_allow(tmp_path, entries):
-    (tmp_path / "settings.json").write_text(
-        json.dumps({"permissions": {"allow": entries}}), encoding="utf-8"
-    )
-
-
-def test_coverage_inv_has_tracked_mirror():
-    """AIR-140：invariant 需宣告 tracked 鏡像路徑＋note 誠實標示鏡像語義。"""
-    inv = _coverage_inv()
-    assert inv["tracked_mirror"] == "governance/registrations/cc-allowlist.json"
-    assert "鏡像" in inv["note"]
-
-
-def test_coverage_mirror_file_projection_shape():
-    """AC#1：tracked 鏡像檔 tracked 在場，形＝permissions.allow 投影。"""
-    mirror = css.REPO_ROOT / "governance" / "registrations" / "cc-allowlist.json"
-    assert mirror.exists()
-    data = json.loads(mirror.read_text(encoding="utf-8"))
-    allow = data.get("permissions", {}).get("allow")
-    assert isinstance(allow, list)
-    assert allow, "鏡像 allow 不得為空（settings.json permissions.allow 非空投影）"
-
-
-def test_coverage_mirror_only_missing_skill_important(tmp_path, monkeypatch):
-    """缺 settings.json＋鏡像在場→照驗：skill 不在鏡像→important（rename drift
-    在非 main checkout 可見——AIR-140 主訴求）。finding 誠實標示證據面為鏡像。"""
-    _write_skill(tmp_path, "renamed-skill")
-    _write_mirror(tmp_path, ["Skill(old-skill)", "Bash(git status:*)"])
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)  # settings.json 缺場
-    findings = css.check_coverage(_coverage_inv())
-    assert len(findings) == 1
-    assert findings[0][1] == "important"
-    assert "renamed-skill" in findings[0][2]
-    assert "cc-allowlist.json" in findings[0][2]
-
-
-def test_coverage_mirror_only_synced_zero(tmp_path, monkeypatch):
-    """缺 settings.json＋鏡像在場→skill 已覆蓋→零 finding。"""
-    _write_skill(tmp_path, "my-skill")
-    _write_mirror(tmp_path, ["Skill(my-skill)", "Bash(git status:*)"])
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_coverage(_coverage_inv()) == []
-
-
-def test_coverage_both_faces_synced_zero(tmp_path, monkeypatch):
-    """兩面都在場且同步→零 finding（不誤報 drift）。"""
-    _write_skill(tmp_path, "my-skill")
-    _write_mirror(tmp_path, ["Skill(my-skill)", "Bash(git status:*)"])
-    _write_live_allow(tmp_path, ["Skill(my-skill)", "Bash(git status:*)"])
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_coverage(_coverage_inv()) == []
-
-
-def test_coverage_both_faces_drift_important(tmp_path, monkeypatch):
-    """兩面都在場且 allow 集合不一致→important（鏡像 stale）。"""
-    _write_skill(tmp_path, "my-skill")
-    _write_mirror(tmp_path, ["Skill(my-skill)"])
-    _write_live_allow(
-        tmp_path, ["Skill(my-skill)", "Skill(new-skill)", "Bash(git diff:*)"]
-    )
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_coverage(_coverage_inv())
-    drift = [f for f in findings if "鏡像" in f[2]]
-    assert len(drift) == 1
-    assert drift[0][1] == "important"
-    assert "Skill(new-skill)" in drift[0][2]
-
-
-def test_coverage_drift_diff_head_five(tmp_path, monkeypatch):
-    """drift finding 附差集合前 5 個元素（超出截斷）。"""
-    _write_skill(tmp_path, "my-skill")
-    _write_mirror(tmp_path, ["Skill(my-skill)"])
-    extra = [f"Skill(x{i})" for i in range(7)]
-    _write_live_allow(tmp_path, ["Skill(my-skill)", *extra])
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_coverage(_coverage_inv())
-    drift = [f for f in findings if "鏡像" in f[2]]
-    assert len(drift) == 1
-    assert "Skill(x4)" in drift[0][2]
-    assert "Skill(x5)" not in drift[0][2]
-    assert "…" in drift[0][2]
-
-
-def test_coverage_both_faces_absent_skip(tmp_path, monkeypatch):
-    """兩面皆缺（不預期）→skip 不 false positive。"""
-    _write_skill(tmp_path, "my-skill")
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)  # settings.json 與鏡像皆缺場
-    assert css.check_coverage(_coverage_inv()) == []
-
-
-def test_coverage_malformed_mirror_important(tmp_path, monkeypatch):
-    """鏡像在場但壞（非 JSON／結構缺）→important fail loud，不得靜默當零覆蓋。"""
-    _write_skill(tmp_path, "my-skill")
-    d = tmp_path / "governance" / "registrations"
-    d.mkdir(parents=True)
-    (d / "cc-allowlist.json").write_text("not-json", encoding="utf-8")
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_coverage(_coverage_inv())
-    assert len(findings) == 1
-    assert findings[0][1] == "important"
-    assert "非 JSON" in findings[0][2]
-
-
-# ---------------------------------------------------------------------------
-# cc_live_parity（AIR-141）：cc.json 模板接線必須已部署 live settings.json
-# （zcode/codex 面皆有 template→live 防線，CC 面補齊——cc.json 加接線、live
-# 忘 merge → hook 從未 fire（F8 形狀）無人抓）。形態照抄 zcode_live_parity：
-# wiring 三元組（event＋matcher＋script basename），{{REPO}} 佔位符與 live
-# 絕對路徑由 basename 收斂；live 缺場（symlink 斷／非本機）skip 不 false
-# positive；單向 template→live；CC 無 hooks.enabled 全域開關（無 enabled 檢查）
-# ---------------------------------------------------------------------------
-
-
-def _cc_parity_inv():
-    return next(i for i in css.INVARIANTS if i["id"] == "cc_live_parity")
-
-
-CC_TPL_JSON = {
+GROK_TPL_JSON = {
     "Notification": [
         {
             "matcher": "",
             "hooks": [{"type": "command", "command": "{{REPO}}/hooks/notification.sh"}],
         }
     ],
-    "SessionStart": [
+    "PreToolUse": [
         {
-            "matcher": "compact",
+            "matcher": "Edit|Write",
             "hooks": [
                 {
                     "type": "command",
-                    "command": "python3 {{REPO}}/hooks/compact-tail-inject.py",
+                    "command": (
+                        "{{HOOK_PYTHON}} {{REPO}}/hooks/block-memory-index-write.py"
+                    ),
                 }
             ],
         }
@@ -1266,109 +1149,44 @@ CC_TPL_JSON = {
 }
 
 
-def _write_cc_tpl(tmp_path, data=CC_TPL_JSON):
+def _grok_parity_inv():
+    return next(i for i in css.INVARIANTS if i["id"] == "grok_live_parity")
+
+
+def _write_grok_tpl(tmp_path, data=GROK_TPL_JSON):
     d = tmp_path / "governance" / "registrations"
     d.mkdir(parents=True)
-    (d / "cc.json").write_text(json.dumps(data), encoding="utf-8")
+    (d / "grok.json").write_text(
+        json.dumps({"hooks": data}), encoding="utf-8"
+    )  # grok 模板形＝{"hooks": {<event map>}} 包裝
 
 
-def _write_cc_live(tmp_path, monkeypatch, events):
-    """tri F1：live 檔寫在 $HOME/.claude/settings.json（CC 實讀路徑經 HOME hop）。"""
-    d = tmp_path / ".claude"
+def _write_grok_live(tmp_path, monkeypatch, events):
+    d = tmp_path / ".grok" / "hooks"
     d.mkdir(parents=True, exist_ok=True)
-    (d / "settings.json").write_text(json.dumps({"hooks": events}), encoding="utf-8")
+    (d / "ai-guide.json").write_text(
+        json.dumps({"hooks": events}), encoding="utf-8"
+    )
     monkeypatch.setenv("HOME", str(tmp_path))
 
 
-def test_cc_parity_inv_registered():
-    """AC#1：REGISTRY 新增 cc_live_parity invariant（形態對齊兩個既有 parity 面）。"""
-    inv = _cc_parity_inv()
-    assert inv["type"] == "cc_live_parity"
-    assert inv["template"] == "governance/registrations/cc.json"
-    assert inv["live"] == "~/.claude/settings.json"
-
-
-def test_cc_parity_wired_into_main_loop():
-    """新 invariant 接進主檢查迴圈（check_zcode_live_parity 被呼叫處照樣接）。"""
-    src = inspect.getsource(css.main)
-    assert "check_cc_live_parity(inv)" in src
-
-
-def test_cc_parity_missing_in_live_critical(tmp_path, monkeypatch):
+def test_grok_parity_missing_in_live_critical(tmp_path, monkeypatch):
     """模板 hook live 缺→逐條 critical（F8 形狀：註冊≠fire）。"""
-    _write_cc_tpl(tmp_path)
-    _write_cc_live(tmp_path, monkeypatch, events={})
+    _write_grok_tpl(tmp_path)
+    _write_grok_live(tmp_path, monkeypatch, events={})
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 2
     assert all(f[1] == "critical" for f in findings)
     assert any("notification.sh" in f[2] for f in findings)
-    assert any("compact-tail-inject.py" in f[2] for f in findings)
+    assert any("block-memory-index-write.py" in f[2] for f in findings)
     assert all("F8" in f[2] for f in findings)
 
 
-def test_cc_parity_exec_template_missing_in_live_critical(tmp_path, monkeypatch):
-    """S: AIR174 工單要求 args 中的 Python hook 缺 live 接線時仍報 critical。"""
-    _write_cc_tpl(
-        tmp_path,
-        data={
-            "SessionStart": [
-                {
-                    "matcher": "compact",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": "{{HOOK_PYTHON}}",
-                            "args": ["{{REPO}}/hooks/compact-tail-inject.py"],
-                        }
-                    ],
-                }
-            ]
-        },
-    )
-    _write_cc_live(tmp_path, monkeypatch, events={})
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_cc_live_parity(_cc_parity_inv())
-    assert len(findings) == 1
-    assert findings[0][:2] == ("cc_live_parity", "critical")
-    assert "compact-tail-inject.py（SessionStart/compact）" in findings[0][2]
-    assert "F8" in findings[0][2]
-
-
-@pytest.mark.parametrize(
-    "template_exec", [False, True], ids=["shell-exec", "exec-shell"]
-)
-def test_cc_parity_exec_shell_equivalent(tmp_path, monkeypatch, template_exec):
-    """S: AIR174 工單要求 exec/shell 兩向等價，且不能以空 wiring 假綠。"""
-    template_hook = {"type": "command"}
-    live_hook = {"type": "command"}
-    if template_exec:
-        template_hook.update(
-            command="{{HOOK_PYTHON}}",
-            args=["{{REPO}}/hooks/compact-tail-inject.py"],
-        )
-        live_hook["command"] = "python3 /abs/repo/hooks/compact-tail-inject.py"
-    else:
-        template_hook["command"] = "python3 {{REPO}}/hooks/compact-tail-inject.py"
-        live_hook.update(
-            command="/abs/runtime/bin/python3.12",
-            args=["/abs/repo/hooks/compact-tail-inject.py"],
-        )
-    template = {"SessionStart": [{"matcher": "compact", "hooks": [template_hook]}]}
-    live = {"SessionStart": [{"matcher": "compact", "hooks": [live_hook]}]}
-    _write_cc_tpl(tmp_path, data=template)
-    _write_cc_live(tmp_path, monkeypatch, events=live)
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    expected = {("SessionStart", "compact", "compact-tail-inject.py")}
-    assert css._cc_wiring(template) == expected
-    assert css._cc_wiring(live) == expected
-    assert css.check_cc_live_parity(_cc_parity_inv()) == []
-
-
-def test_cc_parity_all_deployed_ok(tmp_path, monkeypatch):
-    """兩面同步→零 finding。"""
-    _write_cc_tpl(tmp_path)
-    _write_cc_live(
+def test_grok_parity_all_deployed_ok(tmp_path, monkeypatch):
+    """兩面同步（command 字串形 vs args 形等價收斂）→零 finding。"""
+    _write_grok_tpl(tmp_path)
+    _write_grok_live(
         tmp_path,
         monkeypatch,
         events={
@@ -1383,13 +1201,14 @@ def test_cc_parity_all_deployed_ok(tmp_path, monkeypatch):
                     ],
                 }
             ],
-            "SessionStart": [
+            "PreToolUse": [
                 {
-                    "matcher": "compact",
+                    "matcher": "Edit|Write",
                     "hooks": [
                         {
                             "type": "command",
-                            "command": "python3 /abs/repo/hooks/compact-tail-inject.py",
+                            "command": "/abs/runtime/bin/python3.12",
+                            "args": ["/abs/repo/hooks/block-memory-index-write.py"],
                         }
                     ],
                 }
@@ -1397,32 +1216,35 @@ def test_cc_parity_all_deployed_ok(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_cc_live_parity(_cc_parity_inv()) == []
+    assert css.check_grok_live_parity(_grok_parity_inv()) == []
 
 
-def test_cc_parity_live_absent_skip(tmp_path, monkeypatch):
-    """live 缺場（非本機／symlink 斷——CC 部署＝symlink 型）→skip 不 false positive。"""
-    _write_cc_tpl(tmp_path)  # settings.json 不存在
+def test_grok_parity_live_absent_skip(tmp_path, monkeypatch):
+    """live 缺場（未 install 機器）→skip 不 false positive。"""
+    _write_grok_tpl(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_cc_live_parity(_cc_parity_inv()) == []
+    assert css.check_grok_live_parity(_grok_parity_inv()) == []
 
 
-def test_cc_parity_basename_convergence(tmp_path, monkeypatch):
-    """basename 收斂：template {{REPO}}/hooks/x.py vs live /Users/.../hooks/x.py→零 finding
-    （路徑前綴不同不誤報；matcher 一致才收斂）。"""
-    _write_cc_tpl(tmp_path, data={"SessionStart": CC_TPL_JSON["SessionStart"]})
-    _write_cc_live(
+def test_grok_parity_basename_convergence(tmp_path, monkeypatch):
+    """basename 收斂：模板 {{REPO}}/hooks/x.py vs live 絕對路徑→零 finding。"""
+    _write_grok_tpl(tmp_path, data={"PreToolUse": GROK_TPL_JSON["PreToolUse"]})
+    _write_grok_live(
         tmp_path,
         monkeypatch,
         events={
-            "SessionStart": [
+            "PreToolUse": [
                 {
-                    "matcher": "compact",
+                    "matcher": "Edit|Write",
                     "hooks": [
                         {
                             "type": "command",
-                            "command": "python3 "
-                            "/Users/ctai/Github/ai-guide/hooks/compact-tail-inject.py",
+                            "command": (
+                                "python3 "
+                                "/Users/ctai/Github/ai-guide/hooks/"
+                                "block-memory-index-write.py"
+                            ),
                         }
                     ],
                 }
@@ -1430,35 +1252,13 @@ def test_cc_parity_basename_convergence(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_cc_live_parity(_cc_parity_inv()) == []
+    assert css.check_grok_live_parity(_grok_parity_inv()) == []
 
 
-def test_cc_parity_live_extra_not_reported(tmp_path, monkeypatch):
-    """單向 template→live：live 端手加的 hook 不誤報。"""
-    _write_cc_tpl(tmp_path, data={"Notification": CC_TPL_JSON["Notification"]})
-    _write_cc_live(
-        tmp_path,
-        monkeypatch,
-        events={
-            "Notification": [
-                {
-                    "matcher": "",
-                    "hooks": [
-                        {"type": "command", "command": "/abs/hooks/notification.sh"},
-                        {"type": "command", "command": "python3 /abs/hooks/extra.py"},
-                    ],
-                }
-            ]
-        },
-    )
-    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    assert css.check_cc_live_parity(_cc_parity_inv()) == []
-
-
-def test_cc_parity_wrong_matcher_critical(tmp_path, monkeypatch):
+def test_grok_parity_wrong_matcher_critical(tmp_path, monkeypatch):
     """檔名在 live 但掛錯 matcher＝未部署（wiring 三元組的 matcher 腳）。"""
-    _write_cc_tpl(tmp_path, data={"Notification": CC_TPL_JSON["Notification"]})
-    _write_cc_live(
+    _write_grok_tpl(tmp_path, data={"Notification": GROK_TPL_JSON["Notification"]})
+    _write_grok_live(
         tmp_path,
         monkeypatch,
         events={
@@ -1473,25 +1273,27 @@ def test_cc_parity_wrong_matcher_critical(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "critical"
 
 
-def test_cc_parity_suffix_lookalike_critical(tmp_path, monkeypatch):
-    """`x.py.bak` 殘字樣不算 x.py 已部署（negative lookahead，同 _wiring）。"""
-    _write_cc_tpl(tmp_path, data={"SessionStart": CC_TPL_JSON["SessionStart"]})
-    _write_cc_live(
+def test_grok_parity_suffix_lookalike_critical(tmp_path, monkeypatch):
+    """`x.py.bak` 殘字樣不算 x.py 已部署（negative lookahead）。"""
+    _write_grok_tpl(tmp_path, data={"PreToolUse": GROK_TPL_JSON["PreToolUse"]})
+    _write_grok_live(
         tmp_path,
         monkeypatch,
         events={
-            "SessionStart": [
+            "PreToolUse": [
                 {
-                    "matcher": "compact",
+                    "matcher": "Edit|Write",
                     "hooks": [
                         {
                             "type": "command",
-                            "command": "python3 /abs/hooks/compact-tail-inject.py.bak",
+                            "command": (
+                                "python3 /abs/hooks/block-memory-index-write.py.bak"
+                            ),
                         }
                     ],
                 }
@@ -1499,40 +1301,40 @@ def test_cc_parity_suffix_lookalike_critical(tmp_path, monkeypatch):
         },
     )
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "critical"
 
 
-def test_cc_parity_template_missing_important(tmp_path, monkeypatch):
+def test_grok_parity_template_missing_important(tmp_path, monkeypatch):
     """template 缺場→important（INVARIANTS 路徑 typo 不炸整個 checker）。"""
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "important"
 
 
-def test_cc_parity_bad_json_important(tmp_path, monkeypatch):
+def test_grok_parity_bad_json_important(tmp_path, monkeypatch):
     """兩面 JSON parse 失敗→important 非 crash。"""
-    _write_cc_tpl(tmp_path)
-    d = tmp_path / ".claude"
-    d.mkdir()
-    (d / "settings.json").write_text("not-json", encoding="utf-8")
+    _write_grok_tpl(tmp_path)
+    d = tmp_path / ".grok" / "hooks"
+    d.mkdir(parents=True)
+    (d / "ai-guide.json").write_text("not-json", encoding="utf-8")
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "important"
 
 
-def test_cc_parity_live_hooks_not_dict_important(tmp_path, monkeypatch):
-    """live hooks 區塊結構異常（合法 JSON 非 object）→important 非 crash。"""
-    _write_cc_tpl(tmp_path)
-    d = tmp_path / ".claude"
-    d.mkdir()
-    (d / "settings.json").write_text('{"hooks": [1]}', encoding="utf-8")
+def test_grok_parity_hooks_not_dict_important(tmp_path, monkeypatch):
+    """hooks 區塊結構異常（合法 JSON 非 object）→important 非 crash。"""
+    _write_grok_tpl(tmp_path)
+    d = tmp_path / ".grok" / "hooks"
+    d.mkdir(parents=True)
+    (d / "ai-guide.json").write_text('{"hooks": [1]}', encoding="utf-8")
     monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
     monkeypatch.setenv("HOME", str(tmp_path))
-    findings = css.check_cc_live_parity(_cc_parity_inv())
+    findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "important"

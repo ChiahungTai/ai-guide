@@ -338,3 +338,28 @@ def test_log_rotation_alias_falls_back_without_touching_pool(tmp_path):
     assert log.read_text() == old
     assert (pool / "MEMORY.md").read_bytes() == before
     assert (home / ".local/share/ai-guide/memory-hook-events.jsonl").is_file()
+
+
+def test_write_sensor_source_grok_labeled(tmp_path):
+    """AIR-215：grok 註冊面傳 --source grok——allowlist 收編，遙測不再落 unknown。"""
+    _, entry = make_pool(tmp_path)
+    log = tmp_path / "hook-events.jsonl"
+    env = dict(os.environ, MEMORY_HOOK_LOG=str(log))
+    payload = {
+        "session_id": "s",
+        "tool_name": "Edit",
+        "tool_input": {"file_path": str(entry)},
+        "tool_use_id": "t",
+    }
+    r = subprocess.run(
+        [sys.executable, str(WRITE_SENSOR), "--source", "grok"],
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert r.returncode == 0, r.stderr
+    lines = [json.loads(ln) for ln in log.read_text().splitlines() if ln.strip()]
+    assert len(lines) == 1
+    assert lines[0]["source"] == "grok"

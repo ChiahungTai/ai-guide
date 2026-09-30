@@ -1,6 +1,6 @@
 # agents/ — 跨 harness subagent 定義
 
-> 部署＝registry 視圖：`~/.zcode/agents` symlink → `agents/zcode/`、`~/.claude/agents` → `agents/claude/`。與 hooks/ 不同（config 引用、無目錄載入點），subagent 兩家都是**目錄載入點**，symlink 成立。ZCode 設定 UI 的新建/編輯會穿頂層 symlink 寫入 `agents/zcode/`（= 產生 repo working tree diff，屬預期行為）。
+> 部署＝registry 視圖：`~/.zcode/agents` symlink → `agents/zcode/`、`~/.grok/agents` → `agents/claude/`（AIR-215：grok 原生 user-agent discovery 掃描面——`~/.claude/agents` symlink 已拆，CC face 退役；claude/ 投影保留由 grok 消費，分岔需求出現時另開 agents/grok projection）。與 hooks/ 不同（config 引用、無目錄載入點），subagent 兩家都是**目錄載入點**，symlink 成立。ZCode 設定 UI 的新建/編輯會穿頂層 symlink 寫入 `agents/zcode/`（= 產生 repo working tree diff，屬預期行為）。
 
 ## registry 結構（per-harness 指定＝registry membership）
 
@@ -14,8 +14,8 @@ agents/
                #   background 鏡像（parity gate）／default binding（FK → skills/model-routing/catalog.toml
                #   dispatch_binding；requirement 欄＝--map 四欄相容 token）
   zcode/       # 生成物（~/.zcode/agents → 此）：roles 投影＋presets 解析的部署 pins（model+thoughtLevel）
-  claude/      # 生成物（~/.claude/agents → 此）：roles 投影（full 別名釘選 model: opus〔AIR-44——別名可攜〕；
-               #   其餘省略 model＝inherit；tools 減 CR MCP 行）
+  claude/      # 生成物（AIR-215 起 ~/.grok/agents → 此；~/.claude/agents 已拆）：roles 投影（full 別名釘選
+               #   model: opus〔AIR-44——別名可攜〕；其餘省略 model＝inherit；tools 減 CR MCP 行）
 ```
 
 - **「指定哪個 harness 用哪些 agent」＝role 出現在哪些 registry**（機制，非命名紀律；現況＝presets.toml 的 harness membership）。**registry 內是實檔拷貝**——理由＝per-harness frontmatter 差異需整檔分歧（zcode pins／claude 減 CR MCP 行），symlink 是整檔單位無法承載差異。ZCode loader 可載入 file-level symlink（2026-09-06 新 session 對照實驗：symlink／實檔探針皆載入，推翻 08-29「檔案 symlink 靜默不載」舊判決——舊判決疑為快照過期混淆）；hardlink 被 clone 破壞不可用，symlink 為 git 原生追蹤
@@ -23,7 +23,7 @@ agents/
 - **pin 單一源紀律（AIR-91 S2 起）**：zcode/ 生成檔的 pins 由 `presets.toml` default binding 經 `catalog.toml` 解析生成（wire token／effort encoding 是 catalog 供給事實；loader 驗 FK／carrier 相容／effort 詞彙，違規 fail loud）——改 pin＝改 presets（＋catalog binding）→ 重跑 sync；`presets.background` 與 roles frontmatter 宣告 parity gate（drift＝sync fail loud）。既有 pins 與 AIR-91 前行為逐 byte 等價（tests 等價矩陣 LEGACY_* golden 釘住）
 - **UI 防護規則**：不在 ZCode 設定 UI 編輯 registry 檔（model／思考強度／正文皆然）——zcode/claude/ 是**生成物**（檔頭 ownership marker 標記），UI 編輯會被下次 sync **無預警覆蓋**；要改角色 → 改 `roles/` 源；要改 pins → 改 `presets.toml`（**在 zcode/ 建 fork 已非合法形態**——同名 unmarked 檔會擋 sync）
 - **tier 命名**：能力語義命名（lite-verify／spec-miner，非具體模型名-*——model 每代換名，改名級聯）；例外＝rescue 類（引擎在本質內，如 codex-rescue）。requirement 相容 token（full/vision/lite）定義在 `presets.toml` allow_lists（tier 語義現行居住處＝`skills/model-routing/SKILL.md` dispatch 預設與 lite 分工律節）
-- **生效時機**：ZCode 改動需新建 session（快照制；app 重啟續接同對話亦刷新）；CC 定義檔即時監聽。翻轉頂層 symlink／更新 registry 拷貝後以首個新 session 驗證
+- **生效時機**：ZCode 改動需新建 session（快照制；app 重啟續接同對話亦刷新）；grok 於 session 起掃 `~/.grok/agents`（AIR-215 實證）。翻轉頂層 symlink／更新 registry 拷貝後以首個新 session 驗證
 - **external-runtime 職責**：本 registry 亦承載 external-runtime 委派的入口指派（family／profile 映射與詞彙定義均見 `skills/model-routing/SKILL.md`——glossary＋family 表）；詳見下節 thin forwarder。
 
 ## Thin forwarder（external-runtime 家族入口）

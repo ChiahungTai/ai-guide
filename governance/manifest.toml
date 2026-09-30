@@ -48,15 +48,13 @@ deployed_targets = ["~/.zcode/AGENTS.md", "~/.codex/AGENTS.md", "~/.config/muse/
 
 [surfaces.skills]
 # symlink 活視圖（安裝到 home 消費點）；已存在且指對＝零動作（冪等）；
-# 指錯＝fail-loud 報告不自動改（零遷移原則）。前兩條＝skills 母鏈（P0-8
-# 實證形態）；後四條＝AIR-110 G2 home symlink 收編（user 拍板③擴本面）：
-# CC 端 CLAUDE.md→guide＋rules/agents 目錄、ZCode 端 agents registry。
+# 指錯＝fail-loud 報告不自動改（零遷移原則）。第一條＝skills 母鏈（P0-8
+# 實證形態）；agents registry 兩條（AIR-110 G2 收編——AIR-215 P2：CC 端
+# 四條 ~/.claude symlink 刪除式退役，~/.grok/agents 遞補〔grok 原生
+# user-agent discovery 掃描面；實證 9 支 agents 先補接後拆〕）。
 symlinks = [
     { link = "~/.agents/skills", target = "{{REPO}}/skills" },
-    { link = "~/.claude/skills", target = "{{REPO}}/skills" },
-    { link = "~/.claude/CLAUDE.md", target = "{{REPO}}/ai-development-guide.md" },
-    { link = "~/.claude/rules", target = "{{REPO}}/rules" },
-    { link = "~/.claude/agents", target = "{{REPO}}/agents/claude" },
+    { link = "~/.grok/agents", target = "{{REPO}}/agents/claude" },
     { link = "~/.zcode/agents", target = "{{REPO}}/agents/zcode" },
 ]
 
@@ -83,12 +81,17 @@ install_root = "~/Library/LaunchAgents"
 
 # ── per-harness 註冊（模板＝生成期望唯一定義） ─────────────────
 
-[registrations.cc]
-template = "registrations/cc.json"
-target = "~/.claude/settings.json"
-merge = "json-subtree"
-merge_root = "hooks"
-target_is_symlink = true   # P0-3：寫前必 Path.resolve()，原子寫禁打 symlink 路徑
+# AIR-215：CC 註冊面刪除式退役（registrations.cc/probes.claude/approve.claude）
+# ——registrations/cc.json 模板留 repo 作 dormant 歷史資產（回滾＝補回本節）。
+# grok＝原生 hooks 檔面：全域個人層 Always trusted（10-hooks.md），無 approve
+# 步驟（[approve] 不加 grok 鍵）。SessionStart "compact" matcher 為 dormant
+# 條目（grok SessionStart source 只列 startup/resume…；JSON 無註釋，dormant
+# 標註以此處為單一源）；FileChanged/memory-watch-seed 條目省略（grok 無此事件）。
+[registrations.grok]
+template = "registrations/grok.json"
+target = "~/.grok/hooks/ai-guide.json"
+merge = "file"             # 整檔 render 原子寫（套件獨佔整檔）；check＝canonical JSON 語義比對；uninstall＝刪檔
+target_is_symlink = false
 
 [registrations.zcode]
 template = "registrations/zcode.json"
@@ -107,9 +110,9 @@ target_is_symlink = false
 
 [approve]
 muse = "auto"            # muse plugins approve <id>——install 流程內含
-claude = "manual"        # /hooks UI（無 CLI 替代，P0-5）
 zcode = "new-session"    # per-session 快照，新 session 生效
 codex = "manual"         # /hooks TUI／startup review；installer 禁代寫 [hooks.state]
+# grok：全域個人層免 trust（10-hooks.md）——無 approve 步驟，故無鍵（AIR-215）
 
 # ── verify probe 定義（S3）────────────────────────────────────
 
@@ -117,7 +120,7 @@ codex = "manual"         # /hooks TUI／startup review；installer 禁代寫 [ho
 type = "muse-inspect"          # runtime_capabilities[].status 全部 == trusted_enabled（fail-closed）
 plugin_id = "muse-memory-governance"
 
-[probes.claude]
+[probes.grok]
 type = "pipe-payload"          # 合成 deny payload → hook script → 預期 exit 2
 script = "hooks/block-memory-index-write.py"
 

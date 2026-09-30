@@ -44,7 +44,7 @@ def cli_source(argv):
         if arg == "--source" and i + 1 < len(argv):
             value = argv[i + 1]
             break
-    return value if value in ("claude", "zcode") else "unknown"
+    return value if value in ("claude", "zcode", "grok") else "unknown"
 
 
 def main():

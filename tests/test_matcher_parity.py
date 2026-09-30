@@ -30,6 +30,7 @@ from conftest import REPO_ROOT
 _IN_PRE_COMMIT = os.environ.get("PRE_COMMIT") == "1"
 
 TEMPLATE = REPO_ROOT / "governance" / "registrations" / "zcode.json"
+GROK_TEMPLATE = REPO_ROOT / "governance" / "registrations" / "grok.json"
 CC_SETTINGS = REPO_ROOT / "settings.json"
 ZCODE_LIVE = Path.home() / ".zcode" / "cli" / "config.json"
 HANDLED_SCRIPT = REPO_ROOT / "hooks" / "block-memory-index-write.py"
@@ -105,7 +106,12 @@ def test_matcher_lives_within_handler_branches():
     PRE_COMMIT=1（hook 模式）時 skip：commit gate 須確定性，live drift 偵測
     職責歸 installer --check＋launchd monitor 日頻（AIR-125 AC#2）。"""
     handled = handler_branches()
-    sources = {"template": TEMPLATE, "cc-settings": CC_SETTINGS, "zcode-live": ZCODE_LIVE}
+    sources = {
+        "template": TEMPLATE,
+        "grok-template": GROK_TEMPLATE,
+        "cc-settings": CC_SETTINGS,
+        "zcode-live": ZCODE_LIVE,
+    }
     collected = collect_memory_hook_matchers(sources)
     if collected["zcode-live"] is None:
         pytest.skip("live-config-absent: ~/.zcode/cli/config.json 缺席——live 面未驗")
@@ -115,6 +121,9 @@ def test_matcher_lives_within_handler_branches():
             "fresh worktree 天生無）——CC 面未驗"
         )
     assert collected["template"] is not None, "範本缺席＝registration 源斷裂（fail）"
+    assert (
+        collected["grok-template"] is not None
+    ), "grok 範本缺席＝registration 源斷裂（fail）"
     for name, matchers in collected.items():
         assert matchers is not None, name
         extra = matchers - handled

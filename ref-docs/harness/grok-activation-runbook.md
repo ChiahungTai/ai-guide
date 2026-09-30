@@ -26,13 +26,15 @@ cd /Users/ctai/Github/ai-guide && uv run python scripts/deploy_agents.py
 
 ### ② 部署形收斂（關閉 Claude instruction 重複，保留 hooks）
 
+> **AIR-215 註記（2026-10-01，本節已超越）**：hooks 通道已**切斷**——13 支 guard 遷至 grok 原生 `~/.grok/hooks/ai-guide.json`（governance `[registrations.grok]` merge="file" 生成），`[compat.claude]` 現為 **全 false**（rules/agents/hooks/skills/mcps）＋`[paths] extra_skill_dirs` 移除（inert）。CC 第一方控制面退役完成；skills 72 支經 `~/.agents/skills` 根、agents 9 支經 `~/.grok/agents` symlink、MCP native 5 條＋codebase-memory-mcp 棄用。回滾＝compat cells 回 true＋重建 `~/.claude` symlink（AIR-215 卡 notes）。以下原始建議值保留供回滾形態參照。
+
 編輯 `~/.grok/config.toml`：
 
 ```toml
 [compat.claude]
 rules = false    # 關 ~/.claude/rules 直讀
 agents = false   # 關 ~/.claude/CLAUDE.md instruction scan（agents cell 仍載 CLAUDE.md——rules=false 單獨不夠）
-hooks = true     # 保留——13 支 guard 的接線面正是這裡
+hooks = true     # 【AIR-215 已改 false——hooks 遷 native ai-guide.json；此行為回滾形態】
 # skills / mcps 維持現值（skills 面無重複問題）
 ```
 
@@ -58,7 +60,7 @@ grok inspect --json > /Users/ctai/Github/ai-guide/.agent-tmp/grok-inspect.json
 ```
 
 - [ ] global `~/.grok/AGENTS.md` 在 projectInstructions／rules 清單且 enabled（b 形生效）
-- [ ] hooks 計數 **≥15**（13 user live-scan＋2 plugin；trusted project 再加 project 條）
+- [ ] hooks 計數 **≥15**（13 user live-scan＋2 plugin；trusted project 再加 project 條）——【AIR-215 後改判準：active hooks＝native `~/.grok/hooks/ai-guide.json` 13 條（source dir `~/.grok/hooks`）＋plugin 2；`.claude` source 條目全 disabled＝斷言通過態】
 - [ ] `rg -c 'ai-rules' /Users/ctai/Github/ai-guide/.agent-tmp/grok-inspect.json`＝**0 命中**（dangling 全消）；`rg -c 'ai-guide/hooks'` ≥13
 - [ ] `~/.claude/CLAUDE.md`／`~/.claude/rules` **不再是** grok enabled instruction source（c 形重複收斂）
 - [ ] 行為斷言（B2 重跑）：寫入 synthetic-pool 任務被擋（事件流現 deny、exit 2）；普通檔案 write positive control 成功

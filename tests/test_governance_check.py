@@ -79,12 +79,23 @@ def _boom_resolver(*a, **k):
 def _hooks_manifest_for(tmp_path: Path) -> dict:
     cc = tmp_path / "cc.json"
     cc.write_text("{}")
+    gr = tmp_path / "grok.json"
+    gr.write_text("{}")
     zc = tmp_path / "zc.json"
     zc.write_text("{}")
     cx = tmp_path / "cx.toml"
     cx.write_text("")
     return {
         "registrations": {
+            # AIR-215 後 hooks 面＝grok（render-file）＋zcode＋codex；cc 鍵僅供
+            # check_json_face 泛型單元測試（cc.json＝dormant 歷史模板充當
+            # plain-form fixture）——cmd_check 已不再消費 cc。
+            "grok": {
+                "target": str(gr),
+                "template": "registrations/grok.json",
+                "merge": "file",
+                "target_is_symlink": False,
+            },
             "cc": {
                 "target": str(cc),
                 "template": "registrations/cc.json",
@@ -117,6 +128,10 @@ def test_check_faces_convert_resolver_failure_to_drift(tmp_path, monkeypatch):
         mod.check_json_face(m, harness, drifts)
         assert len(drifts) == 1
         assert "uv python install 3.12" in drifts[0][1]
+    drifts = []
+    mod.check_grok_file_face(m, drifts)
+    assert len(drifts) == 1
+    assert "uv python install 3.12" in drifts[0][1]
     drifts = []
     mod.check_codex_face(m, drifts)
     assert len(drifts) == 1
@@ -639,10 +654,10 @@ def test_check_skills_symlinks(tmp_path):
 def test_cmd_check_missing_configs_exit_drift_not_crash(tmp_path):
     m = {
         "registrations": {
-            "cc": {
-                "target": str(tmp_path / "a.json"),
-                "template": "registrations/cc.json",
-                "merge_root": "hooks",
+            "grok": {
+                "target": str(tmp_path / "g.json"),
+                "template": "registrations/grok.json",
+                "merge": "file",
                 "target_is_symlink": False,
             },
             "zcode": {
@@ -688,8 +703,8 @@ def test_cmd_check_clean_exit_ok(tmp_path, monkeypatch):
     skills.mkdir()
     link = tmp_path / "skills-link"
     link.symlink_to(skills)
-    tmpl_cc = json.loads(_rendered("registrations/cc.json"))
-    cc = _write(tmp_path, "settings.json", {"hooks": tmpl_cc})
+    tmpl_gr = json.loads(_rendered("registrations/grok.json"))
+    gr = _write(tmp_path, "ai-guide.json", tmpl_gr)
     tmpl_zc = json.loads(_rendered("registrations/zcode.json"))
     zc = _write(tmp_path, "config.json", {"mcp": {}, "plugins": {}, "hooks": tmpl_zc})
     ct = _rendered("registrations/codex.toml")
@@ -701,10 +716,10 @@ def test_cmd_check_clean_exit_ok(tmp_path, monkeypatch):
     )  # muse 腿 mock 層另測
     manifest = {
         "registrations": {
-            "cc": {
-                "target": str(cc),
-                "template": "registrations/cc.json",
-                "merge_root": "hooks",
+            "grok": {
+                "target": str(gr),
+                "template": "registrations/grok.json",
+                "merge": "file",
                 "target_is_symlink": False,
             },
             "zcode": {
@@ -828,11 +843,16 @@ def test_hook_identity_cross_root_card_wt(tmp_path, monkeypatch):
 # G5 backlog-cleanup plist 版控化（不入 installer——安裝形態＝清單列出）。
 
 
+# AIR-215 P2：CC 端四條 ~/.claude symlink 刪除式退役；~/.grok/agents 遞補
 G2_ENTRIES = [
-    ("~/.claude/CLAUDE.md", "{{REPO}}/ai-development-guide.md"),
-    ("~/.claude/rules", "{{REPO}}/rules"),
-    ("~/.claude/agents", "{{REPO}}/agents/claude"),
+    ("~/.grok/agents", "{{REPO}}/agents/claude"),
     ("~/.zcode/agents", "{{REPO}}/agents/zcode"),
+]
+RETIRED_CLAUDE_LINKS = [
+    "~/.claude/skills",
+    "~/.claude/CLAUDE.md",
+    "~/.claude/rules",
+    "~/.claude/agents",
 ]
 
 
@@ -851,13 +871,16 @@ def _shim_repo(tmp_path: Path, monkeypatch) -> Path:
     return repo
 
 
-def test_g2_manifest_contains_four_home_symlinks():
+def test_g2_manifest_contains_home_symlinks_and_no_claude_residue():
     manifest = mod.load_manifest()
     entries = {
         (s["link"], s["target"]) for s in manifest["surfaces"]["skills"]["symlinks"]
     }
     for pair in G2_ENTRIES:
         assert pair in entries
+    links = {s["link"] for s in manifest["surfaces"]["skills"]["symlinks"]}
+    for retired in RETIRED_CLAUDE_LINKS:
+        assert retired not in links  # AIR-215：CC 四 symlink 刪除式退役
 
 
 def test_g2_install_creates_then_noop(tmp_path, monkeypatch):
@@ -865,21 +888,21 @@ def test_g2_install_creates_then_noop(tmp_path, monkeypatch):
     manifest = mod.load_manifest()
     plan = mod.build_plan(manifest, "skills", "install")
     symlinks = [t for t in plan["targets"] if t["kind"] == "symlink"]
-    assert len(symlinks) == 6  # 兩條 skills 母鏈＋G2 四條 home symlink
-    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["created"] * 6
-    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["noop"] * 6
+    assert len(symlinks) == 3  # skills 母鏈＋grok/zcode 兩條 agents registry
+    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["created"] * 3
+    assert [mod._apply_target({}, t, "install") for t in symlinks] == ["noop"] * 3
 
 
-def test_g2_file_symlink_claude_md_created(tmp_path, monkeypatch):
-    """CLAUDE.md＝檔案 symlink（非目錄母鏈）——機構泛型形態腿。"""
+def test_g2_grok_agents_symlink_created(tmp_path, monkeypatch):
+    """~/.grok/agents＝目錄 symlink（grok 原生 user-agent discovery 掃描面）。"""
     _shim_repo(tmp_path, monkeypatch)
     manifest = mod.load_manifest()
     plan = mod.build_plan(manifest, "skills", "install")
-    t = next(x for x in plan["targets"] if x["link"] == "~/.claude/CLAUDE.md")
+    t = next(x for x in plan["targets"] if x["link"] == "~/.grok/agents")
     assert mod._apply_target({}, t, "install") == "created"
-    link = Path.home() / ".claude" / "CLAUDE.md"
-    assert link.is_symlink() and not link.is_dir()
-    assert link.resolve() == (mod.REPO_ROOT / "ai-development-guide.md").resolve()
+    link = Path.home() / ".grok" / "agents"
+    assert link.is_symlink() and link.is_dir()
+    assert link.resolve() == (mod.REPO_ROOT / "agents/claude").resolve()
 
 
 def test_g2_check_green_when_symlinks_correct(tmp_path, monkeypatch):
@@ -895,13 +918,13 @@ def test_g2_check_green_when_symlinks_correct(tmp_path, monkeypatch):
 def test_g2_check_reports_wrong_target(tmp_path, monkeypatch):
     _shim_repo(tmp_path, monkeypatch)
     (tmp_path / "elsewhere").mkdir()
-    rules_link = Path.home() / ".claude" / "rules"
-    rules_link.parent.mkdir(parents=True, exist_ok=True)
-    rules_link.symlink_to(tmp_path / "elsewhere")
+    link = Path.home() / ".grok" / "agents"
+    link.parent.mkdir(parents=True, exist_ok=True)
+    link.symlink_to(tmp_path / "elsewhere")
     manifest = mod.load_manifest()
     drifts: list = []
     mod.check_skills_face(manifest, drifts)
-    assert any("指錯" in m and ".claude/rules" in m for _, m in drifts)
+    assert any("指錯" in m and ".grok/agents" in m for _, m in drifts)
 
 
 MINIMAL_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
@@ -1207,6 +1230,7 @@ def test_air126_cmd_check_all_prints_both_warnings(tmp_path, monkeypatch, capsys
         "check_rules_face",
         "check_skills_face",
         "check_hooks_scripts",
+        "check_grok_file_face",
         "check_json_face",
         "check_codex_face",
         "check_agents_face",
@@ -1235,6 +1259,7 @@ def test_air126_cmd_check_drift_branch_still_warns(tmp_path, monkeypatch, capsys
     )
     monkeypatch.setattr(mod, "check_skills_face", lambda m, d: None)
     monkeypatch.setattr(mod, "check_hooks_scripts", lambda m, d: None)
+    monkeypatch.setattr(mod, "check_grok_file_face", lambda m, d: None)
     monkeypatch.setattr(mod, "check_json_face", lambda m, h, d: None)
     monkeypatch.setattr(mod, "check_codex_face", lambda m, d, **k: None)
     monkeypatch.setattr(mod, "check_agents_face", lambda m, d: None)
@@ -1335,7 +1360,7 @@ def _air133_agents_manifest() -> dict:
             "skills": {
                 "symlinks": [
                     {"link": "~/.agents/skills", "target": "{{REPO}}/skills"},
-                    {"link": "~/.claude/agents", "target": "{{REPO}}/agents/claude"},
+                    {"link": "~/.grok/agents", "target": "{{REPO}}/agents/claude"},
                     {"link": "~/.zcode/agents", "target": "{{REPO}}/agents/zcode"},
                 ]
             },
@@ -1360,7 +1385,7 @@ def test_air133_agents_view_present_silent(tmp_path, monkeypatch):
     home = tmp_path / "home"
     for rel, token in (
         (".agents/skills", "{{REPO}}/skills"),
-        (".claude/agents", "{{REPO}}/agents/claude"),
+        (".grok/agents", "{{REPO}}/agents/claude"),
         (".zcode/agents", "{{REPO}}/agents/zcode"),
     ):
         link = home / rel
@@ -1493,3 +1518,162 @@ def test_air132_dry_run_wrap_failure_propagates(monkeypatch):
 
     monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
     assert mod.cmd_install_uninstall(manifest, "all", "dry-run") == mod.EXIT_OK
+
+
+# ── AIR-215 P1：grok 原生 hooks 面（merge=file render-file）＋CC 註冊退役 ──
+# grok 全域個人層 ~/.grok/hooks/ai-guide.json 由套件整檔擁有（merge="file"：
+# 整檔 render 原子寫、check 走 canonical-JSON 語義比對、uninstall＝刪檔）。
+# CC 面（registrations.cc/[approve].claude/probes.claude）刪除式退役。
+
+
+def _grok_reg(grok_target: Path) -> dict:
+    return {
+        "grok": {
+            "target": str(grok_target),
+            "template": "registrations/grok.json",
+            "merge": "file",
+            "target_is_symlink": False,
+        }
+    }
+
+
+def test_air215_manifest_swaps_cc_for_grok():
+    manifest = mod.load_manifest()
+    reg = manifest["registrations"]
+    assert "grok" in reg and "cc" not in reg
+    assert reg["grok"]["merge"] == "file"
+    assert reg["grok"]["target"] == "~/.grok/hooks/ai-guide.json"
+    assert reg["grok"]["template"] == "registrations/grok.json"
+    assert "claude" not in manifest.get("approve", {})
+    probes = manifest["probes"]
+    assert "grok" in probes and "claude" not in probes
+    assert probes["grok"]["type"] == "pipe-payload"
+    assert probes["grok"]["script"] == "hooks/block-memory-index-write.py"
+
+
+def test_air215_build_plan_grok_render_file_kind():
+    manifest = mod.load_manifest()
+    targets = mod.build_plan(manifest, "hooks", "install")["targets"]
+    grok = [t for t in targets if t["target"] == "~/.grok/hooks/ai-guide.json"]
+    assert len(grok) == 1 and grok[0]["kind"] == "render-file"
+    assert not any(t["target"] == "~/.claude/settings.json" for t in targets)
+
+
+def test_air215_grok_template_shape():
+    """模板形態：{"hooks": {...cc 形 event map...}}；FileChanged/watch-seed 省略；
+    SessionStart 僅剩 compact dormant 條目；全部 handler 顯式 timeout；
+    memory-write-sensor 傳 --source grok。"""
+    doc = json.loads(_rendered("registrations/grok.json"))
+    events = doc["hooks"]
+    assert "FileChanged" not in events
+    ss = events.get("SessionStart", [])
+    assert len(ss) == 1 and ss[0].get("matcher") == "compact"
+    for groups in events.values():
+        for g in groups:
+            for h in g["hooks"]:
+                assert "timeout" in h, h
+    sensor_cmds = [
+        str(h.get("command", ""))
+        for g in events["PostToolUse"]
+        for h in g["hooks"]
+        if "memory-write-sensor" in str(h.get("command", ""))
+    ]
+    assert sensor_cmds and any("--source grok" in c for c in sensor_cmds)
+
+
+def test_air215_render_file_install_uninstall_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "_CANONICAL_CACHE", {str(mod.REPO_ROOT): mod.REPO_ROOT})
+    target = tmp_path / "ai-guide.json"
+    t = {
+        "kind": "render-file",
+        "target": str(target),
+        "template": "registrations/grok.json",
+        "action": "merge",
+    }
+    assert mod._apply_target({}, t, "install") == "written"
+    doc = json.loads(target.read_text())
+    assert "PreToolUse" in doc["hooks"]
+    assert mod._apply_target({}, t, "install") == "noop"  # 冪等（byte-equal）
+    t["action"] = "remove"
+    assert mod._apply_target({}, t, "uninstall") == "removed"
+    assert not target.exists()
+    assert mod._apply_target({}, t, "uninstall") == "not-present（leave）"
+
+
+def test_air215_render_file_uninstall_needs_no_resolver(tmp_path, monkeypatch):
+    """C1 對稱腿：render-file uninstall＝刪檔，不經 resolver（rollback 不依賴
+    managed 3.12 在場）。"""
+    target = tmp_path / "ai-guide.json"
+    target.write_text('{"hooks": {}}\n')
+    monkeypatch.setattr(mod, "resolve_hook_python", _boom_resolver)
+    t = {
+        "kind": "render-file",
+        "target": str(target),
+        "template": "registrations/grok.json",
+        "action": "remove",
+    }
+    assert mod._apply_target({}, t, "uninstall") == "removed"
+
+
+def test_air215_check_grok_face_green(tmp_path):
+    rendered = json.loads(_rendered("registrations/grok.json"))
+    target = _write(tmp_path, "ai-guide.json", rendered)
+    drifts: list = []
+    mod.check_grok_file_face({"registrations": _grok_reg(target)}, drifts)
+    assert drifts == []
+
+
+def test_air215_check_grok_face_semantic_not_byte(tmp_path):
+    """WO 契約：check 走 canonical JSON 語義比對非 byte——格式/鍵序差 ≠ drift。"""
+    rendered = json.loads(_rendered("registrations/grok.json"))
+    target = tmp_path / "ai-guide.json"
+    target.write_text(json.dumps(rendered, sort_keys=True))  # 異排版同語義
+    drifts: list = []
+    mod.check_grok_file_face({"registrations": _grok_reg(target)}, drifts)
+    assert drifts == []
+
+
+def test_air215_check_grok_face_missing_file(tmp_path):
+    drifts: list = []
+    mod.check_grok_file_face(
+        {"registrations": _grok_reg(tmp_path / "nope.json")}, drifts
+    )
+    assert any("缺席" in m for _, m in drifts)
+
+
+def test_air215_check_grok_face_content_diff(tmp_path):
+    rendered = json.loads(_rendered("registrations/grok.json"))
+    del rendered["hooks"]["Notification"]
+    target = _write(tmp_path, "ai-guide.json", rendered)
+    drifts: list = []
+    mod.check_grok_file_face({"registrations": _grok_reg(target)}, drifts)
+    assert any("Notification" in m for _, m in drifts)
+
+
+def test_air215_check_grok_face_extra_event(tmp_path):
+    rendered = json.loads(_rendered("registrations/grok.json"))
+    rendered["hooks"]["UserPromptSubmit"] = [
+        {"hooks": [{"type": "command", "command": "/bin/echo", "timeout": 5}]}
+    ]
+    target = _write(tmp_path, "ai-guide.json", rendered)
+    drifts: list = []
+    mod.check_grok_file_face({"registrations": _grok_reg(target)}, drifts)
+    assert any("UserPromptSubmit" in m for _, m in drifts)
+
+
+def test_air215_check_grok_face_malformed(tmp_path):
+    p = tmp_path / "ai-guide.json"
+    p.write_text("{oops")
+    drifts: list = []
+    mod.check_grok_file_face({"registrations": _grok_reg(p)}, drifts)
+    assert any("malformed" in m for _, m in drifts)
+
+
+def test_air215_check_grok_face_missing_registration_raises_exec_family(tmp_path):
+    with pytest.raises(mod.GovernanceError, match="registrations.grok"):
+        mod.check_grok_file_face({"registrations": {}}, [])
+
+
+def test_air215_probe_order_grok_replaces_claude():
+    assert "grok" in mod.PROBE_ORDER and "claude" not in mod.PROBE_ORDER
+    assert mod.PROBE_SURFACES["hooks"] == ("grok", "zcode", "codex")
