@@ -1,10 +1,10 @@
 ---
 id: AIR-220
 title: bridge-2.10-跟動——AIR-216-收線條文補-grok-家族列舉（DB-72-翻轉同步）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-30 23:30'
-updated_date: '2026-09-30 23:30'
+updated_date: '2026-09-30 23:42'
 labels: []
 dependencies: []
 ordinal: 206000
@@ -26,6 +26,21 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 bridge-dispatch SKILL.md :66 family-split 句補 grok 形（NDJSON camelCase tool events＋事件錨定 status：in-stream tool failure 永非終局、anchor-less text 串流＝output-token-limit 大聲失敗——bridge 2.10.0 docs/ep.md S1 honest-completion 條款為源）；as-of 標記更新 2026-10-01
-- [ ] #2 muse 單腿複核條文（minor drift-sync 軌——比照 as-of 翻正先例）無語義面 finding
+- [x] #1 bridge-dispatch SKILL.md :66 family-split 句補 grok 形（NDJSON camelCase tool events＋事件錨定 status：in-stream tool failure 永非終局、anchor-less text 串流＝output-token-limit 大聲失敗——bridge 2.10.0 docs/ep.md S1 honest-completion 條款為源）；as-of 標記更新 2026-10-01
+- [x] #2 muse 單腿複核條文（minor drift-sync 軌——比照 as-of 翻正先例）無語義面 finding
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bridge 2.10.0 DB-72 翻轉同步落地（main 192b6eb5）：收線核對條文 family 列舉補 grok 四形（NDJSON camelCase tool events＋事件錨定 status——in-stream failure 永非終局、anchor-less text 串流＝output-token-limit 大聲失敗，源＝delegate-bridge docs/ep.md S1 honest-completion）＋as-of 翻 2026-10-01。muse 單腿複核 OK（三軸全過：語義對上游／無第二真相源／無漏同步）。**同場清零：live 補證兩發 PASS**（deny control 放行直證＋fail-open canary 續行直證——.agent-tmp/air-220/；AIR-219/215 的 quota 欠證全清，僅餘 monitor codex L3 等 10-04 codex 窗）。
+
+終態圖：
+
+```mermaid
+flowchart LR
+    B["bridge 2.10.0<br/>DB-72 翻轉"] --> F["收線核對四形列舉<br/>glm/muse/codex/grok"]
+    F --> E["事件錨定條款<br/>in-stream failure 永非終局"]
+    E --> M["main 192b6eb5<br/>muse 單腿 OK"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
