@@ -1,10 +1,10 @@
 ---
 id: AIR-218
 title: grok L1a 工程接線——規則 bundle＋hooks 雙讀＋文檔登記＋xAI direct binding
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-30 13:44'
-updated_date: '2026-09-30 14:42'
+updated_date: '2026-09-30 20:58'
 labels: []
 dependencies: []
 references:
@@ -68,3 +68,22 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【0930 工程收斂結算】實作＝flash（六塊）＋審查＝fresh（M1-M5+I1-I5，無 Critical，獨立重跑 621 tests）＋跨家族 muse（F1-F8）→5.3 judge 15+3 項採納（I1 cosmetic 留）→flash 修復輪 15/15＋追加 2 詞＋同叢集延伸 1——全綠（修復回歸 185 passed＋scoped ruff＋dry-run 4/4＋grok WARN 96% 預期態＋availability 31 passed）。落地：card branch 858fb56c（pre-commit 全量 2661 passed）→wt-close full ff-only merge main→WT/branch 已清。**AC 七項全數工程面達成**（#1-#7 機械驗證齊——deploy 4/4/gate WARN/dual-shape deny exit 2/catalog loader+snapshot xai direct candidate/五處登記/matrix 15 維如實/runbook 三連+斷言/零冗餘投影/全量綠）。**回執四欄**：classification=boundary（新 deploy target+hooks 契約面+catalog）／review=fresh+muse 雙腿 GO-WITH-FIXES 全採（evidence：.agent-tmp/air-218/review-*.md＋本 notes；實作/修復證據 log 隨 WT 收斂已滅——關鍵數字全錄本 notes）／session-freshness=fresh／deployment-surfaces=pending-grok（其餘三面 bundle 內容未變零重部署需求；~/.grok/AGENTS.md 部署＝L1b user runbook 面——install --check 現報此一 drift＝預期 fail-loud）。**待 user 拍板**：Done 翻牌（板面現留 In Progress——deep-work 下 Done 屬 human gate 入 pending 台帳）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+grok L1a 工程接線落地 main（858fb56c，30 檔）：第 4 deploy target（~/.grok/AGENTS.md）＋GROK_ATTENTION_BUDGET 30KiB 獨立治理預算（96% WARN 即期觸發＝刻意瘦身壓力）＋hooks/hook_payload_compat.py 薄相容層（8 支雙讀——CC 路徑零變、grok camelCase 生效）＋catalog grok-cli-grok-4.7 direct binding（fabel identity、scope 收窄 direct）＋ref-docs 五處登記＋matrix 15 維如實（partial/wired/unknown 不湊綠）＋activation runbook。審查鏈：flash 實作→fresh（無 Critical）＋muse 雙腿 GO-WITH-FIXES→judge 15+3 全採→修復輪全綠→pre-commit 全量 2661 passed。行為驗收歸 AIR-219（user runbook 面）。終態圖：
+
+```mermaid
+flowchart LR
+    EP["deploy_agents.py"] --> T4["4 targets<br/>+grok 30KiB 預算"]
+    HK["8 支 hooks"] --> CP["hook_payload_compat<br/>snake優先/camel fallback"]
+    CT["catalog.toml"] --> BD["grok-cli-grok-4.7<br/>fabel×direct"]
+    RD["ref-docs 五處"] --> MX["matrix 15 維<br/>如實分類"]
+    T4 --> M["main 858fb56c<br/>2661 tests"]
+    CP --> M
+    BD --> M
+    MX --> M
+    M -.->|"user runbook 後"| L1B["AIR-219 L1b 驗收"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
