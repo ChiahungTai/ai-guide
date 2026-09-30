@@ -4,7 +4,7 @@ title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面�
 status: Done
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 12:06'
+updated_date: '2026-09-30 13:39'
 labels: []
 dependencies: []
 references:
@@ -62,6 +62,8 @@ flowchart LR
 【0930 結算——post-build 收斂＋回執四欄】實作＝flash（impl-lite）七編輯落地；審查＝fresh 腿 GO-WITH-FIXES（F1-F9，最高價值 F1：toolName 僅 glm ledger 形——muse/codex 為 payload_type，防收線誤判）＋跨家族 muse 腿 GO-WITH-FIXES（job-muo002xs，F1-F6）；judge＝5.3 marshal 裁決 9 採納/2 摺結案/0 否決；修復驗證腿九項全 PASS 零修正。回執四欄：classification=boundary／review=fresh+muse+intent+設計雙腿（evidence refs .agent-tmp/air-216/）／session-freshness=fresh／deployment-surfaces=healthy（deploy 3/3，unverified-by-graph 三 bundle 在場）。judge 裁決記錄：①AC#1 措辭『必填節』vs landed 條件節——與討論輪雙腿裁決一致（條件節＋要素 1 指針），AC 以條件節表述勾稽（muse-F6/fresh-F8）②既有 [WARN] graph-not-available 變體與 cr_usage regex 不匹配——後續弧收编（fresh-F9）③muse bundle 96%/30KiB gate 既有壓力上報（非本弧引入）。收線：merge 425ebf3c（wt-close full，WT+branch 已清）；CR telemetry 基線＝call-evidence 2 jobs/4 calls、evidence-bearing 25 jobs（src=11/unverified=22/degraded=3）；correction mining 0 候選；improvement admission=0（全跨弧歷史）；tour corpus no-op；post-build receipt＝.agent-tmp/post-build-receipts/air-216.json。
 
 【0930 field data 補記（mosaic 信 c17c9f40，兩發 route 實測）】glm 腿「默認 degraded」實測成立，機制兩層：①plan tier 剝 Bash（bashAllow 可解）②plan mode 權限閘擋任意 binary 執行（bashAllow 不解——which/ls 可過、code-reality graph_query 被擋）。實務結論：glm 結構查證腿常態路徑＝dispatcher 端 preprovided-cr（先跑 cr 附 artifact 於 read-set）；live-cr:CLI 需 yolo/marshal 級 face，對唯讀 query 腿不成比例。muse/codex 腿 surface 本有 shell，live-cr:CLI 直接可行（各自 surface 探測確認）。證據：job-muo1e52i/job-muo1k2br＋wo-glm-cr-probe.md。route 節條文與此一致（可反駁起點語義），無條文修動需求。
+
+【L1 承接指針補記（bridge 信 fd8224a9）】root cause 層已由 delegate-bridge DB-70 落地：--mcp-supply flag＋staged home mcp.servers 注入（v1 封閉集＝code-reality），main d186471，contract lane 606/606＋三腿審查＋GLM-5.3 judge。caller 面對接：①glm worker 帶 MCP 即可宣告 live-cr ②ledger 的 mcpSupply/mcpToolSchemaChars＝glm-only additive extras——收線核對照 family-split 判讀（與本卡 fresh-F1 修正同構）③preprovided-cr 不衝突。殘留：live canary（真 carrier＋真 CR server）另腿、release bump 未做。本卡 AC#4 閉環。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
