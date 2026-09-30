@@ -22,11 +22,11 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from conftest import load_module
 
 REPO = Path(__file__).resolve().parents[1]
 HOOK = REPO / "hooks" / "marshal_admission_guard.py"
+COMPAT = REPO / "hooks" / "hook_payload_compat.py"
 GUARD = REPO / ".githooks" / "control-plane-guard.sh"
 
 
@@ -72,6 +72,9 @@ def sandbox(tmp_path_factory):
     (canon / "hooks" / "marshal_admission_guard.py").write_text(
         HOOK.read_text(encoding="utf-8"), encoding="utf-8"
     )
+    (canon / "hooks" / "hook_payload_compat.py").write_text(
+        COMPAT.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     _write_marker(canon, WT_MARKER)
     (canon / "rules").mkdir()
     (canon / "rules" / "tool-discipline.md").write_text("x\n", encoding="utf-8")
@@ -114,6 +117,9 @@ def branch_sandbox(tmp_path_factory):
     )
     (repo / "hooks" / "marshal_admission_guard.py").write_text(
         HOOK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (repo / "hooks" / "hook_payload_compat.py").write_text(
+        COMPAT.read_text(encoding="utf-8"), encoding="utf-8"
     )
     _write_marker(
         repo,
@@ -311,6 +317,9 @@ def wo_sandbox(tmp_path_factory):
     )
     (repo / "hooks" / "marshal_admission_guard.py").write_text(
         HOOK.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (repo / "hooks" / "hook_payload_compat.py").write_text(
+        COMPAT.read_text(encoding="utf-8"), encoding="utf-8"
     )
     _write_marker(
         repo,

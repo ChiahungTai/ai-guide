@@ -30,6 +30,7 @@ description: "Spawn／委派／派工前必載——決定用哪個 model 的解
 | candidate | 四元組 (model_identity, dispatch_binding, requested_effort, effective_effort)——不是裸 model 名 |
 | Arbiter／Marshal | Arbiter＝Role 值（judge-review 是執行 Role=Arbiter 的 workflow adapter）；Marshal＝composite workflow 的 orchestration responsibility，非 Role／agent／skill |
 | family／profile | family＝external runtime 家族（muse／codex／glm——**運輸身分軸**，非 model 強度軸）；profile＝external runtime 的 transport mode（implement／review／advisory）。詞彙定義單一源＝本 glossary；rule 端僅留 pointer |
+| surface | DispatchBinding 的派工面詞彙（catalog `surface` 欄）：`agent-definition`＝harness agent registry 面（zcode/claude registry）；`*-family`＝bridge 家族委派面（glm-family/codex-family/muse-family，經 delegate-bridge）；`cli-headless`＝CLI headless 直呼面（AIR-218 首例 grok-cli-grok-4.7——`grok -p` 直接 caller，非 registry 非 bridge）。新 surface 詞須在本表登記（catalog loader 不驗 surface 閉集，敘述面靠此表防漂） |
 
 ### WorkUnitContract schema（owning workflow 持有；欄位語義本節單一源）
 
@@ -156,7 +157,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | 審查／判斷（review 委派） | `high` | `high` | `high` | `high` | review 工單 |
 | 深推理（判斷密集／深挖） | `max`（user 層級；定義檔設值 sticky 不達 wire——見上方但書） | `high` | `xhigh`～`ultra` | `xhigh` | muse 委派預設（user 定）；深推理升 `ultra` |
 
-> 可考值域：codex 接受 `none`/`minimal`/`low`/`medium`/`high`/`xhigh`（**codex plugin** 的 codex-cli-runtime skill——plugin cache 面，非本 repo 檔；repo 內鏡像 `ref-docs/harness/codex/config-file/config-sample.md` 的 config-level enum 無 `none`——companion flag 值域與 config 值域是兩個面）；`chatgpt-web/*` 例外＝slug 自帶固定 effort（light/medium/high＝display Instant/Medium/High），effort 旗標不換 browser model（值域對 web slug 無效）；muse 用 `low`/`medium`/`high`/`xhigh`/`ultra`（`ultra`＝CLI alias → provider 最高級＝API `max`）；ZCode 欄位名是 `thoughtLevel`（非 `reasoningEffort`——未知欄位靜默忽略）、user reasoningLevel 層級含 `max`；CC effort enum 以 CC runtime 為準（repo 慣用 `high`）。跨家族委派時 effort 值以**各家族解析表**為準（muse/codex 見 external-runtime family 表、in-harness 見 tier 解析表），本表只對詞彙。
+> 可考值域：codex 接受 `none`/`minimal`/`low`/`medium`/`high`/`xhigh`（**codex plugin** 的 codex-cli-runtime skill——plugin cache 面，非本 repo 檔；repo 內鏡像 `ref-docs/harness/codex/config-file/config-sample.md` 的 config-level enum 無 `none`——companion flag 值域與 config 值域是兩個面）；`chatgpt-web/*` 例外＝slug 自帶固定 effort（light/medium/high＝display Instant/Medium/High），effort 旗標不換 browser model（值域對 web slug 無效）；muse 用 `low`/`medium`/`high`/`xhigh`/`ultra`（`ultra`＝CLI alias → provider 最高級＝API `max`）；ZCode 欄位名是 `thoughtLevel`（非 `reasoningEffort`——未知欄位靜默忽略）、user reasoningLevel 層級含 `max`；CC effort enum 以 CC runtime 為準（repo 慣用 `high`）；grok-4.7 用 `low`/`medium`/`high`/`xhigh`（CLI param `--reasoning-effort`/`--effort`，grok-4.7 menu 實測值域——AIR-218 catalog binding `grok-cli-grok-4.7`）。跨家族委派時 effort 值以**各家族解析表**為準（muse/codex 見 external-runtime family 表、in-harness 見 tier 解析表），本表只對詞彙。
 
 ## lite 分工律（執行層降級條件）
 

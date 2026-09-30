@@ -11,8 +11,12 @@ PreToolUse hook: 攔截 python -c 命令含換行 + # 註解。
 """
 
 import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
 
 
 def is_violation(command: str) -> bool:
@@ -36,10 +40,11 @@ def main() -> None:
         print(f"[block-python-c-comment] stdin parse error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    if data.get("tool_name") != "Bash":
+    # 容器鍵雙讀（AIR-218）：run_terminal_command→Bash 映射；CC 形零變。
+    if compat.tool_name(data) != "Bash":
         sys.exit(0)
 
-    command = data.get("tool_input", {}).get("command", "")
+    command = (compat.tool_input(data) or {}).get("command", "")
     if not command or not is_violation(command):
         sys.exit(0)
 

@@ -33,10 +33,14 @@ mixed-session／rollback 窗期仍維持 Python 3.9 語法相容（無 match、�
 """
 
 import json
+import os
 import re
 import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
 
 HOOK_TAG = "kanban-skill-gate"
 KANBAN_SKILL_TAIL = ("skills", "kanban-board", "SKILL.md")
@@ -136,10 +140,13 @@ def run(raw):
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
             return 0
-        event = payload.get("hook_event_name")
-        tool = payload.get("tool_name")
-        tool_input = payload.get("tool_input")
-        if not isinstance(tool_input, dict):
+        # 容器鍵雙讀＋值層正規化（AIR-218）：hookEventName/toolName 的 grok
+        # 形（snake 事件值、read_file/target_file、run_terminal_command）經
+        # compat 層轉 CC 語義；CC 形 snake 優先、行為零變。
+        event = compat.hook_event_name(payload)
+        tool = compat.tool_name(payload)
+        tool_input = compat.tool_input(payload)
+        if tool_input is None:
             return 0
         cwd = payload.get("cwd")
         if not isinstance(cwd, str) or not cwd:
@@ -151,14 +158,14 @@ def run(raw):
                 and file_path
                 and _is_kanban_skill_read(file_path, cwd)
             ):
-                _mark_session_read(cwd, payload.get("session_id"))
+                _mark_session_read(cwd, compat.session_id(payload))
             return 0
         if event == "PreToolUse" and tool == "Bash":
             command = tool_input.get("command")
             if (
                 isinstance(command, str)
                 and TASK_CMD_RE.search(command)
-                and _marker_state(cwd, payload.get("session_id")) == "missing"
+                and _marker_state(cwd, compat.session_id(payload)) == "missing"
             ):
                 return _deny()
         return 0

@@ -11,9 +11,13 @@ sed 禁令（mosaic 兩週遙測實測 319 次）。改檔一律走 Edit/Write �
 
 import ast
 import json
+import os
 import re
 import shlex
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
 
 HEREDOC_PATTERN = re.compile(r"<<-?\s*['\"]?\w+")
 # `\bpython3?\b` 已涵蓋 uv run python 形態（uv 後仍出現 'python' word）
@@ -176,10 +180,11 @@ def main() -> None:
         print(f"[block-python-file-write] stdin parse error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    if data.get("tool_name") != "Bash":
+    # 容器鍵雙讀（AIR-218）：run_terminal_command→Bash 映射；CC 形零變。
+    if compat.tool_name(data) != "Bash":
         sys.exit(0)
 
-    command = data.get("tool_input", {}).get("command", "")
+    command = (compat.tool_input(data) or {}).get("command", "")
     if not command or not is_violation(command):
         sys.exit(0)
 

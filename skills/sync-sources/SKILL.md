@@ -31,7 +31,7 @@ uv run python skills/scan-project/scripts/check_single_source.py
 | **classification 自標** | CLAUDE.md 分類的命令本體必須含受眾字樣 | 抓「外部分類、命令不自知」——純字串包含檢查 |
 | **coverage（allow-list 覆蓋）** | source_glob 下每個定義（如 skill name）必須被 enforced_by 提取的集合覆蓋 | 抓「定義源目錄 ↔ 執行源 allow-list」drift（rename 後未同步）——純集合比對 |
 | **source_contains** | 定義源自身必須含關鍵值 | 防 drift 回非預期值——純字串包含檢查 |
-| **部署 bundle 新鮮度** | 非 Claude 三端部署 AGENTS.md 必須 == source 重建 bundle | 抓「編輯 rules/ 後沒跑 deploy」（stale 部署 = 非 Claude session 讀舊規則）——rebuild + byte 比對，無語義判斷 |
+| **部署 bundle 新鮮度** | 非 Claude 四端部署 AGENTS.md 必須 == source 重建 bundle | 抓「編輯 rules/ 後沒跑 deploy」（stale 部署 = 非 Claude session 讀舊規則）——rebuild + byte 比對，無語義判斷 |
 
 ## Finding 嚴重度
 

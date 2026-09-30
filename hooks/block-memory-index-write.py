@@ -51,9 +51,13 @@ Write 收斂豁免：content 比既有檔短即放行（與 Edit delta 豁免對
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
 
 GENERATOR_NAME = "_generate_index.py"
 DESC_LIMIT = 100  # frontmatter description 硬上限（＝寫入紀律值；09-03 P1 對齊）
@@ -152,8 +156,10 @@ def main() -> None:
         print(f"[block-memory-index-write] stdin parse error: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    tool = data.get("tool_name", "")
-    tool_input = data.get("tool_input") or {}
+    # 容器鍵雙讀（AIR-218）：CC/ZCode snake 優先、grok camel fallback＋tool 值
+    # 映射（search_replace→Edit）——CC 形下行為零變（fallback 是死碼）。
+    tool = compat.tool_name(data) or ""
+    tool_input = compat.tool_input(data) or {}
     file_path = tool_input.get("file_path", "")
     if not file_path:
         sys.exit(0)

@@ -6,7 +6,9 @@ Bundles ai-development-guide.md (guide) + rules with matching harness-scope
 frontmatter -> writes to ~/.zcode/AGENTS.md, ~/.codex/AGENTS.md,
 ~/.config/muse/AGENTS.md (muse machine-wide user rules
 path — probe-verified 2026-09-07; loads unconditionally, project AGENTS.md
-wins on conflict).
+wins on conflict), and ~/.grok/AGENTS.md (grok global rules path —
+AIR-218; grok loads each rules file in full with no size cap, so the
+gate there is a governance budget, not a runtime truncation line).
 
 Claude (~/.claude/CLAUDE.md) is NOT touched -- it stays symlink to the
 slim guide; Claude gets rules via ~/.claude/rules/ auto-load.
@@ -115,7 +117,8 @@ def expected_bundle_for(target_path) -> bytes:
 
 
 def resolve_targets(home: pathlib.Path) -> list[DeployTarget]:
-    """三端皆保留 neutral 核心；Muse 為 project instructions 留出空間。"""
+    """四端皆保留 neutral 核心；Muse 為 project instructions 留出空間、
+    grok 以獨立注意力預算自限（無 runtime 截斷線）。"""
     return [
         DeployTarget(
             home / ".zcode" / "AGENTS.md",
@@ -138,6 +141,13 @@ def resolve_targets(home: pathlib.Path) -> list[DeployTarget]:
             MUSE_USER_BUDGET,  # user 層自限（per-file ~32K 實測 cap）；合併專案指令仍須驗 64KiB shared sum。
             "muse",
         ),
+        DeployTarget(
+            home / ".grok" / "AGENTS.md",
+            frozenset({"neutral"}),
+            frozenset(),
+            GROK_ATTENTION_BUDGET,  # 治理預算非 runtime cap（grok 無截斷線）；見常數註解
+            "grok",
+        ),
     ]
 
 
@@ -153,6 +163,15 @@ BUNDLE_MAX_BYTES = 90 * 1024
 # global 側）。歷史：09-09 破 40,092B（tail rules 靜默截斷）立預算 36,864，
 # 但瞄錯 cap（仍超 32,000）；0924 依實測再修。
 MUSE_USER_BUDGET = 30 * 1024
+
+# grok 注意力治理預算（AIR-218）——**治理預算非 runtime cap**：grok 明載
+# "loads each rules file in full, with no size cap"（project-rules 無截斷線），
+# 此常數是我們自己的注意力/recurring-input-cost 預算（單發 input ~46.5k tok
+# 實測、free tier 6 發觸頂——L0 axis7），與 muse 的實測截斷線 margin 同值
+# 不同理由，非 alias。現 bundle ~29.5KB 起跳即 ~96%：刻意形成瘦身壓力
+# （膨脹逼 on-demand 內容下沉 skill，而非無限長大）；超限 fail、>=85% WARN
+# 沿用 BUNDLE_WARN_RATIO。
+GROK_ATTENTION_BUDGET = 30 * 1024
 
 # Early-warning threshold (fraction of BUNDLE_MAX_BYTES). Deploy-time visibility
 # only -- the weekly bundle-watch advisory owns per-rule composition analysis
@@ -803,15 +822,27 @@ def _deploy(args: argparse.Namespace) -> int:
         gate_msg = check_size_gate(bundle_bytes, target)
         if gate_msg is not None:
             print(f"[FAIL] {gate_msg}", file=sys.stderr)
-            print(
-                "     Harness lanes truncate (ZCode: 102,400B hard line; "
-                "muse: ~32,000B per-file cap, measured 2026-09-24 -- cut "
-                "lands at byte 32000, not 32,768). Slim rules/ per "
-                "encoder-philosophy, or demote on-demand content to a "
-                "reference skill (rule keeps always-on core + pointer; "
-                "see rules/AGENTS.md size-gate note).",
-                file=sys.stderr,
-            )
+            if target.label == "grok":
+                # grok 無 runtime 截斷線——超的是治理預算，不提他端截斷語義
+                print(
+                    "     grok loads rules in full (no runtime truncation "
+                    "line) -- GROK_ATTENTION_BUDGET is our own governance "
+                    "budget for recurring input cost. Slim rules/ per "
+                    "encoder-philosophy, or demote on-demand content to a "
+                    "reference skill (rule keeps always-on core + pointer; "
+                    "see rules/AGENTS.md size-gate note).",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "     Harness lanes truncate (ZCode: 102,400B hard line; "
+                    "muse: ~32,000B per-file cap, measured 2026-09-24 -- cut "
+                    "lands at byte 32000, not 32,768). Slim rules/ per "
+                    "encoder-philosophy, or demote on-demand content to a "
+                    "reference skill (rule keeps always-on core + pointer; "
+                    "see rules/AGENTS.md size-gate note).",
+                    file=sys.stderr,
+                )
             failed = True
             continue
         ready.append((target, bundle))

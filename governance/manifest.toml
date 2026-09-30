@@ -44,7 +44,7 @@ scripts = [
 # 禁重寫/修改工具本體。drift 檢查＝import 其 build_bundle 比對部署檔（唯讀）。
 tool = "scripts/deploy_agents.py"
 argv = ["uv", "run", "python", "scripts/deploy_agents.py"]
-deployed_targets = ["~/.zcode/AGENTS.md", "~/.codex/AGENTS.md", "~/.config/muse/AGENTS.md"]
+deployed_targets = ["~/.zcode/AGENTS.md", "~/.codex/AGENTS.md", "~/.config/muse/AGENTS.md", "~/.grok/AGENTS.md"]
 
 [surfaces.skills]
 # symlink 活視圖（安裝到 home 消費點）；已存在且指對＝零動作（冪等）；

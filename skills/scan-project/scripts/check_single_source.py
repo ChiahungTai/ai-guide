@@ -99,8 +99,8 @@ INVARIANTS = [
     {
         "id": "deploy_bundle_freshness",
         "type": "deploy_freshness",
-        "note": "部署 bundle 是 rules/ + guide（單一源）的衍生 snapshot；非 Claude 三端"
-        "（~/.zcode、~/.codex、~/.config/muse 的 AGENTS.md）只讀 bundle，stale = "
+        "note": "部署 bundle 是 rules/ + guide（單一源）的衍生 snapshot；非 Claude 四端"
+        "（~/.zcode、~/.codex、~/.config/muse、~/.grok 的 AGENTS.md）只讀 bundle，stale = "
         "session 讀舊規則。Claude 端 ~/.claude/rules/ 目錄 symlink 即時，不在檢查範圍。"
         "真實案例：2026-08-18 發現部署版落後 source 六條 rules（tool-discipline 新紀律"
         "缺席）——編輯 rules 的 ZCode session 讀不到部署紀律（紀律在 meta rule，不進 "
@@ -627,14 +627,14 @@ def _is_detached_head() -> bool | None:
 
 
 def check_deploy_freshness(inv: dict) -> list[tuple[str, str, str]]:
-    """非 Claude 三端的部署 AGENTS.md 必須 == 當前 source 重建的 bundle（byte 比對）。
+    """非 Claude 四端的部署 AGENTS.md 必須 == 當前 source 重建的 bundle（byte 比對）。
 
     單一源是 repo 內 rules/ + guide；部署檔是衍生 snapshot。skip 條件（不 false
     positive）：目標不存在（該機器未用該 harness）、無 generator header marker
     （非 deploy_agents.py 產出，用戶自管檔）。差異僅在 main worktree（非 detached）
     才判 critical＋開 deploy 處方——非 main worktree / detached / 無法判定 worktree
     時降 important：差異可能只是版本不同，照 deploy 處方執行會用非權威版本覆寫
-    三個 harness 的 always-on policy。
+    四個 harness 的 always-on policy。
     """
     if inv.get("type") != "deploy_freshness":
         return []
@@ -687,7 +687,7 @@ def check_deploy_freshness(inv: dict) -> list[tuple[str, str, str]]:
                     f"{target} 與本 checkout 重建 bundle 不一致，但本 checkout 非 main "
                     f"worktree（main＝{main_wt}）——差異可能僅是版本不同，不代表部署 "
                     "stale；至 main checkout 重跑本檢查確認，勿在非 main worktree 跑 "
-                    "deploy（會把非權威版本覆寫三個 harness）",
+                    "deploy（會把非權威版本覆寫四個 harness）",
                 )
             )
             continue

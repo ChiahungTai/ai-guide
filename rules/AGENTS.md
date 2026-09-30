@@ -7,7 +7,7 @@ harness-scope: meta
 rules/ 是 ai-guide 的行為規範庫。**Claude 與非 Claude 的 rules 載入架構不同**（成因：rules auto-load 是 Claude 獨有功能，非 Claude 沒有）：
 
 - **Claude 端**（雙路徑）：`~/.claude/CLAUDE.md` 是檔案 symlink → `ai-development-guide.md`（guide）；`~/.claude/rules/` 是**目錄 symlink** → `rules/`（rules auto-load，每 session 全載）。repo 改 → 即時生效，**不需 deploy**。
-- **非 Claude 端**（ZCode/Codex/Muse，單檔）：無 rules auto-load 機制 → 靠 `scripts/deploy_agents.py` 把 **guide + neutral rules 拼裝成單一 AGENTS.md**（snapshot），部署到 `~/.{zcode,codex,config/muse}/AGENTS.md`（muse＝machine-wide user rules，probe 實證 always load；專案 AGENTS.md 衝突時贏）。改 rule 後須重跑 deploy 才同步。
+- **非 Claude 端**（ZCode/Codex/Muse/grok，單檔）：無 rules auto-load 機制 → 靠 `scripts/deploy_agents.py` 把 **guide + neutral rules 拼裝成單一 AGENTS.md**（snapshot），部署到 `~/.{zcode,codex,config/muse,grok}/AGENTS.md`（muse＝machine-wide user rules，probe 實證 always load，專案 AGENTS.md 衝突時贏；grok＝global rules 路徑，AIR-218 起入第 4 target）。改 rule 後須重跑 deploy 才同步。
 
 ## 部署紀律（authoring 驗證與正式部署分開）
 
@@ -19,7 +19,7 @@ uv run python scripts/deploy_agents.py --dry-run
 
 **正式落地**：依 instruction-writing skill「落地前審查閘」完成風險分類、所需獨立審查與四欄回執，並取得 [outward-action-consent](outward-action-consent.md) 要求的授權後，才可 merge canonical 或 deploy；dry-run 成功不授予落地權。正式部署須從 canonical 的已接受 revision 執行 `uv run python scripts/deploy_agents.py`，並確認該來源內容與審查回執一致（含 working tree，不能只看 HEAD）；不得從未驗收 authoring WT 部署。
 
-→ 正式部署重新 bundle guide + neutral rules → 寫入 `~/.{zcode,codex,config/muse}/AGENTS.md`（非 Claude 端的 rules 唯一來源）。
+→ 正式部署重新 bundle guide + neutral rules → 寫入 `~/.{zcode,codex,config/muse,grok}/AGENTS.md`（非 Claude 端的 rules 唯一來源）。
 → Claude 端不需 deploy，但 canonical merge 會更新 `~/.claude/rules/` symlink 指向的內容，因此同樣先過落地閘。
 → 注意：deploy 會將非 Claude 端的 AGENTS.md 從 symlink（live-sync）轉為 generated snapshot — 改 rule 後需重跑 generator 才同步。
 → 投影軸（AIR-85）：rule frontmatter 三鍵 `bundle-projection: pointer`＋`pointer-target`＋`bootstrap-pointer`＝非 CC bundle 投影——body 不進 bundle、作者 pointer 句逐字投影；deploy 全域 preflight（repo source＋`~/.agents/skills` runtime 可達）fail-closed、identical 重跑零寫入；`paths:` 是 CC runtime 軸，deploy 不解析（三軸分離）。
@@ -30,8 +30,8 @@ uv run python scripts/deploy_agents.py --dry-run
 非 Claude 端 AGENTS.md 受 harness 截斷線約束；警告與合併方式各端不同，不能只驗全域 bundle：
 
 - **ZCode 實測**：截斷線 **102,400 bytes（100KiB）**，硬編碼於 `zcode.cjs`（`hIn=100*1024`，讀前 100KiB bytes 再 UTF-8 decode），**無任何 config 可調**（官方文檔亦未記載）。載入模型：只讀 user 全域（`~/.zcode/AGENTS.md`）+ workspace（cwd 往上至 project root 第一個 `AGENTS.md`）**兩檔**，各檔獨立 100KiB 預算；**不展開 `@import/@include`、不掃子目錄、不依任務類型選規則檔**。
-- **Muse delegation startup**：全域＋專案指令及包裝共用 **65,536 bytes**，超限會警告並截斷。部署器的 Muse global-only gate 留專案空間，但不保證任意 workspace 可載入；須在實際 workspace 驗合併量與 loader 警告。三端均保留全部 neutral rules；不可因 Muse 家族/headless 就假設它不改 instruction、不查符號或不需 context 紀律。任務是否允許寫入/委派由工單與可用工具決定。
-- `deploy_agents.py` 的各端 size gate 是唯一數值源（ZCode/Codex 用 `BUNDLE_MAX_BYTES`，Muse 用 `MUSE_USER_BUDGET`＝36KiB 自限——64KiB 共享線內留專案層＋framing 緩衝，見 `resolve_targets`），超限拒絕該端部署。撞線先精煉重複與可推導內容，或將 on-demand 細節下沉既有 skill；rule 保留執行核心與觸發 pointer，禁用整檔排除掩蓋尺寸問題。
+- **Muse delegation startup**：全域＋專案指令及包裝共用 **65,536 bytes**，超限會警告並截斷。部署器的 Muse global-only gate 留專案空間，但不保證任意 workspace 可載入；須在實際 workspace 驗合併量與 loader 警告。四端均保留全部 neutral rules；不可因 Muse 家族/headless 就假設它不改 instruction、不查符號或不需 context 紀律。任務是否允許寫入/委派由工單與可用工具決定。
+- `deploy_agents.py` 的各端 size gate 是唯一數值源（ZCode/Codex 用 `BUNDLE_MAX_BYTES`，Muse 用 `MUSE_USER_BUDGET`＝30KiB 自限——per-file ~32,000B 實測截斷線內留 margin；grok 用 `GROK_ATTENTION_BUDGET`＝30KiB——**治理預算非 runtime cap**，grok 無截斷線、bundle 起跳即 ~96% 形成刻意瘦身壓力），超限拒絕該端部署。撞線先精煉重複與可推導內容，或將 on-demand 細節下沉既有 skill；rule 保留執行核心與觸發 pointer，禁用整檔排除掩蓋尺寸問題。
 - 歷史教訓：部署版 141KB 時代，尾部 8 條 rules（含 tool-discipline、quality-constraints）落在截斷區靜默失效（2026-08-20 實證事故：spawn 背景規範沒載入 → 前景 spawn 被 user 插話殺掉）。**規範存在 ≠ 規範載入**。
 
 ### 部署驗證義務（deploy 跑通 ≠ 部署完成）
@@ -40,8 +40,8 @@ dry-run 只驗 authoring 產物，不能要求 deployed 檔已含尚未落地的
 
 - **非 Claude 端**（rules 唯一來源是 bundle）：`rg` 抽查 deployed AGENTS.md（如 `~/.zcode/AGENTS.md`）含新/改 rule 的 section marker + 關鍵內容；排除應排除的 claude-specific rule。**漏驗這端 = 非 Claude LLM 讀不到該 rule**（無其他載入途徑）。
 - **Claude 端**（rules 來源是 `~/.claude/rules/` dir symlink）：`rg` 抽查 `~/.claude/rules/<rule>.md`（透過 symlink 讀 repo）含完整內容 — 瘦身後的 claude-specific rule 仍保留 Claude 專屬段。
-- **多端一致性（per-target）**：逐端與 `expected_bundle_for(target)` 重建 bytes 比對；目前三端相同，但只比部署檔彼此 hash 抓不到「三端一起過時」。idempotence 是同端重跑前後 hash 相同；純簽名重構才要求改前/後 bundle 不變。
-- **機械替代（部署新鮮度）**：`/sync-sources`（`check_single_source.py` REGISTRY `deploy_bundle_freshness`）逐 target 用 `expected_bundle_for` 重建並 byte 比對，stale 即 critical。真實案例：部署落後多條 rule，靠外部 session 才發現。此檢查只涵蓋非 Claude 三端；Claude 另驗 symlink 內容。
+- **多端一致性（per-target）**：逐端與 `expected_bundle_for(target)` 重建 bytes 比對；目前四端相同，但只比部署檔彼此 hash 抓不到「四端一起過時」。idempotence 是同端重跑前後 hash 相同；純簽名重構才要求改前/後 bundle 不變。
+- **機械替代（部署新鮮度）**：`/sync-sources`（`check_single_source.py` REGISTRY `deploy_bundle_freshness`）逐 target 用 `expected_bundle_for` 重建並 byte 比對，stale 即 critical。真實案例：部署落後多條 rule，靠外部 session 才發現。此檢查涵蓋非 Claude 四端（目標不存在＝該機器未用該 harness，skip）；Claude 另驗 symlink 內容。
 
 禁止：只看 deploy stdout 的 `[OK]` 就宣稱部署完成；只驗單端就推論其他端正常。
 

@@ -58,6 +58,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
+
 HOOK_TAG = "compact-restore-inject"
 HEAD_TAIL_BYTES = 400  # thin pointer 預覽預算（head/tail 各此值，UTF-8 bytes）
 OUTPUT_GUARD_BYTES = 30000  # 組裝後最終 guard（ZCode 上限 32768）
@@ -236,7 +239,9 @@ def run(raw, db_path=None, query_compaction=None):
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
             raise TypeError("stdin not a JSON object")
-        session_id = str(payload.get("session_id", ""))
+        # sessionId 雙讀（AIR-218）：grok camel 形經 compat 層；CC/ZCode snake 優先零變
+        sid = compat.session_id(payload)
+        session_id = sid if sid else ""
         cwd = str(payload.get("cwd", ""))
         if not session_id or not cwd:
             raise ValueError("stdin missing session_id/cwd")

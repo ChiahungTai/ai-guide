@@ -102,7 +102,7 @@ def test_loader_rejects_unknown_family_value() -> None:
 
 
 def test_real_catalog_family_assignment() -> None:
-    """9 條 binding 的 family 歸屬（air-123 實查舉證的凍結表）。"""
+    """10 條 binding 的 family 歸屬（air-123 實查舉證的凍結表＋AIR-218 grok）。"""
     cat = sync.load_catalog(REPO_ROOT)
     got = {bid: b.family for bid, b in cat.bindings.items()}
     assert got == {
@@ -115,6 +115,7 @@ def test_real_catalog_family_assignment() -> None:
         "bridge-codex-sol": "codex",
         "bridge-codex-astra": "codex",
         "bridge-muse-spark-1.3": "muse",
+        "grok-cli-grok-4.7": "xai",
     }
     assert cat.families == frozenset({"glm", "muse", "codex", "anthropic", "xai"})
 
@@ -233,14 +234,19 @@ def test_family_coverage_bindings_or_explicit_no_binding(
     states = family_states(out)
     families = real_catalog_families()
     assert set(states) == families, "閉集內每 family 都必須有狀態行（禁靜默省略）"
-    # xai 在現 catalog＝零 binding → 顯式 no-binding 行（非靜默缺席）
-    assert NO_BINDING_MARK in out
-    # 有 binding 的 family：bindings 行計數 ≥1 且與 catalog 事實一致
+    # AIR-218 後 xai 有 direct binding（grok-cli-grok-4.7）→ xai 轉 direct
+    # candidate、不再輸出 no-binding 行；零 binding family（若有）仍須顯式
+    # no-binding 行（下方迴圈釘住），有 binding 的 family 禁殘留 no-binding 行
     counts = {m[0]: int(m[1]) for m in BINDINGS_RE.findall(out)}  # family→count
     expected_counts: dict[str, int] = {}
     cat = sync.load_catalog(REPO_ROOT)
     for binding in cat.bindings.values():
         expected_counts[binding.family] = expected_counts.get(binding.family, 0) + 1
+    zero_binding = [fam for fam in families if not expected_counts.get(fam, 0)]
+    if zero_binding:
+        assert NO_BINDING_MARK in out
+    else:
+        assert NO_BINDING_MARK not in out, "全 family 有 binding 禁殘留 no-binding 行"
     for fam in families:
         n = expected_counts.get(fam, 0)
         if n:

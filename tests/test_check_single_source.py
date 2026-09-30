@@ -605,12 +605,14 @@ def _freshness_inv():
 
 
 def test_deploy_freshness_non_claude_paths_no_opencode():
-    """AIR-102：非 Claude 三端檢查路徑＝~/.zcode、~/.codex、~/.config/muse
-    （opencode 停用後殘留清掃——死路徑不得殘留於 invariant note）。"""
+    """AIR-102/AIR-218：非 Claude 四端檢查路徑＝~/.zcode、~/.codex、
+    ~/.config/muse、~/.grok（opencode 停用後殘留清掃——死路徑不得殘留於
+    invariant note）。"""
     note = _freshness_inv()["note"]
     assert "~/.zcode" in note
     assert "~/.codex" in note
     assert "~/.config/muse" in note
+    assert "~/.grok" in note
     assert "opencode" not in note.lower()
 
 

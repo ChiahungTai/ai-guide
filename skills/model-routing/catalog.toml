@@ -36,8 +36,8 @@ workloads = [
 harness_alias_tokens = ["sonnet", "haiku", "opus"]
 # family 閉集（dispatch_binding.family 引用；AIR-123——歸屬實查：
 # zcode registry 兩條＝glm、cc-registry-opus＝anthropic、bridge 面＝surface
-# 對應家族；xai 零 binding＝fabel dispatch 路徑未定案，availability 輸出
-# 需顯式 no-binding 行禁靜默。擴充＝資料層編輯＋binding 補 family 欄）
+# 對應家族；xai＝fabel direct CLI binding（AIR-218 grok-cli-grok-4.7）。
+# 擴充＝資料層編輯＋binding 補 family 欄）
 families = ["glm", "muse", "codex", "anthropic", "xai"]
 
 # ---- ModelIdentity（穩定概念 key；wire token 一律住 dispatch_binding）----
@@ -69,9 +69,10 @@ label = "Sol"
 id = "gpt-6-astra"
 label = "Astra"
 
-# fabel：xai 家——wire token / dispatch 路徑未定（tier 表僅列家族欄），
-# 先登記 identity＋qualification，binding 待路徑定案後補（無 binding＝零 candidate，
-# fail-closed）
+# fabel：xai 家旗艦的概念 identity（user 稱呼）。wire token＝grok-4.7（隨
+# 版本漂移）、dispatch 路徑＝grok CLI direct headless（AIR-218 落 direct
+# binding grok-cli-grok-4.7）；bridge family 未開（另弧，屆時另開
+# bridge-grok-* binding 不混寫，qualification 分腿記錄）
 [[model_identity]]
 id = "fabel"
 label = "Fabel"
@@ -184,6 +185,23 @@ effort_encoding = "param"
 effort_values = ["low", "medium", "high", "xhigh", "ultra"]
 transport = ["image_transport"] # --image 輸入（repo-observed）
 
+# AIR-218 direct binding：grok CLI headless 直呼（`grok -p`）——fabel 身分
+# 不變（identity＝穩定概念 key doctrine），grok-4.7 是 wire token（1.0.44
+# 實測 available 唯一；1.0.13 期 4.6/4.5 已 superseded——token 隨版漂，identity
+# 不漂）。effort 四值＝grok-4.7 menu 實測（L0 axis4）；OAuth 訂閱 session
+# （free tier 計額，非 API key）。bridge family 未開——禁以本 binding 替
+# 未來 bridge 腿背書。
+[[dispatch_binding]]
+id = "grok-cli-grok-4.7"
+model_identity = "fabel"
+carrier = "grok"
+surface = "cli-headless"
+token = "grok-4.7"
+token_kind = "provider_native"
+family = "xai"
+effort_encoding = "param"
+effort_values = ["low", "medium", "high", "xhigh"]
+
 # ---- qualification records（workload × model_identity）----
 # 初始記錄（EP「已定設計」#6）：GLM 5.3／ChatGPT Web High／Sol／Astra／Opus／
 # Fabel 對 ep_synthesis/adjudication＝qualified＋user_observed；Muse Spark 1.3＝
@@ -265,19 +283,22 @@ status = "qualified"
 evidence_source = "user_observed"
 binding_scope = ["*"]
 
+# fabel qualification（AIR-218 收窄）：binding_scope 由 ["*"] 收窄至 direct
+# binding——direct runtime 的 user-observed 證據不得自動替未來 bridge transport
+# 背書（direct/bridge admission 分立）；bridge 腿未來另取得證據再新增 scope。
 [[qualification]]
 workload = "ep_synthesis"
 model_identity = "fabel"
 status = "qualified"
 evidence_source = "user_observed"
-binding_scope = ["*"]
+binding_scope = ["grok-cli-grok-4.7"]
 
 [[qualification]]
 workload = "adjudication"
 model_identity = "fabel"
 status = "qualified"
 evidence_source = "user_observed"
-binding_scope = ["*"]
+binding_scope = ["grok-cli-grok-4.7"]
 
 [[qualification]]
 workload = "ep_synthesis"

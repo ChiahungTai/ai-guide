@@ -25,6 +25,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
 from memory_hook_common import emit, is_pool_entry, utc_now
 
 
@@ -55,9 +56,13 @@ def main():
     try:
         if not isinstance(data, dict):
             return 0
-        if data.get("tool_name") not in ("Edit", "Write"):
+        # 容器鍵雙讀（AIR-218）：grok camel 形（toolName/toolInput/sessionId/
+        # toolUseId）經 compat 層；search_replace→Edit 映射。agent_id/agent_type
+        # 兩欄 grok 合併為單欄 subagentType（值層合併非鍵正規化）——grok 下
+        # 兩欄記 None（sensor 容錯面，最壞缺欄非阻斷）。
+        if compat.tool_name(data) not in ("Edit", "Write"):
             return 0
-        tool_input = data.get("tool_input") or {}
+        tool_input = compat.tool_input(data) or {}
         canon = is_pool_entry(tool_input.get("file_path", ""))
         if canon is None:
             return 0
@@ -66,10 +71,10 @@ def main():
                 "kind": "post_tool_use",
                 "source": cli_source(sys.argv),
                 "ts": utc_now(),
-                "session_id": data.get("session_id"),
-                "tool": data.get("tool_name"),
+                "session_id": compat.session_id(data),
+                "tool": compat.tool_name(data),
                 "file_path": canon,
-                "tool_use_id": data.get("tool_use_id"),
+                "tool_use_id": compat.field(data, "tool_use_id", "toolUseId"),
                 "agent_id": data.get("agent_id"),
                 "agent_type": data.get("agent_type"),
             }

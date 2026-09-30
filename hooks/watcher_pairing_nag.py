@@ -43,6 +43,9 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
+
 GRACE_MINUTES = 10.0
 BLOCK_BUDGET = 2
 # 鏡像常數：單一源 scripts/bridge_waiter.py HEARTBEAT_STALE_THRESHOLD_MIN——
@@ -174,7 +177,7 @@ def _audit(repo, payload):
                     {
                         "event": "budget-exhausted",
                         "at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017 -- retain Python 3.9 rollback runtime compatibility.
-                        "session": payload.get("session_id", ""),
+                        "session": compat.session_id(payload) or "",
                     },
                     ensure_ascii=False,
                 )
@@ -206,8 +209,9 @@ def _rearm_line():
 
 def evaluate(payload):
     """回 block reason 字串（應攔）或 None（放行）。內部錯誤由 caller fail-open 接住。"""
-    session_id = payload.get("session_id")
-    if not isinstance(session_id, str) or not session_id:
+    # sessionId 雙讀（AIR-218）：grok camel 形經 compat 層；CC/ZCode snake 優先零變
+    session_id = compat.session_id(payload)
+    if not session_id:
         return None
     cwd = payload.get("cwd")
     cwd = cwd if isinstance(cwd, str) and cwd else os.getcwd()

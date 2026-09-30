@@ -426,8 +426,9 @@ def test_main_size_gate_receives_projected_not_source_bytes(tmp_path, monkeypatc
     # If the gate sees raw/full source bytes this must fail, especially Muse.
     assert da.main() == 0
 
-    assert {label for label, _ in observed} == {"zcode", "codex", "muse"}
-    assert all(bundle_bytes < da.MUSE_USER_BUDGET for _, bundle_bytes in observed)
+    assert {label for label, _ in observed} == {"zcode", "codex", "muse", "grok"}
+    budgets = {t.label: t.max_bytes for t in da.resolve_targets(tmp_path)}
+    assert all(bundle_bytes <= budgets[label] for label, bundle_bytes in observed)
     assert all(bundle_bytes < raw_rule_bytes for _, bundle_bytes in observed)
 
 

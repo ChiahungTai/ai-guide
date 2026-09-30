@@ -81,6 +81,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hook_payload_compat as compat
+
 GUARD_REL = os.path.join(".githooks", "control-plane-guard.sh")
 MARKER_REL = os.path.join(".agents", "marshal-governance.json")
 MARKER_PROTOCOL = 1
@@ -130,10 +133,15 @@ def extract_patch_paths(command):
 
 
 def _target_paths(data):
-    """本 hook 轄面的寫入座標清單；非轄面工具回 None（哨兵——不檢查直接放行）。"""
-    tool = data.get("tool_name")
-    tool_input = data.get("tool_input")
-    if not isinstance(tool_input, dict):
+    """本 hook 轄面的寫入座標清單；非轄面工具回 None（哨兵——不檢查直接放行）。
+
+    容器鍵雙讀（AIR-218）：grok camel 形（toolName/toolInput）經 compat 層
+    正規化（search_replace→Edit 走 file_path lane；apply_patch＝codex 專屬
+    形原樣比較）；CC 形 snake 優先、行為零變。
+    """
+    tool = compat.tool_name(data)
+    tool_input = compat.tool_input(data)
+    if tool_input is None:
         return None
     if tool in ("Edit", "Write"):
         file_path = tool_input.get("file_path")
@@ -426,9 +434,7 @@ def _deny(hit):
     elif hit["kind"] == "work-order-missing":
         reason = (
             DENY_HEADER_WORK_ORDER + "。\n命中座標：" + str(resolved) + "\n"
-            "（worktree："
-            + toplevel
-            + "；判定：非 canonical worktree 寫入命中 marker "
+            "（worktree：" + toplevel + "；判定：非 canonical worktree 寫入命中 marker "
             "sourceRoots，需在場憑證 .agent-tmp/work-order.json——缺席或 schema "
             "不符）\n"
             "憑證由 marshal 於 spawn 時經發行工具（對端 repo "

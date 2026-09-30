@@ -16,6 +16,7 @@
 - **時點**：消費弧開工前、或 runtime 行為與鏡像文檔疑似漂移時。refresh 是增量（sha256 不變不寫檔），隨時可跑、不付全量成本
 - **操作**：`uv run python ref-docs/harness/crawl.py [--source <name>]`——不要手動逐頁鏡像（discovery／增量／manifest 都在 crawl.py 內）
 - **contracts.md 同步義務**：refresh 揭露契約面變化（API 改名、行為反轉、機制增刪）→ 對照分析欄**當場同步**，防「鏡像新、對照舊」drift（contracts.md 的價值就在對照，單側更新＝半套）；[control-plane-matrix.md](control-plane-matrix.md) 的 A 層 file:line 斷言同批同步——契約變化即矩陣 stale（AIR-138）
+- **grok-build 新鮮度軸變體（AIR-218）**：鏡像本體走標準 crawl 流程（docs.x.ai root `/llms.txt`，verbatim md——AIR-135.1 註冊於 crawl.py `SOURCES`），但 grok 本機 binary **自動更新**（1.0.13→1.0.44 已自動發生）且 binary-bundled 離線文檔（`~/.grok/docs/user-guide/`，與線上鏡像是兩份不同結構的檔）隨 binary 版本走——**runtime 行為／契約漂移的新鮮度錨點＝grok binary version（`grok --version`），非線上 sha256**。消費 grok 契約斷言（hooks payload、compat cells、事件集）時先對 binary version，再對鏡像；兩者分歧以 binary 實測為準並回補 contracts.md。
 
 ## 退役（何時刪鏡像）
 

@@ -16,7 +16,7 @@ instruction file 是給 AI 的協作指南，應專注於**核心原則**和**�
 
 ## 落地前審查閘（控制面條文——AIR-105）
 
-instruction 條文的**語義變更**（改變 agent 的 decision／authority／gate／authorization／acceptance 可觀察行為）——「落地」＝merge canonical（Claude 端 live symlink 即生效）**或** deploy bundle（非 Claude 三端）任一先到——落地前必須：
+instruction 條文的**語義變更**（改變 agent 的 decision／authority／gate／authorization／acceptance 可觀察行為）——「落地」＝merge canonical（Claude 端 live symlink 即生效）**或** deploy bundle（非 Claude 四端）任一先到——落地前必須：
 
 1. **風險分類**：依 [review-engine](../review-engine/SKILL.md) 風險 profile 判定表分類（控制面 authority／gate 面＝boundary）。分類記錄進卡／工單——**無分類記錄＝fail-closed：條件不明逕依 review-engine 既有分支視為 boundary（fresh＋intent 分離＋全部已命中機械 extras），receipt 補齊前不得落地**。
 2. **配審查腿**：boundary baseline＝fresh＋intent 分離；instruction 條文**另加**跨家族 external second-opinion 腿（boundary baseline 上的 instruction 專屬加腿，非重定義 boundary——此為 model-routing 軟提醒條款之上的加嚴例外）——額度允許時派，不足時依 model-routing 顯式記錄降級、in-harness full 雙 context 承接；**外審零容量→依 review-engine 執行預設記 no-candidate pending 入既有帳本（帳本＝authoritative pending record）——記帳形態＝deferred 回執（見第 5 款；receipt 值僅為帳本 projection，帶 pending-ref），禁降分類、禁靜默落地**。預設 panel：常規控制面 `bi`、風控／會計級 `tri`；ordinary＝至少一條獨立 context 腿。
@@ -35,9 +35,9 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 
 ## 檔案命名（instruction file 雙檔模式）
 
-> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 內容四家皆可達（經各家 discovery／wrapper 機制，詳見下「dir 層四家可達性差異」表）、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。
+> **雙檔模式（root + 每個模組層）**：每層都是 `AGENTS.md`（source）+ `CLAUDE.md`（`@AGENTS.md` wrapper）。多 harness——AGENTS.md 內容五家皆可達（經各家 discovery／wrapper 機制，詳見下「dir 層四家可達性差異」表）、CLAUDE.md 是 Claude 專屬（Claude 不 native 讀 AGENTS.md，靠 CLAUDE.md `@AGENTS.md` wrapper 拉進 session）。標準優先：中立內容進 AGENTS.md，Claude 專屬進 CLAUDE.md。
 
-- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——root 層內容對四家 harness（Claude/ZCode/Codex/Muse）皆**可達**（經各家 root discovery／wrapper 機制導入——非四家 native 直讀同一檔；受各家 trust、size、discovery gate 約束，見下「dir 層四家可達性差異」表）。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
+- **`AGENTS.md`**（source, harness-neutral）：**專案指令**的中立原則層——root 層內容對五家 harness（Claude/ZCode/Codex/Muse/grok）皆**可達**（經各家 root discovery／wrapper 機制導入——非五家 native 直讀同一檔；受各家 trust、size、discovery gate 約束，見下「dir 層四家可達性差異」表）。body **禁 Claude 專屬散文**（Claude 端 hook 註冊細節、`paths:`、`/implement` workflow）——其他 harness 讀到是斷裂噪音；frontmatter 欄位可容忍（harness 自動忽略不懂的）
 
 > **⚠️ 全域指南 ≠ 專案 AGENTS.md**：跨專案共用的全域開發指南（如 ai-guide 的 `ai-development-guide.md`）是**獨立檔**，部署到各 harness 全域位置（`~/.claude/CLAUDE.md`、`~/.zcode/AGENTS.md`、`~/.codex/AGENTS.md`、`~/.config/muse/AGENTS.md` → 該檔），**不是專案 root AGENTS.md**。專案 AGENTS.md = 開該專案時讀的專案指令；全域指南 = 所有專案都載入的跨專案規範。兩者各司其職——混為一檔 → 專案失去自己的指令 + 全域指南被專案內容污染。
 - **`CLAUDE.md`**（thin wrapper, Claude 專屬）：開頭 `@AGENTS.md`（把中立規則拉進 Claude session）+ Claude 專屬段（Claude 端 hook 註冊細節、slash command workflow、repo 結構導航）。只 Claude 讀
