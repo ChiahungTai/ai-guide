@@ -4,7 +4,7 @@ title: grok L1a 工程接線——規則 bundle＋hooks 雙讀＋文檔登記＋
 status: In Progress
 assignee: []
 created_date: '2026-09-30 13:44'
-updated_date: '2026-09-30 13:45'
+updated_date: '2026-09-30 14:42'
 labels: []
 dependencies: []
 references:
@@ -42,13 +42,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 deploy：grok target 進 resolve_targets＋manifest 同步；GROK_ATTENTION_BUDGET=30KiB 獨立常數超限 fail、≥85% WARN；tmp HOME oracle 驗 bundle 內容＋尾 sentinel；既有三處 target-count 測試更新後全綠
-- [ ] #2 hooks：hook_payload_compat.py 薄層正規化容器鍵/event 值/tool 名/read_file.target_file；block-memory-index-write 與 kanban-skill-gate dual-shape（CC snake＋grok camel）pipe-test 各觸預期行為（deny exit 2/事件分流）；既有 hook 相關測試零回歸；13 支 guard 狀態分類齊（wired/unchanged/n-a/partial——compact-tail-inject=partial）
-- [ ] #3 catalog：grok-cli-grok-4.7 direct binding（identity=fabel、token=grok-4.7、effort 四值）；fabel qualification scope 收窄 direct；loader/sync_agents --check 過；availability snapshot xai 轉 direct candidate；無 bridge binding
-- [ ] #4 ref-docs：README/LIFECYCLE/contracts/control-plane-matrix＋AGENTS.md 五處登記；matrix grok 欄 15 維（unknown 附查證依賴）；freshness 軸=binary version 明載
-- [ ] #5 runbook：machine-local activation 三連（rules=false＋agents=false＋extra_rule_dirs 移除）＋hooks=true 保留＋import 修復程序＋rollback；含 user 執行後可判斷言
-- [ ] #6 無冗餘投影：零新 registration、零 grok agent projection、sync_agents 生成行為不變、memory 雙鉤 n-a、通用相容層不進 memory helper
-- [ ] #7 工程收斂：全量 pytest 綠＋ruff 綠＋本卡 AC 全勾即可合併（不等 L1b/user 動作）
+- [x] #1 deploy：grok target 進 resolve_targets＋manifest 同步；GROK_ATTENTION_BUDGET=30KiB 獨立常數超限 fail、≥85% WARN；tmp HOME oracle 驗 bundle 內容＋尾 sentinel；既有三處 target-count 測試更新後全綠
+- [x] #2 hooks：hook_payload_compat.py 薄層正規化容器鍵/event 值/tool 名/read_file.target_file；block-memory-index-write 與 kanban-skill-gate dual-shape（CC snake＋grok camel）pipe-test 各觸預期行為（deny exit 2/事件分流）；既有 hook 相關測試零回歸；13 支 guard 狀態分類齊（wired/unchanged/n-a/partial——compact-tail-inject=partial）
+- [x] #3 catalog：grok-cli-grok-4.7 direct binding（identity=fabel、token=grok-4.7、effort 四值）；fabel qualification scope 收窄 direct；loader/sync_agents --check 過；availability snapshot xai 轉 direct candidate；無 bridge binding
+- [x] #4 ref-docs：README/LIFECYCLE/contracts/control-plane-matrix＋AGENTS.md 五處登記；matrix grok 欄 15 維（unknown 附查證依賴）；freshness 軸=binary version 明載
+- [x] #5 runbook：machine-local activation 三連（rules=false＋agents=false＋extra_rule_dirs 移除）＋hooks=true 保留＋import 修復程序＋rollback；含 user 執行後可判斷言
+- [x] #6 無冗餘投影：零新 registration、零 grok agent projection、sync_agents 生成行為不變、memory 雙鉤 n-a、通用相容層不進 memory helper
+- [x] #7 工程收斂：全量 pytest 綠＋ruff 綠＋本卡 AC 全勾即可合併（不等 L1b/user 動作）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -62,3 +62,9 @@ flowchart LR
 **Integration**：下游＝L1b 卡（runbook 執行＋行為驗收）；model-routing resolver（binding 消費）；週日 bundle 看照（第 4 target 入監）。
 **驗證式**：AC 七項（機械可判）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【0930 工程收斂結算】實作＝flash（六塊）＋審查＝fresh（M1-M5+I1-I5，無 Critical，獨立重跑 621 tests）＋跨家族 muse（F1-F8）→5.3 judge 15+3 項採納（I1 cosmetic 留）→flash 修復輪 15/15＋追加 2 詞＋同叢集延伸 1——全綠（修復回歸 185 passed＋scoped ruff＋dry-run 4/4＋grok WARN 96% 預期態＋availability 31 passed）。落地：card branch 858fb56c（pre-commit 全量 2661 passed）→wt-close full ff-only merge main→WT/branch 已清。**AC 七項全數工程面達成**（#1-#7 機械驗證齊——deploy 4/4/gate WARN/dual-shape deny exit 2/catalog loader+snapshot xai direct candidate/五處登記/matrix 15 維如實/runbook 三連+斷言/零冗餘投影/全量綠）。**回執四欄**：classification=boundary（新 deploy target+hooks 契約面+catalog）／review=fresh+muse 雙腿 GO-WITH-FIXES 全採（evidence：.agent-tmp/air-218/review-*.md＋本 notes；實作/修復證據 log 隨 WT 收斂已滅——關鍵數字全錄本 notes）／session-freshness=fresh／deployment-surfaces=pending-grok（其餘三面 bundle 內容未變零重部署需求；~/.grok/AGENTS.md 部署＝L1b user runbook 面——install --check 現報此一 drift＝預期 fail-loud）。**待 user 拍板**：Done 翻牌（板面現留 In Progress——deep-work 下 Done 屬 human gate 入 pending 台帳）。
+<!-- SECTION:NOTES:END -->
