@@ -1,12 +1,14 @@
 ---
 id: AIR-217
 title: grok-build 試用驗證——相容面實測與後續導入建議
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-30 12:00'
-updated_date: '2026-09-30 12:27'
+updated_date: '2026-09-30 12:28'
 labels: []
 dependencies: []
+references:
+  - ref-docs/harness/grok-build
 ordinal: 203000
 ---
 
@@ -60,3 +62,9 @@ flowchart LR
 **Integration**：下游＝L1 卡（部署形結論輸入）、L2 卡（fixtures＋值域表輸入，歸 delegate-bridge repo）、model-routing xai binding 草案（--model/--effort 值域）。上游＝雙腿 verdict 檔。
 **驗證式**：卡 AC#1-6（機械可判——receipt 指針、baseline delta、GO/NO-GO）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【開工】①流程＝L0 評估弧（無 repo 檔編輯→不開 card WT；實作工作單照 spawn flash）②前置查核：grok CLI 在場性＋auth 形態——開跑前由實作腿回報，未安裝即停卡回報 user（安裝＋login 屬 user 動作）③baseline delta 快照：git status --porcelain > .agent-tmp/air-217/baseline-status.txt（AC#6 用）。
+<!-- SECTION:NOTES:END -->
