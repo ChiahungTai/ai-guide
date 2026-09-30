@@ -1,10 +1,10 @@
 ---
 id: AIR-215
-title: Claude Code 存 settings 會把 ~/.claude/settings.json symlink 打回普通檔——斷鏈循環追蹤＋修復 SOP
-status: To Do
+title: grok 原生控制面切換＋CC 第一方治理退役——settings.json 斷鏈循環以消滅設計收案
+status: In Progress
 assignee: []
 created_date: '2026-09-29 02:22'
-updated_date: '2026-09-29 02:23'
+updated_date: '2026-09-30 22:32'
 labels: []
 dependencies: []
 ordinal: 201000
@@ -13,28 +13,31 @@ ordinal: 201000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-**做什麼**：追蹤一個會反覆發生的機器狀態循環——Claude Code 對 settings 檔做 atomic write（temp+rename）時把 symlink 整個換成普通檔，governance 同步鏈就這樣斷（0929 實證，governance monitor 日頻 fail-loud 抓到）。monitor 是底網（exit 1＝真 drift），修復目前是手動 SOP。
+**做什麼**：CC 不再使用（coding plan 不划算），把 grok 的治理接線從「搭 CC 便車」搬到自己的原生面，CC 在治理體系的註冊同步退役——原本的 symlink 斷鏈循環不是修好，是被消滅。
 
-**不做什麼**：installer 不自動改是設計（P0-3 斷鏈形「user 處置（不自動改）」）；本卡不改 CC 本體行為。
+**兩階段**：Phase 1＝governance 學會生成 grok 原生 hooks 檔（~/.grok/hooks/ai-guide.json，13 支 guard 直達）＋CC 註冊/probe/審批刪除式退役＋切斷 CC 通道；全綠後才開 Phase 2＝拆 ~/.claude 四 symlink（agents 先補接到 ~/.grok/agents 再拆——實證 9 支 agents 走未文檔的 native 掃描）＋關 skills/mcps cells。
 
-**規矩／現況**：0929 修復 SOP 已驗證——①先把 live 檔多出的 hooks.UserPromptSubmit（scbus 回信鉤）併回 repo 源 settings.json（直接換 symlink 會掉鉤）②rm 普通檔 ③ln -s 重建 ④install.py --surface hooks 驗 merge（五面 parity 綠）。復發時照此 SOP。
+**不做什麼**：memory 池錨（Tier C 休眠另卡）；第三方 plugin 生態（delegate/muse 等經 ~/.claude/plugins 進 grok——殘留容忍，不宣稱 zero-read）；scbus claude 註冊 dormant；mosaic 跨 repo 不動。
 
-**等 user 什麼**：裁決要不要機械自癒腿——選項：launchd 每日 reconcile／installer 補 fix face／接受手動 SOP＋monitor 底網。
+**等 user 什麼**：無（方向已拍板；復原隨時可退——compat hooks=true 即回滾）。
 
 ```mermaid
 flowchart LR
-    CC["Claude Code settings 持久化"] -->|"atomic write 換 inode"| BRK["symlink 變普通檔"]
-    BRK --> MON["governance monitor 日頻 fail-loud"]
-    MON --> FIX["手動 SOP：hook 併回源 → rm → ln -s → check"]
-    FIX -.->|"CC 下次持久化再斷（循環）"| CC
+    P1["Phase 1：原生 ai-guide.json<br/>＋CC governance 縮編"] -->|gate 全綠| P2["Phase 2：拆四 symlink<br/>agents 先補接＋cells off"]
+    P2 -.->|休眠另卡| TC["Tier C：memory 池 re-anchor"]
+    P2 --> DONE["斷鏈循環消滅<br/>CC 面休眠"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 0929 修復 SOP 完整記錄於卡 notes（hook 併回源→rm→ln -s→check 綠，含證據行）
-- [ ] #2 復發偵測底網確認：governance monitor 日頻 exit 1 抓斷鏈（已運轉）——復發時本卡 notes 記日期與觸發前動作
-- [ ] #3 自癒裁決記 notes：launchd 每日 reconcile／installer fix face／維持手動 SOP——三選一（或組合）經 user 拍板
+- [ ] #1 P1-1 registrations/grok.json 新 face（merge=file 整檔寫 ~/.grok/hooks/ai-guide.json，timeout 顯式 10s；SessionStart compact dormant 註釋；FileChanged/watch-seed 省略）＋manifest registrations.cc/approve.claude/probes.claude 刪除＋probes.grok（pipe-payload 複用）＋install.py harness tuple/check/probe 同步——install --check 綠
+- [ ] #2 P1-2 --source grok 註冊形態（zcode 先例）＋memory-write-sensor.py allowlist 加 grok＋check_single_source 同步
+- [ ] #3 P1-3 切斷：~/.grok/config.toml [compat.claude] hooks=false；grok inspect 斷言——hooks ≥11 且 source=~/.grok/hooks/ai-guide.json（.claude source ai-guide 條目=0）；config 終態雙條件（inspect＋rg config）
+- [ ] #4 P1-4 L0 deny 行為：air-219 rig 重跑（MEMORY.md 攔截 exit 2，grok 形 payload）——quota 阻斷則 pipe-test 直證附揭露
+- [ ] #5 P2-1 agents 補接：新建 ~/.grok/agents symlink→agents/claude→grok inspect 9 agents source 切新路徑→拆 ~/.claude/agents→複驗 .claude source agents=0
+- [ ] #6 P2-2 cells off＋回歸：compat skills/mcps=false＋移除 inert extra_skill_dirs；inspect 斷言 72 skills 仍經 .agents 根；codebase-memory-mcp 棄用記錄（不遷移不刪）
+- [ ] #7 P1+2 文檔：check_single_source/bootstrap/governance README/root+hooks+rules AGENTS/matrix 同步；rg 殘留掃（cc tuple/probe/approve 鍵）零命中；第三方 plugin cache 殘留明示（禁宣稱 zero-read）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -48,4 +51,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【0929 修復 SOP 已執行（AC#1 證據）】①對時：live 普通檔 16189B vs repo 源 15976B——diff 唯一 delta＝hooks.UserPromptSubmit（scbus hook --harness claude --event user-prompt-submit，跨 session 回信鉤，repo 源與 cc.json 模板皆無）。②先併回源：Edit repo settings.json 補 UserPromptSubmit 子樹（json.load 驗證 ✓；gitignored 故機器本地不入版控）。③rm ~/.claude/settings.json（普通檔）→ ln -s /Users/ctai/Github/ai-guide/settings.json 重建。④驗證：diff live==src ✓；install.py --check——cc drift 消失。⑤codex 面：config.toml PreToolUse/apply_patch group 與模板漂移（trust 針對舊內容）→ install.py --surface hooks 實跑（cc/zcode noop、codex written）→ --check 五面 parity 綠（exit 0）。⑥monitor 重跑：L2 Trusted ✓、check 綠 ✓；僅 L3 codex exec exit 1＝額度窗耗盡（usage limit 至 10-04 06:17）——窗恢復後重跑 monitor 應全綠。⑦寫入者定證：CC atomic write（.last-cleanup 07:34:17 與 settings.json birth 07:34:11 同分鐘＋同分鐘 CC session 檔活躍）——復發為循環，非一次性事故。
+
+【1001 pivot 開工】user 裁定走 design-retired（CC 不硬綁——第一方原生化；plugin cache 殘留容忍）。收斂依據＝flash 五面盤點＋muse/codex 雙腿 verdict（.agent-tmp/air-215/）；5.3 三裁定：①zero-read 範圍＝第一方 only（codex 問答、user 原話裁定）②雙 phase gate（muse）③agents 先補接後拆（muse Q2 實證——9 支走未文檔 native 掃描）。
 <!-- SECTION:NOTES:END -->
