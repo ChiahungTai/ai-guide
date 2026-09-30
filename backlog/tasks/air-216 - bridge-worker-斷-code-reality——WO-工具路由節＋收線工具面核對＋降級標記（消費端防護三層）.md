@@ -4,13 +4,12 @@ title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面�
 status: Done
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 11:22'
+updated_date: '2026-09-30 11:23'
 labels: []
 dependencies: []
 references:
-  - >-
-    backlog/tasks/air-216 -
-    bridge-worker-斷-code-reality——WO-工具路由節＋收線工具面核對＋降級標記（消費端防護三層）.md
+  - skills/bridge-dispatch/SKILL.md
+  - skills/symbol-query-routing/SKILL.md
 ordinal: 202000
 ---
 
