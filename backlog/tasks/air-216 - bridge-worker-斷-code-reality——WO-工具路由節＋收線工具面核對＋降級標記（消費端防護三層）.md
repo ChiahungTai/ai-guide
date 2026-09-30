@@ -1,10 +1,10 @@
 ---
 id: AIR-216
 title: bridge worker 斷 code-reality——WO 工具路由節＋收線工具面核對＋降級標記（消費端防護三層）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-30 09:55'
-updated_date: '2026-09-30 11:19'
+updated_date: '2026-09-30 11:22'
 labels: []
 dependencies: []
 references:
@@ -62,3 +62,19 @@ flowchart LR
 
 【0930 結算——post-build 收斂＋回執四欄】實作＝flash（impl-lite）七編輯落地；審查＝fresh 腿 GO-WITH-FIXES（F1-F9，最高價值 F1：toolName 僅 glm ledger 形——muse/codex 為 payload_type，防收線誤判）＋跨家族 muse 腿 GO-WITH-FIXES（job-muo002xs，F1-F6）；judge＝5.3 marshal 裁決 9 採納/2 摺結案/0 否決；修復驗證腿九項全 PASS 零修正。回執四欄：classification=boundary／review=fresh+muse+intent+設計雙腿（evidence refs .agent-tmp/air-216/）／session-freshness=fresh／deployment-surfaces=healthy（deploy 3/3，unverified-by-graph 三 bundle 在場）。judge 裁決記錄：①AC#1 措辭『必填節』vs landed 條件節——與討論輪雙腿裁決一致（條件節＋要素 1 指針），AC 以條件節表述勾稽（muse-F6/fresh-F8）②既有 [WARN] graph-not-available 變體與 cr_usage regex 不匹配——後續弧收编（fresh-F9）③muse bundle 96%/30KiB gate 既有壓力上報（非本弧引入）。收線：merge 425ebf3c（wt-close full，WT+branch 已清）；CR telemetry 基線＝call-evidence 2 jobs/4 calls、evidence-bearing 25 jobs（src=11/unverified=22/degraded=3）；correction mining 0 候選；improvement admission=0（全跨弧歷史）；tour corpus no-op；post-build receipt＝.agent-tmp/post-build-receipts/air-216.json。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+消費端三層防護落地 main（425ebf3c，部署 3/3）：brief 結構查證腿必帶 structural-evidence route 宣告（live-cr[:MCP|:CLI]／preprovided-cr／degraded 三態，機械可掃 literal）、收線工具面核對（family schema 判讀——toolName 僅 glm 形、muse/codex 為 payload_type；MCP histogram＋CLI payload 例；0 命中 fail-loud floor 以 schema 確認後為準）、symbol-query-routing 新增 no-cr-query-face 降級源＋unverified-by-graph 標記（結構 finding 級逐條，負存在結論不得憑降級證據收敛）。審查鏈：flash 實作＋fresh/muse 雙腿 GO-WITH-FIXES 九項修復全採＋5.3 judge 裁決；root cause 層（L1 isolated home MCP 注入）歸 delegate-bridge 線另案。終態圖：
+
+```mermaid
+flowchart LR
+    B["dispatcher 寫 brief"] --> R["route：宣告<br/>live-cr｜preprovided｜degraded"]
+    R -->|"live-cr"| CR["CR 取結構事實<br/>禁 Read 重建"]
+    R -->|"degraded"| RG["rg/Grep 降級<br/>逐條 unverified-by-graph"]
+    J["job jsonl 實際工具面"] --> CK["收線核對<br/>MCP histogram／CLI payload"]
+    CK -->|"宣告≠實際"| DEF["delivery defect<br/>補標或退回"]
+    RG --> SQR["symbol-query-routing<br/>no-cr-query-face 降級源"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
