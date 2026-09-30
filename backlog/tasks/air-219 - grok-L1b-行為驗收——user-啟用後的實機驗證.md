@@ -1,12 +1,14 @@
 ---
 id: AIR-219
 title: grok L1b 行為驗收——user 啟用後的實機驗證
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-30 14:42'
-updated_date: '2026-09-30 14:42'
+updated_date: '2026-09-30 20:58'
 labels: []
 dependencies: []
+references:
+  - ref-docs/harness/grok-activation-runbook.md
 ordinal: 205000
 ---
 
@@ -51,3 +53,9 @@ flowchart LR
 **Integration**：上游 AIR-218；下游＝grok 正式受治理態＋bridge L2（grok family 的 caller 面確認）。
 **驗證式**：AC 四項（機械可判）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【1001 開工】user 晨間授權「都處理掉吧除了訂閱」——runbook 三動作 marshal 代執行（部署/compat 收斂/import 修復；部署形採預設收斂形）。
+<!-- SECTION:NOTES:END -->
