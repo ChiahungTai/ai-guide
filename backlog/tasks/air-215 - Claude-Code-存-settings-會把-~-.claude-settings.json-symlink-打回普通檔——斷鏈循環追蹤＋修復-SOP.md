@@ -43,8 +43,13 @@ flowchart LR
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-〔baseline：ai-guide efd66d11〕
-〔已決策勿重辯：①載體＝追蹤卡非 hook——自癒與否是語義裁決非機械 predicate ②修復正道＝手動 reconcile→rm→ln -s→install.py --surface hooks 驗 merge；installer check 對斷鏈形不自動改是設計（P0-3）③hooks.UserPromptSubmit（scbus 回信鉤）現佔 repo 源 settings.json（gitignored，機器本地）——是否應上移 governance/registrations/cc.json 模板成安裝面＝本卡調查項 ④L3 codex exec canary 在 codex 額度窗耗盡期 exit 1 屬預期（fail-closed；0929 實證 usage limit 至 10-04 06:17），非本卡修復範圍 ⑤CC 寫入者定證＝.last-cleanup 時戳與 settings.json birth 同分鐘＋atomic write 換 inode 機制〕
+〔Planning Contract——AIR-215 pivot（standard；user 拍板 design-retired）〕
+**Baseline**：main @ dded63ac＋cc-retire-investigation.md（五面錨點）。關鍵：install.py:913 tuple/:1940 check/:2233-2258 對帳閘（fail-loud）；manifest.toml:56-59 四 symlink/:86-91 registrations.cc/:110 approve/:120-122 probes；grok hooks 原生形態＝cc.json 外包 hooks 鍵、全域個人層免 trust（10-hooks.md:66,79）；agents 發現＝未文檔 native 硬掃 ~/.claude/agents（inspect type=user 實證）。
+**已決策（勿重辯——雙腿＋5.3）**：①scope＝第一方原生化；plugin cache 殘留容忍、禁宣稱 zero-read②雙 phase gate（P1 全綠才開 P2）③agents 先補接（~/.grok/agents symlink→agents/claude→inspect 斷言→才拆 ~/.claude/agents）④刪除式縮編（無 skip 機制；--uninstall 面不再碰 settings.json，殘留 dormant）⑤registrations/grok＝merge="file" 新 kind（整檔 render；check 走語義比對非 byte）＋timeout 統一顯式 10s（兩面 precedent）＋--source grok（memory-write-sensor.py:47 allowlist 加）＋approve 不加 grok 鍵（全域免 trust；EP 確認缺鍵不 fail-loud）⑥codebase-memory-mcp 明示棄用（零 live 引用 rg 證）⑦memory 池三件組/scbus/mosaic/settings.json 本體/Tier C＝不動⑧回滾＝compat hooks=true＋symlink 重建（備份與程序）。
+**Scope**：動＝manifest（＋grok registrations/probes；−cc 三節）、install.py、registrations/grok.json 新、memory-write-sensor.py:47、check_single_source.py、bootstrap wording、governance README、root/hooks/rules AGENTS.md、matrix、~/.grok config cells＋~/.grok/agents symlink、拆四 ~/.claude symlink（P2）。不動＝zcode/codex 面、rules bundle、memory 三件組、~/.claude settings.json 本體、scbus、mosaic、agents/claude 生成物、cc-allowlist.json（退役留歷史）、第三方 plugin cache。
+**Scenarios**：P1 inspect 斷言（hooks 原生 source）；agents 補接前後 source 切換；skills 72 支 .agents 根回歸；deny rig（quota 阻斷→pipe 代位）。
+**Integration**：下游＝governance monitor（cc probe 退場後檢查面）、AIR-218 既有 runbook（§compat hooks 段隨切斷更新）。
+**驗證式**：AC 七項（P1×4＋P2×2＋文檔×1）。
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
