@@ -1,10 +1,10 @@
 ---
 id: AIR-215
 title: grok 原生控制面切換＋CC 第一方治理退役——settings.json 斷鏈循環以消滅設計收案
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-29 02:22'
-updated_date: '2026-09-30 23:21'
+updated_date: '2026-09-30 23:23'
 labels: []
 dependencies: []
 ordinal: 201000
@@ -61,3 +61,21 @@ flowchart LR
 
 【1001 pivot 結算——B1-B6 receipt＋回執四欄】實作＝flash 六塊（B1 governance 手術：grok.json 新 face＋merge=file/render-file kind＋probes.grok＋cc 三節刪除式退役＋測試同步 2664 passed；B2 部署切斷：~/.grok/hooks/ai-guide.json 13 條目＋compat hooks=false→inspect native 13/.claude 0；B3 deny：**runtime 直證**（事件流 Hook denied 先於 quota error）＋pipe 雙形 exit 2，control 發 BLOCKED-QUOTA 附揭露；B4 agents 先補接後拆（9 支切 ~/.grok/agents）；B5 cells 全 off＋skills 72 回歸＋codebase-memory-mcp 棄用〔intentional non-migration：零 live 引用 rg 證、binary 不刪〕；B6 文檔六處＋殘留掃零 live-code 命中＋plugin cache 殘留明示〔11 skills+2 hooks 經 ~/.claude/plugins——非 zero-read〕）。審查＝fresh（F1-F7：獨立重跑 320 tests＋live/WT byte-equal；runtime deny 順序直證 confirmed）＋muse（Minor1-3+Info1-3）→judge 7 採 4 留（F3 bootstrap gating/F5 post-hash/F6 SessionEnd 佇列/F7 PostToolUse exit2 語義→後續弧）→flash 修復 7/7 綠（含 P1-gate receipt 補檔 p1-gate-receipt.txt）。回執四欄：classification=boundary（governance 結構手術＋跨 harness 拓撲翻轉）／review=fresh+muse 雙腿 GO-WITH-FIXES 全採（evidence：.agent-tmp/air-215/review-*.md＋p1-gate-receipt）／session-freshness=fresh／deployment-surfaces=healthy-pending-canonical-receipt。**承諾**：merge 後從 canonical 補跑 install --surface hooks＋--check 取 journal receipt（偏差③ install 曾走 module 繞 guard——F2 閉環）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CC settings.json symlink 斷鏈循環以設計消滅收案（user 拍板 design-retired——CC coding plan 不划算）：grok 控制面全面原生化（~/.grok/hooks/ai-guide.json 13 條目 governance 生成＋agents 補接 ~/.grok/agents＋cells 全 off＋四 ~/.claude symlink 拆除），CC 第一方治理刪除式退役（manifest/probe/approve 三節），codebase-memory-mcp 明示棄用。runtime deny 直證（事件流 Hook denied）。落地 main e3e45f3f（全量 2664 passed＋fresh/muse 雙腿 7 項修復＋canonical install receipt 兌現）。殘留：plugin cache（11 skills+2 hooks 經 ~/.claude/plugins——容忍非 zero-read）；Tier C memory 池 re-anchor 休眠另卡；F3/F5/F6/F7 後續弧認知。終態圖：
+
+```mermaid
+flowchart LR
+    G["governance"] --> RG["registrations/grok.json<br/>render-file kind"]
+    RG --> LH["~/.grok/hooks/ai-guide.json<br/>13 條目"]
+    GA["~/.grok/agents"] --> AG["9 agents native"]
+    CELLS["compat cells 全 off"] --> ZERO[".claude 面退役 dormant"]
+    LH --> DENY["runtime deny 直證"]
+    AG --> DENY
+    ZERO --> DENY
+    DENY --> DONE["斷鏈循環消滅<br/>CC 面休眠（回滾=cells true+symlink 重建）"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
