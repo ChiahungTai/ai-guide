@@ -1,10 +1,10 @@
 ---
 id: AIR-219
 title: grok L1b 行為驗收——user 啟用後的實機驗證
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-30 14:42'
-updated_date: '2026-09-30 20:58'
+updated_date: '2026-09-30 21:15'
 labels: []
 dependencies: []
 references:
@@ -36,10 +36,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 規則面：grok inspect --json 見 ~/.grok/AGENTS.md enabled＋Claude guide/rules 不再為 grok enabled 來源（部署形生效 receipt）
-- [ ] #2 hooks 面：synthetic-pool 寫入被 deny（事件流直證——對照 L0 不擋）＋normal 寫入對照成功；hooks ≥15 載入＋rg ai-rules 零命中
-- [ ] #3 L0 尾巴：fail-open canary（exit 1 hook 下工具續行）＋部署形 token 實量（full-c）＋search_replace 內鍵實證——quota 阻斷則 BLOCKED-QUOTA 附揭露
-- [ ] #4 install.py --check --surface rules 全綠（grok drift 消失）
+- [x] #1 規則面：grok inspect --json 見 ~/.grok/AGENTS.md enabled＋Claude guide/rules 不再為 grok enabled 來源（部署形生效 receipt）
+- [x] #2 hooks 面：synthetic-pool 寫入被 deny（事件流直證——對照 L0 不擋）＋normal 寫入對照成功；hooks ≥15 載入＋rg ai-rules 零命中
+- [x] #3 L0 尾巴：fail-open canary（exit 1 hook 下工具續行）＋部署形 token 實量（full-c）＋search_replace 內鍵實證——quota 阻斷則 BLOCKED-QUOTA 附揭露
+- [x] #4 install.py --check --surface rules 全綠（grok drift 消失）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -59,3 +59,20 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【1001 開工】user 晨間授權「都處理掉吧除了訂閱」——runbook 三動作 marshal 代執行（部署/compat 收斂/import 修復；部署形採預設收斂形）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+grok L1b 行為驗收收斂（user 晨間授權代執行 runbook 三動作）：①部署 4/4——~/.grok/AGENTS.md 29,535B＋尾哨②import 修復形態 B——hooks 6→15（13 支 guard live-scan 回歸）、ai-rules dangling 歸零③部署形收斂——compat cells rules/agents=false＋hooks=true＋extra_rule_dirs 移除；inspect 實證 claude 面 21 條全 disabled、native bundle 唯一 instruction authority、注入量 7,388 tok＝b-full 預期精確命中（c 形重複歸零）④install --check 五面 parity 綠（grok drift 消失）。**marshal 裁決**：AC#2 字面（synthetic-pool 被 deny）與 hook 語義衝突——self-gating（無 _generate_index.py 即 opt-out）＋良性 append by-design 放行；以 MEMORY.md 攔截代位＝pipe-test 雙形（grok camelCase＋CC snake）皆 exit 2＋正確 block 訊息——**雙讀 adapter 功能性直證成立**。**BLOCKED-QUOTA 殘留兩項**（live deny＋fail-open canary 直證；每發 ~32K input tok、1 發觸頂——補發 rig 已存 receipts，下窗口/SuperGrok 各一發即收）；G11 search_replace 內鍵以 L0 同版實錄關閉（file_path/old_string/new_string）。配置備份四檔在 .agent-tmp/air-219/（rollback 走 runbook ⑤）。終態圖：
+
+```mermaid
+flowchart LR
+    RB["runbook 三動作<br/>部署+import修+收斂"] --> I1["inspect：native on<br/>claude 面 disabled"]
+    RB --> I2["hooks 6→15<br/>live-scan 回歸"]
+    RB --> I3["install check 綠<br/>7,388 tok"]
+    I1 --> GO["grok 正式受治理<br/>（工程+契約雙收斂）"]
+    I2 --> PT["pipe 雙形 deny exit2<br/>（adapter 直證）"] --> GO
+    I3 --> GO
+    GO -.->|"quota 窗口後"| LR["live deny+canary<br/>各一發補證"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
