@@ -4,7 +4,7 @@ title: grok 原生控制面切換＋CC 第一方治理退役——settings.json 
 status: In Progress
 assignee: []
 created_date: '2026-09-29 02:22'
-updated_date: '2026-09-30 22:32'
+updated_date: '2026-09-30 23:21'
 labels: []
 dependencies: []
 ordinal: 201000
@@ -31,13 +31,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 P1-1 registrations/grok.json 新 face（merge=file 整檔寫 ~/.grok/hooks/ai-guide.json，timeout 顯式 10s；SessionStart compact dormant 註釋；FileChanged/watch-seed 省略）＋manifest registrations.cc/approve.claude/probes.claude 刪除＋probes.grok（pipe-payload 複用）＋install.py harness tuple/check/probe 同步——install --check 綠
-- [ ] #2 P1-2 --source grok 註冊形態（zcode 先例）＋memory-write-sensor.py allowlist 加 grok＋check_single_source 同步
-- [ ] #3 P1-3 切斷：~/.grok/config.toml [compat.claude] hooks=false；grok inspect 斷言——hooks ≥11 且 source=~/.grok/hooks/ai-guide.json（.claude source ai-guide 條目=0）；config 終態雙條件（inspect＋rg config）
-- [ ] #4 P1-4 L0 deny 行為：air-219 rig 重跑（MEMORY.md 攔截 exit 2，grok 形 payload）——quota 阻斷則 pipe-test 直證附揭露
-- [ ] #5 P2-1 agents 補接：新建 ~/.grok/agents symlink→agents/claude→grok inspect 9 agents source 切新路徑→拆 ~/.claude/agents→複驗 .claude source agents=0
-- [ ] #6 P2-2 cells off＋回歸：compat skills/mcps=false＋移除 inert extra_skill_dirs；inspect 斷言 72 skills 仍經 .agents 根；codebase-memory-mcp 棄用記錄（不遷移不刪）
-- [ ] #7 P1+2 文檔：check_single_source/bootstrap/governance README/root+hooks+rules AGENTS/matrix 同步；rg 殘留掃（cc tuple/probe/approve 鍵）零命中；第三方 plugin cache 殘留明示（禁宣稱 zero-read）
+- [x] #1 P1-1 registrations/grok.json 新 face（merge=file 整檔寫 ~/.grok/hooks/ai-guide.json，timeout 顯式 10s；SessionStart compact dormant 註釋；FileChanged/watch-seed 省略）＋manifest registrations.cc/approve.claude/probes.claude 刪除＋probes.grok（pipe-payload 複用）＋install.py harness tuple/check/probe 同步——install --check 綠
+- [x] #2 P1-2 --source grok 註冊形態（zcode 先例）＋memory-write-sensor.py allowlist 加 grok＋check_single_source 同步
+- [x] #3 P1-3 切斷：~/.grok/config.toml [compat.claude] hooks=false；grok inspect 斷言——hooks ≥11 且 source=~/.grok/hooks/ai-guide.json（.claude source ai-guide 條目=0）；config 終態雙條件（inspect＋rg config）
+- [x] #4 P1-4 L0 deny 行為：air-219 rig 重跑（MEMORY.md 攔截 exit 2，grok 形 payload）——quota 阻斷則 pipe-test 直證附揭露
+- [x] #5 P2-1 agents 補接：新建 ~/.grok/agents symlink→agents/claude→grok inspect 9 agents source 切新路徑→拆 ~/.claude/agents→複驗 .claude source agents=0
+- [x] #6 P2-2 cells off＋回歸：compat skills/mcps=false＋移除 inert extra_skill_dirs；inspect 斷言 72 skills 仍經 .agents 根；codebase-memory-mcp 棄用記錄（不遷移不刪）
+- [x] #7 P1+2 文檔：check_single_source/bootstrap/governance README/root+hooks+rules AGENTS/matrix 同步；rg 殘留掃（cc tuple/probe/approve 鍵）零命中；第三方 plugin cache 殘留明示（禁宣稱 zero-read）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -58,4 +58,6 @@ flowchart LR
 【0929 修復 SOP 已執行（AC#1 證據）】①對時：live 普通檔 16189B vs repo 源 15976B——diff 唯一 delta＝hooks.UserPromptSubmit（scbus hook --harness claude --event user-prompt-submit，跨 session 回信鉤，repo 源與 cc.json 模板皆無）。②先併回源：Edit repo settings.json 補 UserPromptSubmit 子樹（json.load 驗證 ✓；gitignored 故機器本地不入版控）。③rm ~/.claude/settings.json（普通檔）→ ln -s /Users/ctai/Github/ai-guide/settings.json 重建。④驗證：diff live==src ✓；install.py --check——cc drift 消失。⑤codex 面：config.toml PreToolUse/apply_patch group 與模板漂移（trust 針對舊內容）→ install.py --surface hooks 實跑（cc/zcode noop、codex written）→ --check 五面 parity 綠（exit 0）。⑥monitor 重跑：L2 Trusted ✓、check 綠 ✓；僅 L3 codex exec exit 1＝額度窗耗盡（usage limit 至 10-04 06:17）——窗恢復後重跑 monitor 應全綠。⑦寫入者定證：CC atomic write（.last-cleanup 07:34:17 與 settings.json birth 07:34:11 同分鐘＋同分鐘 CC session 檔活躍）——復發為循環，非一次性事故。
 
 【1001 pivot 開工】user 裁定走 design-retired（CC 不硬綁——第一方原生化；plugin cache 殘留容忍）。收斂依據＝flash 五面盤點＋muse/codex 雙腿 verdict（.agent-tmp/air-215/）；5.3 三裁定：①zero-read 範圍＝第一方 only（codex 問答、user 原話裁定）②雙 phase gate（muse）③agents 先補接後拆（muse Q2 實證——9 支走未文檔 native 掃描）。
+
+【1001 pivot 結算——B1-B6 receipt＋回執四欄】實作＝flash 六塊（B1 governance 手術：grok.json 新 face＋merge=file/render-file kind＋probes.grok＋cc 三節刪除式退役＋測試同步 2664 passed；B2 部署切斷：~/.grok/hooks/ai-guide.json 13 條目＋compat hooks=false→inspect native 13/.claude 0；B3 deny：**runtime 直證**（事件流 Hook denied 先於 quota error）＋pipe 雙形 exit 2，control 發 BLOCKED-QUOTA 附揭露；B4 agents 先補接後拆（9 支切 ~/.grok/agents）；B5 cells 全 off＋skills 72 回歸＋codebase-memory-mcp 棄用〔intentional non-migration：零 live 引用 rg 證、binary 不刪〕；B6 文檔六處＋殘留掃零 live-code 命中＋plugin cache 殘留明示〔11 skills+2 hooks 經 ~/.claude/plugins——非 zero-read〕）。審查＝fresh（F1-F7：獨立重跑 320 tests＋live/WT byte-equal；runtime deny 順序直證 confirmed）＋muse（Minor1-3+Info1-3）→judge 7 採 4 留（F3 bootstrap gating/F5 post-hash/F6 SessionEnd 佇列/F7 PostToolUse exit2 語義→後續弧）→flash 修復 7/7 綠（含 P1-gate receipt 補檔 p1-gate-receipt.txt）。回執四欄：classification=boundary（governance 結構手術＋跨 harness 拓撲翻轉）／review=fresh+muse 雙腿 GO-WITH-FIXES 全採（evidence：.agent-tmp/air-215/review-*.md＋p1-gate-receipt）／session-freshness=fresh／deployment-surfaces=healthy-pending-canonical-receipt。**承諾**：merge 後從 canonical 補跑 install --surface hooks＋--check 取 journal receipt（偏差③ install 曾走 module 繞 guard——F2 閉環）。
 <!-- SECTION:NOTES:END -->
