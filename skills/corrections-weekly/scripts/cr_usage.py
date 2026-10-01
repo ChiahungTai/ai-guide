@@ -400,7 +400,8 @@ def main() -> int:
     )
     print(f"eligible\t{ledg['eligible']}（legs 名冊 trigger 腿；n/a 腿 {ledg['na_legs']}）")
     print(f"observed-evidence\t源2 call-evidence jobs={b['call_jobs']}")
-    print(f"receipt\t{ledg['receipts']}（degraded={ledg['degraded']}）")
+    print(f"receipt\t{ledg['receipts']}")
+    print(f"degraded\t{ledg['degraded']}（receipt 內 degraded route——fresh-F7 獨立分項行）")
     print(
         f"n-a\t顯式 n/a receipt={ledg['na_receipts']}"
     )

@@ -1,7 +1,7 @@
-# .review/air-224-tc3a.md — TC-3 fixture（synthetic：live-cr:MCP durable evidence＝PASS）
+# .review/air-224-tc3a.md — TC-3 fixture（synthetic：live-cr:MCP 非 bridge 形 evidence＝PASS——僅驗 denylist 邊界，非 durable 認證）
 
 - reviewed revision：fixture branch HEAD `22400t4`＋uncommitted none
-- scope：tests/fixtures/review_ledgers（TC-3——live-cr:MCP 有 evidence ref＝PASS）
+- scope：tests/fixtures/review_ledgers（TC-3——live-cr:MCP 有 evidence ref＝PASS；ref 為 .agent-tmp 形非 bridge-jobs 形——denylist 邊界樣本，ephemeral 檢查不拒收≠durable 認證）
 - review_profile：ordinary
 - legs：L1 fixture-job-tc3a trigger
 - L1: cr(route=live-cr:MCP, evidence=.agent-tmp/air-224/review-L1.out#anchor-cr-callers)

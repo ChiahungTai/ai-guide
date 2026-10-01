@@ -129,7 +129,7 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 - **uncommitted identity**：本弧 tracked diff hash＋untracked 路徑清單＋content hash（與 [work-order](work-order.md) §3 dirty identity 契約同詞）——只有 rev 會讓「untracked-only WIP 改變」場景（HEAD 未變、新檔內容變）假吻合跳審
 - **scope**：本弧 review 範圍——包含／排除檔案與 UC/invariant 清單（復用判準第 3 條的比對鍵）
 - **review_profile**：風險 profile identifier＋定義內容 identity（定義源＝[review-engine](../review-engine/SKILL.md)「審查模式判定規則」；identifier＋該 profile 定義內容的 hash／版次標記——復用判準第 4 條的比對鍵）。正典寫法＝`review-engine@<sha>`，sha 取 `git hash-object -- skills/review-engine/SKILL.md` 輸出前 12 碼（content-bound，非 HEAD）；帳本身份行照寫此值。
-- **legs**（AIR-224 起強制行）：審查腿名冊——`legs：<leg key> <jobId/腿識別> trigger|n/a；…`（先例＝`.review/air-91.md` legs 行）；per-leg CR receipt 行以 leg key／jobId join 名冊，**名冊缺場＝lint FAIL**（命中 trigger 腿缺 receipt 無從判定——SM-5 前提）
+- **legs**（AIR-224 起強制行）：審查腿名冊——`legs：<leg key> <jobId/腿識別> trigger|n/a；…`（受 `.review/air-91.md` `legs：` 行啟發的**概念先例**；item 形以本節 grammar 為準——air-91 舊形 items 無 `trigger|n/a` 尾 tag，在新 grammar 下屬 `roster_malformed`，backfill 須**改寫名冊**而非補 tag）；per-leg CR receipt 行以 leg key／jobId join 名冊，**名冊缺場＝lint FAIL**（命中 trigger 腿缺 receipt 無從判定——SM-5 前提）
 - **coverage**：各軸（profile 必需視角／extras）完成／未驗狀態＋evidence ref（指向 findings／驗證證據所在；**缺證據≠PASS**——未驗軸不得標完成）；命中結構查證 trigger 的 review 腿另以 per-leg CR receipt 子格式承載（語法單一源＝下方「per-leg CR receipt 語法」節）
 - **writer**：產生本清單的命令/session
 
@@ -144,9 +144,10 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 ```
 
 - route 是 **review-leg 級**事實（非 finding 級）；`[cr:present|empty|unavailable|skipped]` 四態保留 material-evidence 語義、與 route 正交（不混欄）
+- **bare `live-cr` 值域註記**：WO route 宣告（producer 面）可寫 bare `live-cr`——face 後綴可選、dispatch 時解析；ledger receipt 落帳時 face 必已解析，receipt 值域僅收 `live-cr:MCP|live-cr:CLI`——bare `live-cr` 於 receipt＝`bad_route`（lint 拒收；route 值域單一源仍＝[bridge-dispatch](../bridge-dispatch/SKILL.md)，本條只鏡像兩面解析時點差）
 - `live-cr:MCP|live-cr:CLI|preprovided-cr` 必附 `evidence=<ref>`；`degraded` 必附 `reason=<why>`，且受影響 claim 逐條 `unverified-by-graph`
-- **evidence ref 兩形態**：converged receipt 的 `evidence=` 必須引用 **producer-issued durable evidence**；WT-local `.delegate-bridge/jobs/<id>.jsonl` 路徑＝**ephemeral observation**，不得滿足 converged receipt（raw JSONL 是 evidence of record；durable producer 另案——producer 未落地前 bridge receipt 可執行/觀察，但不得以 durable-complete 收線）
-- **applicability 與 route 兩範疇分離**：`cr: n/a（reason=無結構查證 trigger；dispatch 端 trigger 事實 ref 必附）`是 **applicability sentinel 非 route 值**——無結構查證 trigger 的腿顯式留 N/A receipt 非空欄；trigger 事實 ref 必附（判「真無 trigger」vs「漏宣告」的唯一對帳錨）
+- **evidence ref 兩形態**：converged receipt 的 `evidence=` 必須引用 **producer-issued durable evidence**；WT-local `.delegate-bridge/jobs/<id>.jsonl` 路徑＝**ephemeral observation**，不得滿足 converged receipt（raw JSONL 是 evidence of record；durable producer 另案——producer 未落地前 bridge receipt 可執行/觀察，但不得以 durable-complete 收線）。至 durable producer 落地前，ephemeral 檢查涵蓋面＝**bridge-jobs 形 blocklist**——非該形的 ref 不因此認證為 durable
+- **applicability 與 route 兩範疇分離**：`cr: n/a（reason=無結構查證 trigger；dispatch 端 trigger 事實 ref 必附）`是 **applicability sentinel 非 route 值**——無結構查證 trigger 的腿顯式留 N/A receipt 非空欄；trigger 事實 ref 必附（判「真無 trigger」vs「漏宣告」的唯一對帳錨），其**在場性由 judge 收線 gate（fresh-F9 checklist）複核，lint 不機驗 ref 內容**
 - **名冊 join**：receipt 行以 leg key 對 `legs：` 名冊；名冊無此腿、或命中 trigger 腿缺 receipt 行＝lint FAIL
 - **cr-closure 行（Arbiter 寫——兩段式）**：`cr-closure：<leg key> checked|rejected`——producer 事實（route/evidence）與 Arbiter 裁決分離：腿寫 receipt→judge 收線核對後另立 closure 行；closure 缺場＝未收線（judge 收線 gate 單一源＝[judge-review](../judge-review/SKILL.md)收線節）
 - **legacy-exempt 機械錨**：僅 `reviewed` hash 早於凍結 cutoff 常數（定義於 `review_ledger.py`）的帳本可蓋 `legacy-exempt` 豁免章放行 lint；telemetry 加 exempt 率分項防大量靜默豁免（[cr_usage.py](../corrections-weekly/scripts/cr_usage.py)）
@@ -201,7 +202,8 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 ```
 ## <命令> Findings — <branch 或 EP 段落>
 
-> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash>（或 `reviewed revision：`——兩形皆 canonical，lint 錨同受） · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none） · scope=<包含檔案/UC/invariant；排除項> · review_profile=<identifier＋definition identity> · legs=<leg key> <jobId> trigger|n/a；… · coverage=<各軸完成/未驗＋evidence ref；命中 trigger 腿附 `cr(route=…, evidence=|reason=)` receipt> · writer=<命令/session>
+> identity: baseline=<任務 baseline hash> · reviewed=<HEAD hash>（或 `reviewed revision：`——兩形皆 canonical，lint 錨同受） · uncommitted=<tracked diff hash>＋untracked <路徑清單＋content hash>（clean 標 none） · scope=<包含檔案/UC/invariant；排除項> · review_profile=<identifier＋definition identity> · coverage=<各軸完成/未驗＋evidence ref；命中 trigger 腿附 `cr(route=…, evidence=|reason=)` receipt> · writer=<命令/session>
+> legs：<leg key> <jobId> trigger|n/a；…（AIR-224 強制行——**獨立一行冒號形**，與 lint parser／fixtures 同形；receipt 以 leg key join 名冊。禁內嵌 identity 行——等號形非 canonical，lint 讀不到）
 
 | ID | 嚴重度 | 檔案:行 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |
 |----|--------|---------|------|------|--------|------|------|

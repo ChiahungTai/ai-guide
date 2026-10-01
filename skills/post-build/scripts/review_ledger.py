@@ -6,17 +6,18 @@
   gate）——identity 三行（reviewed 錨／scope／review_profile）＋Finding Record 表
   canonical 欄位（ID／嚴重度／位置／問題／建議／驗證式／狀態／決策）＋值域
   （decision ∈ ✅❌⚠️；terminal status 見 TERMINAL_STATUSES）＋per-leg CR receipt
-  （AIR-224——``legs`` 名冊強制行、命中 trigger 腿缺 receipt FAIL、degraded 無
-  reason FAIL、n/a 腿缺顯式 sentinel FAIL、live/preprovided 無 evidence FAIL、
-  孤兒腿 FAIL；ephemeral bridge ref（``.delegate-bridge/jobs/``）僅 converged
-  拒收；有效 ``legacy-exempt（cutoff=…）`` 章放行）。grammar 單一源＝
-  workflow-review-pattern「per-leg CR receipt 語法」，本檔為 consumer-equivalent
-  鏡像。``--stage`` 對齊
-  帳本生命週期（預設 converged＝現行為全查）：
+  （AIR-224——converged 面：``legs`` 名冊強制行、命中 trigger 腿缺 receipt FAIL、
+  degraded 無非空 reason FAIL、n/a 腿缺顯式 sentinel FAIL、live/preprovided 無
+  evidence FAIL、孤兒腿 FAIL、ephemeral bridge ref（``.delegate-bridge/jobs/``）
+  拒收；行首 ``legacy-exempt（cutoff=…）`` 逐字形章放行三類舊檔缺 receipt 語義）。
+  grammar 單一源＝workflow-review-pattern「per-leg CR receipt 語法」，本檔為
+  consumer-equivalent 鏡像。``--stage`` 對齊
+  帳本生命週期（預設 converged＝全查）：
   - ``discovery``（post-build 階段 2——judge 前）：只查 identity 錨＋欄位存在性；
     decision/status **值域不查**（發現時態 decision＝「—」、status＝open 是常態，
-    值域檢查會與生命週期互斥——F-1）。
-  - ``converged``（收斂態落卡／commit 2.6——帳本已是終態）：全查（值域含）。
+    值域檢查會與生命週期互斥——F-1）；per-leg CR receipt 檢查亦不查（muse-F2——
+    cr 檢查收斂到 converged 面，與 post-build 階段 2 閘契約同制）。
+  - ``converged``（收斂態落卡／commit 2.6——帳本已是終態）：全查（值域＋cr receipt 含）。
 - ``parse <ledger.md>``：容錯讀＋tally（歷史帳本回歸／消費面）——跨表 ID-join
   last-wins（發現時態表被 apply 終態表覆蓋）、prose 計數禁用（否定句陷阱：
   「零 ❌、零 ⚠️」不得入計數）、解析不出→明確 ``[FAIL]`` 類別拒收（unknown，
@@ -55,22 +56,31 @@ PENDING_STATUSES: tuple[str, ...] = ("open", "needs-confirmation")
 # ---------- per-leg CR receipt lint（AIR-224——S1 grammar 的 consumer-equivalent 鏡像） ----------
 # grammar 單一源＝workflow-review-pattern「per-leg CR receipt 語法」節；route 值域
 # 單一源＝bridge-dispatch「結構查證腿——evidence route 宣告」（本檔只鏡像檢查，
-# 不重定義語義）。cr 檢查屬結構在場面（非值域）——discovery/converged 兩態皆查；
-# ephemeral evidence 拒收僅 converged（producer 未落地前 bridge receipt 可觀察、
-# 不得以 durable-complete 收線——EP Amendment）。
+# 不重定義語義）。cr 檢查屬 converged 面（muse-F2——discovery 態不呼叫，收斂態才
+# 全查）；ephemeral evidence 拒收隨之併入 converged 面（producer 未落地前 bridge
+# receipt 可觀察、不得以 durable-complete 收線——EP Amendment）。
 CR_ROUTES: tuple[str, ...] = ("live-cr:MCP", "live-cr:CLI", "preprovided-cr", "degraded")
 
+# 行首錨定（muse-F8）：名冊／receipt／n/a／豁免章只認「行首（容 `> ` blockquote 與
+# `- `/`* ` 列表符）」起手的行——identity 區 prose（scope 行等）內嵌 grammar 文本
+# （格式說明）不計入 receipt、不誤解析名冊、不誤豁免。
+_LINE_ITEM_PREFIX = r"^\s*(?:>\s*)?(?:[-*]\s*)?"
+
 # receipt 行：`<leg key>: cr(route=<route>, evidence=<ref>|reason=<why>)`
+# leg key 含 `/`（fresh-F2——grammar 佔位符＝`<family/leg>`，如 `muse/L1`）；
+# 排除 `/` 會同檔出 `missing_leg: muse/L1`＋`orphan_leg: L1`（join 破裂）。
 CR_RECEIPT_RE = re.compile(
-    r"(?P<leg>[A-Za-z0-9_.-]+)\s*:\s*"
+    _LINE_ITEM_PREFIX
+    + r"(?P<leg>[A-Za-z0-9_./-]+)\s*:\s*"
     r"cr\(route=(?P<route>[a-z-]+(?::MCP|:CLI)?)\s*,\s*(?P<payload>[^)]*)\)"
 )
 # n/a applicability sentinel（非 route 值）：`<leg key>: cr: n/a（reason=…；…）`
 CR_NA_RE = re.compile(
-    r"(?P<leg>[A-Za-z0-9_.-]+)\s*:\s*cr:\s*n/a\s*[（(]reason=(?P<reason>[^）)]+)[）)]"
+    _LINE_ITEM_PREFIX
+    + r"(?P<leg>[A-Za-z0-9_./-]+)\s*:\s*cr:\s*n/a\s*[（(]reason=(?P<reason>[^）)]+)[）)]"
 )
 # legs 名冊（強制行）：`legs：<leg key> <jobId> trigger|n/a；…`（receipt 以 leg key join）
-LEGS_RE = re.compile(r"legs\s*[：:]", re.IGNORECASE)
+LEGS_RE = re.compile(_LINE_ITEM_PREFIX + r"legs\s*[：:]", re.IGNORECASE)
 LEG_ROSTER_TAGS: tuple[str, ...] = ("trigger", "n/a")
 # ephemeral observation 形態（EP Amendment）：WT-local bridge job jsonl 路徑
 EPHEMERAL_BRIDGE_REF = ".delegate-bridge/jobs/"
@@ -80,7 +90,24 @@ EPHEMERAL_BRIDGE_REF = ".delegate-bridge/jobs/"
 # 一致，帳本時序（hash 是否真早於 cutoff）歸蓋章弧的判斷紀律（telemetry 加 exempt
 # 率分項防大量靜默豁免）。cutoff 值＝AIR-224 baseline main commit b41b4ed1。
 CR_RECEIPT_CUTOFF = "b41b4ed1"
-LEGACY_EXEMPT_MARK = "legacy-exempt"
+# 章形收緊（fresh-F4/muse-F3＋muse-F8 行首錨定）：有效章＝行首
+# `legacy-exempt（cutoff=<cutoff>）` 逐字形（半形括號亦收）——scope prose 無意
+# 共現（同行含兩詞但非章形）不豁免也不誤報；行首起手而非章形＝exempt_invalid。
+LEGACY_EXEMPT_STAMP_RE = re.compile(
+    _LINE_ITEM_PREFIX
+    + r"legacy-exempt\s*[（(]\s*cutoff\s*=\s*"
+    + re.escape(CR_RECEIPT_CUTOFF)
+    + r"\s*[）)]"
+)
+LEGACY_EXEMPT_LINE_RE = re.compile(_LINE_ITEM_PREFIX + r"legacy-exempt\b")
+# 豁免面縮小（fresh-F4/muse-F3）：有效章僅放行三類「舊檔缺 receipt 語義」；
+# roster_malformed／orphan_leg／bad_route／degraded 無 reason／no_evidence／
+# ephemeral_evidence 照常查——自蓋章不全繞道。
+EXEMPTIBLE_VIOLATION_PREFIXES: tuple[str, ...] = (
+    "cr.receipt.roster_missing",
+    "cr.receipt.missing_leg",
+    "cr.receipt.missing_na",
+)
 
 # identity 錨兩形皆 canonical（F-3）：`reviewed revision：...`（歷史帳本形）與
 # `reviewed=<hash>`（canonical 模板 identity 行形）。
@@ -288,9 +315,10 @@ def scan_cr_receipts(
     return receipts, na
 
 
-def cr_receipt_violations(region: list[str], stage: str) -> list[str]:
-    """cr-receipt 檢查（EP S2 清單）——命中 trigger 腿缺 receipt／degraded 無
-    reason／n/a 缺顯式 sentinel／名冊缺場或孤兒腿／ephemeral evidence（converged）。"""
+def cr_receipt_violations(region: list[str]) -> list[str]:
+    """cr-receipt converged 面檢查（EP S2 清單；muse-F2 收斂——discovery 態不呼叫，
+    caller 以 stage gate）——命中 trigger 腿缺 receipt／degraded 無非空 reason／
+    n/a 缺顯式 sentinel／名冊缺場或孤兒腿／ephemeral evidence 拒收。"""
     violations: list[str] = []
     found, roster, malformed = parse_legs_roster(region)
     receipts, na = scan_cr_receipts(region)
@@ -327,14 +355,17 @@ def cr_receipt_violations(region: list[str], stage: str) -> list[str]:
             violations.append(f"cr.receipt.bad_route: {leg} route={route}")
             continue
         if route == "degraded":
-            if "reason=" not in payload:
+            # muse-F4：reason 值 strip 後須非空——`reason=`/`reason=  ` 不算附 reason
+            m = re.search(r"reason=([^|)]*)", payload)
+            reason = m.group(1).strip() if m else ""
+            if not reason:
                 violations.append(f"cr.receipt.degraded_no_reason: {leg}")
             continue
         m = re.search(r"evidence=([^|)]*)", payload)
         ref = m.group(1).strip() if m else ""
         if not ref:
             violations.append(f"cr.receipt.no_evidence: {leg}")
-        elif stage == "converged" and EPHEMERAL_BRIDGE_REF in ref:
+        elif EPHEMERAL_BRIDGE_REF in ref:
             violations.append(
                 f"cr.receipt.ephemeral_evidence: {leg}（WT-local job jsonl＝"
                 "ephemeral observation——不得滿足 converged receipt；durable "
@@ -454,21 +485,33 @@ def cmd_lint(text: str, name: str, stage: str = "converged") -> int:
     if not has_review_profile(region):
         violations.append("identity.missing_review_profile: 無 review_profile 行")
 
-    # legacy-exempt（AIR-224 fresh-F4）：有效章（marker＋cutoff 引用一致）豁免
-    # cr-receipt 檢查；章在場而缺 cutoff 引用＝無效豁免（禁自由豁免）
-    exempt_lines = [line for line in region if LEGACY_EXEMPT_MARK in line]
+    # legacy-exempt（AIR-224 fresh-F4/muse-F3）：章形收緊為行首
+    # `legacy-exempt（cutoff=<值>）` 逐字形（muse-F8 行首錨定——scope prose 無意
+    # 共現不豁免）；章在場而非章形＝無效豁免（禁自由豁免）
+    exempt_candidates = [line for line in region if LEGACY_EXEMPT_LINE_RE.search(line)]
     legacy_exempt = False
-    if exempt_lines:
-        if any(CR_RECEIPT_CUTOFF in line for line in exempt_lines):
+    if exempt_candidates:
+        if any(LEGACY_EXEMPT_STAMP_RE.search(line) for line in exempt_candidates):
             legacy_exempt = True
         else:
             violations.append(
-                "cr.receipt.exempt_invalid: legacy-exempt 章缺 cutoff="
-                f"{CR_RECEIPT_CUTOFF} 引用（機械錨不符——僅 reviewed 錨早於凍結 "
-                "cutoff 的帳本可蓋章）"
+                "cr.receipt.exempt_invalid: legacy-exempt 章形不符（須行首 "
+                "legacy-exempt（cutoff=" + CR_RECEIPT_CUTOFF + "）逐字形——機械錨"
+                "不符，禁自由豁免）"
             )
-    if not legacy_exempt:
-        violations.extend(cr_receipt_violations(region, stage))
+    if stage == "converged":
+        # muse-F2：cr-receipt 檢查收斂到 converged 面（discovery 只查 identity——
+        # post-build 階段 2 閘契約「只查 identity 錨＋欄位存在性」）
+        cr_violations = cr_receipt_violations(region)
+        if legacy_exempt:
+            # fresh-F4/muse-F3：豁免面縮小——僅放行三類「舊檔缺 receipt 語義」，
+            # 其餘（malformed/orphan/bad_route/degraded 無 reason/no_evidence）照常查
+            cr_violations = [
+                v
+                for v in cr_violations
+                if not v.startswith(EXEMPTIBLE_VIOLATION_PREFIXES)
+            ]
+        violations.extend(cr_violations)
 
     tables = [
         t

@@ -36,6 +36,28 @@ def fixture(name: str) -> Path:
     return FIXTURES / name
 
 
+def write_ledger(tmp_path: Path, header_lines: list[str], name: str = "ledger.md") -> Path:
+    """tmp_path 合成 canonical 帳本（不寫 fixtures 目錄——fresh-F6/muse-F9 衛生）。"""
+    lines = [
+        "# .review/tmp-synthetic.md — 測試即產帳本（不入 fixtures）",
+        "",
+        "- reviewed revision：fixture branch HEAD `f1f1f1f`＋uncommitted none",
+        "- scope：tests（tmp_path 合成帳本）",
+        "- review_profile：ordinary",
+        *header_lines,
+        "- writer：test",
+        "",
+        "## Finding Record",
+        "",
+        "| ID | 嚴重度 | 位置 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |",
+        "|---|---|---|---|---|---|---|---|",
+        "| F-01 | Important | a.py:1 | tmp fixture 資料 | 修法 | `true` | verified | ✅ |",
+    ]
+    p = tmp_path / name
+    p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return p
+
+
 def test_script_exists():
     assert SCRIPT.is_file(), f"缺少交付物：{SCRIPT}"
 
@@ -393,8 +415,10 @@ def test_amendment_ephemeral_bridge_ref_observation_ok_at_discovery():
     assert r.returncode == EXIT_OK, r.stdout + r.stderr
 
 
-def test_amendment_durable_ref_passes_converged():
-    # durable 形態（.agent-tmp artifact＋錨點）＝producer-issued durable ref 形狀
+def test_non_bridge_jsonl_ref_passes_converged():
+    # 僅驗 denylist 邊界（fresh-F3/muse-F7 誠實化）：非 .delegate-bridge/jobs/ 形
+    # ref（.agent-tmp artifact）在 converged 不被 ephemeral 檢查拒收——**非 durable
+    # 認證**（durable producer 另案；bridge 形 durable 正樣本待 producer 落地後補）
     r = run_cli("lint", fixture("cr-tc3-live-mcp-evidence.md"))
     assert r.returncode == EXIT_OK, r.stdout + r.stderr
 
@@ -422,20 +446,143 @@ def test_cr_receipt_cutoff_constant_defined():
     assert re.fullmatch(r"[0-9a-f]{7,40}", mod.CR_RECEIPT_CUTOFF)
 
 
-def test_cr_orphan_receipt_leg_fails():
-    # 名冊無此腿＝lint FAIL（receipt 以 leg key join 名冊）
+def test_cr_orphan_receipt_leg_fails(tmp_path):
+    # 名冊無此腿＝lint FAIL（receipt 以 leg key join 名冊）——orphan 帳本寫 tmp_path
+    #（fresh-F6/muse-F9：不再寫 fixtures 目錄，kill 即殘留／平行 hazard 收敛）
     r = run_cli("lint", fixture("cr-tc3-live-mcp-evidence.md"))
     assert r.returncode == EXIT_OK  # sanity：原檔過
     patched = (FIXTURES / "cr-tc3-live-mcp-evidence.md").read_text().replace(
         "legs：L1 fixture-job-tc3a trigger", "legs：L9 fixture-job-tc3a trigger"
     )
-    tmp = FIXTURES / "cr-tmp-orphan.md"
+    tmp = tmp_path / "cr-orphan.md"
     tmp.write_text(patched, encoding="utf-8")
-    try:
-        r2 = run_cli("lint", tmp)
-        assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
-        assert "cr.receipt.orphan_leg" in r2.stdout
-        assert "L1" in r2.stdout
-    finally:
-        tmp.unlink()
+    r2 = run_cli("lint", tmp)
+    assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+    assert "cr.receipt.orphan_leg" in r2.stdout
+    assert "L1" in r2.stdout
+
+
+# ---------- AIR-224 修復輪（fresh F1-F7＋muse F1-F9 verdict 合併——fix tests） ----------
+
+
+def test_slash_leg_key_roster_receipt_join_passes(tmp_path):
+    # fresh-F2：grammar 佔位符＝<family/leg>（如 muse/L1）——charclass 排除 / 會
+    # 同檔出 missing_leg: muse/L1＋orphan_leg: L1（join 破裂）；名冊與 receipt
+    # 同 slash key 須 join 成功 PASS
+    ledger = write_ledger(
+        tmp_path,
+        (
+            "- legs：muse/L1 fixture-job-slash trigger",
+            "- muse/L1: cr(route=live-cr:MCP, evidence=docs/provenance.md)",
+        ),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "missing_leg" not in r.stdout
+    assert "orphan_leg" not in r.stdout
+
+
+def test_air91_roster_precedent_shape_is_malformed():
+    # fresh-F5/muse-F1：air-91 `legs：` 行是概念先例——舊形 items 無 trigger|n/a
+    # 尾 tag，新 grammar 下＝roster_malformed（以 parser 實際行為為 oracle 釘死，
+    # 防條文先例措辭與實作再漂移）
+    r = run_cli("lint", fixture("air-91.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.roster_malformed" in r.stdout
+
+
+def test_cr_receipt_skipped_at_discovery():
+    # muse-F2：discovery 態不查 cr receipt（TC-1 fixture 缺 receipt——discovery 過，
+    # 對齊 post-build 階段 2「只查 identity 錨＋欄位存在性」契約）
+    r = run_cli("lint", fixture("cr-tc1-missing-receipt.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "cr.receipt." not in r.stdout
+
+
+def test_cr_receipt_checked_at_converged():
+    # muse-F2：converged 對同 fixture 全查——缺 receipt 照 FAIL
+    r = run_cli("lint", fixture("cr-tc1-missing-receipt.md"), "--stage", "converged")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.missing_leg" in r.stdout
+
+
+def test_degraded_empty_reason_fails(tmp_path):
+    # muse-F4：degraded reason= 值 strip 後須非空——空值不算附 reason
+    ledger = write_ledger(
+        tmp_path,
+        ("- legs：L1 job-g trigger", "- L1: cr(route=degraded, reason=)"),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.degraded_no_reason" in r.stdout
+
+
+def test_bare_live_cr_receipt_rejected_as_bad_route(tmp_path):
+    # muse-F6 pin：WO route 宣告面可 bare `live-cr`（dispatch 時解析），ledger
+    # receipt 落帳 face 必已解析——bare 於 receipt＝bad_route（鎖現行 parser 行為防漂移）
+    ledger = write_ledger(
+        tmp_path,
+        ("- legs：L1 job-i trigger", "- L1: cr(route=live-cr, evidence=docs/a.md)"),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.bad_route" in r.stdout
+
+
+def test_phantom_grammar_prose_not_counted_as_receipt_or_roster(tmp_path):
+    # muse-F8：identity 區 prose（scope 行等）內嵌 grammar 文本不計入 receipt、
+    # 不誤解析名冊——合成帳本 lint 仍報 roster_missing、無 orphan
+    ledger = write_ledger(
+        tmp_path,
+        (
+            "- scope：本契約收 `cr(route=live-cr:MCP, evidence=doc)` 語法（格式說明非 receipt）",
+            "- 本契約的 legs：X1 job-p trigger 也是格式說明（非名冊行）",
+        ),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.roster_missing" in r.stdout
+    assert "orphan_leg" not in r.stdout
+    assert "roster_malformed" not in r.stdout
+
+
+def test_exempt_prose_cooccurrence_not_exempted(tmp_path):
+    # fresh-F4 ①：scope 行含兩詞（legacy-exempt＋cutoff=b41b4ed1）非章形——
+    # 不豁免（cr 檢查照跑）、也不誤報章無效
+    ledger = write_ledger(
+        tmp_path,
+        ("- scope：tests（legacy-exempt 且 cutoff=b41b4ed1 字樣共現——非章形）",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.roster_missing" in r.stdout
+    assert "exempt_invalid" not in r.stdout
+
+
+def test_exempt_stamp_does_not_bypass_non_exemptible(tmp_path):
+    # fresh-F4 ②：自蓋章不全繞道——degraded 無 reason fixture＋有效章，
+    # degraded_no_reason 照常 FAIL（豁免面僅三類舊檔缺 receipt 語義）
+    stamped = (FIXTURES / "cr-tc2-degraded-no-reason.md").read_text().replace(
+        "- writer：fixture",
+        "- legacy-exempt（cutoff=b41b4ed1）\n- writer：fixture",
+    )
+    p = tmp_path / "tc2a-stamped.md"
+    p.write_text(stamped, encoding="utf-8")
+    r = run_cli("lint", p)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.degraded_no_reason" in r.stdout
+
+
+def test_exempt_stamp_covers_missing_receipt_semantics(tmp_path):
+    # 豁免面正向邊界（ticket 核准集 roster_missing/missing_leg/missing_na）：
+    # TC-1 fixture 唯一 violation＝missing_leg（舊檔缺 receipt 語義）——蓋有效章
+    # 後放行 exit 0；非豁免類的「蓋章仍 FAIL」由上一測承載
+    stamped = (FIXTURES / "cr-tc1-missing-receipt.md").read_text().replace(
+        "- writer：fixture",
+        "- legacy-exempt（cutoff=b41b4ed1）\n- writer：fixture",
+    )
+    p = tmp_path / "tc1-stamped.md"
+    p.write_text(stamped, encoding="utf-8")
+    r = run_cli("lint", p)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
 
