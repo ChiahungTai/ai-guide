@@ -177,6 +177,30 @@ def test_render_claude_full_pins_alias_and_strips_cr_mcp(repo: Path):
     assert "mcp__context7__query-docs" in rendered
 
 
+def test_render_claude_strips_lsp_bridge_prefix(repo: Path):
+    """AIR-227：lsp-bridge（同 plugin 第二 server）全名同屬 ZCode-only 接線
+    ——claude 投影剝除、zcode 保留。lsp 前綴不匹配 `...code-reality__`
+    單前綴 startswith（`-lsp-bridge__` vs `__`），以前綴表承載。"""
+    role = ROLE_FULL.replace(
+        "mcp__plugin_code-reality_code-reality__refs",
+        "mcp__plugin_code-reality_code-reality__refs, "
+        "mcp__plugin_code-reality_code-reality-lsp-bridge__hover, "
+        "mcp__plugin_code-reality_code-reality-lsp-bridge__check_file",
+    )
+    binding, effort = pins(repo, "t-full", "claude")
+    rendered = sync.render_registry("t-full", role, "claude", binding, effort)
+    assert "mcp__plugin_code-reality_code-reality-lsp-bridge__" not in rendered
+    assert "mcp__plugin_code-reality_code-reality__" not in rendered
+    # 非 CR 的 MCP 全名保留（context7）
+    assert "mcp__context7__query-docs" in rendered
+    z_binding, z_effort = pins(repo, "t-full", "zcode")
+    z_rendered = sync.render_registry("t-full", role, "zcode", z_binding, z_effort)
+    assert "mcp__plugin_code-reality_code-reality-lsp-bridge__hover" in z_rendered
+    assert (
+        "mcp__plugin_code-reality_code-reality-lsp-bridge__check_file" in z_rendered
+    )
+
+
 def test_render_claude_lite_inherit_no_pins(repo: Path):
     """lite 在 claude 端無 default binding＝inherit（spawn-time model/effort）。"""
     binding, effort = pins(repo, "t-lite", "claude")

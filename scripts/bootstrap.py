@@ -7,7 +7,9 @@
   Phase 1 preflight——uv 在 PATH、repo root（.git）、G1 secrets（<repo>/
   settings.json gitignored local-only——缺席＝WARN 不擋（AIR-222：dormant
   資產，CC face 已退役〔AIR-215〕非新機必需；在場照驗；不自動建不代寫，
-  拍板①降級）、hooksPath（非 .githooks＝WARN 列修復指引，G3）、
+  拍板①降級）、TS backend（typescript-language-server 缺席＝WARN 不擋，
+  AIR-227——lsp-bridge 的 .ts 面偵測；不安裝不自動補，安裝路徑歸
+  code-reality backend discovery contract）、hooksPath（非 .githooks＝WARN 列修復指引，G3）、
   muse CLI（缺席＝FAIL——installer memory face 前置，R2 codex#4）、
   canonical checkout（git rev-parse --git-dir 含 worktrees 節／與
   --git-common-dir 不等＝linked worktree → FAIL——card WT 安裝會在共享
@@ -171,6 +173,23 @@ def preflight() -> bool:
             "歷史資產，CC face 已退役〔AIR-215〕；不擋；從舊機拷貝供偶用"
             "回滾與歷史 "
             "sessions 參照；不自動建、不代寫）",
+        )
+
+    ts_server = shutil.which("typescript-language-server")
+    if ts_server:
+        _probe("PASS", "ts-backend", ts_server)
+    else:
+        # AIR-227：TS backend 偵測（WARN 形態比照 G1-secrets 先例——缺席不擋）。
+        # lsp-bridge 的 .ts 面依賴 typescript-language-server，缺席只降級 TS 面
+        # 診斷（Python 面不受影響）；不安裝不自動補——安裝 ownership 歸
+        # code-reality backend discovery contract。
+        _probe(
+            "WARN",
+            "ts-backend",
+            "typescript-language-server 不在 PATH——lsp-bridge 的 .ts 面診斷"
+            "缺席（Python 面不受影響）；不安裝不自動補，安裝路徑歸 code-reality "
+            "backend discovery contract（skills/code-reality/SKILL.md；"
+            "裝後以 lsp-bridge lsp_status 驗證）",
         )
 
     muse_path = shutil.which("muse")

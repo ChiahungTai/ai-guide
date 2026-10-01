@@ -115,7 +115,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 1. 讀取 Execution Plan（**card-first**：弧身份第一優先＝TaskRef（backlog 卡）——卡 Plan 段為主路徑 plan source；`<task>/ep.md` 讀取＝條件分支（該弧原有 EP 時照舊，legacy 詳細 plan/evidence owner），探測：`ai-analysis/_tasks/`／`ai-analysis/_projects/<線>/tasks/`／否則 repo-root `00-tasks/`，單一源見 [illustrate html-mode](../_common/illustrate-html-mode.md)「產物位置分流」任務家探測 resolver；與 Report Shell 同 task 目錄——一弧全生命檔案同處；舊 `ai-analysis/execution-plans/` 慣例退役），識別段落結構、依賴關係
 2. **backlog 卡狀態更新**（repo 有 `backlog/` 時）：EP 對應卡翻進行中——`backlog task edit <id> -s "In Progress"`（＋開工雙 ref，合約見 [kanban-board](../kanban-board/SKILL.md)）；無 `backlog/` → 容錯跳過（進行中由任務目錄存在性表達；結算在階段 5a）
-3. **深度查證現有程式碼**（不同於階段 0 的 drift 快掃，此處是理解程式碼上下文與設計意圖）。LSP `goToDefinition` 驗證 dependency anchors 的定義端，`findReferences` 驗證消費端，`hover` 確認關鍵參數型別——三者對不同 anchor 獨立，同 block 併發（[tool-discipline](../../rules/tool-discipline.md) 批次化）
+3. **深度查證現有程式碼**（不同於階段 0 的 drift 快掃，此處是理解程式碼上下文與設計意圖）。載體語義分工（AIR-227）：**結構面**——dependency anchors 的定義端與消費端（definition/references/callers）走 CR 圖譜查詢；**live 型別/簽名面**——關鍵參數型別走 lsp-bridge `hover`／`check_file`（lsp-bridge 無 goToDefinition/findReferences 操作——「用 LSP 查引用/定義」泛稱是無載體指令，會靜默滑向 rg；路由單一源＝[symbol-query-routing](../symbol-query-routing/SKILL.md)）。不同查證對不同 anchor 獨立，同 block 併發（[tool-discipline](../../rules/tool-discipline.md) 批次化）
 4. **POC + demo 盤點**：掃描 `poc/**/*.py`、`demo_*.py`、`scripts/demo_*.py`、`notebooks/*.ipynb`，建立 `{module} → [poc/demo paths]` 映射表
 5. 檢查清單：Kanban InProgress ✓ | POC/demo 映射表 ✓ | 測試檔案 ✓ | instruction 檔同步 ✓ | 依賴完整 ✓
 
@@ -183,7 +183,7 @@ Workflow 審查協調：[workflow-review-pattern.md](../_common/workflow-review-
 
 #### 驗證
 
-每段完成後：**整合路徑覆蓋檢查**（rg）與機械驗證**組合命令**同 block 併發（一次 call 取代逐條，見 [tool-discipline](../../rules/tool-discipline.md)「獨立呼叫批次化」）：`mkdir -p .agent-tmp; uv run ruff check --fix . > .agent-tmp/v.out 2>&1 || echo "ruff:FAIL"; uv run ruff format . >> .agent-tmp/v.out 2>&1 || echo "fmt:FAIL"; uv run mypy . > .agent-tmp/m.out 2>&1 || echo "mypy:FAIL"; uv run pytest <test> -v > .agent-tmp/p.out 2>&1 || echo "pytest:FAIL"`——無 FAIL 行 = 全綠，輸出重導檔案再 Read（段級短測試隨組合跑；全量背景跑在階段 3）。LSP diagnostics 被動推送不耗 request。之後 POC/demo 驗證
+每段完成後：**整合路徑覆蓋檢查**（rg）與機械驗證**組合命令**同 block 併發（一次 call 取代逐條，見 [tool-discipline](../../rules/tool-discipline.md)「獨立呼叫批次化」）：`mkdir -p .agent-tmp; uv run ruff check --fix . > .agent-tmp/v.out 2>&1 || echo "ruff:FAIL"; uv run ruff format . >> .agent-tmp/v.out 2>&1 || echo "fmt:FAIL"`——format 落盤後、mypy 前對**每個改動檔**跑 lsp-bridge `check_file`（MCP 呼叫，改動檔即時型別診斷；AIR-227——對齊 [symbol-query-routing](../symbol-query-routing/SKILL.md)「編輯後驗證順序」既有 doctrine（Edit → ruff → check_file → mypy → pytest）的 drift 修復；diagnostics 不取代 mypy——mypy 仍是 authority；bridge 缺席跳過不擋、降級註記）——再 `uv run mypy . > .agent-tmp/m.out 2>&1 || echo "mypy:FAIL"; uv run pytest <test> -v > .agent-tmp/p.out 2>&1 || echo "pytest:FAIL"`——無 FAIL 行 = 全綠，輸出重導檔案再 Read（段級短測試隨組合跑；全量背景跑在階段 3）。LSP diagnostics 被動推送不耗 request。之後 POC/demo 驗證
 
 > ⚠️ **mypy/pytest 閘門禁 `| tail/grep`**（exit code 被遮蔽 → 誤判通過，見 [bash-hard-rules](../../rules/bash-hard-rules.md)）；看 output 重導檔案再 Read。
 

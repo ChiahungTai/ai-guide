@@ -105,11 +105,11 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 
 ## 查證工具指定
 
-> 符號引用查證 cr-first（index 在場用 cr `refs`；缺場退 LSP `findReferences`），rg 文字搜尋易 pattern 失誤。完整工具決策樹見 [symbol-query-routing](../../rules/symbol-query-routing.md)。
+> 符號引用查證 cr-first（index 在場用 cr `refs`；缺場退 references 是 **carrier-aware** 的（AIR-227）——僅限有**原生 `findReferences` surface** 的 harness；code-reality-lsp-bridge **無 references 操作、不得冒充**〔型別/簽名面才走 lsp-bridge `hover`／`check_file`〕，無原生面時退 rg 互補腿），rg 文字搜尋易 pattern 失誤。完整工具決策樹見 [symbol-query-routing](../../rules/symbol-query-routing.md)。
 
 | 查證對象 | 必用工具 | 禁止 |
 |---------|---------|------|
-| 「X class/function 是否存在」「X 在哪裡被引用 / 建構 / 呼叫」 | **LSP `findReferences` / `goToDefinition` / `workspaceSymbol`** | 單一 rg pattern 0 hits 就下結論「不存在」|
+| 「X class/function 是否存在」「X 在哪裡被引用 / 建構 / 呼叫」 | **原生 LSP `findReferences` / `goToDefinition` / `workspaceSymbol`（carrier-aware——僅限有原生 LSP surface 的 harness；lsp-bridge 無此二操作，型別/簽名面走 `hover`／`check_file`）** | 單一 rg pattern 0 hits 就下結論「不存在」|
 | 「X 字串 / 註解 / config 值是否存在」 | rg | — |
 | 「名為 test_X 的檔案是否存在」 | `fd -g "test_X.py"` + `ls <expected_dir>/` 雙查 | 單一 `fd "test_X"` 無結果就下結論 |
 
@@ -117,11 +117,11 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 
 **「找不到」不等於「不存在」**。通用自我否證義務（換工具 / pattern / 位置；三工具都 0 hits 只能標「查證失敗」，禁止標「不存在」）見 [review-engine](../review-engine/SKILL.md)。
 
-**judge-review 場景應用**：評估 AI 審查建議時，建議宣稱「X 不存在 / 無引用 / 無建構點」→ 必須獨立查證（LSP `findReferences` / `workspaceSymbol`），0 hits 換工具再查，仍 0 hits 才標「查證失敗」→ **禁止把「自己沒查到」誤判為「程式碼不存在」就 ❌ 不採納**（查證者可能是 pattern 失誤，非程式碼不存在；真實案例：審查者 rg 稱某 class 無建構點，獨立 LSP 查證立刻列出 import + 建構行）。
+**judge-review 場景應用**：評估 AI 審查建議時，建議宣稱「X 不存在 / 無引用 / 無建構點」→ 必須獨立查證（原生 LSP `findReferences` / `workspaceSymbol`——carrier-aware：僅限有原生 LSP surface 的 harness，lsp-bridge 無 references 不得冒充〔型別/簽名面才走 lsp-bridge〕），0 hits 換工具再查，仍 0 hits 才標「查證失敗」→ **禁止把「自己沒查到」誤判為「程式碼不存在」就 ❌ 不採納**（查證者可能是 pattern 失誤，非程式碼不存在；真實案例：審查者 rg 稱某 class 無建構點，獨立 LSP 查證立刻列出 import + 建構行）。
 
 ### negative-claim findings 的裁決驗證（cr-audit R1）
 
-finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響 X）→ 採納前用 CR `callers`／`impact_radius` 實測複核（engine 缺場退 LSP `findReferences`＋rg 互補腿——見 [cr-query](../cr-query/SKILL.md) GATE）；**rg 單腿論證不可作為採納依據**（rg parity 例外只適用 positive lookup——「找到 3 個」≠「只有 3 個」；canonical 條文＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）。EP／研究面的同族宣稱（claim 四欄結構）見 [execution-plan](../execution-plan/SKILL.md) 段落 0。
+finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響 X）→ 採納前用 CR `callers`／`impact_radius` 實測複核（engine 缺場退 references 僅限**原生 `findReferences` surface** 的 harness——lsp-bridge 無 references 不得冒充，無原生面退 rg＋互補腿——見 [cr-query](../cr-query/SKILL.md) GATE）；**rg 單腿論證不可作為採納依據**（rg parity 例外只適用 positive lookup——「找到 3 個」≠「只有 3 個」；canonical 條文＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）。EP／研究面的同族宣稱（claim 四欄結構）見 [execution-plan](../execution-plan/SKILL.md) 段落 0。
 
 ## 收線 receipt gate（AIR-224）
 
