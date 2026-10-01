@@ -90,12 +90,12 @@ Two facts backends, complementary not competing:
 
 ## card-WT 結構證據供給（AIR-228）
 
-卡弧在 card WT（`scripts/wt-open.sh` 形態——開卡不建 graph，fast path 保持）的結構證據供給判定：**trigger 不是生命週期事件，是 evidence demand**——查證需求出現才背景補建，single-flight 一次為限。
+卡弧在 card WT（`scripts/wt-open.sh` 形態——開卡不建 graph，fast path 保持）的結構證據供給判定：**trigger 不是生命週期事件，是 evidence demand**——查證需求出現才背景補建，single-flight（併發觸發共享同一 in-flight build；無 fresh graph 可用時才啟動；graph 再轉 stale 時新 demand 可再啟）。
 
-- **committed-baseline 借用判準**：WT 缺自有 graph（`<wt>/.code-reality/graph.db` 不在）或 freshness≠true（`code-reality freshness --repo <wt> --json`）時，**正向 lookup**（理解既有 symbol／確認存在性——不涉 current-tree 改判）可借主 checkout graph 消費——`code-reality <tool> --repo <primary>`；借用姿態（`serves=committed-baseline`）與禁同步 rebuild 同上「Worktree 借用處方（AIR-206）」，receipt 註明 `baseline-borrowed`（provenance 標註面，非 route 值域擴張——凍結 grammar 不動）。
-- **current-tree demand trigger（列舉式——命中任一即必須 current-tree 證據，baseline 借用不足）**：①branch 新增/修改 symbol 的 refs／callers／closure／impact 查證（借來的 graph 對 WT branch commits 與 dirty tree 無 source relation）；②negative/exhaustive verdict——零 caller／唯一消費者／可刪／不影響 X（AIR-206 同禁）。命中而 WT graph 缺席或 stale → **single-flight 背景 build**：`code-reality build --repo <wt>` 背景執行一次；已在跑不重啟（build 冪等，重複觸發收斂同一結果）；**禁同步阻塞等 build**（dispatch 同步面＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」的背景 rebuild 語義）。
+- **committed-baseline 借用判準**：WT 缺自有 graph（`<wt>/.code-reality/graph.db` 不在）或 freshness≠true（`code-reality freshness --repo <wt> --json`）時，**正向 lookup**（理解既有 symbol／確認存在性——不涉 current-tree 改判）可借主 checkout graph 消費——`code-reality <tool> --repo <primary>`；借用姿態（`serves=committed-baseline`）與禁同步 rebuild 同上「Worktree 借用處方（AIR-206）」，receipt 註明採單一機械格式：payload 內 `evidence=<ref>, provenance=baseline-borrowed`（逗號+空格+鍵值；provenance 標註面，非 route 值域擴張——凍結 grammar 不動；lint 將其吸入 evidence 值屬已知且可接受——格式凍結後消費端可機械剝離後綴）。
+- **current-tree demand trigger（列舉式——命中任一即必須 current-tree 證據，baseline 借用不足）**：①branch 新增/修改 symbol 的 refs／callers／closure／impact 查證（借來的 graph 對 WT branch commits 與 dirty tree 無 source relation）；②negative/exhaustive verdict——零 caller／唯一消費者／可刪／不影響 X（AIR-206 同禁）。命中而 WT graph 缺席或 stale → **single-flight 背景 build**：`code-reality build --repo <wt>`（＝graph_db build 傘形——code-reality SKILL.md:58 主入口）背景執行一次；已在跑不重啟（build 冪等，重複觸發收斂同一結果）；**禁同步阻塞等 build**（dispatch 同步面＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」的背景 rebuild 語義）。
 - **build 失敗語義（不擋開工、不擋實作——只限證據權限）**：該次查證走 degraded 路線——受影響 claim 逐條 `unverified-by-graph`＋negative structural verdict **不得 terminal 收斂**（與 AIR-224 receipt 模型相容：`cr(route=degraded, reason=…)` 承載）；degraded reason 建議值＝`WT-graph-absent`／`WT-graph-stale`（本節區域慣例——供 AIR-224.1 觀察窗 telemetry 區分「WT graph 缺席/過期」降級成因；reason 值面本為自由承載，不動 [workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar）。
-- **升級語義**：背景 build 成功且 freshness=true 後，後續查證升級 current-tree evidence（同 symbol 重查即得 current-tree verdict，先前的 baseline-borrowed 標註不再適用）。
+- **升級語義**：背景 build 成功且 freshness=true 後，後續查證升級 current-tree evidence（同 symbol 重查即得 current-tree verdict，先前的 baseline-borrowed 標註不再適用）。升級 current-tree 後舊標註辨識＝剝離 `, provenance=baseline-borrowed` 後綴；lint/cr_usage 感知面歸 AIR-224.1 觀察窗或後續弧。
 
 ## 🔴 Anti-over-reliance (the failure this skill prevents)
 
