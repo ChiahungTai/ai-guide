@@ -4,7 +4,7 @@ title: LSP live type/signature 接線——roles 白名單＋workflow 觸點＋�
 status: In Progress
 assignee: []
 created_date: '2026-10-01 22:16'
-updated_date: '2026-10-01 22:34'
+updated_date: '2026-10-01 22:41'
 labels: []
 dependencies: []
 ordinal: 214000
@@ -41,4 +41,6 @@ flowchart LR
 G4 去向（muse verdict 點 6 代記）：TS backend 缺口的長期載體＝bootstrap ts-backend WARN 偵測（本卡落地）＋安裝 ownership 歸 code-reality backend discovery contract／TS 消費端 repo；不做一次性 npm -g（machine-local 換機即失）。live spawn 驗證（muse AC5）延後至 merge 後——~/.zcode/agents symlink 指 primary canonical main 面，卡 branch 未 merge 前新白名單不進 spawn 快照；post-merge 補 code-reviewer 試調 hover receipt。
 
 雙腿審查收齊：fresh GO-WITH-FIXES（F1 Important＝agents/AGENTS.md:22 已知刻意分歧條 stale 枚舉未同步雙前綴表＋F2 bootstrap hint 指向自鑄詞＋F4 implement 句首過度宣稱＋F3 pre-existing 泛稱語料五處）／muse GO（AC 兌現全獨立驗證；F4 偏差正確從卡；207 tests 經 log+算術佐證）。judge 裁決：F1/F2/F4 修（flash 修復腿跑中）；F3 記值星批次泛稱語料清理項不擴卡 scope（execution-plan:237/:276、cr-query:47-48/:112、ep-review:74/:86、fix-test:204）。附帶實證：fresh 審查 session 自身＝query face 在場 lsp-bridge 缺席快照——muse 前腿炸彈組合預言成立，agent-workflow 半句緩解面對應正確。verdicts 存檔 .agent-tmp/air-227/。
+
+【收斂態落卡（AIR-121/224）】[air-227.md] findings=5 tables=1 decisions ✅=4/❌=1/⚠️=0/unknown=0 (source=決策) status resolved=1/verified=3/closed=1/open=0/unknown=0 未決=0 unparsed=0
 <!-- SECTION:NOTES:END -->
