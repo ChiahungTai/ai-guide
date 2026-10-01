@@ -4,7 +4,7 @@ title: CC 退役家事三小改——bootstrap-G1-降-WARN＋真-L1-缺席補測
 status: In Progress
 assignee: []
 created_date: '2026-10-01 01:45'
-updated_date: '2026-10-01 01:46'
+updated_date: '2026-10-01 02:18'
 labels: []
 dependencies: []
 references:
@@ -31,9 +31,9 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 G1：fixture 其他 prerequisite 全綠＋settings 缺席→bootstrap 不因 G1 非零退出＋輸出 WARN G1-secrets；在場→PASS；既有 fail-loud test :69 改 warning oracle 綠；bootstrap.py 說明/Phase 5 列印/MULTI-MACHINE.md/:253 清單行同步（rg preflight-已擋缺席 零殘留）
-- [ ] #2 L1：config 在場且合法＋刪一個 owned hook group→probe_codex/monitor 路徑得 FAIL/EXIT_DRIFT＋[L1] MISSING；與 :361 既有 target-缺席測試分離並存
-- [ ] #3 routing：:185 rescue 列載具註記與 :132 standing policy 一致（bridge-dispatch 複驗紀錄在場）；同檔 consistency scan 無相反語義
+- [x] #1 G1：fixture 其他 prerequisite 全綠＋settings 缺席→bootstrap 不因 G1 非零退出＋輸出 WARN G1-secrets；在場→PASS；既有 fail-loud test :69 改 warning oracle 綠；bootstrap.py 說明/Phase 5 列印/MULTI-MACHINE.md/:253 清單行同步（rg preflight-已擋缺席 零殘留）
+- [x] #2 L1：config 在場且合法＋刪一個 owned hook group→probe_codex/monitor 路徑得 FAIL/EXIT_DRIFT＋[L1] MISSING；與 :361 既有 target-缺席測試分離並存
+- [x] #3 routing：:185 rescue 列載具註記與 :132 standing policy 一致（bridge-dispatch 複驗紀錄在場）；同檔 consistency scan 無相反語義
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -47,3 +47,9 @@ flowchart LR
 **Integration**：bootstrap 新機流程、monitor 日檢語義（221 後）。
 **驗證式**：AC 三組。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【1001 收線結算】實作＝flash 三改（RED→GREEN：G1 fail-loud test 改 warning oracle 1 failed→20 passed；真 L1 group 缺席 case 斷言集僅 MISSING 分支可產出非恆綠；rescue 列經 bridge-dispatch 複驗後寫入）；審查＝fresh **GO**（零 Critical——獨立複跑 53 tests＋intact-config 判別力直證＋ loud→silent lens 認定安全〔零機械消費端＋訊號保留〕）＋intent 腿 ALIGNED-WITH-NOTES（四軸全對齊）→judge 採 F-1/F-2 兩行 polish＋F-3 結案 notes，F4-F6 放生。回執四欄：classification=boundary（bootstrap gate 語義＋model-routing instruction sync）／review=fresh GO＋intent ALIGNED（evidence .agent-tmp/air-222/landed.diff＋review 紀錄）／session-freshness=fresh／deployment-surfaces=N-A（本地腳本與文檔；bootstrap 非 deploy 面）。
+<!-- SECTION:NOTES:END -->
