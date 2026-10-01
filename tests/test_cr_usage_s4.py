@@ -65,6 +65,7 @@ def test_scan_receipt_ledgers_golden(cr_usage, tmp_path, monkeypatch):
     assert out["eligible"] == 4
     assert out["receipts"] == 3
     assert out["degraded"] == 1
+    assert out["degraded_reasons"] == {"no-cr-query-face": 1}
     assert out["na_receipts"] == 1
     assert out["closures"] == 1
     assert out["silent_fallback"] == 1
@@ -141,6 +142,26 @@ def test_scan_receipt_ledgers_exempt_stamp_shape_gated(
     assert out["ledgers"] == 2
     assert out["exempt_ledgers"] == 1  # 只有 stamped.md 章形匹配
     assert out["silent_fallback"] == 1  # prose-exempt.md 的 L1 無 receipt
+
+
+def test_scan_receipt_ledgers_degraded_reason_histogram(cr_usage, tmp_path, monkeypatch):
+    """AIR-228：degraded receipt 的 reason 值 histogram 分項——WT-graph-absent
+    （card WT 缺 graph 降級成因）與既有 no-cr-query-face 各自獨立計數，
+    last-wins 口徑同七分項（最終 route=degraded 的腿才計）。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "wt-degraded.md").write_text(
+        "# .review/wt-degraded.md — golden fixture\n"
+        "- legs：L1 job-a trigger；L2 job-b trigger\n"
+        "- L1: cr(route=degraded, reason=WT-graph-absent)\n"
+        "- L2: cr(route=degraded, reason=no-cr-query-face)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["degraded"] == 2
+    assert out["degraded_reasons"]["WT-graph-absent"] == 1
+    assert out["degraded_reasons"]["no-cr-query-face"] == 1
 
 
 def test_scan_brief_routes_golden(cr_usage, tmp_path, monkeypatch):

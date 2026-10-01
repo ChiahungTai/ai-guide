@@ -18,7 +18,9 @@ output.txt`（mtime 窗）同指紋——output face 只有文字，一律計 ev
 （mtime 窗；帳本隨 commit 清除，窗口內在場者才計——durable 觀察面歸卡／EP
 notes，非本腳本掃描面）掃 legs 名冊／per-leg cr receipt／cr-closure／
 legacy-exempt 章計七分項（eligible／declared／observed-evidence／receipt／
-degraded／N-A／silent fallback 各獨立計數）；bridge brief route 宣告掃 jobs
+degraded／N-A／silent fallback 各獨立計數）；degraded receipt 另出 reason=
+值 histogram 分項（AIR-228——WT-graph-absent／WT-graph-stale／
+no-cr-query-face／其他，觀察窗區分 WT graph 缺席/過期降級成因）；bridge brief route 宣告掃 jobs
 jsonl `turn.input.user` payload prompt（不掃全檔文字——skill 條文流經
 task.lifecycle.output 的誤報是审计實證主體）；in-harness crsurface 分布掃 db
 part 文字。SM-6 宣告 vs 實呼 histogram 歸收線核對手工貼卡（禁腳本化——
@@ -75,6 +77,10 @@ CR_RECEIPT_RE = re.compile(
     + r"(?P<leg>[A-Za-z0-9_./-]+)\s*:\s*"
     + r"cr\(route=(?P<route>[a-z-]+(?::MCP|:CLI)?)\s*,\s*(?P<payload>[^)]*)\)"
 )
+# degraded receipt 的 reason 值抽取（AIR-228 分項 histogram 原料）——payload 內
+# `reason=<why>` 值截到分隔符（逗號／分號，中西形）；缺席＝空值（reason 缺席面歸
+# 「其他」桶，機械驗收歸 review_ledger lint——本腳本只計數）。
+DEGRADED_REASON_RE = re.compile(r"reason[=：:]\s*(?P<reason>[^,，；;]+)")
 CR_NA_RE = re.compile(
     _LINE_ITEM_PREFIX + r"(?:[A-Za-z0-9_./-]+)\s*:\s*cr:\s*n/a\s*[（(]reason="
 )
@@ -109,6 +115,7 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         "na_legs": 0,
         "receipts": 0,
         "degraded": 0,
+        "degraded_reasons": {},
         "na_receipts": 0,
         "closures": 0,
         "silent_fallback": 0,
@@ -130,6 +137,7 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         rec["ledgers"] += 1
         roster: dict[str, str] = {}
         receipt_routes: dict[str, str] = {}
+        receipt_reasons: dict[str, str] = {}
         na_receipts = closures = ephemeral = 0
         exempt_stamp = False
         for line in text.splitlines():
@@ -141,6 +149,10 @@ def scan_receipt_ledgers(since_s: float) -> dict:
                         roster[parts[0]] = parts[-1]
             for rm in CR_RECEIPT_RE.finditer(line):
                 receipt_routes[rm.group("leg")] = rm.group("route")
+                rrm = DEGRADED_REASON_RE.search(rm.group("payload"))
+                receipt_reasons[rm.group("leg")] = (
+                    rrm.group("reason").strip() if rrm else ""
+                )
             na_receipts += len(CR_NA_RE.findall(line))
             cm = CR_CLOSURE_RE.search(line)
             if cm:
@@ -155,6 +167,12 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         na_legs = sum(1 for tag in roster.values() if tag == "n/a")
         receipts = len(receipt_routes)
         degraded = sum(1 for route in receipt_routes.values() if route == "degraded")
+        # AIR-228：degraded receipt 的 reason 值 histogram（last-wins 同七分項
+        # 口徑——只計最終 route=degraded 的腿；reason 缺席歸「其他」桶）
+        for leg, route in receipt_routes.items():
+            if route == "degraded":
+                val = receipt_reasons.get(leg, "") or "reason-missing"
+                out["degraded_reasons"][val] = out["degraded_reasons"].get(val, 0) + 1
         # silent fallback（AT-1）＝名冊 trigger 腿無對應 receipt；孤兒 receipt 不抵扣
         silent = sum(
             1
@@ -438,6 +456,19 @@ def main() -> int:
     print(f"observed-evidence\t源2 call-evidence jobs={b['call_jobs']}")
     print(f"receipt\t{ledg['receipts']}")
     print(f"degraded\t{ledg['degraded']}（receipt 內 degraded route——fresh-F7 獨立分項行）")
+    known_reasons = ("WT-graph-absent", "WT-graph-stale", "no-cr-query-face")
+    for key in known_reasons:
+        print(f"degraded-reason\t{ledg['degraded_reasons'].get(key, 0)}\t{key}")
+    other_reasons = {
+        k: v for k, v in ledg["degraded_reasons"].items() if k not in known_reasons
+    }
+    other_detail = (
+        ", ".join(f"{k}={v}" for k, v in sorted(other_reasons.items())) or "零"
+    )
+    print(
+        f"degraded-reason\t{sum(other_reasons.values())}\t其他（{other_detail}）"
+        "——AIR-228 觀察窗：區分 WT graph 缺席/過期成因"
+    )
     print(
         f"n-a\t顯式 n/a receipt={ledg['na_receipts']}"
     )
