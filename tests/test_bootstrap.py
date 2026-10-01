@@ -140,8 +140,8 @@ def test_preflight_missing_git_fail_loud(tmp_path, monkeypatch, capsys):
 
 def test_ts_backend_missing_warn_not_block(tmp_path, monkeypatch, capsys):
     """AIR-227：typescript-language-server 不在 PATH＝WARN 不擋——preflight
-    續行（dry-run exit 0）、輸出 WARN ts-backend 行＋安裝路徑指向 code-reality
-    backend discovery contract；不安裝不自動補（dry-run 零子進程面外動作）。"""
+    續行（dry-run exit 0）、輸出 WARN ts-backend 行＋安裝路徑指向 skills/
+    code-reality/SKILL.md「安裝面」；不安裝不自動補（dry-run 零子進程面外動作）。"""
     _sandbox_green(tmp_path, monkeypatch)
     monkeypatch.setattr(
         boot,
@@ -158,7 +158,8 @@ def test_ts_backend_missing_warn_not_block(tmp_path, monkeypatch, capsys):
     warn_lines = [ln for ln in out.splitlines() if "WARN" in ln and "ts-backend" in ln]
     assert warn_lines
     assert "typescript-language-server" in out
-    assert "code-reality" in out  # 安裝路徑指引指向 backend discovery contract
+    assert "code-reality" in out  # 安裝路徑指引指向 SKILL.md「安裝面」
+    assert "SKILL.md" in out
 
 
 def test_ts_backend_present_pass(tmp_path, monkeypatch, capsys):
