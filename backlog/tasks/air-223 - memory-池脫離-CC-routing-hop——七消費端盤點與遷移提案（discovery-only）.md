@@ -7,6 +7,8 @@ created_date: '2026-10-01 01:46'
 updated_date: '2026-10-01 01:46'
 labels: []
 dependencies: []
+references:
+  - hooks/setup-memory-symlinks.sh
 ordinal: 209000
 ---
 

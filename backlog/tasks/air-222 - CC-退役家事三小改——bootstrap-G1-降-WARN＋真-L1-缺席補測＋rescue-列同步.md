@@ -4,9 +4,11 @@ title: CC 退役家事三小改——bootstrap-G1-降-WARN＋真-L1-缺席補測
 status: In Progress
 assignee: []
 created_date: '2026-10-01 01:45'
-updated_date: '2026-10-01 01:45'
+updated_date: '2026-10-01 01:46'
 labels: []
 dependencies: []
+references:
+  - scripts/bootstrap.py
 ordinal: 208000
 ---
 
