@@ -366,6 +366,26 @@ def test_monitor_l1_missing_still_fails(tmp_path, monkeypatch):
     assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_DRIFT
 
 
+def test_monitor_l1_group_missing_real_branch(tmp_path, monkeypatch, capsys):
+    """AIR-222 真 L1 缺席（≠上行 target 整檔缺席）：config target 在場且合法、
+    刻意刪除一個 owned hook group——probe_codex 走 install.py MISSING 分支
+    （`[L1] MISSING`＋FAIL），monitor 路徑映 EXIT_DRIFT。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    target = mod.Path(manifest["registrations"]["codex"]["target"])
+    text = target.read_text()
+    _preamble, units = mod.codex_group_units(text)
+    victim = [u for u in units if u["kind"] == "group"][-1]
+    target.write_text(text.replace(victim["text"], "", 1), encoding="utf-8")
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    status, detail, lines = mod.probe_codex(manifest, passive=True)
+    assert status == "FAIL"
+    assert "層一" in detail
+    assert any("[L1] MISSING" in ln for ln in lines)
+    assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_DRIFT
+    assert "[L1] MISSING" in capsys.readouterr().out
+
+
 def test_monitor_probe_set_sync_guard(monkeypatch):
     """monitor 面消費同一 probe 集合——manifest 失同步 fail-loud（S-3 同款對帳）。"""
     _patch_local_probes_pass(monkeypatch)

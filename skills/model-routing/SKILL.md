@@ -182,7 +182,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | 實作（implementation） | glm（生效前 muse） | implement | 主力 implementation loop 承接——bridge `task --family glm --write-mode edit --yolo`（生效前提見 dispatch 預設段——未備前過渡維持 muse 行）；muse（implement）降為額度 failover 腿與重實作段升級選項 |
 | external second-opinion review | muse | review | 獨立第二意見，與 in-harness 驗收審查職責分離（見下） |
 | in-harness acceptance reviewer | GLM | — | 驗收委派工單的主審（Writer/Reviewer 分離的 in-harness 側） |
-| 診斷 rescue | codex | implement | ad-hoc 選項（想到再用、低頻）；context 小＋消耗快禁大工單 |
+| 診斷 rescue | codex | implement | ad-hoc 選項（想到再用、低頻）；context 小＋消耗快禁大工單；載具＝bridge `task --family codex` 僅 webgpt（`chatgpt-web/*` transport）——native binding 不作 fallback（AIR-221 standing policy，見 dispatch 預設段 codex 行） |
 | advisory 掃描 | muse | advisory | 唯讀掃描、盤點 |
 | 機械驗證／探索 | GLM | lite | 機械查證、探索（沿用 tier→lite 路由） |
 | 視覺驗收 | GLM | vision | 預設路由；muse 具視覺能力為跨家族備選 |

@@ -31,8 +31,11 @@ def _sandbox_green(
     git_out: str = "",
     git_dir: str = ".git",
     git_common: str = ".git",
+    settings_present: bool = True,
 ) -> list:
     """preflight 全綠沙箱：.git＋settings.json 在場、uv/muse 在 PATH、子進程錄影。
+
+    settings_present=False＝G1 缺席沙箱（AIR-222：缺席＝WARN 不擋，非 FAIL）。
 
     git_rc=1（hooksPath 未設）→ preflight WARN 不擋；安裝/探針類一律回 0。
     git_dir/git_common 預設＝primary checkout 形態（兩 flag 同值——canonical
@@ -41,7 +44,8 @@ def _sandbox_green(
     HOME 指沙箱 → spine 檢查缺席（degraded WARN 非擋）。
     """
     (tmp_path / ".git").mkdir()
-    (tmp_path / "settings.json").write_text("{}\n", encoding="utf-8")
+    if settings_present:
+        (tmp_path / "settings.json").write_text("{}\n", encoding="utf-8")
     monkeypatch.setattr(boot, "REPO_ROOT", tmp_path)
     monkeypatch.setattr(
         boot, "shutil", SimpleNamespace(which=lambda n: "/usr/local/bin/uv")
@@ -63,28 +67,35 @@ def _sandbox_green(
     return calls
 
 
-# ── G1 secrets fail-loud（拍板①）──────────────────────────────────
+# ── G1 secrets（AIR-222：缺席＝WARN 不擋、在場照驗——拍板①降級）──────
 
 
-def test_g1_missing_settings_fail_loud(tmp_path, monkeypatch, capsys):
-    (tmp_path / ".git").mkdir()  # settings.json 缺席＝secrets 未拷
-    monkeypatch.setattr(boot, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(
-        boot, "shutil", SimpleNamespace(which=lambda n: "/usr/local/bin/uv")
-    )
-    monkeypatch.setattr(
-        boot,
-        "subprocess",
-        SimpleNamespace(
-            run=lambda *a, **k: SimpleNamespace(returncode=1, stdout="", stderr="")
-        ),
-    )
-    rc = boot.main([])
-    assert rc != 0
+def test_g1_missing_settings_warn_not_block(tmp_path, monkeypatch, capsys):
+    """AIR-222：settings.json 缺席（dormant CC 資產——CC face 已退役 AIR-215）
+    ＝WARN 不擋：preflight 不因 G1 非零退出、輸出 WARN G1-secrets 行、
+    不自動建不代寫（沙箱 tmp_path 內零 settings 產物）。"""
+    calls = _sandbox_green(tmp_path, monkeypatch, settings_present=False)
+    rc = boot.main(["--dry-run"])
+    assert rc == 0  # 缺席不擋——preflight 續行到計畫列印
     out = capsys.readouterr().out
+    warn_lines = [ln for ln in out.splitlines() if "WARN" in ln and "G1-secrets" in ln]
+    assert warn_lines  # WARN G1-secrets 行在場
     assert "settings.json" in out
-    assert str(tmp_path) in out  # 引導印出實際 repo 路徑
+    assert str(tmp_path) in out  # 引導仍印實際 repo 路徑
+    # WARN 引導動詞釘住（AIR-222）：從舊機拷貝的引導不被措辭改壞靜默丟失
     assert "拷" in out or "copy" in out.lower()
+    assert not (tmp_path / "settings.json").exists()  # 不自動建、不代寫
+    assert not any("governance/install.py" in c for c in calls)  # dry-run 零安裝
+
+
+def test_g1_present_settings_pass(tmp_path, monkeypatch, capsys):
+    """AIR-222 保留「有則照驗」：settings.json 在場＝現行 PASS 路徑照舊。"""
+    _sandbox_green(tmp_path, monkeypatch, settings_present=True)
+    rc = boot.main(["--dry-run"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    pass_lines = [ln for ln in out.splitlines() if "PASS" in ln and "G1-secrets" in ln]
+    assert pass_lines
 
 
 def test_preflight_uv_missing_fail_loud(tmp_path, monkeypatch, capsys):

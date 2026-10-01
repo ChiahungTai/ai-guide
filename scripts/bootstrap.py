@@ -5,8 +5,9 @@
 [bootstrap_cli]），不下手工 config。五階段：
 
   Phase 1 preflight——uv 在 PATH、repo root（.git）、G1 secrets（<repo>/
-  settings.json gitignored local-only——缺席 fail-loud 引導手動拷，不自動建
-  不代寫，拍板①）、hooksPath（非 .githooks＝WARN 列修復指引，G3）、
+  settings.json gitignored local-only——缺席＝WARN 不擋（AIR-222：dormant
+  資產，CC face 已退役〔AIR-215〕非新機必需；在場照驗；不自動建不代寫，
+  拍板①降級）、hooksPath（非 .githooks＝WARN 列修復指引，G3）、
   muse CLI（缺席＝FAIL——installer memory face 前置，R2 codex#4）、
   canonical checkout（git rev-parse --git-dir 含 worktrees 節／與
   --git-common-dir 不等＝linked worktree → FAIL——card WT 安裝會在共享
@@ -161,14 +162,16 @@ def preflight() -> bool:
     if settings.exists():
         _probe("PASS", "G1-secrets", f"{settings} 在場（gitignored local-only）")
     else:
+        # AIR-222：缺席降 WARN（dormant 資產——CC face 已退役〔AIR-215〕，
+        # 非新機必需；缺席不擋、有則照驗；不自動建、不代寫）。
         _probe(
-            "FAIL",
+            "WARN",
             "G1-secrets",
-            f"從舊機拷貝 settings.json（含 API keys）到 {settings}"
-            "（fail-loud：不自動建、不代寫；dormant 歷史資產——CC face 已退役"
-            "〔AIR-215〕，但保留供偶用回滾與歷史 sessions 參照）",
+            f"{settings} 缺席（gitignored local-only、含 API keys——dormant "
+            "歷史資產，CC face 已退役〔AIR-215〕；不擋；從舊機拷貝供偶用"
+            "回滾與歷史 "
+            "sessions 參照；不自動建、不代寫）",
         )
-        ok = False
 
     muse_path = shutil.which("muse")
     if muse_path:
@@ -250,7 +253,10 @@ def print_external_list() -> None:
     print("  - mosaic com.mosaic.* launchd 排程（mosaic repo 側管理）")
     print("  - entitlements-probe（deploy/entitlements-probe.plist 手動裝載）")
     print("面外步驟（installer 範圍外——hooks/MULTI-MACHINE.md「新機器全裝總覽」節）：")
-    print("  - G1 secrets：<repo>/settings.json 從舊機拷貝（preflight 已擋缺席）")
+    print(
+        "  - G1 secrets：<repo>/settings.json 從舊機拷貝（缺席＝preflight WARN 不擋——"
+        "AIR-222：dormant CC 資產；在場照驗）"
+    )
     print(
         "  - G3 hooksPath：git config core.hooksPath .githooks（per-clone，preflight WARN；verify 完成檢查 FAIL）"
     )

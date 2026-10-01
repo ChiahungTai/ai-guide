@@ -18,7 +18,7 @@ uv run python scripts/bootstrap.py --approved    # 手動 approve 後 resume：�
 
 - **installer 七項**（CC/ZCode/codex 三家 hooks 註冊＋muse plugin、skills/rules symlink、agents registry、monitor 排程、逐面驗證命令）：單一源＝[governance/README.md](../governance/README.md) bootstrap 節——本檔不重抄。
 - **面外步驟**（bootstrap 列印不安裝）：
-  - G1 secrets：`<repo>/settings.json`（gitignored local-only、含 API keys）從舊機拷——preflight 缺席＝fail-loud 擋下，不自動建不代寫。
+  - G1 secrets：`<repo>/settings.json`（gitignored local-only、含 API keys）從舊機拷——preflight 缺席＝WARN 不擋（AIR-222：dormant CC 資產——CC face 已退役〔AIR-215〕非新機必需；在場照驗），不自動建不代寫。
   - G3 hooksPath：`git config core.hooksPath .githooks`（per-clone，clone 後手動一次；非 .githooks＝preflight WARN、verify 完成檢查 FAIL）。
   - G5 backlog-cleanup plist：已版控（`deploy/backlog-cleanup.plist`）——手動裝載見 [governance/README.md](../governance/README.md) 面外排程清單。
   - G6 池傳輸：§1（池 local-only 永不進 repo——clone 不帶池，新機空池起步）。
