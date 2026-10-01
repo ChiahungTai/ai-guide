@@ -1,7 +1,7 @@
 ---
 id: AIR-223
 title: memory-池脫離-CC-routing-hop——七消費端盤點與遷移提案（discovery-only）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-01 01:46'
 updated_date: '2026-10-01 03:02'
@@ -58,7 +58,7 @@ flowchart LR
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-memory 池脫離 CC routing hop 落地（main 直鏈遷移）：ZC_MEM→<repo>/.agents/memory 唯一必要鏈（CC alias optional 可缺席）、fresh-machine 負向案例由四連鎖斷點轉全綠、16 處文檔同步（含 blueprint projection 刷新）、雙 pool generator 副本刷新非 stale、86+ tests 綠。池位元組零搬動、CC transcript 零觸碰。殘餘：P3/P7 runtime 場驗證留自然 session；mosaic 端同構拓撲跟進歸跨 repo 對帳。終態圖：
+memory 池脫離 CC routing hop 落地（main 307e2e73）：ZC_MEM→<repo>/.agents/memory 唯一必要鏈（CC alias optional 可缺席）、fresh-machine 負向案例由四連鎖斷點轉全綠、16 處文檔同步（含 blueprint projection 刷新）、雙 pool generator 副本刷新非 stale、86+ tests 綠。池位元組零搬動、CC transcript 零觸碰。殘餘：P3/P7 runtime 場驗證留自然 session；mosaic 端同構拓撲跟進歸跨 repo 對帳。終態圖：
 
 ```mermaid
 flowchart LR
