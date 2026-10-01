@@ -4,7 +4,7 @@ title: scbus-收件統一單一門牌——ai-guide-marshal-唯一-durable-addre
 status: Done
 assignee: []
 created_date: '2026-10-01 03:13'
-updated_date: '2026-10-01 04:02'
+updated_date: '2026-10-01 04:05'
 labels: []
 dependencies: []
 ordinal: 211000
@@ -62,13 +62,13 @@ flowchart LR
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-scbus 收件統一單一門牌落地：ai-guide-marshal 為唯一 durable address（ext 穩定持有不轉手）、ai-guide-primary 退役（release＋tombstone gen 4＋禁 reacquire；SCR-6 reversal 聲明入檔）、值星監看改 scbus address ls --pending 免身分 discovery（v0.2.0 fail-soft 已修）、sender 二分規範＋retirement 程序＋exception contract 五要件進 ownership doc 正典；今日三封漏接事故由模型消滅（sender 不再猜、值星不再維護地址清單）。已知：retired 位址再現 pending＝stale-sender violation。終態圖：
+scbus 收件統一單一門牌落地（main 1d26245d）：ai-guide-marshal 為唯一 durable address（ext 穩定持有不轉手）、ai-guide-primary 退役（release＋tombstone gen 4＋禁 reacquire；SCR-6 reversal 聲明入檔）、值星監看改 scbus address ls --pending 免身分 discovery（scbus 已升 v0.2.0 fail-soft——SCR-8 修復）、sender 二分規範＋retirement 程序＋exception contract 五要件進 ownership doc 正典（+64 行新節）；三封漏接事故由結構消滅（sender 不再猜、值星不再維護地址清單——今日事故模式被模型本身消掉）。已知：retired 位址再現 pending＝stale-sender violation。終態圖：
 
 ```mermaid
 flowchart LR
     S1["跨 repo 責任信"] --> M["ai-guide-marshal<br/>ext 穩定持有"]
     S2["精準 session 信"] --> SM["raw session id"]
-    V["值星 address ls --pending<br/>免身分監看"] --> M
+    V["值星 address ls --pending<br/>免身分監看 v0.2.0"] --> M
     P["ai-guide-primary"] -.->|"退役 tombstone"| X["再現=stale-sender violation"]
     M --> OK["漏接結構性消滅"]
 ```
