@@ -1,10 +1,10 @@
 ---
 id: AIR-222
 title: CC 退役家事三小改——bootstrap-G1-降-WARN＋真-L1-缺席補測＋rescue-列同步
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-01 01:45'
-updated_date: '2026-10-01 02:18'
+updated_date: '2026-10-01 02:20'
 labels: []
 dependencies: []
 references:
@@ -53,3 +53,17 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【1001 收線結算】實作＝flash 三改（RED→GREEN：G1 fail-loud test 改 warning oracle 1 failed→20 passed；真 L1 group 缺席 case 斷言集僅 MISSING 分支可產出非恆綠；rescue 列經 bridge-dispatch 複驗後寫入）；審查＝fresh **GO**（零 Critical——獨立複跑 53 tests＋intact-config 判別力直證＋ loud→silent lens 認定安全〔零機械消費端＋訊號保留〕）＋intent 腿 ALIGNED-WITH-NOTES（四軸全對齊）→judge 採 F-1/F-2 兩行 polish＋F-3 結案 notes，F4-F6 放生。回執四欄：classification=boundary（bootstrap gate 語義＋model-routing instruction sync）／review=fresh GO＋intent ALIGNED（evidence .agent-tmp/air-222/landed.diff＋review 紀錄）／session-freshness=fresh／deployment-surfaces=N-A（本地腳本與文檔；bootstrap 非 deploy 面）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+CC 退役家事三小改落地（main 3330359c）：①bootstrap G1-secrets FAIL→WARN（dormant CC 資產缺席不擋新機 bootstrap、有則照驗； loud→silent 轉換經 fresh 審查 lens 認定安全——零機械消費端＋訊號保留）②真 L1 group 缺席 case（config 在場刪 owned group→EXIT_DRIFT＋[L1] MISSING——與 target-缺席分支分離）③model-routing rescue 列 webgpt-only 註記（經 bridge-dispatch 複驗）。審查：fresh GO＋intent ALIGNED-WITH-NOTES；53 tests 綠。終態圖：
+
+```mermaid
+flowchart LR
+    G1["bootstrap G1<br/>FAIL→WARN"] --> M["main 3330359c"]
+    L1["真 L1 缺席 case<br/>EXIT_DRIFT+[L1] MISSING"] --> M
+    R["rescue 列 webgpt-only<br/>（:132 policy 對齊）"] --> M
+    M --> F["fresh GO＋intent ALIGNED<br/>53 tests"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
