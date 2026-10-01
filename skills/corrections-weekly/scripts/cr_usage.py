@@ -14,6 +14,15 @@ schema；command 欄位以外的文字面提及≠呼叫——條文引用與呼
 CR calls）。
 源3 agent 產出（output evidence）：`~/.zcode/cli/agents/sess_*/agent_*/
 output.txt`（mtime 窗）同指紋——output face 只有文字，一律計 evidence 不計 call。
+源4 receipt closure 對帳（AIR-224——AC6 七分項）：`~/Github/*/.review/*.md`
+（mtime 窗；帳本隨 commit 清除，窗口內在場者才計——durable 觀察面歸卡／EP
+notes，非本腳本掃描面）掃 legs 名冊／per-leg cr receipt／cr-closure／
+legacy-exempt 章計七分項（eligible／declared／observed-evidence／receipt／
+degraded／N-A／silent fallback 各獨立計數）；bridge brief route 宣告掃 jobs
+jsonl `turn.input.user` payload prompt（不掃全檔文字——skill 條文流經
+task.lifecycle.output 的誤報是审计實證主體）；in-harness crsurface 分布掃 db
+part 文字。SM-6 宣告 vs 實呼 histogram 歸收線核對手工貼卡（禁腳本化——
+bridge-dispatch「結構證據收線核對」條款），本腳本只供分項計數。
 輸出計數＋distinct 單位供 LLM 判讀（腳本不判讀——advisory 面）。
 
 Run: uv run python cr_usage.py [--days 7]
@@ -45,6 +54,138 @@ EVIDENCE_RES = {
     "unverified": re.compile(r"未\s*index\s*驗證|unverified"),
     "degraded": re.compile(r"\[WARN\]\s*structural context degraded"),
 }
+
+# ---------- 源4（AIR-224 receipt closure 對帳） ----------
+# 語法鏡像：receipt 承載語法單一源＝workflow-review-pattern「per-leg CR receipt
+# 語法」；route 值域單一源＝bridge-dispatch；機械驗收面＝review_ledger.py lint
+# （本腳本只計數不驗收——advisory）。
+ROUTE_DECL_RE = re.compile(
+    r"route[：:]\s*(live-cr(?::MCP|:CLI)?|preprovided-cr|degraded|n/a)"
+)
+CRSURFACE_RE = re.compile(r"crsurface=(mcp|attach|cli|absent)")
+LEGS_LINE_RE = re.compile(r"legs\s*[：:]", re.IGNORECASE)
+CR_RECEIPT_RE = re.compile(r"cr\(route=([a-z-]+(?::MCP|:CLI)?)[^)]*\)")
+CR_NA_RE = re.compile(r"cr:\s*n/a\s*[（(]reason=")
+CR_CLOSURE_RE = re.compile(r"cr-closure\s*[：:](.*)")
+CR_CLOSURE_ITEM_RE = re.compile(r"[A-Za-z0-9_.-]+\s+(checked|rejected)\b")
+EXEMPT_MARK = "legacy-exempt"
+EPHEMERAL_REF = ".delegate-bridge/jobs/"
+
+
+def scan_receipt_ledgers(since_s: float) -> dict:
+    """掃窗口內帳本檔的 per-leg receipt 七分項原料（每項獨立計數）。"""
+    out = {
+        "ledgers": 0,
+        "exempt_ledgers": 0,
+        "eligible": 0,
+        "na_legs": 0,
+        "receipts": 0,
+        "degraded": 0,
+        "na_receipts": 0,
+        "closures": 0,
+        "silent_fallback": 0,
+        "ephemeral_refs": 0,
+        "per_repo": {},
+    }
+    if not GITHUB.is_dir():
+        return out
+    for lf in GITHUB.glob("*/.review/*.md"):
+        try:
+            if lf.stat().st_mtime < since_s:
+                continue
+            text = lf.read_text(errors="replace")
+        except OSError:
+            continue
+        out["ledgers"] += 1
+        repo = lf.parts[-3] if len(lf.parts) >= 3 else "?"
+        rec = out["per_repo"].setdefault(repo, {"ledgers": 0, "receipts": 0})
+        rec["ledgers"] += 1
+        eligible = na_legs = receipts = na_receipts = degraded = 0
+        closures = ephemeral = 0
+        for line in text.splitlines():
+            m = LEGS_LINE_RE.search(line)
+            if m:
+                for item in re.split(r"[；;]", line[m.end() :]):
+                    parts = item.split()
+                    if len(parts) >= 3 and parts[-1] == "trigger":
+                        eligible += 1
+                    elif len(parts) >= 3 and parts[-1] == "n/a":
+                        na_legs += 1
+            for rm in CR_RECEIPT_RE.finditer(line):
+                receipts += 1
+                if rm.group(1) == "degraded":
+                    degraded += 1
+            na_receipts += len(CR_NA_RE.findall(line))
+            cm = CR_CLOSURE_RE.search(line)
+            if cm:
+                # 逐 item 計數（一行可載多腿：`cr-closure：L1 checked；L2 rejected`）
+                closures += len(CR_CLOSURE_ITEM_RE.findall(cm.group(1)))
+            ephemeral += len(
+                re.findall(r"evidence=[^)|]*" + re.escape(EPHEMERAL_REF), line)
+            )
+        if EXEMPT_MARK in text:
+            out["exempt_ledgers"] += 1
+        # silent fallback＝eligible 腿無 route receipt（負值截 0——n/a 腿不在分子）
+        silent = max(0, eligible - receipts)
+        out["eligible"] += eligible
+        out["na_legs"] += na_legs
+        out["receipts"] += receipts
+        out["degraded"] += degraded
+        out["na_receipts"] += na_receipts
+        out["closures"] += closures
+        out["silent_fallback"] += silent
+        out["ephemeral_refs"] += ephemeral
+        rec["receipts"] += receipts
+    return out
+
+
+def scan_brief_routes(since_s: float) -> dict:
+    """掃窗口內 bridge brief（turn.input.user payload prompt）的 route 宣告行。"""
+    out = {"jobs": 0, "declared_jobs": 0, "values": {}}
+    if not GITHUB.is_dir():
+        return out
+    for jf in GITHUB.glob("*/.delegate-bridge/jobs/*.jsonl"):
+        try:
+            if jf.stat().st_mtime < since_s:
+                continue
+            text = jf.read_text(errors="replace")
+        except OSError:
+            continue
+        out["jobs"] += 1
+        declared = 0
+        for line in text.splitlines():
+            try:
+                e = json.loads(line)
+            except ValueError:
+                continue
+            if e.get("payload_type") != "turn.input.user":
+                continue
+            prompt = str((e.get("payload") or {}).get("prompt") or "")
+            for m in ROUTE_DECL_RE.finditer(prompt):
+                declared += 1
+                v = m.group(1)
+                out["values"][v] = out["values"].get(v, 0) + 1
+        if declared:
+            out["declared_jobs"] += 1
+    return out
+
+
+def scan_crsurface(since_ms: int) -> dict:
+    """掃 db part 文字面 crsurface= 分布（dispatch preview 落在 session 文字）。"""
+    db = sqlite3.connect(f"file:{DB}?mode=ro", uri=True)
+    try:
+        rows = db.execute(
+            "SELECT json_extract(p.data, '$.text') FROM part p "
+            "WHERE p.time_created >= ? AND p.data LIKE '%crsurface=%'",
+            (since_ms,),
+        ).fetchall()
+    finally:
+        db.close()
+    values: dict[str, int] = {}
+    for (t,) in rows:
+        for m in CRSURFACE_RE.finditer(str(t or "")):
+            values[m.group(1)] = values.get(m.group(1), 0) + 1
+    return values
 
 
 def scan_db(since_ms: int) -> tuple[dict, set, dict, int]:
@@ -224,6 +365,58 @@ def main() -> int:
         f"evidence-bearing files\t{a['evid_files']}（markers: "
         + ", ".join(f"{k}={v}" for k, v in a["markers"].items())
         + "）"
+    )
+
+    print(
+        "== 源4 receipt closure 對帳（AIR-224——七分項獨立計數；帳本源="
+        "~/Github/*/.review/*.md mtime 窗，durable 觀察面歸卡/EP notes）=="
+    )
+    try:
+        crs = scan_crsurface(since_ms)
+    except sqlite3.Error as exc:
+        print(f"[FAIL] db 查詢失敗：{exc}")
+        return 1
+    ledg = scan_receipt_ledgers(since_s)
+    brief = scan_brief_routes(since_s)
+    print(
+        f"ledgers\t{ledg['ledgers']}（exempt={ledg['exempt_ledgers']}"
+        + (
+            f"；exempt-rate={ledg['exempt_ledgers'] / ledg['ledgers']:.2f}"
+            if ledg["ledgers"]
+            else ""
+        )
+        + "）"
+    )
+    decl_vals = (
+        ", ".join(f"{k}={v}" for k, v in sorted(brief["values"].items()))
+        or "零"
+    )
+    crs_vals = (
+        ", ".join(f"{k}={v}" for k, v in sorted(crs.items())) or "零"
+    )
+    print(
+        f"declared\tbrief_jobs={brief['declared_jobs']}/{brief['jobs']}"
+        f"（值分布: {decl_vals}）；in-harness crsurface 分布: {crs_vals}"
+    )
+    print(f"eligible\t{ledg['eligible']}（legs 名冊 trigger 腿；n/a 腿 {ledg['na_legs']}）")
+    print(f"observed-evidence\t源2 call-evidence jobs={b['call_jobs']}")
+    print(f"receipt\t{ledg['receipts']}（degraded={ledg['degraded']}）")
+    print(
+        f"n-a\t顯式 n/a receipt={ledg['na_receipts']}"
+    )
+    print(f"silent-fallback\t{ledg['silent_fallback']}（eligible−receipts，負值截 0）")
+    if ledg["receipts"]:
+        print(
+            f"rates\treceipt-rate={ledg['receipts'] / max(ledg['eligible'], 1):.2f}"
+            f"（receipts/eligible）　closure-rate={ledg['closures'] / ledg['receipts']:.2f}"
+            f"（closures={ledg['closures']}/receipts）"
+        )
+    else:
+        print("rates\tn/a（窗口內零 receipt）")
+    print(f"ephemeral-evidence refs\t{ledg['ephemeral_refs']}（WT-local job jsonl 形——不得滿足 converged receipt）")
+    print(
+        "sm6-histogram\t宣告 live-cr 腿的實呼 histogram 歸收線核對手工貼卡"
+        "（禁腳本化——bridge-dispatch「結構證據收線核對」）；本節分項僅供 LLM 判讀"
     )
     return 0
 

@@ -3,6 +3,8 @@
 - reviewed revision：fixture branch HEAD `0f0f0f0`＋uncommitted none
 - scope：tests（fenced 格式說明表禁計數 fixture）
 - review_profile：ordinary
+- legs：L1 fixture-job-00f n/a
+- L1: cr: n/a（reason=無結構查證 trigger；trigger 事實 ref=fixture synthetic docs-only diff）
 - writer：fixture
 
 ## 格式說明（範本——非 findings，禁計數）

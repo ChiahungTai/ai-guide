@@ -2,6 +2,9 @@
 
 > identity: baseline=`0000000` · reviewed=`0f0f0f0` · uncommitted=none · scope=tests（judge 後態 fixture——驗證 discovery lint 應過、converged lint 應 FAIL） · review_profile=ordinary · writer=fixture
 
+> legs：L1 fixture-job-00j n/a
+> L1: cr: n/a（reason=無結構查證 trigger；trigger 事實 ref=fixture synthetic docs-only diff）
+
 ## Finding Record
 
 | ID | 嚴重度 | 位置 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |

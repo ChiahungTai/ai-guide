@@ -5,6 +5,8 @@
 - reviewed revision：air-000 branch HEAD `0000000`＋uncommitted none
 - scope：skills/post-build/SKILL.md（本檔為 canonical 格式範本 fixture，非真實審查）
 - review_profile：ordinary
+- legs：L1 fixture-job-001 n/a
+- L1: cr: n/a（reason=無結構查證 trigger；trigger 事實 ref=fixture synthetic docs-only diff）
 - writer：fixture
 
 ## Finding Record

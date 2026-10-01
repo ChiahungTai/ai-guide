@@ -6,6 +6,7 @@ fixture 全 in-repo（tests/fixtures/review_ledgers/，自 9 份歷史帳本固�
 """
 
 import importlib.util
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -313,3 +314,128 @@ def test_module_loads_with_exit_contract_constants():
         2,
         3,
     )
+
+
+# ---------- per-leg CR receipt lint（AIR-224——TC-1~4＋EP Amendment） ----------
+
+# 凍結真實舊檔 snapshot（源＝primary .review/ 九檔；.review/ 本身 ephemeral 不入測）。
+# air-66/air-75 無 canonical reviewed 錨——lint 先 EXIT_STALE，cr 檢查不可達（預期矩陣）。
+LEGACY_SNAPSHOTS_FAIL_WITH_CR = (
+    "air-52.md",
+    "air-52.fresh.md",
+    "air-52.primed.md",
+    "air-57.md",
+    "air-70.md",
+    "air-86.md",
+    "air-91.md",
+)
+LEGACY_SNAPSHOTS_STALE = ("air-66.md", "air-75.md")
+
+
+def test_tc1_trigger_leg_missing_receipt_fails_and_locates_leg():
+    r = run_cli("lint", fixture("cr-tc1-missing-receipt.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.missing_leg" in r.stdout  # cr-專屬 violation（防空洞）
+    assert "L1" in r.stdout  # 定位該腿
+
+
+def test_tc2_degraded_without_reason_fails():
+    r = run_cli("lint", fixture("cr-tc2-degraded-no-reason.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.degraded_no_reason" in r.stdout
+
+
+def test_tc2_na_with_reason_passes():
+    r = run_cli("lint", fixture("cr-tc2-na-with-reason.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "[OK]" in r.stdout
+
+
+def test_tc3_live_cr_mcp_with_evidence_passes():
+    r = run_cli("lint", fixture("cr-tc3-live-mcp-evidence.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_tc3_preprovided_with_evidence_passes():
+    r = run_cli("lint", fixture("cr-tc3-preprovided-evidence.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_tc4_legacy_snapshots_fail_with_cr_violation_string():
+    # 防空洞：legacy 檔多本就因非 cr 原因 FAIL（如 air-91 缺 scope/欄位）——
+    # 斷言必須命中 cr.receipt 專屬 violation 字串，證明 cr 檢查真的在場
+    for name in LEGACY_SNAPSHOTS_FAIL_WITH_CR:
+        r = run_cli("lint", fixture(name))
+        assert r.returncode == EXIT_FAIL, f"{name}: {r.stdout + r.stderr}"
+        assert "cr.receipt." in r.stdout, f"{name} 缺 cr-專屬 violation: {r.stdout}"
+
+
+def test_tc4_legacy_snapshots_without_anchor_exit_stale():
+    # air-66/air-75 無 canonical reviewed 錨——identity stale 先擋（cr 檢查不可達）
+    for name in LEGACY_SNAPSHOTS_STALE:
+        r = run_cli("lint", fixture(name))
+        assert r.returncode == EXIT_STALE, f"{name}: {r.stdout + r.stderr}"
+
+
+def test_amendment_ephemeral_bridge_ref_fails_converged():
+    # EP Amendment：WT-local .delegate-bridge/jobs/<id>.jsonl＝ephemeral observation，
+    # 不得滿足 converged receipt（durable producer 另案）
+    r = run_cli("lint", fixture("cr-ephemeral-evidence.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.ephemeral_evidence" in r.stdout
+
+
+def test_amendment_ephemeral_bridge_ref_observation_ok_at_discovery():
+    # producer 未落地前 bridge receipt 可執行/觀察——discovery 態容忍 ephemeral ref
+    r = run_cli(
+        "lint", fixture("cr-ephemeral-evidence.md"), "--stage", "discovery"
+    )
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_amendment_durable_ref_passes_converged():
+    # durable 形態（.agent-tmp artifact＋錨點）＝producer-issued durable ref 形狀
+    r = run_cli("lint", fixture("cr-tc3-live-mcp-evidence.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_legacy_exempt_stamp_passes():
+    # legacy-exempt 放行：有效章（marker＋cutoff 引用）豁免 cr-receipt 檢查
+    r = run_cli("lint", fixture("cr-exempt-legacy.md"))
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "cr.receipt." not in r.stdout
+
+
+def test_legacy_exempt_stamp_without_cutoff_fails():
+    # 機械錨：章缺 cutoff 引用＝無效豁免（禁自由豁免）
+    r = run_cli("lint", fixture("cr-exempt-invalid.md"))
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.exempt_invalid" in r.stdout
+
+
+def test_cr_receipt_cutoff_constant_defined():
+    # cutoff 常數定義於 S2（fresh-F4）——模組層在場且為 hex 形（git short hash）
+    spec = importlib.util.spec_from_file_location("review_ledger_cut", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert re.fullmatch(r"[0-9a-f]{7,40}", mod.CR_RECEIPT_CUTOFF)
+
+
+def test_cr_orphan_receipt_leg_fails():
+    # 名冊無此腿＝lint FAIL（receipt 以 leg key join 名冊）
+    r = run_cli("lint", fixture("cr-tc3-live-mcp-evidence.md"))
+    assert r.returncode == EXIT_OK  # sanity：原檔過
+    patched = (FIXTURES / "cr-tc3-live-mcp-evidence.md").read_text().replace(
+        "legs：L1 fixture-job-tc3a trigger", "legs：L9 fixture-job-tc3a trigger"
+    )
+    tmp = FIXTURES / "cr-tmp-orphan.md"
+    tmp.write_text(patched, encoding="utf-8")
+    try:
+        r2 = run_cli("lint", tmp)
+        assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+        assert "cr.receipt.orphan_leg" in r2.stdout
+        assert "L1" in r2.stdout
+    finally:
+        tmp.unlink()
+

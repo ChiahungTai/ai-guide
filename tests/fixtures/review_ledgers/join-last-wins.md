@@ -3,6 +3,8 @@
 - reviewed revision：test branch HEAD `abcdef0`＋uncommitted none
 - scope：tests/fixtures/review_ledgers（本檔為 join 語義測試 fixture）
 - review_profile：ordinary
+- legs：L1 fixture-job-00w n/a
+- L1: cr: n/a（reason=無結構查證 trigger；trigger 事實 ref=fixture synthetic docs-only diff）
 
 ## Finding Record
 

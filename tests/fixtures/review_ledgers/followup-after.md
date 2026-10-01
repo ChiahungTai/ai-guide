@@ -3,6 +3,8 @@
 - reviewed revision：fixture branch HEAD `0k0k0k0`＋uncommitted none
 - scope：tests（followup 後態 fixture——verified/closed＝canonical terminal、resolved＝容錯 terminal）
 - review_profile：ordinary
+- legs：L1 fixture-job-00k n/a
+- L1: cr: n/a（reason=無結構查證 trigger；trigger 事實 ref=fixture synthetic docs-only diff）
 - writer：fixture
 
 ## Finding Record

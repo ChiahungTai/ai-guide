@@ -123,6 +123,15 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 
 finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響 X）→ 採納前用 CR `callers`／`impact_radius` 實測複核（engine 缺場退 LSP `findReferences`＋rg 互補腿——見 [cr-query](../cr-query/SKILL.md) GATE）；**rg 單腿論證不可作為採納依據**（rg parity 例外只適用 positive lookup——「找到 3 個」≠「只有 3 個」；canonical 條文＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）。EP／研究面的同族宣稱（claim 四欄結構）見 [execution-plan](../execution-plan/SKILL.md) 段落 0。
 
+## 收線 receipt gate（AIR-224）
+
+> judge 收線（落 decision／宣稱 review chain 收斂）前對帳 ledger 的 per-leg CR receipt——收口不變式：**沒有 per-leg receipt 就不能宣稱 review chain 收斂**。receipt 語法與 legs 名冊 join 單一源＝[workflow-review-pattern](../_common/workflow-review-pattern.md)「per-leg CR receipt 語法」節；機械面＝`skills/post-build/scripts/review_ledger.py lint <ledger> --stage converged`——**收線前實跑，非零即修帳本、不收線**。
+
+- **ledger gate（eligible 腿）**：命中結構查證 trigger 的腿，`route=`／`evidence=`／`reason=` 缺失，或派工端宣告（WO route carrier／`crsurface=` 投影）與 receipt 實際記載**不一致（宣告≠實際）**——不得收斂。bridge 外審腿的宣告 vs 實際 channel 核對語義單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)「結構證據收線核對」（零星命中＋Read 主導＝實質違反，同 floor）；in-harness 腿＝`crsurface=` 經 canonical projection 對 child session 實際 CR tool 呼叫證據核對——**手工抽核起步**（bridge 同款禁腳本化門檻邏輯適用，[agent-workflow](../agent-workflow/SKILL.md) dispatch preview 投影表）
+- **N/A 豁免主張複核（fresh-F9 checklist）**：`cr: n/a（reason=…）` 腿逐腿核對——①n/a 行是否附 dispatch 端 trigger 事實 ref；②該 ref 與 diff 實際矛盾（diff 含 callable 變更且命中觸發面）即**豁免主張不成立→不收斂**（該腿補 route receipt 或重審）
+- **cr-closure 行（judge 另立行——兩段式寫入）**：收線核對完成後逐腿寫 `cr-closure：<leg key> checked|rejected`（值域單一源＝workflow-review-pattern 同節；producer 事實與 Arbiter 裁決分離——judge 只寫 closure 行，**不改**腿的 receipt；closure 缺場＝未收線）
+- **[cr:*] 四態正交確認**：`[cr:present|empty|unavailable|skipped]` 保留 material-evidence 語義（單一源＝[review-engine](../review-engine/SKILL.md)「bridge review 的 CR 證據分類與消費」），與 route（review-leg 級事實）正交——不混欄、marker 消費不取代本 gate
+
 ---
 
 ## 特殊情況
