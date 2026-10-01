@@ -1,7 +1,7 @@
 ---
 id: AIR-223
 title: memory-池脫離-CC-routing-hop——七消費端盤點與遷移提案（discovery-only）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-01 01:46'
 updated_date: '2026-10-01 03:02'
@@ -54,3 +54,17 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【1001 收線結算】實作＝flash 四步（RED 4 failed→GREEN 7 passed→本機遷移 readlink 三鏈存證→P1-P10＋文檔 16 處同步含 blueprint 四檔 drift 追加）；審查＝fresh GO-WITH-FIXES（F-1 memory-audit SKILL drift 修正＋F-2 generate_index 註解＋雙 pool 副本刷新——flash 修復全綠兩 pool --check 非 stale；F-3/F-4 證據衛生歸本段揭露：mypy log 名實不符如實標、P8 pool dirty 20 條／P9 check_single_source 6 條皆 pre-existing 與拓撲正交）＋F-7 mosaic 端同構拓撲跟進＝跨 repo 對帳項歸 STATE。回執四欄：classification=boundary（memory 拓撲翻轉）／review=fresh GO-WITH-FIXES 全採／session-freshness=fresh／deployment-surfaces=healthy（installer --surface memory exit 0＋verify 全綠＋P1/P2/P4/P5/P6/P10 PASS；P3/P7 runtime 場驗證留自然 session）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+memory 池脫離 CC routing hop 落地（main 直鏈遷移）：ZC_MEM→<repo>/.agents/memory 唯一必要鏈（CC alias optional 可缺席）、fresh-machine 負向案例由四連鎖斷點轉全綠、16 處文檔同步（含 blueprint projection 刷新）、雙 pool generator 副本刷新非 stale、86+ tests 綠。池位元組零搬動、CC transcript 零觸碰。殘餘：P3/P7 runtime 場驗證留自然 session；mosaic 端同構拓撲跟進歸跨 repo 對帳。終態圖：
+
+```mermaid
+flowchart LR
+    POOL["<repo>/.agents/memory<br/>唯一 authority"] <--"唯一必要鏈"--> ZC["ZC_MEM 直鏈"]
+    POOL -.->|"optional alias 可缺席"| CC["CC_MEM"]
+    OLD["雙跳 ZC→CC→POOL<br/>+:61 gate 退役"] --> DONE["fresh-machine 全綠<br/>16 處文檔同步"]
+    ZC --> DONE
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
