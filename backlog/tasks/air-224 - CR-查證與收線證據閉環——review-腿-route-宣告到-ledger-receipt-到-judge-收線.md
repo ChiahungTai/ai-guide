@@ -1,10 +1,10 @@
 ---
 id: AIR-224
 title: CR-查證與收線證據閉環——review-腿-route-宣告到-ledger-receipt-到-judge-收線
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-01 02:24'
-updated_date: '2026-10-01 06:05'
+updated_date: '2026-10-01 06:25'
 labels: []
 dependencies: []
 references:
@@ -46,6 +46,20 @@ flowchart LR
 **驗證式**：codex AC 八項（EP 凍結時細化 grammar）。
 <!-- SECTION:PLAN:END -->
 
+## Acceptance Criteria
+
+- [x] per-leg CR receipt schema 凍結於 workflow-review-pattern（legs 名冊強制行＋coverage 子格式＋cr-closure 兩段式＋applicability/route 二分＋legacy-exempt 錨＋durable/ephemeral 分野）——S1＋Amendment 落地（f067906d）
+- [x] producer carrier：WO review variant 逐腿 route 行（漏欄＝contract-incomplete）＋agent-workflow crsurface→route 四映射＋review-engine 兩 enforcement points owner 接線——S1b 落地
+- [x] review_ledger.py converged lint gate：命中 trigger 缺 receipt FAIL／degraded 無 reason FAIL／N-A 有 reason PASS／有 evidence PASS／ephemeral bridge ref FAIL／exempt 章形限縮（三類豁免）——TDD 63 測綠＋真實九檔矩陣實證（7 檔 cr.receipt violation、air-66/75 stale exit=3）
+- [x] judge-review 收線 receipt gate（宣告≠實際不收斂＋N/A 豁免主張複核 fresh-F9 checklist）——S3 落地
+- [x] cr_usage.py 七分項（eligible/declared/observed-evidence/receipt/degraded/N-A/silent fallback）＋exempt 率＋golden test 鎖口徑——S4 落地（silent 名冊 join 防孤兒稀釋、phantom 行首錨定）
+- [x] SM-1~7 場景矩陣全覆蓋（TC-1~5 oracle 對帳 5/5：S×5/H×1/I×1）＋EP Amendment ephemeral/durable lint fixture
+- [x] 三腿審查（fresh＋muse 跨家族＋audit-test）18 findings 全採、修復兩輪落地（4bd05e4f/72269032）；回執四欄入卡；九檔 legacy-exempt 決策記錄（cutoff=b41b4ed1）
+- [x] follow-up 觀察卡 AIR-224.1 開立（EP 收尾段 4）＋mosaic dogfood 通報記錄（卡 notes 載體）
+
+<!-- SECTION:AC:BEGIN -->
+<!-- SECTION:AC:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -68,4 +82,25 @@ mosaic dogfood 通報（EP 收尾段 4）：通報主旨＋契約三要點＋觀
 殘留：bridge durable-evidence producer 卡（bridge 側開卡中）——producer 落地前 bridge CR 腿不得 durable-complete 收線（lint 已擋 ephemeral）；F-8 五處家族枚舉 drift＋四家/五家詞彙 5 檔（值星批次）；AIR-224.1 觀察窗指標承載 muse-F3/F7/F10/F11。
 
 Done 翻牌待 user 拍板。
+
+【結案】user 拍板 Done（『２２４ ＤＯＮＥ可以』，2026-10-01）。final refs：merge main@72269032＋follow-up AIR-224.1（觀察窗）＋verdict 存檔 .agent-tmp/air-224/＋bridge 跟催信 0668eea5。弧蒸餾結論：零新增 memory 候選——審計方法論（job histogram＋ledger 對帳）已固化於 cr_usage.py 源4 分項＋EP 段落 0，repo 可推導不重複入池。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（main@72269032；三 commit f067906d／4bd05e4f／72269032）：CR 查證閉環全鏈機械化——producer（WO route 行＋crsurface 投影）→ receipt（legs 名冊＋coverage per-leg 子格式＋cr-closure 兩段式）→ consumer（review_ledger.py converged lint gate＋judge 收線 gate）→ telemetry（cr_usage 七分項＋exempt 率）。三腿審查 18 findings 全採；回執四欄齊；九檔 legacy-exempt 候選（cutoff=b41b4ed1）。
+
+```mermaid
+flowchart LR
+    WO["work-order route 行<br/>逐腿必填或 n/a"] --> L["review 腿執行<br/>live-cr / prepvided / degraded"]
+    AW["agent-workflow 投影<br/>crsurface→route 四映射"] --> L
+    L --> R["ledger<br/>legs 名冊＋cr(route,evidence/reason)"]
+    R --> LG["review_ledger.py lint<br/>--stage converged 全查"]
+    LG -->|"非零"| X["不得收線"]
+    LG -->|"零"| J["judge 收線<br/>cr-closure checked/rejected"]
+    L --> T["cr_usage 七分項<br/>宣告率/實呼率/receipt 率分開"]
+    T -.->|"dispatcher 預跑可見"| J
+    R -->|"bridge 腿"| E["evidence= 須 durable ref<br/>WT-local jsonl=ephemeral FAIL"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
