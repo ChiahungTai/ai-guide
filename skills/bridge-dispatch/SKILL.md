@@ -71,13 +71,22 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 
 > glm writer（implementation）派發的全命令模板鏈——把 bridge-dispatch 紀律收斂成單一序列；條文語義單一源：always-on 核心在 rule 端，caller surface 對照表與 resume model-match 契約在本檔（0924 收編；步驟 1/5 引用）。
 
-**三家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）。brief 步驟須配 carrier 工具面：非 `--yolo` 的 glm spawn 被 bridge 注入 `--disallowed-tools Bash`、plain（plan tier）另無 Write——派 git／命令步驟或 Write 產出給這類 carrier＝空轉（0926 judge v1 空轉 6.5h 實證）；材料預落 repo 檔案；唯讀產出處置（seal 模式）定義單一源＝下方「Brief capability contract」要素 4。
+**四家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）；grok default leg＝contained writer（kernel-enforced Seatbelt——authority facts 見下方「grok family authority profile」段）。brief 步驟須配 carrier 工具面：非 `--yolo` 的 glm spawn 被 bridge 注入 `--disallowed-tools Bash`、plain（plan tier）另無 Write——派 git／命令步驟或 Write 產出給這類 carrier＝空轉（0926 judge v1 空轉 6.5h 實證）；材料預落 repo 檔案；唯讀產出處置（seal 模式）定義單一源＝下方「Brief capability contract」要素 4。
 
 1. **registry pin 解析**：plugin surface 用 `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`；bare shell 讀 `~/.zcode/cli/plugins/installed_plugins.json` 取 `installPath` 拼 `bin/delegate-bridge`——禁手拼版本化 cache 路徑（第二 pin，見本檔上方 caller surface 對照表）
 2. **provision 前置**：workspace 首次 glm 委派前 `delegate-bridge provision --family glm`（**唯一 sanctioned config write**；0924 自 rules 收編）；spawn verify-only（缺漏／drift＝fail-loud 附指引，不自動補）
 3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）
 4. **watcher 配對（cwd＝job workspace）**：派工同 step arm `uv run python <ai-guide repo>/scripts/bridge_waiter.py <jobId>`——**waiter 的 cwd 必須＝job 的 workspace**：job ledger 是 per-workspace（`<ws>/.delegate-bridge/`），cwd 錯位＝查無 job（not-found 誤入 reconcile 分支）
 5. **定向 resume（glm resume model-match 契約；0924 自 rules 收編，條文單一源＝本步驟）**：接續必帶**建立時** `--model <id>`（不帶＝落 manifest `defaultModel`；ledger row 有記；不符＝carrier `Select a model` fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`。定義源＝delegate-bridge repo `AGENTS.md`「Build loop」glm provisioning 段＋`docs/ep.md` S1（僅指針）
+
+## grok family authority profile（default contained writer vs --yolo/--marshal；AIR-226）
+
+> 決定性事實源＝delegate-bridge repo `docs/ep.md` db-71 grok 段＋carrier docs `~/.grok/docs/user-guide/18-sandbox.md`——本段只記消費端判斷面 authority facts，**不複刻 sandbox spec**（producer 文件為事實 source）。
+
+- **default leg＝contained writer**（`--always-approve --sandbox workspace`；hand-face invariant——每個 spawn argv 恆恰一個顯式 permission face）：Seatbelt 於 process 啟動時套用、kernel-enforced、process-wide、irreversible，涵蓋全部工具與子進程；write 集＝CWD＋`~/.grok/`＋temp dirs（`/tmp`、`/var/tmp`＋macOS temp）——**`/tmp` 是 in-bounds 契約面，非缺口**。
+- **AC10 兩段翻轉終態（2026-10-01 live 雙向驗證）**：1ade5b3e FALSIFIED（初判「`/tmp` 寫成功＝containment 破口」——探針把契約內 temp dir 當界外，probe 設計錯誤）→ 3c1d0492 CORRECTION（`/tmp` in-bounds 契約面非缺口）。決定性 probe＝界外 write tool 寫 `$HOME` 根 REFUSED＋bash 子進程界外（OOB）寫 REFUSED（皆附 `FsViolation` 事件、磁碟無檔）＋`~/.grok/sessions/sandbox-events.jsonl` 記 `ProfileApplied(enforced:true, macos/seatbelt)`——containment 雙向確認。
+- **contained writer 語義限 default binding/profile**：`--yolo`／`--marshal`＝`--always-approve` **無 `--sandbox`**（full access——另一 authority profile，非 contained；`--yolo` 走 family-neutral DB-18 閘、marshal＝DB-33 parity）。禁把 default face 的 containment 證據外推到 `--yolo`／`--marshal` 腿。
+- **kernel 證據邊界**：上述 enforcement 事實限當前 macOS/Seatbelt face，不擴寫跨平台通用保證；enforcement 前提＝profile 套用成功（套用失敗 carrier warn 後**不帶圍欄續跑**——read-only profile 於本機曾拒啟動）。review face 騎 default contained-writer face——reviewer 的唯讀紀律是 work-order 紀律，carrier 沙箱面照樣可寫。
 
 ## Brief capability contract（派工前工具面契約——空轉預防；bridge db-58/59/60 對端條款）
 

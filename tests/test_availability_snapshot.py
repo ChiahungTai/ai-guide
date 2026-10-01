@@ -102,7 +102,7 @@ def test_loader_rejects_unknown_family_value() -> None:
 
 
 def test_real_catalog_family_assignment() -> None:
-    """10 條 binding 的 family 歸屬（air-123 實查舉證的凍結表＋AIR-218 grok）。"""
+    """11 條 binding 的 family 歸屬（air-123 實查舉證的凍結表＋AIR-218 grok＋AIR-226 bridge-grok）。"""
     cat = sync.load_catalog(REPO_ROOT)
     got = {bid: b.family for bid, b in cat.bindings.items()}
     assert got == {
@@ -116,6 +116,7 @@ def test_real_catalog_family_assignment() -> None:
         "bridge-codex-astra": "codex",
         "bridge-muse-spark-1.3": "muse",
         "grok-cli-grok-4.7": "xai",
+        "bridge-grok-grok-4.7": "xai",
     }
     assert cat.families == frozenset({"glm", "muse", "codex", "anthropic", "xai"})
 

@@ -36,7 +36,8 @@ workloads = [
 harness_alias_tokens = ["sonnet", "haiku", "opus"]
 # family 閉集（dispatch_binding.family 引用；AIR-123——歸屬實查：
 # zcode registry 兩條＝glm、cc-registry-opus＝anthropic、bridge 面＝surface
-# 對應家族；xai＝fabel direct CLI binding（AIR-218 grok-cli-grok-4.7）。
+# 對應家族；xai＝fabel direct CLI binding（AIR-218 grok-cli-grok-4.7）＋
+# bridge binding（AIR-226 bridge-grok-grok-4.7）。
 # 擴充＝資料層編輯＋binding 補 family 欄）
 families = ["glm", "muse", "codex", "anthropic", "xai"]
 
@@ -70,9 +71,10 @@ id = "gpt-6-astra"
 label = "Astra"
 
 # fabel：xai 家旗艦的概念 identity（user 稱呼）。wire token＝grok-4.7（隨
-# 版本漂移）、dispatch 路徑＝grok CLI direct headless（AIR-218 落 direct
-# binding grok-cli-grok-4.7）；bridge family 未開（另弧，屆時另開
-# bridge-grok-* binding 不混寫，qualification 分腿記錄）
+# 版本漂移）、dispatch 路徑雙軌——grok CLI direct headless（AIR-218 direct
+# binding grok-cli-grok-4.7）＋bridge family（AIR-226 開 bridge-grok-grok-4.7，
+# direct/bridge admission 分立不混寫；qualification 分腿記錄——bridge binding
+# 零 workload qualification 繼承）
 [[model_identity]]
 id = "fabel"
 label = "Fabel"
@@ -189,13 +191,32 @@ transport = ["image_transport"] # --image 輸入（repo-observed）
 # 不變（identity＝穩定概念 key doctrine），grok-4.7 是 wire token（1.0.44
 # 實測 available 唯一；1.0.13 期 4.6/4.5 已 superseded——token 隨版漂，identity
 # 不漂）。effort 四值＝grok-4.7 menu 實測（L0 axis4）；OAuth 訂閱 session
-# （free tier 計額，非 API key）。bridge family 未開——禁以本 binding 替
-# 未來 bridge 腿背書。
+# （free tier 計額，非 API key）。bridge-grok binding 已開（AIR-226）——
+# direct/bridge admission 分立：本 binding 的 user-observed 證據（fabel
+# qualification binding_scope）不替 bridge 腿背書。
 [[dispatch_binding]]
 id = "grok-cli-grok-4.7"
 model_identity = "fabel"
 carrier = "grok"
 surface = "cli-headless"
+token = "grok-4.7"
+token_kind = "provider_native"
+family = "xai"
+effort_encoding = "param"
+effort_values = ["low", "medium", "high", "xhigh"]
+
+# AIR-226 bridge binding：grok bridge family 開啟（delegate-bridge 2.9.0 四
+# 家族；default leg＝contained writer——kernel-enforced Seatbelt，AC10 live
+# 驗證終態 authority facts 見 bridge-dispatch skill grok 段）。與 direct
+# binding 分立：本行只記 supply 事實——AC10 證的是 authority/containment 非
+# 品質，fabel ep_synthesis/adjudication qualification 不繼承（binding_scope
+# 維持 grok-cli-grok-4.7；bridge 腿另取證據再新增 scope）。effort 四值＝
+# carrier parse 端值域（delegate-bridge docs/ep.md db-71——大小寫不敏感）。
+[[dispatch_binding]]
+id = "bridge-grok-grok-4.7"
+model_identity = "fabel"
+carrier = "bridge"
+surface = "grok-family"
 token = "grok-4.7"
 token_kind = "provider_native"
 family = "xai"

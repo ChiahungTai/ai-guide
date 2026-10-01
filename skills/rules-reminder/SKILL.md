@@ -36,6 +36,8 @@ uv run python scripts/check.py
 
 `find -exec` 和 `grep -r` 是 Claude Code 系統硬限制（CC 端機制宣稱；其他 harness 依各自 sandbox 規則），**無法被任何 allow 規則覆蓋**，每次都需手動批准。
 
+**邊界（AIR-226）**：symbol/ref/caller/closure 類結構查詢先走 [symbol-query-routing](../symbol-query-routing/SKILL.md)（code-reality/LSP 優先），`rg`/`fd` 只作文字／檔案搜尋、不得充當結構證據；本節 rg/fd 文字／檔案搜尋規則照舊保留。
+
 ```bash
 # ❌ 禁止 — 每次都要手動批准
 find . -name "*.py"
