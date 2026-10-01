@@ -4,9 +4,11 @@ title: CR-查證與收線證據閉環——review-腿-route-宣告到-ledger-rec
 status: To Do
 assignee: []
 created_date: '2026-10-01 02:24'
-updated_date: '2026-10-01 02:24'
+updated_date: '2026-10-01 02:42'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/10-01-cr-receipt-closure/ep.md
 ordinal: 210000
 ---
 
