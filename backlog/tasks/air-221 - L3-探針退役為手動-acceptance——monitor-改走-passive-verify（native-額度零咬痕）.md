@@ -1,10 +1,10 @@
 ---
 id: AIR-221
 title: L3-探針退役為手動-acceptance——monitor-改走-passive-verify（native-額度零咬痕）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-01 00:40'
-updated_date: '2026-10-01 01:09'
+updated_date: '2026-10-01 01:11'
 labels: []
 dependencies: []
 ordinal: 207000
@@ -56,3 +56,17 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【1001 結算】實作＝flash（stub 轉正＋monitor 被動化＋文檔六處＋政策句＋消解句＋9 新測）；審查＝fresh（六軸全 PASS＋live 實跑被動綠；必修 F1＝政策句張力）＋muse（五題對照全合＋Minor/Info 三條）→judge 6 採＋F5 記帳→flash 修復 6/6 綠（含 L4 monitor 真跑 exit 0）。回執四欄：classification=boundary（monitor 契約＋探針政策面）／review=fresh+muse GO-WITH-FIXES 全採（evidence .agent-tmp/l3-reform/）／session-freshness=fresh／deployment-surfaces=healthy（monitor L4 真跑綠＋--check 雙面綠）。記帳：F5（hooks/AGENTS.md＋matrix row 15 正當但未列 Plan Scope——drift 防護課責）；後續弧候選：真 L1 缺席測試補案、family 表 :185 rescue 列同步。全量 2672 passed。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+L3 探針退役手動 acceptance 落地（main 2c7fb477）：monitor 日頻改走 --surface monitor 排程被動路徑（L1/L2＋本地面、永不 codex exec——native 額度零咬痕；CLI 缺席不再 GUARD＝環境噪音源消滅）；手動 --verify --surface all 完整含 L3（fail-closed 不變）；正典入口＋五觸發時點（codex 升級/改 hooks/registration/trust/L3 fixture 變更後）住 governance README；webgpt-only 路由政策入 model-routing SKILL（native passthrough 標退役；catalog 純供給事實零政策句）；10-04 pending 以 superseded 語義消解（air-215/220 notes）。殘餘風險（行為級失效延遲到下個手動觸發點）誠實入卡與 README。終態圖：
+
+```mermaid
+flowchart LR
+    D["monitor 日頻"] --> PV["surface=monitor<br/>被動：L1/L2+本地面<br/>零 native 額度"]
+    M["手動 surface=all"] --> L3["L3 host-level<br/>（升級/改hooks 後）"]
+    PV --> G["PASS=被動綠+check 綠<br/>不宣稱 deny 已驗"]
+    L3 -.->|"五觸發時點"| README["正典入口<br/>governance README"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
