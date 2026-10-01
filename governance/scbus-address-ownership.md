@@ -64,6 +64,89 @@
 - 只有明確 address-consumer UC 的 owner 才 claim/renew；一般 session workflow
   不加入 renew chore。
 
+## Repo well-known address 與收件責任
+
+> 收件面 convention 單一源（AIR-225，2026-10-01 marshal 三封漏接事故收斂；
+> 雙腿 verdict `.agent-tmp/addr-unify/`）。其他文檔只放 pointer，不重刻本節
+> ——authoring source＝本節本體，無獨立 consumer 檔；consumer 接線＝值星
+> session 開場讀本節，STATE.md 1001 起載指針。
+> 通用 template：所有 repo 一體適用；他 repo 命名（各 `<repo>-marshal`）已符合，
+> convention 采納隨各自觸點跟進——不發動跨 repo 搬遷，採納細節由各 repo 自主。
+
+### Repo address cardinality（一 repo 一門牌）
+
+- 每個 repo 預設**恰一個** well-known durable inbound address，命名 `<repo>-marshal`
+  （ai-guide 即 `ai-guide-marshal`，由 workspace ext per-workspace 決定論身分長持）。
+- 第二位址例外 predicate：必須證明**獨立 consumer UC**才可建立；「系統信／工作信」
+  「值星／marshal」等訊息分類或命名差異不構成 UC——訊息種類用 envelope
+  `mode`（steer/queue/notify）＋`intent`（inform/solicit/receipt）表達，不以多位址分類。
+
+### Sender selection（二分 oracle）
+
+| 訊息要給誰 | 動詞 |
+|---|---|
+| repo/workspace 承接、須跨 session 存活的責任信 | `send --to-address <repo>-marshal` |
+| 已知 live session 的即時對話 | `send --to <session_id>` |
+
+同信多址雙寄製造雙 envelope＋ack 歧義，禁。
+
+### Holder ≠ monitor
+
+- **holder** 負責 routing lease 與 ack（claim/acquire/renew/release/ack 的主體）；
+  **monitor** 只負責發現 pending——不同角色，monitor 不需要 holder 身分。
+- 值星/Marshal session 的收件義務＝**監看 canonical mailbox＋掃自己的 session inbox**，
+  兩面都免 holder 身分：canonical 用 `scbus address ls --pending`（read-only badge，
+  AIR-168 驗收③——ls 不帶 caller identity；holder-less 位址每封 pending header
+  附首行 preview 供 triage；實證錨＝scbus v0.2.0 `scbus address ls --help`——
+  `--pending` 附 envelope_id/from/mode/created，首行 preview 僅非 holder 視角
+  ＝installed cli.py `preview=not held` 行為）。
+  **已知崩潰史（SCR-8）**：address row 在而磁上 `new/` 目錄缺時，pending 視圖曾
+  整命令崩（raw FileNotFoundError）；上游已修（sc-router scr-8——缺目錄讀面
+  fail-soft 回空清單＋pending_note，修復入 v0.2.0），本機已升級。降級監看路徑＝
+  直接 `ls addresses/*/new/` 檔案面（scbus home 底下）。
+  session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手不動搖
+  ownership。因監控需求 acquire/renew/force-reclaim canonical address 皆違反本節。
+- 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
+  actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
+- ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
+  （holder-operation gap）。lease 已過期時，同 trust boundary 的 operator 走
+  **ext operator path**（以 ext holder 複合鍵執行 CLI——2026-10-01 migration
+  三封 ack 實證形態）plain `acquire`（expired binding，generation+1）恢復 lease
+  後即可 ack——非 transfer、非 force-reclaim，pin 仍屬原 holder 身分；
+  **禁 session 面冒身 acquire**（identity 非 authN、trust boundary 內可 spoof
+  是事實描述非授權，見紅線節——規範禁令不因技術可行而撤）。
+- 閉環驅動路徑：monitor 發現 marshal pending >0 後，正常＝**holder ext 自收**
+  （workspace 重開窗即同身分 renew＋recv，generation 不變）；operator 代 ack
+  僅限 holder 委託或緊急（漏接事故級），走前述 ext operator path。release
+  命令形（AIR-225 primary release 實證）：`scbus release --harness zcode
+  --session-id <holder> --address ai-guide-primary --generation <n>`
+  （`--session-id`／`--generation` optional——後者為 fencing CAS）。
+
+### Retirement 程序
+
+退役一個 address 依序：①所有 sender 停止使用 →②drain/ack pending →③holder
+`release`（或 lease 惰性 expiry）→④禁 reacquire。address row 留存不消失
+（tombstone 語義以 scbus-address-contract.md:26 為準——對象為舊 binding
+generation，非 address），不隨 release 消失——**退役後該位址 pending 再現
+>0 ＝ stale-sender violation**（寄舊址者違規，不是正常第二 inbox）。
+
+登記：`ai-guide-primary` 已退役（2026-10-01，AIR-225）——成立理由（AIR-206 SCR-6
+位址面 drain 誤診）已被 SCR-6 否證，本退役＝部分反轉並於卡面聲明。此後
+`ai-guide-primary` pending >0 即 stale-sender violation。
+
+### Exception contract（第二位址五要件）
+
+第二 durable address 要成立，須同時登記五要件，缺任一項不成立：
+①獨立 consumer UC（非訊息分類）②canonical sender selection（誰寄它、何時）
+③holder＋monitor 契約（誰持有、誰監看、各自生命週期）④ack owner（誰有權 ack）
+⑤retirement rule（退役條件與程序）。現況登記：**無**（ai-guide 無第二位址）。
+
+### Transport 事實登記（alias / multi-drop）
+
+公開 scbus surface 無 alias、無 multi-drop：send 單一 `--to`／`--to-address` 二選一，
+address 僅 create/ls/sweep。本節不新增 sc-router transport feature（AIR-225 不做項）；
+fan-out 需求只能以多次單址 send 表達，且受上文禁雙寄約束。
+
 ## 證據錨點
 
 southchariot：`src/scbus/controlChannel.ts:75-94`（身分決定論）、`:938-941`（B1）、
