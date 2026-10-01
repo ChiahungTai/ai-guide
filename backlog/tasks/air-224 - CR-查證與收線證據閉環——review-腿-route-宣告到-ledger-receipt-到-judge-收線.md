@@ -4,7 +4,7 @@ title: CR-查證與收線證據閉環——review-腿-route-宣告到-ledger-rec
 status: In Progress
 assignee: []
 created_date: '2026-10-01 02:24'
-updated_date: '2026-10-01 04:06'
+updated_date: '2026-10-01 05:51'
 labels: []
 dependencies: []
 references:
@@ -50,4 +50,10 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【1001 狀態翻正】EP accepted（61dae017＋amendment e6a76f12）——實作（S1 語義凍結/S1b producer carrier/S2 lint gate/S3 judge consumer/S4 telemetry）待下 session（EP 自含，fresh context 接手）。precheck ③ 反向檢查命中＝EP commits 在線而卡未翻——翻 In Progress 解除。
+
+值星 dispatch（sess_04e54db8 續杯後）：卡 WT air-224 已開（baseline main=b41b4ed1）；flash 實作 agent 已派背景跑——五段照 EP 收口順序（S0 telemetry baseline 凍結→S1 schema→S1b producer carrier→S2 lint TDD→S3 judge gate→S4 telemetry+dogfood 草稿）；bridge durable-evidence producer 卡 bridge 側尚無回音，EP amendment 語義已涵蓋（不阻塞）；後續：fresh+muse 審查→judge→commit→wt-close merge。
+
+雙腿審查收齊（fresh GO-WITH-FIXES 1Major+2Imp+2Min+2Info／muse GO-WITH-FIXES 3Imp+6Min+3Info；互相印證 F5≡F1、F3≡F7、F6≡F9 零衝突）；judge 裁決 13 項全採（F1 模板 legs 冒號形／slash leg key／Amendment 測試撥正／exempt 章形+豁免面雙收緊／air-91 先例措辭／cr 檢查收斂 converged／空 reason／n/a judge 複核註記／bare live-cr 註記＋pin／phantom 錨定／tmp_path／degraded 獨立行／S4 golden test）；flash 修復腿跑中。verdict 存檔：.agent-tmp/air-224/verdict-{fresh,muse}.md。
+
+audit-test 腿（EP 收尾段 3）收齊：PASS-WITH-NOTES（gate_blocking=false；60 passed 自跑；9/9 快照獨立復驗 SAME）。AT-1~5 全修（孤兒 receipt 稀釋 silent／cr_usage 鏡像錨定未同步 phantom／exempt 測 vacuous-green 守衛／missing_na+no_evidence 補測／tuple 非空守衛）；AT-6 不追補（後續弧 RED provenance 慣例）；AT-7 記錄（cutoff re-baseline 五處同步：review_ledger.py:92＋cr-exempt-legacy.md:8＋三 inline replace）。flash 修復輪 2 跑中。verdict-audit.md 存檔。
 <!-- SECTION:NOTES:END -->
