@@ -1,10 +1,10 @@
 ---
 id: AIR-224
 title: CR-查證與收線證據閉環——review-腿-route-宣告到-ledger-receipt-到-judge-收線
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-01 02:24'
-updated_date: '2026-10-01 02:42'
+updated_date: '2026-10-01 04:06'
 labels: []
 dependencies: []
 references:
@@ -45,3 +45,9 @@ flowchart LR
 **Integration**：下游＝judge-review 收線 gate、AIR-216 收線核對（bridge 面已先行）、mosaic dogfood；上游＝兩份審計。
 **驗證式**：codex AC 八項（EP 凍結時細化 grammar）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【1001 狀態翻正】EP accepted（61dae017＋amendment e6a76f12）——實作（S1 語義凍結/S1b producer carrier/S2 lint gate/S3 judge consumer/S4 telemetry）待下 session（EP 自含，fresh context 接手）。precheck ③ 反向檢查命中＝EP commits 在線而卡未翻——翻 In Progress 解除。
+<!-- SECTION:NOTES:END -->
