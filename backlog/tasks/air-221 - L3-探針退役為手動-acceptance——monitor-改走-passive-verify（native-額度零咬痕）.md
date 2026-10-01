@@ -4,7 +4,7 @@ title: L3-探針退役為手動-acceptance——monitor-改走-passive-verify（
 status: In Progress
 assignee: []
 created_date: '2026-10-01 00:40'
-updated_date: '2026-10-01 00:40'
+updated_date: '2026-10-01 01:09'
 labels: []
 dependencies: []
 ordinal: 207000
@@ -31,12 +31,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 monitor 路徑：governance_health_monitor.py 調 --verify --surface monitor；install.py stub 實作（scheduled passive 永不呼叫 codex_host_level_fixture；CLI 缺席該模式非 GUARD）；monitor log 含可見 manual-only 行
-- [ ] #2 手動能力保留：rg gov-probe-fixture governance/install.py 命中不變；--surface all 語義含 L3（文件＋代碼分支）；PASS/尾行措辭照決策②
-- [ ] #3 文檔：README probe 表/三層節/排程節/manual 正典入口＋觸發時點；hooks/AGENTS.md pointer；manifest/plist/schedule-registry 語義同步
-- [ ] #4 路由政策句：model-routing SKILL codex 行 webgpt-only＋native 手動保留 rg 命中；catalog.toml 零政策句
-- [ ] #5 消解句：air-215/air-220 notes 各一句（superseded 語義）
-- [ ] #6 驗證：monitor 實跑綠（被動+check）；相關 pytest 同步全綠；--check --surface all 綠
+- [x] #1 monitor 路徑：governance_health_monitor.py 調 --verify --surface monitor；install.py stub 實作（scheduled passive 永不呼叫 codex_host_level_fixture；CLI 缺席該模式非 GUARD）；monitor log 含可見 manual-only 行
+- [x] #2 手動能力保留：rg gov-probe-fixture governance/install.py 命中不變；--surface all 語義含 L3（文件＋代碼分支）；PASS/尾行措辭照決策②
+- [x] #3 文檔：README probe 表/三層節/排程節/manual 正典入口＋觸發時點；hooks/AGENTS.md pointer；manifest/plist/schedule-registry 語義同步
+- [x] #4 路由政策句：model-routing SKILL codex 行 webgpt-only＋native 手動保留 rg 命中；catalog.toml 零政策句
+- [x] #5 消解句：air-215/air-220 notes 各一句（superseded 語義）
+- [x] #6 驗證：monitor 實跑綠（被動+check）；相關 pytest 同步全綠；--check --surface all 綠
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -50,3 +50,9 @@ flowchart LR
 **Integration**：下游=monitor 日常（10-04 噪音源消失）；README 運維單一源。
 **驗證式**：AC 六項。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【1001 結算】實作＝flash（stub 轉正＋monitor 被動化＋文檔六處＋政策句＋消解句＋9 新測）；審查＝fresh（六軸全 PASS＋live 實跑被動綠；必修 F1＝政策句張力）＋muse（五題對照全合＋Minor/Info 三條）→judge 6 採＋F5 記帳→flash 修復 6/6 綠（含 L4 monitor 真跑 exit 0）。回執四欄：classification=boundary（monitor 契約＋探針政策面）／review=fresh+muse GO-WITH-FIXES 全採（evidence .agent-tmp/l3-reform/）／session-freshness=fresh／deployment-surfaces=healthy（monitor L4 真跑綠＋--check 雙面綠）。記帳：F5（hooks/AGENTS.md＋matrix row 15 正當但未列 Plan Scope——drift 防護課責）；後續弧候選：真 L1 缺席測試補案、family 表 :185 rescue 列同步。全量 2672 passed。
+<!-- SECTION:NOTES:END -->
