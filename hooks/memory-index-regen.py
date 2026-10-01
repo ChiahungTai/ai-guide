@@ -5,7 +5,8 @@ Stop hook: memory 索引冪等重生成（跨 Claude/ZCode 單一實作）。
 從 stdin JSON 共用欄位 cwd（缺漏時退 CLAUDE_PROJECT_DIR env）推導 memory 目錄：
 - Claude: ~/.claude/projects/<cwd 非英數→dash>/memory（底線也轉 dash——專案名編碼陷阱）
 - ZCode:  ~/.zcode/cli/memories/projects/<basename>-<sha256(cwd)[:16]>/memory
-  （ZCode 目錄多為 symlink → Claude 同一實體 pool；resolve() 去重只跑一次）
+  （兩腿皆 symlink → 同一實體 pool——AIR-223 直鏈拓撲均指池 real dir；
+  resolve() 去重只跑一次）
 Self-gating：目錄無 _generate_index.py 則靜默跳過（裝 script 即 opt-in）。
 恆 exit 0——Stop 的 exit 2 會強制主模型再跑一輪（ZCode hooks 文檔明載），
 regen 失敗只回報不阻斷。generator 資產源：skills/memory-audit/scripts/generate_index.py。

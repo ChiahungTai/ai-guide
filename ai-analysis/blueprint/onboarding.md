@@ -251,8 +251,8 @@ hooks/setup-memory-symlinks.sh --apply
 
 - primary `.agents/memory/` 必須是實體目錄。
 - 被替換 path 先搬成 `.bak-*`。
-- CC project directory 尚未存在時 fail loud；先從 repo 開一次 CC session，再重跑。
-- ZCode path 經 CC memory path 最終解析到 canonical pool。
+- CC alias（optional compat）只在 CC project directory 已存在時建；缺席印 SKIP 續行——不是 prerequisite，無需開 CC session（AIR-223）。
+- ZCode path 直鏈 canonical pool（唯一必要鏈；AIR-223 direct-anchor）。
 
 ### 4.3 Muse memory 閘 — ✅
 
@@ -269,9 +269,9 @@ hooks/verify-memory-topology.sh
 現有 verifier 檢：
 
 - primary pool real-dir。
-- CC symlink。
-- ZCode double-hop。
-- 三腿 `MEMORY.md` 同 inode。
+- ZCode symlink → pool（唯一必要腿）。
+- CC alias → pool（optional——在場才驗，缺席 SKIP 不計 FAIL）。
+- 在場腿 `MEMORY.md` 同 inode。
 - generator `--check`。
 
 Muse write gate 健檢＝plugin 面（`muse plugins inspect <id> --json` 的 `runtime_capabilities[].status`），單一源＝[muse-plugins/memory-governance/README.md](../../muse-plugins/memory-governance/README.md) 運維節（legacy `.muse/hooks.json` 檢查與 `--smoke` hook 往返已隨 AIR-79 cutover 退役）。

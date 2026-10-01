@@ -31,7 +31,7 @@
 #   流入率口徑（R4）：A 形態＝MEMORY.md chars；B 形態＝inventory chars（B 常駐面
 #   ≈常數不得作為流入訊號）——輸出行自帶兩欄數字，消費端（lite 流入率/夜收斂）
 #   依形態取數，禁不同口徑相減（首次切換重建基線）。
-# 載入上限實證（2026-09-03 雙端源碼反組譯、CLI 三版同構；共用池＝ZCode symlink→Claude 實體）：
+# 載入上限實證（2026-09-03 雙端源碼反組譯、CLI 三版同構；共用池＝ZCode symlink→`<repo>/.agents/memory` 池主體——AIR-223 direct-anchor；CC 舊徑 alias optional 可缺席）：
 #   兩端同語義＝200 行 或 25,000 字元（UTF-16 code units，CJK 一字計 1）：
 #     ZCode zcode.cjs：Vut=200／mre=25e3（Wut()：o=t.length 比較）
 #     Claude versions/<v>：YD=200／GF=25000（mLe() 回傳 byteCount:t.length——

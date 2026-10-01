@@ -8,7 +8,7 @@ allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Edit", "Write"]
 
 # /memory-audit — auto memory 兩級稽核 + 增量核實 + 專案狀態戳
 
-> **適用載體**：Claude Code / ZCode auto memory——per-project memory 目錄（`MEMORY.md` 索引 + 各條目 .md；session 啟動只載索引，超限截斷——**兩端皆 200 行或 25,000 字元（UTF-16，CJK 一字計 1）** 先到為準，截斷附 WARNING、尾端條目不載；「25KB」是警告訊息以 KB 顯示的假象）。ZCode memory 目錄是 symlink → Claude `projects/<project>/memory`，兩端單一真相。memory 跟專案/repo 走：稽核與狀態戳 per-project，跨 worktree 同一份不重複稽核。
+> **適用載體**：Claude Code / ZCode auto memory——per-project memory 目錄（`MEMORY.md` 索引 + 各條目 .md；session 啟動只載索引，超限截斷——**兩端皆 200 行或 25,000 字元（UTF-16，CJK 一字計 1）** 先到為準，截斷附 WARNING、尾端條目不載；「25KB」是警告訊息以 KB 顯示的假象）。ZCode memory 目錄是 symlink → `<repo>/.agents/memory` 池主體（AIR-223 direct-anchor）；CC 舊徑 alias optional 可缺席。memory 跟專案/repo 走：稽核與狀態戳 per-project，跨 worktree 同一份不重複稽核。
 
 ## 🔴 反模式警示（最前，必讀）
 

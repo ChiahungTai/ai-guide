@@ -40,8 +40,8 @@ hooks/setup-memory-symlinks.sh            # dry-run，先看 plan
 hooks/setup-memory-symlinks.sh --apply    # 執行；被換掉的原條目一律先 mv 成 .bak-<timestamp>，不用 rm
 ```
 
-- 命名規則（2026-09-09 實測）：CC 目錄＝repo 路徑 `/`→`-`；ZCode 目錄＝`<basename>-<sha256(repo路徑)[:16]>`；鏈＝ZCode→CC→池。
-- CC project 目錄不存在→腳本 fail-loud：先去新機器 repo 開一次 CC session 再重跑。
+- 命名規則（2026-09-09 實測）：CC 目錄＝repo 路徑 `/`→`-`；ZCode 目錄＝`<basename>-<sha256(repo路徑)[:16]>`；拓撲（AIR-223 direct-anchor）＝ZCode→池（唯一必要鏈，直鏈不做雙跳）。
+- CC alias（`~/.claude/projects/<encoded>/memory`→池）＝optional compat：CC project 目錄已存在才建，缺席印 `SKIP CC alias (optional; project dir absent)` 續行 exit 0——**不是 prerequisite，無需開 CC session**（AIR-215 後 CC 停用的機器照裝）。
 - muse 端零動作（project scope 跟 repo 走）。
 
 ### 3. Muse memory 閘（AIR-79 plugin 化）
@@ -60,7 +60,7 @@ ZCode cron 住本機 DB，不跟 repo 走。**registry 記 primary 機的 automa
 ### 5. 驗證
 
 ```bash
-hooks/verify-memory-topology.sh           # 只讀：三段＋inode＋generator
+hooks/verify-memory-topology.sh           # 只讀：必要腿（ZCode→池）＋optional CC alias＋inode＋generator
 ```
 
 ## 深層限制（架構邊界，非待修）

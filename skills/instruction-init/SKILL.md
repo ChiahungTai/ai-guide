@@ -109,7 +109,7 @@ Phase 1.5 完成後檢查 code-reality graph 就緒（消費端＝後續 review 
 - Key Patterns（反覆出現的設計模式）
 - Build and Development（如何建置、測試、lint）
 - "Finding Things" quick reference（常見問題 → 去哪裡找）
-- **記憶池路由行（條件段）**：先探測本 repo 的 Claude 記憶池——encoded 名＝repo 絕對路徑 `/`→`-`（實證：`/Users/ctai/Github/ai-guide`→`-Users-ctai-Github-ai-guide`），再 `ls ~/.claude/projects/<encoded>/memory/` 查存在性。三形態：
+- **記憶池路由行（條件段）**：先探測本 repo 的記憶池主體 `<repo>/.agents/memory/`（direct——AIR-223 起唯一 authority）；查無再退 fallback 探 CC 舊徑（legacy repo 池未直鏈者）——encoded 名＝repo 絕對路徑 `/`→`-`（實證：`/Users/ctai/Github/ai-guide`→`-Users-ctai-Github-ai-guide`），`ls ~/.claude/projects/<encoded>/memory/` 查存在性。三形態：
   - 池存在且 `_inventory.md` 在 → 蓋章路由行：含精確池路徑；檢索指引＝`rg -i "<關鍵詞>" <池>/_inventory.md` 定位後 Read 條目檔 body
   - 池存在但無 `_inventory.md` → 蓋章路由行：含精確池路徑；檢索指引＝`rg -i "<關鍵詞>" <池>/*.md` 直接搜條目檔
   - 池缺 → degraded 一行（「本 repo 無記憶池」）

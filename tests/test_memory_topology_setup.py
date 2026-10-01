@@ -71,7 +71,7 @@ def test_symlinks_apply_backs_up_and_links(tmp_path):
     baks = list(cc_mem.parent.glob("memory.bak-*"))
     assert len(baks) == 1 and (baks[0] / "old-note.md").is_file()
     zc = list((home / ".zcode" / "cli" / "memories" / "projects").glob("repo-*/memory"))
-    assert len(zc) == 1 and os.readlink(zc[0]) == str(cc_mem)
+    assert len(zc) == 1 and os.readlink(zc[0]) == str(pool)
 
 
 def test_symlinks_apply_idempotent(tmp_path):
@@ -105,6 +105,53 @@ def test_symlinks_missing_pool_fails_loud(tmp_path):
     assert "transfer" in r.stderr
 
 
+def test_symlinks_apply_without_cc_dir_links_zcode_direct(tmp_path):
+    """CC-less skeleton (no ~/.claude/projects): --apply exit 0, ZCode -> pool.
+
+    AIR-223: the CC alias is optional compat; its absence must not block
+    the required ZCode leg (direct-anchor topology).
+    """
+    home, repo, pool, env = make_skeleton(tmp_path, with_cc_memory=False)
+    r = subprocess.run(
+        ["bash", str(repo / "hooks" / "setup-memory-symlinks.sh"), "--apply"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert r.returncode == 0, r.stderr
+    assert "SKIP CC alias (optional; project dir absent)" in r.stdout
+    cc_mem = home / ".claude" / "projects" / repo_encoded(repo) / "memory"
+    assert not cc_mem.exists() and not cc_mem.is_symlink()
+    h = hashlib.sha256(str(repo).encode()).hexdigest()[:16]
+    zc_mem = (
+        home / ".zcode" / "cli" / "memories" / "projects" / f"repo-{h}" / "memory"
+    )
+    assert zc_mem.is_symlink() and os.readlink(zc_mem) == str(pool)
+
+
+def test_verify_green_without_cc_dir(tmp_path):
+    """CC-less skeleton: verify exit 0; CC leg printed as SKIP, not FAIL."""
+    _, repo, _, env = make_skeleton(tmp_path, with_cc_memory=False)
+    setup = str(repo / "hooks" / "setup-memory-symlinks.sh")
+    assert (
+        subprocess.run(
+            ["bash", setup, "--apply"], env=env, capture_output=True, check=False
+        ).returncode
+        == 0
+    )
+    r = subprocess.run(
+        ["bash", str(repo / "hooks" / "verify-memory-topology.sh")],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "SKIP CC alias" in r.stdout
+    assert "0 failed" in r.stdout
+
+
 def test_verify_topology_green_on_good_tree(tmp_path):
     """Verify script passes on a correctly linked skeleton."""
     home, repo, pool, env = make_skeleton(tmp_path, with_cc_memory=False)
@@ -115,7 +162,7 @@ def test_verify_topology_green_on_good_tree(tmp_path):
     h = hashlib.sha256(str(repo).encode()).hexdigest()[:16]
     zc_mem = home / ".zcode" / "cli" / "memories" / "projects" / f"repo-{h}" / "memory"
     zc_mem.parent.mkdir(parents=True)
-    zc_mem.symlink_to(cc_mem)
+    zc_mem.symlink_to(pool)
     muse_dir = repo / ".muse"
     muse_dir.mkdir()
     fake_hook = repo / "hooks" / "fake-hook.sh"

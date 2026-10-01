@@ -9,7 +9,7 @@
 **Stop 陣列第二個 hook 物件**（目前是 `python3 .../memory-index-regen.py`）：
 
 ```
-M="$HOME/.claude/projects/$(echo "$CLAUDE_PROJECT_DIR" | sed 's|[^A-Za-z0-9]|-|g')/memory"; if [ -f "$M/_generate_index.py" ]; then python3 "$M/_generate_index.py" || true; fi
+M="/Users/ctai/Github/ai-guide/.agents/memory"; if [ -f "$M/_generate_index.py" ]; then python3 "$M/_generate_index.py" || true; fi
 ```
 
 **PreToolUse（matcher `Edit|Write|NotebookEdit`）hook 物件**（目前是 `python3 .../block-memory-index-write.py`）：

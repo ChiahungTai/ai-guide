@@ -7,9 +7,11 @@
 # machine-derived: CC encodes the repo path (`/` -> `-`), ZCode appends
 # sha256(repo path)[:16] (both rules verified empirically 2026-09-09).
 #
-# Layout rebuilt (same as AIR-54 Chapter 1):
-#   ZCode memories/<repo>-<hash>/memory -> CC projects/<encoded>/memory
-#                                        -> <repo>/.agents/memory (real dir)
+# Layout rebuilt (AIR-223 direct-anchor; pool = single authority):
+#   ZCode memories/<repo>-<hash>/memory -> <repo>/.agents/memory (real dir)
+#   CC projects/<encoded>/memory        -> <repo>/.agents/memory  (optional
+#     compat alias; built only when the CC project dir already exists,
+#     otherwise SKIP — never a prerequisite)
 #
 # Safety: default is DRY-RUN (print plan only). `--apply` executes, and
 # every replaced entry is first moved to <name>.bak-<timestamp> (never rm).
@@ -58,13 +60,19 @@ do_entry() { # $1=label $2=link-path $3=target
   echo "LINK $1 $2 -> $3"
 }
 
-[ -d "$(dirname "$CC_MEM")" ] || fail "CC project dir not found: $(dirname "$CC_MEM") (open one CC session in $REPO first, then re-run)"
-
 if [ "$APPLY" = 1 ]; then
-  do_entry "CC" "$CC_MEM" "$POOL"
-  do_entry "ZCode" "$ZC_MEM" "$CC_MEM"
+  do_entry "ZCode" "$ZC_MEM" "$POOL"
+  if [ -d "$(dirname "$CC_MEM")" ]; then
+    do_entry "CC" "$CC_MEM" "$POOL"
+  else
+    echo "SKIP CC alias (optional; project dir absent): $(dirname "$CC_MEM")"
+  fi
 else
   echo "(dry-run; pass --apply to execute)"
-  plan_entry "CC" "$CC_MEM" "$POOL"
-  plan_entry "ZCode" "$ZC_MEM" "$CC_MEM"
+  plan_entry "ZCode" "$ZC_MEM" "$POOL"
+  if [ -d "$(dirname "$CC_MEM")" ]; then
+    plan_entry "CC" "$CC_MEM" "$POOL"
+  else
+    echo "SKIP CC alias (optional; project dir absent): $(dirname "$CC_MEM")"
+  fi
 fi

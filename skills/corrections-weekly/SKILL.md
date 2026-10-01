@@ -28,7 +28,7 @@ allowed-tools: ["Read", "Bash", "Write", "Edit"]
 
    輸出三源三證據類：源1 ZCode db——CR skill 調用（cr-query＋code-reality，distinct sessions＋總計）、CR MCP 工具呼叫（per-tool distinct sessions）、對照 Bash rg part 數；源2 bridge jobs——**call 證據只認 `item.completed`＋`command_execution` 的 command 欄位 match CR CLI**（文字面提及≠呼叫——條文引用與呼叫混淆是誤報主體），寫入面 subcommand 另計，`[SRC]`／未 index 驗證／degraded marker＝evidence-bearing jobs（非 CR calls）；源3 agent 產出（`output.txt` 無工具結構，一律計 evidence 不計 call）。**判讀語義（cr-audit R5 換軌）**：滲透計數只是健康診斷（agent 在不需 CR 的任務亂 call 也達標，不作 KPI）；KPI 主軸＝**negative-claim CR 覆蓋率**（本週弧 negative claims 中附 `[SRC]`／CR 證據的比例）、**rename-delete preflight 覆蓋率**、**query not-found→retry 成功率**、**silent fallback 數**——分母取材本週弧 findings/卡面（LLM 判讀面，腳本只供工具呼叫面）。事件觸發主形態：CR wiring 變更弧收尾時必跑本腳本＋數字附卡（**runtime hook＝post-build 階段 4「CR wiring telemetry checkpoint」，detector 清單單一源在彼**）；週期 cron 跑到時若該週無 wiring 變更，CR 段寫「事件觸發制——本週無 wiring 變更，KPI 段略」。
 
-2b. **跑 memory 寫入歸因腳本**（機械面——AIR-40；池＝本 repo 對應 CC 池）：
+2b. **跑 memory 寫入歸因腳本**（機械面——AIR-40；池＝repo 主體 `.agents/memory` 直連，非經 CC；`--cc-root` 為 Claude 歷史 session 遙測源，與池路由無關）：
 
    ```bash
    uv run python /Users/ctai/Github/ai-guide/skills/memory-audit/scripts/memory_telemetry.py writes \

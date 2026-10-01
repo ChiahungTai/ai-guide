@@ -9,15 +9,15 @@ sha1 = "afeeb3d25c041357a51cb798e8753e4ece6c2f33"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/structure.md"
-sha1 = "feb5ceddd62033fc0a1cb9d8cddd6c2a0ce1c0e2"
+sha1 = "eb4dc9c2e2674f1f24519d464a1a82e5c404c2bb"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/workflow.md"
-sha1 = "4e73026b60dd6f59ff65961e5172b6a962c64870"
+sha1 = "1e6c8c895fc5352d88b0a44aaaecf2820b12362c"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/onboarding.md"
-sha1 = "76620b80fd8d20bbc001c386765ceb3c11034205"
+sha1 = "04be24099f72a28e648e76f3af0df6ef5ee13b01"
 
 [[projection.upstream]]
 path = "AGENTS.md"

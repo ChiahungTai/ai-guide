@@ -999,7 +999,7 @@ def print_plan(plan: dict) -> None:
             else [
                 "muse plugins install <repo>/muse-plugins/memory-governance --scope user",
                 "muse plugins approve muse-memory-governance",
-                "hooks/setup-memory-symlinks.sh --apply（pool 拓撲腿）",
+                "hooks/setup-memory-symlinks.sh --apply（pool 直鏈腿——ZCode→池；CC alias optional）",
             ]
         )
         for c in muse_cmds:

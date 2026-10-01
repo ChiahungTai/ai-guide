@@ -3,9 +3,10 @@
 # fresh-machine setup and as the shrunken E2E for the migration
 # acceptance gate.
 #
-# Checks: pool is a real dir; CC path is a symlink onto the pool; ZCode
-# path double-hops onto the pool; all three resolve to the same inode;
-# deployed generator --check is green.
+# Checks (AIR-223 direct-anchor): pool is a real dir; the required leg is
+# ZCode -> pool. The CC alias -> pool is optional compat — verified only
+# when present, absence is a SKIP (not a FAIL); every present leg must
+# resolve to the same inode; deployed generator --check is green.
 # Muse write-gate health is plugin-plane (AIR-79 cutover; the legacy
 # hooks.json / launcher checks are retired) — see
 # muse-plugins/memory-governance/README.md 運維節.
@@ -24,16 +25,36 @@ CC_MEM="$HOME/.claude/projects/$ENCODED/memory"
 ZC_MEM="$HOME/.zcode/cli/memories/projects/$(basename "$REPO")-$HASH/memory"
 
 [ -d "$POOL" ] && [ ! -L "$POOL" ] && ok "pool is a real dir" || bad "pool missing or symlink: $POOL"
-[ -L "$CC_MEM" ] && [ "$(readlink "$CC_MEM")" = "$POOL" ] && ok "CC symlink -> pool" || bad "CC link wrong: $CC_MEM"
-[ -L "$ZC_MEM" ] && [ "$(readlink "$ZC_MEM")" = "$CC_MEM" ] && ok "ZCode symlink -> CC" || bad "ZCode link wrong: $ZC_MEM"
 
-if [ -f "$POOL/MEMORY.md" ] && [ -f "$CC_MEM/MEMORY.md" ] && [ -f "$ZC_MEM/MEMORY.md" ]; then
-  A=$(python3 -c "import os;print(os.stat('$POOL/MEMORY.md').st_ino)")
-  B=$(python3 -c "import os;print(os.stat('$CC_MEM/MEMORY.md').st_ino)")
-  C=$(python3 -c "import os;print(os.stat('$ZC_MEM/MEMORY.md').st_ino)")
-  [ "$A" = "$B" ] && [ "$B" = "$C" ] && ok "same inode ($A)" || bad "inode mismatch: $A $B $C"
+if [ -L "$ZC_MEM" ] && [ "$(readlink "$ZC_MEM")" = "$POOL" ]; then
+  ok "ZCode symlink -> pool"
 else
-  bad "MEMORY.md not reachable on all three legs"
+  bad "ZCode link wrong: $ZC_MEM (expected -> $POOL)"
+fi
+
+CC_PRESENT=0
+if [ -L "$CC_MEM" ] || [ -e "$CC_MEM" ]; then
+  if [ -L "$CC_MEM" ] && [ "$(readlink "$CC_MEM")" = "$POOL" ]; then
+    ok "CC alias -> pool (optional compat)"
+    CC_PRESENT=1
+  else
+    bad "CC alias wrong: $CC_MEM (expected -> $POOL)"
+  fi
+else
+  echo "SKIP CC alias (optional; project dir absent): $CC_MEM"
+fi
+
+if [ -f "$POOL/MEMORY.md" ] && [ -f "$ZC_MEM/MEMORY.md" ]; then
+  A=$(python3 -c "import os;print(os.stat('$POOL/MEMORY.md').st_ino)")
+  B=$(python3 -c "import os;print(os.stat('$ZC_MEM/MEMORY.md').st_ino)")
+  if [ "$CC_PRESENT" = 1 ] && [ -f "$CC_MEM/MEMORY.md" ]; then
+    C=$(python3 -c "import os;print(os.stat('$CC_MEM/MEMORY.md').st_ino)")
+    [ "$A" = "$B" ] && [ "$B" = "$C" ] && ok "same inode ($A)" || bad "inode mismatch: $A $B $C"
+  else
+    [ "$A" = "$B" ] && ok "same inode ($A)" || bad "inode mismatch: $A $B"
+  fi
+else
+  bad "MEMORY.md not reachable on required legs (pool + ZCode)"
 fi
 
 if [ -f "$POOL/_generate_index.py" ]; then
