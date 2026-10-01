@@ -4,6 +4,7 @@ title: 值星清理批次——家族枚舉＋詞彙＋LSP 泛稱語料 drift �
 status: To Do
 assignee: []
 created_date: '2026-10-01 22:41'
+updated_date: '2026-10-01 23:04'
 labels: []
 dependencies: []
 ordinal: 216000
@@ -22,3 +23,9 @@ flowchart LR
     C --> V['rg 三組掃描<br/>零命中'] --> DONE['consistency 快道']
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+第四組追加（AIR-228 fresh-F3 judge 裁決歸併）：bridge-dispatch:66＋symbol-query-routing:25 的降級原因記載仍為 no-cr-query-face 單值時代措辭——改為指涉 cr-query『card-WT 結構證據供給』節的 reason 值清單（no-cr-query-face／WT-graph-absent／WT-graph-stale）。
+<!-- SECTION:NOTES:END -->
