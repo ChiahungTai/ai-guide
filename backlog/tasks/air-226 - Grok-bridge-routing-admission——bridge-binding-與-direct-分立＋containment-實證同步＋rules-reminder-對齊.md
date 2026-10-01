@@ -5,9 +5,11 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-10-01 03:27'
-updated_date: '2026-10-01 03:27'
+updated_date: '2026-10-01 03:29'
 labels: []
 dependencies: []
+references:
+  - skills/model-routing/SKILL.md
 ordinal: 212000
 ---
 
