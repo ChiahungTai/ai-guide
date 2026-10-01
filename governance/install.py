@@ -2243,12 +2243,18 @@ def codex_host_level_fixture(codex_home: Path | None = None) -> tuple[str, str]:
         raise
 
 
-def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
+def probe_codex(manifest: dict, *, passive: bool = False) -> tuple[str, str, list[str]]:
     """codex-three-layer（TC-9）：L1 discovery＋L2 trust 如實報告＋L3 host-level。
 
     L1＝config 面註冊在場（P0-10：無 live discovery 讀取 API，降級契約＝
     config 在場性＋state 診斷＋層三）；L2 Untrusted＝install 直後預期態非 FAIL
     （SM-7）；positional state key 僅診斷輸出（Q4 紅線）。
+
+    passive=True（AIR-221，`--verify --surface monitor` 消費）：scheduled
+    passive 腿＝L1＋L2、L3 止步（CLI 在場仍跑 --version 版本診斷——零額度子進程，
+    非 codex exec），**永不呼叫 codex_host_level_fixture**（零
+    native 額度）；codex CLI 缺席在該模式非 GUARD（L1/L2 不需 CLI，CLI 只屬
+    手動 L3）。L3＝手動 acceptance（`--verify --surface all`）。
     """
     try:  # F-4（judge 修正輪）：registrations KeyError 家族（probe 面同家族化）
         reg = manifest["registrations"]["codex"]
@@ -2305,6 +2311,16 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
             "  [L2] Untrusted＝install 直後預期態非 FAIL——手動 approve：新 session "
             "startup review 或 /hooks TUI（文案單一源＝README「approve 分欄」節）"
         )
+    if passive:  # AIR-221：scheduled monitor 被動腿——永不 codex exec（零 native 額度）
+        lines.append(
+            "  [L3] manual-only——scheduled passive 不執行 host-level fixture"
+            "（手動：--verify --surface all；觸發時點＝governance README probe 節）"
+        )
+        return (
+            "PASS",
+            "層一註冊在場＋層二 trust 診斷（scheduled passive；L3＝手動 acceptance）",
+            lines,
+        )
     if not has_cli:  # L3 需 CLI；L1/L2 為 config/state 檔面——CLI 缺席仍如實報告
         lines.append(
             "  [L3] GUARD——codex CLI 缺席（檢查 PATH；launchd 環境需 plist PATH 涵蓋）"
@@ -2319,7 +2335,9 @@ def probe_codex(manifest: dict) -> tuple[str, str, list[str]]:
     return "PASS", "層一註冊在場＋層三 host-level deny 生效", lines
 
 
-def run_probe(manifest: dict, name: str, probe: dict) -> tuple[str, str, list[str]]:
+def run_probe(
+    manifest: dict, name: str, probe: dict, *, passive: bool = False
+) -> tuple[str, str, list[str]]:
     if probe["type"] == "muse-inspect":
         s, d = probe_muse(probe["plugin_id"])
         return s, d, []
@@ -2327,12 +2345,13 @@ def run_probe(manifest: dict, name: str, probe: dict) -> tuple[str, str, list[st
         s, d = probe_pipe_payload(probe["script"])
         return s, d, []
     if probe["type"] == "codex-three-layer":
-        return probe_codex(manifest)
+        return probe_codex(manifest, passive=passive)
     return "FAIL", f"未知 probe type：{probe.get('type')}", []
 
 
 # probe 跑序：快的先（pipe/muse），codex L3 fixture（真 codex exec）最後。
 # AIR-215：claude probe 退役，grok（pipe-payload 同款）遞補。
+# AIR-221：monitor 面（passive）同跑序消費全集合——codex 走 L1/L2 passive 腿。
 PROBE_ORDER = ("grok", "zcode", "muse", "codex")
 PROBE_SURFACES = {"hooks": ("grok", "zcode", "codex"), "memory": ("muse",)}
 
@@ -2340,19 +2359,22 @@ PROBE_SURFACES = {"hooks": ("grok", "zcode", "codex"), "memory": ("muse",)}
 def cmd_verify(manifest: dict, surface: str) -> int:
     """--verify：逐家 manifest [probes]（行為觀察面）。exit 0 全 PASS／1 FAIL／2 GUARD。
 
-    rules/skills/agents 無 probe（config 態面歸 --check）；monitor 歸 S5。
+    rules/skills/agents 無 probe（config 態面歸 --check）。兩消費形態（AIR-221）：
+    `--surface monitor`＝scheduled passive（S5 日頻——grok/zcode/muse 本地面＋
+    codex L1/L2，**永不 codex exec**、codex CLI 缺席非 GUARD）；其餘（all/hooks）
+    ＝manual full（codex 含 L3 host-level fixture，消費 native 額度）；memory 面
+    ＝muse only 不觸 codex。
     FAIL 權重大於 GUARD（真驗證失敗比環境缺席重要）。
     """
     if surface in ("rules", "skills", "agents"):
         print(f"[verify:{surface}] 無 probe 定義（wrap/symlink 面 parity 歸 --check）")
         return EXIT_OK
-    if surface == "monitor":
-        print("[stub] monitor 面 S5 實裝——not implemented", file=sys.stderr)
-        return EXIT_NOT_IMPL
-    names = PROBE_ORDER if surface == "all" else PROBE_SURFACES[surface]
+    passive = surface == "monitor"
+    names = PROBE_ORDER if surface in ("all", "monitor") else PROBE_SURFACES[surface]
     probes = manifest.get("probes", {})
-    if surface == "all" and set(PROBE_ORDER) != set(probes):
-        # S-3：probe 集合雙源對帳——manifest 新增 probe 而忘排程時 fail-loud 非靜默跳過
+    if surface in ("all", "monitor") and set(PROBE_ORDER) != set(probes):
+        # S-3：probe 集合雙源對帳——monitor 面消費同一集合（codex 走 passive 腿），
+        # manifest 新增 probe 而忘排程時 fail-loud 非靜默跳過
         print(
             f"[verify] probe 集合失同步：manifest={sorted(probes)} vs "
             f"PROBE_ORDER={sorted(PROBE_ORDER)}",
@@ -2366,7 +2388,7 @@ def cmd_verify(manifest: dict, surface: str) -> int:
             print(f"[verify:{name}] FAIL——manifest [probes.{name}] 缺定義")
             worst = EXIT_DRIFT
             continue
-        status, detail, extra = run_probe(manifest, name, probe)
+        status, detail, extra = run_probe(manifest, name, probe, passive=passive)
         print(f"[verify:{name}] {status}——{detail}")
         for ln in extra:
             print(ln)
@@ -2374,7 +2396,13 @@ def cmd_verify(manifest: dict, surface: str) -> int:
             worst = EXIT_DRIFT
         elif status == "GUARD" and worst == EXIT_OK:
             worst = EXIT_GUARD
-    if worst == EXIT_OK:
+    if worst == EXIT_OK and passive:
+        print(
+            "[verify] monitor 面 scheduled passive 全 PASS——codex L3 host-level "
+            "未測＝手動 acceptance（--verify --surface all；觸發時點＝governance "
+            "README probe 節）"
+        )
+    elif worst == EXIT_OK:
         print(
             "[verify] 全部 PASS（grok/ZCode actual-runtime firing 未測——AIR-100 "
             "deferred 總驗卡承接；grok L0 deny 由 AIR-215 rig 另證）"

@@ -25,6 +25,33 @@ def _patch(monkeypatch, results):
         SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired))
 
 
+# ── AIR-221：verify 腿走 scheduled passive（--surface monitor）────────
+
+
+def test_modes_verify_is_passive_surface():
+    """AC#1（AIR-221）：verify argv 精確＝--verify --surface monitor；check 不變。"""
+    assert mod.MODES == (
+        ("verify", ["--verify", "--surface", "monitor"]),
+        ("check", ["--check", "--surface", "all"]),
+    )
+
+
+def test_monitor_pass_line_names_manual_l3(monkeypatch, capsys):
+    """AC#2 措辭：PASS 行明示 Codex L3＝手動 acceptance，不得宣稱 deny 已驗。"""
+    _patch(monkeypatch, [(0, "[verify] monitor 面 PASS"), (0, "[check] 五面 parity 綠")])
+    assert mod.main() == 0
+    out = capsys.readouterr().out
+    assert "[governance-health] PASS" in out
+    assert "手動 acceptance" in out
+
+
+def test_monitor_logs_manual_only_l3_line(monkeypatch, capsys):
+    """AC#1：log 含可見 manual-only 行（fail 路徑也要在場）。"""
+    _patch(monkeypatch, [(1, "verify fail"), (0, "[check] 綠")])
+    assert mod.main() == 1
+    assert "manual-only" in capsys.readouterr().out
+
+
 def test_monitor_pass_exit_zero(monkeypatch, capsys):
     _patch(monkeypatch, [(0, "[verify] 全部 PASS"), (0, "[check] 五面 parity 綠")])
     assert mod.main() == 0

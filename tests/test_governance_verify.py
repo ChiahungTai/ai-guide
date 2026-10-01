@@ -283,8 +283,126 @@ def test_cmd_verify_missing_probe_def_is_fail():
     assert mod.cmd_verify(manifest, "memory") == mod.EXIT_DRIFT
 
 
-def test_cmd_verify_monitor_stub_not_impl():
-    assert mod.cmd_verify({}, "monitor") == mod.EXIT_NOT_IMPL
+# ── AIR-221：--surface monitor＝scheduled passive verify（永不 codex exec）──
+
+
+def _manifest_four_probes() -> dict:
+    return {
+        "probes": {
+            "grok": {
+                "type": "pipe-payload",
+                "script": "hooks/block-memory-index-write.py",
+            },
+            "zcode": {
+                "type": "pipe-payload",
+                "script": "hooks/block-memory-index-write.py",
+            },
+            "muse": {"type": "muse-inspect", "plugin_id": "x"},
+            "codex": {"type": "codex-three-layer"},
+        }
+    }
+
+
+def _patch_local_probes_pass(monkeypatch):
+    """grok/zcode/muse 本地面代 PASS——codex 腿走真 probe_codex（受測对象）。"""
+    real_run_probe = mod.run_probe
+
+    def fake_run_probe(manifest, name, probe, *, passive=False):
+        if name == "codex":
+            return real_run_probe(manifest, name, probe, passive=passive)
+        return "PASS", "local stub", []
+
+    monkeypatch.setattr(mod, "run_probe", fake_run_probe)
+
+
+def _codex_config_manifest(tmp_path) -> dict:
+    tmpl = mod.render(
+        (mod.MANIFEST_PATH.parent / "registrations/codex.toml").read_text()
+    )
+    target = tmp_path / "config.toml"
+    target.write_text("[hooks.state]\n\n" + tmpl)
+    return {
+        "registrations": {
+            "codex": {"target": str(target), "template": "registrations/codex.toml"}
+        }
+    }
+
+
+def test_monitor_passive_never_calls_host_fixture(tmp_path, monkeypatch, capsys):
+    """AC#1（AIR-221）：scheduled monitor 永不 codex exec——host fixture 一呼叫即 fail。"""
+
+    def _boom(*a, **k):
+        raise AssertionError("codex_host_level_fixture must not run in monitor mode")
+
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    monkeypatch.setattr(mod, "codex_host_level_fixture", _boom)
+    _patch_local_probes_pass(monkeypatch)
+    # CLI 在場仍不得觸發 L3——monitor 模式與 CLI 存在與否完全解耦
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(run=lambda *a, **k: SimpleNamespace(
+            returncode=1, stdout="", stderr="")),
+    )
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/codex"))
+    assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_OK
+    assert "manual-only" in capsys.readouterr().out
+
+
+def test_monitor_cli_absent_is_not_guard(tmp_path, monkeypatch):
+    """AC#1：monitor 模式 codex CLI 缺席非 GUARD——L1/L2 皆檔面，CLI 只屬手動 L3。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_OK
+
+
+def test_monitor_l1_missing_still_fails(tmp_path, monkeypatch):
+    """passive 不是放寬：config target 缺席分支照 FAIL（drift 訊號保留）。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    manifest["registrations"]["codex"]["target"] = str(tmp_path / "absent.toml")
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_DRIFT
+
+
+def test_monitor_probe_set_sync_guard(monkeypatch):
+    """monitor 面消費同一 probe 集合——manifest 失同步 fail-loud（S-3 同款對帳）。"""
+    _patch_local_probes_pass(monkeypatch)
+    assert mod.cmd_verify({"probes": {}}, "monitor") == mod.EXIT_GUARD
+
+
+def test_monitor_pass_makes_no_deny_claim(tmp_path, monkeypatch, capsys):
+    """AC#2 措辭：scheduled PASS 尾行不得宣稱 host-level deny 已驗——明示手動 acceptance。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: None))
+    assert mod.cmd_verify(manifest, "monitor") == mod.EXIT_OK
+    out = capsys.readouterr().out
+    assert "手動 acceptance" in out
+    assert "deny 生效" not in out
+
+
+def test_all_surface_still_runs_host_fixture(tmp_path, monkeypatch):
+    """AC#2：--surface all＝manual full——L3 照跑且 PASS/GUARD/FAIL 傳播退出碼。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+    calls: list[int] = []
+
+    def _fake_fixture(*a, **k):
+        calls.append(1)
+        return "PASS", "stub canary 未變"
+
+    monkeypatch.setattr(mod, "codex_host_level_fixture", _fake_fixture)
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(run=lambda *a, **k: SimpleNamespace(
+            returncode=1, stdout="", stderr="")),
+    )
+    monkeypatch.setattr(mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/codex"))
+    assert mod.cmd_verify(manifest, "all") == mod.EXIT_OK
+    assert calls == [1]
 
 
 def test_cmd_verify_fail_dominates_guard(monkeypatch):
@@ -296,7 +414,9 @@ def test_cmd_verify_fail_dominates_guard(monkeypatch):
             "codex": {"type": "codex-three-layer"},
         }
     }
-    monkeypatch.setattr(mod, "run_probe", lambda m, n, p: next(_seq))
+    monkeypatch.setattr(
+        mod, "run_probe", lambda m, n, p, passive=False: next(_seq)
+    )
     _seq = iter([("GUARD", "", []), ("PASS", "", []), ("FAIL", "", [])])
     assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_DRIFT
     _seq = iter([("GUARD", "", []), ("PASS", "", []), ("GUARD", "", [])])

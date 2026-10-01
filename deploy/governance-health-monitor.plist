@@ -9,9 +9,12 @@
      路徑欄位替換後重建 plist（XML 註解隨 dump 卸除，註解零 token 字樣；
      home 路徑含雙連字號亦不毒化輸出），跨機器零手改；check 模式 surface
      monitor 即比對 live 與 render 期望。
-     行為：五面 health（install.py 的 verify＋check 兩模式）任一非零 exit 時
-     告警行落 StandardOutPath/StandardErrorPath 日志；launchd 非零 exit 不觸發
-     重跑（StartInterval 節流）。
+     行為（AIR-221 scheduled passive）：install.py verify 面 surface=monitor
+     （grok/zcode/muse 本地面＋codex L1/L2——永不 codex exec，日頻零 native
+     額度；codex L3 host-level＝手動 acceptance，正典入口與觸發時點＝
+     governance/README.md probe 節）＋check 面 surface=all（五面 parity）；
+     任一非零 exit 時告警行落 StandardOutPath/StandardErrorPath 日志；launchd
+     非零 exit 不觸發重跑（StartInterval 節流）。
      回復＝uninstall surface monitor（bootout＋刪 ~/Library/LaunchAgents/ 副本；
      版控源與 script 保留——dead but harmless）。 -->
 <plist version="1.0">

@@ -33,7 +33,7 @@ flowchart LR
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-bridge 2.10.0 DB-72 翻轉同步落地（main 192b6eb5）：收線核對條文 family 列舉補 grok 四形（NDJSON camelCase tool events＋事件錨定 status——in-stream failure 永非終局、anchor-less text 串流＝output-token-limit 大聲失敗，源＝delegate-bridge docs/ep.md S1 honest-completion）＋as-of 翻 2026-10-01。muse 單腿複核 OK（三軸全過：語義對上游／無第二真相源／無漏同步）。**同場清零：live 補證兩發 PASS**（deny control 放行直證＋fail-open canary 續行直證——.agent-tmp/air-220/；AIR-219/215 的 quota 欠證全清，僅餘 monitor codex L3 等 10-04 codex 窗）。
+bridge 2.10.0 DB-72 翻轉同步落地（main 192b6eb5）：收線核對條文 family 列舉補 grok 四形（NDJSON camelCase tool events＋事件錨定 status——in-stream failure 永非終局、anchor-less text 串流＝output-token-limit 大聲失敗，源＝delegate-bridge docs/ep.md S1 honest-completion）＋as-of 翻 2026-10-01。muse 單腿複核 OK（三軸全過：語義對上游／無第二真相源／無漏同步）。**同場清零：live 補證兩發 PASS**（deny control 放行直證＋fail-open canary 續行直證——.agent-tmp/air-220/；AIR-219/215 的 quota 欠證全清，僅餘 monitor codex L3 等 10-04 codex 窗——**1001 AIR-221 消解：該 pending 已 superseded**，AIR-221 將 scheduled L3 退役為手動 acceptance〔monitor 改走 `--verify --surface monitor` scheduled passive，日頻零 native 額度〕，10-04 窗到補跑義務移除；末次 L3 未驗證的歷史事實不記為 PASS）。
 
 終態圖：
 

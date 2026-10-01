@@ -130,6 +130,10 @@ script = "hooks/block-memory-index-write.py"
 
 [probes.codex]
 type = "codex-three-layer"     # 層一 discovery/state 診斷；層二 user 手動 approve；層三 host-level fixture
+# AIR-221 兩消費形態：--verify --surface monitor（scheduled passive）走 L1/L2
+# 腿——永不 codex exec（日頻零 native 額度）、codex CLI 缺席該模式非 GUARD；
+# L3 host-level 僅 manual full（--surface all）執行＝手動 acceptance（觸發時點
+# 單一源＝governance/README.md probe 節）。
 
 # ── bootstrap 穩定 CLI 契約（S6；AIR-110 消費）────────────────
 

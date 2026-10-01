@@ -45,26 +45,30 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 
 ## 健康檢查
 
-- 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面，見下節）。
-- 排程：`com.ai-guide.governance-health-monitor` launchd（日頻；AIR-100 S-E muse approve monitor 已收編）——`scripts/governance_health_monitor.py` 消費 install.py `--verify`＋`--check --surface all`，輸出透傳落 log；任一 FAIL 非零 exit＋告警行（fail-loud）。裝載／卸載＝`--surface monitor`；排程面自身 parity＝`--check --surface monitor`（AIR-110 G4：live plist vs render(版控源)，顯式面——`all` 不含）。
+- 手動：`uv run python governance/install.py --check --surface all`（唯讀五面 parity，drift 即列清單 exit 1）＋`--verify`（probe 面，見下節——manual full 形態含 codex L3）。
+- 排程（scheduled passive——AIR-221）：`com.ai-guide.governance-health-monitor` launchd（日頻；AIR-100 S-E muse approve monitor 已收編）——`scripts/governance_health_monitor.py` 消費 install.py `--verify --surface monitor`（scheduled passive：grok/zcode/muse 本地面＋codex L1/L2——**永不 codex exec**，日頻零 native 額度；codex CLI 缺席該模式非 GUARD）＋`--check --surface all`，輸出透傳落 log；任一 FAIL 非零 exit＋告警行（fail-loud）；每輪 log 印 codex L3 manual-only 行。**scheduled PASS≠host-level deny acceptance**（L3＝手動 acceptance，觸發時點見下節）。裝載／卸載＝`--surface monitor`；排程面自身 parity＝`--check --surface monitor`（AIR-110 G4：live plist vs render(版控源)，顯式面——`all` 不含）。
 - codex mixed representation：`--check` 掃同 semantic hook 是否另有 `~/.codex/hooks.json` copy／重複 inline copy（同 layer 混載＝warning＋雙 fire）。
 
 ### `--verify` probe 面（S3）
 
 逐家執行 manifest `[probes]`；exit 0 全 PASS／1 FAIL／2 GUARD（probe 工具缺席）。**fail-closed**：muse inspect 輸出不可判定、payload 非 dict、`runtime_capabilities` 空或缺＝FAIL（「無法證明 trusted」即 FAIL，語義源＝AIR-100 S-E monitor，已吸收為本 probe）。
 
+兩消費形態（AIR-221）：`--verify --surface monitor`＝**scheduled passive**（日頻 monitor 消費——grok/zcode/muse 本地面＋codex L1/L2，永不 codex exec；codex CLI 缺席該模式非 GUARD）；其餘（`all`／`hooks`）＝**manual full**（codex 含 L3 host-level fixture，消費 native 額度；`memory` 面＝muse only 不觸 codex）。
+
 | probe | 機制 | PASS 判準 |
 |---|---|---|
 | muse | `muse plugins inspect <id> --json` | `runtime_capabilities[].status` 全部 `trusted_enabled` |
 | grok／zcode | 自含 fixture（暫存目錄放空 `_generate_index.py`）合成 deny payload → `hooks/block-memory-index-write.py` | exit 2（①索引手寫攔截分支；不觸任何真實池） |
-| codex | 三層（TC-9），見下 | L1 註冊在場＋L3 canary byte-level 未變；L2 如實報告不 gate |
+| codex | 三層（TC-9），見下；monitor 形態走 L1/L2 passive 腿 | scheduled（monitor）：L1 註冊在場（L2 如實報告不 gate）；manual full（`all`）：L1 註冊在場＋L3 canary byte-level 未變 |
 
 **codex 三層語義**：
 - **L1 discovery**：config 面套件 group 註冊在場（identity 對照模板；P0-10——無 live discovery 讀取 API，降級契約＝config 在場性＋state 診斷＋L3）。
 - **L2 trust**：`[hooks.state]` 檔面診斷（key 公式見「approve 分欄」節；positional key 僅診斷輸出）。**Untrusted＝install 直後預期態非 FAIL**——印手動 approve 步驟。
 - **L3 host-level fixture**：真 `codex exec`（`--skip-git-repo-check --sandbox workspace-write --dangerously-bypass-hook-trust`）對 canary 檔施 apply_patch，斷言 **byte-level 未變**。bypass flag＝per-invocation、不寫 `[hooks.state]`、非模擬 approve——文檔明載用途（已審 hook 源的自動化）。canary 落 `~/.agents/memory/`（家目錄偽池＝deny 根之一），deny 意外失敗的殘留不觸真實治理池；PASS 即清，FAIL 保留作證據。2026 apply_patch deny-bypass bug 先例：script pipe 不可替代本層。
 
-**未測範圍（誠實標記）**：grok/ZCode 的 actual-runtime firing（hook 在真 session 被事件驅動）未由本 probe 涵蓋——AIR-100 deferred 總驗卡承接（grok L0 deny 另由 AIR-215 rig 直證），`--verify` PASS 輸出尾行明載。codex L2 Trusted 態＝state 檔面診斷＋user `/hooks` 目視，runtime 態以 L3 為準。
+**codex L3＝手動 acceptance（AIR-221 正典入口——不另 runbook）**：L3 不入日迴圈（monitor 走 scheduled passive，零 native 額度咬痕）；手動指令＝`uv run python governance/install.py --verify --surface all`。**觸發時點**：①codex 升級②hook source 變更③registration 變更④trust 契約變更⑤L3 fixture 本身變更——變更後各跑一次。**無保底週期、無版本戳記、無 mtime 觸發**（觸發制 proxy 抓不到 trust/runtime 語義變化，月保底把 native 額度固定燒回——AIR-221 裁定）。native 額度稀缺的配套路由政策（bridge 派工一律 webgpt、native 只留 user 手動）單一源＝model-routing SKILL dispatch 預設 codex 行。
+
+**未測範圍（誠實標記）**：grok/ZCode 的 actual-runtime firing（hook 在真 session 被事件驅動）未由本 probe 涵蓋——AIR-100 deferred 總驗卡承接（grok L0 deny 另由 AIR-215 rig 直證），`--verify` PASS 輸出尾行明載。codex L2 Trusted 態＝state 檔面診斷＋user `/hooks` 目視，runtime 態以 L3 為準——而 L3 只在手動觸發點跑：兩觸發點之間的純行為級失效（配置/trust 在場但 runtime 不 fire）無日頻捕捉（AIR-221 殘餘風險，低 base rate 接受）。
 
 ## uninstall 影響（拆接線不刪源）
 
@@ -105,6 +109,6 @@ uv run python governance/install.py --surface {rules,skills,hooks,agents,memory,
 2. 計畫可讀：`uv run python governance/install.py --surface all --dry-run` 輸出逐面計畫、零寫入。
 3. 安裝：`uv run python governance/install.py --surface all`（machine-local config 生成 `.bak-*`）。
 4. 手動 approve：codex trust review、ZCode 重開 session（見分欄表；grok 全域個人層免 trust 無步驟）。
-5. 驗證：`--verify`——muse PASS、grok/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
+5. 驗證：`--verify --surface all`（manual full 形態——codex 含 L3 host-level，觸發時點語義見 probe 節；bootstrap 編排器 Phase 4 跑 `--surface all`）——muse PASS、grok/ZCode pipe probe PASS、codex 層一 discovery 在場（trust 態如實報告）。
 6. parity：`--check --surface all` 五面綠。逐面 PASS 定義＝manifest 七面（五 surface 中 rules/agents/memory 各含 symlink／拓撲腿）；`git config core.hooksPath` 輸出 `.githooks` 由 bootstrap 清單獨立項驗（repo clone 步驟，非本套件面）——install/check 結尾另有 guard fail-open 顯性警示（AIR-126，偵測非驗證；修復指令見警示行）。
 7. 排程：`--surface all` 不含 monitor（顯式排程面）——`--surface monitor` 裝載後 `launchctl start com.ai-guide.governance-health-monitor` 觸發一輪，log 出現五面執行紀錄；`--check --surface monitor` 驗排程面 parity（live plist＝render 期望）。bootstrap 編排器已自動跑此兩步（Phase 2 `all` 成功後接 `--surface monitor`；Phase 4 `--check --surface monitor`）——手動逐面操作時照本清單。
