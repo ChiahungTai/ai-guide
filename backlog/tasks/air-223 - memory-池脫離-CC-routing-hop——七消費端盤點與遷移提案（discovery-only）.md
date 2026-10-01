@@ -4,7 +4,7 @@ title: memory-池脫離-CC-routing-hop——七消費端盤點與遷移提案（
 status: To Do
 assignee: []
 created_date: '2026-10-01 01:46'
-updated_date: '2026-10-01 01:46'
+updated_date: '2026-10-01 03:02'
 labels: []
 dependencies: []
 references:
@@ -32,9 +32,9 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 active consumer 全枚舉分類表（每行：行為需求＋候選改法＋驗證式——池路由面 vs 遙測面二分）
-- [ ] #2 單一 proposed topology＋fresh-machine 負向案例證明（從未建 ~/.claude/projects 條件下 pool routing 可建立/驗證）＋migration/rollback 次序＋consumer-equivalent probes 清單
-- [ ] #3 零代碼改動舉證（git status --porcelain 乾淨）＋telemetry 面保留/停用建議與理由（coverage 決策移交 user）
+- [x] #1 active consumer 全枚舉分類表（每行：行為需求＋候選改法＋驗證式——池路由面 vs 遙測面二分）
+- [x] #2 單一 proposed topology＋fresh-machine 負向案例證明（從未建 ~/.claude/projects 條件下 pool routing 可建立/驗證）＋migration/rollback 次序＋consumer-equivalent probes 清單
+- [x] #3 零代碼改動舉證（git status --porcelain 乾淨）＋telemetry 面保留/停用建議與理由（coverage 決策移交 user）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -48,3 +48,9 @@ flowchart LR
 **Integration**：下游＝user 拍板→實作卡（trigger＝direct-anchor＋fresh-machine 負向＋rollback 三者成立）。
 **驗證式**：AC 三項。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【1001 收線結算】實作＝flash 四步（RED 4 failed→GREEN 7 passed→本機遷移 readlink 三鏈存證→P1-P10＋文檔 16 處同步含 blueprint 四檔 drift 追加）；審查＝fresh GO-WITH-FIXES（F-1 memory-audit SKILL drift 修正＋F-2 generate_index 註解＋雙 pool 副本刷新——flash 修復全綠兩 pool --check 非 stale；F-3/F-4 證據衛生歸本段揭露：mypy log 名實不符如實標、P8 pool dirty 20 條／P9 check_single_source 6 條皆 pre-existing 與拓撲正交）＋F-7 mosaic 端同構拓撲跟進＝跨 repo 對帳項歸 STATE。回執四欄：classification=boundary（memory 拓撲翻轉）／review=fresh GO-WITH-FIXES 全採／session-freshness=fresh／deployment-surfaces=healthy（installer --surface memory exit 0＋verify 全綠＋P1/P2/P4/P5/P6/P10 PASS；P3/P7 runtime 場驗證留自然 session）。
+<!-- SECTION:NOTES:END -->
