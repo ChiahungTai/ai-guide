@@ -4,7 +4,7 @@ title: CR-查證與收線證據閉環——review-腿-route-宣告到-ledger-rec
 status: In Progress
 assignee: []
 created_date: '2026-10-01 02:24'
-updated_date: '2026-10-01 05:51'
+updated_date: '2026-10-01 06:05'
 labels: []
 dependencies: []
 references:
@@ -56,4 +56,16 @@ flowchart LR
 雙腿審查收齊（fresh GO-WITH-FIXES 1Major+2Imp+2Min+2Info／muse GO-WITH-FIXES 3Imp+6Min+3Info；互相印證 F5≡F1、F3≡F7、F6≡F9 零衝突）；judge 裁決 13 項全採（F1 模板 legs 冒號形／slash leg key／Amendment 測試撥正／exempt 章形+豁免面雙收緊／air-91 先例措辭／cr 檢查收斂 converged／空 reason／n/a judge 複核註記／bare live-cr 註記＋pin／phantom 錨定／tmp_path／degraded 獨立行／S4 golden test）；flash 修復腿跑中。verdict 存檔：.agent-tmp/air-224/verdict-{fresh,muse}.md。
 
 audit-test 腿（EP 收尾段 3）收齊：PASS-WITH-NOTES（gate_blocking=false；60 passed 自跑；9/9 快照獨立復驗 SAME）。AT-1~5 全修（孤兒 receipt 稀釋 silent／cr_usage 鏡像錨定未同步 phantom／exempt 測 vacuous-green 守衛／missing_na+no_evidence 補測／tuple 非空守衛）；AT-6 不追補（後續弧 RED provenance 慣例）；AT-7 記錄（cutoff re-baseline 五處同步：review_ledger.py:92＋cr-exempt-legacy.md:8＋三 inline replace）。flash 修復輪 2 跑中。verdict-audit.md 存檔。
+
+【收線結算——merge 完成 main@72269032】三 commit 落地（f067906d 實作／4bd05e4f 雙腿修復／72269032 audit 修復）；main 上 66 tests 親驗；WT+branch 已拆。
+
+回執四欄：classification=boundary（EP 執行紀律）｜review=fresh GO-WITH-FIXES（verdict-fresh.md）＋muse 跨家族 GO-WITH-FIXES（job-mup2mdn5-dvhzx5；verdict-muse.md）＋audit-test PASS-WITH-NOTES（verdict-audit.md）——13+5 findings 全採，修復輪 4bd05e4f/72269032｜session-freshness=fresh（開場重讀 EP/卡/bridge-dispatch；governing bundle session 內零變更）｜deployment-surfaces=healthy（post-merge live face：~/.agents/skills symlink 端 workflow-review-pattern 語法節＋work-order route 行 rg 命中；main 66 passed）。
+
+九檔 legacy-exempt 決策記錄（EP 收尾段 1）：舊檔於新 converged gate 的 FAIL 全屬缺 receipt 語義類（air-91 另含 roster_malformed 舊形——E 項措辭已釐清 backfill 須改寫名冊）；豁免候選蓋章弧歸各卡結案兩步，cutoff=b41b4ed1；AT-7 五處同步清單（review_ledger.py:92＋cr-exempt-legacy.md:8＋test 三 inline）——re-baseline 時照單同步。
+
+mosaic dogfood 通報（EP 收尾段 4）：通報主旨＋契約三要點＋觀察面已備（.agent-tmp/air-224/mosaic-dogfood-draft.md）；載體＝本卡 notes 記錄（EP 原文）；註：mosaic_alpha 尚無註冊 marshal 門牌（scbus 清單僅 southchariot/workspace 等），直接投遞待其依 AIR-225 convention 建牌或由 user 轉知。
+
+殘留：bridge durable-evidence producer 卡（bridge 側開卡中）——producer 落地前 bridge CR 腿不得 durable-complete 收線（lint 已擋 ephemeral）；F-8 五處家族枚舉 drift＋四家/五家詞彙 5 檔（值星批次）；AIR-224.1 觀察窗指標承載 muse-F3/F7/F10/F11。
+
+Done 翻牌待 user 拍板。
 <!-- SECTION:NOTES:END -->
