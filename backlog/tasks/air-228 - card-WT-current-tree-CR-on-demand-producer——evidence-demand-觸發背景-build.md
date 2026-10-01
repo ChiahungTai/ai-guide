@@ -1,9 +1,10 @@
 ---
 id: AIR-228
 title: card-WT current-tree CR on-demand producer——evidence-demand 觸發背景 build
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-01 22:16'
+updated_date: '2026-10-01 22:46'
 labels: []
 dependencies: []
 ordinal: 215000
