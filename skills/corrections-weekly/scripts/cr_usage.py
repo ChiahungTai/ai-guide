@@ -58,22 +58,50 @@ EVIDENCE_RES = {
 # ---------- 源4（AIR-224 receipt closure 對帳） ----------
 # 語法鏡像：receipt 承載語法單一源＝workflow-review-pattern「per-leg CR receipt
 # 語法」；route 值域單一源＝bridge-dispatch；機械驗收面＝review_ledger.py lint
-# （本腳本只計數不驗收——advisory）。
+# （本腳本只計數不驗收——advisory；兩 scripts 分屬不同 skill 目錄、無 package
+# 結構——跨 skill import 須 sys.path hack 且耦合對方佈局，故複製鏡像並註明源）。
 ROUTE_DECL_RE = re.compile(
     r"route[：:]\s*(live-cr(?::MCP|:CLI)?|preprovided-cr|degraded|n/a)"
 )
 CRSURFACE_RE = re.compile(r"crsurface=(mcp|attach|cli|absent)")
-LEGS_LINE_RE = re.compile(r"legs\s*[：:]", re.IGNORECASE)
-CR_RECEIPT_RE = re.compile(r"cr\(route=([a-z-]+(?::MCP|:CLI)?)[^)]*\)")
-CR_NA_RE = re.compile(r"cr:\s*n/a\s*[（(]reason=")
-CR_CLOSURE_RE = re.compile(r"cr-closure\s*[：:](.*)")
+# 行首錨定（AT-2——鏡像 review_ledger.py `_LINE_ITEM_PREFIX`）：名冊／receipt／
+# n/a／closure／豁免章只認「行首（容 `> ` blockquote 與 `- `/`* ` 列表符）」起手
+# 的行——scope prose 內嵌 grammar 文本（格式說明）不計 phantom receipt、不誤解析
+# 名冊、不誤豁免。逐行 splitlines() 掃描，`^` 即行首。
+_LINE_ITEM_PREFIX = r"^\s*(?:>\s*)?(?:[-*]\s*)?"
+LEGS_LINE_RE = re.compile(_LINE_ITEM_PREFIX + r"legs\s*[：:]", re.IGNORECASE)
+CR_RECEIPT_RE = re.compile(
+    _LINE_ITEM_PREFIX
+    + r"(?P<leg>[A-Za-z0-9_./-]+)\s*:\s*"
+    + r"cr\(route=(?P<route>[a-z-]+(?::MCP|:CLI)?)\s*,\s*(?P<payload>[^)]*)\)"
+)
+CR_NA_RE = re.compile(
+    _LINE_ITEM_PREFIX + r"(?:[A-Za-z0-9_./-]+)\s*:\s*cr:\s*n/a\s*[（(]reason="
+)
+CR_CLOSURE_RE = re.compile(_LINE_ITEM_PREFIX + r"cr-closure\s*[：:](.*)")
 CR_CLOSURE_ITEM_RE = re.compile(r"[A-Za-z0-9_.-]+\s+(checked|rejected)\b")
-EXEMPT_MARK = "legacy-exempt"
+# legacy-exempt 章（AT-2——行首章形匹配，鏡像 review_ledger.py
+# LEGACY_EXEMPT_STAMP_RE 語義；cutoff 值鏡像源＝review_ledger.CR_RECEIPT_CUTOFF，
+# 禁自行改值——review_ledger 改值時本鏡像須同步）。
+CR_RECEIPT_CUTOFF = "b41b4ed1"
+LEGACY_EXEMPT_STAMP_RE = re.compile(
+    _LINE_ITEM_PREFIX
+    + r"legacy-exempt\s*[（(]\s*cutoff\s*=\s*"
+    + re.escape(CR_RECEIPT_CUTOFF)
+    + r"\s*[）)]"
+)
 EPHEMERAL_REF = ".delegate-bridge/jobs/"
 
 
 def scan_receipt_ledgers(since_s: float) -> dict:
-    """掃窗口內帳本檔的 per-leg receipt 七分項原料（每項獨立計數）。"""
+    """掃窗口內帳本檔的 per-leg receipt 七分項原料（每項獨立計數）。
+
+    名冊 join 語義鏡像 review_ledger.py `parse_legs_roster`（AT-1）：legs 行以
+    leg key 建名冊（leg→trigger|n/a），receipt 同以 leg key join——silent 只認
+    「名冊內 trigger 腿無對應 receipt」，孤兒 receipt（腿不在名冊）不抵扣；
+    receipt／degraded 分項以 leg key 去重（同一 leg 重複行 last-wins，與 gate
+    join 口徑一致）。
+    """
     out = {
         "ledgers": 0,
         "exempt_ledgers": 0,
@@ -100,33 +128,41 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         repo = lf.parts[-3] if len(lf.parts) >= 3 else "?"
         rec = out["per_repo"].setdefault(repo, {"ledgers": 0, "receipts": 0})
         rec["ledgers"] += 1
-        eligible = na_legs = receipts = na_receipts = degraded = 0
-        closures = ephemeral = 0
+        roster: dict[str, str] = {}
+        receipt_routes: dict[str, str] = {}
+        na_receipts = closures = ephemeral = 0
+        exempt_stamp = False
         for line in text.splitlines():
             m = LEGS_LINE_RE.search(line)
             if m:
                 for item in re.split(r"[；;]", line[m.end() :]):
                     parts = item.split()
-                    if len(parts) >= 3 and parts[-1] == "trigger":
-                        eligible += 1
-                    elif len(parts) >= 3 and parts[-1] == "n/a":
-                        na_legs += 1
+                    if len(parts) >= 3 and parts[-1] in ("trigger", "n/a"):
+                        roster[parts[0]] = parts[-1]
             for rm in CR_RECEIPT_RE.finditer(line):
-                receipts += 1
-                if rm.group(1) == "degraded":
-                    degraded += 1
+                receipt_routes[rm.group("leg")] = rm.group("route")
             na_receipts += len(CR_NA_RE.findall(line))
             cm = CR_CLOSURE_RE.search(line)
             if cm:
                 # 逐 item 計數（一行可載多腿：`cr-closure：L1 checked；L2 rejected`）
                 closures += len(CR_CLOSURE_ITEM_RE.findall(cm.group(1)))
+            if LEGACY_EXEMPT_STAMP_RE.search(line):
+                exempt_stamp = True
             ephemeral += len(
                 re.findall(r"evidence=[^)|]*" + re.escape(EPHEMERAL_REF), line)
             )
-        if EXEMPT_MARK in text:
+        eligible = sum(1 for tag in roster.values() if tag == "trigger")
+        na_legs = sum(1 for tag in roster.values() if tag == "n/a")
+        receipts = len(receipt_routes)
+        degraded = sum(1 for route in receipt_routes.values() if route == "degraded")
+        # silent fallback（AT-1）＝名冊 trigger 腿無對應 receipt；孤兒 receipt 不抵扣
+        silent = sum(
+            1
+            for leg, tag in roster.items()
+            if tag == "trigger" and leg not in receipt_routes
+        )
+        if exempt_stamp:
             out["exempt_ledgers"] += 1
-        # silent fallback＝eligible 腿無 route receipt（負值截 0——n/a 腿不在分子）
-        silent = max(0, eligible - receipts)
         out["eligible"] += eligible
         out["na_legs"] += na_legs
         out["receipts"] += receipts
@@ -405,7 +441,10 @@ def main() -> int:
     print(
         f"n-a\t顯式 n/a receipt={ledg['na_receipts']}"
     )
-    print(f"silent-fallback\t{ledg['silent_fallback']}（eligible−receipts，負值截 0）")
+    print(
+        f"silent-fallback\t{ledg['silent_fallback']}"
+        "（名冊 trigger 腿無對應 receipt；孤兒 receipt 不抵扣）"
+    )
     if ledg["receipts"]:
         print(
             f"rates\treceipt-rate={ledg['receipts'] / max(ledg['eligible'], 1):.2f}"

@@ -386,6 +386,7 @@ def test_tc3_preprovided_with_evidence_passes():
 def test_tc4_legacy_snapshots_fail_with_cr_violation_string():
     # 防空洞：legacy 檔多本就因非 cr 原因 FAIL（如 air-91 缺 scope/欄位）——
     # 斷言必須命中 cr.receipt 專屬 violation 字串，證明 cr 檢查真的在場
+    assert len(LEGACY_SNAPSHOTS_FAIL_WITH_CR) > 0  # AT-5：空 tuple 時 for loop 空轉（vacuous-green 守衛）
     for name in LEGACY_SNAPSHOTS_FAIL_WITH_CR:
         r = run_cli("lint", fixture(name))
         assert r.returncode == EXIT_FAIL, f"{name}: {r.stdout + r.stderr}"
@@ -394,6 +395,7 @@ def test_tc4_legacy_snapshots_fail_with_cr_violation_string():
 
 def test_tc4_legacy_snapshots_without_anchor_exit_stale():
     # air-66/air-75 無 canonical reviewed 錨——identity stale 先擋（cr 檢查不可達）
+    assert len(LEGACY_SNAPSHOTS_STALE) > 0  # AT-5：同上守衛
     for name in LEGACY_SNAPSHOTS_STALE:
         r = run_cli("lint", fixture(name))
         assert r.returncode == EXIT_STALE, f"{name}: {r.stdout + r.stderr}"
@@ -566,6 +568,7 @@ def test_exempt_stamp_does_not_bypass_non_exemptible(tmp_path):
         "- writer：fixture",
         "- legacy-exempt（cutoff=b41b4ed1）\n- writer：fixture",
     )
+    assert "legacy-exempt（cutoff=" in stamped  # AT-3：.replace() 錨失配＝no-op 時照綠的 vacuous-green 守衛
     p = tmp_path / "tc2a-stamped.md"
     p.write_text(stamped, encoding="utf-8")
     r = run_cli("lint", p)
@@ -581,8 +584,47 @@ def test_exempt_stamp_covers_missing_receipt_semantics(tmp_path):
         "- writer：fixture",
         "- legacy-exempt（cutoff=b41b4ed1）\n- writer：fixture",
     )
+    assert "legacy-exempt（cutoff=" in stamped  # AT-3：同構守衛（此測 exit 0 斷言隱依賴章插入，守衛使失敗定位到根因）
     p = tmp_path / "tc1-stamped.md"
     p.write_text(stamped, encoding="utf-8")
     r = run_cli("lint", p)
     assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+# ---------- AIR-224 fix2（AT-4——missing_na／no_evidence branch 覆蓋） ----------
+
+
+def test_na_leg_missing_sentinel_fails(tmp_path):
+    # AT-4①：n/a 腿缺顯式 `cr: n/a（reason=…）` sentinel → missing_na FAIL
+    #（review_ledger.py cr_receipt_violations 該 branch 此前零斷言）
+    ledger = write_ledger(tmp_path, ("- legs：L2 job-c n/a",))
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.missing_na" in r.stdout
+    assert "L2" in r.stdout  # 定位該腿
+
+
+def test_na_leg_missing_sentinel_exempt_stamp_covers(tmp_path):
+    # AT-4① 豁免章成員資格一併釘死：missing_na 屬 EXEMPTIBLE_VIOLATION_PREFIXES
+    #（舊檔缺 receipt 語義三類）——蓋有效章後放行 exit 0
+    ledger = write_ledger(
+        tmp_path,
+        ("- legacy-exempt（cutoff=b41b4ed1）", "- legs：L2 job-c n/a"),
+        name="na-stamped.md",
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+
+
+def test_live_cr_empty_evidence_fails(tmp_path):
+    # AT-4②：`evidence=` 空值 → no_evidence FAIL（該 branch 此前零斷言；
+    # 非空 evidence 正樣本由 test_tc3_live_cr_mcp_with_evidence_passes 承載）
+    ledger = write_ledger(
+        tmp_path,
+        ("- legs：L1 job-e trigger", "- L1: cr(route=live-cr:MCP, evidence=)"),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.no_evidence" in r.stdout
+    assert "L1" in r.stdout
 

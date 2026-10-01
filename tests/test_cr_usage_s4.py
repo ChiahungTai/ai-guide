@@ -71,6 +71,78 @@ def test_scan_receipt_ledgers_golden(cr_usage, tmp_path, monkeypatch):
     assert out["ephemeral_refs"] == 1
 
 
+def test_scan_receipt_ledgers_orphan_receipt_does_not_offset_silent(
+    cr_usage, tmp_path, monkeypatch
+):
+    """AT-1：孤兒 receipt（腿不在名冊）不抵扣 silent——名冊 trigger 腿無對應
+    receipt 仍計 silent（join 語義鏡像 review_ledger.parse_legs_roster）。
+    L1 trigger 無 receipt＋L9 孤兒 receipt → eligible=1/receipts=1/silent=1。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "orphan.md").write_text(
+        "# .review/orphan.md — golden fixture\n"
+        "- legs：L1 job-a trigger\n"
+        "- L9: cr(route=live-cr:MCP, evidence=docs/x.md)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["ledgers"] == 1
+    assert out["eligible"] == 1
+    assert out["receipts"] == 1  # 孤兒 receipt 仍入 receipts 總數（獨立計數）
+    assert out["silent_fallback"] == 1  # 但不抵扣 L1 的 silent
+
+
+def test_scan_receipt_ledgers_line_anchor_phantom_prose_not_counted(
+    cr_usage, tmp_path, monkeypatch
+):
+    """AT-2：行首錨定——scope prose 行內嵌 `cr(route=live-cr:MCP, evidence=doc)`
+    是格式說明非 receipt → receipts 不計入；名冊行照解析 → eligible=1/silent=1。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "phantom.md").write_text(
+        "# .review/phantom.md — golden fixture\n"
+        "- reviewed revision：fixture `aaaaaaa`＋uncommitted none\n"
+        "- scope：本契約收 cr(route=live-cr:MCP, evidence=doc) 語法（格式說明非 receipt）\n"
+        "- review_profile：ordinary\n"
+        "- legs：L1 job-a trigger\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["ledgers"] == 1
+    assert out["eligible"] == 1
+    assert out["receipts"] == 0  # phantom prose 不計
+    assert out["silent_fallback"] == 1  # receipts 歸零後 L1 的 silent 浮現
+
+
+def test_scan_receipt_ledgers_exempt_stamp_shape_gated(
+    cr_usage, tmp_path, monkeypatch
+):
+    """AT-2：legacy-exempt 只認行首章形 `legacy-exempt（cutoff=<值>）`——
+    prose 行夾帶兩詞（非章形）不豁免；有效章才計 exempt_ledgers。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "stamped.md").write_text(
+        "# .review/stamped.md — golden fixture\n"
+        "- legacy-exempt（cutoff=b41b4ed1）\n"
+        "- legs：L1 job-a trigger\n"
+        "- L1: cr(route=live-cr:MCP, evidence=docs/x.md)\n",
+        encoding="utf-8",
+    )
+    (review / "prose-exempt.md").write_text(
+        "# .review/prose-exempt.md — golden fixture\n"
+        "- scope：tests（legacy-exempt 且 cutoff=b41b4ed1 字樣共現——非章形）\n"
+        "- legs：L1 job-a trigger\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["ledgers"] == 2
+    assert out["exempt_ledgers"] == 1  # 只有 stamped.md 章形匹配
+    assert out["silent_fallback"] == 1  # prose-exempt.md 的 L1 無 receipt
+
+
 def test_scan_brief_routes_golden(cr_usage, tmp_path, monkeypatch):
     """declared 分項：payload_type=turn.input.user 的 prompt 內 route 宣告才計——
     bare `live-cr`（producer 宣告面）與 `live-cr:MCP` 各一；非 user payload 不計。"""
