@@ -4,7 +4,7 @@ title: LSP live type/signature 接線——roles 白名單＋workflow 觸點＋�
 status: In Progress
 assignee: []
 created_date: '2026-10-01 22:16'
-updated_date: '2026-10-01 22:41'
+updated_date: '2026-10-01 22:46'
 labels: []
 dependencies: []
 ordinal: 214000
@@ -43,4 +43,6 @@ G4 去向（muse verdict 點 6 代記）：TS backend 缺口的長期載體＝bo
 雙腿審查收齊：fresh GO-WITH-FIXES（F1 Important＝agents/AGENTS.md:22 已知刻意分歧條 stale 枚舉未同步雙前綴表＋F2 bootstrap hint 指向自鑄詞＋F4 implement 句首過度宣稱＋F3 pre-existing 泛稱語料五處）／muse GO（AC 兌現全獨立驗證；F4 偏差正確從卡；207 tests 經 log+算術佐證）。judge 裁決：F1/F2/F4 修（flash 修復腿跑中）；F3 記值星批次泛稱語料清理項不擴卡 scope（execution-plan:237/:276、cr-query:47-48/:112、ep-review:74/:86、fix-test:204）。附帶實證：fresh 審查 session 自身＝query face 在場 lsp-bridge 缺席快照——muse 前腿炸彈組合預言成立，agent-workflow 半句緩解面對應正確。verdicts 存檔 .agent-tmp/air-227/。
 
 【收斂態落卡（AIR-121/224）】[air-227.md] findings=5 tables=1 decisions ✅=4/❌=1/⚠️=0/unknown=0 (source=決策) status resolved=1/verified=3/closed=1/open=0/unknown=0 未決=0 unparsed=0
+
+【live spawn 驗證結果】FAIL＋根因＝session 啟動快照過舊（非接線錯誤）——機械證據：①merged 檔內容正確（agents/zcode/code-reviewer.md 含 lsp-bridge__hover＋__check_file，rg 實證）②live symlink 面 ~/.zcode/agents→primary 讀到新檔（mtime 10-02 06:45）③spawned code-reviewer（本弧收線後派）工具面僅四顆 CR query face——ZCode agent 定義為 session 啟動快照（本 session 開於弧前），app 重啟即載入新定義。**下一 session 一步收據**：spawn code-reviewer 試調 lsp_status/hover → PASS 即翻 deployment-surfaces=healthy。此 FAIL 附帶再證 agent-workflow 快照缺席降級半句是 load-bearing（本 session 內任何型別查證派工都會踩到）。Done 判讀：核心交付（接線+同步+測試+雙腿+新閘 dogfood）全綠；行為面收據待新 session——留 user 拍板。
 <!-- SECTION:NOTES:END -->
