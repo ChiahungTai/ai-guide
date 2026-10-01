@@ -2,10 +2,10 @@
 id: AIR-226
 title: >-
   Grok-bridge-routing-admission——bridge-binding-與-direct-分立＋containment-實證同步＋rules-reminder-對齊
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-01 03:27'
-updated_date: '2026-10-01 03:29'
+updated_date: '2026-10-01 04:26'
 labels: []
 dependencies: []
 references:
@@ -34,11 +34,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 catalog 同時存在 grok-cli-grok-4.7 direct 與獨立 Grok bridge binding；active model-routing 內 bridge family 未開 零命中
-- [ ] #2 fabel ep_synthesis/adjudication qualification 仍只 scope direct binding；新 bridge binding 零 workload qualification 繼承
-- [ ] #3 bridge-dispatch 明確區分 default contained writer 與 --yolo/--marshal；記錄 /tmp in-bounds；以 producer 文件為事實 source 不複刻 sandbox spec
-- [ ] #4 rules-reminder 明確指向 symbol-query-routing：symbol/ref/caller/closure 類 query 不得以 rg/fd 取代；原 rg/fd 文字/檔案搜尋規則保留
-- [ ] #5 catalog validation 與 instruction consistency gate 通過；無 bridge workload evidence 不新增 qualification
+- [x] #1 catalog 同時存在 grok-cli-grok-4.7 direct 與獨立 Grok bridge binding；active model-routing 內 bridge family 未開 零命中
+- [x] #2 fabel ep_synthesis/adjudication qualification 仍只 scope direct binding；新 bridge binding 零 workload qualification 繼承
+- [x] #3 bridge-dispatch 明確區分 default contained writer 與 --yolo/--marshal；記錄 /tmp in-bounds；以 producer 文件為事實 source 不複刻 sandbox spec
+- [x] #4 rules-reminder 明確指向 symbol-query-routing：symbol/ref/caller/closure 類 query 不得以 rg/fd 取代；原 rg/fd 文字/檔案搜尋規則保留
+- [x] #5 catalog validation 與 instruction consistency gate 通過；無 bridge workload evidence 不新增 qualification
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -52,3 +52,22 @@ flowchart LR
 **Integration**：下游＝resolver（bridge grok candidate 出現）；上游＝DB-71 landing＋AC10。
 **驗證式**：AC 五項（codex 定稿）。
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Grok bridge routing admission 落地（main fca7c669）：catalog 新增 bridge-grok-grok-4.7 binding（bridge family 正式開啟；fabel workload qualification 零繼承——AC10 是 authority/containment 證據非品質證據）＋model-routing 四處 stale 家族枚舉補 grok＋bridge-dispatch grok authority facts（AC10 kernel 實證 Seatbelt＋/tmp in-bounds 契約面＋兩段翻轉記錄）＋rules-reminder symbol-query-routing pointer（rg/fd 不得作結構證據）。審查：fresh GO-WITH-FIXES（F-1~F-4 同卡修＋F-8 五處 scope-外 drift 記帳歸值星批次）。bridge-grok 與 direct grok-cli-grok-4.7 分立並存。終態圖：
+
+```mermaid
+flowchart LR
+    C["catalog.toml"] --> BB["bridge-grok-grok-4.7<br/>零 qualification 繼承"]
+    C --> DB["grok-cli-grok-4.7<br/>direct binding"]
+    MR["model-routing SKILL"] --> SYN["四處枚舉補 grok"]
+    BD["bridge-dispatch"] --> AF["grok authority facts<br/>AC10 kernel 實證"]
+    RR["rules-reminder"] --> SQ["symbol-query-routing pointer"]
+    BB --> M["main fca7c669<br/>2676 passed"]
+    SYN --> M
+    AF --> M
+    SQ --> M
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
