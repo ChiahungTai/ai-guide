@@ -124,3 +124,11 @@ author_family: glm（EP 作者 session＝GLM-5.3）——implement dispatch 時 
 
 baseline: d259bd4b（開卡 commit；EP 定稿後重錄）
 産出順序＝收口順序（codex 裁定五段＋intent 順序恢復）：**telemetry baseline 凍結**（S1 前置）→S1（凍結語義＋legs 名冊）→S1b（producer carrier）→S2（lint gate）→S3（judge consumer）→S4（instrumentation＋mosaic dogfood）。S1/S1b/S2 同弧同 landing（producer/consumer schema 不留半套窗口）。
+
+## EP Amendment（2026-10-01 信件跟動討論——codex 裁決採納）
+
+**新增 invariant**：bridge leg 的 converged CR receipt，其 `evidence=` 必須引用 **producer-issued durable evidence**；WT-local `.delegate-bridge/jobs/<id>.jsonl` 路徑＝ephemeral observation，不得滿足 converged receipt（raw JSONL 是 evidence of record——delegate-bridge task.rs:10596；grok adapter 因 per-job JSONL 保留完整 stream 而不另做 trajectory export——grok.rs:2064）。
+**S1 grammar**：區分 durable bridge ref 與 ephemeral observation 兩形態。
+**S2 lint fixture**：ephemeral bridge ref→FAIL；durable bridge ref→PASS。
+**dependency**：依賴 delegate-bridge durable evidence producer 卡（另案，cross-repo proposal 已備）；producer 未落地前 bridge receipt 可執行/觀察，但不得以 durable-complete 收線。
+**不變**：AIR-224 不實作 archive storage、不解析 producer 私有 archive path。
