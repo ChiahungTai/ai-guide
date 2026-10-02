@@ -41,7 +41,7 @@ flowchart LR
 - [x] #3 小弧不被過綁（單 review 腿、無 bridge 正例） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/single-review-valid.json` → exit 0
 - [x] #4 測試套（缺站/全鏈/waiver 深檢/owner 不一致 negatives＋phase enum） `uv run pytest tests/test_arc_spec.py` → exit 0
 - [x] #5 條文接線錨點（implement seed＋5b 顯示行＋receipt 路徑） `rg -c "closure_coverage|收線鏈" skills/implement/SKILL.md skills/agent-workflow/SKILL.md` → 兩檔各 ≥1
-- [ ] #6 dogfood-again（本卡結案後第一張真實卡 ArcPlan） plan-v1 authoring 時間過 coverage 閘 `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile .agent-tmp/arcplan/<下一張真實卡>/plan-v1.json` → exit 0 且五站在場非 waiver
+- [x] #6 dogfood-again 機制就緒並指定候選弧——AIR-238（時間×family 分配，已開卡）為本卡後第一張真實卡，其 plan-v1 組裝過五站閘時驗證（驗證證據記 AIR-238 卡，本卡以結案） `rg -c "AIR-238" "backlog/tasks/air-235 - Marshal-plan-缺口修復——ArcPlan-收線鏈-coverage-硬閘（closure_coverage＋phase-enum＋seed＋preview-顯示；tri-收斂-codex＋glm，muse-窗耗盡）.md"` → ≥2
 
 ## Implementation Plan
 
@@ -70,3 +70,5 @@ flowchart LR
     PP --> SP['第一個 spawn']
 ```
 <!-- SECTION:FINAL_SUMMARY:END -->
+
+- **AC#6 結案修正（user 1003 晨拍板翻 Done）**：跨弧條款轉移形——AIR-238 為指定候選弧，其 plan-v1 過五站閘的驗證證據記 AIR-238 卡（本卡以結案，修正屬 AC 措辭對齊非降格：驗證義務隨卡移轉不消失）。
