@@ -53,3 +53,17 @@ min-interval 裁決理由（AC#5）：--min-interval（預設 30min）＝防連�
 
 live wake-fire 實測步驟（pending——待 mosaic 側 pmset 03:00 wake 安裝）：次晨 `rg "03:0" ~/.mosaic/logs/ops/launchagent-ai-guide-entitlements-probe.log` 應有 wake 窗 entry；結果補記本節。安裝面提醒：plist 時刻變更須 user 手動 re-render＋reload LaunchAgent 才生效（AIR-110 形態）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（main @ 4f9f9828）：mosaic 夜鏈重編排的 ai-guide 側四項全數落地——backlog-cleanup 排程 23:50→21:50（前移案；3:00 pmset 窗只留 ping）＋清場腳本 caffeinate -is guard wrap（防睡眠半套執行）＋usage-ping skill headless 變體邊界注記（session 綁定語義不變＝mosaic 設計依據明文化）＋cr-usage-archive 同名異物聲明（CR 工具量測≠LLM 配額）。G5 plist 形狀 oracle 同步 Hour 21（guard 測試腿抓的遺漏）。
+
+```mermaid
+flowchart LR
+    P['plist 21:50<br/>（re-render＋reload 後生效）'] --> S['21:50 清場批次<br/>caffeinate wrap']
+    W['pmset 03:00 wake（mosaic 側待裝）'] --> E['entitlements-probe on-wake fire<br/>min-interval 30 不變']
+    E --> L['次晨查 log 03:0x entry<br/>＝live 實測（pending 記卡 NOTES）']
+```
+驗收：AC 五勾（plistlib parse／bash -n／rg 三錨點／NOTES）＋guard 全套 2817 passed＋fail-closed join OK 4 predicates。待辦交接：live wake-fire 實測隨 mosaic pmset 安裝後次晨執行，結果補卡 NOTES。
+<!-- SECTION:FINAL_SUMMARY:END -->
