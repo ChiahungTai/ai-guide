@@ -43,6 +43,8 @@ def _spec() -> dict:
 
 
 def _plan(plan_changes: list | None = None) -> dict:
+    """AIR-235 ripple：intent_review.generate 上游密封先驗走 arc_spec compile
+    stage——plan 殼須帶合規 closure_coverage＋新 phase enum。"""
     plan = {
         "schema": "arc-plan/1",
         "card_id": "AIR-94",
@@ -54,9 +56,19 @@ def _plan(plan_changes: list | None = None) -> dict:
                 "unit_id": "AIR-94#W1",
                 "title": "flash 調查",
                 "role": "implement",
-                "phase": "Build",
+                "phase": "build",
                 "depends_on": [],
             }
+        ],
+        "closure_coverage": [
+            {"station": s, "unit_ref": "AIR-94#W1", "owner": o, "gate": g}
+            for s, o, g in (
+                ("post-build", "dispatch", "none"),
+                ("review", "dispatch", "none"),
+                ("judge", "main-session", "human"),
+                ("landing", "main-session", "commit-consent"),
+                ("settle", "main-session", "human"),
+            )
         ],
         "budget_context": {"revert_exposure_cap": 0, "usage_cap": 0},
         "terminal_semantics": {
@@ -101,7 +113,7 @@ def _plan_with_sinks() -> dict:
             "unit_id": "AIR-94#W1",
             "title": "flash implement",
             "role": "implement",
-            "phase": "Build",
+            "phase": "build",
             "depends_on": [],
             "sink": "src/rename/investigation.md",
         },
@@ -109,7 +121,7 @@ def _plan_with_sinks() -> dict:
             "unit_id": "AIR-94#W4",
             "title": "flash implement 落地",
             "role": "implement",
-            "phase": "Build",
+            "phase": "build",
             "depends_on": ["AIR-94#W1"],
             "sink": {"mode": "artifact", "path": "docs/rename-notes.md"},
         },
@@ -117,7 +129,7 @@ def _plan_with_sinks() -> dict:
             "unit_id": "AIR-94#W5",
             "title": "verify 收尾",
             "role": "verify",
-            "phase": "Verify",
+            "phase": "post-build",
             "depends_on": ["AIR-94#W4"],
             "sink": "reports/verify.json",
         },
@@ -125,7 +137,7 @@ def _plan_with_sinks() -> dict:
             "unit_id": "AIR-94#W6",
             "title": "codex code-review",
             "role": "review",
-            "phase": "Verify",
+            "phase": "review",
             "depends_on": ["AIR-94#W4"],
             "sink": ".agent-tmp/findings.md",
         },

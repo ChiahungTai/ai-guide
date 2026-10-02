@@ -1,0 +1,27 @@
+{
+  "schema": "arc-plan/1",
+  "card_id": "AIR-234",
+  "card_baseline": "521a3d79",
+  "version": 1,
+  "supersedes": null,
+  "plan_hash": "945ec0f8ce06cc496b777fb3919cfdb5bb35eccb9e4ddbfd8c21f66f39a5c018",
+  "work_units": [
+    {
+      "unit_id": "AIR-234#impl-a",
+      "title": "bridge receipt 機驗（v1 實形）",
+      "role": "implement",
+      "phase": "build",
+      "depends_on": []
+    }
+  ],
+  "budget_context": {
+    "revert_exposure_cap": 0,
+    "usage_cap": null
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "plan_changes": []
+}

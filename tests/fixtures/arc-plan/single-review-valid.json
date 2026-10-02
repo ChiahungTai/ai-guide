@@ -1,0 +1,104 @@
+{
+  "schema": "arc-plan/1",
+  "card_id": "AIR-102",
+  "card_baseline": "521a3d79",
+  "version": 1,
+  "supersedes": null,
+  "plan_hash": "e499e72a53cecb88590714f99445a0b0c14ecc5c643e7fcc05c3b715cdd7be17",
+  "work_units": [
+    {
+      "unit_id": "AIR-102#W1",
+      "title": "小功能實作",
+      "role": "implement",
+      "phase": "build",
+      "depends_on": []
+    },
+    {
+      "unit_id": "AIR-102#pb",
+      "title": "post-build 收尾鏈",
+      "role": "verify",
+      "phase": "post-build",
+      "depends_on": [
+        "AIR-102#W1"
+      ]
+    },
+    {
+      "unit_id": "AIR-102#rev",
+      "title": "單腿 code-review（無 bridge 跨家族腿）",
+      "role": "review",
+      "phase": "review",
+      "depends_on": [
+        "AIR-102#pb"
+      ]
+    },
+    {
+      "unit_id": "AIR-102#judge",
+      "title": "judge 主 session 本職不派工",
+      "role": "verify",
+      "phase": "judge",
+      "depends_on": [
+        "AIR-102#rev"
+      ]
+    },
+    {
+      "unit_id": "AIR-102#land",
+      "title": "landing 主 session 本職（receipt-gate＋ff-only）",
+      "role": "verify",
+      "phase": "land",
+      "depends_on": [
+        "AIR-102#judge"
+      ]
+    },
+    {
+      "unit_id": "AIR-102#settle",
+      "title": "settle 翻 Done 恆 user 拍板",
+      "role": "verify",
+      "phase": "settle",
+      "depends_on": [
+        "AIR-102#land"
+      ]
+    }
+  ],
+  "budget_context": {
+    "revert_exposure_cap": 0,
+    "usage_cap": null
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "plan_changes": [],
+  "closure_coverage": [
+    {
+      "station": "post-build",
+      "unit_ref": "AIR-102#pb",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "review",
+      "unit_ref": "AIR-102#rev",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "judge",
+      "unit_ref": "AIR-102#judge",
+      "owner": "main-session",
+      "gate": "human"
+    },
+    {
+      "station": "landing",
+      "unit_ref": "AIR-102#land",
+      "owner": "main-session",
+      "gate": "commit-consent"
+    },
+    {
+      "station": "settle",
+      "unit_ref": "AIR-102#settle",
+      "owner": "main-session",
+      "gate": "human"
+    }
+  ]
+}

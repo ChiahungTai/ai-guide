@@ -147,7 +147,11 @@ class TestSetInvariants:
 
 
 def _plan_with(contract: dict) -> dict:
-    """合法 ArcPlan 殼＋嵌 contract（plan_hash 重算——嵌塊入 hash 覆蓋面）。"""
+    """合法 ArcPlan 殼＋嵌 contract（plan_hash 重算——嵌塊入 hash 覆蓋面）。
+
+    AIR-235 ripple：compile stage 新閘（phase enum＋closure_coverage 五站）——
+    殼須帶合規 coverage 才能隔離出 contract 本身的深檢訊號。
+    """
     plan = {
         "schema": "arc-plan/1",
         "card_id": contract["card_id"],
@@ -160,9 +164,20 @@ def _plan_with(contract: dict) -> dict:
                 "unit_id": f"{contract['card_id']}#W1",
                 "title": "compiler core 驗證殼",
                 "role": "implement",
-                "phase": "Build",
+                "phase": "build",
                 "depends_on": [],
             }
+        ],
+        "closure_coverage": [
+            {"station": s, "unit_ref": f"{contract['card_id']}#W1",
+             "owner": o, "gate": g}
+            for s, o, g in (
+                ("post-build", "dispatch", "none"),
+                ("review", "dispatch", "none"),
+                ("judge", "main-session", "human"),
+                ("landing", "main-session", "commit-consent"),
+                ("settle", "main-session", "human"),
+            )
         ],
         "budget_context": {"revert_exposure_cap": 0, "usage_cap": 0},
         "terminal_semantics": {

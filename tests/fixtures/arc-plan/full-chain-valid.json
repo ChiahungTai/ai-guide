@@ -1,0 +1,114 @@
+{
+  "schema": "arc-plan/1",
+  "card_id": "AIR-235",
+  "card_baseline": "521a3d79",
+  "version": 1,
+  "supersedes": null,
+  "plan_hash": "08a80c0dd5e532e3dade28c5fc43f106fe9a473d971d36617087f636e8871715",
+  "work_units": [
+    {
+      "unit_id": "AIR-235#impl",
+      "title": "實作腿",
+      "role": "implement",
+      "phase": "build",
+      "depends_on": []
+    },
+    {
+      "unit_id": "AIR-235#post-build",
+      "title": "post-build 編排（marshal 本職）",
+      "role": "verify",
+      "phase": "post-build",
+      "depends_on": [
+        "AIR-235#impl"
+      ]
+    },
+    {
+      "unit_id": "AIR-235#review-fresh",
+      "title": "fresh 審查腿",
+      "role": "review",
+      "phase": "review",
+      "depends_on": [
+        "AIR-235#post-build"
+      ]
+    },
+    {
+      "unit_id": "AIR-235#review-cross",
+      "title": "跨家族審查腿（bridge，依 availability）",
+      "role": "review",
+      "phase": "review",
+      "depends_on": [
+        "AIR-235#post-build"
+      ]
+    },
+    {
+      "unit_id": "AIR-235#judge",
+      "title": "judge 裁決（主 session decision work unit，不 agent 化）",
+      "role": "verify",
+      "phase": "judge",
+      "depends_on": [
+        "AIR-235#review-fresh",
+        "AIR-235#review-cross"
+      ]
+    },
+    {
+      "unit_id": "AIR-235#commit-merge",
+      "title": "landing（marshal 本職）：receipt-gate＋ff-only merge；push 恆停",
+      "role": "verify",
+      "phase": "land",
+      "depends_on": [
+        "AIR-235#judge"
+      ]
+    },
+    {
+      "unit_id": "AIR-235#settle",
+      "title": "四數記卡＋結案兩步（翻 Done 恆 user 拍板）",
+      "role": "verify",
+      "phase": "settle",
+      "depends_on": [
+        "AIR-235#commit-merge"
+      ]
+    }
+  ],
+  "budget_context": {
+    "revert_exposure_cap": 0,
+    "usage_cap": null
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "plan_changes": [],
+  "closure_coverage": [
+    {
+      "station": "post-build",
+      "unit_ref": "AIR-235#post-build",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "review",
+      "unit_ref": "AIR-235#review-fresh",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "judge",
+      "unit_ref": "AIR-235#judge",
+      "owner": "main-session",
+      "gate": "human"
+    },
+    {
+      "station": "landing",
+      "unit_ref": "AIR-235#commit-merge",
+      "owner": "main-session",
+      "gate": "commit-consent"
+    },
+    {
+      "station": "settle",
+      "unit_ref": "AIR-235#settle",
+      "owner": "main-session",
+      "gate": "human"
+    }
+  ]
+}

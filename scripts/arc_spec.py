@@ -33,6 +33,15 @@ satisfied/satisfied_at_baseline）＋judgment_required（ac_id/reason）＋ac_id
 exactly-once、聯集=全部、交集=空）。選填＝本弧 back-compat（既有 plan 無此塊
 仍合法；AIR-135.1.2 lifecycle wiring 收緊必填）。
 
+closure_coverage 硬閘（AIR-235）：ArcPlan machine-invariant 欄——收線鏈五站
+post-build/review/judge/landing/settle 各 {station, unit_ref, owner, gate}；
+compile stage 驗全站在場（waiver 站豁免）＋unit_ref 回指 work_units＋owner
+站別一致（judge/landing/settle 恆 main-session、review 恆 dispatch）——缺站
+逐行 fail-loud 列可用站別。顯式逃生口＝`chain_waiver`（stations＋reason 必填
+——顯式勝於歧義）。coverage 只在 compile stage（plan 定版時驗；dispatch 不
+重驗，slice 是 per-unit 物）。work_units.phase 收斂 enum build/post-build/
+review/judge/land/settle（135.3 六站的操作軸映射，六站語義不重定）。
+
 fail-loud 文案形（codex multi_agents_common.rs:395-442）：
     Unknown model `X` for spawn_agent. Available models: A, B
 本檔同形：缺欄列出全部必填、未知枚舉列出可用值、雙 authoritative 值／非有限
@@ -78,6 +87,23 @@ KINDS = ("arc-spec", "arc-plan", "dispatch-slice", "receipt")
 STAGES = ("compile", "dispatch")
 
 ROLES = ("implement", "review", "verify", "test", "intent-review")
+# work_units.phase 收斂 enum（AIR-235）：收線鏈操作站別，取 v2 已實踐語彙追認
+# 為正式詞彙——非 135.3 六站直抄（六站＝obligation 層人類 gate 站牌，phase 是
+# transport 層操作軸；六站無 Land 站，直套＝跨層綁定）。映射一行：build↔Build、
+# post-build/review↔Verify、judge↔exit Align、land/settle↔Settle 域——六站語義不重定。
+PHASES = ("build", "post-build", "review", "judge", "land", "settle")
+# 收線鏈 coverage（AIR-235）：五必含站＋owner/gate 枚舉——compile stage 驗；
+# owner 站別一致性：judge/landing/settle 恆 main-session（codex/glm 共識：把
+# 這三站塞 dispatch 是假語義）、review 恆 dispatch；post-build 兩形皆可。
+COVERAGE_STATIONS = ("post-build", "review", "judge", "landing", "settle")
+COVERAGE_OWNERS = ("main-session", "dispatch")
+COVERAGE_GATES = ("human", "commit-consent", "none")
+STATION_OWNER_FIXED = {
+    "judge": "main-session",
+    "landing": "main-session",
+    "settle": "main-session",
+    "review": "dispatch",
+}
 READ_SET_POLICIES = ("full-context", "problem-contract-only", "chain-exclusion")
 # AC#2 role-dependent read-set（0919 外部收割＋0920 修訂）：same page ≠ same
 # projection——review/verify/test 只給 problem/behavior contract（禁逐字繼承
@@ -187,7 +213,22 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("supersedes", "machine-invariant", "always",
                       "前一版本號或 null（supersedes trail；須小於自身版本）", nullable=True),
             FieldSpec("work_units", "machine-invariant", "always",
-                      "工作單元列表——unit_id 錨 card node id（唯一）、role 枚舉、phase 引用 135.3 六站語彙（不重定）、depends_on 拓撲"),
+                      "工作單元列表——unit_id 錨 card node id（唯一）、role 枚舉、"
+                      "phase 枚舉 build/post-build/review/judge/land/settle（135.3 六站"
+                      "映射：build↔Build、post-build/review↔Verify、judge↔exit Align、"
+                      "land/settle↔Settle 域——transport 層操作軸，六站語義不重定）、"
+                      "depends_on 拓撲"),
+            FieldSpec("closure_coverage", "machine-invariant", "compile",
+                      "收線鏈 coverage（AIR-235）：五站 post-build/review/judge/landing/"
+                      "settle 各 {station, unit_ref, owner, gate}——owner 枚舉 "
+                      "main-session/dispatch、gate 枚舉 human/commit-consent/none；"
+                      "compile stage 驗全站在場（waiver 站豁免）＋unit_ref 回指 "
+                      "work_units＋owner 站別一致（judge/landing/settle 恆 main-session、"
+                      "review 恆 dispatch）；dispatch 不重驗（slice 是 per-unit 物）",
+                      nullable=True),
+            FieldSpec("chain_waiver", "machine-invariant", "never",
+                      "顯式逃生口（AIR-235）：{stations: [...], reason: str}——列出豁免 "
+                      "coverage 的站別；reason 必填（缺席/空字串＝exit 2）——顯式勝於歧義"),
             FieldSpec("budget_context", "machine-invariant", "always",
                       "預算 context——revert_exposure_cap（敞口帽，純數值有限 ≥0）＋"
                       "usage_cap（用量帽三態：有限數 ≥0＝具體帽、null＝未設、"
@@ -669,6 +710,119 @@ def _check_contract_back_refs(
         )
 
 
+def _coverage_enum_field(name: str, values: tuple[str, ...], noun: str) -> FieldSpec:
+    return FieldSpec(name, "machine-invariant", "always", "", values=values, noun=noun,
+                     plural=f"{noun}s")
+
+
+def _check_closure_coverage(
+    data: dict, stage: str, kind: str, errors: list[str]
+) -> None:
+    """收線鏈 coverage 硬閘（AIR-235）——只在 compile stage（plan 定版時驗；
+    dispatch 不重驗，slice 是 per-unit 物）。缺站逐行列出＋文案列可用站別；
+    chain_waiver 顯式豁免（reason 必填——顯式勝於歧義）。"""
+    if stage != "compile":
+        return
+
+    # waiver 先行——豁免集決定 coverage 必含面
+    waived: set[str] = set()
+    waiver = data.get("chain_waiver")
+    if waiver is not None:
+        if not isinstance(waiver, dict):
+            errors.append(
+                f"`chain_waiver` must be an object for {kind}, "
+                f"got {type(waiver).__name__}"
+            )
+        else:
+            stations = waiver.get("stations")
+            _require_list("chain_waiver.stations", stations, kind, errors)
+            if isinstance(stations, list):
+                for s in stations:
+                    if s not in COVERAGE_STATIONS:
+                        errors.append(_unknown_enum(
+                            _coverage_enum_field("station", COVERAGE_STATIONS,
+                                                 "coverage station"),
+                            s, f"{kind}.chain_waiver",
+                        ))
+                    else:
+                        waived.add(s)
+            reason = waiver.get("reason")
+            if not (isinstance(reason, str) and reason.strip()):
+                errors.append(
+                    f"`chain_waiver.reason` 不得為空 for {kind} — waiver 顯式勝於"
+                    f"歧義（reason 空字串/缺席＝exit 2）"
+                )
+
+    coverage = data.get("closure_coverage")
+    _require_list("closure_coverage", coverage, kind, errors)
+    covered: set[str] = set()
+    if isinstance(coverage, list):
+        work_units = data.get("work_units")
+        unit_ids = {
+            wu["unit_id"]
+            for wu in (work_units or [])
+            if isinstance(wu, dict)
+            and isinstance(wu.get("unit_id"), str)
+            and wu["unit_id"].strip()
+        }
+        for i, entry in enumerate(coverage):
+            if not isinstance(entry, dict):
+                errors.append(
+                    f"closure_coverage[{i}] must be an object for {kind}, "
+                    f"got {type(entry).__name__}"
+                )
+                continue
+            station = entry.get("station")
+            if station not in COVERAGE_STATIONS:
+                errors.append(_unknown_enum(
+                    _coverage_enum_field("station", COVERAGE_STATIONS,
+                                         "coverage station"),
+                    station, f"{kind}.closure_coverage",
+                ))
+                continue
+            covered.add(station)
+            unit_ref = entry.get("unit_ref")
+            if not (isinstance(unit_ref, str) and unit_ref.strip()):
+                errors.append(
+                    f"`closure_coverage[{i}].unit_ref` 不得為空 for {kind}"
+                )
+            elif unit_ids and unit_ref not in unit_ids:
+                errors.append(
+                    f"closure_coverage[{i}].unit_ref `{unit_ref}` not found in "
+                    f"work_units for {kind} — unit_ref 須回指在場 unit_id. "
+                    f"Available unit ids: {', '.join(sorted(unit_ids))}"
+                )
+            owner = entry.get("owner")
+            if owner not in COVERAGE_OWNERS:
+                errors.append(_unknown_enum(
+                    _coverage_enum_field("owner", COVERAGE_OWNERS, "owner"),
+                    owner, f"{kind}.closure_coverage",
+                ))
+            else:
+                fixed = STATION_OWNER_FIXED.get(station)
+                if fixed is not None and owner != fixed:
+                    errors.append(
+                        f"closure_coverage[{i}] station `{station}` requires "
+                        f"owner=`{fixed}` for {kind}, got `{owner}` — owner 站別"
+                        f"一致性（judge/landing/settle 恆 main-session、review "
+                        f"恆 dispatch）"
+                    )
+            gate = entry.get("gate")
+            if gate not in COVERAGE_GATES:
+                errors.append(_unknown_enum(
+                    _coverage_enum_field("gate", COVERAGE_GATES, "gate"),
+                    gate, f"{kind}.closure_coverage",
+                ))
+
+    for station in COVERAGE_STATIONS:
+        if station not in waived and station not in covered:
+            errors.append(
+                f"closure_coverage missing station `{station}` for {kind} — "
+                f"收線鏈五站必含（waiver 站豁免；顯式 chain_waiver 須帶 reason）. "
+                f"Available stations: {', '.join(COVERAGE_STATIONS)}"
+            )
+
+
 def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
     kind = "arc-plan"
     version = data.get("version")
@@ -738,6 +892,13 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
                     errors.append(
                         f"work_units[{i}].{key} 不得為空 for {kind}"
                     )
+            phase = wu.get("phase")
+            if phase is not None and phase not in PHASES:
+                errors.append(_unknown_enum(
+                    FieldSpec("phase", "machine-invariant", "always", "",
+                              values=PHASES, noun="phase", plural="phases"),
+                    phase, kind,
+                ))
             if "depends_on" in wu and not isinstance(wu["depends_on"], list):
                 errors.append(
                     f"work_units[{i}].depends_on must be a list for {kind}"
@@ -787,6 +948,8 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
     if isinstance(contract, dict):
         _check_acceptance_contract(contract, kind, errors)
         _check_contract_back_refs(data, contract, kind, errors)
+
+    _check_closure_coverage(data, stage, kind, errors)
 
 
 def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:

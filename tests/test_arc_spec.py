@@ -49,7 +49,25 @@ def _arc_spec() -> dict:
     }
 
 
+def _coverage_entry(station: str, unit_ref: str, owner: str, gate: str) -> dict:
+    return {"station": station, "unit_ref": unit_ref, "owner": owner, "gate": gate}
+
+
+def _full_coverage(unit_id: str = "AIR-94#W1") -> list[dict]:
+    """五站 coverage 最小形——unit_ref 單元最小合法實例共用了 W1（shape 合法
+    優先於語義飽滿；語義飽滿形見 tests/fixtures/arc-plan/full-chain-valid.json）。"""
+    return [
+        _coverage_entry("post-build", unit_id, "dispatch", "none"),
+        _coverage_entry("review", unit_id, "dispatch", "none"),
+        _coverage_entry("judge", unit_id, "main-session", "human"),
+        _coverage_entry("landing", unit_id, "main-session", "commit-consent"),
+        _coverage_entry("settle", unit_id, "main-session", "human"),
+    ]
+
+
 def _arc_plan() -> dict:
+    """舊 oracle 改判（AIR-235）：單 Build unit 即 valid 的時代結束——valid
+    需 closure_coverage 五站在場（舊形見 fixtures/arc-plan/missing-closure.json）。"""
     return {
         "schema": "arc-plan/1",
         "card_id": "AIR-94",
@@ -62,10 +80,11 @@ def _arc_plan() -> dict:
                 "unit_id": "AIR-94#W1",
                 "title": "flash 調查",
                 "role": "implement",
-                "phase": "Build",
+                "phase": "build",
                 "depends_on": [],
             }
         ],
+        "closure_coverage": _full_coverage(),
         "budget_context": {"revert_exposure_cap": 0, "usage_cap": 0},
         "terminal_semantics": dict(TERMINAL_SEMANTICS),
         "plan_changes": [],
@@ -194,6 +213,25 @@ class TestSchemaRegistry:
         fields = {f.name: f for f in _mod.ARTIFACTS["dispatch-slice"].fields}
         for name in ("family", "model", "binding", "ledger"):
             assert fields[name].required_at == "dispatch", name
+
+    def test_closure_coverage_fields_registered(self) -> None:
+        """AIR-235：closure_coverage＝compile-stage machine-invariant（nullable
+        ——key 在場允許 []，全 waiver 小弧用）；chain_waiver＝選填 machine-invariant。"""
+        fields = {f.name: f for f in _mod.ARTIFACTS["arc-plan"].fields}
+        cc = fields["closure_coverage"]
+        assert cc.kind == "machine-invariant" and cc.required_at == "compile"
+        assert cc.nullable is True
+        cw = fields["chain_waiver"]
+        assert cw.kind == "machine-invariant" and cw.required_at == "never"
+
+    def test_schema_table_lists_coverage_fields(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """schema 子命令輸出表同步新欄位（AIR-235）。"""
+        assert _mod.main(["schema", "--kind", "arc-plan"]) == 0
+        out = capsys.readouterr().out
+        assert "closure_coverage" in out and "chain_waiver" in out
+        assert "post-build" in out  # 五站站別在欄位描述可讀
 
 
 # ---------------------------------------------------------------------------
@@ -953,3 +991,324 @@ class TestPlanContractBackRefs:
         c = _acceptance_contract()
         del c["card_baseline"]
         assert _errors("arc-plan", _plan_with_contract(c)) == []
+
+
+# ---------------------------------------------------------------------------
+# closure_coverage 收線鏈 coverage 硬閘（AIR-235——compile stage 限定）
+# ---------------------------------------------------------------------------
+
+COVERAGE_FIXTURES = Path(__file__).parent / "fixtures" / "arc-plan"
+
+
+class TestClosureCoverage:
+    """收線鏈五站硬閘：post-build/review/judge/landing/settle 各
+    {station, unit_ref, owner, gate}——缺站 fail-loud 列可用站別；unit_ref
+    回指 work_units；owner 站別一致（judge/landing/settle 恆 main-session、
+    review 恆 dispatch）；chain_waiver 顯式逃生口（reason 必填）。"""
+
+    def _plan_compile(self, **overrides: object) -> dict:
+        p = _plan_with_valid_hash()
+        p.update(overrides)
+        if "plan_hash" not in overrides:
+            p["plan_hash"] = _mod.plan_content_hash(p)
+        return p
+
+    # --- 正例 ---
+
+    def test_valid_plan_passes_at_compile(self) -> None:
+        assert _errors("arc-plan", self._plan_compile(), stage="compile") == []
+
+    def test_coverage_not_required_at_dispatch(self) -> None:
+        """coverage 驗證只在 compile stage（plan 定版時驗；dispatch 不重驗）。"""
+        p = _plan_with_valid_hash()
+        del p["closure_coverage"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        assert _errors("arc-plan", p, stage="dispatch") == []
+
+    def test_deep_check_skipped_at_dispatch(self) -> None:
+        p = self._plan_compile()
+        p["closure_coverage"] = _full_coverage()[:4]  # 缺 settle 站
+        errs = _errors("arc-plan", p, stage="dispatch")
+        assert not any("missing station" in e for e in errs)
+
+    def test_full_waiver_with_empty_coverage_valid(self) -> None:
+        """小弧顯式全 waiver——coverage key 在場帶 [] 合法（nullable 語義）。"""
+        p = self._plan_compile(
+            closure_coverage=[],
+            chain_waiver={
+                "stations": ["post-build", "review", "judge", "landing", "settle"],
+                "reason": "light-tier 小弧：單檔小修直收 settle",
+            },
+        )
+        assert _errors("arc-plan", p, stage="compile") == []
+
+    # --- 缺站 ---
+
+    def test_missing_coverage_field_lists_all_five_stations(self) -> None:
+        """AC#1 golden invariant：缺 coverage 欄＝逐行列五缺站＋列可用站別。"""
+        p = _plan_with_valid_hash()
+        del p["closure_coverage"]
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("Missing machine-invariant field `closure_coverage`" in e for e in errs)
+        for station in ("post-build", "review", "judge", "landing", "settle"):
+            assert any(f"missing station `{station}`" in e for e in errs), station
+        assert any("Available stations" in e for e in errs)
+
+    def test_dropped_single_station_listed(self) -> None:
+        p = self._plan_compile()
+        p["closure_coverage"] = [e for e in p["closure_coverage"] if e["station"] != "judge"]
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("missing station `judge`" in e for e in errs)
+        assert not any("missing station `settle`" in e for e in errs)
+
+    def test_empty_coverage_without_waiver_lists_all(self) -> None:
+        p = self._plan_compile(closure_coverage=[])
+        errs = _errors("arc-plan", p, stage="compile")
+        assert sum("missing station" in e for e in errs) == 5
+
+    def test_non_list_coverage_fails(self) -> None:
+        p = self._plan_compile(closure_coverage="all-settled")
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`closure_coverage` must be a list" in e for e in errs)
+
+    def test_non_dict_entry_fails(self) -> None:
+        p = self._plan_compile(closure_coverage=["post-build"])
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("closure_coverage[0] must be an object" in e for e in errs)
+
+    # --- entry 欄位深檢 ---
+
+    def test_unknown_station_lists_available(self) -> None:
+        entry = _coverage_entry("deploy", "AIR-94#W1", "dispatch", "none")
+        p = self._plan_compile(closure_coverage=_full_coverage() + [entry])
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "Unknown coverage station `deploy`" in e and "landing" in e for e in errs
+        )
+
+    def test_ghost_unit_ref_fails(self) -> None:
+        """unit_ref 須回指 work_units 在場 unit_id（錯誤列可用 unit ids）。"""
+        coverage = _full_coverage()
+        coverage[0]["unit_ref"] = "AIR-94#GHOST"
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "AIR-94#GHOST" in e and "not found in work_units" in e for e in errs
+        )
+        assert any("AIR-94#W1" in e for e in errs)  # 列可用 unit ids
+
+    def test_blank_unit_ref_fails(self) -> None:
+        coverage = _full_coverage()
+        coverage[4]["unit_ref"] = "  "
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("closure_coverage[4].unit_ref" in e for e in errs)
+
+    # --- owner 站別一致性 ---
+
+    def test_review_owner_must_be_dispatch(self) -> None:
+        coverage = _full_coverage()
+        coverage[1]["owner"] = "main-session"
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "station `review` requires owner=`dispatch`" in e for e in errs
+        )
+
+    def test_judge_owner_must_be_main_session(self) -> None:
+        """codex/glm 共識：把 judge 塞 dispatch 是假語義——裁決點恆主 session。"""
+        coverage = _full_coverage()
+        coverage[2]["owner"] = "dispatch"
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "station `judge` requires owner=`main-session`" in e for e in errs
+        )
+
+    def test_landing_owner_must_be_main_session(self) -> None:
+        coverage = _full_coverage()
+        coverage[3]["owner"] = "dispatch"
+        errs = _errors(
+            "arc-plan", self._plan_compile(closure_coverage=coverage), stage="compile"
+        )
+        assert any(
+            "station `landing` requires owner=`main-session`" in e for e in errs
+        )
+
+    def test_settle_owner_must_be_main_session(self) -> None:
+        coverage = _full_coverage()
+        coverage[4]["owner"] = "dispatch"
+        errs = _errors(
+            "arc-plan", self._plan_compile(closure_coverage=coverage), stage="compile"
+        )
+        assert any(
+            "station `settle` requires owner=`main-session`" in e for e in errs
+        )
+
+    def test_post_build_owner_free(self) -> None:
+        """owner 站別一致性只釘 judge/landing/settle/review——post-build 兩形皆可。"""
+        for owner in ("dispatch", "main-session"):
+            coverage = _full_coverage()
+            coverage[0]["owner"] = owner
+            p = self._plan_compile(closure_coverage=coverage)
+            assert _errors("arc-plan", p, stage="compile") == [], owner
+
+    def test_unknown_owner_lists_available(self) -> None:
+        coverage = _full_coverage()
+        coverage[0]["owner"] = "agent"
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "Unknown owner `agent`" in e and "main-session" in e for e in errs
+        )
+
+    def test_unknown_gate_lists_available(self) -> None:
+        coverage = _full_coverage()
+        coverage[0]["gate"] = "auto"
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "Unknown gate `auto`" in e and "commit-consent" in e for e in errs
+        )
+
+    # --- chain_waiver ---
+
+    def test_waiver_partial_with_coverage_valid(self) -> None:
+        """waiver 站豁免 coverage——其餘站仍在場即過。"""
+        p = self._plan_compile(
+            closure_coverage=[e for e in _full_coverage() if e["station"] == "settle"],
+            chain_waiver={
+                "stations": ["post-build", "review", "judge", "landing"],
+                "reason": "light-tier 小弧：無外審腿直收 settle",
+            },
+        )
+        assert _errors("arc-plan", p, stage="compile") == []
+
+    def test_waiver_without_reason_fails(self) -> None:
+        p = self._plan_compile(
+            chain_waiver={"stations": ["review"]},
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`chain_waiver.reason`" in e for e in errs)
+
+    def test_waiver_blank_reason_fails(self) -> None:
+        p = self._plan_compile(
+            chain_waiver={"stations": ["review"], "reason": "   "},
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`chain_waiver.reason`" in e for e in errs)
+
+    def test_waiver_unknown_station_fails(self) -> None:
+        p = self._plan_compile(
+            chain_waiver={"stations": ["deploy"], "reason": "skip"},
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("Unknown coverage station `deploy`" in e for e in errs)
+
+    def test_waiver_stations_must_be_list(self) -> None:
+        p = self._plan_compile(
+            chain_waiver={"stations": "review", "reason": "skip"},
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`chain_waiver.stations` must be a list" in e for e in errs)
+
+    def test_waiver_non_dict_fails(self) -> None:
+        p = self._plan_compile(chain_waiver="skip-review")
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`chain_waiver` must be an object" in e for e in errs)
+
+    def test_waiver_covers_missing_station(self) -> None:
+        """缺站錯誤被 waiver 豁免——review 缺席但有 waiver reason 時不列缺站。"""
+        p = self._plan_compile(
+            closure_coverage=[
+                e for e in _full_coverage() if e["station"] != "review"
+            ],
+            chain_waiver={"stations": ["review"], "reason": "單腿小弧"},
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert not any("missing station `review`" in e for e in errs)
+
+    # --- phase enum ---
+
+    def test_illegal_phase_lists_available(self) -> None:
+        """phase 收斂 enum（AIR-235）——違反列可用值；舊大寫形不再合法。"""
+        p = self._plan_compile()
+        p["work_units"][0]["phase"] = "Build"
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "Unknown phase `Build`" in e and "post-build" in e for e in errs
+        )
+
+    def test_all_phase_enum_values_pass(self) -> None:
+        units: list[dict] = []
+        for i, phase in enumerate(
+            ("build", "post-build", "review", "judge", "land", "settle")
+        ):
+            units.append(
+                {
+                    "unit_id": f"AIR-94#P{i}",
+                    "title": phase,
+                    "role": "verify",
+                    "phase": phase,
+                    "depends_on": [],
+                }
+            )
+        p = self._plan_compile(
+            work_units=units,
+            closure_coverage=_full_coverage("AIR-94#P0"),
+        )
+        assert _errors("arc-plan", p, stage="compile") == []
+
+
+class TestCoverageFixtures:
+    """golden fixtures（AC#1–#3 的檔案形）——AIR-234 v1 實形負例＋小弧正例。"""
+
+    def _load(self, name: str) -> dict:
+        return _mod.parse_artifact_file(COVERAGE_FIXTURES / name, "arc-plan")
+
+    def test_missing_closure_fixture_fails_listing_stations(self) -> None:
+        """AIR-234 v1 實形 golden negative：單 build unit 無 coverage＝exit 2 列缺站。"""
+        errs = _errors("arc-plan", self._load("missing-closure.json"), stage="compile")
+        assert errs
+        for station in ("post-build", "review", "judge", "landing", "settle"):
+            assert any(f"missing station `{station}`" in e for e in errs), station
+
+    def test_chain_waiver_valid_fixture_passes(self) -> None:
+        errs = _errors(
+            "arc-plan", self._load("chain-waiver-valid.json"), stage="compile"
+        )
+        assert errs == []
+
+    def test_chain_waiver_no_reason_fixture_fails(self) -> None:
+        errs = _errors(
+            "arc-plan", self._load("chain-waiver-no-reason.json"), stage="compile"
+        )
+        assert any("`chain_waiver.reason`" in e for e in errs)
+
+    def test_single_review_fixture_passes(self) -> None:
+        """小弧不被過綁：五站齊＋review 單腿（無 bridge 跨家族）＝合法。"""
+        errs = _errors(
+            "arc-plan", self._load("single-review-valid.json"), stage="compile"
+        )
+        assert errs == []
+
+    def test_full_chain_fixture_passes(self) -> None:
+        """owner/gate 全形正例：雙腿 review＋全 gate 值。"""
+        errs = _errors(
+            "arc-plan", self._load("full-chain-valid.json"), stage="compile"
+        )
+        assert errs == []
+
+    def test_fixture_cli_exit_codes(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """CLI 面：missing-closure→2、waiver-valid→0（AC#1/#2 的 exit 契約）。"""
+        missing = str(COVERAGE_FIXTURES / "missing-closure.json")
+        assert (
+            _mod.main(["validate", "--kind", "arc-plan", "--stage", "compile", missing])
+            == 2
+        )
+        assert "missing station" in capsys.readouterr().err
+        waiver = str(COVERAGE_FIXTURES / "chain-waiver-valid.json")
+        assert (
+            _mod.main(["validate", "--kind", "arc-plan", "--stage", "compile", waiver])
+            == 0
+        )
