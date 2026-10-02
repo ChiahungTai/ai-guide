@@ -23,7 +23,7 @@ agents/
 - **pin 單一源紀律（AIR-91 S2 起）**：zcode/ 生成檔的 pins 由 `presets.toml` default binding 經 `catalog.toml` 解析生成（wire token／effort encoding 是 catalog 供給事實；loader 驗 FK／carrier 相容／effort 詞彙，違規 fail loud）——改 pin＝改 presets（＋catalog binding）→ 重跑 sync；`presets.background` 與 roles frontmatter 宣告 parity gate（drift＝sync fail loud）。既有 pins 與 AIR-91 前行為逐 byte 等價（tests 等價矩陣 LEGACY_* golden 釘住）
 - **UI 防護規則**：不在 ZCode 設定 UI 編輯 registry 檔（model／思考強度／正文皆然）——zcode/claude/ 是**生成物**（檔頭 ownership marker 標記），UI 編輯會被下次 sync **無預警覆蓋**；要改角色 → 改 `roles/` 源；要改 pins → 改 `presets.toml`（**在 zcode/ 建 fork 已非合法形態**——同名 unmarked 檔會擋 sync）
 - **tier 命名**：能力語義命名（lite-verify／spec-miner，非具體模型名-*——model 每代換名，改名級聯）；例外＝rescue 類（引擎在本質內，如 codex-rescue）。requirement 相容 token（full/vision/lite）定義在 `presets.toml` allow_lists（tier 語義現行居住處＝`skills/model-routing/SKILL.md` dispatch 預設與 lite 分工律節）
-- **生效時機**：ZCode 改動需新建 session（快照制；app 重啟續接同對話亦刷新）；grok 於 session 起掃 `~/.grok/agents`（AIR-215 實證）。翻轉頂層 symlink／更新 registry 拷貝後以首個新 session 驗證
+- **生效時機**：ZCode 改動**延遲刷新**傳播（非即時——依賴新定義的 spawn 應經時延後或換 session；詳見下方「ZCode 限制」節 AIR-227 修正）；grok 於 session 起掃 `~/.grok/agents`（AIR-215 實證）。翻轉頂層 symlink／更新 registry 拷貝後以延遲窗後的 spawn 驗證（變更後立即 spawn 可能得舊面）
 - **external-runtime 職責**：本 registry 亦承載 external-runtime 委派的入口指派（family／profile 映射與詞彙定義均見 `skills/model-routing/SKILL.md`——glossary＋family 表）；詳見下節 thin forwarder。
 
 ## Thin forwarder（external-runtime 家族入口）
@@ -83,7 +83,7 @@ agents/
 
 | harness | provider 綁定 | 調用形態 | role 來源 | evidence status |
 |---------|--------------|---------|-----------|----------------|
-| zcode | zai | registry spawn（背景；快照制——新 session 載入） | `agents/zcode/` 生成檔（pins＝部署預設） | repo-observed |
+| zcode | zai | registry spawn（背景；延遲刷新——經時延後載入） | `agents/zcode/` 生成檔（pins＝部署預設） | repo-observed |
 | cc（Claude Code） | CC 詞彙面（sonnet/haiku/opus）——背後接線 machine-local（user 維護）；原生家 Anthropic 未訂閱，訂閱後 user 自換 | `--agent <name> --bg` named-agent＋Agent tool（spawn-time model/effort） | `agents/claude/` 生成檔 | repo-observed（2.1.261 實測：named-agent 可用、未知名稱即退出） |
 | muse code | meta | **雙身分**：user 直用開發 harness（該弧主力，muse-spark-1.3 全棧）＋ ZCode 端 bridge 工單委派（`task`／`review`，必經） | 直用＝repo AGENTS.md 載入（全域部署點未查證）；委派＝roles/ body 填工單 Role contract（work-order §2） | repo-observed |
 | codex | OpenAI | **經 delegate-bridge `task --family codex` 工單**（AIR-47 吸收；raw CLI 語義留 memory reference） | 同上 | repo-observed |
@@ -118,7 +118,7 @@ markdown + YAML frontmatter，正文 = 系統提示詞。兩家必填欄位同�
 - Beta 僅 user 級（無 workspace 層）；內建 `general-purpose` / `Explore` 名稱不可複用（不可建同名覆蓋檔 — Claude 端可以覆蓋 Explore，這是兩家不對稱點）
 - 內建 `general-purpose`／`Explore` **無 registry pin——繼承 spawning session 主模型**（ZCode 設計行為，官方 qa 文檔；設定頁可為內建單獨釘模型）；lite 角色任務誤派 general-purpose＝旗艦跑機械段（AIR-50 弧兩次實例）——要省成本層必派 registry lite agent
 - 子智能體內**不能再派發子智能體**（Claude 可多層巢狀——官方文檔對深度上限記載版本間不一，勿釘死數字）→ 共用的系統提示詞不可依賴「spawn 下屬 agent」
-- 定義修改不熱更新——快照在 session 啟動時建立（同 hooks 行為；2026-08-22 實測雙層快照：新檔案同 session 不進 registry、既有檔的 body 與 tools 修改同 session spawn 均不生效；重啟 app 後**續接同對話即刷新**——session id 不變但快照已更新，無需開新對話）
+- 定義修改**延遲刷新**傳播——非即時熱更新、亦非啟動時釘死（2026-10-02 AIR-227 三數據點實測：merge 後同 session 立即 spawn＝舊面、同 session 經時延後 spawn＝新面、事後 fresh session spawn＝新面；機制觸發點未究——cache TTL 或事件驅動重讀，「換 session 即時刷新」未單獨實證；前記「啟動時快照、需新 session」強宣稱已撤回——官方文檔仍載快照制，文檔與 runtime 不一致，以 AIR-227 實測為準）。**實務**：依賴新定義的 spawn 應經時延後或換 session——同 session 變更後立即 spawn 得舊面，不得據此下「接線失敗」結論（真實案例：AIR-227 live spawn 收據曾因此誤判 FAIL；2026-08-22 雙層快照觀察——新檔案不進 registry、body/tools 修改即時 spawn 不生效——即延遲窗內樣本）。重啟 app 後**續接同對話即刷新**仍成立——session id 不變但快照已更新，無需開新對話
 - 自 v3.7.1 起子智能體預設注入 user 級 + workspace AGENTS.md（與 Claude subagents 載入 CLAUDE.md layers 對稱）
 - Beta 灰度上線 — 可用性以「設定 → 子智能體」面板實測為準
 
