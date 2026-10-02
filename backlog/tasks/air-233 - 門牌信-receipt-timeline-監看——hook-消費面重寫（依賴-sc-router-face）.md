@@ -1,9 +1,10 @@
 ---
 id: AIR-233
 title: 門牌信 receipt-timeline 監看——hook 消費面重寫（依賴 sc-router face）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 08:07'
+updated_date: '2026-10-02 08:09'
 labels: []
 dependencies: []
 ordinal: 223000
