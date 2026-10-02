@@ -5,23 +5,28 @@
 - settle-state 是 per-arc projection state，**非 card truth 第二源**——每弧只存
   可重建的推進位置（七態＋authoritative artifact pointer＋seq），狀態真值仍在
   卡與收線動作的實據；轉移由收線動作顯式驅動（set／advance），禁後台自動推進
-  （無 watcher、無 daemon——marshal 只吃 READY_TO_JUDGE queue）。
+  （無 watcher、無 daemon——marshal 只吃 READY_TO_JUDGE queue）。per-arc
+  **單寫者假設**：收線動作顯式驅動即隱含序列化（同一弧同一時點只有收線 CPU
+  寫入；無鎖、無後台併發寫入面——repair-1 R4）。
 - 七態：IMPLEMENTING / REVIEWING / READY_TO_JUDGE / NEEDS_REPAIR /
   READY_TO_LAND / LANDED / BLOCKED。
 
-合法轉移表（卡面狀態圖＋任態→BLOCKED；LANDED／BLOCKED 為終態無後繼）::
+合法轉移表（卡面狀態圖＋任態→BLOCKED 逃逸線；LANDED 語義單一化＝repair-1
+R2 裁決：LANDED 唯一合法後繼即 BLOCKED，BLOCKED 為唯一真終態）::
 
     IMPLEMENTING  → REVIEWING
     REVIEWING     → READY_TO_JUDGE
     READY_TO_JUDGE → READY_TO_LAND | NEEDS_REPAIR
     NEEDS_REPAIR  → IMPLEMENTING
     READY_TO_LAND → LANDED
-    任態          → BLOCKED
-    LANDED / BLOCKED → （無——advance 一律 exit 2；show 仍可讀）
+    任態          → BLOCKED（逃逸線含 LANDED——landing 後發現問題走此線）
+    BLOCKED       → （無——真終態，advance 一律 exit 2；show 仍可讀）
 
 CLI（argparse＋fail-loud 風格照 scripts/arc_goal_compile.py；錯誤逐行 stderr、
 文案列可用值、exit 2）：
-- `set --arc A --state S --pointer P --dir D`——新建或全量覆寫（seq 從 1）。
+- `set --arc A --state S --pointer P --dir D`——**僅限新建**（新 arc seq 從 1；
+  既有 arc 拒收 exit 2「arc 已存在——用 advance 推進」——seq 單調合卡面，
+  repair-1 R1：set 無覆寫面）。
 - `advance --arc A --state S [--pointer P] --dir D`——現態→S 須合法轉移；
   非法＝逐行錯誤列「現態＋合法後繼」exit 2；seq+1；--pointer 缺省＝保留既有
   指針，給定＝全量更新（非空）。
@@ -156,7 +161,18 @@ def cmd_set(args: argparse.Namespace) -> int:
     _validate_arc_id(args.arc)
     _validate_state(args.state)
     pointer = _validate_pointer(args.pointer)
-    path = save_state(Path(args.dir), _record(args.arc, args.state, pointer, 1))
+    directory = Path(args.dir)
+    if state_path(directory, args.arc).exists():
+        # repair-1 R1：set 僅限新建——既有 arc 一律 advance 推進（seq 單調
+        # 合卡面；fail-loud 禁靜默覆寫重置 seq）
+        print(
+            f"[arc-settle] ERROR: arc 已存在——用 advance 推進: "
+            f"{state_path(directory, args.arc)}（現態查 show；set 不覆寫、"
+            f"seq 不重置）",
+            file=sys.stderr,
+        )
+        return 2
+    path = save_state(directory, _record(args.arc, args.state, pointer, 1))
     print(f"[arc-settle] set {args.arc} -> {args.state} (seq=1) pointer={pointer}")
     print(f"[arc-settle] state file: {path}")
     return 0
@@ -241,7 +257,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_set = sub.add_parser("set", help="新建或全量覆寫 arc state 檔（seq 從 1）")
+    p_set = sub.add_parser("set", help="新建 arc state 檔（僅限新建；既有 arc 拒收，seq 從 1）")
     p_set.add_argument("--arc", required=True, help="arc id（檔名安全字元）")
     p_set.add_argument("--state", required=True, help=f"七態之一: {', '.join(STATES)}")
     p_set.add_argument("--pointer", required=True, help="authoritative artifact 指針（非空）")

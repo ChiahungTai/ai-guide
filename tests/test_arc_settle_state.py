@@ -1,10 +1,14 @@
 """arc_settle_state 狀態機測試（AIR-135.11 值星收線機械隊列）。
 
-釘住的 invariant（卡面狀態圖＋工單 §2 機械面）：
+釘住的 invariant（卡面狀態圖＋工單 §2 機械面＋repair-1 修復批）：
 - 七態枚舉；合法轉移表＝IMPLEMENTING→REVIEWING→READY_TO_JUDGE→
   READY_TO_LAND｜NEEDS_REPAIR；NEEDS_REPAIR→IMPLEMENTING；
-  READY_TO_LAND→LANDED；任態→BLOCKED；LANDED／BLOCKED 無後繼。
-- set＝新建或全量覆寫（seq 從 1）；advance 須合法轉移，非法 fail-loud
+  READY_TO_LAND→LANDED；任態→BLOCKED。
+- LANDED 語義單一化（repair-1 R2——裁決勿重辯）：LANDED 唯一合法後繼＝
+  BLOCKED（任態→BLOCKED 逃逸線含 LANDED）；BLOCKED 為唯一真終態（無後繼，
+  advance 一律 exit 2；show 仍可讀）。
+- set＝僅限新建（既有 arc 拒收 exit 2「arc 已存在——用 advance 推進」——
+  seq 單調合卡面，repair-1 R1）；advance 須合法轉移，非法 fail-loud
   逐行列「現態＋合法後繼」exit 2；seq 單調遞增（無時鐘依賴）。
 - pointer 非空（空指針拒收）；寫檔原子（無 tmp 殘留）；record 欄位恰五鍵。
 - queue 按 state 過濾；損壞 state 檔 fail-loud 禁靜默跳過。
@@ -166,44 +170,139 @@ class TestLegalPaths:
         assert record["pointer"] == "new.md"
         assert record["seq"] == 2
 
-    def test_set_overwrite_resets_seq(self, tmp_path: Path) -> None:
+    def test_set_existing_arc_rejected(self, tmp_path: Path, capsys) -> None:
+        """repair-1 R1（翻轉自 test_set_overwrite_resets_seq）：set 僅限新建——
+        既有 arc 拒收 exit 2「arc 已存在——用 advance 推進」，seq 單調合卡面。"""
         d = tmp_path / "q"
-        ss.main(
-            [
-                "set",
-                "--arc",
-                "A",
-                "--state",
-                "IMPLEMENTING",
-                "--pointer",
-                "p1.md",
-                "--dir",
-                str(d),
-            ]
+        assert (
+            ss.main(
+                [
+                    "set",
+                    "--arc",
+                    "A",
+                    "--state",
+                    "IMPLEMENTING",
+                    "--pointer",
+                    "p1.md",
+                    "--dir",
+                    str(d),
+                ]
+            )
+            == 0
         )
-        ss.main(["advance", "--arc", "A", "--state", "REVIEWING", "--dir", str(d)])
+        capsys.readouterr()
         rc = ss.main(
             [
                 "set",
                 "--arc",
                 "A",
                 "--state",
-                "READY_TO_JUDGE",
+                "REVIEWING",
                 "--pointer",
                 "p2.md",
                 "--dir",
                 str(d),
             ]
         )
-        assert rc == 0
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "arc 已存在" in err
+        assert "advance" in err
+        # 既有 state 檔未被覆寫
         record = json.loads((d / "A.json").read_text(encoding="utf-8"))
-        assert record == {
-            "schema": "arc-settle-state/1",
-            "arc_id": "A",
-            "state": "READY_TO_JUDGE",
-            "pointer": "p2.md",
-            "seq": 1,
-        }
+        assert record["state"] == "IMPLEMENTING"
+        assert record["seq"] == 1
+        assert record["pointer"] == "p1.md"
+
+    def test_seq_continuity_set_advance_advance(self, tmp_path: Path) -> None:
+        """repair-1 R1 補測：set→advance→advance seq 連續 1,2,3（單調由
+        advance 承擔，set 無重置面）。"""
+        d = tmp_path / "q"
+        path = d / "A.json"
+        assert (
+            ss.main(
+                [
+                    "set",
+                    "--arc",
+                    "A",
+                    "--state",
+                    "IMPLEMENTING",
+                    "--pointer",
+                    "p.md",
+                    "--dir",
+                    str(d),
+                ]
+            )
+            == 0
+        )
+        assert json.loads(path.read_text(encoding="utf-8"))["seq"] == 1
+        assert (
+            ss.main(["advance", "--arc", "A", "--state", "REVIEWING", "--dir", str(d)])
+            == 0
+        )
+        assert json.loads(path.read_text(encoding="utf-8"))["seq"] == 2
+        assert (
+            ss.main(
+                ["advance", "--arc", "A", "--state", "READY_TO_JUDGE", "--dir", str(d)]
+            )
+            == 0
+        )
+        assert json.loads(path.read_text(encoding="utf-8"))["seq"] == 3
+
+    def test_full_chain_to_ready_to_judge(self, tmp_path: Path) -> None:
+        """repair-1 R3 整鏈 sequence：impl set IMPLEMENTING → review advance
+        REVIEWING → join 過 advance READY_TO_JUDGE——全鏈 exit 0。"""
+        d = tmp_path / "q"
+        assert (
+            ss.main(
+                [
+                    "set",
+                    "--arc",
+                    "A",
+                    "--state",
+                    "IMPLEMENTING",
+                    "--pointer",
+                    "impl.md",
+                    "--dir",
+                    str(d),
+                ]
+            )
+            == 0
+        )
+        assert (
+            ss.main(
+                [
+                    "advance",
+                    "--arc",
+                    "A",
+                    "--state",
+                    "REVIEWING",
+                    "--pointer",
+                    "review.md",
+                    "--dir",
+                    str(d),
+                ]
+            )
+            == 0
+        )
+        assert (
+            ss.main(
+                [
+                    "advance",
+                    "--arc",
+                    "A",
+                    "--state",
+                    "READY_TO_JUDGE",
+                    "--dir",
+                    str(d),
+                ]
+            )
+            == 0
+        )
+        record = json.loads((d / "A.json").read_text(encoding="utf-8"))
+        assert record["state"] == "READY_TO_JUDGE"
+        assert record["seq"] == 3
+        assert record["pointer"] == "review.md"
 
 
 # ---------------------------------------------------------------------------
