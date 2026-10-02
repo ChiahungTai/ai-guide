@@ -756,3 +756,140 @@ class TestFileAndCli:
     def test_cli_unknown_kind_exit_2(self, capsys: pytest.CaptureFixture[str]) -> None:
         assert _mod.main(["validate", "--kind", "foo", "/dev/null"]) == 2
         assert "Available kinds" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# acceptance_contract 區塊（AIR-135.1.1 C5b——schema＋集合不變式四條）
+# ---------------------------------------------------------------------------
+
+
+def _acceptance_contract() -> dict:
+    return {
+        "schema": "acceptance-contract/1",
+        "card_id": "AIR-94",
+        "source_card": "backlog/tasks/air-94 - ai-rules→ai-guide-改名落地.md",
+        "card_baseline": "d6b05d0",
+        "ac_ids": ["1", "2", "3"],
+        "predicates": [
+            {
+                "ac_id": "1",
+                "kind": "command_expected",
+                "verifier": "uv run pytest tests/test_demo.py -q",
+                "expected": "exit 0",
+                "satisfied": False,
+                "satisfied_at_baseline": None,
+            },
+            {
+                "ac_id": "2",
+                "kind": None,
+                "verifier": None,
+                "expected": None,
+                "satisfied": True,
+                "satisfied_at_baseline": "d6b05d0",
+            },
+        ],
+        "judgment_required": [{"ac_id": "3", "reason": "no-explicit-verifier"}],
+    }
+
+
+def _plan_with_contract(contract: dict) -> dict:
+    plan = _arc_plan()
+    plan["card_id"] = contract["card_id"]
+    plan["acceptance_contract"] = contract
+    plan["plan_hash"] = _mod.plan_content_hash(plan)
+    return plan
+
+
+class TestAcceptanceContractBlock:
+    def test_field_registered_machine_invariant_optional(self) -> None:
+        f = {x.name: x for x in _mod.ARTIFACTS["arc-plan"].fields}
+        assert f["acceptance_contract"].kind == "machine-invariant"
+        assert f["acceptance_contract"].required_at == "never"
+
+    def test_valid_block_passes(self) -> None:
+        assert _errors("arc-plan", _plan_with_contract(_acceptance_contract())) == []
+
+    def test_block_absent_still_valid_back_compat(self) -> None:
+        """既有 plan 無此塊仍合法（本弧 back-compat；135.1.2 收緊必填）。"""
+        assert _errors("arc-plan", _plan_with_valid_hash()) == []
+
+    def test_bad_block_schema_marker(self) -> None:
+        c = _acceptance_contract()
+        c["schema"] = "acceptance-contract/2"
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("acceptance-contract/1" in e for e in errs)
+
+    def test_open_predicate_requires_kind_and_verifier(self) -> None:
+        c = _acceptance_contract()
+        c["predicates"][0]["verifier"] = None
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("verifier" in e for e in errs)
+
+    def test_unknown_predicate_kind_lists_values(self) -> None:
+        c = _acceptance_contract()
+        c["predicates"][0]["kind"] = "vibes"
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("command_expected" in e and "vibes" in e for e in errs)
+
+    def test_satisfied_requires_baseline_identity(self) -> None:
+        c = _acceptance_contract()
+        c["predicates"][1]["satisfied_at_baseline"] = None
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("satisfied_at_baseline" in e for e in errs)
+
+    def test_no_verifier_open_predicate_rejected(self) -> None:
+        """無 verifier 的 open predicate＝靜默 goal 化——禁（歸 judgment_required）。"""
+        c = _acceptance_contract()
+        c["predicates"][0]["kind"] = "artifact"
+        c["predicates"][0]["verifier"] = None
+        c["predicates"][0]["expected"] = None
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("judgment_required" in e for e in errs)
+
+    def test_unknown_judgment_reason_lists_values(self) -> None:
+        c = _acceptance_contract()
+        c["judgment_required"][0]["reason"] = "looks-hard"
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("no-explicit-verifier" in e for e in errs)
+
+    def test_dropped_judgment_entry_fails(self) -> None:
+        """不變式 3：聯集=全部——judgment_required 靜默丟失即 FAIL。"""
+        c = _acceptance_contract()
+        c["judgment_required"] = []
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("missing from acceptance_contract" in e for e in errs)
+
+    def test_duplicate_ac_id_in_predicates_fails(self) -> None:
+        """不變式 1：exactly-once predicates。"""
+        c = _acceptance_contract()
+        c["predicates"].append(dict(c["predicates"][0]))
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("Duplicate ac_id" in e and "predicates" in e for e in errs)
+
+    def test_duplicate_ac_id_in_ac_ids_fails(self) -> None:
+        c = _acceptance_contract()
+        c["ac_ids"] = ["1", "1", "3"]
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("Duplicate ac_id" in e and "ac_ids" in e for e in errs)
+
+    def test_double_classification_fails(self) -> None:
+        """不變式 4：交集=空——同 ac 雙重歸類即 FAIL。"""
+        c = _acceptance_contract()
+        c["judgment_required"].append({"ac_id": "1", "reason": "no-explicit-verifier"})
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("in both predicates and judgment_required" in e for e in errs)
+
+    def test_union_shortfall_fails(self) -> None:
+        """不變式 3 反向：predicates 側也禁缺——AC 全集須被完整覆蓋。"""
+        c = _acceptance_contract()
+        c["predicates"] = []
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("missing from acceptance_contract" in e for e in errs)
+
+    def test_plan_hash_covers_contract_block(self) -> None:
+        """嵌塊入 hash 覆蓋面——contract 漂移即 hash mismatch（禁原地改）。"""
+        plan = _plan_with_contract(_acceptance_contract())
+        assert _errors("arc-plan", plan) == []
+        plan["acceptance_contract"]["ac_ids"].append("9")
+        errs = _errors("arc-plan", plan)
+        assert any("Plan hash mismatch" in e for e in errs)

@@ -25,6 +25,14 @@ PLAN_CHANGES 修訂流（D4——本 slice 只定義流程文件，引擎不建�
 （sha256 of canonical JSON——sort_keys＋緊湊分隔符＋UTF-8；禁 process-salted
 hash）。DispatchSlice 與 receipt 以 plan_version／plan_hash 回指。
 
+acceptance_contract 區塊（AIR-135.1.1 C5b）：ArcPlan machine-invariant 選填
+區塊——`scripts/arc_goal_compile.py` 從卡 AC explicit verifier 編出（producer
+單一源；本檔只擁 schema＋validate）：predicates（ac_id/kind/verifier/expected/
+satisfied/satisfied_at_baseline）＋judgment_required（ac_id/reason）＋ac_ids
+（AC 全集——使集合不變式四條可在無卡環境機驗：predicates/judgment_required
+exactly-once、聯集=全部、交集=空）。選填＝本弧 back-compat（既有 plan 無此塊
+仍合法；AIR-135.1.2 lifecycle wiring 收緊必填）。
+
 fail-loud 文案形（codex multi_agents_common.rs:395-442）：
     Unknown model `X` for spawn_agent. Available models: A, B
 本檔同形：缺欄列出全部必填、未知枚舉列出可用值、雙 authoritative 值／非有限
@@ -58,6 +66,13 @@ SCHEMA_ARC_SPEC = "arc-spec/1"
 SCHEMA_ARC_PLAN = "arc-plan/1"
 SCHEMA_DISPATCH_SLICE = "dispatch-slice/1"
 SCHEMA_SLICE_RECEIPT = "slice-receipt/1"
+# acceptance_contract 區塊 schema marker（AIR-135.1.1 C5b——區塊非第五 artifact：
+# 無 KINDS/validate 入口，producer＝arc_goal_compile.py）
+ACCEPTANCE_CONTRACT_SCHEMA = "acceptance-contract/1"
+# predicate kind 枚舉（v1 唯一產出 command_expected；餘為保留枚舉）
+PREDICATE_KINDS = ("command_expected", "artifact", "schema", "state_transition")
+# judgment_required reason 枚舉（C5b v1 唯一值）
+JUDGMENT_REASONS = ("no-explicit-verifier",)
 
 KINDS = ("arc-spec", "arc-plan", "dispatch-slice", "receipt")
 STAGES = ("compile", "dispatch")
@@ -181,6 +196,11 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
                       "終態語義（D6）：on_budget_exhausted=budget-limited、raise_cap=human-action、settle_gate=human"),
             FieldSpec("plan_changes", "machine-invariant", "always",
                       "PLAN_CHANGES 修訂流（D4）：每筆須附 what＋diff 交驗收腿複核；初始為空列表", nullable=True),
+            FieldSpec("acceptance_contract", "machine-invariant", "never",
+                      "C5b acceptance contract 區塊（AIR-135.1.1）：{schema, card_id, source_card, "
+                      "card_baseline?, ac_ids, predicates[], judgment_required[]}——producer＝"
+                      "arc_goal_compile.py（卡 AC explicit verifier 的 deterministic 編譯）；"
+                      "選填＝本弧 back-compat（135.1.2 wiring 收緊）；在場時深檢集合不變式四條"),
             FieldSpec("objective_notes", "llm-guidance", "never",
                       "計畫寫作約束（grok 借鑑 #7）：specify outcomes, not architecture；為最弱執行模型可讀而寫"),
         ),
@@ -444,6 +464,172 @@ def _check_arc_spec(data: dict, stage: str, errors: list[str]) -> None:
         )
 
 
+def _check_acceptance_contract(
+    contract: dict, kind: str, errors: list[str]
+) -> None:
+    """C5b acceptance_contract 區塊深檢（AIR-135.1.1）——欄位契約＋集合不變式
+    四條（ac_ids 承載 AC 全集，故可在無卡環境機驗）。producer 單一源＝
+    arc_goal_compile.py；本檔只擋形狀與集合違約，不重編譯。"""
+    label = "acceptance_contract"
+    if contract.get("schema") != ACCEPTANCE_CONTRACT_SCHEMA:
+        errors.append(
+            f"Unknown schema marker `{contract.get('schema')}` for {kind}.{label}. "
+            f"Available schema markers: {ACCEPTANCE_CONTRACT_SCHEMA}"
+        )
+    for key in ("card_id", "source_card"):
+        if not _present_nonempty(contract.get(key)):
+            errors.append(f"`{label}.{key}` 不得為空 for {kind}")
+
+    ac_ids = contract.get("ac_ids")
+    if not isinstance(ac_ids, list) or not ac_ids:
+        errors.append(
+            f"`{label}.ac_ids` must be a non-empty list for {kind} — "
+            f"AC 全集承載（集合不變式的輸入對照面）"
+        )
+        ac_ids = None
+    elif not all(isinstance(a, str) and a.strip() for a in ac_ids):
+        errors.append(f"`{label}.ac_ids` must be non-empty strings for {kind}")
+        ac_ids = None
+    elif len(set(ac_ids)) != len(ac_ids):
+        dupes = sorted({a for a in ac_ids if ac_ids.count(a) > 1})
+        errors.append(
+            f"Duplicate ac_id {dupes} in `{label}.ac_ids` for {kind} — "
+            f"AC 身分歧義（fail-loud）"
+        )
+
+    predicates = contract.get("predicates")
+    _require_list(f"{label}.predicates", predicates, kind, errors)
+    pred_ids: list[str] = []
+    if isinstance(predicates, list):
+        for i, p in enumerate(predicates):
+            if not isinstance(p, dict):
+                errors.append(
+                    f"{label}.predicates[{i}] must be an object for {kind}, "
+                    f"got {type(p).__name__}"
+                )
+                continue
+            ac_id = p.get("ac_id")
+            if not _present_nonempty(ac_id) or not isinstance(ac_id, str):
+                errors.append(
+                    f"{label}.predicates[{i}].ac_id 不得為空 for {kind}"
+                )
+                continue
+            pred_ids.append(ac_id)
+            satisfied = p.get("satisfied")
+            if not isinstance(satisfied, bool):
+                errors.append(
+                    f"{label}.predicates[{i}].satisfied must be a boolean "
+                    f"for {kind}, got {type(satisfied).__name__}"
+                )
+                satisfied = None
+
+            p_kind = p.get("kind")
+            if p_kind is not None and p_kind not in PREDICATE_KINDS:
+                errors.append(_unknown_enum(
+                    FieldSpec("kind", "machine-invariant", "always", "",
+                              values=PREDICATE_KINDS, noun="predicate kind",
+                              plural="predicate kinds"),
+                    p_kind, f"{kind}.{label}",
+                ))
+            if satisfied is False and p_kind not in PREDICATE_KINDS:
+                errors.append(
+                    f"`{label}.predicates[{i}].kind` must be one of "
+                    f"{', '.join(PREDICATE_KINDS)} for open predicates "
+                    f"(satisfied=false) in {kind} — 無 verifier kind 的 open "
+                    f"predicate＝無機驗面的 goal（禁）"
+                )
+
+            verifier = p.get("verifier")
+            expected = p.get("expected")
+            if p_kind == "command_expected":
+                for key, val in (("verifier", verifier), ("expected", expected)):
+                    if not _present_nonempty(val):
+                        errors.append(
+                            f"{label}.predicates[{i}].{key} 不得為空 for "
+                            f"kind=command_expected in {kind}"
+                        )
+            elif verifier is not None or expected is not None:
+                errors.append(
+                    f"{label}.predicates[{i}].verifier/expected 僅定義於 "
+                    f"kind=command_expected（v1）——kind=`{p_kind}` 帶之即 "
+                    f"雙 authoritative 形狀（fail-loud）"
+                )
+            if verifier is None and satisfied is False:
+                errors.append(
+                    f"{label}.predicates[{i}] 無 verifier 且 satisfied=false "
+                    f"for {kind} — 無機驗面的 open predicate（靜默 goal 化，禁；"
+                    f"no-verifier AC 應在 judgment_required）"
+                )
+
+            baseline_at = p.get("satisfied_at_baseline")
+            if satisfied is True:
+                if not (isinstance(baseline_at, str) and BASELINE_RE.match(baseline_at)):
+                    errors.append(
+                        f"{label}.predicates[{i}].satisfied_at_baseline 需 hex "
+                        f"7-40 位 for satisfied predicate in {kind} — 已滿足須帶 "
+                        f"baseline 身份（重編譯不丟已完成證據）"
+                    )
+            elif baseline_at is not None:
+                errors.append(
+                    f"{label}.predicates[{i}].satisfied_at_baseline 須為 null "
+                    f"for open predicate in {kind}, got `{baseline_at}`"
+                )
+
+    judgment = contract.get("judgment_required")
+    _require_list(f"{label}.judgment_required", judgment, kind, errors)
+    jud_ids: list[str] = []
+    if isinstance(judgment, list):
+        for i, j in enumerate(judgment):
+            if not isinstance(j, dict):
+                errors.append(
+                    f"{label}.judgment_required[{i}] must be an object for {kind}, "
+                    f"got {type(j).__name__}"
+                )
+                continue
+            ac_id = j.get("ac_id")
+            if not _present_nonempty(ac_id) or not isinstance(ac_id, str):
+                errors.append(
+                    f"{label}.judgment_required[{i}].ac_id 不得為空 for {kind}"
+                )
+                continue
+            jud_ids.append(ac_id)
+            reason = j.get("reason")
+            if reason not in JUDGMENT_REASONS:
+                errors.append(_unknown_enum(
+                    FieldSpec("reason", "machine-invariant", "always", "",
+                              values=JUDGMENT_REASONS, noun="judgment reason",
+                              plural="judgment reasons"),
+                    reason, f"{kind}.{label}",
+                ))
+
+    # 集合不變式四條（ac_ids 在場才可機驗——輸入對照面）
+    if ac_ids is not None:
+        if len(set(pred_ids)) != len(pred_ids):
+            errors.append(
+                f"Duplicate ac_id in `{label}.predicates` for {kind} — "
+                f"exactly-once 違約（fail-loud）"
+            )
+        if len(set(jud_ids)) != len(jud_ids):
+            errors.append(
+                f"Duplicate ac_id in `{label}.judgment_required` for {kind} — "
+                f"exactly-once 違約（fail-loud）"
+            )
+        pred_set, jud_set, all_set = set(pred_ids), set(jud_ids), set(ac_ids)
+        lost = sorted(all_set - pred_set - jud_set)
+        if lost:
+            errors.append(
+                f"AC id {lost} missing from acceptance_contract for {kind} — "
+                f"集合不變式 3（聯集=全部）：judgment_required 靜默丟失為本編譯器"
+                f"最危險失效形（fail-loud）"
+            )
+        overlap = sorted(pred_set & jud_set)
+        if overlap:
+            errors.append(
+                f"AC id {overlap} in both predicates and judgment_required for "
+                f"{kind} — 集合不變式 4（交集=空；雙重歸類）"
+            )
+
+
 def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
     kind = "arc-plan"
     version = data.get("version")
@@ -554,6 +740,13 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
                         f"PLAN_CHANGES 修訂須附 what＋diff 交驗收腿複核（D4；"
                         f"弱化／刪除／自利條款本身即駁回理由）"
                     )
+
+    _require_object(
+        "acceptance_contract", data.get("acceptance_contract"), kind, errors
+    )
+    contract = data.get("acceptance_contract")
+    if isinstance(contract, dict):
+        _check_acceptance_contract(contract, kind, errors)
 
 
 def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:
