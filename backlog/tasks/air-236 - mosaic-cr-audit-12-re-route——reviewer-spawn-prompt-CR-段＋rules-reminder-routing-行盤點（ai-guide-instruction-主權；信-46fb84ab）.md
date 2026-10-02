@@ -39,3 +39,12 @@ flowchart LR
 - [ ] #1 兩點 verdict 行記本卡 notes（covered-by＜錨點＞ 或 patch-needed） `rg -c "covered-by|patch-needed" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥2
 - [ ] #2 patch-needed 項各有下場（本弧 patch commit sha 或 followup 卡 id；全 covered 時顯式 waiver 行） `rg -c "followup:|patch-commit:|waiver:" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥1
 
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+盤點 verdict（2026-10-02，marshal 本職唯讀盤點）：
+
+- **(1) reviewer spawn prompt CR 段——covered-by**：skills/_common/work-order.md「Review／advisory variant」per-leg route carrier 條（AIR-224——逐腿必填 route：live-cr[:MCP|:CLI]／preprovided-cr／degraded／n/a sentinel；degraded 逐條 unverified-by-graph）＋同檔 §7 carrier 分流 guard（無 MCP surface 腿寫 CLI 指令字串）＋skills/agent-workflow/SKILL.md 步 6 crsurface materialization gate（constructed prompt 離手前機驗其一——不得默默漏注入）。mosaic 建議的「prompt 帶一行 CR 提示」已由 materialization gate 以更強形式實現：不是被動提示行，是 dispatch 端 fail-closed。mosaic 調查樣本（117.11-15 五弧）早於 AIR-224 落地，其發現與本 repo 修復線（224/227/232）收斂於同一破口。
+- **(2) rules-reminder 摘要納 symbol-query-routing——covered-by**：skills/rules-reminder/SKILL.md:39 邊界行（AIR-226）已明文「symbol/ref/caller/closure 類結構查證先走 symbol-query-routing（code-reality/LSP 優先），rg/fd 不得充當結構證據」——即 mosaic 要的那一行。
+- followup: waiver——兩點皆 covered-by，零 patch-needed、零後續卡；本卡結算後即 Done 候選（AC 勾稽由 marshal 覆核）。
