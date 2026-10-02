@@ -34,3 +34,9 @@ flowchart LR
     G --> V['mosaic dogfood 數據<br/>spec 收緊後實作']
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【升級決策】四項不依賴 mosaic dogfood 數據（tri 報告已具體到可實作）——mosaic 數據回來後僅做事後驗證素材非阻塞；draft 態結束
+<!-- SECTION:NOTES:END -->
