@@ -3,9 +3,10 @@ id: AIR-234
 title: >-
   Marshal mode 強化 P0——compiled work-order closure（predicate manifest＋handback
   join＋operational preflight）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 09:14'
+updated_date: '2026-10-02 12:28'
 labels: []
 dependencies: []
 ordinal: 224000
