@@ -112,6 +112,17 @@ def make_spine(tmp_path: Path, as_of: str, available_line: str) -> Path:
     return spine
 
 
+def make_spine_lines(tmp_path: Path, as_of: str, lines: list[str]) -> Path:
+    spine = tmp_path / "spine.md"
+    spine.write_text(
+        "# model-runtime-entitlements\n\n"
+        f"**as-of {as_of}**（test fixture）\n\n"
+        + "".join(line + "\n" for line in lines),
+        encoding="utf-8",
+    )
+    return spine
+
+
 def run_json(
     argv: list[str], capsys: pytest.CaptureFixture[str]
 ) -> tuple[int, dict[str, Any]]:
@@ -213,12 +224,10 @@ def test_muse_unsupported_without_anchor_unknown_no_retryable(
     assert row["source"] == "probe"
 
 
-def test_fresh_spine_available_claim_survives_unsupported_probe(
-    tmp_path, capsys
-) -> None:
-    # D4 has_state：spine fresh 的 available 主張是有資訊量的慢事實，
-    # 壓過 unsupported probe 的零資訊 unknown——主張帶 source=spine 溯源，
-    # 非合成（合成禁令針對 retryable_at 週期推算，見上測試）
+def test_muse_unsupported_spine_cannot_upgrade(tmp_path, capsys) -> None:
+    # R1(b) 契約版（翻轉 repair-1 前的 claim-survives 測試——fresh F1／
+    # codex F1 Critical）：muse unsupported 且無唯一 quota-event anchor
+    # → 恆 unknown，spine 不得升格（即使 fresh spine 明列 muse 可用）
     probe_dir = tmp_path / "probe"
     probe_dir.mkdir()
     seed_probe(probe_dir, "muse", "unknown", FRESH_TS, status="unsupported")
@@ -228,9 +237,69 @@ def test_fresh_spine_available_claim_survives_unsupported_probe(
     )
     assert rc == 0
     row = row_of(payload["rows"], "muse", "unknown")
+    assert row["state"] == "unknown"
+    assert row["retryable_at"] is None
+    assert row["source"] == "probe"
+
+
+def test_spine_event_conflict_downgrades_spine_claim(tmp_path, capsys) -> None:
+    # R1(a)：family 在可用行命中且 spine 事件行與限制詞共現 → 該 family
+    # spine 證據降 has_state=False（未知），禁以污染主張壓過 probe
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "glm", "glm-native", STALE_TS)
+    spine = make_spine_lines(
+        tmp_path,
+        SPINE_FRESH_AS_OF,
+        [
+            "- **可用**：GLM",
+            "- **近期事件**：額度事件：glm 1308 耗盡——禁派至"
+            " 2026-10-03T00:00Z（fixture）",
+        ],
+    )
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    row = row_of(payload["rows"], "glm", "glm-native")
     assert row["source"] == "spine"
-    assert row["state"] == "available"
-    assert row["retryable_at"] is None  # spine 恆不供 reset 錨點
+    assert row["freshness"] == "fresh"
+    assert row["state"] == "unknown"  # 污染主張降 unknown，非 available
+
+
+COMPOUND_AVAILABLE_LINE = (
+    "- **可用**：GLM（5.3 主力＋5.3-flash）＋codex 兩家；"
+    "**muse 停用至 2026-10-05 08:00 台北（＝00:00Z，user 觀察 provider 明示 "
+    "Resets Oct 5 at 8:00 AM）**——期間 cross 腿走 codex/glm"
+)
+
+
+def test_compound_available_line_with_suspension_clause(tmp_path, capsys) -> None:
+    # R1(c)：今晨真 spine 複合可用行形狀（parse_spine 對整行做 token 搜尋，
+    # muse 被停用子句毒入 available）——muse 子句含停用 → spine 主張降
+    # unknown；codex 子句乾淨 → 主張存活
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "muse", "unknown", STALE_TS, status="ok")
+    seed_probe(
+        probe_dir,
+        "codex",
+        "chatgpt-web",
+        STALE_TS,
+        parsed={"verdict": "healthy", "pool_visibility": "none"},
+    )
+    spine = make_spine(tmp_path, SPINE_FRESH_AS_OF, COMPOUND_AVAILABLE_LINE)
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    muse = row_of(payload["rows"], "muse", "unknown")
+    assert muse["source"] == "spine"
+    assert muse["freshness"] == "fresh"
+    assert muse["state"] == "unknown"  # 停用子句污染 → 禁造 available
+    codex = row_of(payload["rows"], "codex", "chatgpt-web")
+    assert codex["source"] == "spine"
+    assert codex["state"] == "available"  # 乾淨子句主張存活
 
 
 def test_quota_event_unique_reset_pins_literal(tmp_path, capsys) -> None:
@@ -276,7 +345,11 @@ def test_event_outranks_unsupported_probe_even_when_older(
     assert row["retryable_at"] == MUSE_RESET_TS
 
 
-def test_quota_event_ambiguous_reset_no_retryable(tmp_path, capsys) -> None:
+def test_quota_event_ambiguous_reset_no_anchor_state_unknown(
+    tmp_path, capsys
+) -> None:
+    # R1(b) 嚴格契約：歧義 reset＝無唯一 anchor → unsupported probe row
+    # 恆 unknown（非 unavailable）；retryable_at 依舊缺席
     probe_dir = tmp_path / "probe"
     probe_dir.mkdir()
     seed_probe(probe_dir, "muse", "unknown", FRESH_TS, status="unsupported")
@@ -296,7 +369,8 @@ def test_quota_event_ambiguous_reset_no_retryable(tmp_path, capsys) -> None:
     )
     assert rc == 0
     row = row_of(payload["rows"], "muse", "unknown")
-    assert row["state"] == "unavailable"
+    assert row["state"] == "unknown"
+    assert row["source"] == "probe"
     assert row["retryable_at"] is None  # 歧義→缺，禁揀首個
 
 
@@ -546,6 +620,75 @@ def test_explicit_spine_missing_exit_2(tmp_path, capsys) -> None:
 
 def test_flag_without_value_exit_2(tmp_path) -> None:
     rc = snap.main(["--probe-dir"], now=NOW)
+    assert rc == 2
+
+
+def test_spine_missing_available_line_no_unavailable_claim(
+    tmp_path, capsys
+) -> None:
+    # R3：spine 檔在場但缺可用行 → spine 證據 has_state=False（canonical
+    # 「無法判定」語義），禁造 unavailable 主張
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "glm", "glm-native", STALE_TS)
+    seed_probe(probe_dir, "muse", "unknown", STALE_TS, status="ok")
+    spine = make_spine_lines(
+        tmp_path, SPINE_FRESH_AS_OF, ["- **GLM**：legacy v1 方案（fixture）"]
+    )
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    for family, pool in (("glm", "glm-native"), ("muse", "unknown")):
+        row = row_of(payload["rows"], family, pool)
+        assert row["source"] == "spine", family
+        assert row["freshness"] == "fresh", family
+        assert row["state"] == "unknown", family  # 非 unavailable——無法判定≠否定
+
+
+def test_future_check_uses_injected_clock_not_wall_clock(
+    tmp_path, monkeypatch
+) -> None:
+    # R2 time-bomb 否證：wall clock 被推過跨日（10-03T00:00Z）而注入
+    # NOW=22:00Z——23:00Z probe 仍須判未來（exit 2），禁讀第二套時鐘
+    class FakeDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            return cls(2026, 10, 3, 0, 0, 0, tzinfo=UTC)
+
+    monkeypatch.setattr(snap, "datetime", FakeDateTime)
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "glm", "glm-native", "2026-10-02T23:00:00Z")
+    rc = snap.main(["--probe-dir", str(probe_dir), "--json"], now=NOW)
+    assert rc == 2
+
+
+def test_naive_iso_probe_ts_exit_2(tmp_path, capsys) -> None:
+    # R4：naive ISO（無時區）＝不合法——走 [FAIL]＋exit 2，禁 TypeError
+    # traceback（naive 與 aware 不可比較）
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "glm", "glm-native", "2026-10-02T22:00:00")
+    rc = snap.main(["--probe-dir", str(probe_dir), "--json"], now=NOW)
+    assert rc == 2
+
+
+def test_naive_iso_event_observed_at_exit_2(tmp_path, capsys) -> None:
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(probe_dir, "muse", "unknown", FRESH_TS)
+    seed_events(
+        probe_dir,
+        [
+            {
+                "family": "muse",
+                "observed_at_utc": "2026-10-02T21:30:00",
+                "message": MUSE_RESET_MSG,
+            }
+        ],
+    )
+    rc = snap.main(["--probe-dir", str(probe_dir), "--json"], now=NOW)
     assert rc == 2
 
 

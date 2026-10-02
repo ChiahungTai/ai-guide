@@ -25,10 +25,25 @@ AIR-239 Description）：
   等於閾值＝fresh，＞才 stale**；未來時間戳＝exit 2（未來非新，沿 F4）。
 - D4 衝突序（勝者 rank key 由高到低＝fresh → has_state → tier →
   observed_at → 平手 tiebreak）：fresh 壓 stale；有 state 主張壓 unknown
-  主張（probe unsupported/error 對現值零資訊量）；direct（probe/event）
-  壓 spine；較新 observed_at 勝；全等時 event＞probe＞spine（保守：耗盡
-  訊號壓過探測快照）。**勝者 stale → state=unknown＋retryable_at=None**
-  （stale 證據的 reset 錨點屬考古，禁當現值）。
+  主張（probe error 對現值零資訊量；**unsupported 例外見 R1b**）；direct
+  （probe/event）壓 spine；較新 observed_at 勝；全等時 event＞probe＞
+  spine（保守：耗盡訊號壓過探測快照）。**勝者 stale → state=unknown＋
+  retryable_at=None**（stale 證據的 reset 錨點屬考古，禁當現值）。
+- R1（repair-1，judge 裁決 fresh NO-GO＋codex GO-WITH-FIXES 修復批）：
+  (a) spine 限制詞共現（事件行 canonical 檢查移植＋複合可用行子句級偵測，
+  限制詞閉集＝禁派/耗盡/reset/1308/429/停用）→ 該 family spine 證據降
+  has_state=False＋stderr WARN（json 模式）/stdout WARN（人話模式）——
+  WARN 欄不進 row（五鍵契約是 AC 釘死面，欄位變動會破 child-2 消費契約）
+  (b) probe status=unsupported 且無唯一 quota-event reset 錨點（fresh＋
+  retryable 非 None）→ 恆 unknown，spine 整層排除不得升格；歧義 reset
+  事件亦非錨點 (c) 複合可用行含停用子句＝今晨真 spine 形狀，子句級分段
+  共現偵測（WARN 級 heuristic，同 canonical F1 姿態）
+- R2：全模組單一時鐘——future-check／freshness 全用 main() 捕獲注入的
+  now，loaders 禁自讀 wall clock（兩套時鐘會讓固定時鐘測試跨日翻轉）
+- R3：spine 檔在場但可用行缺席/零 family → spine 證據 has_state=False
+  （canonical「無法判定」語義），禁造 unavailable 主張
+- R4：naive ISO（無時區）＝不合法 → [FAIL]＋exit 2（禁 naive/aware
+  比較 TypeError traceback）
 - D5 retryable_at＝provider reset 時間戳 only、**禁 5h 週期合成**（全檔無
   週期推算路徑）：probe 勝者讀 glm-native parsed.limits[].nextResetTime
   （epoch ms）與 codex-native raw.rate_limit.reset_at（epoch s）——相異值
@@ -53,6 +68,7 @@ AIR-239 Description）：
 
 import importlib.util
 import json
+import re
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -97,9 +113,12 @@ def _parse_iso_z(value: object) -> datetime | None:
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+    if dt.tzinfo is None:
+        return None  # R4：naive ISO（無時區）＝不合法——禁與 aware 比較時 TypeError
+    return dt
 
 
 def _iso_z(dt: datetime) -> str:
@@ -114,8 +133,12 @@ def _require(condition: bool, message: str) -> None:
 # ---- 輸入三源 ----
 
 
-def load_probe_records(probe_dir: Path) -> list[dict]:
-    """probe latest-*.json 載入（fail-loud：dir 缺／空／malformed／欄缺）。"""
+def load_probe_records(probe_dir: Path, now: datetime) -> list[dict]:
+    """probe latest-*.json 載入（fail-loud：dir 缺／空／malformed／欄缺）。
+
+    R2：future-check 用 main() 捕獲注入的 now——全模組單一時鐘，禁各層
+    自讀 wall clock（兩套時鐘會讓固定時鐘測試跨日翻轉）。
+    """
     if not probe_dir.is_dir():
         raise SnapshotInputError(f"probe dir 缺席：{probe_dir}——fail-loud（exit 2）")
     latests = sorted(probe_dir.glob("latest-*.json"))
@@ -138,17 +161,17 @@ def load_probe_records(probe_dir: Path) -> list[dict]:
             f"probe record 欄位不合法：{path}（family/pool/status）",
         )
         ts = _parse_iso_z(rec.get("probe_ts_utc"))
-        _require(ts is not None, f"probe_ts_utc 非 ISO：{path}")
+        _require(ts is not None, f"probe_ts_utc 非 ISO（或 naive 無時區）：{path}")
         assert ts is not None
         _require(
-            ts <= datetime.now(tz=UTC),
+            ts <= now,
             f"probe_ts_utc 為未來時間戳：{path}（{rec.get('probe_ts_utc')}）——輸入不合法",
         )
         records.append(rec)
     return records
 
 
-def load_quota_events(probe_dir: Path) -> list[dict]:
+def load_quota_events(probe_dir: Path, now: datetime) -> list[dict]:
     """quota-events.jsonl → capture_quota_event 重解析（parser 單一源）。
 
     檔案缺席＝零事件；parser 回 None＝簽名未命中（「未識別，非無事件」）
@@ -188,9 +211,9 @@ def load_quota_events(probe_dir: Path) -> list[dict]:
             ) from exc
         observed_at = _parse_iso_z(line["observed_at_utc"])
         _require(
-            observed_at is not None and observed_at <= datetime.now(tz=UTC),
-            f"quota-events.jsonl line {line_no} observed_at_utc 為未來時間戳"
-            "——輸入不合法",
+            observed_at is not None and observed_at <= now,
+            f"quota-events.jsonl line {line_no} observed_at_utc 非 ISO（或 naive）"
+            "／為未來時間戳——輸入不合法",
         )
         if event is None:
             continue
@@ -198,11 +221,13 @@ def load_quota_events(probe_dir: Path) -> list[dict]:
     return events
 
 
-def load_spine_state(spine_path: Path, families: list[str], *, explicit: bool):
+def load_spine_state(
+    spine_path: Path, families: list[str], now: datetime, *, explicit: bool
+):
     """spine 慢事實載入（availability_snapshot.parse_spine 單一源重用）。
 
     顯式 --spine 檔缺＝exit 2；預設路徑檔缺＝該層缺席（None，WARN 線索交
-    human 輸出）。
+    human 輸出）。R2：future-check 用注入 now。
     """
     if not spine_path.is_file():
         if explicit:
@@ -221,7 +246,7 @@ def load_spine_state(spine_path: Path, families: list[str], *, explicit: bool):
     assert state.as_of is not None
     as_of_date = datetime.fromisoformat(state.as_of).date()
     _require(
-        as_of_date <= datetime.now(tz=UTC).date(),
+        as_of_date <= now.date(),
         f"spine as-of {state.as_of} 為未來日期——輸入不合法（exit 2）",
     )
     return state
@@ -325,25 +350,66 @@ def _event_evidence(item: dict, now: datetime, stale_hours: float) -> Evidence:
 
 
 def _spine_evidence(
-    spine_state, family: str, now: datetime, stale_days: int
+    spine_state, family: str, now: datetime, stale_days: int, *, blocked: bool
 ) -> Evidence | None:
+    """spine 證據（R1a/R1c/R3）——blocked＝限制詞共現或可用行缺席，主張降
+    unknown（has_state=False，canonical「無法判定」語義），禁造
+    available/unavailable 主張。"""
     if spine_state is None:
         return None
     as_of_date = datetime.fromisoformat(spine_state.as_of).date()
     age_days = (now.date() - as_of_date).days
     fresh = age_days <= stale_days
     observed_at = datetime(as_of_date.year, as_of_date.month, as_of_date.day, tzinfo=UTC)
+    if blocked:
+        state, has_state = "unknown", False
+    else:
+        state = "available" if family in spine_state.available else "unavailable"
+        has_state = True
     return Evidence(
         source="spine",
         observed_at=observed_at,
         fresh=fresh,
-        has_state=True,
-        state="available" if family in spine_state.available else "unavailable",
+        has_state=has_state,
+        state=state,
         retryable=None,  # spine 慢事實不供 reset 錨點（D5）
     )
 
 
 # ---- row 組裝 ----
+
+
+def _family_hit(text: str, family: str) -> bool:
+    return re.search(rf"\b{re.escape(family)}\b", text, re.IGNORECASE) is not None
+
+
+# R1(a)：限制詞閉集＝canonical availability RESTRICTION_KEYWORDS＋停用（repair-1）
+RESTRICTION_KEYWORDS = ("禁派", "耗盡", "reset", "1308", "429", "停用")
+_SEGMENT_SPLIT_RE = re.compile(r"[；;。—–]")
+
+
+def _spine_conflict(spine_state, family: str) -> bool:
+    """R1(a)/R1(c) 限制詞共現偵測——WARN 級 heuristic（非語義歸因，判讀
+    仍須讀 spine 原文；同 canonical availability_snapshot F1 姿態）：
+
+    - 事件行：family token 與限制詞同行共現（canonical 衝突檢查移植）
+    - 複合可用行（R1c，今晨真 spine 形狀「muse 停用至…」）：parse_spine 對
+      整行 token 搜尋會把被停用 family 毒入 available——子句級（；;。—–
+      分段）共現偵測把該 family 的 spine 主張降 unknown
+    """
+    for event_line in spine_state.events:
+        if _family_hit(event_line, family) and any(
+            kw in event_line.lower() for kw in RESTRICTION_KEYWORDS
+        ):
+            return True
+    raw = spine_state.available_line_raw
+    body = raw.split("：", 1)[-1] if "：" in raw else raw
+    for segment in _SEGMENT_SPLIT_RE.split(body):
+        if _family_hit(segment, family) and any(
+            kw in segment.lower() for kw in RESTRICTION_KEYWORDS
+        ):
+            return True
+    return False
 
 
 def build_rows(
@@ -355,15 +421,29 @@ def build_rows(
     spine_stale_days: int,
     spine_explicit: bool,
 ) -> tuple[list[dict], list[str]]:
-    records = load_probe_records(probe_dir)
-    events = load_quota_events(probe_dir)
+    records = load_probe_records(probe_dir, now)
+    events = load_quota_events(probe_dir, now)
     families = sorted({r["family"] for r in records})
-    spine_state = load_spine_state(
-        spine_path, families, explicit=spine_explicit
-    )
+    spine_state = load_spine_state(spine_path, families, now, explicit=spine_explicit)
     warnings: list[str] = []
+    spine_blocked: set[str] = set()
     if spine_state is None:
         warnings.append(f"spine 缺席（{spine_path}）——慢事實層缺席，僅 probe/event 評估")
+    elif not spine_state.available:
+        # R3：可用行缺席或零 family＝無法判定（canonical 語義）——spine 全
+        # family 禁造 available/unavailable 主張
+        warnings.append(
+            "spine 可用行缺席或零 family——spine 證據降為無法判定（禁造 unavailable 主張）"
+        )
+        spine_blocked = set(families)
+    else:
+        for fam in families:
+            if _spine_conflict(spine_state, fam):
+                spine_blocked.add(fam)
+                warnings.append(
+                    f"spine 限制詞共現（{fam}）——該 family spine 證據降為"
+                    "無法判定（WARN 級 heuristic，判讀須讀 spine 原文）"
+                )
     rows: list[dict] = []
     seen_pairs: set[tuple[str, str]] = set()
     for rec in records:
@@ -374,15 +454,30 @@ def build_rows(
             )
             continue
         seen_pairs.add(pair)
-        evidences = [_probe_evidence(rec, now, probe_stale_hours)]
-        for item in events:
-            if item["event"].family == rec["family"]:
-                evidences.append(_event_evidence(item, now, probe_stale_hours))
-        spine_ev = _spine_evidence(
-            spine_state, rec["family"], now, spine_stale_days
-        )
-        if spine_ev is not None:
-            evidences.append(spine_ev)
+        probe_ev = _probe_evidence(rec, now, probe_stale_hours)
+        event_evs = [
+            _event_evidence(item, now, probe_stale_hours)
+            for item in events
+            if item["event"].family == rec["family"]
+        ]
+        if rec["status"] == "unsupported":
+            # R1(b) muse 誠實條款：spine 不得升格 unsupported row；僅帶唯一
+            # reset 錨點（retryable 非 None，即 fresh＋唯一時間戳）的
+            # quota-event 可將 row 帶離 unknown
+            evidences = [probe_ev] + [
+                ev for ev in event_evs if ev.retryable is not None
+            ]
+        else:
+            spine_ev = _spine_evidence(
+                spine_state,
+                rec["family"],
+                now,
+                spine_stale_days,
+                blocked=rec["family"] in spine_blocked,
+            )
+            evidences = [probe_ev, *event_evs]
+            if spine_ev is not None:
+                evidences.append(spine_ev)
         winner = _winner(evidences)
         state = winner.state if (winner.fresh and winner.has_state) else "unknown"
         rows.append(
