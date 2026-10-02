@@ -60,7 +60,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 1. workflow phase 建立 WorkUnitContract
 2. qualification／judgment／capability hard filter——status=qualified 且（如記錄帶 minimum）effective effort 可確認且達標；conditional 不過 decision hard gate；capability 需求取交集；無記錄＝fail-closed 不通過
-3. binding／carrier compatibility——token kind／effort encoding／transport 可否承載 contract 的 surface
+3. binding／carrier compatibility——token kind／effort encoding／transport 可否承載 contract 的 surface；**CR face availability lint（AIR-232）**——帶結構查證義務的腿（工單 route 宣告＝`live-cr`／`preprovided-cr`，宣告面＝[work-order](../_common/work-order.md) §7）禁派給無 CR query face 的 carrier——face-less carrier 只承接顯式 `degraded` 腿（合法值域單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)「結構證據收線核對」），無合格 face carrier＝no-candidate（no-silent-downgrade 不變）
 4. availability tri-state——見下；stale／unknown 不得當 available（probe 或顯性 no-candidate）
 5. ArcOverride constraint——user 當弧指示只約束合格候選的排序／優先，不能降低 contract；要降級須 user 明說接受該 work unit 的 degraded contract
 6. RoutingPolicy soft ranking——合格且可用集合內的穩定偏好（本檔 dispatch 預設段）

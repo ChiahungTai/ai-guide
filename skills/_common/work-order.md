@@ -73,6 +73,17 @@
 - external runtime 接線（available-face 階梯，以 runtime 實際能力為準——禁從 role/template 宣告推定 runtime 實際具有 MCP）：① runtime/role 實際暴露 CR MCP query tools → 優先 MCP；② 否則 runtime 可執行 code-reality CLI → 唯讀 query face；③ 兩者皆不可用 → `rg` degraded，交付報告標 `[WARN] structural context degraded`；降級 fallback 階梯與標記語義單一源＝symbol-query-routing——受影響的結構 finding／claim 另須逐條 `unverified-by-graph`（報告級 WARN 只作匯總）
 - carrier 分流 guard（0926 CR 使用率調查；同日探測更新，AIR-206）：carrier 的 CR 指令形態以**當次 surface 探測**為準、禁以歷史結論推定——codex 0922-26 調查窗口曾實測 MCP 名錯配，0926 探測（bridge 2.3.0）實測 **both**（`mcp__code_reality__*` server＋CLI binary 都在）；muse/glm 依實際 surface 發 MCP 名。CR 契約值指路不重抄（owner＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）
 - fallback 可見化：CR query transient failure → 同 face 重試一次；capability 缺場／binary missing／auth 明確拒絕 → 記 reason 往下降階（禁盲重試、禁靜默漂移到純文字查證）；external runtime spawn auth failure 屬 dispatch 層處置，不與 CR query fallback 混同
+- **degraded 宣告語義收窄（AIR-232）**：上③的 `rg` degraded 非自由值——合法成因收窄三值：`no-cr-query-face`（carrier 無 CR query face）／`WT-graph-absent`（WT 無自有 graph）／`WT-graph-stale`（背景 single-flight build 已觸發未回），依實際成因擇一記錄（值清單指涉單一源＝[cr-query](../cr-query/SKILL.md)「card-WT 結構證據供給（AIR-228）」節；receipt grammar 凍結面不動 [workflow-review-pattern](workflow-review-pattern.md)）；degraded 腿受影響 claim 逐條 `unverified-by-graph`（③ 既有條款）。**face 在場而未查＝delivery defect**——AIR-216 收線核對既有條款（[bridge-dispatch](../bridge-dispatch/SKILL.md)「結構證據收線核對」）嚴格執行，本檔不重寫；派工端 availability lint（有結構義務的腿禁派給無 CR face 的 carrier）單一源＝[model-routing](../model-routing/SKILL.md) resolver 步驟 3
+- **宣稱—證據通道綁定表（AIR-232——claim-type 綁定，非逐 finding）**：查證腿產出下列四類宣稱時，對應 evidence channel **必填**——缺通道＝該宣稱不得收進 findings（工具語義單一源＝[cr-query](../cr-query/SKILL.md)；四類之外不強制；行為判斷仍必讀碼，graph 只給結構）：
+
+  | 宣稱類型 | 必填 evidence channel |
+  |---|---|
+  | 消費者枚舉（「只被 Y 消費」） | `callers` |
+  | blast radius（影響面宣稱） | `closure` 或 `impact_radius` |
+  | 死碼／可刪／不影響 X | `callers`＋`hub_refs` hazard＋`rg` 補盲（動態派發／字串鍵是 graph 盲區） |
+  | 同構／雙生實作疑慮 | `refs` symbol 搜尋（callers 對跨模組同名不命中——雙生守衛案例教訓） |
+
+- **freshness receipt 核（收線 collection 補強——AIR-232）**：AIR-216 histogram 收線核對只證 route 遵循、**不證 graph freshness**——stale graph＋全套 live-cr＝洗白負存在斷言（零 caller／可刪／不影響 X 在 stale 圖上照樣「綠燈」）。收線核對另核 freshness：indexed identity vs 消費端 working tree（`code-reality freshness` face 機械求值；identity pair／欄位語義單一源＝[cr-query](../cr-query/SKILL.md)「Stale graph check」，不重抄）；**overlap 檢查**——消費 WT 的 branch commits／dirty 檔與該查詢符號的定義／消費檔有交集 ⇒ 該查詢判 stale、不可消費（跨 WT 借用與 demand trigger 單一源＝同 skill「card-WT 結構證據供給（AIR-228）」節）
 - 最小可用：不引入非必要工具
 - 事實軸（cross-verify investigator）cr 軸工單必填 `repo_root` 與 CLI 命令字串（禁只給 MCP 工具名——該 role 去 MCP 化，見 agents/AGENTS.md roles 表；AIR-207 同源）
 - 三禁令：
