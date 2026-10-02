@@ -86,7 +86,7 @@ Phase 1.5 完成後檢查 code-reality graph 就緒（消費端＝後續 review 
 - 每個 shell 側檔案開頭指回 truth 位置（「邏輯真實所在」）——防止讀者在 shell 側找實作、或在 shell 側加邏輯
 - 分層敘述以 truth 語言為主軸（例：Rust crate 分層）；理解動線 = truth 實作 → 綁定層（truth 側 `src/python/` 之類）→ shell re-export
 
-**每個模組 AGENTS.md 包含**（source，四家 harness 都讀）：
+**每個模組 AGENTS.md 包含**（source，五家 harness 都讀）：
 
 - **模組職責**：這個模組做什麼、不做什麼
 - **架構定位**：在整體系統中的角色
@@ -102,7 +102,7 @@ Phase 1.5 完成後檢查 code-reality graph 就緒（消費端＝後續 review 
 - Use LSP findReferences on module-level symbols to verify module boundaries when dep_graph is unavailable
 - 無 snapshot 時，Module Boundaries 基於 Phase 1 的粗略 import 分析
 
-**Root AGENTS.md 包含**（source，neutral 專案資訊——四家 harness 開本專案都讀）：
+**Root AGENTS.md 包含**（source，neutral 專案資訊——五家 harness 開本專案都讀）：
 
 - 架構總覽（語言組成、分層、核心設計理念）
 - Module Navigation Map（每個重要目錄一行，含模組 AGENTS.md 連結）
@@ -153,7 +153,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 
 ## 產出
 
-1. 每個重要模組目錄新增 `AGENTS.md`（source，四家 harness 讀）+ `CLAUDE.md`（`@AGENTS.md` thin wrapper，Claude 讀）
+1. 每個重要模組目錄新增 `AGENTS.md`（source，五家 harness 讀）+ `CLAUDE.md`（`@AGENTS.md` thin wrapper，Claude 讀）
 2. 專案根目錄新增 `AGENTS.md`（source，harness-neutral）+ `CLAUDE.md`（`@AGENTS.md` wrapper + Claude 專屬段）——見 [instruction-writing.md](../../rules/instruction-writing.md) 雙檔模式
 3. `.project-snapshot.json`（如果 Phase 1.5 有執行）
 4. 最後列出所有新增的 instruction file 路徑

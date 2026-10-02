@@ -2,7 +2,7 @@
 name: state-review
 description: "全 repo 狀態對抗審查——抓 diff-review 的結構盲區（state-rot：跨弧累積漂移，每個 diff 各自乾淨但累積錯誤）。迴路＝環境凍結（clean-tree 預設＋scope manifest）→ external family 單發深審（work-order review variant）→ in-family judge-review → gate 候選提案。read-only 全程：產出報告與提案，落檔/建卡由 user 拍板。週期盤點／懷疑累積漂移／多 worktree 權威面審計用。"
 when_to_use: "週期性（大弧收尾後）或觸發性（懷疑累積 drift、部署面疑似腐爛）的全 repo 狀態審查。NOT for: 任務弧 diff 審查（/code-review——diff-anchored）、人類 viewport 壞味道（/smell-detector——B 軸）、doc 連結健康（/doc-health）、單一修復驗收（/followup-review）。"
-argument-hint: "[--family muse|codex|glm]（顯式指定深審家族；未指定＝依 caller 解析**相異**家族——非 muse caller→muse、muse caller→fail-loud 要求顯式指定；解析表單一源在 model-routing review/advisory 條款）"
+argument-hint: "[--family muse|codex|glm|grok]（顯式指定深審家族——bridge 家族面；資格照 dispatch 前 eligibility 查核；未指定＝依 caller 解析**相異**家族——非 muse caller→muse、muse caller→fail-loud 要求顯式指定；解析表單一源在 model-routing review/advisory 條款）"
 allowed-tools: ["Read", "Bash", "Glob", "Grep", "Agent"]
 ---
 

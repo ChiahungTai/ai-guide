@@ -110,7 +110,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 > 定義「有資格被解析為旗艦（full）」的模型能力條款——資格線穩定（大綱層）；同 tier 內強弱排行不進條款（另見下行坐位註記）。候選模型須全部滿足：
 
-1. **跨文件交叉推導力**：docstring↔斷言、EP↔code、caller↔callee 型不一致能抓；證據指針＝四家同尺比較中五項跨文件案唯終審層抓到。
+1. **跨文件交叉推導力**：docstring↔斷言、EP↔code、caller↔callee 型不一致能抓；證據指針＝同尺比較中五項跨文件案唯終審層抓到。
 2. **judge 否決力**：對高信心措辭 finding 有否決傾向而非順勢採納；證據指針＝同尺比較首輪全採納傾向反例。
 3. **規劃的契約查證力**：把既有測試契約當設計約束、會推導決策前提失效；證據指針＝同尺比較 wrapper parity 約束與前提失效推導案。
 4. **長弧查證紀律**：查證密度不隨 session 長度衰減；證據指針＝同尺比較後段淺驗反例。
@@ -149,7 +149,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 ## effort 家族對譯表（跨 runtime 詞彙對照）
 
-> 同一思考投入檔位在四家 runtime 的詞彙對照（AIR-28 補；execution contract tier 欄與跨家族工單 effort 欄對話時用）。**單一源在本表**——registry pins／工單模板／contract 表引用不自带數值；muse/codex 現值權威見下方 external-runtime family 表。對譯是語義對應非等價保證——實現機制不同（ZCode `thoughtLevel` 綁具體 model＋sticky 不達 wire 家族〔見上方但書〕、CC spawn-time enum、muse/codex runtime 參數）。
+> 同一思考投入檔位在 ZCode／CC／muse／codex 四個 runtime 欄位的詞彙對照（AIR-28 補；execution contract tier 欄與跨家族工單 effort 欄對話時用；grok effort 值域不在本表——見下方 external-runtime family 表 grok row 與「可考值域」註）。**單一源在本表**——registry pins／工單模板／contract 表引用不自带數值；muse/codex 現值權威見下方 external-runtime family 表。對譯是語義對應非等價保證——實現機制不同（ZCode `thoughtLevel` 綁具體 model＋sticky 不達 wire 家族〔見上方但書〕、CC spawn-time enum、muse/codex runtime 參數）。
 
 | 檔位語義 | ZCode thoughtLevel | CC effort（spawn-time） | muse effort | codex `--effort` | repo 慣用位 |
 |---------|--------------------|------------------------|-------------|------------------|------------|
@@ -293,7 +293,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 > grok flag 面暫由 [bridge-dispatch](../bridge-dispatch/SKILL.md) grok 段（authority profile）承載；flag row 待實派後補。
 
-**bridge 必經（external-runtime 家族委派唯一入口——四家（muse／codex／glm／grok））**：委派外部 runtime 跑 repo 任務一律經 bridge 入口（上表列＝`delegate-bridge.mjs` 子命令的抽象形態，`--family` 選家族），禁直呼 `muse exec`／`codex exec` 或其他繞過 bridge 的入口。**caller surface → 合法 bridge 路徑對照（registry pin 唯一源、禁手拼版本化 cache 路徑）＝bridge-dispatch skill「Caller surface → 合法入口對照表」節（0924 自 rules 收編）**。**派發前正規化**：user 對話中的模型／檔位口語詞（flash／max…）不是值——派發前經 family 表正規化為 `--model`／`--effort` 顯式旗標；非表內詞＝查表觸發訊號，禁猜測直接套用（flash 對 muse 非合法 effort 值，本身就是該查表的訊號）——bridge 落 per-repo `.delegate-bridge/jobs.json` ledger（jobId／sessionId／status／text／family 欄；v1.0.0 前舊 ledger dir 相容雙讀、id 去重——新者勝），非 bridge 入口的產出 ledger 查無，事後只能從副作用側考古（真實案例：mosaic post-build 鏈同鏈兩段 muse 委派一走 bridge 一繞道，繞道段收尾不可考）。完成回報攜帶 ledger jobId（reviewer 交接契約欄位）；委派了外部 runtime 而 jobId 缺席＝入口違規，補查或標明。
+**bridge 必經（external-runtime 家族委派唯一入口——四家族（muse／codex／glm／grok））**：委派外部 runtime 跑 repo 任務一律經 bridge 入口（上表列＝`delegate-bridge.mjs` 子命令的抽象形態，`--family` 選家族），禁直呼 `muse exec`／`codex exec` 或其他繞過 bridge 的入口。**caller surface → 合法 bridge 路徑對照（registry pin 唯一源、禁手拼版本化 cache 路徑）＝bridge-dispatch skill「Caller surface → 合法入口對照表」節（0924 自 rules 收編）**。**派發前正規化**：user 對話中的模型／檔位口語詞（flash／max…）不是值——派發前經 family 表正規化為 `--model`／`--effort` 顯式旗標；非表內詞＝查表觸發訊號，禁猜測直接套用（flash 對 muse 非合法 effort 值，本身就是該查表的訊號）——bridge 落 per-repo `.delegate-bridge/jobs.json` ledger（jobId／sessionId／status／text／family 欄；v1.0.0 前舊 ledger dir 相容雙讀、id 去重——新者勝），非 bridge 入口的產出 ledger 查無，事後只能從副作用側考古（真實案例：mosaic post-build 鏈同鏈兩段 muse 委派一走 bridge 一繞道，繞道段收尾不可考）。完成回報攜帶 ledger jobId（reviewer 交接契約欄位）；委派了外部 runtime 而 jobId 缺席＝入口違規，補查或標明。
 
 ### session 定向接續（`--session-id` resume／fork；L4 實測）
 

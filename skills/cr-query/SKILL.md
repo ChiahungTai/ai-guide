@@ -44,8 +44,8 @@ Two facts backends, complementary not competing:
 
 | You need | Tool | Why |
 |---|---|---|
-| Symbol **definition / signature / type** | **code-reality-lsp-bridge** `hover`（.py→pyrefly、.rs→rust-analyzer 副檔路由；bridge 缺場退 LSP `hover` / `goToDefinition`） | Live, precise, ~50ms（熱態） |
-| **Single-symbol** references (who uses X) | **LSP** `findReferences` | Precise for one symbol |
+| Symbol **definition / signature / type** | **code-reality-lsp-bridge** `hover`（.py→pyrefly、.rs→rust-analyzer 副檔路由；bridge 缺場退原生 LSP `hover` / `goToDefinition`——`goToDefinition` 僅原生 LSP surface 有，lsp-bridge 無此操作） | Live, precise, ~50ms（熱態） |
+| **Single-symbol** references (who uses X) | 原生 LSP `findReferences`（lsp-bridge 無此操作——ZCode 載體僅 hover/check_file/edit_file） | Precise for one symbol |
 | Symbol **callers** (direct) | **code-reality** MCP `callers`（sites 級）OR LSP `incomingCalls` | Either; CR if traversing further（`closure`） |
 | Symbol **callees** (X 呼叫誰) | LSP `outgoingCalls`（CR MCP 無 callee 面；CLI `hub_refs` 有 callees 目錄面） | — |
 | Symbol refs/defs（trait 消歧；Rust＋Python） | **code-reality** MCP `refs`／CLI `scip_refs`（Rust＝SCIP、Python＝pyrefly index；`[SRC]` provenance＋stale 守衛、跨 session 一致） | 雙語料皆有此路；index 缺場重建或退 LSP（workspace 狀態相依） |
@@ -118,7 +118,7 @@ They compose: a CRG workflow gives the steps; `cr-query` governs *how each query
 
 ## Fallback — engine absent or stale
 
-- **Not installed** → `[WARN]` (above) + LSP `findReferences`/`incomingCalls` (single-symbol, no transitive) + scan-project dep_graph (folder/module-level ripple) + rg. Accept degraded: no transitive impact, no flows, no communities.
+- **Not installed** → `[WARN]` (above) + native LSP `findReferences`/`incomingCalls` (single-symbol, no transitive; native surface only — lsp-bridge has no such ops) + scan-project dep_graph (folder/module-level ripple) + rg. Accept degraded: no transitive impact, no flows, no communities.
 - **MCP tools absent but graph.db exists** → CLI 直用：`code-reality graph_query <op> --repo <repo-root>`（ops: impact_radius detect_changes hub bridge communities arch_overview flows affected_flows review_context minimal_context search symbols；`--leiden` 社區分層——`--union` 已退休：聯集邊於 build 時物化，查詢預設全量）。新庫缺場 → `code-reality graph_db build --repo`（純 producer graph 為常態——`import_legacy` 已完全移除〔W5 2026-08-28〕）。
 - **Graph stale** → regen the producer cache (Rust: SCIP index; Python: `pyrefly-index`) + `graph_db build --repo <root>`. Or verify critical edges with LSP and note the staleness.
 

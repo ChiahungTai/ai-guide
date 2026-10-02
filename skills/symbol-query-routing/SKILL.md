@@ -22,7 +22,7 @@ description: "符號查詢路由深層參考 — LSP operation 速查表（自 r
 
 （`goToDefinition`／`workspaceSymbol`／`documentSymbol`／`incoming·outgoingCalls` 等標準 operation 語義跨 harness 一致、可推導；ZCode 端型別面由 code-reality-lsp-bridge 承接，非原生 LSP）
 
-- **委派 worker 無 CR query face（bridge worker 降級源；AIR-216）**：CR query face 以 worker 當次實際能力判定——MCP 缺席不等於 CR 缺席（唯讀 CLI `code-reality` 經 Bash 可達即為合法 query face）；工具在場亦不等於 current-tree graph 可用（freshness／provenance 仍按 cr-query 判定）。降級 cause＝`no-cr-query-face`；標記＝結構 finding／claim 級逐條 `unverified-by-graph`＋方法段匯總（報告級 `[WARN] structural context degraded` 只作摘要）；負存在結論（「無呼叫者→可刪」類）不得憑降級證據直接收敛——改寫句式參照 loopback 表「toplevel 未發現，local import 未驗證」。收線核對面見 bridge-dispatch skill「結構證據收線核對」。
+- **委派 worker 無 CR query face（bridge worker 降級源；AIR-216）**：CR query face 以 worker 當次實際能力判定——MCP 缺席不等於 CR 缺席（唯讀 CLI `code-reality` 經 Bash 可達即為合法 query face）；工具在場亦不等於 current-tree graph 可用（freshness／provenance 仍按 cr-query 判定）。降級 cause 依成因記值——bridge worker 無 CR query face＝`no-cr-query-face`、WT graph 缺席／過期＝`WT-graph-absent`／`WT-graph-stale`（值清單指涉單一源＝[cr-query](../cr-query/SKILL.md)「card-WT 結構證據供給（AIR-228）」節）；標記＝結構 finding／claim 級逐條 `unverified-by-graph`＋方法段匯總（報告級 `[WARN] structural context degraded` 只作摘要）；負存在結論（「無呼叫者→可刪」類）不得憑降級證據直接收敛——改寫句式參照 loopback 表「toplevel 未發現，local import 未驗證」。收線核對面見 bridge-dispatch skill「結構證據收線核對」。
 
 ## LSP 驗證任務 workflow（5 步）
 

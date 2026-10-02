@@ -234,7 +234,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 **執行**：spawn 全域研究 agent——ZCode registry [`cr-research`](../../agents/AGENTS.md)（掛 CR MCP 白名單；decision／global-research——AIR-76 v3.1 裁升，非 lite；CR 查詢 in-path）；registry 缺場（Claude 端）→ Explore（繼承主 session 模型——全域研究 fallback 形態，見 [model-routing](../../rules/model-routing.md)）＋spawn prompt 帶下方 CLI 清單。深度掃描相關模組：
 
 1. **可複用基礎設施盤點**：搜尋需求涉及的模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities + LSP `workspaceSymbol` 搜尋相關 class/function，找出可複用的 utilities、base classes、protocols
-2. **依賴分析**：LSP `goToDefinition` / `findReferences` 追蹤 import 鏈和介面關係，rg 補充非程式碼引用。**code-reality（index 在場）——cr-research 的 CR MCP 工具（callers／closure／refs／impact_radius）in-path 執行**；Explore fallback 形態＝CLI 清單寫進 spawn prompt（分層事實見 [cr-query](../cr-query/SKILL.md)；工具用法真相源 [code-reality](../code-reality/SKILL.md)；GATE 見 cr-query）：
+2. **依賴分析**：結構面 code-reality first——**index 在場走 cr-research 的 CR MCP 工具（callers／closure／refs／impact_radius）in-path 執行**，追蹤 import 鏈和介面關係；缺場退原生 LSP `goToDefinition` / `findReferences`（lsp-bridge 無此二操作——僅原生 LSP surface 可用，禁靜默滑向 rg），rg 補充非程式碼引用。Explore fallback 形態＝CLI 清單寫進 spawn prompt（分層事實見 [cr-query](../cr-query/SKILL.md)；工具用法真相源 [code-reality](../code-reality/SKILL.md)；GATE 見 cr-query）：
    - 宣稱被整合/觸發的既有符號 → `code-reality scip_refs <sym> --callers --repo <repo>`；追 transitive 鏈 → 同命令 `--closure --depth 2`
    - 修改檔案的 ripple / 影響範圍 → `code-reality graph_query impact_radius --repo <repo> --files <絕對路徑>`（相對路徑靜默回 `changed_nodes=[]`，非錯誤）
    - 刪碼/退役場景 → `code-reality hub_refs <sym> --hazard --repo <repo>`（動態派發盲區安全網）
@@ -273,7 +273,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 - **依賴關係**：與其他段落的依賴和整合點
 - **語義約束**：與其他段落共享的隱含假設（型別定義、命名慣例、架構決策）。無則寫「無」，有則寫「與 S{N} 共享 [具體假設]」
 - **基礎設施盤點**：設計 pseudo code 前的必做步驟（讀 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）可複用基礎設施 → LSP `workspaceSymbol` + `rg` 搜尋相關元件 → 列出可複用元件或寫「無」）
-- **依賴錨點**：EP 對現有程式碼的雙向錨定 — 每個依賴同時標注定義端與消費端（格式：`symbol` → 定義 `path/def.py:42` / 消費 `path/caller.py:156`）。用 LSP `goToDefinition` 驗證定義端、`findReferences` 驗證消費端。`/implement` 時直接定位雙端，省去搜尋成本。執行前驗證錨點，drift 時先更新 EP
+- **依賴錨點**：EP 對現有程式碼的雙向錨定 — 每個依賴同時標注定義端與消費端（格式：`symbol` → 定義 `path/def.py:42` / 消費 `path/caller.py:156`）。定義端驗證＝CR `refs`（缺場退原生 LSP `goToDefinition`）、消費端驗證＝CR `refs`／`callers`（缺場退原生 LSP `findReferences`）——lsp-bridge 無此二操作，禁滑向 rg。`/implement` 時直接定位雙端，省去搜尋成本。執行前驗證錨點，drift 時先更新 EP
 - **技術選型** + **成功標準**
 
 ### 1b. Invariant Impact（條件必填 — 觸及 invariant-bearing 模組時）

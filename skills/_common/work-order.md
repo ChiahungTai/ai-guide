@@ -1,6 +1,6 @@
 # Work Order — Foreign-runtime 委派工單模板（_common）
 
-> 共享子範本——foreign runtime（delegate-bridge `task --family muse|codex|glm`）共用；skill 間引用＋主 session 直接填寫。prompt 為任務本文，禁含委派語言（muse-in-muse EPERM 教訓）。本檔定義十節硬欄位，缺一不可；消費端填寫時逐節落實，空缺＝未就緒。批次派工（單次 dispatch 承載多 unit 引用）是**追加 envelope**——十節之上疊加「批次 envelope」節要求，不取代也不豁免。
+> 共享子範本——foreign runtime（delegate-bridge `task --family muse|codex|glm|grok`）共用；skill 間引用＋主 session 直接填寫。prompt 為任務本文，禁含委派語言（muse-in-muse EPERM 教訓）。本檔定義十節硬欄位，缺一不可；消費端填寫時逐節落實，空缺＝未就緒。批次派工（單次 dispatch 承載多 unit 引用）是**追加 envelope**——十節之上疊加「批次 envelope」節要求，不取代也不豁免。
 
 > **契約值指路不 inline**：工單涉及既有契約（卡 ref 形態、命令語義、流程步驟、規則集條款）時寫「見 `skills/<skill>/SKILL.md` 對應段」並標「以合約為準」，不複製完整值——工單是快照，內嵌值與單一源脫鉤，源更新後工單仍帶舊值，被委派方不載自家 skill 無從發現漂移（真實案例：muse 工單內嵌當時形態的 URL，中央 viewer 改版後結案卡 ref 照抄舊值；spawn prompt 內聯規則集濃縮版當場漏條款）。**pointer 必須接手方可達**：跨 repo/外部 runtime 委派用絕對路徑（同機可達形態＝`~/.agents/skills/<skill>/SKILL.md`）；不可達時嵌最小必要契約值＋標「以源 repo 為準，值僅快照」。執行中發現工單值與源漂移 → 中途注入「以 skill 段為權威＋漏項」校正，不必等收屍。
 
@@ -102,7 +102,7 @@
 4. `rg -n "flag profile|thin forwarder" agents/AGENTS.md` → 兩詞皆命中
 5. `test -f skills/_common/work-order.md && rg -n "紅線|Baseline|矛盾例外|PII|交付報告格式" skills/_common/work-order.md` → 檔在且五關鍵詞皆命中
 6. `head -3 skills/_common/work-order.md | rg -c "^---"` → 0
-7. `rg -n "<model-id-前綴>" rules/model-routing.md agents/AGENTS.md skills/_common/work-order.md` → 零命中（skill 檔除外；實際掃三家族模型前綴小寫，此處為避模板自身命中而改寫示意）
+7. `rg -n "<model-id-前綴>" rules/model-routing.md agents/AGENTS.md skills/_common/work-order.md` → 零命中（skill 檔除外；實際掃四家族模型前綴小寫，此處為避模板自身命中而改寫示意）
 8. `rg -n "external-runtime" skills/model-routing/SKILL.md` → ≥2 命中
 9. `rg -n "model-routing" rules/AGENTS.md` → 讀現況並報告（本次不改）
 
@@ -168,4 +168,4 @@
 
 ---
 
-> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法單一源見 model-routing skill「完成回報收法」決策樹。中斷/恢復的 checkpoint 欄位與恢復順序單一源＝[task-recovery](task-recovery.md)——工單照 §3/§10 落 baseline identity 與 jobId 即已覆蓋對應欄位，不另抄欄位表。`rules/model-routing.md`（family／profile 詞彙）與 `skills/model-routing/SKILL.md`（resolver／WorkUnitContract schema）為詞彙與映射單一源，本模板不自帶定義。
+> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm|grok`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法單一源見 model-routing skill「完成回報收法」決策樹。中斷/恢復的 checkpoint 欄位與恢復順序單一源＝[task-recovery](task-recovery.md)——工單照 §3/§10 落 baseline identity 與 jobId 即已覆蓋對應欄位，不另抄欄位表。`rules/model-routing.md`（family／profile 詞彙）與 `skills/model-routing/SKILL.md`（resolver／WorkUnitContract schema）為詞彙與映射單一源，本模板不自帶定義。

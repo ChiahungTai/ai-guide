@@ -71,7 +71,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 5 個 Dimensio
 
 ### F1: 完整性檢查
 
-每段是否有驗收標準？檔案是否完整列出？依賴項是否遺漏？邊界情況是否考量？Use LSP goToDefinition to verify file paths mentioned in EP actually contain the referenced symbols.
+每段是否有驗收標準？檔案是否完整列出？依賴項是否遺漏？邊界情況是否考量？Verify file paths mentioned in EP actually contain the referenced symbols — CR `refs` first；CR 缺場退原生 LSP `goToDefinition`（lsp-bridge 無此操作，禁滑向 rg）.
 
 **§1b Invariant Impact（觸發時才檢查）**：若段落觸及 invariant-bearing 模組（見 [execution-plan](../execution-plan/SKILL.md) §1b 觸發定義），檢查 §1b 是否含：① 受影響 domain invariant、② §4 驗證對齊。**關鍵：驗證對齊的 test 是否真覆蓋該 invariant 行為**（非僅符號存在——同 acceptance-evidence L3 符號 vs 路徑覆蓋）。producer 宣告的完整性由本維度把關（build 只機械確認 test 存在通過，不判斷 producer 是否漏列 invariant——漏列的 invariant 無人查，§1b 退化為 self-report）—— 此即 Claim→Evidence→Trust 缺口（原則見 [acceptance-evidence](../../rules/acceptance-evidence.md)「Claim→Evidence→Trust」：producer 宣告「沒動 X invariant」= no-impact claim，須獨立證據反證，不接受自述）。
 
@@ -83,7 +83,7 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 合成 5 個 Dimensio
 
 - **段落一致性**：段落間依賴順序合理？對同一檔案的修改矛盾？技術方案一致？
 - **語義約束**（共享型別、命名慣例、架構假設）是否標記？drift 檢查
-- **依賴錨點 drift**：EP 對現有 code 的雙向錨定（定義端 + 消費端）是否 drift — 用 LSP `goToDefinition`/`findReferences` 驗證
+- **依賴錨點 drift**：EP 對現有 code 的雙向錨定（定義端 + 消費端）是否 drift — 定義端＝CR `refs`（缺場退原生 LSP `goToDefinition`）、消費端＝CR `refs`/`callers`（缺場退原生 LSP `findReferences`）；lsp-bridge 無此二操作，禁滑向 rg
 - **投影 claims 判讀**（EP 段落 0 有跑 `code-reality project` 時）：報告的 `[projected][HOLE]`／`[projected][MISSING]` 進 Findings 表（前綴保留）——**HOLE**＝宣稱整合的符號有 DEF 但零呼叫邊（**未驗證假設非 bug**——回作者接線或撤宣稱）；**MISSING**＝宣稱符號不存在（EP 錨點錯）；WIRED＝邊已鑄（通過）；`[projected]` 一律＝宣告非證據（overlay 是 producer 假設——落地後以真實 index 重驗；洗衣陷阱措辭，工具語義見 [cr-query](../cr-query/SKILL.md)）
 - **分層依賴**（承接 execution-plan ①）：domain←use case←adapter←infra 依賴向內？有循環？— 視角與結構資料見 [arch-thinking](../arch-thinking/SKILL.md)（視角 §一、機械 §二）
 - **bounded context**（承接 ②）：跨域存取 `_private`？邊界清楚？職責單一？

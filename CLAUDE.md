@@ -6,7 +6,7 @@
 
 ## Claude 專屬機制（AGENTS.md neutral 化後補回）
 
-> ai-guide 轉型 multi-harness——AGENTS.md 已拔除 Claude 專屬機制（保持 neutral，四家 harness 都讀），Claude 端細節在此。
+> ai-guide 轉型 multi-harness——AGENTS.md 已拔除 Claude 專屬機制（保持 neutral，五家 harness 都讀），Claude 端細節在此。
 
 ### 載體選擇（Hook/Rule/Skill/Agent）
 

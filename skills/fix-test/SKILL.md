@@ -201,7 +201,7 @@ TWINS: searched <pattern> - found <N> other sites: <files, or "none">
 - **N=0**：完成
 - **N>0**：列出位置；建議是否一併修（同一 commit 或分拆由用戶決定）
 
-**搜尋工具**：符號查詢 cr-first（cr `refs`；缺場 LSP `findReferences`）；文字 pattern 用 rg（工具選擇見 [symbol-query-routing](../../rules/symbol-query-routing.md)）。
+**搜尋工具**：符號查詢 cr-first（cr `refs`；缺場退原生 LSP `findReferences`——lsp-bridge 無此操作）；文字 pattern 用 rg（工具選擇見 [symbol-query-routing](../../rules/symbol-query-routing.md)）。
 
 **pattern 範例**（依 fix-test 失敗類型）：
 
@@ -209,7 +209,7 @@ TWINS: searched <pattern> - found <N> other sites: <files, or "none">
 |------|-------------|---------|
 | A 實作缺陷 | `rg "if x is None:"`（應為 `is not` 的邏輯翻轉） | 同類邏輯錯誤 |
 | B 契約變更 | `rg "<old_signature>"`（舊 signature 殘留） | 其他用舊契約的 caller |
-| C 測試腐化 | LSP `findReferences` on private method | 其他耦合同 private 的測試 |
+| C 測試腐化 | 原生 LSP `findReferences` on private method（lsp-bridge 無此操作） | 其他耦合同 private 的測試 |
 | D 基礎設施 | `rg "fixture_<name>"` 或 `rg "conftest"` | 同類 fixture 過時 |
 | E 測試過時 | `rg "@pytest.mark.<marker>"`（標記的過時意圖） | 其他同類過時測試 |
 
