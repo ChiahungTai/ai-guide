@@ -20,7 +20,11 @@ notes，非本腳本掃描面）掃 legs 名冊／per-leg cr receipt／cr-closur
 legacy-exempt 章計七分項（eligible／declared／observed-evidence／receipt／
 degraded／N-A／silent fallback 各獨立計數）；degraded receipt 另出 reason=
 值 histogram 分項（AIR-228——WT-graph-absent／WT-graph-stale／
-no-cr-query-face／其他，觀察窗區分 WT graph 缺席/過期降級成因）；bridge brief route 宣告掃 jobs
+no-cr-query-face／其他，觀察窗區分 WT graph 缺席/過期降級成因）；receipt
+payload 內 `, provenance=baseline-borrowed` 凍結後綴另出 advisory 計數行
+（AIR-228 G-C——currently-borrowed legs 語義非累積事件：帳本升級 current-tree
+後舊標註剝離，見 cr-query「升級語義」；advisory 診斷訊號非 KPI 無閾值——
+B2 借用常態化間接指標，與 WT-graph-absent/stale 同時偏高才警覺）；bridge brief route 宣告掃 jobs
 jsonl `turn.input.user` payload prompt（不掃全檔文字——skill 條文流經
 task.lifecycle.output 的誤報是审计實證主體）；in-harness crsurface 分布掃 db
 part 文字。SM-6 宣告 vs 實呼 histogram 歸收線核對手工貼卡（禁腳本化——
@@ -81,6 +85,11 @@ CR_RECEIPT_RE = re.compile(
 # `reason=<why>` 值截到分隔符（逗號／分號，中西形）；缺席＝空值（reason 缺席面歸
 # 「其他」桶，機械驗收歸 review_ledger lint——本腳本只計數）。
 DEGRADED_REASON_RE = re.compile(r"reason[=：:]\s*(?P<reason>[^,，；;]+)")
+# baseline-borrowed 借用標註抽取（AIR-228 G-C advisory 計數原料）——payload 內
+# `, provenance=baseline-borrowed` 凍結後綴（格式單一源＝cr-query SKILL
+# 「committed-baseline 借用判準」：逗號+空格+鍵值；provenance 標註面不擴 route
+# 值域——lint 吸入 evidence 值屬已知可接受，本腳本只計數）。
+BORROWED_PROVENANCE_RE = re.compile(r", provenance=baseline-borrowed")
 CR_NA_RE = re.compile(
     _LINE_ITEM_PREFIX + r"(?:[A-Za-z0-9_./-]+)\s*:\s*cr:\s*n/a\s*[（(]reason="
 )
@@ -105,8 +114,8 @@ def scan_receipt_ledgers(since_s: float) -> dict:
     名冊 join 語義鏡像 review_ledger.py `parse_legs_roster`（AT-1）：legs 行以
     leg key 建名冊（leg→trigger|n/a），receipt 同以 leg key join——silent 只認
     「名冊內 trigger 腿無對應 receipt」，孤兒 receipt（腿不在名冊）不抵扣；
-    receipt／degraded 分項以 leg key 去重（同一 leg 重複行 last-wins，與 gate
-    join 口徑一致）。
+    receipt／degraded／baseline-borrowed 分項以 leg key 去重（同一 leg 重複行
+    last-wins，與 gate join 口徑一致）。
     """
     out = {
         "ledgers": 0,
@@ -116,6 +125,8 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         "receipts": 0,
         "degraded": 0,
         "degraded_reasons": {},
+        "borrowed_legs": 0,
+        "borrowed_ledgers": 0,
         "na_receipts": 0,
         "closures": 0,
         "silent_fallback": 0,
@@ -138,6 +149,7 @@ def scan_receipt_ledgers(since_s: float) -> dict:
         roster: dict[str, str] = {}
         receipt_routes: dict[str, str] = {}
         receipt_reasons: dict[str, str] = {}
+        receipt_borrowed: dict[str, bool] = {}
         na_receipts = closures = ephemeral = 0
         exempt_stamp = False
         for line in text.splitlines():
@@ -152,6 +164,9 @@ def scan_receipt_ledgers(since_s: float) -> dict:
                 rrm = DEGRADED_REASON_RE.search(rm.group("payload"))
                 receipt_reasons[rm.group("leg")] = (
                     rrm.group("reason").strip() if rrm else ""
+                )
+                receipt_borrowed[rm.group("leg")] = bool(
+                    BORROWED_PROVENANCE_RE.search(rm.group("payload"))
                 )
             na_receipts += len(CR_NA_RE.findall(line))
             cm = CR_CLOSURE_RE.search(line)
@@ -173,6 +188,13 @@ def scan_receipt_ledgers(since_s: float) -> dict:
             if route == "degraded":
                 val = receipt_reasons.get(leg, "") or "reason-missing"
                 out["degraded_reasons"][val] = out["degraded_reasons"].get(val, 0) + 1
+        # AIR-228 G-C：baseline-borrowed advisory 計數（last-wins 同七分項口徑；
+        # currently-borrowed 語義非累積事件——升級後舊標註剝離見 cr-query
+        # 「升級語義」；distinct ledgers＝窗口內在場借用帳本數）
+        borrowed = sum(1 for flag in receipt_borrowed.values() if flag)
+        if borrowed:
+            out["borrowed_ledgers"] += 1
+        out["borrowed_legs"] += borrowed
         # silent fallback（AT-1）＝名冊 trigger 腿無對應 receipt；孤兒 receipt 不抵扣
         silent = sum(
             1
@@ -475,6 +497,10 @@ def main() -> int:
     print(
         f"silent-fallback\t{ledg['silent_fallback']}"
         "（名冊 trigger 腿無對應 receipt；孤兒 receipt 不抵扣）"
+    )
+    print(
+        f"baseline-borrowed\t{ledg['borrowed_legs']}"
+        f"\tcurrently-borrowed legs（{ledg['borrowed_ledgers']} ledgers）"
     )
     if ledg["receipts"]:
         print(

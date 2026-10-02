@@ -70,6 +70,9 @@ def test_scan_receipt_ledgers_golden(cr_usage, tmp_path, monkeypatch):
     assert out["closures"] == 1
     assert out["silent_fallback"] == 1
     assert out["ephemeral_refs"] == 1
+    # AIR-228 G-C：golden receipts 皆不帶 provenance=baseline-borrowed 後綴 → 0
+    assert out["borrowed_legs"] == 0
+    assert out["borrowed_ledgers"] == 0
 
 
 def test_scan_receipt_ledgers_orphan_receipt_does_not_offset_silent(
@@ -162,6 +165,53 @@ def test_scan_receipt_ledgers_degraded_reason_histogram(cr_usage, tmp_path, monk
     assert out["degraded"] == 2
     assert out["degraded_reasons"]["WT-graph-absent"] == 1
     assert out["degraded_reasons"]["no-cr-query-face"] == 1
+
+
+def test_scan_receipt_ledgers_baseline_borrowed_count(cr_usage, tmp_path, monkeypatch):
+    """AIR-228 G-C：receipt payload `, provenance=baseline-borrowed` 凍結後綴
+    advisory 計數——帶後綴的腿才計（currently-borrowed legs）＋distinct ledgers。
+    borrowed.md：B1 帶後綴＋B2 不帶 → borrowed_legs=1/borrowed_ledgers=1；
+    borrowed2.md：B3 帶後綴 → borrowed_legs 累計=2、borrowed_ledgers=2；
+    receipts 總數不受影響（獨立計數）。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "borrowed.md").write_text(
+        "# .review/borrowed.md — golden fixture\n"
+        "- legs：B1 job-a trigger；B2 job-b trigger\n"
+        "- B1: cr(route=live-cr:MCP, evidence=docs/p.md, provenance=baseline-borrowed)\n"
+        "- B2: cr(route=live-cr:CLI, evidence=docs/q.md)\n",
+        encoding="utf-8",
+    )
+    (review / "borrowed2.md").write_text(
+        "# .review/borrowed2.md — golden fixture\n"
+        "- legs：B3 job-c trigger\n"
+        "- B3: cr(route=degraded, reason=WT-graph-absent, provenance=baseline-borrowed)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["receipts"] == 3  # 後綴不影響 receipts 總數（lint 吸入 evidence 值）
+    assert out["borrowed_legs"] == 2
+    assert out["borrowed_ledgers"] == 2
+
+
+def test_scan_receipt_ledgers_baseline_borrowed_last_wins(cr_usage, tmp_path, monkeypatch):
+    """AIR-228 G-C：同一 leg 重複 receipt 行 last-wins（同七分項去重口徑）——
+    前行帶後綴、末行不帶 → 最終不計 borrowed。"""
+    review = tmp_path / "repoA" / ".review"
+    review.mkdir(parents=True)
+    (review / "lastwins.md").write_text(
+        "# .review/lastwins.md — golden fixture\n"
+        "- legs：B1 job-a trigger\n"
+        "- B1: cr(route=live-cr:MCP, evidence=docs/p.md, provenance=baseline-borrowed)\n"
+        "- B1: cr(route=live-cr:MCP, evidence=docs/q.md)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(cr_usage, "GITHUB", tmp_path)
+    out = cr_usage.scan_receipt_ledgers(WINDOW_S)
+    assert out["receipts"] == 1
+    assert out["borrowed_legs"] == 0
+    assert out["borrowed_ledgers"] == 0
 
 
 def test_scan_brief_routes_golden(cr_usage, tmp_path, monkeypatch):
