@@ -106,6 +106,12 @@
   直接 `ls addresses/*/new/` 檔案面（scbus home 底下）。
   session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手不動搖
   ownership。因監控需求 acquire/renew/force-reclaim canonical address 皆違反本節。
+- **interaction-boundary hook discovery（AIR-225.1）**：`hooks/scbus-address-pending-reminder.py`
+  （zcode UserPromptSubmit＋SessionStart 各獨立 sync 條目，註冊單一源＝governance
+  registrations）在每次打字／session 回場跑 `scbus address ls --pending`，指名門牌
+  pending>0 注入一行 address＋count＋指針（只讀 badge——禁 body/preview 注入、
+  禁 recv/ack/acquire；fail-soft＝零 stdout exit 0 不擋 turn）；**人工輪詢（上段
+  開場快照）保留為 fallback**——hook 未註冊機器、fail-soft 靜默時的兜底皆走它。
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
 - ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
