@@ -1,10 +1,10 @@
 ---
 id: AIR-230
 title: 跨家族審查解析表補 grok 選項——model-routing 解析政策更新
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 03:32'
-updated_date: '2026-10-02 04:11'
+updated_date: '2026-10-02 06:44'
 labels: []
 dependencies: []
 ordinal: 219000
