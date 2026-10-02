@@ -37,9 +37,20 @@ flowchart LR
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-capture 卡：本夜只凍結概念＋現狀缺口＋候選方向；AC 待 tri 收斂後於 Plan Preview 前補（帶 grammar verifier）。tri 腿＝muse＋codex（bridge）；參考材料＝skills/model-routing/SKILL.md（resolver／availability snapshot）＋scripts/probe_entitlements.py＋spine `model-runtime-entitlements` 條目＋本夜 muse failed-usage 兩實證（AIR-235／AIR-135.11 journal）。
+**tri 定稿（1003 晨；codex job-murfan77 完備＋glm job-murfksif 地形圖；muse 四度 failed-usage 缺席）**：多層防禦、每層單一 authority——
+1. **ArcPlan＝時間意圖＋引用**：work unit 級 preferred_family／planned_not_before／on_unavailable={delay,fallback}＋entitlement_snapshot_ref/hash/as_of——**易爛 quota 真值禁寫進 plan**（volatile truth 進 versioned artifact＝幾小時後腐爛）
+2. **EntitlementWindowSnapshot（新）＝規劃面證據**：probe raw＋quota-event parser（retryable_at 唯一源）＋spine 慢事實 → normalized {source/observed_at/freshness/state/retryable_at}；衝突序＝fresh probe > 舊 spine、stale 一律 unknown、provider reset 時間戳 > 週期推算
+3. **AvailabilitySnapshot＝派工當下唯一 live authority**（resolver 七步、fallback、no-silent-downgrade、explicit-only 全不動）；validator 只驗形不代 resolver 做「選」（evaluator-not-router 邊界）
+- **muse 誠實條款**：probe 對 muse unsupported、無結構化重置源——無 anchor 時 next_window=unknown，禁從 5h 週期硬推（GLM 的 nextResetTime 在場、codex web 池 pool_visibility=none——各 family 能力不齊，禁統一演算法假設）
+- **spine 寫手契約不動**：probe→snapshot 機械化；probe→spine 維持半自動候寫（僅 durable 事件吸收）
+- **卡切（parent＋2 bounded child＋1 後接）**：child-1＝EntitlementWindowSnapshot 資料面（freshness normalization）；child-2＝ArcPlan temporal schema＋compile 驗證＋DispatchSlice carry-through；deep-work 批量排序第三張等前兩 contract 穩定後接
+- **glm 地形圖三大發現收編**：①FAMILIES enum 縫（arc_spec 四值無 grok、catalog 五值無 local/grok——child-2 須裁決擴 enum 或 grok 腿不走 slice）②implement SKILL.md:116「開工資源規劃簡報」＝本概念現行人工版（AIR-238 是機械化升級非新發明）③availability_snapshot.py 為 snapshot 近親（child-1 裁決擴它或平行新檔）
+- 改動面：scripts/entitlement_window_snapshot.py（新）＋probe_entitlements.py（保留 raw，補 normalized export）＋arc_spec.py（temporal fields＋freshness validation＋DispatchSlice carry-through）＋model-routing SKILL.md 補 planning-vs-dispatch authority contract（窄改——七步/catalog/presets 不動）＋三份 tests
+
+**AC 定稿**：parent 卡收斂於下（AC#1 tri 定稿＝本節）；實作 AC 隨 child 卡（codex AC1-AC4 草案已被全採——snapshot provenance／compile freshness／dispatch authority／source contracts 四條 grammar 形）。
 <!-- SECTION:PLAN:END -->
 
 ## Acceptance Criteria
 
-- [ ] #1 tri 收斂 verdict 存檔＋方案定稿（含 AC grammar 草案）記本卡（tri 後結算時判定本條最終形） `rg -c "定稿" "backlog/tasks/air-238 - ArcPlan-時間×模型分配規劃——dispatch-依-memory-spine-訂閱狀態排-family-model-時窗（user-概念凍結；明早-tri）.md"` → ≥1
+- [x] #1 tri 收斂 verdict 存檔＋方案定稿（含 AC grammar 草案）記本卡（tri 後結算時判定本條最終形） `rg -c "定稿" "backlog/tasks/air-238 - ArcPlan-時間×模型分配規劃——dispatch-依-memory-spine-訂閱狀態排-family-model-時窗（user-概念凍結；明早-tri）.md"` → ≥1
+- [x] #2 卡切落地——child-1（EntitlementWindowSnapshot 資料面）＋child-2（ArcPlan temporal schema）兩卡開立並帶各自的 grammar AC `rg -c "AIR-239|AIR-240" "backlog/tasks/air-238 - ArcPlan-時間×模型分配規劃——dispatch-依-memory-spine-訂閱狀態排-family-model-時窗（user-概念凍結；明早-tri）.md"` → ≥2
