@@ -72,3 +72,4 @@ flowchart LR
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 - **AC#6 結案修正（user 1003 晨拍板翻 Done）**：跨弧條款轉移形——AIR-238 為指定候選弧，其 plan-v1 過五站閘的驗證證據記 AIR-238 卡（本卡以結案，修正屬 AC 措辭對齊非降格：驗證義務隨卡移轉不消失）。
+- **AC#6 驗證閉環（1003）**：候選弧實證＝AIR-239（child-1）——其 plan-v1 authoring 時間被 phase enum 閘攔（大寫七行錯誤）、修正後過五站閘（plan 73a93188）；證據＝air-239 卡 journal＋.agent-tmp/air-239/。 
