@@ -1,10 +1,10 @@
 ---
 id: AIR-229
 title: 值星清理批次——家族枚舉＋詞彙＋LSP 泛稱語料 drift 掃清
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-01 22:41'
-updated_date: '2026-10-01 23:04'
+updated_date: '2026-10-02 01:16'
 labels: []
 dependencies: []
 ordinal: 216000
