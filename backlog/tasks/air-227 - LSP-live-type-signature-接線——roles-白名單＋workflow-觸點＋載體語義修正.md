@@ -4,7 +4,7 @@ title: LSP live type/signature 接線——roles 白名單＋workflow 觸點＋�
 status: Done
 assignee: []
 created_date: '2026-10-01 22:16'
-updated_date: '2026-10-02 02:29'
+updated_date: '2026-10-02 02:35'
 labels: []
 dependencies: []
 ordinal: 214000
@@ -71,6 +71,8 @@ G4 去向（muse verdict 點 6 代記）：TS backend 缺口的長期載體＝bo
 【結案】user 拍板 Done（「可以翻done」，2026-10-02）。final refs：merge main（09bb4513 實作＋ace8c81b 修復）＋verdicts .agent-tmp/air-227/＋AIR-229（F-03 落點）＋live spawn 收據＝下一 session 一步（快照根因記錄在案）。
 
 【診斷修正＋live spawn 收據 PASS（2026-10-02）】前記「session 啟動快照、需新 session」診斷被第三數據點證偽——merge 後立即 spawn＝舊面（四顆）、經時延後 spawn＝新面（六顆）：registry 變更以延遲刷新傳播（機制觸發點未究——cache TTL 或事件驅動重讀；強宣稱撤回）。行為收據：spawn code-reviewer 工具面盤點＝恰六顆（四 CR query＋lsp-bridge hover/check_file；lsp_status 不在場＝least-privilege 刻意不掛，非缺陷）＋實呼雙 PASS（hover 取得 CR_MCP_PREFIXES tuple[Literal,Literal] 型別簽名——即本卡 sync_agents 變更自身；check_file diagnostics count=0）。deployment-surfaces=healthy。此收據同時＝AIR-224.1 觀察項⑦（G-B trigger-conditioned LSP 樣本）第一筆。
+
+【新 session 收據補強（sess_8a97ac5e，user 自跑）】全新 session 的 code-reviewer 掛載面恰六顆（四 CR query＋lsp-bridge hover/check_file）＋hover/check_file 實呼雙 PASS——白名單於 fresh session 亦正確生效，補強本 session 延遲刷新收據。註：agent 自判 FAIL 係舊版驗收 prompt 誤以 lsp_status 在場為判準（該 face 刻意不掛——5.3 least-privilege 裁決），非工具缺陷；驗收 prompt 已作廢修正。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
