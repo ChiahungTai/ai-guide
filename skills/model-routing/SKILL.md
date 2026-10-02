@@ -266,7 +266,9 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 > **review／advisory 形態條款**（read-only 委派——external second-opinion review、[state-review](../state-review/SKILL.md) 深審腿、advisory 掃描）：以 ①②⑤＋三條專屬判定——**read-only transport**（flag 或工單紅線承載，產出＝findings/報告）、**跨家族成立**（委派對象與 caller 相異家族——external 視角是派發理由本身）、**可重現輸出**（findings 附錨點＋驗收設計，in-family judge 可機械重現）。條件③④（單一 writer／implementation loop 主價值）是 **implement 形態專屬**，不得用以擋 review 形態——否則跨家族審查腿結構性不可達（真實案例：state-review 深審腿依原條文④被擋）。
 >
-> **跨家族解析表**（未指定 family 時；顯式指定與 caller 同 family → fail-loud）：GLM／ZCode caller → muse；codex caller → muse；glm caller → muse；**muse caller → fail-loud**——相異家族僅剩 codex／glm 可選，而兩者皆 explicit-only 不因解析繞過：**停下要求 user 選擇**——顯式 `--family codex` 或 `--family glm`，或明示接受同家族 degraded review（caller-harness decision-grade dual-context 承接＋記錄）；禁解析層自選降級。
+> **跨家族解析表**（未指定 family 時；顯式指定與 caller 同 family → fail-loud）：GLM／ZCode caller → muse；codex caller → muse；glm caller → muse；**muse caller → fail-loud**——相異家族第二意見候選＝codex／glm／grok（AIR-230——grok 家族已開，AIR-226 bridge binding），而三者皆 explicit-only 不因解析繞過：**停下要求 user 選擇**——顯式 `--family codex`／`--family glm`／`--family grok`，或明示接受同家族 degraded review（caller-harness decision-grade dual-context 承接＋記錄）；禁解析層自選降級。
+>
+> **grok 資格待遇（qualification 未認證）**：bridge binding 的 qualification 零繼承（AIR-226 AC10 驗的是 sandbox authority 非審查品質）——比照 muse 首次啟用：列第二意見候選、可用於真實弧外審樣本累積資格，樣本通過前不得作唯一外審腿。資格確認＝首次 grok 外審樣本取自下一個有外審需求的真實弧，樣本結果記錄後 update 本表 qualification 狀態。
 
 > sandbox-error 禁以 `--yolo` 賭重試（父層沙箱不可越權重試）；分類走 auth-failed／environment，修因後重派。
 
