@@ -622,12 +622,51 @@ def _check_acceptance_contract(
                 f"集合不變式 3（聯集=全部）：judgment_required 靜默丟失為本編譯器"
                 f"最危險失效形（fail-loud）"
             )
+        extra = sorted((pred_set | jud_set) - all_set)
+        if extra:
+            errors.append(
+                f"AC id {extra} not covered by `{label}.ac_ids` for {kind} — "
+                f"集合不變式 3 反向包含：predicate/judgment 帶 AC 全集之外的 "
+                f"ac_id＝身分脫離輸入對照面（fail-loud）"
+            )
         overlap = sorted(pred_set & jud_set)
         if overlap:
             errors.append(
                 f"AC id {overlap} in both predicates and judgment_required for "
                 f"{kind} — 集合不變式 4（交集=空；雙重歸類）"
             )
+
+
+def _check_contract_back_refs(
+    plan: dict, contract: dict, kind: str, errors: list[str]
+) -> None:
+    """plan ↔ acceptance_contract 跨塊回指（fresh F3）——card_id／card_baseline
+    兩側皆在場時須一致；不一致＝契約歸屬卡與 plan 歸屬卡分歧（fail-loud）。
+    card_baseline 為選填欄（無 baseline 編譯合法），兩側在場才比。"""
+    plan_id = plan.get("card_id")
+    contract_id = contract.get("card_id")
+    if (
+        _present_nonempty(plan_id)
+        and _present_nonempty(contract_id)
+        and plan_id != contract_id
+    ):
+        errors.append(
+            f"acceptance_contract.card_id `{contract_id}` != plan card_id "
+            f"`{plan_id}` for {kind} — 跨塊回指不一致（契約歸屬卡與 plan 歸屬卡"
+            f"分歧；雙 authoritative，fail-loud）"
+        )
+    plan_baseline = plan.get("card_baseline")
+    contract_baseline = contract.get("card_baseline")
+    if (
+        _present_nonempty(plan_baseline)
+        and _present_nonempty(contract_baseline)
+        and plan_baseline != contract_baseline
+    ):
+        errors.append(
+            f"acceptance_contract.card_baseline `{contract_baseline}` != plan "
+            f"card_baseline `{plan_baseline}` for {kind} — 跨塊回指不一致"
+            f"（編譯 baseline 與 plan baseline 分歧；fail-loud）"
+        )
 
 
 def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
@@ -747,6 +786,7 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
     contract = data.get("acceptance_contract")
     if isinstance(contract, dict):
         _check_acceptance_contract(contract, kind, errors)
+        _check_contract_back_refs(data, contract, kind, errors)
 
 
 def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:

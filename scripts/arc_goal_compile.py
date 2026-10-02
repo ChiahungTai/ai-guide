@@ -18,11 +18,18 @@ explicit verifier grammar（v1——自真實卡歸納：AIR-135.4／air-227/228
 judgment_required 也不猜）::
 
     AC item  := checkbox 行（`- [ ]`／`- [x]` 前綴，可帶 `#N` 顯式 id）
-                ＋緊鄰續行（連續非空、非新 item、非 section 邊界的行）
+                ＋緊鄰續行（連續非空、非新 item、非 section 邊界的行；
+                ``` 圍欄區塊整段跳過——圍欄內容不成 item 亦不作續行）
     verifier := COMMAND SP ARROW SP EXPECTED（同一行內）
     COMMAND  := `...` code span，內容 strip 後非空
     ARROW    := `→` 或 `->`
     EXPECTED := arrow 後同行剩餘文字，strip 後非空（`exit 0`、錨點詞皆可）
+
+段邊界：AC 段掃描終止於 AC:END marker（優先）或任一 ATX heading（`^#{1,6}`＋空白）
+——marker 缺席時 heading 亦終止，plan 正文不得漏進末條 AC；checkbox-like 續行
+（`1. [ ]`／`- [?`／`-[]` 等不合 item grammar 的 `[` 行）＝疑似 malformed item，
+fail-loud 不靜默吞併。frontmatter `id:` 只認第一個 `---` 圍欄區塊——正文 id 行
+不充當 card_id。
 
 分類三態（對每個 AC item）：
 - 恰一個 verifier match → predicate（kind=command_expected，v1 唯一產出 kind；
@@ -33,14 +40,19 @@ judgment_required 也不猜）::
 
 禁猜例：純文字箭頭（如「full→`--model X`」arrow 前是 prose 非 code span）不構成
 verifier——該 AC 走 judgment_required；code span 存在但無 arrow（如 `.html`）同理。
+第三向（v1 已知殘留誤判面——muse F3）：描述性 prose 恰好含 code span＋箭頭
+（如「確認 config `A` -> `B` fallback」）會按 grammar 字面升為 predicate——語義
+是敘述非機驗命令；render 人話段＋摘要行使誤編可見，wiring 弧 Plan Preview
+人話複核承接，v1 不另加機制。
 
 CLI：
 - `uv run python scripts/arc_goal_compile.py CARD [--baseline SHA] [--out PATH]`
   ——預設 stdout 印人話 md（含 ```json 區塊）＋摘要行；`--out` 落檔時 stdout
   仍印摘要行。canonical JSON＝sort_keys＋緊湊分隔符＋UTF-8（同 arc_spec）。
 - exit 0＝成功；exit 2＝契約/parse 錯（無 frontmatter id、無 AC 段、AC 段空、
-  duplicate ac_id、malformed/歧義 verifier、帶 `[x]` 而未給 --baseline、
-  baseline 格式錯）——錯誤逐行 stderr，文案列可用值（arc_spec fail-loud 同形）。
+  duplicate ac_id、malformed/歧義 verifier、續行疑似 malformed item、
+  帶 `[x]` 而未給 --baseline、baseline 格式錯）——錯誤逐行 stderr，文案列
+  可用值（arc_spec fail-loud 同形）。
 
 決定性：輸出不含時鐘/process 鹽——同卡同 baseline 兩跑 byte-equal；contract
 canonical JSON 可直接嵌 ArcPlan（plan hash 覆蓋）。
@@ -60,8 +72,17 @@ JUDGMENT_REASONS = ("no-explicit-verifier",)
 
 BASELINE_RE = re.compile(r"^[0-9a-fA-F]{7,40}$")
 FRONTMATTER_ID_RE = re.compile(r"^id:\s*(\S+)\s*$", re.MULTILINE)
+# frontmatter 只認第一個 `---` 圍欄區塊——正文 `id:` 行不充當 card_id（R5）
+FRONTMATTER_BLOCK_RE = re.compile(
+    r"\A---[ \t]*\n(.*?)\n---[ \t]*(?:\n|\Z)", re.DOTALL
+)
 AC_HEADING_RE = re.compile(r"^#{1,6}\s*Acceptance Criteria\s*$")
+# 任一 ATX heading 皆為 section 邊界（AC:END marker 優先；R1）
+ATX_HEADING_RE = re.compile(r"^#{1,6}\s")
 AC_ITEM_RE = re.compile(r"^\s*[-*]\s+\[([ xX])\]\s*(.*)$")
+# checkbox-like 但不合 AC item grammar（`1. [ ]`／`- [?`／`-[]`）——續行偵測用
+# （R3：作續行即疑似 malformed item，fail-loud 禁靜默吞併）
+CHECKBOX_LIKE_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)]?)\s*\[")
 AC_EXPLICIT_ID_RE = re.compile(r"^#(\d+)\s+(.*)$")
 VERIFIER_RE = re.compile(r"`([^`]*)`\s*(?:→|->)\s*(\S.*?\S|\S)\s*$")
 # malformed 訊號：意圖是 verifier（code span 緊鄰 arrow）但 command/expected 缺一
@@ -86,11 +107,15 @@ class AcItem:
 
 def parse_card(card_text: str) -> tuple[str, list[AcItem]]:
     """抽 frontmatter id＋AC 段 items——無 id／無段／空段皆 fail-loud。"""
-    id_match = FRONTMATTER_ID_RE.search(card_text)
+    block = FRONTMATTER_BLOCK_RE.match(card_text)
+    id_match = (
+        FRONTMATTER_ID_RE.search(block.group(1)) if block is not None else None
+    )
     if id_match is None:
         raise GoalCompileError(
             "card frontmatter 缺 `id:` 欄——acceptance_contract 須回指卡節點身分"
-            "（fail-loud；禁由檔名猜 card id）"
+            "（fail-loud；禁由檔名猜 card id；`id:` 須在第一個 `---` 圍欄區塊內，"
+            "正文 id 行不充當）"
         )
     card_id = id_match.group(1)
 
@@ -107,10 +132,16 @@ def parse_card(card_text: str) -> tuple[str, list[AcItem]]:
     items: list[AcItem] = []
     current: list[str] | None = None
     current_checked = False
+    in_fence = False
     for line in lines[start + 1 :]:
         stripped = line.strip()
-        if stripped == AC_END_MARKER or AC_HEADING_RE.match(line):
-            break
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            continue  # 圍欄行整段跳過——fenced code 不成 item 亦不作續行（R3）
+        if in_fence:
+            continue
+        if stripped == AC_END_MARKER or ATX_HEADING_RE.match(line):
+            break  # AC:END marker 優先；任一 ATX heading 皆 section 邊界（R1）
         item_match = AC_ITEM_RE.match(line)
         if item_match is not None:
             if current is not None:
@@ -124,6 +155,12 @@ def parse_card(card_text: str) -> tuple[str, list[AcItem]]:
             items.append(_make_item(current, current_checked, len(items)))
             current = None
             continue
+        if CHECKBOX_LIKE_RE.match(line):
+            raise GoalCompileError(
+                f"AC 續行疑似 malformed item：`{stripped}` — checkbox-like 行"
+                f"不作續行（疑漏 `- [ ]` 前綴或勾選記號非法；fail-loud 禁靜默"
+                f"吞併致 AC 無聲消失）"
+            )
         current.append(line)
     if current is not None:
         items.append(_make_item(current, current_checked, len(items)))
@@ -179,10 +216,16 @@ def extract_verifier(item: AcItem) -> tuple[str, str] | None:
             )
         return good[0].group(1).strip(), expected_text.strip()
     if malformed:
+        empty_command = any(
+            MALFORMED_EMPTY_COMMAND_RE.search(line) for line in item.lines
+        )
+        hint = (
+            "；雙 backtick span 不支援，請用單 backtick 形" if empty_command else ""
+        )
         raise GoalCompileError(
             f"ac #{item.ac_id} malformed verifier——code span 緊鄰 arrow 但 "
             f"command 空白或 expected 空白（fail-closed；grammar："
-            f"`command` → expected，兩端皆須非空）"
+            f"`command` → expected，兩端皆須非空{hint}）"
         )
     return None
 
@@ -304,9 +347,18 @@ def _check_set_invariants(
             f"judgment_required 集合 {sorted(jud_ids)} != 輸入對照 "
             f"{sorted(expected_jud_ids)}（不變式 2）"
         )
-    if set(pred_ids) | set(jud_ids) != set(ac_ids):
-        lost = sorted(set(ac_ids) - set(pred_ids) - set(jud_ids))
-        _fail(f"AC id {lost} 遺失——不變式 3（聯集=全部；靜默丟失禁）")
+    union = set(pred_ids) | set(jud_ids)
+    all_set = set(ac_ids)
+    if union != all_set:
+        lost = sorted(all_set - union)
+        if lost:
+            _fail(f"AC id {lost} 遺失——不變式 3（聯集=全部；靜默丟失禁）")
+        extra = sorted(union - all_set)
+        if extra:
+            _fail(
+                f"AC id {extra} 不在 ac_ids 全集——不變式 3 反向包含"
+                f"（predicate/judgment 帶全集外身分；禁）"
+            )
     if set(pred_ids) & set(jud_ids):
         _fail(
             f"ac_id {sorted(set(pred_ids) & set(jud_ids))} 雙重歸類——不變式 4"

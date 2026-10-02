@@ -893,3 +893,63 @@ class TestAcceptanceContractBlock:
         plan["acceptance_contract"]["ac_ids"].append("9")
         errs = _errors("arc-plan", plan)
         assert any("Plan hash mismatch" in e for e in errs)
+
+
+class TestContractReverseContainment:
+    """R2（fresh F1）：集合不變式 3 反向包含——predicate/judgment 帶 ac_ids
+    之外的 ac_id 須 fail-loud，不得靜默放行。"""
+
+    @staticmethod
+    def _extra_predicate(ac_id: str) -> dict:
+        return {
+            "ac_id": ac_id,
+            "kind": "command_expected",
+            "verifier": "uv run pytest tests/test_demo.py -q",
+            "expected": "exit 0",
+            "satisfied": False,
+            "satisfied_at_baseline": None,
+        }
+
+    def test_extra_predicate_ac_id_fails(self) -> None:
+        c = _acceptance_contract()
+        c["predicates"].append(self._extra_predicate("9"))
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("not covered by" in e and "9" in e for e in errs)
+
+    def test_extra_judgment_ac_id_fails(self) -> None:
+        c = _acceptance_contract()
+        c["judgment_required"].append(
+            {"ac_id": "7", "reason": "no-explicit-verifier"}
+        )
+        errs = _errors("arc-plan", _plan_with_contract(c))
+        assert any("not covered by" in e and "7" in e for e in errs)
+
+    def test_no_extra_ids_still_passes(self) -> None:
+        """正向：predicate/judgment 全落 ac_ids 內時反向檢查靜默。"""
+        assert _errors("arc-plan", _plan_with_contract(_acceptance_contract())) == []
+
+
+class TestPlanContractBackRefs:
+    """R4（fresh F3）：plan ↔ acceptance_contract 跨塊回指——card_id／
+    card_baseline 兩側在場且不一致須 fail-loud（原 validate 全綠）。"""
+
+    def test_matching_back_refs_pass(self) -> None:
+        assert _errors("arc-plan", _plan_with_contract(_acceptance_contract())) == []
+
+    def test_card_id_mismatch_fails(self) -> None:
+        plan = _plan_with_contract(_acceptance_contract())
+        plan["acceptance_contract"]["card_id"] = "AIR-OTHER"
+        errs = _errors("arc-plan", plan)
+        assert any("acceptance_contract.card_id" in e and "AIR-OTHER" in e for e in errs)
+
+    def test_card_baseline_mismatch_fails(self) -> None:
+        plan = _plan_with_contract(_acceptance_contract())
+        plan["acceptance_contract"]["card_baseline"] = "aaa1111"
+        errs = _errors("arc-plan", plan)
+        assert any("card_baseline" in e and "aaa1111" in e for e in errs)
+
+    def test_contract_without_baseline_still_passes(self) -> None:
+        """card_baseline 選填——contract 端缺席不觸發比對、不擋合法 plan。"""
+        c = _acceptance_contract()
+        del c["card_baseline"]
+        assert _errors("arc-plan", _plan_with_contract(c)) == []

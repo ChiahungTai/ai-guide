@@ -244,6 +244,128 @@ class TestFailLoud:
 
 
 # ---------------------------------------------------------------------------
+# 修復回歸（AIR-135.1.1 雙腿合併五修）：R1 heading 終止／R3 checkbox-like
+# fail-loud＋圍欄跳過／R5 frontmatter id 限縮／R6 雙 backtick hint
+# ---------------------------------------------------------------------------
+
+
+class TestSectionAndItemBoundaries:
+    def test_plan_heading_without_blank_line_terminates_ac_section(self) -> None:
+        """R1（muse F1）：無 AC:END marker 時，AC 段後緊鄰的 heading 終止掃描
+        ——plan 正文（縱帶 verifier 形）不得漏進 AC 編成 predicate。"""
+        text = (
+            "---\nid: AIR-TEST-PLANLEAK\n---\n\n## Acceptance Criteria\n"
+            "- [ ] AC 一——純 prose 無 explicit verifier\n"
+            "## Implementation Plan\n"
+            "- 步驟 `uv run pytest -q` → exit 0\n"
+        )
+        contract = gc.compile_card(text, source_card="inline")
+        assert contract["ac_ids"] == ["1"]
+        assert contract["predicates"] == []
+        assert [j["ac_id"] for j in contract["judgment_required"]] == ["1"]
+
+    def test_marker_still_takes_priority_over_heading(self) -> None:
+        """R1：AC:END marker 優先——marker 後同段內容不入 items。"""
+        text = (
+            "---\nid: AIR-TEST-MARKERPRI\n---\n\n## Acceptance Criteria\n"
+            "- [ ] AC 一 `a` → 1\n"
+            "<!-- AC:END -->\n"
+            "## Implementation Plan\n"
+            "- 步驟 `uv run pytest -q` → exit 0\n"
+        )
+        contract = gc.compile_card(text, source_card="inline")
+        assert contract["ac_ids"] == ["1"]
+        assert len(contract["predicates"]) == 1
+
+    def test_checkbox_like_continuation_fails_loud(self) -> None:
+        """R3：三條 authored AC 帶 `-[]` malformed 行 → fail-loud，非 3→2 靜默
+        吞併（AC 無聲消失禁）。"""
+        text = (
+            "---\nid: AIR-TEST-CBLIKE\n---\n\n## Acceptance Criteria\n"
+            "- [ ] AC 一\n"
+            "-[] AC 二（`[]` 非法勾選記號）\n"
+            "- [ ] AC 三\n"
+        )
+        with pytest.raises(gc.GoalCompileError, match="malformed item"):
+            gc.compile_card(text, source_card="inline")
+
+    def test_numbered_checkbox_like_continuation_fails_loud(self) -> None:
+        """R3：`1. [ ]` numbered-list 形同為 checkbox-like 續行——fail-loud。"""
+        text = (
+            "---\nid: AIR-TEST-CBLIKE2\n---\n\n## Acceptance Criteria\n"
+            "- [ ] AC 一\n"
+            "1. [ ] 仿 numbered list 的 malformed item\n"
+        )
+        with pytest.raises(gc.GoalCompileError, match="malformed item"):
+            gc.compile_card(text, source_card="inline")
+
+    def test_fenced_code_does_not_create_items_or_break_section(self) -> None:
+        """R3：``` 圍欄整段跳過——圍欄內 checkbox 不成 phantom item、圍欄內
+        `#` 行不終止 AC 段。"""
+        text = (
+            "---\nid: AIR-TEST-FENCE\n---\n\n## Acceptance Criteria\n"
+            "- [ ] AC 一——含圍欄示例\n"
+            "  ```\n"
+            "  - [ ] 圍欄內 checkbox 非 item\n"
+            "  1. [ ] 圍欄內數字 checkbox 亦非\n"
+            "  ## 圍欄內 heading 非 section 邊界\n"
+            "  ```\n"
+            "- [ ] AC 二\n"
+        )
+        contract = gc.compile_card(text, source_card="inline")
+        assert contract["ac_ids"] == ["1", "2"]
+
+    def test_compiler_invariant_extra_id_message(self) -> None:
+        """R2（compiler 側）：不變式 3 違約的方向是「全集外身分」時，錯誤列
+        實際多餘 id，不再誤導為「AC id [] 遺失」。"""
+        contract = {
+            "ac_ids": ["1"],
+            "predicates": [],
+            "judgment_required": [
+                {"ac_id": "1", "reason": "no-explicit-verifier"},
+                {"ac_id": "2", "reason": "no-explicit-verifier"},
+            ],
+        }
+        with pytest.raises(
+            gc.GoalCompileError, match=r"AC id \['2'\] 不在 ac_ids 全集"
+        ):
+            gc._check_set_invariants(contract, [], ["1", "2"])
+
+
+class TestFrontmatterIdScope:
+    def test_body_id_line_is_not_card_id(self) -> None:
+        """R5：正文 `id:` 行不充當 card_id——只認第一個 `---` 圍欄區塊。"""
+        text = (
+            "---\ntitle: 無 id frontmatter\n---\n\n## Acceptance Criteria\n"
+            "- [ ] `a` → 1\n\nid: AIR-FAKE\n"
+        )
+        with pytest.raises(gc.GoalCompileError, match="frontmatter"):
+            gc.compile_card(text, source_card="inline")
+
+    def test_frontmatter_id_wins_over_body_id(self) -> None:
+        """R5：frontmatter id 在場時，正文同欄位行不覆寫。"""
+        text = (
+            "---\nid: AIR-TEST-FMID\n---\n\n## Acceptance Criteria\n"
+            "- [ ] `a` → 1\n\nid: AIR-FAKE\n"
+        )
+        contract = gc.compile_card(text, source_card="inline")
+        assert contract["card_id"] == "AIR-TEST-FMID"
+
+
+class TestDoubleBacktickHint:
+    def test_double_backtick_span_message_carries_hint(self) -> None:
+        """R6：雙 backtick span 的 malformed 錯誤須指名「雙 backtick span
+        不支援，請用單 backtick 形」。"""
+        text = (
+            "---\nid: AIR-TEST-DBLTICK\n---\n\n## Acceptance Criteria\n"
+            "- [ ] 測試 ``cmd`` → exit 0\n"
+        )
+        with pytest.raises(gc.GoalCompileError) as excinfo:
+            gc.compile_card(text, source_card="inline")
+        assert "雙 backtick span 不支援" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
 # 決定性＋roundtrip
 # ---------------------------------------------------------------------------
 
