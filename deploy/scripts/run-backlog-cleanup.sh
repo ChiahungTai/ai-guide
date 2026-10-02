@@ -4,7 +4,13 @@
 #       逐卡跑 backlog_precheck.sh（跨線掃描單一源）→ backlog task complete → git add backlog/ + commit
 # precheck [不可清]（In Progress／跨線訊號）→ 跳過該卡記 log，不擋其他卡（有進有出）
 # 授權：機械清場批次（user 2026-09-06 裁定，建卡 commit 同型態免逐次確認）
-# twin: mosaic_alpha/deploy/scripts/run-backlog-cleanup.sh 同邏輯副本（絕對路徑 precheck）——修改須同步
+# twin: mosaic_alpha/deploy/scripts/run-backlog-cleanup.sh 同邏輯副本（絕對路徑 precheck）——修改須同步；caffeinate wrap 已同步語義——mosaic twin 修改自行做（AIR-237）
+
+# 防睡眠 wrap（AIR-237）：清場批次含 git/網路操作，睡眠中斷＝半套狀態
+if [ -z "${CAFFEINATE_WRAPPED:-}" ]; then
+  export CAFFEINATE_WRAPPED=1
+  exec /usr/bin/caffeinate -is bash "$0" "$@"
+fi
 
 set -uo pipefail
 

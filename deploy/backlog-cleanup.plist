@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- backlog Done 欄清場批次（每日 23:50；卡 AIR-98 P1 前形版控化＝AIR-110 G5）。
+<!-- backlog Done 欄清場批次（每日 21:50（AIR-237 前移案——3:00 pmset wake 窗只留 ping；caffeinate wrap 防睡眠中啟動半套執行）；卡 AIR-98 P1 前形版控化＝AIR-110 G5）。
      行為主體＝deploy/scripts/run-backlog-cleanup.sh（已版控；twin 同步見該檔頭）。
      路徑參數化：{{REPO}}（repo 根）與 {{HOME}} 佔位——launchd 不展開 ~ 或佔位符，
      裝載前須 render 成絕對路徑（governance/install.py 的 render 同款替換）。
@@ -24,7 +24,7 @@
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>
-        <integer>23</integer>
+        <integer>21</integer>
         <key>Minute</key>
         <integer>50</integer>
     </dict>

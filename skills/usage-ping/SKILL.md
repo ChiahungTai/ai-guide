@@ -16,6 +16,7 @@ allowed-tools: ["Bash", "CronCreate", "CronDelete", "CronList"]
 - **單 call 紀律**（per-call 計費）：landing 只回一行確認文字、**零工具呼叫**——任何工具 round-trip 都是多一個 request，不划算
 - **無語音**（user 09-09 定案——簡單事不浪費 token）：無排程確認 say、無召回機制；確認靠 landing 一行文字（session 內可見）
 - **落地不做清理**：清理成本（CronList＋CronDelete ≈ 2-3 calls）與讓未 fire rung 空落地（各 1 call）相當且零失敗模式。殘留兩種——未 fire 的後續 rung、ZCode one-shot 跑完的 completed/failed 記錄（**不自動刪且佔 20 條名額**；Claude Code 跑完自刪無此殘留）——都由下次排程 supersede（步驟 2）清掉
+- **夜鏈 headless 變體邊界（AIR-237）**：夜間排程以 launchd 直接跑 `claude -p` 探測 ping 屬 headless 變體，**非本 skill 的 CronCreate 排程面**——本 skill 的 session 綁定（ZCode 20 條名額／session automation 限制）與 host 關閉 skipped 不補跑語義僅約束本 skill 面；launchd fire 不受此限也不繼承（session 綁定語義是夜鏈設計選擇 headless 的依據）
 
 ## 執行流程（一次性 `HH:MM`）
 

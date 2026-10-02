@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """CR 使用率事件持久化（AIR-206 ④）——bridge jobs jsonl 的 code-reality 工具呼叫歸檔。
 
+同名異物聲明（AIR-237）：cr-usage＝code-reality 工具呼叫量測（AIR-206④），與 usage-ping（LLM provider 配額探測 skill／排程）無關、無需接 ping log——兩者僅名字相近。
+
 事件源：$HOME/Github/* 一層各 workspace 的 .delegate-bridge/jobs/*.jsonl（repo 與
 card WT 同層皆掃）。抽取 type=tool.updated、toolName 含 "code-reality" 且 kind 為
 result 終態的事件（MCP CR 查詢面；一呼叫一事件——scheduled/started 中間態不收，

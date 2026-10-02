@@ -1107,7 +1107,7 @@ def test_g5_backlog_cleanup_plist_versioned_and_parameterized(monkeypatch):
         "/bin/bash",
         f"{mod.REPO_ROOT}/deploy/scripts/run-backlog-cleanup.sh",
     ]
-    assert doc["StartCalendarInterval"] == {"Hour": 23, "Minute": 50}
+    assert doc["StartCalendarInterval"] == {"Hour": 21, "Minute": 50}
     assert doc["ThrottleInterval"] == 600
     assert (mod.REPO_ROOT / "deploy/scripts/run-backlog-cleanup.sh").exists()
 

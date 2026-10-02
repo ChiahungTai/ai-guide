@@ -38,8 +38,18 @@ flowchart LR
 
 ## Acceptance Criteria
 
-- [ ] #1 backlog-cleanup plist 前移 21:50 且 XML 可解析 `uv run python -c "import plistlib; plistlib.load(open('deploy/backlog-cleanup.plist','rb')); print('ok')"` → exit 0 且 Hour integer 為 21
-- [ ] #2 清場腳本 caffeinate wrap（guard 防 re-exec＋twin 註記同步） `rg -c "caffeinate -is" deploy/scripts/run-backlog-cleanup.sh` → ≥1 且 `bash -n deploy/scripts/run-backlog-cleanup.sh` → exit 0
-- [ ] #3 usage-ping 邊界注記（headless 變體非 skill 排程面＋skipped 不補跑語義不變） `rg -c "headless" skills/usage-ping/SKILL.md` → ≥1
-- [ ] #4 cr-usage-archive 同名異物聲明（與 usage-ping／LLM 配額無關） `rg -c "usage-ping" scripts/cr_usage_archive.py` → ≥1
-- [ ] #5 ②的裁量與 live-test 計畫記卡 NOTES（min-interval 不縮短理由＋pmset 安裝後次晨查 log 步驟） `rg -c "min-interval" "backlog/tasks/air-237 - mosaic-夜鏈重編排移交——ai-guide-側四項（backlog-cleanup-前移＋caffeinate-wrap／entitlements-probe-wake-角色確認／usage-ping-邊界注記／cr-usage-archive-同名異物聲明；時移已裁前移案）.md"` → ≥1（NOTES 段）
+- [x] #1 backlog-cleanup plist 前移 21:50 且 XML 可解析 `uv run python -c "import plistlib; plistlib.load(open('deploy/backlog-cleanup.plist','rb')); print('ok')"` → exit 0 且 Hour integer 為 21
+- [x] #2 清場腳本 caffeinate wrap（guard 防 re-exec＋twin 註記同步） `rg -c "caffeinate -is" deploy/scripts/run-backlog-cleanup.sh` → ≥1 且 `bash -n deploy/scripts/run-backlog-cleanup.sh` → exit 0
+- [x] #3 usage-ping 邊界注記（headless 變體非 skill 排程面＋skipped 不補跑語義不變） `rg -c "headless" skills/usage-ping/SKILL.md` → ≥1
+- [x] #4 cr-usage-archive 同名異物聲明（與 usage-ping／LLM 配額無關） `rg -c "usage-ping" scripts/cr_usage_archive.py` → ≥1
+- [x] #5 ②的裁量與 live-test 計畫記卡 NOTES（min-interval 不縮短理由＋pmset 安裝後次晨查 log 步驟） `rg -c "min-interval" "backlog/tasks/air-237 - mosaic-夜鏈重編排移交——ai-guide-側四項（backlog-cleanup-前移＋caffeinate-wrap／entitlements-probe-wake-角色確認／usage-ping-邊界注記／cr-usage-archive-同名異物聲明；時移已裁前移案）.md"` → ≥1（NOTES 段）
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+結算（2026-10-02）：P1–P4 worker 全 PASS＋marshal 獨立複核（plistlib parse／Hour=21／bash -n／rg 三錨點／diff 目檢）＋fail-closed join OK 4 predicates（首收被拒——evidence 空欄，退補一輪後過；repair_rounds 真實數據＋1）。
+
+min-interval 裁決理由（AC#5）：--min-interval（預設 30min）＝防連續重複 fire 閘；wake fire 前機器已睡數小時、latest age 恆 ≥ 閘值，不擋 on-wake fire——縮短只增加無謂 probe 成本。03:00 窗快照最壞 ~40min 舊（GLM/codex 配額 5h 窗粒度可接受）。
+
+live wake-fire 實測步驟（pending——待 mosaic 側 pmset 03:00 wake 安裝）：次晨 `rg "03:0" ~/.mosaic/logs/ops/launchagent-ai-guide-entitlements-probe.log` 應有 wake 窗 entry；結果補記本節。安裝面提醒：plist 時刻變更須 user 手動 re-render＋reload LaunchAgent 才生效（AIR-110 形態）。
+<!-- SECTION:NOTES:END -->
