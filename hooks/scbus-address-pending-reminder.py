@@ -18,7 +18,8 @@ UserPromptSubmit（每次 user 打字）與 SessionStart（session 回場）。�
 body preview（pending[].preview），原樣轉發即洩信件內容進 context；本 hook
 輸出只取 address 與 count，連 envelope header 都不帶。
 
-決策表（stdout 皆協議 JSON 或空；exit 恆 0）：
+決策表（hook 運作面 stdout 皆協議 JSON 或空、exit 恆 0；唯一例外＝註冊
+args 誤用，見末行）：
 
 | 情境                                             | stdout            | exit |
 |--------------------------------------------------|-------------------|------|
@@ -26,6 +27,8 @@ body preview（pending[].preview），原樣轉發即洩信件內容進 context�
 | pending=0／未傳 --address                        | 空（靜默）        | 0    |
 | scbus 缺席／命令失敗／stdout 壞 JSON／門牌不在清單 | 空（fail-soft）   | 0    |
 | stdin 壞 JSON／缺或未知 hook_event_name           | 空（fail-soft）   | 0    |
+| pending 非 list（上游形契約漂移）                 | 空（fail-soft）   | 0    |
+| 註冊 args 誤用（argparse 拒絕）                   | 空（stderr 用法）  | 2（大聲、刻意——misconfig 歸註冊單一源修復，不走 fail-soft） |
 
 fail-soft 契約（繼承 L2 drain 面）：ZCode 讀 exit 2 為「擋 turn」、非 JSON
 stdout 餵 hook-output parser——exit 0＋零 stdout 是唯一安全靜默形（上游毒信
@@ -106,7 +109,14 @@ def query_counts(addresses, runner=None):
         if entry is None:
             raise LookupError("address not in listing: " + address)
         pending = entry.get("pending")
-        counts[address] = len(pending) if isinstance(pending, list) else 0
+        if not isinstance(pending, list):
+            # 形契約漂移（上游 pending 非 list）不靜默歸零——raise 交 fail-soft
+            # 統一路徑（零 stdout exit 0＋stderr 診斷），禁吞成 pending=0。
+            raise TypeError(
+                "pending not a list for address " + address
+                + " (got " + type(pending).__name__ + ")"
+            )
+        counts[address] = len(pending)
     return counts
 
 

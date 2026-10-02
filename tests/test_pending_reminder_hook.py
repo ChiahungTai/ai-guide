@@ -4,8 +4,9 @@
 - pending>0 注入：additionalContext 含 address＋count＋指針＋禁權聲明；
   UPS 與 SessionStart 各自 hookEventName 正確（單 script 兩事件）。
 - pending=0／無 --address：零 stdout exit 0（靜默不擋 turn）。
-- fail-soft：scbus 缺席／命令失敗／stdout 壞 JSON／門牌不在清單／stdin 壞／
-  未知事件——一律零 stdout exit 0（繼承 L2：ZCode exit 2＝擋 turn）。
+- fail-soft：scbus 缺席／命令失敗／stdout 壞 JSON／門牌不在清單／pending
+  非 list（形契約漂移）／stdin 壞／未知事件——一律零 stdout exit 0
+  （繼承 L2：ZCode exit 2＝擋 turn）。
 - 語義邊界：上游 holder-less preview 欄位絕不進輸出（禁洩信件內容）。
 - governance 接線：zcode/cc 模板雙事件獨立 group＋manifest inventory；
   install merge 面新 group append、既有條目（scbus canonical／
@@ -171,6 +172,27 @@ class TestFailSoft:
         runner = _runner(_listing(other=1))
         code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
         assert (code, out) == (0, "")
+
+    def test_pending_not_list_shape_drift_fail_soft(self, capsys):
+        """pending 非 list（int 形契約漂移）——禁靜默歸零成 pending=0。
+
+        形狀漂移須 raise 交 fail-soft 統一路徑：零 stdout exit 0＋stderr
+        含診斷（絕不擋 turn，也不假裝沒有信）。
+        """
+        listing = json.dumps(
+            {
+                "status": "ok",
+                "addresses": [
+                    {"address": ADDRESS, "binding": None, "pending": 3}
+                ],
+            }
+        )
+        runner = _runner(listing)
+        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
+        assert (code, out) == (0, "")
+        err = capsys.readouterr().err
+        assert "fail-soft" in err
+        assert "pending not a list" in err
 
     def test_bad_stdin_json(self):
         runner = _runner(exc=AssertionError("must not call scbus"))
