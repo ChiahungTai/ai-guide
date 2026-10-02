@@ -42,7 +42,7 @@ flowchart LR
 - impl-a（code，TDD）：scripts/arc_manifest.py（acceptance_contract→per-unit manifest；set 不變式 union=all／intersection=∅ 違反 fail-loud）＋scripts/arc_handback_join.py（manifest×handback 機械 join；缺 verdict／非三值／evidence 空＝exit 2 逐行列缺項）＋tests／fixtures
 - impl-b（instructions）：skills/_common/work-order.md 增 handback schema＋operational preflight 兩段；skills/agent-workflow/SKILL.md 收線 join 接線＋small-fix batch envelope；agents/AGENTS.md 註 b 四行例示
 
-收線：雙腿審查（fresh＋跨家族 bridge）→ judge → 修復輪 → merge；⑦四數手工記本卡 NOTES（first_handback_complete／repair_rounds／marshal_direct_impl_violation／settle_wait）。
+收線全鏈（arc-plan v2 顯式 work units，supersedes v1——v1 只列 impl＋settle 被 user 指正）：**post-build**（handback fail-closed join——impl-a 首收 marshal 手動、impl-b 用交付工具；WT CR graph build——WT 起 graph-absent、canonical graph 不覆蓋 WT 新檔；ledger lint）→ **雙腿 review 平行**（fresh＝in-harness code-reviewer；cross＝bridge muse/codex 依 availability；per-leg CR receipt 照 AIR-224 語法）→ **judge**（主 session decision work unit 不 agent 化；需修復走 repair batch envelope）→ **commit-merge**（/commit receipt-gate＋控制面 merge 前回執四欄覆核＋ff-only merge 回 main＋branch 收線；push 恆停）→ **settle**（四數記卡＋Final Summary＋結案兩步——翻 Done 恆 user 拍板）。
 <!-- SECTION:PLAN:END -->
 
 ## Acceptance Criteria
