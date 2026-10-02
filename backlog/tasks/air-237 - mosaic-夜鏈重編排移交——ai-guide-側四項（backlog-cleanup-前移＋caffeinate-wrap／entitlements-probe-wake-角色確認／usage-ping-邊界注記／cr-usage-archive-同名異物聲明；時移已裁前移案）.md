@@ -36,6 +36,12 @@ flowchart LR
 ```
 <!-- SECTION:DESCRIPTION:END -->
 
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+移交批（repair batch envelope）：①plist Hour 23→21＋②script caffeinate guard wrap＋③usage-ping 邊界注記＋④cr-usage-archive 聲明——單一 impl-lite 承作（P1-P4 逐項 handback）；裁量與掃描腿（min-interval／夜間不睡）＝marshal 本職；live wake-fire 實測＝mosaic pmset 安裝後次晨（pending 交接 NOTES）。
+<!-- SECTION:PLAN:END -->
+
 ## Acceptance Criteria
 
 - [x] #1 backlog-cleanup plist 前移 21:50 且 XML 可解析 `uv run python -c "import plistlib; plistlib.load(open('deploy/backlog-cleanup.plist','rb')); print('ok')"` → exit 0 且 Hour integer 為 21
