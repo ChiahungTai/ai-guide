@@ -36,8 +36,14 @@ flowchart LR
 
 ## Acceptance Criteria
 
-- [ ] #1 兩點 verdict 行記本卡 notes（covered-by＜錨點＞ 或 patch-needed） `rg -c "covered-by|patch-needed" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥2
-- [ ] #2 patch-needed 項各有下場（本弧 patch commit sha 或 followup 卡 id；全 covered 時顯式 waiver 行） `rg -c "followup:|patch-commit:|waiver:" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥1
+- [x] #1 兩點 verdict 行記本卡 notes（covered-by＜錨點＞ 或 patch-needed） `rg -c "covered-by|patch-needed" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥2
+- [x] #2 patch-needed 項各有下場（本弧 patch commit sha 或 followup 卡 id；全 covered 時顯式 waiver 行） `rg -c "followup:|patch-commit:|waiver:" "backlog/tasks/air-236 - mosaic-cr-audit-12-re-route——reviewer-spawn-prompt-CR-段＋rules-reminder-routing-行盤點（ai-guide-instruction-主權；信-46fb84ab）.md"` → ≥1
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**：mosaic cr-audit 四建議全數有主——(1) covered-by AIR-224 route carrier＋crsurface materialization gate（dispatch 離手前機驗，強於被動提示行）；(2) covered-by AIR-226 rules-reminder:39 邊界行；(3) duty session 裁已編碼（WO 契約）；(4) ＝DB-76 在途。本卡零 patch、waiver 結算（2bb8a720）。
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 
 ## Implementation Notes
