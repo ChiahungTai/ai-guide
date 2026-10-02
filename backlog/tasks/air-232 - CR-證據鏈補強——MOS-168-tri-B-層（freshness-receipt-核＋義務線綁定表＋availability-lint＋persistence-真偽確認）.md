@@ -3,9 +3,10 @@ id: AIR-232
 title: >-
   CR 證據鏈補強——MOS-168 tri B 層（freshness receipt 核＋義務線綁定表＋availability
   lint＋persistence 真偽確認）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 04:40'
+updated_date: '2026-10-02 08:56'
 labels: []
 dependencies: []
 ordinal: 222000
