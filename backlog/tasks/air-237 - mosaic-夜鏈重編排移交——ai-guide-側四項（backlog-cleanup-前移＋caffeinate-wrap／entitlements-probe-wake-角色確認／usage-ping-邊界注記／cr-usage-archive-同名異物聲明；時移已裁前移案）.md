@@ -4,10 +4,10 @@ title: >-
   mosaic 夜鏈重編排移交——ai-guide 側四項（backlog-cleanup 前移＋caffeinate
   wrap／entitlements-probe wake 角色確認／usage-ping 邊界注記／cr-usage-archive
   同名異物聲明；時移已裁前移案）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 13:30'
-updated_date: '2026-10-02 13:31'
+updated_date: '2026-10-02 13:45'
 labels: []
 dependencies: []
 ordinal: 228000
