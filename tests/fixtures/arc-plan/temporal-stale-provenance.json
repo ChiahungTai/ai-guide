@@ -1,0 +1,68 @@
+{
+  "schema": "arc-plan/1",
+  "card_id": "AIR-240",
+  "card_baseline": "682f64a7",
+  "version": 1,
+  "supersedes": null,
+  "plan_hash": "1c68e9de3d9672e49a2473b71ff473ec43dfe78def803c5899ea4eb580aeb69a",
+  "work_units": [
+    {
+      "unit_id": "AIR-240#W1",
+      "title": "temporal 意圖腿（fixture 形態契約）",
+      "role": "implement",
+      "phase": "build",
+      "depends_on": []
+    }
+  ],
+  "closure_coverage": [
+    {
+      "station": "post-build",
+      "unit_ref": "AIR-240#W1",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "review",
+      "unit_ref": "AIR-240#W1",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "judge",
+      "unit_ref": "AIR-240#W1",
+      "owner": "main-session",
+      "gate": "human"
+    },
+    {
+      "station": "landing",
+      "unit_ref": "AIR-240#W1",
+      "owner": "main-session",
+      "gate": "commit-consent"
+    },
+    {
+      "station": "settle",
+      "unit_ref": "AIR-240#W1",
+      "owner": "main-session",
+      "gate": "human"
+    }
+  ],
+  "temporal_allocation": {
+    "preferred_family": "muse",
+    "planned_not_before": "2026-09-28T09:00:00Z",
+    "on_unavailable": "delay",
+    "fallback_families": [],
+    "entitlement_snapshot_ref": "entitlement-window-stale.json",
+    "entitlement_snapshot_hash": "e925f2f699644a89ed227c687d1363fa2c58d845b0accedec5bbe7dd59d57e8c",
+    "entitlement_snapshot_as_of": "2026-09-28T00:00:00Z"
+  },
+  "budget_context": {
+    "revert_exposure_cap": 0,
+    "usage_cap": 0
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "plan_changes": []
+}

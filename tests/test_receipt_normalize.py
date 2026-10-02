@@ -422,7 +422,8 @@ class TestFailLoudContract:
         with pytest.raises(_mod.NormalizeError) as ei:
             _mod.normalize("weixin", _env_codex())
         assert "Unknown family `weixin` for receipt_normalize" in str(ei.value)
-        assert "Available families: local, muse, codex, glm" in str(ei.value)
+        # AIR-240：FAMILIES 擴 grok（enum 值域隨 arc_spec.FAMILIES 投影）
+        assert "Available families: local, muse, codex, glm, grok" in str(ei.value)
 
     def test_local_family_not_mapped_v0(self) -> None:
         with pytest.raises(_mod.NormalizeError) as ei:

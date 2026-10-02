@@ -12,11 +12,13 @@
 - D7——receipt 沿用 CollectionReceipt 欄位集＋plan 版本回指；terminal≠complete。
 """
 
+import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from conftest import load_module
+from conftest import REPO_ROOT, load_module
 
 _mod = load_module("scripts/arc_spec.py")
 
@@ -164,8 +166,10 @@ def _receipt() -> dict:
     }
 
 
-def _errors(kind: str, data: dict, stage: str = "dispatch") -> list[str]:
-    return _mod.validate(kind, data, stage=stage)
+def _errors(
+    kind: str, data: dict, stage: str = "dispatch", **kw: object
+) -> list[str]:
+    return _mod.validate(kind, data, stage=stage, **kw)
 
 
 # ---------------------------------------------------------------------------
@@ -1419,3 +1423,562 @@ class TestCoverageRepairBatch:
             },
         )
         assert _errors("arc-plan", p, stage="compile") == []
+
+
+
+
+# ---------------------------------------------------------------------------
+# temporal_allocation 意圖欄（AIR-240）——可選整體缺席；在場則全鍵深檢＋
+# provenance 機驗＋易爛真值禁令
+# ---------------------------------------------------------------------------
+
+TEMPORAL_NOW = datetime(2026, 10, 2, 12, 0, 0, tzinfo=UTC)
+
+SNAPSHOT_NAME = "entitlement-window-valid.json"
+
+
+def _snapshot_payload(
+    rows: list[dict] | None = None,
+    generated_at: str = "2026-10-02T12:00:00Z",
+) -> dict:
+    """EntitlementWindowSnapshot（AIR-239）最小合法 payload。"""
+    if rows is None:
+        rows = [
+            {
+                "family": "muse",
+                "pool": "unknown",
+                "source": "probe",
+                "observed_at": generated_at,
+                "freshness": "fresh",
+                "state": "available",
+                "retryable_at": None,
+            }
+        ]
+    return {
+        "schema": "entitlement-window-snapshot/1",
+        "generated_at": generated_at,
+        "rows": rows,
+    }
+
+
+def _snapshot_hash(payload: dict) -> str:
+    """sha256 canonical（與 plan_hash 同構：sort_keys＋緊湊分隔符＋UTF-8）。"""
+    return hashlib.sha256(_mod.canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def _write_snapshot(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
+def _temporal_block(snapshot_name: str = SNAPSHOT_NAME) -> dict:
+    """最小合法 temporal_allocation——ref 相對 plan 檔所在目錄解析。"""
+    return {
+        "preferred_family": "muse",
+        "planned_not_before": "2026-10-02T18:00:00Z",
+        "on_unavailable": "delay",
+        "fallback_families": [],
+        "entitlement_snapshot_ref": snapshot_name,
+        "entitlement_snapshot_hash": _snapshot_hash(_snapshot_payload()),
+        "entitlement_snapshot_as_of": "2026-10-02T12:00:00Z",
+    }
+
+
+def _plan_temporal(tmp_path: Path) -> dict:
+    """帶合法 temporal_allocation 的 plan（寫入配套 snapshot＋hash 重算）。"""
+    _write_snapshot(tmp_path / SNAPSHOT_NAME, _snapshot_payload())
+    p = _plan_with_valid_hash()
+    p["temporal_allocation"] = _temporal_block()
+    p["plan_hash"] = _mod.plan_content_hash(p)
+    return p
+
+
+class TestTemporalAllocation:
+    """AIR-240：ArcPlan temporal 意圖欄。
+
+    - 可選整體缺席（既有 plan back-compat）；在場則七鍵全到（禁部分宣告歧義）
+    - 易爛真值禁令：block 閉集鎖定——quota 數字/reset 時刻等現值欄禁入 plan
+    - provenance 機驗：ref 檔存在（相對 plan 檔目錄）＋sha256 canonical 比對
+      ＋as_of 非未來且與快照 generated_at 一致＋rows 非空且非全 stale
+      （stale 閾值 ownership 在 producer——AIR-239 單一時鐘 R2，validator
+      消費 freshness 標籤、不自備第二時鐘）
+    """
+
+    def test_temporal_absent_still_valid(self) -> None:
+        """可選整體缺席——既有 plan 不受影響（back-compat）。"""
+        assert _errors("arc-plan", _plan_with_valid_hash(), stage="compile") == []
+
+    def test_valid_temporal_plan_passes(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        assert (
+            _errors(
+                "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+            )
+            == []
+        )
+
+    def test_null_temporal_block_fails(self) -> None:
+        """key 在場值 null＝歧義宣告（缺席才是合法省略形）——fail-loud。"""
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = None
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`temporal_allocation` must be an object" in e for e in errs)
+
+    def test_volatile_truth_key_banned(self, tmp_path: Path) -> None:
+        """易爛真值禁令：quota 現值欄禁入 temporal block（閉集鎖定）。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["quota_remaining"] = 42
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("quota_remaining" in e and "易爛真值禁令" in e for e in errs)
+        assert any("Known temporal keys" in e for e in errs)
+
+    def test_missing_all_keys_lists_all_seven(self) -> None:
+        """在場則全鍵必到——空 block 列全部七鍵（禁部分宣告歧義）。"""
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = {}
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        for key in (
+            "preferred_family",
+            "planned_not_before",
+            "on_unavailable",
+            "fallback_families",
+            "entitlement_snapshot_ref",
+            "entitlement_snapshot_hash",
+            "entitlement_snapshot_as_of",
+        ):
+            assert any(f"`temporal_allocation.{key}`" in e for e in errs), key
+
+    def test_unknown_preferred_family_lists_available(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["preferred_family"] = "weixin"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any(
+            "Unknown preferred family `weixin`" in e and "grok" in e for e in errs
+        )
+
+    def test_planned_not_before_naive_iso_fails(self, tmp_path: Path) -> None:
+        """naive ISO（無時區）＝不合法（AIR-239 R4 同姿態：禁與 aware 混比）。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["planned_not_before"] = "2026-10-02T18:00:00"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("planned_not_before" in e and "時區" in e for e in errs)
+
+    def test_planned_not_before_future_ok(self, tmp_path: Path) -> None:
+        """planned_not_before 是排程意圖（未來時點合法）——無 now 對比。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["planned_not_before"] = "2027-01-01T00:00:00Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert errs == []
+
+    def test_on_unavailable_unknown_lists_values(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "retry"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any(
+            "on_unavailable" in e and "delay" in e and "fallback" in e for e in errs
+        )
+
+    def test_fallback_same_as_preferred_fails(self, tmp_path: Path) -> None:
+        """矛盾 policy：fallback_families 含 preferred_family＝同家 fallback。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "fallback"
+        p["temporal_allocation"]["fallback_families"] = ["muse"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("fallback" in e and "muse" in e and "矛盾" in e for e in errs)
+
+    def test_fallback_without_explicit_set_fails(self, tmp_path: Path) -> None:
+        """explicit-only 契約：fallback policy 須帶非空顯式集合（禁 resolver
+        製造跨家族 fallback）。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "fallback"
+        p["temporal_allocation"]["fallback_families"] = []
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("explicit-only" in e for e in errs)
+
+    def test_fallback_valid_with_explicit_set(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "fallback"
+        p["temporal_allocation"]["fallback_families"] = ["glm", "grok"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert errs == []
+
+    def test_delay_with_fallback_set_conflict_fails(self, tmp_path: Path) -> None:
+        """矛盾 policy：delay 配非空 fallback 集＝雙 authoritative policy。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["fallback_families"] = ["glm"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("delay" in e and "雙 authoritative" in e for e in errs)
+
+    def test_fallback_unknown_family_lists_available(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "fallback"
+        p["temporal_allocation"]["fallback_families"] = ["weixin"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("weixin" in e and "Unknown" in e and "grok" in e for e in errs)
+
+    def test_duplicate_fallback_families_fail(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["on_unavailable"] = "fallback"
+        p["temporal_allocation"]["fallback_families"] = ["glm", "glm"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("Duplicate fallback family" in e for e in errs)
+
+    # --- provenance 機驗 ---
+
+    def test_snapshot_ref_missing_file_fails(self, tmp_path: Path) -> None:
+        """missing provenance：ref 指向檔不存在＝exit 2 逐行列原因。"""
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block("no-such-snapshot.json")
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("不存在" in e and "no-such-snapshot.json" in e for e in errs)
+
+    def test_snapshot_hash_mismatch_fails(self, tmp_path: Path) -> None:
+        """provenance 漂移：快照內容與 hash 不一致＝fail-loud。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = "a" * 64
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("hash" in e and "mismatch" in e for e in errs)
+
+    def test_snapshot_hash_bad_format_fails(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = "zz"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("entitlement_snapshot_hash" in e and "hex 64" in e for e in errs)
+
+    def test_snapshot_future_as_of_fails(self, tmp_path: Path) -> None:
+        """未來時間戳非「新」——as_of 非未來（availability_snapshot F4 同姿態）。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["entitlement_snapshot_as_of"] = "2026-10-02T12:00:01Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("as_of" in e and "未來" in e for e in errs)
+
+    def test_snapshot_as_of_boundary_now_passes(self, tmp_path: Path) -> None:
+        """as_of 恰等於 now＝非未來（邊界：> 才違約）。"""
+        p = _plan_temporal(tmp_path)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert errs == []
+
+    def test_snapshot_as_of_generated_at_mismatch_fails(self, tmp_path: Path) -> None:
+        """as_of 主張須與快照自身 generated_at 一致（provenance 綁定）。"""
+        p = _plan_temporal(tmp_path)
+        p["temporal_allocation"]["entitlement_snapshot_as_of"] = "2026-10-01T00:00:00Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("generated_at" in e and "不一致" in e for e in errs)
+
+    def test_all_stale_rows_stale_provenance_fails(self, tmp_path: Path) -> None:
+        """stale provenance：快照全 rows stale＝零 fresh evidence 可規劃。"""
+        stale_rows = [
+            {
+                "family": "muse",
+                "pool": "unknown",
+                "source": "spine",
+                "observed_at": "2026-09-28T00:00:00Z",
+                "freshness": "stale",
+                "state": "unknown",
+                "retryable_at": None,
+            }
+        ]
+        payload = _snapshot_payload(stale_rows, "2026-09-28T00:00:00Z")
+        _write_snapshot(tmp_path / "entitlement-window-stale.json", payload)
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block("entitlement-window-stale.json")
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["temporal_allocation"]["entitlement_snapshot_as_of"] = "2026-09-28T00:00:00Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("stale" in e and "provenance" in e for e in errs)
+
+    def test_zero_rows_fails(self, tmp_path: Path) -> None:
+        """零 rows＝零 planning evidence——快照檔在場也禁。"""
+        payload = _snapshot_payload([], "2026-10-02T12:00:00Z")
+        _write_snapshot(tmp_path / "entitlement-window-empty.json", payload)
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block("entitlement-window-empty.json")
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("rows" in e for e in errs)
+
+    def test_snapshot_bad_schema_marker_fails(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        payload = {
+            "schema": "availability-snapshot/1",
+            "generated_at": "2026-10-02T12:00:00Z",
+            "rows": [],
+        }
+        _write_snapshot(tmp_path / SNAPSHOT_NAME, payload)  # 覆寫成壞 marker 快照
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("entitlement-window-snapshot/1" in e for e in errs)
+
+    def test_snapshot_malformed_row_fails(self, tmp_path: Path) -> None:
+        """rows 內非 object 條目＝malformed evidence——禁靜默跳過。"""
+        p = _plan_temporal(tmp_path)
+        payload = _snapshot_payload(["garbage"], "2026-10-02T12:00:00Z")
+        _write_snapshot(tmp_path / SNAPSHOT_NAME, payload)  # 覆寫成 malformed rows
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("rows" in e and "malformed" in e for e in errs)
+
+    # --- per-unit 區塊 ---
+
+    def test_per_unit_temporal_block_checked(self, tmp_path: Path) -> None:
+        """work-unit 級 temporal_allocation 同深檢——label 帶 unit 路徑。"""
+        p = _plan_temporal(tmp_path)
+        del p["temporal_allocation"]
+        p["work_units"][0]["temporal_allocation"] = _temporal_block()
+        p["work_units"][0]["temporal_allocation"]["preferred_family"] = "weixin"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any(
+            "work_units[0].temporal_allocation" in e and "weixin" in e for e in errs
+        )
+
+    def test_per_unit_valid_temporal_passes(self, tmp_path: Path) -> None:
+        p = _plan_temporal(tmp_path)
+        del p["temporal_allocation"]
+        p["work_units"][0]["temporal_allocation"] = _temporal_block()
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert errs == []
+
+    def test_temporal_block_registered_schema_table(self) -> None:
+        """schema 欄位表註冊（machine-invariant、選填）。"""
+        fields = {f.name: f for f in _mod.ARTIFACTS["arc-plan"].fields}
+        ta = fields["temporal_allocation"]
+        assert ta.kind == "machine-invariant" and ta.required_at == "never"
+
+
+class TestDispatchSliceTemporalCarryThrough:
+    """AIR-240：DispatchSlice temporal carry-through——同欄投影（slice 級
+    preferred_family／on_unavailable／fallback_families）；選填 machine-
+    invariant，在場則形狀＋矛盾 policy 驗證（值歸 resolver，schema 留欄）。"""
+
+    def test_carry_through_fields_registered_optional(self) -> None:
+        fields = {f.name: f for f in _mod.ARTIFACTS["dispatch-slice"].fields}
+        for name in ("preferred_family", "on_unavailable", "fallback_families"):
+            assert name in fields, name
+            assert fields[name].kind == "machine-invariant"
+            assert fields[name].required_at == "never"
+
+    def test_carry_through_absent_still_valid(self) -> None:
+        s = _slice()
+        assert "preferred_family" not in s
+        assert _errors("dispatch-slice", s) == []
+
+    def test_carry_through_grok_family_valid(self) -> None:
+        """grok（AIR-240 擴 enum）為合法 slice family 值＋carry-through 全形。"""
+        s = _slice()
+        s["family"] = "grok"
+        s["preferred_family"] = "grok"
+        s["on_unavailable"] = "delay"
+        s["fallback_families"] = []
+        assert _errors("dispatch-slice", s) == []
+
+    def test_carry_through_unknown_preferred_family_fails(self) -> None:
+        s = _slice()
+        s["preferred_family"] = "weixin"
+        errs = _errors("dispatch-slice", s)
+        assert any(
+            "Unknown preferred family `weixin`" in e and "grok" in e for e in errs
+        )
+
+    def test_carry_through_unknown_on_unavailable_fails(self) -> None:
+        s = _slice()
+        s["on_unavailable"] = "retry"
+        errs = _errors("dispatch-slice", s)
+        assert any("on_unavailable" in e and "delay" in e for e in errs)
+
+    def test_carry_through_fallback_requires_explicit_set(self) -> None:
+        s = _slice()
+        s["on_unavailable"] = "fallback"
+        errs = _errors("dispatch-slice", s)
+        assert any("explicit-only" in e for e in errs)
+
+    def test_carry_through_fallback_same_as_preferred_fails(self) -> None:
+        s = _slice()
+        s["preferred_family"] = "muse"
+        s["on_unavailable"] = "fallback"
+        s["fallback_families"] = ["muse"]
+        errs = _errors("dispatch-slice", s)
+        assert any("矛盾" in e for e in errs)
+
+    def test_carry_through_delay_with_set_conflict_fails(self) -> None:
+        s = _slice()
+        s["on_unavailable"] = "delay"
+        s["fallback_families"] = ["glm"]
+        errs = _errors("dispatch-slice", s)
+        assert any("雙 authoritative" in e for e in errs)
+
+    def test_carry_through_fallback_valid_explicit(self) -> None:
+        s = _slice()
+        s["preferred_family"] = "muse"
+        s["on_unavailable"] = "fallback"
+        s["fallback_families"] = ["glm", "grok"]
+        assert _errors("dispatch-slice", s) == []
+
+
+class TestFamiliesCatalogConsistency:
+    """AIR-240 FAMILIES enum 縫裁決——arc_spec×catalog 機械關係釘住。
+
+    裁決：FAMILIES 擴 grok（AIR-226 bridge-grok-grok-4.7 binding 在場——
+    有 binding 的 family 須有合法 slice 值；delegate-bridge 四家族語彙）。
+    與 catalog families 閉集的軸差顯式記錄：grok bindings 的 catalog family
+    label＝xai（bridge surface＝grok-family）；local＝in-harness spawn 無
+    catalog binding。工單字面關係「值域 ⊆ catalog families＋local」對 grok
+    不成立（grok ∉ catalog families）——以顯式映射表取代（deviation 記
+    handback）。catalog parser 重用 sync_agents.parse_catalog 單一源。
+    """
+
+    SLICE_FAMILY_TO_CATALOG = {
+        "glm": "glm",
+        "muse": "muse",
+        "codex": "codex",
+        "grok": "xai",
+    }
+
+    def _catalog(self):
+        sync = load_module("scripts/sync_agents.py")
+        path = REPO_ROOT / "skills" / "model-routing" / "catalog.toml"
+        return sync.parse_catalog(path.read_text(encoding="utf-8"))
+
+    def test_families_closed_set_pinned(self) -> None:
+        assert _mod.FAMILIES == ("local", "muse", "codex", "glm", "grok")
+
+    def test_families_bridge_bindings_have_slice_values(self) -> None:
+        """bridge binding 的 family token（id 第二段）須為合法 slice 值。"""
+        catalog = self._catalog()
+        bridge_families = {
+            b.id.split("-")[1]
+            for b in catalog.bindings.values()
+            if b.carrier == "bridge"
+        }
+        assert bridge_families == {"glm", "codex", "muse", "grok"}
+        assert bridge_families <= set(_mod.FAMILIES)
+
+    def test_families_map_into_catalog_families(self) -> None:
+        """顯式映射表：slice family → catalog family label 全部命中閉集。"""
+        catalog = self._catalog()
+        for fam, cat_fam in self.SLICE_FAMILY_TO_CATALOG.items():
+            assert fam in _mod.FAMILIES, fam
+            assert cat_fam in catalog.families, fam
+
+    def test_families_domain_relation_documented_divergence(self) -> None:
+        """值域關係（工單字面關係的替代形）：FAMILIES−{local} 經映射表全落
+        catalog families——grok→xai 軸差顯式。"""
+        catalog = self._catalog()
+        mapped = {
+            self.SLICE_FAMILY_TO_CATALOG[f]
+            for f in _mod.FAMILIES
+            if f != "local"
+        }
+        assert mapped <= set(catalog.families)
+
+
+class TestTemporalFixtures:
+    """golden fixtures（AIR-240 AC#1/#2 的檔案形）——provenance 三鍵＋配套
+    EntitlementWindowSnapshot。時間穩定設計：as_of past-frozen（牆鐘非未來檢
+    恆綠）、stale 判定走 rows[].freshness 標籤（不吃牆鐘）——fixture 不隨
+    時間腐爛。"""
+
+    def _load(self, name: str) -> dict:
+        return _mod.parse_artifact_file(COVERAGE_FIXTURES / name, "arc-plan")
+
+    def test_temporal_valid_fixture_passes(self) -> None:
+        errs = _errors(
+            "arc-plan",
+            self._load("temporal-valid.json"),
+            stage="compile",
+            base_dir=COVERAGE_FIXTURES,
+            now=TEMPORAL_NOW,
+        )
+        assert errs == []
+
+    def test_temporal_stale_provenance_fixture_fails(self) -> None:
+        errs = _errors(
+            "arc-plan",
+            self._load("temporal-stale-provenance.json"),
+            stage="compile",
+            base_dir=COVERAGE_FIXTURES,
+            now=TEMPORAL_NOW,
+        )
+        assert any("stale" in e and "provenance" in e for e in errs)
+
+    def test_fixture_cli_exit_codes(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """CLI 面（AC verifiers 原形）：temporal-valid→0、stale-provenance→2
+        且 stderr 明列原因。"""
+        valid = str(COVERAGE_FIXTURES / "temporal-valid.json")
+        assert (
+            _mod.main(["validate", "--kind", "arc-plan", "--stage", "compile", valid])
+            == 0
+        )
+        capsys.readouterr()
+        stale = str(COVERAGE_FIXTURES / "temporal-stale-provenance.json")
+        assert (
+            _mod.main(["validate", "--kind", "arc-plan", "--stage", "compile", stale])
+            == 2
+        )
+        assert "stale provenance" in capsys.readouterr().err

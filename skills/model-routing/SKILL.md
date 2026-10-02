@@ -74,6 +74,10 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 `state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。窗口重置週期與「是否再 probe」的消費語義見下方「窗口語義（重置週期正典）」節：距 last-probe 超過週期→值得再 probe（web 池不適用週期推度，見該節 codex 行）；現值不可推度——retryable-at ≠ available。
 
+### Planning vs dispatch authority（AIR-240）
+
+**EntitlementWindowSnapshot**（`scripts/entitlement_window_snapshot.py`，AIR-239）與 **ArcPlan temporal 意圖欄**（`temporal_allocation`——preferred_family／planned_not_before／on_unavailable＋entitlement_snapshot provenance；validator＝`arc_spec.py` compile stage）＝**advisory planning evidence**——只供排序／排程參考；**AvailabilitySnapshot＝dispatch 唯一 live authority**（resolver 七步順序不變）。freshness precedence：fresh probe/event ＞ 較舊 spine observation；stale 一律降 unknown；帶 provider reset 時間戳的事件 ＞ 依週期推算。ArcPlan `on_unavailable=fallback` 只是授權 resolver 在「已 qualified＋live available＋顯式列舉於 fallback_families」的候選間考慮——不得降低 WorkUnitContract、不得製造跨家族 independence（explicit-only 與 no-silent-downgrade 不變）。
+
 ### 窗口語義（重置週期正典）
 
 > 正典住本節（AIR-98 P2，as-of 2026-09-15 user 對帳）；spine（`model-runtime-entitlements`）只留指針＋as-of＋事件行，禁拷貝本節窗口/週期數字。V 現值（訂閱到期日／消耗倍率現值／促銷活動）不住本節——唯一歸宿＝spine；本節只留窗口機制與計費結構。數字變更以 provider dashboard／實際錯誤訊息為準。

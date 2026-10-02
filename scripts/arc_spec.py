@@ -42,6 +42,35 @@ compile stage 驗全站在場（waiver 站豁免）＋unit_ref 回指 work_units
 重驗，slice 是 per-unit 物）。work_units.phase 收斂 enum build/post-build/
 review/judge/land/settle（135.3 六站的操作軸映射，六站語義不重定）。
 
+temporal_allocation 意圖欄（AIR-240）：ArcPlan machine-invariant 選填區塊
+（頂層或 per-work_unit——兩處皆可，單位級細化頂層預設）；在場則七鍵全到
+（禁部分宣告歧義）：preferred_family（枚舉＝FAMILIES）／planned_not_before
+（ISO 8601 帶時區——排程意圖，未來時點合法）／on_unavailable（delay｜
+fallback）／fallback_families（explicit-only：fallback policy 須帶非空顯式
+集合、禁含 preferred_family、禁與 delay 並存——值歸 resolver 於派工當下
+重驗 availability，schema 只鎖形）＋provenance 三鍵 entitlement_snapshot_ref/
+hash/as_of。compile 機驗（provenance 不隨 stage 豁免——plan 是凍結物）：
+ref 相對 plan 檔所在目錄解析且檔必存在、hash＝sha256(canonical JSON) 比對、
+as_of 非未來且與快照 generated_at 一致、rows 非空且非全 stale（missing/
+stale provenance 逐行 exit 2）。**stale 閾值 ownership 在 producer**
+（entitlement_window_snapshot.py：probe 26h／spine 3d——AIR-239 單一時鐘
+R2），本 validator 消費 rows[].freshness 標籤、不自備第二時鐘；牆鐘只用於
+as_of 非未來（過去 frozen fixture 恆綠——AC 驗證器時間穩定）。**易爛真值
+禁令**：temporal block 閉集鎖定——quota 數字/reset 時刻等「現值」欄禁入
+plan（ArcPlan 是穩定版控 artifact，現值幾小時即腐爛；現值唯一合法歸宿＝
+snapshot 引用）；閉集選在 block 層而非全 plan 白名單（ArcPlan 載 producer
+自選 Optional 區塊——全 plan 白名單會耦合每個 producer；現值入侵點＝
+temporal block，禁令守在那裡）。DispatchSlice carry-through：preferred_
+family／on_unavailable／fallback_families 同欄投影（選填 machine-invariant
+、值歸 resolver，schema 留欄）。FAMILIES 擴 grok（AIR-240 裁決：AIR-226
+bridge-grok-grok-4.7 binding 在場——有 binding 的 family 須有合法 slice 值
+；與 catalog.toml families 閉集的軸差＝grok bindings 的 catalog family
+label 為 xai，顯式映射表釘在 tests/test_arc_spec.py
+TestFamiliesCatalogConsistency）。model-routing 契約面：EntitlementWindow
+Snapshot／ArcPlan temporal 意圖＝advisory planning evidence；Availability
+Snapshot＝dispatch 唯一 live authority（resolver 七步不動——窄改記於
+model-routing SKILL.md）。
+
 fail-loud 文案形（codex multi_agents_common.rs:395-442）：
     Unknown model `X` for spawn_agent. Available models: A, B
 本檔同形：缺欄列出全部必填、未知枚舉列出可用值、雙 authoritative 值／非有限
@@ -69,6 +98,7 @@ import math
 import re
 import sys
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 SCHEMA_ARC_SPEC = "arc-spec/1"
@@ -116,7 +146,25 @@ ROLE_READ_SET: dict[str, tuple[str, ...]] = {
     "test": ("problem-contract-only",),
     "intent-review": ("chain-exclusion",),
 }
-FAMILIES = ("local", "muse", "codex", "glm")
+# family 枚舉（AIR-240 擴 grok）：AIR-226 bridge-grok-grok-4.7 binding 在場
+# ——有 binding 的 family 須有合法 slice 值（delegate-bridge 四家族語彙）。
+# local＝in-harness spawn（無 catalog binding）。與 catalog.toml families 閉
+# 集的軸差＝grok bindings 的 catalog family label 為 xai——顯式映射表釘在
+# tests/test_arc_spec.py TestFamiliesCatalogConsistency。
+FAMILIES = ("local", "muse", "codex", "glm", "grok")
+# temporal 意圖欄（AIR-240）：on_unavailable 枚舉＋planning snapshot schema
+# marker＋block 閉集（易爛真值禁令的機械落點——閉集外 key 即錯）
+TEMPORAL_ON_UNAVAILABLE = ("delay", "fallback")
+TEMPORAL_SNAPSHOT_SCHEMA = "entitlement-window-snapshot/1"
+TEMPORAL_ALLOCATION_KEYS = (
+    "preferred_family",
+    "planned_not_before",
+    "on_unavailable",
+    "fallback_families",
+    "entitlement_snapshot_ref",
+    "entitlement_snapshot_hash",
+    "entitlement_snapshot_as_of",
+)
 TERMINALS = ("completed", "budget-limited", "blocked-human-decision", "failed")
 CAPABILITY_MODES = ("ReadOnly", "ReadWrite", "Execute", "All")
 AUTHORITIES = ("writer", "read-only")
@@ -229,6 +277,16 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("chain_waiver", "machine-invariant", "never",
                       "顯式逃生口（AIR-235）：{stations: [...], reason: str}——列出豁免 "
                       "coverage 的站別；reason 必填（缺席/空字串＝exit 2）——顯式勝於歧義"),
+            FieldSpec("temporal_allocation", "machine-invariant", "never",
+                      "temporal 意圖欄（AIR-240，選填——在場則七鍵全到）：頂層或 "
+                      "per-work_unit；preferred_family（枚舉＝FAMILIES）／"
+                      "planned_not_before（ISO 8601 帶時區）／on_unavailable（"
+                      "delay｜fallback）／fallback_families（explicit-only）＋"
+                      "provenance entitlement_snapshot_ref/hash/as_of——ref 相對 "
+                      "plan 檔目錄、sha256 canonical 比對、as_of 非未來且與快照 "
+                      "generated_at 一致、rows 非空非全 stale（missing/stale "
+                      "provenance exit 2）。易爛真值禁令：閉集鎖定，quota 現值/"
+                      "reset 時刻等欄禁入"),
             FieldSpec("budget_context", "machine-invariant", "always",
                       "預算 context——revert_exposure_cap（敞口帽，純數值有限 ≥0）＋"
                       "usage_cap（用量帽三態：有限數 ≥0＝具體帽、null＝未設、"
@@ -303,6 +361,21 @@ ARTIFACTS: dict[str, ArtifactSpec] = {
             FieldSpec("commit_delegation", "machine-invariant", "always",
                       "commit 委任範圍（AC#6：僅本 repo 審查通過弧、跨 repo 寫恆停；settle 尾人類 gate 見 terminal_semantics.settle_gate）",
                       values=COMMIT_DELEGATIONS, noun="commit delegation", plural="commit delegations"),
+            FieldSpec("preferred_family", "machine-invariant", "never",
+                      "temporal 意圖 carry-through（AIR-240，選填）：計畫偏好 family"
+                      "——值歸 resolver 於派工當下重驗 availability，schema 留欄",
+                      values=FAMILIES, noun="preferred family",
+                      plural="preferred families"),
+            FieldSpec("on_unavailable", "machine-invariant", "never",
+                      "temporal 意圖 carry-through（AIR-240，選填）：preferred family "
+                      "不可用時的 policy——delay（等窗）或 fallback（限顯式 "
+                      "fallback_families）",
+                      values=TEMPORAL_ON_UNAVAILABLE, noun="on_unavailable policy",
+                      plural="on_unavailable policies"),
+            FieldSpec("fallback_families", "machine-invariant", "never",
+                      "temporal 意圖 carry-through（AIR-240，選填）：explicit fallback "
+                      "家族集合——explicit-only 契約（禁 resolver 製造跨家族 "
+                      "fallback；禁含 preferred_family、禁與 delay 並存）"),
             FieldSpec("prompt_material", "llm-guidance", "never",
                       "任務敘述材料（D3：LLM guidance；禁入 machine-invariant 欄）"),
             FieldSpec("guidance", "llm-guidance", "never", "方法論指針（skills／文檔 pointers）"),
@@ -496,7 +569,10 @@ def _check_terminal_semantics(
             )
 
 
-def _check_arc_spec(data: dict, stage: str, errors: list[str]) -> None:
+def _check_arc_spec(
+    data: dict, stage: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
     baseline = data.get("card_baseline")
     if baseline is not None and not BASELINE_RE.match(str(baseline)):
         errors.append(
@@ -842,7 +918,276 @@ def _check_closure_coverage(
             )
 
 
-def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
+def _parse_iso_utc(value: object) -> datetime | None:
+    """ISO 8601 tz-aware 解析——naive（無時區）＝不合法（AIR-239 R4 同姿態：
+    禁與 aware 值混比時 TypeError）。"""
+    if not isinstance(value, str):
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return None
+    return dt
+
+
+def _temporal_enum_field(name: str, values: tuple[str, ...], noun: str) -> FieldSpec:
+    return FieldSpec(name, "machine-invariant", "always", "", values=values,
+                     noun=noun, plural=f"{noun}s")
+
+
+def _check_temporal_intent(
+    block: dict, prefix: str, kind: str, errors: list[str], *,
+    check_enums: bool,
+) -> None:
+    """temporal 意圖欄共用深檢（AIR-240）——枚舉／ISO 形／fallback 集合＋矛盾
+    policy 三條。prefix＝錯誤文案欄位路徑前綴（slice 頂層欄傳 ""；plan 區塊
+    傳 "temporal_allocation" 或 "work_units[i].temporal_allocation"）。
+
+    check_enums：plan 區塊（dict 欄——generic FieldSpec 枚舉迴圈不下降）傳
+    True；slice 頂層欄已由 generic 迴圈枚舉檢查（values= 註冊）——傳 False
+    禁雙重報錯。
+
+    矛盾 policy 三條（各自逐行 fail-loud）：
+    1. fallback_families 含 preferred_family＝同家 fallback（相異家族才叫 fallback）
+    2. on_unavailable=fallback 而集合空/缺席＝explicit-only 違約（禁 resolver
+       製造跨家族 fallback）
+    3. on_unavailable=delay 而集合非空＝雙 authoritative policy
+    """
+    p = f"{prefix}." if prefix else ""
+    # enum 錯誤的 kind context 帶欄位路徑——per-unit 區塊錯誤可定位到 unit
+    ctx = f"{kind}.{prefix}" if prefix else kind
+
+    preferred = block.get("preferred_family")
+    if check_enums and preferred is not None and preferred not in FAMILIES:
+        errors.append(_unknown_enum(
+            _temporal_enum_field("preferred_family", FAMILIES, "preferred family"),
+            preferred, ctx,
+        ))
+
+    planned_raw = block.get("planned_not_before")
+    if planned_raw is not None and _parse_iso_utc(planned_raw) is None:
+        errors.append(
+            f"`{p}planned_not_before` 須為 ISO 8601 且帶時區 for {kind}, "
+            f"got `{planned_raw}`（naive ISO＝不合法，禁與 aware 值混比）"
+        )
+
+    on_unavailable = block.get("on_unavailable")
+    if (
+        check_enums
+        and on_unavailable is not None
+        and on_unavailable not in TEMPORAL_ON_UNAVAILABLE
+    ):
+        errors.append(_unknown_enum(
+            _temporal_enum_field(
+                "on_unavailable", TEMPORAL_ON_UNAVAILABLE, "on_unavailable policy"
+            ),
+            on_unavailable, ctx,
+        ))
+
+    fallbacks = block.get("fallback_families")
+    fallback_list: list[object] = []
+    if fallbacks is not None:
+        if not isinstance(fallbacks, list):
+            errors.append(
+                f"`{p}fallback_families` must be a list for {kind}, "
+                f"got {type(fallbacks).__name__}"
+            )
+        else:
+            fallback_list = fallbacks
+            for j, fam in enumerate(fallbacks):
+                if fam not in FAMILIES:
+                    errors.append(_unknown_enum(
+                        _temporal_enum_field(
+                            f"fallback_families[{j}]", FAMILIES, "fallback family"
+                        ),
+                        fam, ctx,
+                    ))
+            dupes = sorted({f for f in fallbacks if fallbacks.count(f) > 1})
+            if dupes:
+                errors.append(
+                    f"Duplicate fallback family {dupes} in `{p}fallback_families` "
+                    f"for {kind} — 雙 authoritative（fail-loud）"
+                )
+
+    if isinstance(preferred, str) and preferred in fallback_list:
+        errors.append(
+            f"`{p}fallback_families` contains preferred_family `{preferred}` "
+            f"for {kind} — fallback 與 preferred 同家＝矛盾 policy（fallback 須為"
+            f"相異家族 explicit set；fail-loud）"
+        )
+    if on_unavailable == "fallback" and not fallback_list:
+        errors.append(
+            f"`{prefix or 'slice'}` on_unavailable=`fallback` 須帶非空 "
+            f"fallback_families for {kind} — explicit-only 契約：fallback 集須"
+            f"顯式列舉（禁 resolver 製造跨家族 fallback；fail-loud）"
+        )
+    if on_unavailable == "delay" and fallback_list:
+        errors.append(
+            f"`{p}fallback_families` 在場但 on_unavailable=`delay` for {kind} — "
+            f"雙 authoritative policy（delay 與 fallback 集矛盾；fail-loud）"
+        )
+
+
+def _load_snapshot_payload(
+    path: Path, label: str, kind: str, errors: list[str]
+) -> dict | None:
+    """planning snapshot 檔載入——缺席／壞 json／schema marker 不符逐行報。"""
+    if not path.is_file():
+        errors.append(
+            f"`{label}.entitlement_snapshot_ref` 指向的 snapshot 檔不存在: {path} "
+            f"for {kind} — missing provenance（planning evidence 缺場＝禁定版，"
+            f"fail-loud）"
+        )
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        errors.append(
+            f"`{label}.entitlement_snapshot_ref` snapshot 檔不可讀或壞 json: "
+            f"{path}（{exc}）for {kind}"
+        )
+        return None
+    if not isinstance(payload, dict) or payload.get("schema") != TEMPORAL_SNAPSHOT_SCHEMA:
+        errors.append(
+            f"snapshot schema marker mismatch at {path} for {kind} — 須為 "
+            f"`{TEMPORAL_SNAPSHOT_SCHEMA}`（planning evidence 契約面；producer＝"
+            f"scripts/entitlement_window_snapshot.py）"
+        )
+        return None
+    return payload
+
+
+def _check_temporal_provenance(
+    block: dict, label: str, kind: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
+    """provenance 三鍵機驗（AIR-240 compile gate）——「規劃當下有 fresh
+    evidence」的機械面：ref 檔存在＋sha256 canonical 比對＋as_of 非未來且與
+    快照 generated_at 一致＋rows 非空且非全 stale。stale 閾值 ownership 在
+    producer（AIR-239 單一時鐘 R2）——本函數消費 rows[].freshness 標籤。"""
+    ref = block.get("entitlement_snapshot_ref")
+    if not (isinstance(ref, str) and ref.strip()):
+        return  # 缺欄已由全鍵必到檢報過——此處不重複
+    snap_path = Path(ref)
+    if not snap_path.is_absolute():
+        snap_path = base_dir / snap_path
+    payload = _load_snapshot_payload(snap_path, label, kind, errors)
+    if payload is None:
+        return
+
+    recorded_hash = block.get("entitlement_snapshot_hash")
+    if isinstance(recorded_hash, str) and HEX64_RE.match(recorded_hash):
+        recomputed = hashlib.sha256(
+            canonical_json(payload).encode("utf-8")
+        ).hexdigest()
+        if recorded_hash != recomputed:
+            errors.append(
+                f"`{label}.entitlement_snapshot_hash` mismatch for {kind}: "
+                f"recorded `{recorded_hash}`, recomputed `{recomputed}` — "
+                f"planning evidence 內容已漂移（provenance 比對；fail-loud）"
+            )
+    elif recorded_hash is not None:
+        errors.append(
+            f"Invalid `{label}.entitlement_snapshot_hash` `{recorded_hash}` for "
+            f"{kind} — 需 hex 64 位（sha256 canonical）"
+        )
+
+    as_of_raw = block.get("entitlement_snapshot_as_of")
+    as_of = _parse_iso_utc(as_of_raw)
+    if as_of_raw is not None and as_of is None:
+        errors.append(
+            f"`{label}.entitlement_snapshot_as_of` 須為 ISO 8601 且帶時區 for "
+            f"{kind}, got `{as_of_raw}`（naive ISO＝不合法）"
+        )
+    elif as_of is not None:
+        if as_of > now:
+            errors.append(
+                f"`{label}.entitlement_snapshot_as_of` 為未來時間戳 for {kind}: "
+                f"`{as_of_raw}` — 未來非新（fail-loud；availability_snapshot F4 "
+                f"同姿態）"
+            )
+        generated = _parse_iso_utc(payload.get("generated_at"))
+        if generated is not None and as_of != generated:
+            errors.append(
+                f"`{label}.entitlement_snapshot_as_of` `{as_of_raw}` 與快照 "
+                f"generated_at `{payload.get('generated_at')}` 不一致 for {kind} "
+                f"— provenance 綁定：as_of 主張須錨定快照自身時戳（fail-loud）"
+            )
+
+    rows = payload.get("rows")
+    if not isinstance(rows, list) or not rows:
+        errors.append(
+            f"snapshot at `{label}.entitlement_snapshot_ref` has zero/missing "
+            f"rows for {kind} — 零 planning evidence（快照在場也禁；fail-loud）"
+        )
+        return
+    malformed = [i for i, r in enumerate(rows) if not isinstance(r, dict)]
+    if malformed:
+        errors.append(
+            f"snapshot rows malformed at indices {malformed} for {kind} — rows[] "
+            f"須為 object（禁靜默跳過；fail-loud）"
+        )
+        return
+    bad_freshness = [
+        i for i, r in enumerate(rows) if r.get("freshness") not in ("fresh", "stale")
+    ]
+    if bad_freshness:
+        errors.append(
+            f"snapshot rows freshness 標籤不合法 at indices {bad_freshness} for "
+            f"{kind} — 須為 fresh/stale（producer 契約面；fail-loud）"
+        )
+        return
+    if all(r["freshness"] == "stale" for r in rows):
+        errors.append(
+            f"stale provenance for {kind}: `{label}.entitlement_snapshot_ref` 全 "
+            f"rows freshness=stale — 零 fresh evidence 可規劃（missing/stale "
+            f"provenance exit 2；閾值 ownership 在 producer 26h/3d——重出快照"
+            f"而非調 plan）"
+        )
+
+
+def _check_temporal_allocation(
+    block: object, label: str, kind: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
+    """temporal_allocation 區塊深檢（AIR-240）——在場則七鍵全到＋閉集鎖定
+    （易爛真值禁令）＋意圖深檢＋provenance 機驗。"""
+    if not isinstance(block, dict):
+        errors.append(
+            f"`{label}` must be an object for {kind}, got {type(block).__name__}"
+        )
+        return
+    unknown = [k for k in block if k not in TEMPORAL_ALLOCATION_KEYS]
+    if unknown:
+        errors.append(
+            f"Unknown temporal key(s) {', '.join(sorted(unknown))} in `{label}` "
+            f"for {kind} — 易爛真值禁令（quota 數字/reset 時刻等現值欄禁入 plan"
+            f"；ArcPlan 是穩定版控 artifact，現值唯一合法歸宿＝snapshot 引用）. "
+            f"Known temporal keys: {', '.join(TEMPORAL_ALLOCATION_KEYS)}"
+        )
+    for key in TEMPORAL_ALLOCATION_KEYS:
+        value = block.get(key)
+        present = key in block and value is not None
+        if key == "fallback_families" and present and isinstance(value, list):
+            pass  # 空集合＝顯式「無 fallback」——delay policy 的合法值
+        elif not present or not _present_nonempty(value):
+            errors.append(
+                f"`{label}.{key}` 不得缺席或為空 for {kind} — temporal 意圖欄在場"
+                f"即全鍵必到（禁部分宣告歧義；provenance 三鍵齊備才可機驗 "
+                f"planning evidence）"
+            )
+    _check_temporal_intent(block, label, kind, errors, check_enums=True)
+    _check_temporal_provenance(
+        block, label, kind, errors, now=now, base_dir=base_dir
+    )
+
+
+def _check_arc_plan(
+    data: dict, stage: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
     kind = "arc-plan"
     version = data.get("version")
     version_ok = False
@@ -927,6 +1272,16 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
                 errors.append(
                     f"work_units[{i}].depends_on must be a list for {kind}"
                 )
+            if "temporal_allocation" in wu:
+                # AIR-240：work-unit 級 temporal 意圖——與頂層區塊同深檢
+                _check_temporal_allocation(
+                    wu["temporal_allocation"],
+                    f"work_units[{i}].temporal_allocation",
+                    kind,
+                    errors,
+                    now=now,
+                    base_dir=base_dir,
+                )
 
     _require_object("budget_context", data.get("budget_context"), kind, errors)
     budget = data.get("budget_context")
@@ -975,8 +1330,23 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
 
     _check_closure_coverage(data, stage, kind, errors)
 
+    if "temporal_allocation" in data:
+        # AIR-240：頂層 temporal 意圖欄（provenance 機驗不隨 stage 豁免——plan
+        # 是凍結物，ref/hash/as_of 的有效性與驗證時點的 stage 無關）
+        _check_temporal_allocation(
+            data.get("temporal_allocation"),
+            "temporal_allocation",
+            kind,
+            errors,
+            now=now,
+            base_dir=base_dir,
+        )
 
-def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:
+
+def _check_dispatch_slice(
+    data: dict, stage: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
     kind = "dispatch-slice"
     slice_id = data.get("slice_id") or "<unnamed>"
 
@@ -1102,8 +1472,15 @@ def _check_dispatch_slice(data: dict, stage: str, errors: list[str]) -> None:
 
     _check_terminal_semantics("terminal_semantics", data.get("terminal_semantics"), kind, errors)
 
+    # AIR-240：temporal carry-through 形狀＋矛盾 policy（選填欄——值歸
+    # resolver，schema 留欄；在場才驗）
+    _check_temporal_intent(data, "", kind, errors, check_enums=False)
 
-def _check_receipt(data: dict, stage: str, errors: list[str]) -> None:
+
+def _check_receipt(
+    data: dict, stage: str, errors: list[str],
+    *, now: datetime, base_dir: Path,
+) -> None:
     kind = "receipt"
     slice_id = data.get("slice_id") or "<unnamed>"
 
@@ -1208,12 +1585,25 @@ _CHECKERS = {
 }
 
 
-def validate(kind: str, data: object, stage: str = "dispatch") -> list[str]:
+def validate(
+    kind: str,
+    data: object,
+    stage: str = "dispatch",
+    *,
+    now: datetime | None = None,
+    base_dir: Path | None = None,
+) -> list[str]:
     """校驗一個 artifact dict，回傳錯誤列表（空列表＝通過）。
 
     contract 錯（未知 kind/stage、schema marker 不符、data 非 dict）raise
     ArcSpecError；欄位級錯誤逐條收集（一次報全部，不逐次擠牙膏）。
+
+    now（AIR-240）＝temporal as_of 非未來檢查的時鐘——預設 UTC 現在；測試
+    注入固定時鐘（AIR-239 R2 單一時鐘姿態）。base_dir＝temporal snapshot ref
+    的相對解析基準（CLI 傳 plan 檔所在目錄；預設 CWD）。
     """
+    now = now or datetime.now(tz=UTC)
+    base_dir = base_dir or Path.cwd()
     if kind not in ARTIFACTS:
         raise ArcSpecError(
             f"Unknown kind `{kind}`. Available kinds: {', '.join(KINDS)}"
@@ -1272,7 +1662,7 @@ def validate(kind: str, data: object, stage: str = "dispatch") -> list[str]:
                     f"for {kind} — 空白值視同缺欄（fail-loud）"
                 )
 
-    _CHECKERS[kind](data, stage, errors)
+    _CHECKERS[kind](data, stage, errors, now=now, base_dir=base_dir)
     return errors
 
 
@@ -1378,7 +1768,12 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     try:
         data = parse_artifact_file(Path(args.file), args.kind)
-        errors = validate(args.kind, data, stage=args.stage)
+        errors = validate(
+            args.kind,
+            data,
+            stage=args.stage,
+            base_dir=Path(args.file).resolve().parent,
+        )
     except ArcSpecError as e:
         print(f"[arc-spec] ERROR: {e}", file=sys.stderr)
         return 2
