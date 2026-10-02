@@ -1,0 +1,24 @@
+{
+  "schema": "arc-handback/1",
+  "card_id": "AIR-234",
+  "unit_id": "AIR-234#impl-a",
+  "verdicts": [
+    {
+      "ac_id": "1",
+      "verdict": "PASS",
+      "evidence": "uv run python scripts/arc_manifest.py tests/fixtures/air-234/contract.json --units tests/fixtures/air-234/units.json --out-dir <tmp> → exit 0；三檔 predicates 非空"
+    },
+    {
+      "ac_id": "2",
+      "verdict": "PASS",
+      "evidence": "uv run python scripts/arc_handback_join.py --manifest tests/fixtures/air-234/manifests/impl-a.json --handback tests/fixtures/air-234/handback-missing.json → exit 2；stdout 逐行缺項"
+    },
+    {
+      "ac_id": "3",
+      "verdict": "PASS",
+      "evidence": "uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py -q → exit 0 全綠"
+    }
+  ],
+  "deviations": [],
+  "journal": ".agent-tmp/air-234/journal-impl-a.md"
+}

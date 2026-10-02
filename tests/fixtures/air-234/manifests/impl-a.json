@@ -1,0 +1,26 @@
+{
+  "schema": "arc-manifest/1",
+  "card_id": "AIR-234",
+  "unit_id": "AIR-234#impl-a",
+  "contract_hash": "150a9879818a348cd3af2b3c8bab4eeaa3c620425b8102f9b0cf6ded81eb37c5",
+  "predicates": [
+    {
+      "ac_id": "1",
+      "kind": "command_expected",
+      "verifier": "uv run python scripts/arc_manifest.py tests/fixtures/air-234/contract.json --units tests/fixtures/air-234/units.json --out-dir .agent-tmp/air-234/manifests",
+      "expected": "exit 0 且每 unit 一檔 predicates 非空"
+    },
+    {
+      "ac_id": "2",
+      "kind": "command_expected",
+      "verifier": "uv run python scripts/arc_handback_join.py --manifest tests/fixtures/air-234/manifests/impl-a.json --handback tests/fixtures/air-234/handback-missing.json",
+      "expected": "exit 2"
+    },
+    {
+      "ac_id": "3",
+      "kind": "command_expected",
+      "verifier": "uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py",
+      "expected": "exit 0 全綠"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "arc-units/1",
+  "card_id": "AIR-234",
+  "units": [
+    {
+      "unit_id": "AIR-234#impl-a",
+      "ac_ids": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "unit_id": "AIR-234#impl-b",
+      "ac_ids": [
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "unit_id": "AIR-234#settle",
+      "ac_ids": [
+        "7"
+      ]
+    }
+  ]
+}

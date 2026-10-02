@@ -138,6 +138,27 @@
 
 > 附加：jobId／thread id、改檔清單、實跑命令與輸出、未驗證項、建議 reviewer 聚焦點（completion-check 話術承載節）；無對應項標「無」勿留空。
 
+## Handback closure（ArcPlan 弧 worker 交付——AIR-234）
+
+> ArcPlan 弧的 worker 交付必帶 `arc-handback/1` handback JSON——逐 assigned predicate 回 verdict＋evidence，是 collection 端 fail-closed machine join 的輸入；非 ArcPlan 弧免此節。assigned predicate 清單來源＝per-unit manifest：`scripts/arc_manifest.py`（acceptance_contract 投影 per-unit manifest，schema `arc-manifest/1`——每 unit 一檔，unit 分派違 set 不變式 fail-loud）。
+
+完整形：
+
+```json
+{"schema": "arc-handback/1", "card_id": "…", "unit_id": "…", "verdicts": [{"ac_id": "…", "verdict": "PASS|FAIL|NOT-DONE", "evidence": "命令＋exit／file:line／commit sha"}], "deviations": [], "journal": "…"}
+```
+
+- 鐵律：**缺任何 assigned predicate＝transport 可 terminal 但不得進 DONE／READY_FOR_REVIEW**；verdict 逐條附 evidence，禁無證據 PASS
+- join 工具：`uv run python scripts/arc_handback_join.py --manifest <manifest> --handback <handback>`（exit 0＝結構齊；exit 2＝缺項逐行列出）——join 只驗結構（缺 verdict／非三值／evidence 空），FAIL／NOT-DONE 語義裁決歸 collection
+- collection 端收線接線（何時跑 join、擋什麼）單一源＝[agent-workflow](../agent-workflow/SKILL.md)「ArcPlan 弧 handback join」條
+
+## Operational preflight（可機械查假設 dispatch 前先驗——AIR-234）
+
+> 工單引用的 CLI／path／flag／section 是可低成本機械查的事實——dispatch 前驗存在，不讓 worker 用猜的接單（依據實證：AIR-232 journal 有「工單指定 section 不存在、worker 自行找正確落點」案例）。
+
+- **dispatch 前（marshal 側）**：工單內可機械查的 CLI／path／flag／section 一律先驗存在（`ls`／`rg`／`--help`）；不能低成本驗的假設明標 `ASSUMPTION:` 寫進工單
+- **worker 側**：第一階段先 verify 全部 ASSUMPTION；任何不符→`CONTRACT_BLOCKED`（handback deviations＋journal 詳述正確事實），禁照錯工單一路做到底
+
 ## 批次 envelope（單次 dispatch 承載多 unit 引用——Marshal 工單粒度契約）
 
 > 一個工單可列**多個既有 work-unit rows 的引用**，但不能 union 成較寬 authority 的新 row（契約值仍逐 unit 指向 owning workflow 的 rows，本檔不另造 schema）。**允許批次＝同 authority、相容 surface/qualification、同 owning scope 的機械查證或實作子成果**（SM-20）；以下禁合併形態不因批次放寬。本節是既有工單模板的 envelope 寫法——**禁新增引擎、快取或模板檔**；消費端由 agent-workflow、EP/implement/post-build 指向。

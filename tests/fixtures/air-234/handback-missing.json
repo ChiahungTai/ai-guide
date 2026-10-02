@@ -1,0 +1,19 @@
+{
+  "schema": "arc-handback/1",
+  "card_id": "AIR-234",
+  "unit_id": "AIR-234#impl-a",
+  "verdicts": [
+    {
+      "ac_id": "1",
+      "verdict": "PASS",
+      "evidence": "uv run python scripts/arc_manifest.py … → exit 0"
+    },
+    {
+      "ac_id": "2",
+      "verdict": "PASS",
+      "evidence": "uv run python scripts/arc_handback_join.py … → exit 2"
+    }
+  ],
+  "deviations": [],
+  "journal": ".agent-tmp/air-234/journal-impl-a.md"
+}
