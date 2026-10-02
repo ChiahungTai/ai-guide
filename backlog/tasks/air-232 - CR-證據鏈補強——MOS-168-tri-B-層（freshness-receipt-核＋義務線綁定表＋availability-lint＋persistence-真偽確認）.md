@@ -3,10 +3,10 @@ id: AIR-232
 title: >-
   CR 證據鏈補強——MOS-168 tri B 層（freshness receipt 核＋義務線綁定表＋availability
   lint＋persistence 真偽確認）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 04:40'
-updated_date: '2026-10-02 08:56'
+updated_date: '2026-10-02 09:11'
 labels: []
 dependencies: []
 ordinal: 222000
@@ -39,4 +39,29 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【升級決策】四項不依賴 mosaic dogfood 數據（tri 報告已具體到可實作）——mosaic 數據回來後僅做事後驗證素材非阻塞；draft 態結束
+
+【實作完成】四項全落地（main @ 8854099b）：①work-order freshness receipt 核（indexed identity vs 消費樹＋overlap——落 §7 指涉 bridge-dispatch 條款）②宣稱—證據通道綁定表（四類宣稱→必填通道，§7）③degraded 收窄三值＋availability lint（model-routing resolver 步驟 3）④persistence 真偽確認＝**存在**（owner codebase-memory-mcp：graph.db.zst export＋bootstrap，報告 .agent-tmp/air-232/persistence-verify.md）——分享候選擱置解除，啟動歸 owning 決策。85 passed。
 <!-- SECTION:NOTES:END -->
+
+## Acceptance Criteria
+
+- [x] freshness receipt 核進 work-order（indexed identity vs 消費樹＋overlap 檢查——語義單一源指 cr-query/AIR-228 不重抄）
+- [x] 宣稱—證據通道綁定表（四類宣稱→必填通道：枚舉→callers／blast→closure/impact／死碼→callers＋hub_refs＋rg／同構→refs）
+- [x] degraded 合法值收窄三值＋face 在場未查＝delivery defect
+- [x] dispatcher availability lint（model-routing resolver——結構義務腿禁派無 face carrier）
+- [x] persistence 真偽確認：**存在**——owner＝codebase-memory-mcp（graph.db.zst export＋bootstrap，file:line 報告在弧暫存）
+- [x] 85 passed＋單檔外零外溢
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（main @ 8854099b）：MOS-168 tri B 層四項全落地——CR 證據鏈補強完成（freshness 核＋綁定表＋lint＋真偽確認）。persistence 分享候選（graph.db.zst）擱置解除——啟動歸 owning 決策。
+
+```mermaid
+flowchart LR
+    A["freshness receipt 核"] --> G["CR 證據鏈補強<br/>四項落地"]
+    B["義務線綁定表"] --> G
+    C["availability lint"] --> G
+    D["persistence 確認<br/>存在"] --> G
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
