@@ -32,3 +32,26 @@ flowchart LR
     CJ --> M['四數量測<br/>一次通過率/修復輪/直編/turnaround']
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+本弧同時是 AIR-135.1.2 排定的真實卡全 lifecycle dogfood：Plan Preview（arc_goal_compile 編 acceptance_contract）→ 帶 per-unit predicate manifest 派工 → handback 逐 predicate 回 PASS/FAIL/NOT-DONE＋evidence ref → collection fail-closed join → Settle。
+
+兩 work unit 平行（介面契約釘死在工單：CLI 名＋manifest/handback JSON schema，雙方對同一契約實作）：
+- impl-a（code，TDD）：scripts/arc_manifest.py（acceptance_contract→per-unit manifest；set 不變式 union=all／intersection=∅ 違反 fail-loud）＋scripts/arc_handback_join.py（manifest×handback 機械 join；缺 verdict／非三值／evidence 空＝exit 2 逐行列缺項）＋tests／fixtures
+- impl-b（instructions）：skills/_common/work-order.md 增 handback schema＋operational preflight 兩段；skills/agent-workflow/SKILL.md 收線 join 接線＋small-fix batch envelope；agents/AGENTS.md 註 b 四行例示
+
+收線：雙腿審查（fresh＋跨家族 bridge）→ judge → 修復輪 → merge；⑦四數手工記本卡 NOTES（first_handback_complete／repair_rounds／marshal_direct_impl_violation／settle_wait）。
+<!-- SECTION:PLAN:END -->
+
+## Acceptance Criteria
+
+- [ ] #1 per-unit manifest 投影——acceptance_contract＋unit 分派表輸入，產 per-unit manifest（assigned predicates 帶 ac_id；unit 分派違 set 不變式 fail-loud） `uv run python scripts/arc_manifest.py tests/fixtures/air-234/contract.json --units tests/fixtures/air-234/units.json --out-dir .agent-tmp/air-234/manifests` → exit 0 且每 unit 一檔 predicates 非空
+- [ ] #2 handback fail-closed join——assigned predicate 缺 verdict／verdict 非三值／evidence 空即拒收（transport terminal 不等於 DONE） `uv run python scripts/arc_handback_join.py --manifest tests/fixtures/air-234/manifests/impl-a.json --handback tests/fixtures/air-234/handback-missing.json` → exit 2
+- [ ] #3 兩工具測試覆蓋——manifest set 不變式（union=all／intersection=∅／未知 ac_id）＋join 三態與 pass path＋schema 邊界 `uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py` → exit 0 全綠
+- [ ] #4 work-order 模板兩段——handback schema（逐 predicate PASS/FAIL/NOT-DONE＋evidence ref；缺項不得進 DONE/READY_FOR_REVIEW）＋operational preflight（dispatch 前驗 CLI/path/flag/section；不能低成本驗的標 assumption 由 worker 第一階段 verify；錯→CONTRACT_BLOCKED 禁照錯執行） `rg -c "handback" skills/_common/work-order.md` → ≥2
+- [ ] #5 agent-workflow 接線——collection 步帶 manifest machine join（缺項擋 DONE 前）＋small-fix batch envelope（同 authority 同 read-set 多小修合一 repair batch，逐 unit 收 verdict） `rg -c "repair batch" skills/agent-workflow/SKILL.md` → ≥1
+- [ ] #6 註 b 四行例示——tests＝spawn 一行也算／純錯字格式＝直做但跑機械閘／卡面結構＝本職但須過 validator／累積熔斷＝同弧直編 ≥3 次或任一次被閘退改 spawn `rg -c "熔斷" agents/AGENTS.md` → ≥1
+- [ ] #7 本弧四數量測記卡——first_handback_complete／repair_rounds／marshal_direct_impl_violation／settle_wait 手工記 NOTES `rg -c "first_handback_complete" "backlog/tasks/air-234 - Marshal-mode-強化-P0——compiled-work-order-closure（predicate-manifest＋handback-join＋operational-preflight）.md"` → ≥1
+
