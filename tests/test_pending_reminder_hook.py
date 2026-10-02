@@ -8,11 +8,13 @@
 - 無新→靜默且 state 零動；冷啟動→只建 cursor 不告警（防歷史洪水）；
   分頁（has_more）收齊才推進。
 - state 寫失敗→寧重不漏（提醒照出、cursor 不動、下次重複提醒）；
-  state 損壞→顯性 reconcile（stderr 註記＋視同冷啟動重建）。
+  cursor 損壞→顯性 rebuild（stderr 警示＋「（cursor 重建）」注記行——已知
+  miss window，非寧重不漏；冷啟動〔無 state 檔〕仍靜默，兩徑分離）。
 - monitor eligibility gate：cwd repo 外→零查詢零輸出零推進；cwd 缺席
   fail-closed。
-- degraded：face 失敗（缺席／非零 exit／壞 JSON／形漂移）→零 stdout exit 0
-  ＋stderr「receipts face 未落地」註記；SCBUS_MONITOR_RUNNER 環境變數 shim
+- degraded：face 失敗→零 stdout exit 0＋stderr 分註（缺席型「receipts face
+  未落地——sc-router 卡追蹤中」／其他失敗型中性文案帶實際錯誤摘要）；
+  SCBUS_MONITOR_RUNNER 環境變數 shim
   注入（真 subprocess 整合面）。
 - 語義邊界：items 內容（envelope header/body 欄位）絕不進輸出（count-only）。
 - governance 接線：zcode/cc 模板雙事件獨立 group＋manifest inventory；
@@ -26,7 +28,6 @@ import os
 import sys
 
 import pytest
-
 from conftest import load_module
 
 mod = load_module("hooks/scbus-address-pending-reminder.py")
@@ -59,9 +60,9 @@ def state_file(tmp_path):
 def _item(i, accepted_us):
     """receipts face 單 item（codex 草規形——唯讀 timeline，無 body/preview）。"""
     return {
-        "envelope_id": "env-%d" % i,
-        "message_id": "msg-%d" % i,
-        "from": {"harness": "zcode", "session_id": "s-%d" % i, "name": None},
+        "envelope_id": f"env-{i}",
+        "message_id": f"msg-{i}",
+        "from": {"harness": "zcode", "session_id": f"s-{i}", "name": None},
         "accepted_at_us": accepted_us,
         "stages": [
             {"stage": "accepted", "at_us": accepted_us},
@@ -141,8 +142,8 @@ class TestNewReceiptsAlertAndCursor:
         _seed_state(state_file, "cur-0")
         runner = _page_runner([_receipts([_item(1, 100), _item(2, 200),
                                           _item(3, 300)], "cur-1", False)])
-        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
-                                    state_file=state_file)
+        code, out, _commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                     state_file=state_file)
         assert code == 0
         doc = json.loads(out)
         assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
@@ -152,6 +153,8 @@ class TestNewReceiptsAlertAndCursor:
         assert "accepted≠送達 UI≠內文可讀" in ctx  # astra 邊界二語義校注
         assert "scbus address ls --pending" in ctx  # 讀取指針
         assert "SC UI" in ctx
+        assert "ls --pending 只映 new/" in ctx  # snapshot 範圍注記
+        assert "歷史對帳待 receipt face" in ctx  # cur/ 不在場——歷史對帳出口
         assert "recv/ack/acquire" in ctx  # 禁權聲明
         # 呼叫面照 face 草規：address receipts＋--address＋--after-cursor＋--limit
         assert runner.calls == [[
@@ -272,9 +275,10 @@ class TestSilentAndColdStart:
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_cold_start_builds_cursor_no_alert(self, state_file):
+    def test_cold_start_builds_cursor_no_alert(self, state_file, capsys):
         """無 state 檔＝冷啟動：掃至 timeline 尾端只建 cursor、不告警
-        （防歷史洪水）；首查不帶 --after-cursor。"""
+        （防歷史洪水）；首查不帶 --after-cursor。冷啟動≠cursor 損壞——
+        零警示零注記（兩徑分離）。"""
         assert not os.path.exists(state_file)
         page1 = _receipts([_item(1, 100), _item(2, 200)], "c1", True)
         page2 = _receipts(
@@ -284,6 +288,7 @@ class TestSilentAndColdStart:
         code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
                                     state_file=state_file)
         assert (code, out) == (0, "")
+        assert "cursor 損壞" not in capsys.readouterr().err
         assert "--after-cursor" not in runner.calls[0]
         assert runner.calls[1][runner.calls[1].index("--after-cursor") + 1] == "c1"
         commit()
@@ -310,7 +315,7 @@ class TestSilentAndColdStart:
         assert "自上次知會後新到 1 封" in out2
 
 
-# ── state 寫失敗／損壞：寧重不漏＋顯性 reconcile──────────────────────
+# ── state 寫失敗（寧重不漏）／cursor 損壞（rebuild 注記——已知 miss window）
 
 
 class TestStateResilience:
@@ -345,26 +350,35 @@ class TestStateResilience:
                                  state_file=state_file)
         assert "自上次知會後新到 2 封" in out2
 
-    def test_corrupt_state_file_reconciled_as_cold_start(self, state_file,
-                                                         capsys):
+    def test_corrupt_state_file_rebuild_notice_and_stderr(self, state_file,
+                                                           capsys):
+        """cursor 損壞（≠ 冷啟動）：stderr 明顯警示在場＋提醒行帶「
+        （cursor 重建）」注記——已知 miss window 顯性化（非寧重不漏）。"""
         os.makedirs(os.path.dirname(state_file), exist_ok=True)
         with open(state_file, "w", encoding="utf-8") as fh:
             fh.write("{not json")
         runner = _page_runner([_receipts([_item(1, 100)], "c-end", False)])
         code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
                                     state_file=state_file)
-        assert (code, out) == (0, "")  # 不告警（冷啟動語義）
-        assert "損壞" in capsys.readouterr().err  # 顯性 reconcile
+        assert code == 0
+        assert "（cursor 重建）" in out  # 注記行隨 stdout 注入 context
+        assert "cursor 損壞已重建" in out  # 漏提醒風險寫進 context
+        err = capsys.readouterr().err
+        assert "cursor 損壞已重建" in err  # stderr 明顯警示
+        assert "期間可能有漏提醒" in err
+        assert "請人工核對 scbus address ls" in err
         commit()
         assert _read_state(state_file) == {ADDRESS: {"emitted_cursor": "c-end"}}
 
     def test_corrupt_cursor_value_reconciled(self, state_file, capsys):
+        """cursor 值形漂移（檔可讀、值非字串）同屬損壞徑：警示＋注記行。"""
         _seed_state(state_file, cursor=123)  # 非 str——cursor 損壞
         runner = _page_runner([_receipts([_item(1, 100)], "c-end", False)])
         code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
                                     state_file=state_file)
-        assert (code, out) == (0, "")
-        assert "emitted_cursor 損壞" in capsys.readouterr().err
+        assert code == 0
+        assert "（cursor 重建）" in out
+        assert "cursor 損壞已重建" in capsys.readouterr().err
         commit()
         assert _read_state(state_file) == {ADDRESS: {"emitted_cursor": "c-end"}}
 
@@ -459,8 +473,9 @@ class TestEligibilityGate:
 
 
 class TestDegradedFaceUnavailable:
-    def test_runner_failure_silent_with_degraded_note(self, state_file,
-                                                      capsys):
+    def test_face_absent_marker_gets_absent_note(self, state_file, capsys):
+        """缺席型（CLI 拒絕子命令——marker 命中）：stderr 保留「未落地——
+        sc-router 卡追蹤中」語義。"""
         _seed_state(state_file)
         runner = _page_runner([RuntimeError("exit 2: unknown command")])
         code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
@@ -469,6 +484,20 @@ class TestDegradedFaceUnavailable:
         err = capsys.readouterr().err
         assert "receipts face 未落地——sc-router 卡追蹤中" in err
         assert "fail-soft" in err
+
+    def test_other_failure_neutral_note_with_error_summary(self, state_file,
+                                                           capsys):
+        """其他失敗型：中性文案「receipts face 不可用」＋實際錯誤摘要隨行
+        （非缺席失敗不誤標「未落地」）。"""
+        _seed_state(state_file)
+        runner = _page_runner([RuntimeError("boom: connection reset XYZ")])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)  # 零 stdout exit 0
+        err = capsys.readouterr().err
+        assert "receipts face 不可用" in err
+        assert "connection reset XYZ" in err  # 實際錯誤摘要
+        assert "未落地" not in err  # 非缺席失敗不誤標缺席語義
 
     def test_bad_json_stdout_silent(self, state_file):
         _seed_state(state_file)
@@ -495,7 +524,7 @@ class TestDegradedFaceUnavailable:
         """分頁上限觸發 raise → fail-soft：不 emit 不推進（寧重不漏）。"""
         _seed_state(state_file, "cur-0")
         pages = [
-            _receipts([_item(i, i)], "c-p%d" % i, True)
+            _receipts([_item(i, i)], f"c-p{i}", True)
             for i in range(mod.RECEIPTS_MAX_PAGES)
         ]
         runner = _page_runner(pages)

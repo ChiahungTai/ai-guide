@@ -131,14 +131,20 @@
   body/preview 注入、禁 recv/ack/acquire；fail-soft＝零 stdout exit 0 不擋
   turn）。consumer-owned 狀態＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/
   scbus-address-monitor.json`（按 address 記 `emitted_cursor`；atomic 寫、
-  **advance-after-emit**——stdout 寫出成功後才推進，寫失敗寧可下次重複提醒；
-  冷啟動只建 cursor 不告警，防歷史洪水；cursor 損壞顯性 reconcile——stderr
-  註記後視同冷啟動重建）。**monitor eligibility gate**：session cwd 在本 repo
+  **advance-after-emit**——stdout 寫出成功後才推進，寫失敗寧可下次重複提醒）。
+  冷啟動與 cursor 損壞分離：冷啟動（無 state 檔——正常首輪）只建 cursor 不
+  告警，防歷史洪水；cursor 損壞顯性 reconcile——stderr 警示＋提醒行「
+  （cursor 重建）」注記，視同冷啟動重建＝**已知 miss window**（last-good-save
+  後未提醒事件整批錯過——非寧重不漏，self-heal 取捨記錄在案；state 檔無鎖，
+  多 address／多 consumer 並發擴張時需補 filelock/CAS——現行單 address 風險
+  低，後果恆為重複提醒）。**monitor eligibility gate**：session cwd 在本 repo
   內才查詢／提醒／推進（user-level 註冊跨專案觸發——防錯誤 session 吃掉
   watermark；最低限度字面前綴鎖，card WT 路徑不在鎖內——WT session 不提醒
-  不推進，寧重不漏方向安全）。上游 face 未落地前 hook 呈 **degraded**
-  （stderr 註記「receipts face 未落地——sc-router 卡追蹤中」、零 stdout
-  exit 0；不退化相容 `ls --pending`——snapshot 與 timeline 語義不同，雙路徑
+  不推進，寧重不漏方向安全）。face 失敗 hook 呈 **degraded**（零 stdout
+  exit 0；stderr 分註：缺席型——CLI 拒絕子命令——「receipts face 未落地
+  ——sc-router 卡追蹤中」，其他失敗型「receipts face 不可用（細節見
+  stderr）」帶實際錯誤摘要；不退化相容 `ls --pending`——snapshot 與
+  timeline 語義不同，雙路徑
   fallback 已裁示不採）；face 落地即自動生效（同一呼叫面）。人工輪詢（上段
   開場快照）保留為 point-in-time fallback——hook 未註冊機器、degraded／
   fail-soft 靜默時的兜底皆走它。
