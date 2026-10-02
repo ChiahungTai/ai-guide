@@ -3,9 +3,10 @@ id: AIR-235
 title: >-
   Marshal plan 缺口修復——ArcPlan 收線鏈 coverage 硬閘（closure_coverage＋phase
   enum＋seed＋preview 顯示；tri 收斂 codex＋glm，muse 窗耗盡）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 13:14'
+updated_date: '2026-10-02 13:56'
 labels: []
 dependencies: []
 ordinal: 226000
@@ -25,11 +26,11 @@ AIR-234 v1 實證（2026-10-02）：ArcPlan 可缺整條收線鏈仍合法——
 ```mermaid
 flowchart LR
     P['ArcPlan 組裝'] --> S['implement 開工步 seed<br/>預設收線鏈起底']
-    S --> V['arc_spec validate compile stage<br/>closure_coverage 硬閘：<br/>五站各 {unit_ref, owner, gate}<br/>缺站/waiver 無 reason = exit 2']
-    V -->|過| PP['5b Plan Preview<br/>coverage 顯示行<br/>每站→unit_id→owner/gate<br/>＋preview receipt 留痕']
-    V -->|缺站| R['重編 plan']
+    S --> V['arc_spec validate compile stage<br/>closure_coverage 硬閘<br/>五站各帶 unit_ref＋owner＋gate<br/>缺站或 waiver 無 reason 即 exit 2']
+    V -->|"過"| PP['5b Plan Preview<br/>coverage 顯示行<br/>每站 unit_id owner gate<br/>＋preview receipt 留痕']
+    V -->|"缺站"| R['重編 plan']
     PP --> SP['第一個 behavior-bearing spawn']
-    W2['waiver：顯式 reason'] -.->|小弧逃生口| V
+    W2['waiver：顯式 reason'] -.->|"小弧逃生口"| V
 ```
 <!-- SECTION:DESCRIPTION:END -->
 
@@ -41,4 +42,3 @@ flowchart LR
 - [ ] #4 測試套（缺站/全鏈/waiver 深檢/owner 不一致 negatives＋phase enum） `uv run pytest tests/test_arc_spec.py` → exit 0
 - [ ] #5 條文接線錨點（implement seed＋5b 顯示行＋receipt 路徑） `rg -c "closure_coverage|收線鏈" skills/implement/SKILL.md skills/agent-workflow/SKILL.md` → 兩檔各 ≥1
 - [ ] #6 dogfood-again（本卡結案後第一張真實卡 ArcPlan） plan-v1 authoring 時間過 coverage 閘 `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile .agent-tmp/arcplan/<下一張真實卡>/plan-v1.json` → exit 0 且五站在場非 waiver
-
