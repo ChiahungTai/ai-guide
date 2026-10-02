@@ -3,10 +3,10 @@ id: AIR-235
 title: >-
   Marshal plan 缺口修復——ArcPlan 收線鏈 coverage 硬閘（closure_coverage＋phase
   enum＋seed＋preview 顯示；tri 收斂 codex＋glm，muse 窗耗盡）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 13:14'
-updated_date: '2026-10-02 13:56'
+updated_date: '2026-10-02 20:35'
 labels: []
 dependencies: []
 ordinal: 226000
