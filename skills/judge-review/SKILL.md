@@ -134,6 +134,17 @@ finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響
 
 ---
 
+## ArcPlan plan_changes 複核（收線項——AIR-135.1.2）
+
+> ArcPlan 弧（有 plan version 身份者）收線前，judge 對 ArcPlan 的 `plan_changes[]`（arc_spec D4 修訂流）逐筆複核——與上節 CR receipt gate 並列為收線 checklist：
+
+- **逐筆 what＋diff 齊備**——缺一即駁回該筆；
+- **弱化／刪除／自利條款本身即駁回**（arc_spec D4 語義——plan_changes 不得作為放寬 acceptance contract／authority 的通道）；
+- **semantic 變更禁藏 plan_changes**：觸及 acceptance contract／work-unit 集合與依賴／authority／non-goal／風險邊界的變更 → recompile 新版（supersedes）重走 Plan Preview 確認閘（[agent-workflow](../agent-workflow/SKILL.md) 5b）——judge 發現藏匿即駁回收線；
+- **收線綁已定版 plan hash**：post-build 與收線消費同一已確認版 plan hash、禁 recompile——review ledger 收斂（本節＋CR receipt gate）屬 workflow predicates，不得偽裝成 card AC goal（兩類謂詞分離——card predicates＝acceptance_contract，deep-work「Settle 完成條件」節同源）；
+- **judgment_required 每項須有 authority closure**——誰裁的、依什麼，缺 closure 即未收線；
+- 非 ArcPlan 弧（無 plan version）免此項。
+
 ## 特殊情況
 
 - **建議互相矛盾**：基於程式碼判斷採納哪一方，附理由
