@@ -47,11 +47,40 @@ flowchart LR
 
 ## Acceptance Criteria
 
-- [ ] #1 per-unit manifest 投影——acceptance_contract＋unit 分派表輸入，產 per-unit manifest（assigned predicates 帶 ac_id；unit 分派違 set 不變式 fail-loud） `uv run python scripts/arc_manifest.py tests/fixtures/air-234/contract.json --units tests/fixtures/air-234/units.json --out-dir .agent-tmp/air-234/manifests` → exit 0 且每 unit 一檔 predicates 非空
-- [ ] #2 handback fail-closed join——assigned predicate 缺 verdict／verdict 非三值／evidence 空即拒收（transport terminal 不等於 DONE） `uv run python scripts/arc_handback_join.py --manifest tests/fixtures/air-234/manifests/impl-a.json --handback tests/fixtures/air-234/handback-missing.json` → exit 2
-- [ ] #3 兩工具測試覆蓋——manifest set 不變式（union=all／intersection=∅／未知 ac_id）＋join 三態與 pass path＋schema 邊界 `uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py` → exit 0 全綠
-- [ ] #4 work-order 模板兩段——handback schema（逐 predicate PASS/FAIL/NOT-DONE＋evidence ref；缺項不得進 DONE/READY_FOR_REVIEW）＋operational preflight（dispatch 前驗 CLI/path/flag/section；不能低成本驗的標 assumption 由 worker 第一階段 verify；錯→CONTRACT_BLOCKED 禁照錯執行） `rg -c "handback" skills/_common/work-order.md` → ≥2
-- [ ] #5 agent-workflow 接線——collection 步帶 manifest machine join（缺項擋 DONE 前）＋small-fix batch envelope（同 authority 同 read-set 多小修合一 repair batch，逐 unit 收 verdict） `rg -c "repair batch" skills/agent-workflow/SKILL.md` → ≥1
-- [ ] #6 註 b 四行例示——tests＝spawn 一行也算／純錯字格式＝直做但跑機械閘／卡面結構＝本職但須過 validator／累積熔斷＝同弧直編 ≥3 次或任一次被閘退改 spawn `rg -c "熔斷" agents/AGENTS.md` → ≥1
-- [ ] #7 本弧四數量測記卡——first_handback_complete／repair_rounds／marshal_direct_impl_violation／settle_wait 手工記 NOTES `rg -c "first_handback_complete" "backlog/tasks/air-234 - Marshal-mode-強化-P0——compiled-work-order-closure（predicate-manifest＋handback-join＋operational-preflight）.md"` → ≥1
+- [x] #1 per-unit manifest 投影——acceptance_contract＋unit 分派表輸入，產 per-unit manifest（assigned predicates 帶 ac_id；unit 分派違 set 不變式 fail-loud） `uv run python scripts/arc_manifest.py tests/fixtures/air-234/contract.json --units tests/fixtures/air-234/units.json --out-dir .agent-tmp/air-234/manifests` → exit 0 且每 unit 一檔 predicates 非空
+- [x] #2 handback fail-closed join——assigned predicate 缺 verdict／verdict 非三值／evidence 空即拒收（transport terminal 不等於 DONE） `uv run python scripts/arc_handback_join.py --manifest tests/fixtures/air-234/manifests/impl-a.json --handback tests/fixtures/air-234/handback-missing.json` → exit 2
+- [x] #3 兩工具測試覆蓋——manifest set 不變式（union=all／intersection=∅／未知 ac_id）＋join 三態與 pass path＋schema 邊界 `uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py` → exit 0 全綠
+- [x] #4 work-order 模板兩段——handback schema（逐 predicate PASS/FAIL/NOT-DONE＋evidence ref；缺項不得進 DONE/READY_FOR_REVIEW）＋operational preflight（dispatch 前驗 CLI/path/flag/section；不能低成本驗的標 assumption 由 worker 第一階段 verify；錯→CONTRACT_BLOCKED 禁照錯執行） `rg -c "handback" skills/_common/work-order.md` → ≥2
+- [x] #5 agent-workflow 接線——collection 步帶 manifest machine join（缺項擋 DONE 前）＋small-fix batch envelope（同 authority 同 read-set 多小修合一 repair batch，逐 unit 收 verdict） `rg -c "repair batch" skills/agent-workflow/SKILL.md` → ≥1
+- [x] #6 註 b 四行例示——tests＝spawn 一行也算／純錯字格式＝直做但跑機械閘／卡面結構＝本職但須過 validator／累積熔斷＝同弧直編 ≥3 次或任一次被閘退改 spawn `rg -c "熔斷" agents/AGENTS.md` → ≥1
+- [x] #7 本弧四數量測記卡——first_handback_complete／repair_rounds／marshal_direct_impl_violation／settle_wait 手工記 NOTES `rg -c "first_handback_complete" "backlog/tasks/air-234 - Marshal-mode-強化-P0——compiled-work-order-closure（predicate-manifest＋handback-join＋operational-preflight）.md"` → ≥1
 
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+**四數量測（settle 結算——⑦交付）**：
+- first_handback_complete＝TRUE×2（impl-a、impl-b 首收 handback 皆 100% assigned predicates 帶 evidence——join 機驗 exit 0；repair batch 為審查修復輪不計首收）
+- repair_rounds＝1（雙腿審查 findings → 單一 repair batch R1-R7 全數落地；AIR-237 弧另貢獻 repair_rounds＝2 的跨弧對照——evidence 空欄退補＋oracle 未同步，均為閘正確咬合）
+- marshal_direct_impl_violation＝0（卡面/arc 產物/manifest 投影＝本職豁免；tests/oracle/instruction 修復全走 worker；唯一 WO 品質瑕疵＝§4.5 section 引用不精確，被 impl-b 以 D2 deviation 如實 flag——④ preflight 條文的設計行為實證）
+- settle_wait：t_dispatch 1790945179 → t_ready_to_judge 1790947535（66min——含 plan v2 recompile／WT CR build／cross 腿 muse 失敗換 codex 重派）→ t_landed 1790948984（+24min 修復輪）；全程 107min
+
+已知限制（judge 裁量接受）：fresh F2（contract 元素級 TypeError 走 traceback exit 1 非乾淨 exit 2）——Suggestion 級、不 false-pass、producer 契約保證形狀，接受為 degraded；contract predicates 內重複 ac_id 取後者＝既有行為未動。AC#7 verifier 量測弱（PLAN 段預有字樣）——以本 NOTES 實數為準（verifier 修復方向併 AIR-235 receipt grammar 面）。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（air-234 branch db5ff513）：compiled work-order closure 全鏈落地——①`scripts/arc_manifest.py`（acceptance_contract→per-unit manifest；set 不變式四條含檔名碰撞；judgment_required 投影＋satisfied passthrough）②`scripts/arc_handback_join.py`（manifest×handback 結構 join；缺項/malformed 逐行 exit 2；語義分離——FAIL/NOT-DONE 仍 exit 0）③work-order「Handback closure」＋「Operational preflight」兩附錄節 ④agent-workflow 5c repair batch envelope＋「ArcPlan 弧 handback join」collection 條 ⑤agents/AGENTS.md 註 b 四行例示（熔斷分支拆寫版）⑥四數量測記卡（本 NOTES）。全弧本身即 AIR-135.1.2 排定的 lifecycle dogfood：Plan Preview（v1→v2 recompile）→帶 manifest 派工→handback join（含一次真實拒收）→雙腿審查（fresh live-cr:MCP／cross codex degraded 如實記）→repair batch→landing。
+
+```mermaid
+flowchart LR
+    CARD['卡 AC 七條'] --> GC['arc_goal_compile<br/>7 predicates']
+    GC --> PM['per-unit manifest<br/>impl-a／impl-b']
+    PM --> HB['handback 逐 predicate<br/>PASS＋evidence']
+    HB --> CJ['fail-closed join<br/>（曾真實拒收 evidence 空欄）']
+    CJ --> RV['雙腿審查<br/>3 Critical 全修']
+    RV --> SM['settle 四數<br/>（本卡 NOTES）']
+    SM --> LAND['merge ff-only']
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
