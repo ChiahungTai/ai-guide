@@ -36,9 +36,37 @@ flowchart LR
 
 ## Acceptance Criteria
 
-- [ ] #1 缺站 plan fail-loud（AIR-234 v1 實形 golden negative） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/missing-closure.json` → exit 2 且輸出列缺站名
-- [ ] #2 waiver 正例（無 reason 版由 pytest 覆蓋 exit 2） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/chain-waiver-valid.json` → exit 0
-- [ ] #3 小弧不被過綁（單 review 腿、無 bridge 正例） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/single-review-valid.json` → exit 0
-- [ ] #4 測試套（缺站/全鏈/waiver 深檢/owner 不一致 negatives＋phase enum） `uv run pytest tests/test_arc_spec.py` → exit 0
-- [ ] #5 條文接線錨點（implement seed＋5b 顯示行＋receipt 路徑） `rg -c "closure_coverage|收線鏈" skills/implement/SKILL.md skills/agent-workflow/SKILL.md` → 兩檔各 ≥1
+- [x] #1 缺站 plan fail-loud（AIR-234 v1 實形 golden negative） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/missing-closure.json` → exit 2 且輸出列缺站名
+- [x] #2 waiver 正例（無 reason 版由 pytest 覆蓋 exit 2） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/chain-waiver-valid.json` → exit 0
+- [x] #3 小弧不被過綁（單 review 腿、無 bridge 正例） `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile tests/fixtures/arc-plan/single-review-valid.json` → exit 0
+- [x] #4 測試套（缺站/全鏈/waiver 深檢/owner 不一致 negatives＋phase enum） `uv run pytest tests/test_arc_spec.py` → exit 0
+- [x] #5 條文接線錨點（implement seed＋5b 顯示行＋receipt 路徑） `rg -c "closure_coverage|收線鏈" skills/implement/SKILL.md skills/agent-workflow/SKILL.md` → 兩檔各 ≥1
 - [ ] #6 dogfood-again（本卡結案後第一張真實卡 ArcPlan） plan-v1 authoring 時間過 coverage 閘 `uv run python scripts/arc_spec.py validate --kind arc-plan --stage compile .agent-tmp/arcplan/<下一張真實卡>/plan-v1.json` → exit 0 且五站在場非 waiver
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+單 impl unit（arc_spec closure_coverage＋chain_waiver＋phase enum＋fixtures 五組＋oracle 改判＋implement seed＋5b 顯示行）→ post-build（join＋ledger lint，本職）→ review-fresh＋review-cross（bridge）→ judge（本職）→ commit-merge（receipt-gate＋ff-only）→ settle。收線鏈全形手工示範——本弧 plan 即 AC#6 要的目標形態。
+<!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+**四數量測（settle 結算）**：first_handback_complete＝TRUE（impl 首收 join 5/5）；repair_rounds＝1（fresh GO 三綠＋codex GO-WITH-FIXES 兩硬——F1 Critical unit_ref fail-open 以 re-hash 實證、F2 phase 缺席繞道 → 修復批 R1-R5 全落地）；marshal_direct_impl_violation＝0；settle_wait＝t_dispatch 1790950500 前後 → t_landed 1790952900（main d34f3787）≈ 40min。
+
+judge 裁決紀錄：codex F1/F2 必修（hard gate fail-open＝本卡核心承諾的破口）；fresh 三綠（waiver∩coverage 重疊／全 waiver authoring／duplicate station）全數併入同批低成本收編。AC#6（dogfood-again）＝跨弧條款：待本卡後第一張真實卡 ArcPlan 以 plan-v1 過五站閘時勾稽——已指定 AIR-238（時間×family 分配，已開卡）為自然候選，其 plan-v1 組裝時即驗。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（main d34f3787）：ArcPlan 收線鏈硬閘落地——closure_coverage 五站（post-build/review/judge/landing/settle）machine-invariant＋owner/gate 枚舉與站別一致性驗證（judge/landing/settle 恆 main-session、review 恆 dispatch）＋chain_waiver（reason 必填、waived∩covered 雙頭拒）＋phase enum（build/post-build/review/judge/land/settle＋六站映射）＋unit_ref 回指驗證（空集 fail-open 已閉）＋unit_id/title/phase 缺 key 或空值都錯＋duplicate station 拒＋implement 開工步 seed（收線鏈起底＋本職/user-gate 標題慣例）＋5b coverage 顯示行（檢查歸 validator、preview 只轉譯）＋preview receipt 固定落點 .agent-tmp/arcplan/<card_id>/preview-receipt.md。小弧逃生口：chain_waiver 顯式 reason；review 單腿合法（cardinality 不綁 cross-family）。
+
+```mermaid
+flowchart LR
+    P['ArcPlan 組裝<br/>implement seed 起底'] --> V['arc_spec compile stage<br/>五站 coverage 硬閘<br/>unit_ref 回指＋owner 一致<br/>waiver reason 必填']
+    V -->|"缺站或雙頭 exit 2"| R['重編']
+    V -->|"過"| PP['5b preview<br/>coverage 顯示行＋receipt 留痕']
+    PP --> SP['第一個 spawn']
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
