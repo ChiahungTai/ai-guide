@@ -1312,3 +1312,110 @@ class TestCoverageFixtures:
             _mod.main(["validate", "--kind", "arc-plan", "--stage", "compile", waiver])
             == 0
         )
+
+
+class TestCoverageRepairBatch:
+    """repair batch（judge 裁決 R1–R5——codex F1/F2＋fresh F1/F2/F3）：
+
+    - R1 unit_ref fail-open：unit_ids 為空（work_units=[{}]）時 ghost ref 全跳過
+      → 去掉 `unit_ids and` 前置；nested-field 對 unit_id/title 改「缺 key 或空值都錯」。
+    - R2 phase 缺席合法 → 缺席與空值一樣 fail-loud（列可用 enum 值）。
+    - R3 closure_coverage 同 station 重複 entry → duplicate fail-loud。
+    - R4 條文面（implement seed 半句）——pytest 不覆蓋，handback 記。
+    - R5 waiver stations 與 coverage stations 重疊 → 列錯誤。
+    """
+
+    def _plan_compile(self, **overrides: object) -> dict:
+        p = _plan_with_valid_hash()
+        p.update(overrides)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        return p
+
+    # --- R1 ---
+
+    def test_ghost_refs_fail_when_no_valid_unit_ids(self) -> None:
+        """codex F1：work_units=[{}]（unit_ids 空集）時 ghost ref 不得跳過檢查。"""
+        p = self._plan_compile(work_units=[{}], closure_coverage=_full_coverage())
+        errs = _errors("arc-plan", p, stage="compile")
+        ghost_errs = [e for e in errs if "not found in work_units" in e]
+        assert len(ghost_errs) == 5, errs
+
+    def test_ghost_refs_fail_when_all_unit_ids_missing(self) -> None:
+        """R1 變形：unit_id key 全缺（空字串同）——同樣不得 fail-open。"""
+        units = [
+            {"unit_id": "  ", "title": "t", "phase": "build", "depends_on": []},
+            {"title": "no id", "phase": "build", "depends_on": []},
+        ]
+        p = self._plan_compile(work_units=units, closure_coverage=_full_coverage())
+        errs = _errors("arc-plan", p, stage="compile")
+        assert sum("not found in work_units" in e for e in errs) == 5
+
+    def test_work_unit_missing_unit_id_fails(self) -> None:
+        """codex F1 連帶：nested-field 對 unit_id 改「缺 key 或空值都錯」。"""
+        p = self._plan_compile()
+        del p["work_units"][0]["unit_id"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("work_units[0].unit_id" in e and "缺席" in e for e in errs)
+
+    def test_work_unit_missing_title_fails(self) -> None:
+        p = self._plan_compile()
+        del p["work_units"][0]["title"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("work_units[0].title" in e and "缺席" in e for e in errs)
+
+    # --- R2 ---
+
+    def test_missing_phase_fails_listing_available(self) -> None:
+        """codex F2：phase key 整個缺席＝與空值一樣 fail-loud，錯誤列可用 enum。"""
+        p = self._plan_compile()
+        del p["work_units"][0]["phase"]
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "work_units[0].phase" in e and "Available phases" in e for e in errs
+        )
+        assert any("post-build" in e for e in errs)
+
+    # --- R3 ---
+
+    def test_duplicate_station_entry_fails(self) -> None:
+        """fresh F3：同 station 重複 entry＝雙 authoritative，fail-loud。"""
+        coverage = _full_coverage() + [dict(_full_coverage()[0])]
+        p = self._plan_compile(closure_coverage=coverage)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "Duplicate coverage station `post-build`" in e for e in errs
+        )
+
+    # --- R5 ---
+
+    def test_waiver_coverage_overlap_fails(self) -> None:
+        """fresh F1：waiver 與 coverage 同站雙頭＝矛盾授權，fail-loud。"""
+        p = self._plan_compile(
+            closure_coverage=[
+                e for e in _full_coverage() if e["station"] != "review"
+            ],
+            chain_waiver={
+                "stations": ["settle", "review"],
+                "reason": "誤標——settle 已在 coverage",
+            },
+        )
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("settle" in e and "雙頭" in e for e in errs)
+        assert not any(
+            "station `review`" in e and "雙頭" in e for e in errs
+        )  # review 只在 waiver 側＝合法豁免（不列缺站、不列雙頭）
+        assert not any("missing station `review`" in e for e in errs)
+
+    def test_no_overlap_still_valid(self) -> None:
+        """正向：waiver 與 coverage 互斥時零錯（chain-waiver-valid fixture 形）。"""
+        p = self._plan_compile(
+            closure_coverage=[e for e in _full_coverage() if e["station"] == "settle"],
+            chain_waiver={
+                "stations": ["post-build", "review", "judge", "landing"],
+                "reason": "light-tier 小弧",
+            },
+        )
+        assert _errors("arc-plan", p, stage="compile") == []

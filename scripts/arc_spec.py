@@ -780,17 +780,29 @@ def _check_closure_coverage(
                     station, f"{kind}.closure_coverage",
                 ))
                 continue
+            if station in covered:
+                errors.append(
+                    f"Duplicate coverage station `{station}` in closure_coverage "
+                    f"for {kind} — 每站恰一 entry（雙 authoritative，fail-loud）"
+                )
             covered.add(station)
             unit_ref = entry.get("unit_ref")
             if not (isinstance(unit_ref, str) and unit_ref.strip()):
                 errors.append(
                     f"`closure_coverage[{i}].unit_ref` 不得為空 for {kind}"
                 )
-            elif unit_ids and unit_ref not in unit_ids:
+            elif unit_ref not in unit_ids:
+                # R1（codex F1）：無 `unit_ids and` 前置——unit_ids 空集
+                # （如 work_units=[{}]）時 ghost ref 一律報，禁 fail-open。
+                available_ids = (
+                    ", ".join(sorted(unit_ids))
+                    if unit_ids
+                    else "<none — work_units 無合法 unit_id>"
+                )
                 errors.append(
                     f"closure_coverage[{i}].unit_ref `{unit_ref}` not found in "
                     f"work_units for {kind} — unit_ref 須回指在場 unit_id. "
-                    f"Available unit ids: {', '.join(sorted(unit_ids))}"
+                    f"Available unit ids: {available_ids}"
                 )
             owner = entry.get("owner")
             if owner not in COVERAGE_OWNERS:
@@ -813,6 +825,13 @@ def _check_closure_coverage(
                     _coverage_enum_field("gate", COVERAGE_GATES, "gate"),
                     gate, f"{kind}.closure_coverage",
                 ))
+
+    for station in sorted(waived & covered):
+        # R5（fresh F1）：豁免與覆蓋不得同站雙頭——矛盾授權 fail-loud。
+        errors.append(
+            f"chain_waiver station `{station}` also covered in closure_coverage "
+            f"for {kind} — 豁免與覆蓋不得同站雙頭（fail-loud）"
+        )
 
     for station in COVERAGE_STATIONS:
         if station not in waived and station not in covered:
@@ -887,13 +906,18 @@ def _check_arc_plan(data: dict, stage: str, errors: list[str]) -> None:
                               values=ROLES, noun="role", plural="roles"),
                     role, kind,
                 ))
-            for key in ("unit_id", "title", "phase"):
-                if key in wu and not _present_nonempty(wu[key]):
+            for key in ("unit_id", "title"):
+                if key not in wu or not _present_nonempty(wu[key]):
                     errors.append(
-                        f"work_units[{i}].{key} 不得為空 for {kind}"
+                        f"work_units[{i}].{key} 不得缺席或為空 for {kind}"
                     )
             phase = wu.get("phase")
-            if phase is not None and phase not in PHASES:
+            if not _present_nonempty(phase):
+                errors.append(
+                    f"work_units[{i}].phase 不得缺席或為空 for {kind}. "
+                    f"Available phases: {', '.join(PHASES)}"
+                )
+            elif phase not in PHASES:
                 errors.append(_unknown_enum(
                     FieldSpec("phase", "machine-invariant", "always", "",
                               values=PHASES, noun="phase", plural="phases"),
