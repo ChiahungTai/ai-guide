@@ -60,8 +60,8 @@ agents/
 - **註 b（implementation work unit 定義——AIR-135.10，role-based 非 LOC）**：acceptance outcome 需要改變 **behavior-bearing artifact 或其驗證物**的 work unit 即 implementation——code、tests，與控制面行為（rules／skills／hooks／agents／scripts／deploy/config）；**一行也算**（一行 bug fix、一行 rule 語義都是 implementation；review 後補刀同屬 implementation，回 worker work unit，不由主 session 代做）。豁免＝purely editorial（錯字／格式等零行為變更）＋Marshal 本職（規格、卡面、dispatch／collection、judge、機械驗收、commit consent）。Build row 無「spawn failure → 主 session 直做」分支——fallback 只有 alternate qualified carrier／等待 availability／declared no-candidate。canonical 控制面直寫另有 admission guard 機械擋（`hooks/marshal_admission_guard.py`——控制面×canonical 主樹 deny、crash fail-open、無 bypass env）。四行例示（既有豁免定義的 operationalization，非改判——AIR-234）：
   1. tests／rules／skills／hooks 等 behavior-bearing 或其驗證物＝spawn，**一行也算**（ruff --fix 動 import 也算 implementation）
   2. 純錯字／格式（零行為）＝Marshal 直做合法，但須跑對應機械閘（lint／single-source suite），禁逐行裸改
-  3. 卡面結構編輯＝Marshal 本職（豁免），但產出須過 validator（`arc_spec.py validate`／ledger lint／card guards）才算完工
-  4. **累積熔斷**：同弧 Marshal 直編 ≥3 次，或任一次被閘退回→第 4 次起一律 spawn（「來回成本＞3 行修正」的機械化）
+  3. 卡面結構編輯＝Marshal 本職（豁免），但產出須過 validator（`arc_spec.py validate`／`skills/post-build/scripts/review_ledger.py lint --stage converged`／card guards）才算完工
+  4. **累積熔斷**：同弧 Marshal 直編 ≥3 次→之後一律 spawn；任一次被閘退回→立即改 spawn（直編省來回的優勢隨累積次數或閘退消失）
 - **test-gen（第三家族測試寫手——非常設，P0 最後手段）**：不生成 registry 定義檔、不佔上表 stage 行；啟用條件預寫死＝MVP 實證 pre-RED challenge＋軸B review 擋不住 fixture fidelity 級穿透才啟用（v3.1 測試契約定案——AIR-70 幽靈角色答案反轉）；條件未滿足前，測試寫手委派→拒
 - **CC dispatch**：本表 preset 名的全名在兩 registry 皆生成在場——CC `--agent <name>` 全 9 名可用；未知名稱仍立即退出（反向守衛）
 

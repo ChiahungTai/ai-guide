@@ -7,8 +7,11 @@
 - contract_hash＝sha256(canonical_json(contract))——canonical 形同 arc_spec
   （sort_keys＋緊湊分隔符＋UTF-8）；hash 值以 dispatcher assigned manifest
   的實際值為獨立錨（非工具自證）。
-- happy path：每 unit 一檔 `<unit_id「#」後綴>.json`，predicates 帶
-  ac_id/kind/verifier/expected 四鍵且非空；輸出與固化 fixture byte-equal。
+- happy path：每 unit 一檔 `<unit_id「#」後綴>.json`，覆蓋語義＝assigned
+  ac_ids 全數投影（repair-1 R1）：有 predicate 者帶 ac_id/kind/verifier/
+  expected 四鍵且非空（契約 predicate 帶 satisfied/satisfied_at_baseline 時
+  原樣 pass-through）；judgment_required 者投影 kind="judgment_required"
+  ＋verifier/expected 空字串＋contract reason。輸出與固化 fixture byte-equal。
 """
 
 import json
@@ -68,13 +71,29 @@ class TestHappyPath:
         assert m["unit_id"] == "AIR-234#impl-a"
         assert [p["ac_id"] for p in m["predicates"]] == ["1", "2", "3"]
         for p in m["predicates"]:
-            assert set(p) == {"ac_id", "kind", "verifier", "expected"}
+            assert set(p) == {
+                "ac_id",
+                "kind",
+                "verifier",
+                "expected",
+                "satisfied",
+                "satisfied_at_baseline",
+            }
             assert p["kind"] == "command_expected"
             assert p["verifier"]
             assert p["expected"]
         assert m["predicates"][0]["verifier"].startswith(
             "uv run python scripts/arc_manifest.py"
         )
+
+    def test_satisfied_fields_pass_through(self, tmp_path: Path) -> None:
+        """R1：契約 predicate 的 satisfied/satisfied_at_baseline 原樣 pass-through
+        ——已滿足 AC 的 baseline 證據不得在投影時丟掉。"""
+        _, out_dir = _run(tmp_path)
+        m = _load(out_dir / "impl-a.json")
+        for p in m["predicates"]:
+            assert p["satisfied"] is False
+            assert p["satisfied_at_baseline"] is None
 
     def test_contract_hash_matches_external_anchor(self, tmp_path: Path) -> None:
         """hash 錨點取自 dispatcher assigned manifest 實際值（非工具自證）。"""
@@ -175,27 +194,76 @@ class TestSetInvariants:
         assert "漏分派" in err
         assert "重疊" in err
 
-    def test_judgment_required_ac_projection_fails_loud(
-        self, tmp_path: Path
-    ) -> None:
-        """unit 分派到 judgment-required ac（無 predicate 可投影）——fail-loud
-        禁產生 predicates 空的 manifest。"""
-        contract = {
-            "schema": "acceptance-contract/1",
-            "card_id": "AIR-234",
-            "source_card": "inline",
-            "ac_ids": ["1"],
-            "predicates": [],
-            "judgment_required": [{"ac_id": "1", "reason": "no-explicit-verifier"}],
-        }
-        cpath = _write_json(tmp_path / "contract.json", contract)
+    def test_manifest_filename_collision_fails(self, tmp_path: Path) -> None:
+        """R2（不變式 4）：不同 unit「#」後綴撞名＝第二檔靜默覆蓋第一檔——
+        exit 2 逐行錯誤，禁輸出。"""
         units = self._units_with(
-            tmp_path, [{"unit_id": "AIR-234#u", "ac_ids": ["1"]}]
+            tmp_path,
+            [
+                {"unit_id": "AIR-234#same", "ac_ids": ["1", "2", "3"]},
+                {"unit_id": "OTHER#same", "ac_ids": ["4", "5", "6", "7"]},
+            ],
         )
+        out_dir = tmp_path / "out"
         rc = am.main(
-            [str(cpath), "--units", str(units), "--out-dir", str(tmp_path / "o")]
+            [str(CONTRACT), "--units", str(units), "--out-dir", str(out_dir)]
         )
         assert rc == 2
+        assert not out_dir.exists(), "撞名時不得寫出任何檔"
+
+
+# ---------------------------------------------------------------------------
+# judgment_required＋satisfied 投影（repair-1 R1 覆蓋語義：assigned 全數投影）
+# ---------------------------------------------------------------------------
+
+
+class TestJudgmentAndSatisfied:
+    CONTRACT_JUDGMENT = FIXTURES / "contract-judgment.json"
+    UNITS_JUDGMENT = FIXTURES / "units-judgment.json"
+
+    def _run_judgment(self, tmp_path: Path) -> tuple[int, Path]:
+        out_dir = tmp_path / "out"
+        rc = am.main(
+            [
+                str(self.CONTRACT_JUDGMENT),
+                "--units",
+                str(self.UNITS_JUDGMENT),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        return rc, out_dir
+
+    def test_mixed_contract_projects_success(self, tmp_path: Path) -> None:
+        """改判（原錯誤 oracle：mixed contract exit 2）——judgment_required 是
+        arc_goal_compile 的合法產物，混合同 contract 應成功投影 exit 0。"""
+        rc, out_dir = self._run_judgment(tmp_path)
+        assert rc == 0
+        judge = _load(out_dir / "judge.json")
+        assert judge["unit_id"] == "AIR-234#judge"
+        assert judge["predicates"] == [
+            {
+                "ac_id": "3",
+                "kind": "judgment_required",
+                "verifier": "",
+                "expected": "",
+                "reason": "no-explicit-verifier",
+            }
+        ]
+
+    def test_judgment_entry_shape_and_satisfied_pass_through(
+        self, tmp_path: Path
+    ) -> None:
+        """同一 mixed contract：有 predicate 的 unit 照常四鍵＋satisfied 兩欄
+        pass-through（baseline 已滿足證據不丟）。"""
+        rc, out_dir = self._run_judgment(tmp_path)
+        assert rc == 0
+        m = _load(out_dir / "impl-a.json")
+        assert [p["ac_id"] for p in m["predicates"]] == ["1", "2"]
+        assert m["predicates"][0]["satisfied"] is False
+        assert m["predicates"][0]["satisfied_at_baseline"] is None
+        assert m["predicates"][1]["satisfied"] is True
+        assert m["predicates"][1]["satisfied_at_baseline"] == "b051629e"
 
 
 # ---------------------------------------------------------------------------
@@ -290,3 +358,31 @@ class TestCli:
         )
         assert rc == 0
         assert (out_dir / "impl-a.json").exists()
+
+    def test_contract_top_level_non_object_fails_clean(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """R4：合法 JSON 但 top-level 非物件（[]）——乾淨逐行結構錯誤＋exit 2
+        （非 AttributeError traceback exit 1）。"""
+        bad = tmp_path / "c.json"
+        bad.write_text("[]", encoding="utf-8")
+        rc = am.main(
+            [str(bad), "--units", str(UNITS), "--out-dir", str(tmp_path / "o")]
+        )
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "ERROR" in err
+        assert "object" in err
+
+    def test_units_top_level_non_object_fails_clean(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        bad = tmp_path / "u.json"
+        bad.write_text("[]", encoding="utf-8")
+        rc = am.main(
+            [str(CONTRACT), "--units", str(bad), "--out-dir", str(tmp_path / "o")]
+        )
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "ERROR" in err
+        assert "object" in err

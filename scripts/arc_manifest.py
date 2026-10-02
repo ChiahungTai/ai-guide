@@ -7,17 +7,26 @@ assigned-predicate manifest（schema `arc-manifest/1`）：worker 帶著它負�
 AC predicates 清單上工，handback 逐 predicate 回 verdict（join＝
 scripts/arc_handback_join.py）。
 
-set 不變式三條（工單 §5.1 釘死，核心 oracle——違反任一＝逐行錯誤 stderr＋
-exit 2，永不靜默投影）：
+set 不變式四條（工單 §5.1 三條＋repair-1 R2 檔名唯一；違反任一＝逐行錯誤
+stderr＋exit 2，永不靜默投影）：
 1. units 的 ac_ids 聯集 == contract `ac_ids`（少＝漏分派、多＝未知 ac_id）
 2. units 兩兩不相交（重疊＝同一 predicate 雙頭分派）
 3. `unit_id` 無重複
+4. 衍生 manifest 檔名無碰撞（撞名＝第二檔靜默覆蓋第一檔，禁）
 
 輸出：`DIR/<unit_id「#」後綴>.json`（如 `AIR-234#impl-a`→`impl-a.json`）::
 
     {"schema": "arc-manifest/1", "card_id": "…", "unit_id": "…",
      "contract_hash": "<hex64>",
-     "predicates": [{"ac_id", "kind", "verifier", "expected"}, …]}
+     "predicates": [{"ac_id", "kind", "verifier", "expected",
+                     〔選填〕"reason"／"satisfied"／"satisfied_at_baseline"}, …]}
+
+predicate 條目形（repair-1 R1 覆蓋語義＝assigned ac_ids 全數投影）：
+- 有 predicate 者：四鍵照投影；契約 predicate 帶 `satisfied`／
+  `satisfied_at_baseline` 時原樣 pass-through 兩欄（baseline 已滿足證據不丟）
+- judgment_required 者（arc_goal_compile 合法產物）：投影
+  `{"ac_id", "kind": "judgment_required", "verifier": "", "expected": "",
+    "reason": <contract judgment_required 條目的 reason>}`
 
 `contract_hash`＝sha256(canonical_json(contract))；canonical＝sort_keys＋
 緊湊分隔符＋UTF-8（與 scripts/arc_spec.py 同形）。
@@ -25,9 +34,11 @@ exit 2，永不靜默投影）：
 邊界：
 - pure projector：無 process side effects（不 spawn、不寫卡、不觸 git）；
   contract/unit 表仍是唯一 source of truth，本工具只投影不裁語義。
-- fail-loud 補充（工單三不變式之外的結構防線，同 exit 2）：schema 值不符、
-  contract/units card_id 不一致、unit 分派到 judgment-required ac（無
-  predicate 可投影）、unit_id 無「#」後綴或後綴含路徑字元（檔名衍生不可為）。
+- fail-loud 補充（四不變式之外的結構防線，同 exit 2）：top-level 非 JSON
+  object、schema 值不符、contract/units card_id 不一致、judgment_required
+  條目 malformed／重複／與 predicates 重疊、assigned ac 契約外（predicates
+  與 judgment_required 皆無）、unit_id 無「#」後綴或後綴含路徑字元（檔名
+  衍生不可為）。
 - exit 0＝成功＋stdout 一行摘要（units 數＋predicates 總數）；
   exit 2＝契約/結構錯（錯誤逐行 stderr）。
 
@@ -65,8 +76,20 @@ def _fail(errors: list[str]) -> None:
 
 
 def _validate_structures(contract: dict, units_doc: dict) -> None:
-    """schema 值＋card_id 一致＋容器形狀——三不變式外的結構防線（fail-loud）。"""
+    """schema 值＋card_id 一致＋容器形狀——四不變式外的結構防線（fail-loud）。"""
     errors: list[str] = []
+    if not isinstance(contract, dict):
+        errors.append(
+            f"invalid: contract reason=須為 JSON object（top-level），"
+            f"got {type(contract).__name__}"
+        )
+    if not isinstance(units_doc, dict):
+        errors.append(
+            f"invalid: units reason=須為 JSON object（top-level），"
+            f"got {type(units_doc).__name__}"
+        )
+    _fail(errors)
+    errors = []
     if contract.get("schema") != ACCEPTANCE_CONTRACT_SCHEMA:
         errors.append(
             f"invalid: contract schema={contract.get('schema')!r} reason="
@@ -89,6 +112,13 @@ def _validate_structures(contract: dict, units_doc: dict) -> None:
             "invalid: contract reason=ac_ids／predicates 須為 list"
             "（acceptance-contract/1 形）"
         )
+    if not isinstance(contract.get("judgment_required"), list):
+        errors.append(
+            "invalid: contract reason=judgment_required 須為 list"
+            "（acceptance-contract/1 形）"
+        )
+    else:
+        errors.extend(_validate_judgment_required(contract))
     if not isinstance(units_doc.get("units"), list):
         errors.append("invalid: units reason=units 須為 list（arc-units/1 形）")
     for i, unit in enumerate(units_doc.get("units", []) if isinstance(units_doc.get("units"), list) else []):
@@ -106,6 +136,46 @@ def _validate_structures(contract: dict, units_doc: dict) -> None:
                 f"invalid: units[{i}] reason=ac_ids 須為字串 list"
             )
     _fail(errors)
+
+
+def _validate_judgment_required(contract: dict) -> list[str]:
+    """judgment_required 逐條目驗證（R1 投影源 integrity）——條目須為含非空
+    字串 ac_id／reason 的 object、無重複、與 predicates 不重疊（重疊＝kind
+    投影歧義，fail-loud）。"""
+    errors: list[str] = []
+    jud = contract["judgment_required"]
+    pred_ids: set[str] = set()
+    if isinstance(contract.get("predicates"), list):
+        pred_ids = {
+            p["ac_id"]
+            for p in contract["predicates"]
+            if isinstance(p, dict) and isinstance(p.get("ac_id"), str)
+        }
+    seen: set[str] = set()
+    for i, j in enumerate(jud):
+        if (
+            not isinstance(j, dict)
+            or not isinstance(j.get("ac_id"), str)
+            or not j["ac_id"]
+            or not isinstance(j.get("reason"), str)
+            or not j["reason"]
+        ):
+            errors.append(
+                f"invalid: judgment_required[{i}] reason=須為含非空字串 "
+                f"ac_id／reason 的 object"
+            )
+            continue
+        if j["ac_id"] in seen:
+            errors.append(
+                f"invalid: judgment_required ac_id={j['ac_id']} reason=重複"
+            )
+        seen.add(j["ac_id"])
+        if j["ac_id"] in pred_ids:
+            errors.append(
+                f"invalid: ac_id={j['ac_id']} reason=同時出現在 predicates 與 "
+                f"judgment_required（kind 投影歧義）"
+            )
+    return errors
 
 
 def check_set_invariants(contract: dict, units_doc: dict) -> None:
@@ -167,26 +237,43 @@ def _manifest_filename(unit_id: str) -> str:
 
 
 def project_unit(contract: dict, unit: dict) -> dict:
-    """單 unit 投影——predicates 取該 unit assigned ac_ids 對應的 contract
-    predicates（四鍵：ac_id/kind/verifier/expected；按 ac_id 排序）。"""
+    """單 unit 投影——覆蓋語義＝assigned ac_ids 全數投影（repair-1 R1）：
+    有 predicate 者四鍵（契約帶 satisfied/satisfied_at_baseline 時原樣
+    pass-through）；judgment_required 者投影 kind="judgment_required"＋
+    contract reason；按 ac_id 排序。"""
     assigned = set(unit["ac_ids"])
     by_ac: dict[str, dict] = {p["ac_id"]: p for p in contract["predicates"]}
-    no_predicate = sorted(assigned - set(by_ac))
-    if no_predicate:
+    by_jud: dict[str, dict] = {
+        j["ac_id"]: j for j in contract["judgment_required"]
+    }
+    outside = sorted(assigned - set(by_ac) - set(by_jud))
+    if outside:
         raise ManifestError(
-            f"invalid: ac_id={no_predicate} reason=unit {unit['unit_id']} 分派到"
-            f"無 predicate 的 ac（judgment-required 或契約外——禁產生 predicates "
-            f"空的 manifest；fail-loud）"
+            f"invalid: ac_id={outside} reason=unit {unit['unit_id']} 分派到契約外"
+            f" ac（predicates 與 judgment_required 皆無；fail-loud）"
         )
-    predicates = [
-        {
-            "ac_id": ac,
-            "kind": by_ac[ac]["kind"],
-            "verifier": by_ac[ac]["verifier"],
-            "expected": by_ac[ac]["expected"],
-        }
-        for ac in sorted(assigned, key=lambda a: (len(a), a))
-    ]
+    predicates: list[dict] = []
+    for ac in sorted(assigned, key=lambda a: (len(a), a)):
+        if ac in by_ac:
+            p = by_ac[ac]
+            entry: dict = {
+                "ac_id": ac,
+                "kind": p["kind"],
+                "verifier": p["verifier"],
+                "expected": p["expected"],
+            }
+            for key in ("satisfied", "satisfied_at_baseline"):
+                if key in p:
+                    entry[key] = p[key]
+        else:
+            entry = {
+                "ac_id": ac,
+                "kind": "judgment_required",
+                "verifier": "",
+                "expected": "",
+                "reason": by_jud[ac]["reason"],
+            }
+        predicates.append(entry)
     return {
         "schema": MANIFEST_SCHEMA,
         "card_id": contract["card_id"],
@@ -200,10 +287,22 @@ def project_manifests(contract: dict, units_doc: dict) -> list[tuple[str, dict]]
     """contract×units → [(檔名, manifest dict)]；任何違約 raise ManifestError。"""
     _validate_structures(contract, units_doc)
     check_set_invariants(contract, units_doc)
-    return [
+    pairs = [
         (_manifest_filename(unit["unit_id"]), project_unit(contract, unit))
         for unit in units_doc["units"]
     ]
+    by_name: dict[str, list[str]] = {}
+    for filename, manifest in pairs:
+        by_name.setdefault(filename, []).append(manifest["unit_id"])
+    _fail(
+        [
+            f"invalid: manifest 檔名={filename} reason={uids} 後綴撞名"
+            f"（不變式 4：第二檔靜默覆蓋第一檔，禁）"
+            for filename, uids in by_name.items()
+            if len(uids) > 1
+        ]
+    )
+    return pairs
 
 
 def _load_json(path: Path, label: str) -> dict:

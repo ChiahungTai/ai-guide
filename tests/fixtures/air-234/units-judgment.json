@@ -1,0 +1,14 @@
+{
+  "schema": "arc-units/1",
+  "card_id": "AIR-234",
+  "units": [
+    {
+      "unit_id": "AIR-234#impl-a",
+      "ac_ids": ["1", "2"]
+    },
+    {
+      "unit_id": "AIR-234#judge",
+      "ac_ids": ["3"]
+    }
+  ]
+}

@@ -11,10 +11,13 @@ DONE；collection 用本工具把缺項擋在 DONE 前）。
 NOT-DONE 结案）歸 collection，不歸 join；本工具永不越權變 semantic gate。
 
 join 規則（全過→exit 0＋stdout 一行 `join OK: N predicates`）：
-1. 兩檔 schema 值正確；`card_id` 一致；`unit_id` 一致
-2. manifest 每 predicate 恰一個 verdict；handback 無未知 `ac_id`
-3. `verdict` ∈ {`PASS`, `FAIL`, `NOT-DONE`}
-4. `evidence` 非空字串
+1. 兩檔 top-level 為 JSON object；schema 值正確；`card_id` 一致；`unit_id`
+   一致
+2. manifest predicates 逐條目驗證（object＋非空字串 `ac_id`＋無重複——
+   malformed／重複即拒收，禁縮水集合假 PASS；repair-1 R3）
+3. manifest 每 predicate 恰一個 verdict；handback 無未知 `ac_id`
+4. `verdict` ∈ {`PASS`, `FAIL`, `NOT-DONE`}
+5. `evidence` 非空字串
 
 違反→stdout 逐行列缺項（`missing: ac_id=…`／`invalid: ac_id=… reason=…`）
 ＋exit 2；一次全列不首報即停。檔案層錯誤（不存在／JSON 壞）→stderr
@@ -36,6 +39,18 @@ VALID_VERDICTS = ("PASS", "FAIL", "NOT-DONE")
 def join(manifest: dict, handback: dict) -> list[str]:
     """結構 join——回錯誤行 list（空＝全過）；純函數、不觸 IO。"""
     errors: list[str] = []
+    if not isinstance(manifest, dict):
+        errors.append(
+            f"invalid: manifest reason=須為 JSON object（top-level），"
+            f"got {type(manifest).__name__}"
+        )
+    if not isinstance(handback, dict):
+        errors.append(
+            f"invalid: handback reason=須為 JSON object（top-level），"
+            f"got {type(handback).__name__}"
+        )
+    if errors:
+        return errors
 
     if manifest.get("schema") != MANIFEST_SCHEMA:
         errors.append(
@@ -62,9 +77,28 @@ def join(manifest: dict, handback: dict) -> list[str]:
     if not isinstance(predicates, list):
         errors.append("invalid: manifest reason=predicates 須為 list")
         predicates = []
-    manifest_acs = [
-        p.get("ac_id") for p in predicates if isinstance(p, dict)
-    ]
+    # 規則 2（repair-1 R3）：manifest predicates 逐條目驗證——非 object／非
+    # 非空字串 ac_id／重複 ac_id 都逐行 invalid，禁縮水集合假 PASS
+    manifest_acs: list[str] = []
+    seen_ac: set[str] = set()
+    for i, p in enumerate(predicates):
+        if not isinstance(p, dict):
+            errors.append(f"invalid: predicates[{i}] reason=須為 object")
+            continue
+        ac = p.get("ac_id")
+        if not isinstance(ac, str) or not ac:
+            errors.append(
+                f"invalid: predicates[{i}] reason=ac_id 須為非空字串"
+            )
+            continue
+        if ac in seen_ac:
+            errors.append(
+                f"invalid: ac_id={ac} reason=manifest predicates 重複"
+                f"（每 ac_id 恰一條）"
+            )
+            continue
+        seen_ac.add(ac)
+        manifest_acs.append(ac)
 
     verdicts = handback.get("verdicts")
     if not isinstance(verdicts, list):

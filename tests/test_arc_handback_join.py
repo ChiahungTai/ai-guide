@@ -36,7 +36,6 @@ def _write_json(path: Path, data: dict) -> Path:
 
 
 def _run(
-    tmp_path: Path,
     manifest: Path = MANIFEST,
     handback: Path = HANDBACK_PASS,
 ) -> tuple[int, str, str]:
@@ -60,7 +59,7 @@ def _handback_with(tmp_path: Path, **overrides: dict) -> Path:
 
 class TestJoinPass:
     def test_fixture_pass_exit_zero(self, tmp_path: Path) -> None:
-        rc, out, _ = _run(tmp_path)
+        rc, out, _ = _run()
         assert rc == 0
         assert out.strip() == "join OK: 3 predicates"
 
@@ -74,7 +73,7 @@ class TestJoinPass:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "全綠"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 0
         assert "join OK" in out
 
@@ -87,7 +86,7 @@ class TestJoinPass:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "全綠"},
             ],
         )
-        rc, _, _ = _run(tmp_path, handback=path)
+        rc, _, _ = _run(handback=path)
         assert rc == 0
 
 
@@ -99,7 +98,7 @@ class TestJoinPass:
 class TestJoinViolations:
     def test_missing_verdict_line(self, tmp_path: Path) -> None:
         """fixture 即 AC#2 驗收載體——缺 ac_id=3 的 verdict。"""
-        rc, out, _ = _run(tmp_path, handback=HANDBACK_MISSING)
+        rc, out, _ = _run(handback=HANDBACK_MISSING)
         assert rc == 2
         assert "missing: ac_id=3" in out
 
@@ -112,7 +111,7 @@ class TestJoinViolations:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "y"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "invalid: ac_id=1" in out
         assert "reason=" in out
@@ -126,7 +125,7 @@ class TestJoinViolations:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "y"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "invalid: ac_id=1" in out
         assert "evidence" in out
@@ -140,19 +139,19 @@ class TestJoinViolations:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "y"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "invalid: ac_id=1" in out
 
     def test_unit_id_mismatch(self, tmp_path: Path) -> None:
         path = _handback_with(tmp_path, unit_id="AIR-234#impl-b")
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "unit_id" in out
 
     def test_card_id_mismatch(self, tmp_path: Path) -> None:
         path = _handback_with(tmp_path, card_id="AIR-OTHER")
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "card_id" in out
 
@@ -166,7 +165,7 @@ class TestJoinViolations:
                 {"ac_id": "9", "verdict": "PASS", "evidence": "越權 verdict"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "invalid: ac_id=9" in out
         assert "未知" in out
@@ -182,9 +181,45 @@ class TestJoinViolations:
                 {"ac_id": "3", "verdict": "PASS", "evidence": "w"},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "ac_id=1" in out
+
+    def test_corrupt_manifest_string_entry_rejected(self, tmp_path: Path) -> None:
+        """R3：manifest predicates 含字串條目＝malformed——禁縮水集合假 PASS
+        （verdict 只蓋合法條目仍須 exit 2，非靜默略過）。"""
+        m = _load(MANIFEST)
+        m["predicates"] = [m["predicates"][0], "CORRUPT"]
+        path = _handback_with(
+            tmp_path,
+            verdicts=[{"ac_id": "1", "verdict": "PASS", "evidence": "x"}],
+        )
+        rc, out, _ = _run(manifest=_write_json(tmp_path / "m.json", m), handback=path)
+        assert rc == 2
+        assert "invalid" in out
+        assert "reason=" in out
+
+    def test_duplicate_ac_in_manifest_rejected(self, tmp_path: Path) -> None:
+        """R3：manifest predicates 同 ac_id 兩條＝重複——exit 2（禁靜默取一）。"""
+        m = _load(MANIFEST)
+        m["predicates"] = [
+            m["predicates"][0],
+            m["predicates"][0],
+            m["predicates"][1],
+        ]
+        path = _handback_with(
+            tmp_path,
+            verdicts=[
+                {"ac_id": "1", "verdict": "PASS", "evidence": "x"},
+                {"ac_id": "2", "verdict": "PASS", "evidence": "y"},
+            ],
+        )
+        rc, out, _ = _run(
+            manifest=_write_json(tmp_path / "m2.json", m), handback=path
+        )
+        assert rc == 2
+        assert "ac_id=1" in out
+        assert "重複" in out
 
     def test_multiple_violations_reported_per_line(self, tmp_path: Path) -> None:
         """逐行缺項——缺項與壞值同現時 stdout 多行、非僅首報。"""
@@ -194,7 +229,7 @@ class TestJoinViolations:
                 {"ac_id": "1", "verdict": "NOPE", "evidence": ""},
             ],
         )
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         lines = [ln for ln in out.strip().splitlines() if ln.strip()]
         assert len(lines) >= 3, f"未逐行回報：{lines!r}"  # 缺 2/3＋壞 1
@@ -208,7 +243,7 @@ class TestJoinViolations:
 class TestSchemaAndFiles:
     def test_bad_handback_schema(self, tmp_path: Path) -> None:
         path = _handback_with(tmp_path, schema="arc-handback/9")
-        rc, out, _ = _run(tmp_path, handback=path)
+        rc, out, _ = _run(handback=path)
         assert rc == 2
         assert "schema" in out
 
@@ -216,27 +251,44 @@ class TestSchemaAndFiles:
         m = _load(MANIFEST)
         m["schema"] = "arc-manifest/9"
         rc, out, _ = _run(
-            tmp_path, manifest=_write_json(tmp_path / "m.json", m)
+            manifest=_write_json(tmp_path / "m.json", m)
         )
         assert rc == 2
         assert "schema" in out
 
     def test_missing_manifest_file(self, tmp_path: Path) -> None:
-        rc, _, err = _run(tmp_path, manifest=tmp_path / "nope.json")
+        rc, _, err = _run(manifest=tmp_path / "nope.json")
         assert rc == 2
         assert "not found" in err
 
     def test_missing_handback_file(self, tmp_path: Path) -> None:
-        rc, _, err = _run(tmp_path, handback=tmp_path / "nope.json")
+        rc, _, err = _run(handback=tmp_path / "nope.json")
         assert rc == 2
         assert "not found" in err
 
     def test_malformed_json_manifest(self, tmp_path: Path) -> None:
         bad = tmp_path / "bad.json"
         bad.write_text("{broken", encoding="utf-8")
-        rc, _, err = _run(tmp_path, manifest=bad)
+        rc, _, err = _run(manifest=bad)
         assert rc == 2
         assert "ERROR" in err
+
+    def test_manifest_top_level_non_object_fails_clean(self, tmp_path: Path) -> None:
+        """R4：合法 JSON 但 top-level 非物件（[]）——乾淨結構錯誤＋exit 2。"""
+        bad = tmp_path / "m.json"
+        bad.write_text("[]", encoding="utf-8")
+        rc, out, _ = _run(manifest=bad)
+        assert rc == 2
+        assert "invalid" in out
+        assert "object" in out
+
+    def test_handback_top_level_non_object_fails_clean(self, tmp_path: Path) -> None:
+        bad = tmp_path / "hb.json"
+        bad.write_text("[]", encoding="utf-8")
+        rc, out, _ = _run(handback=bad)
+        assert rc == 2
+        assert "invalid" in out
+        assert "object" in out
 
 
 # ---------------------------------------------------------------------------
@@ -260,7 +312,7 @@ class TestSeamWithArcManifest:
         ) == 0
         handback = _handback_with(tmp_path)  # verdicts 對 ac 1/2/3
         rc, out, _ = _run(
-            tmp_path, manifest=out_dir / "impl-a.json", handback=handback
+            manifest=out_dir / "impl-a.json", handback=handback
         )
         assert rc == 0
         assert "join OK: 3 predicates" in out

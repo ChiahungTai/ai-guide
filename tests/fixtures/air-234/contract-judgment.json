@@ -1,0 +1,30 @@
+{
+  "schema": "acceptance-contract/1",
+  "card_id": "AIR-234",
+  "source_card": "inline（repair-1 R1 自造 mixed contract：predicates＋judgment_required 並存）",
+  "ac_ids": ["1", "2", "3"],
+  "predicates": [
+    {
+      "ac_id": "1",
+      "kind": "command_expected",
+      "verifier": "uv run pytest tests/test_arc_manifest.py tests/test_arc_handback_join.py",
+      "expected": "exit 0 全綠",
+      "satisfied": false,
+      "satisfied_at_baseline": null
+    },
+    {
+      "ac_id": "2",
+      "kind": "command_expected",
+      "verifier": "rg -c \"熔斷\" agents/AGENTS.md",
+      "expected": "≥1",
+      "satisfied": true,
+      "satisfied_at_baseline": "b051629e"
+    }
+  ],
+  "judgment_required": [
+    {
+      "ac_id": "3",
+      "reason": "no-explicit-verifier"
+    }
+  ]
+}
