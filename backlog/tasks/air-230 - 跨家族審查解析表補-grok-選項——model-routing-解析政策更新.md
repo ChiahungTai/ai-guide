@@ -1,10 +1,10 @@
 ---
 id: AIR-230
 title: 跨家族審查解析表補 grok 選項——model-routing 解析政策更新
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 03:32'
-updated_date: '2026-10-02 06:44'
+updated_date: '2026-10-02 06:50'
 labels: []
 dependencies: []
 ordinal: 219000
@@ -40,3 +40,21 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 【user 裁決（2026-10-02）】grok 進跨家族解析表，待遇比照 muse 首次啟用：列為第二意見候選、qualification 標未認證（AIR-226 零繼承——AC10 驗的是沙箱非審查品質），資格確認＝下一個適合的真實弧派 grok 外審樣本（候選：AIR-231 的外審腿），樣本通過後轉正。條文更新照此落。
 <!-- SECTION:NOTES:END -->
+
+## Acceptance Criteria
+
+- [x] 解析表更新：第二意見候選＝codex／glm／grok（explicit-only），「僅剩 codex」零殘留
+- [x] grok 資格待遇節（:271）：qualification 未認證＋比照 muse 首次啟用＋樣本通過前不作唯一外審腿＋資格確認安排
+- [x] test_check_single_source 85 passed；單檔變更零外溢
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**（main @ 51eddbbd）：跨家族解析表反映 grok 開家現實——第二意見候選三家族，grok qualification 未認證（比照 muse 首次啟用：真實弧外審樣本累積資格、通過前不作唯一外審腿、資格確認安排下一真實弧）。資格樣本取得後 update 本表狀態。
+
+```mermaid
+flowchart LR
+    A["解析表舊值<br/>僅剩 codex/glm"] --> B["更新<br/>三家族候選"]
+    B --> C["grok 未認證標記<br/>樣本通過後轉正"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
