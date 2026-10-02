@@ -1,10 +1,10 @@
 ---
 id: AIR-231
 title: execution-plan 的 LSP workspaceSymbol 泛稱指引過時——補 CR-first 與載體限定
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 03:32'
-updated_date: '2026-10-02 03:33'
+updated_date: '2026-10-02 04:11'
 labels: []
 dependencies: []
 ordinal: 220000
