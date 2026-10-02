@@ -3,10 +3,10 @@ id: AIR-236
 title: >-
   mosaic cr-audit (1)(2) re-route——reviewer spawn prompt CR 段＋rules-reminder
   routing 行盤點（ai-guide instruction 主權；信 46fb84ab）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 13:20'
-updated_date: '2026-10-02 13:53'
+updated_date: '2026-10-02 13:55'
 labels: []
 dependencies: []
 ordinal: 227000
