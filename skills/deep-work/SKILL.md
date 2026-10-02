@@ -237,6 +237,7 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 6. **lane 可決不上拋**：已有卡、已定案（勿重辯區）的事——卡序、做法方向、優先序、既有常設授權的協調動作——自主決定並記錄；新承諾、跨 repo 寫入、outward 才問 user；本地 trunk merge（ff-only）＝marshal 自主（AIR-200 predicate delegation——fresh receipt＋landing eligible，rebase 即重驗）；無人值守批量下非紅線 human gate 入 pending 台帳套 safe default 續跑（AIR-135.7 AC#7）。
 7. **dw 承諾制**：接到 deep-work 指令即承諾做完卡 AC；判斷阻塞→bi/tri（雙腿／三腿多家族審查）取結論→續做；報告僅終場一次。語義單一源＝AIR-135.7，數值不在此重刻。
 8. **harness 中立**：Settle predicate 為主體；native `/goal`（ZCode／muse）與外部 driver（codex／claude，bridge_waiter 形態）皆為 adapter 投影。bridge 派的 worker 無 goal 接點——編譯責任在 invoking session。
+9. **值星多弧收線（settle queue——AIR-135.11）**：marshal 只吃 `queue --state READY_TO_JUDGE` 的弧（`uv run python scripts/arc_settle_state.py`——settle-state 為 per-arc projection state，非 card truth 第二源；轉移由收線動作顯式驅動，禁後台自動推進）。
 
 ---
 
