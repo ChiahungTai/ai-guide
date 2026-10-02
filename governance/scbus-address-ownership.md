@@ -93,25 +93,55 @@
 ### Holder ≠ monitor
 
 - **holder** 負責 routing lease 與 ack（claim/acquire/renew/release/ack 的主體）；
-  **monitor** 只負責發現 pending——不同角色，monitor 不需要 holder 身分。
-- 值星/Marshal session 的收件義務＝**監看 canonical mailbox＋掃自己的 session inbox**，
-  兩面都免 holder 身分：canonical 用 `scbus address ls --pending`（read-only badge，
-  AIR-168 驗收③——ls 不帶 caller identity；holder-less 位址每封 pending header
-  附首行 preview 供 triage；實證錨＝scbus v0.2.0 `scbus address ls --help`——
-  `--pending` 附 envelope_id/from/mode/created，首行 preview 僅非 holder 視角
-  ＝installed cli.py `preview=not held` 行為）。
-  **已知崩潰史（SCR-8）**：address row 在而磁上 `new/` 目錄缺時，pending 視圖曾
-  整命令崩（raw FileNotFoundError）；上游已修（sc-router scr-8——缺目錄讀面
-  fail-soft 回空清單＋pending_note，修復入 v0.2.0），本機已升級。降級監看路徑＝
-  直接 `ls addresses/*/new/` 檔案面（scbus home 底下）。
-  session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手不動搖
-  ownership。因監控需求 acquire/renew/force-reclaim canonical address 皆違反本節。
-- **interaction-boundary hook discovery（AIR-225.1）**：`hooks/scbus-address-pending-reminder.py`
-  （zcode UserPromptSubmit＋SessionStart 各獨立 sync 條目，註冊單一源＝governance
-  registrations）在每次打字／session 回場跑 `scbus address ls --pending`，指名門牌
-  pending>0 注入一行 address＋count＋指針（只讀 badge——禁 body/preview 注入、
-  禁 recv/ack/acquire；fail-soft＝零 stdout exit 0 不擋 turn）；**人工輪詢（上段
-  開場快照）保留為 fallback**——hook 未註冊機器、fail-soft 靜默時的兜底皆走它。
+  **monitor** 只負責發現新到 delivery event——不同角色，monitor 不需要 holder 身分。
+
+#### 架構 invariant（AIR-233——三軸互不代理）
+
+> Canonical address 只有一個 delivery lifecycle；**receipt timeline 是
+> delivery-event authority**（sc-router `address receipts` 唯讀 face——accepted
+> 為查詢軸，與 ack 狀態解耦）。三軸各持自己的 cursor/state、互不拿彼此的
+> state 當 proxy：**transport ack**（`acked_at`，holder 面送達確認——ack ≠ 已讀
+> ≠ 已處理）、**human seen/done**（mailbox unseen→seen→done，SC UI human
+> lifecycle）、**AI notification**（consumer-owned `emitted_cursor`，語義＝
+> reminder emitted——非 AI seen、非 processed，advisory badge 非責任結清點）。
+> 任何一方不得用 mailbox `new/cur` 或 transport ack 代理另一方的閱讀／處理狀態；
+> consumer 直讀 maildir（`addresses/*/new/`、`receipts/` 檔案面）＝downstream
+> 重做 sc-router domain logic，已由 face 取代（AIR-225.1 iteration 2 的
+> interim workaround superseded），非支援監看路徑。
+
+- 值星/Marshal session 的收件義務＝**知會新到 delivery events＋掃自己的
+  session inbox**，兩面都免 holder 身分：canonical 面由 receipt-timeline hook
+  自動知會（下條）；人工 point-in-time 輪詢（`scbus address ls --pending`
+  read-only badge，AIR-168 驗收③——ls 不帶 caller identity）保留為 fallback
+  快照（語義＝目前 `new/` 目錄，非 delivery authority——holder-less 位址每封
+  pending header 附首行 preview 供 triage；實證錨＝scbus v0.2.0
+  `scbus address ls --help`）。**已知崩潰史（SCR-8）**：address row 在而磁上
+  `new/` 目錄缺時，pending 視圖曾整命令崩（raw FileNotFoundError）；上游已修
+  （sc-router scr-8——缺目錄讀面 fail-soft 回空清單＋pending_note，修復入
+  v0.2.0），本機已升級（歷史事實；maildir 直讀降級路徑隨 invariant 條退役）。
+  session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手
+  不動搖 ownership。因監控需求 acquire/renew/force-reclaim canonical address
+  皆違反本節。
+- **interaction-boundary hook monitor（AIR-225.1 建面、AIR-233 消費面重寫）**：
+  `hooks/scbus-address-pending-reminder.py`（zcode UserPromptSubmit＋SessionStart
+  各獨立 sync 條目，註冊單一源＝governance registrations）以 delivery-event
+  timeline 為唯一資料源——`scbus address receipts --address <addr>
+  --after-cursor <emitted_cursor> --limit N` 查新到收件紀錄，新到 N 封注入一行
+  （計數＋語義校注「accepted≠送達 UI≠內文可讀」＋讀取指針；count-only——禁
+  body/preview 注入、禁 recv/ack/acquire；fail-soft＝零 stdout exit 0 不擋
+  turn）。consumer-owned 狀態＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/
+  scbus-address-monitor.json`（按 address 記 `emitted_cursor`；atomic 寫、
+  **advance-after-emit**——stdout 寫出成功後才推進，寫失敗寧可下次重複提醒；
+  冷啟動只建 cursor 不告警，防歷史洪水；cursor 損壞顯性 reconcile——stderr
+  註記後視同冷啟動重建）。**monitor eligibility gate**：session cwd 在本 repo
+  內才查詢／提醒／推進（user-level 註冊跨專案觸發——防錯誤 session 吃掉
+  watermark；最低限度字面前綴鎖，card WT 路徑不在鎖內——WT session 不提醒
+  不推進，寧重不漏方向安全）。上游 face 未落地前 hook 呈 **degraded**
+  （stderr 註記「receipts face 未落地——sc-router 卡追蹤中」、零 stdout
+  exit 0；不退化相容 `ls --pending`——snapshot 與 timeline 語義不同，雙路徑
+  fallback 已裁示不採）；face 落地即自動生效（同一呼叫面）。人工輪詢（上段
+  開場快照）保留為 point-in-time fallback——hook 未註冊機器、degraded／
+  fail-soft 靜默時的兜底皆走它。
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
 - ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
@@ -121,7 +151,8 @@
   後即可 ack——非 transfer、非 force-reclaim，pin 仍屬原 holder 身分；
   **禁 session 面冒身 acquire**（identity 非 authN、trust boundary 內可 spoof
   是事實描述非授權，見紅線節——規範禁令不因技術可行而撤）。
-- 閉環驅動路徑：monitor 發現 marshal pending >0 後，正常＝**holder ext 自收**
+- 閉環驅動路徑：monitor 發現 marshal 新到收件紀錄（receipt timeline；fallback
+  ＝pending 快照 >0）後，正常＝**holder ext 自收**
   （workspace 重開窗即同身分 renew＋recv，generation 不變）；operator 代 ack
   僅限 holder 委託或緊急（漏接事故級），走前述 ext operator path。release
   命令形（AIR-225 primary release 實證）：`scbus release --harness zcode

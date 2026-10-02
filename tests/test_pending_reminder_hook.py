@@ -1,19 +1,31 @@
-"""scbus 門牌 pending 監看提醒 hook 測試（AIR-225.1）。
+"""scbus 門牌 receipt-timeline 監看提醒 hook 測試（AIR-233 消費面重寫）。
 
-涵蓋（卡 AC＋前置驗證 P-B）：
-- pending>0 注入：additionalContext 含 address＋count＋指針＋禁權聲明；
-  UPS 與 SessionStart 各自 hookEventName 正確（單 script 兩事件）。
-- pending=0／無 --address：零 stdout exit 0（靜默不擋 turn）。
-- fail-soft：scbus 缺席／命令失敗／stdout 壞 JSON／門牌不在清單／pending
-  非 list（形契約漂移）／stdin 壞／未知事件——一律零 stdout exit 0
-  （繼承 L2：ZCode exit 2＝擋 turn）。
-- 語義邊界：上游 holder-less preview 欄位絕不進輸出（禁洩信件內容）。
+涵蓋（工單六項＋AIR-225.1 既有 fail-soft 契約保留）：
+- receipts face 消費：runner 注入 mock（codex 草規形——items 帶
+  envelope_id/message_id/from/accepted_at_us/stages＋next_cursor/has_more）；
+  新到 N 封→提醒行計數正確＋cursor 推進（advance-after-emit——commit 由
+  呼叫端在 stdout 寫出後執行）。
+- 無新→靜默且 state 零動；冷啟動→只建 cursor 不告警（防歷史洪水）；
+  分頁（has_more）收齊才推進。
+- state 寫失敗→寧重不漏（提醒照出、cursor 不動、下次重複提醒）；
+  state 損壞→顯性 reconcile（stderr 註記＋視同冷啟動重建）。
+- monitor eligibility gate：cwd repo 外→零查詢零輸出零推進；cwd 缺席
+  fail-closed。
+- degraded：face 失敗（缺席／非零 exit／壞 JSON／形漂移）→零 stdout exit 0
+  ＋stderr「receipts face 未落地」註記；SCBUS_MONITOR_RUNNER 環境變數 shim
+  注入（真 subprocess 整合面）。
+- 語義邊界：items 內容（envelope header/body 欄位）絕不進輸出（count-only）。
 - governance 接線：zcode/cc 模板雙事件獨立 group＋manifest inventory；
-  install merge 面新 group append、既有條目（scbus canonical／
-  compact-restore-inject）零動、冪等、uninstall 只拆本套件 group。
+  install merge 面新 group append、既有條目零動、冪等、uninstall 只拆本套件
+  group（registrations 雙模板 AIR-233 零動——script 名與 args 不變）。
 """
 
+import io
 import json
+import os
+import sys
+
+import pytest
 
 from conftest import load_module
 
@@ -21,210 +33,575 @@ mod = load_module("hooks/scbus-address-pending-reminder.py")
 gov = load_module("governance/install.py")
 
 ADDRESS = "ai-guide-marshal"
-UPS_STDIN = json.dumps(
-    {"hook_event_name": "UserPromptSubmit", "session_id": "s1", "cwd": "/tmp"}
-)
-SS_STDIN = json.dumps(
-    {"hook_event_name": "SessionStart", "session_id": "s1", "cwd": "/tmp"}
-)
+REPO = "/fake/ai-guide/repo"
 
 
-def _listing(**counts):
-    """合成 `scbus address ls --pending` stdout——counts: address→pending 數。
+def _stdin(event="UserPromptSubmit", cwd=REPO):
+    """合法 monitor invocation 形——cwd 在鎖內（gate autouse fixture 對齊）。"""
+    return json.dumps({"hook_event_name": event, "session_id": "s1", "cwd": cwd})
 
-    首封 pending header 帶 preview 欄位（上游 holder-less 形態）——釘住
-    「preview 絕不進 hook 輸出」的語義邊界。
-    """
-    entries = []
-    for addr, n in counts.items():
-        headers = [
+
+UPS_STDIN = _stdin()
+SS_STDIN = _stdin(event="SessionStart")
+
+
+@pytest.fixture(autouse=True)
+def _gate(monkeypatch):
+    """eligibility gate 鎖定測試 repo——預設 stdin cwd 即鎖內。"""
+    monkeypatch.setattr(mod, "script_repo_root", lambda: REPO)
+
+
+@pytest.fixture
+def state_file(tmp_path):
+    return str(tmp_path / "state" / "scbus-address-monitor.json")
+
+
+def _item(i, accepted_us):
+    """receipts face 單 item（codex 草規形——唯讀 timeline，無 body/preview）。"""
+    return {
+        "envelope_id": "env-%d" % i,
+        "message_id": "msg-%d" % i,
+        "from": {"harness": "zcode", "session_id": "s-%d" % i, "name": None},
+        "accepted_at_us": accepted_us,
+        "stages": [
+            {"stage": "accepted", "at_us": accepted_us},
             {
-                "envelope_id": f"env-{i}",
-                "from": "someone",
-                "mode": "queue",
-                "created_at_us": 1,
-            }
-            for i in range(n)
-        ]
-        if headers:
-            headers[0]["preview"] = "TOP-SECRET-BODY-PREVIEW"
-        entries.append({"address": addr, "binding": None, "pending": headers})
+                "stage": "acked_at",
+                "at_us": accepted_us + 1000,
+                "generation": 4,
+            },
+        ],
+    }
+
+
+def _receipts(items, next_cursor, has_more, extra_first=None):
+    """合成 receipts face stdout。extra_first：併入首 item 的額外欄位
+    （釘住「item 內容絕不進 hook 輸出」語義邊界）。"""
+    if extra_first and items:
+        items = [dict(items[0], **extra_first)] + items[1:]
     return json.dumps(
-        {"status": "ok", "count": len(entries), "addresses": entries}
+        {
+            "status": "ok",
+            "op": "address-receipts",
+            "address": ADDRESS,
+            "items": items,
+            "next_cursor": next_cursor,
+            "has_more": has_more,
+        }
     )
 
 
-def _runner(stdout=None, exc=None):
-    """injectable runner：回傳固定 stdout 或 raise；未呼叫不炸（用 sentinel 斷言）。"""
+def _page_runner(pages):
+    """injectable runner：pages 依呼叫序回傳（str stdout 或 Exception）。"""
     calls = []
 
     def run(argv):
         calls.append(argv)
-        if exc is not None:
-            raise exc
-        return stdout
+        page = pages[len(calls) - 1]
+        if isinstance(page, Exception):
+            raise page
+        return page
 
     run.calls = calls
     return run
 
 
-def _out_context(raw, addresses, runner):
-    code, out = mod.run(raw, addresses, runner=runner)
-    return code, out
+def _seed_state(state_file, cursor="cur-0", address=ADDRESS):
+    os.makedirs(os.path.dirname(state_file), exist_ok=True)
+    with open(state_file, "w", encoding="utf-8") as fh:
+        json.dump({address: {"emitted_cursor": cursor}}, fh)
 
 
-# ── pending>0：注入一行（兩事件 hookEventName 正確——P-B）──────────
+def _shim(doc, tmp_path, name="receipts-shim.py"):
+    """SCBUS_MONITOR_RUNNER shim 執行檔——stdout 固定印 doc JSON。
+
+    JSON 以 quoted-string 內嵌（JSON 字面值 null/false 非 Python literal，
+    直接內嵌 source 會 NameError）。"""
+    shim = tmp_path / name
+    shim.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json\n"
+        "print(" + json.dumps(json.dumps(doc)) + ")\n",
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    return shim
 
 
-class TestPendingPositiveInjects:
-    def test_ups_injects_address_count_and_pointer(self):
-        runner = _runner(_listing(**{ADDRESS: 2}))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
+def _read_state(state_file):
+    with open(state_file, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# ── 新到 N 封：提醒行計數＋cursor 推進（advance-after-emit）──────────
+
+
+class TestNewReceiptsAlertAndCursor:
+    def test_alert_line_semantics_and_count(self, state_file):
+        _seed_state(state_file, "cur-0")
+        runner = _page_runner([_receipts([_item(1, 100), _item(2, 200),
+                                          _item(3, 300)], "cur-1", False)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
         assert code == 0
         doc = json.loads(out)
+        assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
         ctx = doc["hookSpecificOutput"]["additionalContext"]
-        assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-        assert "[" + mod.HOOK_TAG + "] " + ADDRESS + " pending=2" in ctx
-        assert "scbus address ls --pending" in ctx
-        assert "recv/ack/acquire" in ctx
-        assert runner.calls == [["scbus", "address", "ls", "--pending"]]
+        assert "[" + mod.HOOK_TAG + "] " + ADDRESS in ctx
+        assert "自上次知會後新到 3 封收件紀錄" in ctx
+        assert "accepted≠送達 UI≠內文可讀" in ctx  # astra 邊界二語義校注
+        assert "scbus address ls --pending" in ctx  # 讀取指針
+        assert "SC UI" in ctx
+        assert "recv/ack/acquire" in ctx  # 禁權聲明
+        # 呼叫面照 face 草規：address receipts＋--address＋--after-cursor＋--limit
+        assert runner.calls == [[
+            "scbus", "address", "receipts",
+            "--address", ADDRESS,
+            "--limit", "100",
+            "--after-cursor", "cur-0",
+        ]]
 
-    def test_sessionstart_event_name(self):
-        runner = _runner(_listing(**{ADDRESS: 1}))
-        code, out = _out_context(SS_STDIN, [ADDRESS], runner)
-        assert code == 0
-        doc = json.loads(out)
-        assert doc["hookSpecificOutput"]["hookEventName"] == "SessionStart"
-        assert ADDRESS + " pending=1" in doc["hookSpecificOutput"]["additionalContext"]
+    def test_advance_after_emit_not_before(self, state_file):
+        """cursor 推進只發生在 commit()（stdout 寫出後）——run() 返回當下
+        state 未動。"""
+        _seed_state(state_file, "cur-0")
+        runner = _page_runner([_receipts([_item(1, 100)], "cur-9", False)])
+        _code, _out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert commit is not None
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-0"
+        commit()
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-9"
 
-    def test_grok_snake_event_value_normalized(self):
-        raw = json.dumps({"hookEventName": "user_prompt_submit"})
-        runner = _runner(_listing(**{ADDRESS: 1}))
-        _code, out = _out_context(raw, [ADDRESS], runner)
-        doc = json.loads(out)
-        assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    def test_sessionstart_event_name(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner([_receipts([_item(1, 100)], "c1", False)])
+        _code, out, _commit = mod.run(SS_STDIN, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert json.loads(out)["hookSpecificOutput"][
+            "hookEventName"] == "SessionStart"
 
-    def test_preview_never_leaks_into_context(self):
-        runner = _runner(_listing(**{ADDRESS: 3}))
-        _code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert "TOP-SECRET-BODY-PREVIEW" not in out
-        assert "preview" not in out
+    def test_grok_snake_event_value_normalized(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner([_receipts([_item(1, 100)], "c1", False)])
+        raw = json.dumps({"hookEventName": "user_prompt_submit", "cwd": REPO})
+        _code, out, _commit = mod.run(raw, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert json.loads(out)["hookSpecificOutput"][
+            "hookEventName"] == "UserPromptSubmit"
 
-    def test_repeated_address_only_positive_lines(self):
-        runner = _runner(_listing(**{"ai-guide-marshal": 2, "other-marshal": 0}))
-        _code, out = _out_context(
-            UPS_STDIN, ["ai-guide-marshal", "other-marshal"], runner
-        )
+    def test_multipage_has_more_collected_before_advance(self, state_file):
+        """has_more=true 續翻收齊——cursor 只推進到已消費完的位置。"""
+        _seed_state(state_file, "cur-0")
+        page1 = _receipts([_item(i, i) for i in range(100)], "cur-mid", True)
+        page2 = _receipts([_item(101, 900), _item(102, 901)], "cur-end", False)
+        runner = _page_runner([page1, page2])
+        _code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                     state_file=state_file)
         ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
-        assert "ai-guide-marshal pending=2" in ctx
-        assert "other-marshal" not in ctx
+        assert "自上次知會後新到 102 封收件紀錄" in ctx
+        assert runner.calls[1][
+            runner.calls[1].index("--after-cursor") + 1] == "cur-mid"
+        commit()
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-end"
 
-    def test_multiple_positive_addresses_two_lines(self):
-        runner = _runner(_listing(**{"a-marshal": 1, "b-marshal": 4}))
-        _code, out = _out_context(UPS_STDIN, ["a-marshal", "b-marshal"], runner)
+    def test_multiple_addresses_two_lines_and_both_advance(self, state_file):
+        os.makedirs(os.path.dirname(state_file), exist_ok=True)
+        with open(state_file, "w", encoding="utf-8") as fh:
+            json.dump(
+                {
+                    "a-marshal": {"emitted_cursor": "cur-0"},
+                    "b-marshal": {"emitted_cursor": "cur-0"},
+                },
+                fh,
+            )
+        pages = [
+            _receipts([_item(1, 100)], "a-end", False),
+            _receipts(
+                [_item(1, 200), _item(2, 201), _item(3, 202), _item(4, 203)],
+                "b-end",
+                False,
+            ),
+        ]
+        runner = _page_runner(pages)
+        _code, out, commit = mod.run(
+            UPS_STDIN, ["a-marshal", "b-marshal"], runner=runner,
+            state_file=state_file,
+        )
         ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
         assert ctx.count("\n") == 1
-        assert "a-marshal pending=1" in ctx
-        assert "b-marshal pending=4" in ctx
+        assert "a-marshal：自上次知會後新到 1 封" in ctx
+        assert "b-marshal：自上次知會後新到 4 封" in ctx
+        commit()
+        doc = _read_state(state_file)
+        assert doc["a-marshal"]["emitted_cursor"] == "a-end"
+        assert doc["b-marshal"]["emitted_cursor"] == "b-end"
+
+    def test_item_fields_never_leak_into_output(self, state_file):
+        """count-only 語義邊界：item 的 envelope header／body／preview 欄位
+        絕不進輸出（face 形漂移多帶欄位也不洩）。"""
+        _seed_state(state_file)
+        runner = _page_runner([
+            _receipts([_item(1, 100)], "c1", False,
+                      extra_first={"body": "TOP-SECRET-BODY",
+                                   "preview": "TOP-SECRET-PREVIEW"}),
+        ])
+        _code, out, _commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert "TOP-SECRET" not in out
+        assert "envelope_id" not in out
+        assert "stages" not in out
 
 
-# ── pending=0／無參數：零 stdout 靜默──────────────────────────────
+# ── 無新／冷啟動：靜默與只建 cursor────────────────────────────────────
 
 
-class TestSilentPaths:
-    def test_pending_zero_zero_stdout(self):
-        runner = _runner(_listing(**{ADDRESS: 0}))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert (code, out) == (0, "")
+class TestSilentAndColdStart:
+    def test_zero_new_silent_state_untouched(self, state_file):
+        _seed_state(state_file, "cur-0")
+        runner = _page_runner([_receipts([], None, False)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-0"
 
-    def test_no_address_flag_zero_stdout_without_scbus_call(self):
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context(UPS_STDIN, [], runner)
-        assert (code, out) == (0, "")
+    def test_no_address_flag_zero_stdout_without_scbus_call(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        code, out, commit = mod.run(UPS_STDIN, [], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-
-# ── fail-soft：任何錯誤零 stdout exit 0───────────────────────────
-
-
-class TestFailSoft:
-    def test_scbus_binary_missing(self):
-        runner = _runner(exc=FileNotFoundError("scbus"))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
+    def test_cold_start_builds_cursor_no_alert(self, state_file):
+        """無 state 檔＝冷啟動：掃至 timeline 尾端只建 cursor、不告警
+        （防歷史洪水）；首查不帶 --after-cursor。"""
+        assert not os.path.exists(state_file)
+        page1 = _receipts([_item(1, 100), _item(2, 200)], "c1", True)
+        page2 = _receipts(
+            [_item(i, i * 100) for i in range(3, 7)], "c-end", False
+        )
+        runner = _page_runner([page1, page2])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
         assert (code, out) == (0, "")
+        assert "--after-cursor" not in runner.calls[0]
+        assert runner.calls[1][runner.calls[1].index("--after-cursor") + 1] == "c1"
+        commit()
+        assert _read_state(state_file) == {ADDRESS: {"emitted_cursor": "c-end"}}
 
-    def test_scbus_nonzero_exit(self):
-        runner = _runner(exc=RuntimeError("exit 1: envelope_corrupt"))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
+    def test_cold_start_empty_timeline_no_state_write(self, state_file):
+        """空 timeline 且 face 未給端點 token——無 cursor 可建，下輪重掃。"""
+        runner = _page_runner([_receipts([], None, False)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert not os.path.exists(state_file)
+
+    def test_cold_start_new_items_then_warm_alerts_only_delta(self, state_file):
+        """冷啟動建 cursor 後，新 delivery 才告警——歷史不重灌。"""
+        runner = _page_runner([_receipts([_item(1, 100)], "c-base", False)])
+        _code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                     state_file=state_file)
+        assert out == ""  # 冷啟動不告警
+        commit()
+        runner2 = _page_runner([_receipts([_item(2, 900)], "c-next", False)])
+        _code, out2, _ = mod.run(UPS_STDIN, [ADDRESS], runner=runner2,
+                                 state_file=state_file)
+        assert "自上次知會後新到 1 封" in out2
+
+
+# ── state 寫失敗／損壞：寧重不漏＋顯性 reconcile──────────────────────
+
+
+class TestStateResilience:
+    def test_state_write_failure_duplicate_next_run(self, state_file,
+                                                    monkeypatch):
+        """寫失敗寧可重複提醒：提醒照出（emitted）、推進失敗 cursor 不動、
+        下次同批重複提醒（寧重不漏）。"""
+        _seed_state(state_file, "cur-0")
+
+        def boom(path, doc):
+            raise OSError("disk on fire")
+
+        orig_save = mod.save_state
+        monkeypatch.setattr(mod, "save_state", boom)
+        runner = _page_runner(
+            [_receipts([_item(1, 100), _item(2, 200)], "cur-9", False)]
+        )
+        _code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                     state_file=state_file)
+        assert "自上次知會後新到 2 封" in out  # 提醒照出
+        with pytest.raises(OSError):
+            commit()  # 推進失敗——main() 吸收成 stderr、exit 0
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-0"
+
+        # 下次 invocation：cursor 仍在 cur-0——同批重複提醒（寧重不漏）。
+        # 不用 monkeypatch.undo()——會連動拆掉 autouse gate fixture 的鎖。
+        monkeypatch.setattr(mod, "save_state", orig_save)
+        runner2 = _page_runner(
+            [_receipts([_item(1, 100), _item(2, 200)], "cur-9", False)]
+        )
+        _code, out2, _ = mod.run(UPS_STDIN, [ADDRESS], runner=runner2,
+                                 state_file=state_file)
+        assert "自上次知會後新到 2 封" in out2
+
+    def test_corrupt_state_file_reconciled_as_cold_start(self, state_file,
+                                                         capsys):
+        os.makedirs(os.path.dirname(state_file), exist_ok=True)
+        with open(state_file, "w", encoding="utf-8") as fh:
+            fh.write("{not json")
+        runner = _page_runner([_receipts([_item(1, 100)], "c-end", False)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out) == (0, "")  # 不告警（冷啟動語義）
+        assert "損壞" in capsys.readouterr().err  # 顯性 reconcile
+        commit()
+        assert _read_state(state_file) == {ADDRESS: {"emitted_cursor": "c-end"}}
+
+    def test_corrupt_cursor_value_reconciled(self, state_file, capsys):
+        _seed_state(state_file, cursor=123)  # 非 str——cursor 損壞
+        runner = _page_runner([_receipts([_item(1, 100)], "c-end", False)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
         assert (code, out) == (0, "")
+        assert "emitted_cursor 損壞" in capsys.readouterr().err
+        commit()
+        assert _read_state(state_file) == {ADDRESS: {"emitted_cursor": "c-end"}}
 
-    def test_scbus_bad_json_stdout(self):
-        runner = _runner("Traceback (most recent call last):")
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_main_commit_failure_exit0_stderr_note(self, tmp_path, capsys,
+                                                   monkeypatch):
+        """main() 面：推進失敗不擋 turn——提醒照出、exit 0、stderr 註記。
 
-    def test_scbus_unexpected_shape(self):
-        runner = _runner(json.dumps({"status": "ok", "addresses": "not-a-list"}))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert (code, out) == (0, "")
-
-    def test_address_not_in_listing(self):
-        runner = _runner(_listing(other=1))
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert (code, out) == (0, "")
-
-    def test_pending_not_list_shape_drift_fail_soft(self, capsys):
-        """pending 非 list（int 形契約漂移）——禁靜默歸零成 pending=0。
-
-        形狀漂移須 raise 交 fail-soft 統一路徑：零 stdout exit 0＋stderr
-        含診斷（絕不擋 turn，也不假裝沒有信）。
-        """
-        listing = json.dumps(
+        main() 無 runner／state_file 參數——查詢走 SCBUS_MONITOR_RUNNER shim、
+        state 走 XDG_STATE_HOME（皆 env 注入）。"""
+        shim = _shim(
             {
                 "status": "ok",
-                "addresses": [
-                    {"address": ADDRESS, "binding": None, "pending": 3}
-                ],
-            }
+                "op": "address-receipts",
+                "address": ADDRESS,
+                "items": [_item(1, 100)],
+                "next_cursor": "cur-9",
+                "has_more": False,
+            },
+            tmp_path,
+            name="commit-fail-shim.py",
         )
-        runner = _runner(listing)
-        code, out = _out_context(UPS_STDIN, [ADDRESS], runner)
-        assert (code, out) == (0, "")
+        monkeypatch.setenv(mod.RUNNER_ENV, str(shim))
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        state = tmp_path / "ai-guide" / "scbus-address-monitor.json"
+        os.makedirs(str(state.parent), exist_ok=True)
+        state.write_text(
+            json.dumps({ADDRESS: {"emitted_cursor": "cur-0"}}),
+            encoding="utf-8",
+        )
+
+        def boom(path, doc):
+            raise OSError("disk on fire")
+
+        monkeypatch.setattr(mod, "save_state", boom)
+        monkeypatch.setattr(sys, "stdin", io.StringIO(UPS_STDIN))
+        rc = mod.main(["--address", ADDRESS])
+        assert rc == 0
+        captured = capsys.readouterr()
+        assert "自上次知會後新到 1 封" in captured.out
+        assert "cursor 推進失敗" in captured.err
+
+
+# ── monitor eligibility gate（cwd 鎖）────────────────────────────────
+
+
+class TestEligibilityGate:
+    def test_cwd_outside_repo_silent_no_query_no_state(self, state_file):
+        _seed_state(state_file, "cur-0")
+        runner = _page_runner([AssertionError("must not call scbus")])
+        raw = _stdin(cwd="/tmp/other-project")
+        code, out, commit = mod.run(raw, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert runner.calls == []  # 零查詢
+        assert _read_state(state_file)[
+            ADDRESS]["emitted_cursor"] == "cur-0"  # 不推進
+
+    def test_cwd_missing_fail_closed(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        raw = json.dumps({"hook_event_name": "UserPromptSubmit"})
+        code, out, commit = mod.run(raw, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert runner.calls == []
+
+    def test_cwd_subdirectory_of_repo_proceeds(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner([_receipts([_item(1, 100)], "c1", False)])
+        raw = _stdin(cwd=REPO + "/hooks/deep/dir")
+        _code, out, _commit = mod.run(raw, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert "自上次知會後新到 1 封" in out
+
+    def test_cwd_repo_root_exact_proceeds(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner([_receipts([_item(1, 100)], "c1", False)])
+        _code, out, _commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                      state_file=state_file)
+        assert "自上次知會後新到 1 封" in out
+
+    def test_prefix_sibling_path_not_eligible(self):
+        """字面前綴鎖不吞 sibling：/fake/ai-guide/repo-x 不在 repo 內。"""
+        assert mod.is_eligible(REPO + "-x/sub") is False
+        assert mod.is_eligible(None) is False
+        assert mod.is_eligible("") is False
+        assert mod.is_eligible(123) is False
+        assert mod.is_eligible(REPO) is True
+        assert mod.is_eligible(REPO + "/sub") is True
+
+
+# ── degraded：face 失敗靜默＋stderr 註記；shim 注入面─────────────────
+
+
+class TestDegradedFaceUnavailable:
+    def test_runner_failure_silent_with_degraded_note(self, state_file,
+                                                      capsys):
+        _seed_state(state_file)
+        runner = _page_runner([RuntimeError("exit 2: unknown command")])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)  # 零 stdout exit 0
         err = capsys.readouterr().err
+        assert "receipts face 未落地——sc-router 卡追蹤中" in err
         assert "fail-soft" in err
-        assert "pending not a list" in err
 
-    def test_bad_stdin_json(self):
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context("{not json", [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_bad_json_stdout_silent(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner(["Traceback (most recent call last):"])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_shape_drift_items_not_list_silent(self, state_file):
+        _seed_state(state_file)
+        runner = _page_runner([json.dumps({"status": "ok", "items": 3})])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_has_more_without_next_cursor_silent(self, state_file):
+        _seed_state(state_file, "cur-0")
+        runner = _page_runner([_receipts([_item(1, 100)], None, True)])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_paging_cap_exceeded_silent_no_advance(self, state_file):
+        """分頁上限觸發 raise → fail-soft：不 emit 不推進（寧重不漏）。"""
+        _seed_state(state_file, "cur-0")
+        pages = [
+            _receipts([_item(i, i)], "c-p%d" % i, True)
+            for i in range(mod.RECEIPTS_MAX_PAGES)
+        ]
+        runner = _page_runner(pages)
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert len(runner.calls) == mod.RECEIPTS_MAX_PAGES
+        assert _read_state(state_file)[ADDRESS]["emitted_cursor"] == "cur-0"
+
+    def test_runner_env_var_routes_to_shim(self, state_file, tmp_path,
+                                           monkeypatch):
+        """SCBUS_MONITOR_RUNNER 環境變數指向 shim 執行檔——stub-first 整合面
+        （真 subprocess、無函式注入）。"""
+        shim = _shim(
+            {
+                "status": "ok",
+                "op": "address-receipts",
+                "address": ADDRESS,
+                "items": [_item(1, 100), _item(2, 200)],
+                "next_cursor": "cur-shim-end",
+                "has_more": False,
+            },
+            tmp_path,
+        )
+        monkeypatch.setenv(mod.RUNNER_ENV, str(shim))
+        _seed_state(state_file, "cur-0")
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], state_file=state_file)
+        assert code == 0
+        assert "自上次知會後新到 2 封" in out
+        commit()
+        assert _read_state(state_file)[
+            ADDRESS]["emitted_cursor"] == "cur-shim-end"
+
+    def test_runner_env_var_shim_failure_silent(self, state_file, tmp_path,
+                                                monkeypatch):
+        shim = tmp_path / "failing-shim.py"
+        shim.write_text(
+            "#!/usr/bin/env python3\n"
+            "import sys\n"
+            "sys.stderr.write('unknown command')\n"
+            "sys.exit(3)\n",
+            encoding="utf-8",
+        )
+        shim.chmod(0o755)
+        monkeypatch.setenv(mod.RUNNER_ENV, str(shim))
+        _seed_state(state_file, "cur-0")
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_default_runner_nonzero_exit_raises(self, tmp_path, monkeypatch):
+        shim = tmp_path / "exit-shim.py"
+        shim.write_text("#!/usr/bin/env python3\nraise SystemExit(1)\n")
+        shim.chmod(0o755)
+        monkeypatch.setenv(mod.RUNNER_ENV, str(shim))
+        with pytest.raises(RuntimeError, match="scbus exit 1"):
+            mod._default_runner(["scbus", "address", "receipts"])
+
+
+# ── fail-soft 既有契約（AIR-225.1 全保留）────────────────────────────
+
+
+class TestFailSoftContract:
+    def test_bad_stdin_json(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        code, out, commit = mod.run("{not json", [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_empty_stdin(self):
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context("", [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_empty_stdin(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        code, out, commit = mod.run("", [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
 
-    def test_stdin_not_object(self):
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context("[1,2]", [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_stdin_not_object(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        code, out, commit = mod.run("[1,2]", [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
 
-    def test_unknown_event_silent_without_scbus_call(self):
-        raw = json.dumps({"hook_event_name": "Stop"})
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context(raw, [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_unknown_event_silent_without_scbus_call(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        raw = json.dumps({"hook_event_name": "Stop", "cwd": REPO})
+        code, out, commit = mod.run(raw, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_missing_event_name_silent(self):
-        raw = json.dumps({"session_id": "s1"})
-        runner = _runner(exc=AssertionError("must not call scbus"))
-        code, out = _out_context(raw, [ADDRESS], runner)
-        assert (code, out) == (0, "")
+    def test_missing_event_name_silent(self, state_file):
+        runner = _page_runner([AssertionError("must not call scbus")])
+        raw = json.dumps({"session_id": "s1", "cwd": REPO})
+        code, out, commit = mod.run(raw, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_cold_start_face_failure_retries_next_run(self, state_file):
+        """冷啟動遇 face 失敗：靜默零寫——下輪仍冷啟動可重建（不毒化 state）。"""
+        runner = _page_runner([RuntimeError("exit 2")])
+        code, out, commit = mod.run(UPS_STDIN, [ADDRESS], runner=runner,
+                                    state_file=state_file)
+        assert (code, out, commit) == (0, "", None)
+        assert not os.path.exists(state_file)
 
 
-# ── governance 接線：registrations 雙事件獨立 group＋merge 面──────
+# ── governance 接線：registrations 雙事件獨立 group＋merge 面（零動）──
 
 
 def _registration(rel):
@@ -264,7 +641,7 @@ class TestRegistrationWiring:
     def test_zcode_template_existing_entries_untouched(self):
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
-        assert len(ups) == 2  # compact-restore-inject ＋ 新 pending-reminder
+        assert len(ups) == 2  # compact-restore-inject ＋ pending-reminder
         compact = [
             g for g in ups if "compact-restore-inject.py" in _hook_scripts(g)
         ]
@@ -273,7 +650,6 @@ class TestRegistrationWiring:
         assert entry["type"] == "process"
         assert entry.get("enabled") is True
         assert entry.get("timeoutMs") == 10000
-        # 新增 SessionStart 事件鍵不擠掉既有事件面
         assert set(doc["events"]) >= {
             "PreToolUse",
             "Stop",
@@ -356,7 +732,6 @@ class TestInstallMergeFace:
         ss = new_root["hooks"]["events"]["SessionStart"]
         live_ups = live["hooks"]["events"]["UserPromptSubmit"]
         live_ss = live["hooks"]["events"]["SessionStart"]
-        # 既有兩 UPS group 原樣在前、scbus canonical（空 scripts identity）不動
         assert ups[0] == live_ups[0]
         assert ups[1] == live_ups[1]
         assert len(ups) == 3
@@ -380,8 +755,6 @@ class TestInstallMergeFace:
         merged, _ = gov.merge_json_hooks(live, tmpl, "hooks", remove=False)
         back, changed = gov.merge_json_hooks(merged, tmpl, "hooks", remove=True)
         assert changed
-        # 套件 group（compact-restore＋pending-reminder×2）全拆；scbus canonical
-        # 條目（非本套件——空 scripts identity 不相符）原樣保留
         events = back["hooks"]["events"]
         assert len(events["UserPromptSubmit"]) == 1
         assert gov._group_scripts(events["UserPromptSubmit"][0]) == frozenset()
@@ -390,8 +763,6 @@ class TestInstallMergeFace:
 
     def test_identity_no_collapse_with_canonical_or_compact(self):
         tmpl = self._template()
-        # identity 是 per-event scope（merge/check 逐事件比對）——UPS 與 SS
-        # 兩條目共用同一 identity 合法；同事件內須恰一、且可解析非空。
         for event in ("UserPromptSubmit", "SessionStart"):
             ours = [
                 gov._group_identity(g)
@@ -400,7 +771,6 @@ class TestInstallMergeFace:
             ]
             assert len(ours) == 1, event
             assert len(ours[0][1]) == 1
-            # 與同事件其他 group（compact / scbus canonical）identity 不相撞
             others = {
                 gov._group_identity(g) for g in tmpl["events"][event]
             } - set(ours)
