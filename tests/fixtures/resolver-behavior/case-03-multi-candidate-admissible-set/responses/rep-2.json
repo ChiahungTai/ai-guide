@@ -1,0 +1,78 @@
+{
+  "schema": "resolver-decision/1",
+  "decision_id": "multi-candidate-admissible",
+  "contract": {
+    "role": "implement",
+    "authority": "apply",
+    "judgment_floor": "execution",
+    "qualifications": [
+      "implement_from_accepted_ep"
+    ],
+    "capabilities": [],
+    "surface": "glm-family"
+  },
+  "dispatched_contract": {
+    "role": "implement",
+    "authority": "apply",
+    "judgment_floor": "execution",
+    "qualifications": [
+      "implement_from_accepted_ep"
+    ],
+    "capabilities": [],
+    "surface": "glm-family"
+  },
+  "policy": {
+    "preferred_family": "codex",
+    "on_unavailable": "fallback",
+    "fallback_families": [
+      "glm",
+      "muse"
+    ]
+  },
+  "planning_rows": [
+    {
+      "family": "codex",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    },
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "available"
+    }
+  ],
+  "live_availability": [
+    {
+      "family": "codex",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    },
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "available"
+    }
+  ],
+  "qualified_families": [
+    "codex",
+    "glm",
+    "muse"
+  ],
+  "selected": {
+    "family": "muse",
+    "model": "muse-spark-1.3",
+    "effort": "xhigh",
+    "binding": "muse-family",
+    "eligibility_source": "live_availability"
+  }
+}

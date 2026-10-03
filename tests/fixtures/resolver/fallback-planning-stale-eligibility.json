@@ -1,0 +1,41 @@
+{
+  "schema": "resolver-decision/1",
+  "decision_id": "fallback-planning-stale-eligibility",
+  "contract": {
+    "role": "implement",
+    "authority": "apply",
+    "judgment_floor": "execution",
+    "qualifications": ["implement_from_accepted_ep"],
+    "capabilities": [],
+    "surface": "glm-family"
+  },
+  "dispatched_contract": {
+    "role": "implement",
+    "authority": "apply",
+    "judgment_floor": "execution",
+    "qualifications": ["implement_from_accepted_ep"],
+    "capabilities": [],
+    "surface": "glm-family"
+  },
+  "policy": {
+    "preferred_family": "muse",
+    "on_unavailable": "fallback",
+    "fallback_families": ["glm"]
+  },
+  "planning_rows": [
+    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+    {"family": "glm", "freshness": "stale", "state": "unknown"}
+  ],
+  "live_availability": [
+    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+    {"family": "glm", "freshness": "fresh", "state": "available"}
+  ],
+  "qualified_families": ["muse", "glm"],
+  "selected": {
+    "family": "glm",
+    "model": "GLM-5.3-Flash",
+    "effort": "high",
+    "binding": "bridge-glm-5.3-flash",
+    "eligibility_source": "entitlement_planning"
+  }
+}

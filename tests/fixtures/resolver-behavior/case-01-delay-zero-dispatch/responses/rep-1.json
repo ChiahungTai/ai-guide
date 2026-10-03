@@ -1,0 +1,27 @@
+{
+  "schema": "resolver-decision/1",
+  "decision_id": "delay-zero-dispatch",
+  "contract": {
+    "role": "implement",
+    "authority": "apply",
+    "judgment_floor": "execution",
+    "qualifications": ["implement_from_accepted_ep"],
+    "capabilities": [],
+    "surface": "glm-family"
+  },
+  "policy": {
+    "preferred_family": "muse",
+    "on_unavailable": "delay",
+    "fallback_families": []
+  },
+  "planning_rows": [
+    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+    {"family": "glm", "freshness": "fresh", "state": "available"}
+  ],
+  "live_availability": [
+    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+    {"family": "glm", "freshness": "fresh", "state": "available"}
+  ],
+  "qualified_families": ["muse", "glm"],
+  "selected": null
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "resolver-behavior-case/1",
+  "case_id": "case-02-fallback-live-available",
+  "description": "fallback policy＋preferred（muse）live-unavailable、explicit fallback glm qualified＋live fresh available——正確行為＝selected glm（eligibility_source=live_availability）",
+  "scenario": {
+    "policy": {
+      "preferred_family": "muse",
+      "on_unavailable": "fallback",
+      "fallback_families": ["glm"]
+    },
+    "live_availability": [
+      {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+      {"family": "glm", "freshness": "fresh", "state": "available"}
+    ],
+    "qualified_families": ["muse", "glm"]
+  },
+  "response_provenance": "draft-synthetic——格式草案（非真實 fresh-agent capture）；真跑依 consumer-dryrun-corpus 協議（skills/_common/consumer-dryrun-corpus.md）重捕後替換"
+}

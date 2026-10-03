@@ -1,0 +1,19 @@
+{
+  "schema": "resolver-behavior-case/1",
+  "case_id": "case-03-multi-candidate-admissible-set",
+  "description": "多合法 soft-ranked candidate 並存（glm／muse 皆 fallback 集合內＋qualified＋live available）——不同 rep 可選不同 family，皆 admissible；probe 不比 winner（evaluator-not-router）",
+  "scenario": {
+    "policy": {
+      "preferred_family": "codex",
+      "on_unavailable": "fallback",
+      "fallback_families": ["glm", "muse"]
+    },
+    "live_availability": [
+      {"family": "codex", "freshness": "fresh", "state": "unavailable"},
+      {"family": "glm", "freshness": "fresh", "state": "available"},
+      {"family": "muse", "freshness": "fresh", "state": "available"}
+    ],
+    "qualified_families": ["codex", "glm", "muse"]
+  },
+  "response_provenance": "draft-synthetic——格式草案（非真實 fresh-agent capture）；rep 間 glm/muse 交替為刻意設計（驗 admissible set 語義非 winner 收斂）；真跑依 consumer-dryrun-corpus 協議重捕後替換"
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "resolver-behavior-case/1",
+  "case_id": "case-01-delay-zero-dispatch",
+  "description": "delay policy＋preferred（muse）live-unavailable——正確行為＝zero dispatch（selected=null）；glm 雖 live-available 亦不可選（delay 語義，fallback_families 必空）",
+  "scenario": {
+    "policy": {
+      "preferred_family": "muse",
+      "on_unavailable": "delay",
+      "fallback_families": []
+    },
+    "live_availability": [
+      {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+      {"family": "glm", "freshness": "fresh", "state": "available"}
+    ],
+    "qualified_families": ["muse", "glm"]
+  },
+  "response_provenance": "draft-synthetic——格式草案（非真實 fresh-agent capture）；真跑依 consumer-dryrun-corpus 協議（skills/_common/consumer-dryrun-corpus.md）重捕後替換"
+}

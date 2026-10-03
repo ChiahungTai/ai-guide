@@ -1,0 +1,18 @@
+{
+  "schema": "resolver-behavior-case/1",
+  "case_id": "case-04-provider-failure-inconclusive",
+  "description": "provider/runtime failure 演練——rep-1 為 explicit INCONCLUSIVE marker（GLM 1308 usage limit）；rep-2..5 artifact 缺席＝無完成樣本。正確行為＝probe 記 INCONCLUSIVE 如實、禁 retry-to-green",
+  "scenario": {
+    "policy": {
+      "preferred_family": "muse",
+      "on_unavailable": "fallback",
+      "fallback_families": ["glm"]
+    },
+    "live_availability": [
+      {"family": "muse", "freshness": "fresh", "state": "unavailable"},
+      {"family": "glm", "freshness": "fresh", "state": "available"}
+    ],
+    "qualified_families": ["muse", "glm"]
+  },
+  "response_provenance": "explicit INCONCLUSIVE marker（示範 provider/runtime failure 記錄形態）；缺席 rep＝無完成樣本形態"
+}
