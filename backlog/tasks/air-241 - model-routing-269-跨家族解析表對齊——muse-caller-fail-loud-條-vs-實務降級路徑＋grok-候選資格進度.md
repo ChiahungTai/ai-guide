@@ -1,10 +1,10 @@
 ---
 id: AIR-241
 title: 'model-routing:269 跨家族解析表對齊——muse caller fail-loud 條 vs 實務降級路徑＋grok 候選資格進度'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 22:48'
-updated_date: '2026-10-03 03:07'
+updated_date: '2026-10-03 03:38'
 labels: []
 dependencies: []
 ordinal: 232000
