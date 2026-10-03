@@ -3,9 +3,10 @@ id: AIR-245
 title: >-
   AIR-245-C Resolver decision invariant checker＋behavior oracle——驗 hard
   invariants 禁 ranking
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-03 04:44'
+updated_date: '2026-10-03 05:53'
 labels: []
 dependencies: []
 ordinal: 236000
