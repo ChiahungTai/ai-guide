@@ -3,10 +3,10 @@ id: AIR-243
 title: >-
   AIR-243-A Entitlement probe truth normalization——status=ok 但 raw
   limit_reached=true 必 unavailable（真 bug 立即修）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-03 04:44'
-updated_date: '2026-10-03 04:50'
+updated_date: '2026-10-03 05:12'
 labels: []
 dependencies: []
 ordinal: 234000
