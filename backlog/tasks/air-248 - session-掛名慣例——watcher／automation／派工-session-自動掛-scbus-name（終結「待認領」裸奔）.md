@@ -1,12 +1,14 @@
 ---
 id: AIR-248
 title: session 掛名慣例——watcher／automation／派工 session 自動掛 scbus name（終結「待認領」裸奔）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-03 23:02'
-updated_date: '2026-10-03 23:16'
+updated_date: '2026-10-03 23:18'
 labels: []
 dependencies: []
+references:
+  - skills/_common/work-order.md
 ordinal: 239000
 ---
 
