@@ -3,9 +3,10 @@ id: AIR-244
 title: >-
   AIR-244-B Quota-event ingress closure——real failure surface→event file→reader
   閉環（producer 才算完成）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-03 04:44'
+updated_date: '2026-10-03 04:50'
 labels: []
 dependencies: []
 ordinal: 235000
