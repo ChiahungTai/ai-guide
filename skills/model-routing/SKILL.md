@@ -272,6 +272,8 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 >
 > **跨家族解析表**（未指定 family 時；顯式指定與 caller 同 family → fail-loud）：GLM／ZCode caller → muse；codex caller → muse；glm caller → muse；**muse caller → fail-loud**——相異家族第二意見候選＝codex／glm／grok（AIR-230——grok 家族已開，AIR-226 bridge binding），而三者皆 explicit-only 不因解析繞過：**停下要求 user 選擇**——顯式 `--family codex`／`--family glm`／`--family grok`，或明示接受同家族 degraded review（caller-harness decision-grade dual-context 承接＋記錄）；禁解析層自選降級。
 >
+> **偏好 family walled（failed-usage／retryable-at 未過實證）時的場景分岔**：interactive session＝維持停下問 user（explicit-only 精神不變）；autonomous／deep-work session＝**顯式降級**至相異家族合格 candidate（仍走 resolver 全步——qual／availability／ArcOverride 不跳），**強制記錄**（dispatch trace 帶 failure family＋降級理由）並於 completion report 報備——禁靜默、禁降 hard requirement（no-silent-downgrade 不變）。
+>
 > **grok 資格待遇（qualification 未認證）**：bridge binding 的 qualification 零繼承（AIR-226 AC10 驗的是 sandbox authority 非審查品質）——比照 muse 首次啟用：列第二意見候選、可用於真實弧外審樣本累積資格，樣本通過前不得作唯一外審腿。資格確認＝首次 grok 外審樣本取自下一個有外審需求的真實弧，樣本結果記錄後 update 本表 qualification 狀態。
 
 > sandbox-error 禁以 `--yolo` 賭重試（父層沙箱不可越權重試）；分類走 auth-failed／environment，修因後重派。
