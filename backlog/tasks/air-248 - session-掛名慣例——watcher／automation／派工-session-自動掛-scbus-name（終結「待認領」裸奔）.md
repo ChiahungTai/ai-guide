@@ -4,7 +4,7 @@ title: session 掛名慣例——watcher／automation／派工 session 自動掛
 status: Done
 assignee: []
 created_date: '2026-10-03 23:02'
-updated_date: '2026-10-03 23:39'
+updated_date: '2026-10-03 23:41'
 labels: []
 dependencies: []
 references:
@@ -60,6 +60,8 @@ flowchart LR
 實作 receipt（1004 晨，WT ai-guide-air-248）：四錨點落地（work-order §3 session-name 欄單一源／agent-workflow item 8／bridge-dispatch runbook step 6／at capsule item 1 前綴 rename）；AC verifier 全跑（AC1-5 rg 值 1/1/1/1/0-0 合格）；drift sweep「session-name」全域四檔精確命中、無既有衝突慣例。deviations 兩筆（verdict 錨點微調，語義不變）：①work-order 欄位落 §3 Baseline identity 非 verdict 所寫 §2／Role contract——session 身份欄語義歸屬＋Role contract 子段「非 role 派發留空」會漏 ad-hoc 派工命名；②usage-ping 錨點不採——rung 模板「禁止任何工具呼叫」＋冷 context trigger 退化吸引子禁多步工具流，加 rename 違反該 skill 核心設計（ephemeral 單 turn session 由 cron title 承載用途，掛名無定位收益）。分類回執：classification=ordinary（程序性命名慣例；不觸 decision/authority/gate/authorization/acceptance 語義）／review=待 fresh-context 腿（本節補）／session-freshness=fresh／deployment-surfaces=healthy（skills symlink 母鏈即時生效）
 
 審查閉環（1004 晨）：fresh-context 腿（code-reviewer，獨立 session）verdict＝GO-WITH-FIXES——F1 🔴 capsule rename 缺 required --session-id（scbus 無 self-face：whoami 需 env id、出生 hook 未注入，冷 session 必 argparse 失敗被「續行不阻塞」靜默吸收）／F2 🟡 in-harness 腿缺 id 發現 fallback／F3 🟢 {session_name} 值來源未定義／F4 🟢 steps 5-6 前導空格 spurious 修改／F5 🟢 deviation 揭露缺第三筆。修復批全收：F1＝自 id 發現法入 work-order §3 單一源（scbus list 對照 harness＋workspace_root 最新註冊；並列無法唯一確立＝不掛禁猜 id）＋capsule item 1 改引該法＋帶 --session-id；F2＝agent-workflow item 8 補 list fallback＋「id 無法確立＝跳過」自洽；F3＝capsule invariants 補 {session_name} arm 端自填語義；F4＝去前導空格；F5＝本筆即補。deviations 第三筆（F5）：verdict ③ 錨點「dispatch preview 內」實落為獨立 item 8（preview 是派前列印、rename 是 spawn 後動作——語義歸屬不同段）。回執四欄：classification=ordinary／review=fresh-context（in-harness code-reviewer 獨立 session）GO-WITH-FIXES→F1-F5 修復批全收／session-freshness=fresh／deployment-surfaces=healthy（skills symlink 母鏈即時生效）。外審腿（跨家族 second-opinion）額度已用於本弧 codex 討論腿（verdict 檔）；ordinary 分類 baseline＝一條獨立 context 腿已滿足。
+
+AC#6 閉環回執（post-merge）：ff merge 收線 main @ e34f6fbb（arc 三 commit 31110c19／6563a6f7／e34f6fbb 全在 main——結案前驗 code commit in main 檢查通過）；wt-close full 完成零殘留（WT＋branch 已滅）。mosaic completed 回執已寄（message_id 8fc0d119-8bcf-4962-851b-5961f499fb34，queued-awaiting-holder——mosaic-primary 無活躍 holder，下次對方 drain 時送達）。CR freshness：trunk 前進，graph stale 提醒在案（下次 review 前 rebuild，非本弧義務）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
