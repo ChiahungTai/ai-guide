@@ -3,10 +3,10 @@ id: AIR-247
 title: >-
   AIR-247 human-comprehension 強化——晨間 digest＋shell decision-first 首屏＋judge
   家族分歧軸（Karpathy 階梯；codex＋glm 雙腿共識）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-03 06:59'
-updated_date: '2026-10-03 07:02'
+updated_date: '2026-10-03 07:09'
 labels: []
 dependencies: []
 ordinal: 238000

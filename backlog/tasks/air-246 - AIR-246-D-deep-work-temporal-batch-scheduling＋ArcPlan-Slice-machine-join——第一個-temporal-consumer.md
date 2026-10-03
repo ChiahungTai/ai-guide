@@ -3,9 +3,10 @@ id: AIR-246
 title: >-
   AIR-246-D deep-work temporal batch scheduling＋ArcPlan-Slice machine join——第一個
   temporal consumer
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-03 04:44'
+updated_date: '2026-10-03 07:09'
 labels: []
 dependencies: []
 ordinal: 237000
