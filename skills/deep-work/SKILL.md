@@ -238,6 +238,24 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 7. **dw 承諾制**：接到 deep-work 指令即承諾做完卡 AC；判斷阻塞→bi/tri（雙腿／三腿多家族審查）取結論→續做；報告僅終場一次。語義單一源＝AIR-135.7，數值不在此重刻。
 8. **harness 中立**：Settle predicate 為主體；native `/goal`（ZCode／muse）與外部 driver（codex／claude，bridge_waiter 形態）皆為 adapter 投影。bridge 派的 worker 無 goal 接點——編譯責任在 invoking session。
 9. **值星多弧收線（settle queue——AIR-135.11）**：marshal 只吃 `queue --state READY_TO_JUDGE` 的弧（`uv run python scripts/arc_settle_state.py`——settle-state 為 per-arc projection state，非 card truth 第二源；轉移由收線動作顯式驅動，禁後台自動推進）。
+10. **晨間 digest（AIR-247）**：批量模式多卡收線完成時同步渲染人類晨間頁——掛點、骨架、鐵律見下方「晨間 digest」節；單弧模式免（單弧已有卡面 Final Summary）。
+
+### 晨間 digest（批量收線渲染——AIR-247）
+
+批量模式多卡收線完成時，**同步渲染**一份人類晨間頁：`ai-analysis/reports/morning-<YYYYMMDD>.md`，寫完 `open` 彈出。**分工一句話**：digest＝值星 outcome／decision 層；`/standup`＝昨日活動敘事層——不同 workspace／素材源／受眾，不合併、互不取代。
+
+**骨架四段（倒金字塔）**：
+
+1. **一句話戰況**——幾卡 Done／幾卡半途／幾卡等 user
+2. **exception 放大**——紅線跳過、stall-stop、靜默完成腿、bridge 回音缺、未驗降級
+3. **decision points**——每項一句話確認問題，user 一句「對／不對」收掉；0-5 個上限
+4. **下次起手＋drill pointers**——卡／report／receipt 入口
+
+**鐵律**：
+
+- 每項必帶 user 動作（確認／否認／忽略）——無動作項刪
+- **STATE.md 一字不動**；digest 是**渲染層非第二 state**——數據宣稱只從卡面與機械底稿帶入
+- **fail-loud 尾段帶「未收割源」清單**：素材源＝parent 卡 FS、各卡 FS、STATE.md pending 台帳、settle queue、卡 notes verdict 物——列了的才可信，沒列的明示沒看
 
 ---
 

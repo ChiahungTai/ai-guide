@@ -62,11 +62,22 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
 | 報告類型 | 敘事骨架 | 圖選型 |
 |---------|---------|------------------|
 | EP 計畫導讀（任務家 `<task>/ep.md`）——**方向 brief** | 必含五要素：問題→使用者看得到的結果→重要取捨→不做範圍→驗收（動機鏈／各段細節／風險降級／決策記錄按需延展） | flowchart（gate/exception）＋HTML 塊（層次） |
-| 實作完成報告（implement 完成報告/debrief）——**成果 brief** | 必含五要素：before/after 具體例→實跑證據（命令+exit code）→未驗→重要偏離→回源；意圖／做了什麼／認知誤差點/待確認沿敘事併入 | flowchart（流程變更時）＋前後對照 HTML 塊 |
+| 實作完成報告（implement 完成報告/debrief）——**成果 brief** | 首屏＝decision-first 四桶（Outcome／Exceptions／Decision points／Evidence——規格見下方「成果 brief 首屏四桶」段）；意圖／做了什麼／認知誤差點沿敘事併入各桶；回源照殼共通必備 | flowchart（流程變更時）＋前後對照 HTML 塊 |
 | codebase 架構報告 | 分層地圖→資料流→熱點與風險區 | HTML 塊（分層）＋flowchart LR（資料流） |
 | module 現況（`@module`／AGENTS.md 域） | 職責→Capabilities 精華→依賴與邊界 | HTML 塊（局部視圖） |
 | 目錄導覽（`@dir`） | 這裡有什麼→入口→慣例 | HTML 塊 |
 | 決策 viewport（裁決 report 的圖形投影） | 結論→流程/分工→修改面→證據鏈 | flowchart TB（管線）＋表格（分工/清單）——先例 `ai-analysis/test-contract/` |
+
+**成果 brief 首屏四桶（decision-first——AIR-247）**：實作完成報告的首屏固定四個 attention buckets（注意力桶），順序＝閱讀優先序；落殼首章並掛 `first-screen` class（覆寫 AIR-14 首屏規則——見 template 檔頭硬約束①附註）：
+
+| 桶 | 內容 | 呈現 |
+|----|------|------|
+| **Outcome** | 使用者可觀察的 before→after——只列實際改變 | 首屏展開 |
+| **Exceptions** | 未驗／失敗／降級／偏離計畫——**與 Outcome 同級，禁藏進折疊 drawer** | 首屏展開 |
+| **Decision points** | 需 user preference／value 判斷的項目，0-5 個，每項一句確認問題 | 首屏展開 |
+| **Evidence** | review／receipt／test 證據 | **預設折疊**，可 drill |
+
+互動只加直接降低閱讀量的過濾切換（**Needs decision only**／**Exceptions only**——template 內建 `toggleFilter`），禁 SPA 化。原五要素映射：before/after→Outcome、未驗＋重要偏離→Exceptions、待確認→Decision points、實跑證據→Evidence；回源不變（殼共通必備）。
 
 **產物位置分流（user 裁決「開心目錄」——一弧一殼、隨生命週期生長；AIR-74 起殼一律進版控）**：
 
@@ -85,7 +96,7 @@ mode B artifact 與 mode A/C city map 共用此映射（概念軸單一源；「
 |------|------|-----|---------------|---------|
 | **hook 1** | EP 定稿（[execution-plan](../execution-plan/SKILL.md) 定稿交付） | **建殼骨架**＋計畫章節，badge 📋——骨架＝零渲染管線內容（HTML 塊/表格可），**渲染管線圖（mermaid）不於 hook 1 產**，diagram 槽留 degraded 待裝＋殼頭標「圖待 hook 2 裝」（砍掉 hook 1 計畫圖在 hook 2 實作大改後的重投影成本）；殼頭部聲明 EP 路徑＋task integration baseline＋projection source（未 commit 用本體 content SHA；post-build/code-review 弧模式跨 session 可從殼讀）；**card-first 分支（AIR-135.2 AC#4）**：card-first 弧殼頭聲明＝卡 TaskRef＋Plan baseline hash（內容 hash 對驗延後——已記卡 residue，見 resolver 第 3 點） | `task edit <id> --ref "<EP 相對路徑>,<殼相對路徑>"`（**開工雙 ref 合約**——建殼後並列殼路徑；殼未建單掛 EP 路徑，不寫 viewer 過渡 URL；card-first 弧 `--ref` 值＝卡 id〔TaskRef〕，EP 弧 EP 相對路徑照舊——AIR-135.2 AC#4） | **`open <殼絕對路徑>`**——殼建好即彈出（提前預覽骨架） |
 | **badge 推進** | [implement](../implement/SKILL.md) 階段 5a 結算 | 情境 A（Built 結算）→ 🟡（✅ 升級掛 hook 2 結案）；情境 B（中間段）→ 🟡 | 卡不動（仍 In Progress） | 不主動開——board portal 隨時點同一殼路徑 |
-| **hook 2** | **post-build 完成**（commit 前最後穩定點；程序載體＝[post-build](../post-build/SKILL.md) 階段 5） | 同一殼長**實作章節**：做了什麼／驗證證據／delta 前後對照／認知誤差點＋回源連結——反映修正迴圈後**最終態**；**並產圖一次**——依 [diagram-selection](../diagram-selection/SKILL.md) 選型補 degraded 槽（判無圖——畫不出或題材不需——標「本次以文字/表格呈現」收掉 degraded 槽，不留永久假待辦；觸發與品質判準見上「圖觸發與品質判準」）；badge ✅；**持久版 delta tour＝ask-once**（收尾報告待確認清單、預設略過——demand-driven；已產時殼實作章節連結 `.tours/delta/<arcId>.tour`，走讀＝ai-lifecycle AI Tours 視圖） | **結案兩步＋弧結案蒸餾第三動**：`-s Done --final-summary`（`--ref` 沿用開工既有路徑——AIR-77 起永不搬，結案補寫可選；卡留 Done 欄；已產 delta tour 時 refs 並附 `.tours/delta/<arcId>.tour`）；本弧 memory 條目蒸餾終態 facts | **`open <殼絕對路徑>`**——終態殼彈出 |
+| **hook 2** | **post-build 完成**（commit 前最後穩定點；程序載體＝[post-build](../post-build/SKILL.md) 階段 5） | 同一殼長**實作章節**（成果 brief——首屏四桶見上「成果 brief 首屏四桶」段）：Outcome／Exceptions／Decision points／Evidence＋delta 前後對照（有圖時）＋回源連結——反映修正迴圈後**最終態**；**並產圖一次**——依 [diagram-selection](../diagram-selection/SKILL.md) 選型補 degraded 槽（判無圖——畫不出或題材不需——標「本次以文字/表格呈現」收掉 degraded 槽，不留永久假待辦；觸發與品質判準見上「圖觸發與品質判準」）；badge ✅；**持久版 delta tour＝ask-once**（收尾報告待確認清單、預設略過——demand-driven；已產時殼實作章節連結 `.tours/delta/<arcId>.tour`，走讀＝ai-lifecycle AI Tours 視圖） | **結案兩步＋弧結案蒸餾第三動**：`-s Done --final-summary`（`--ref` 沿用開工既有路徑——AIR-77 起永不搬，結案補寫可選；卡留 Done 欄；已產 delta tour 時 refs 並附 `.tours/delta/<arcId>.tour`）；本弧 memory 條目蒸餾終態 facts | **`open <殼絕對路徑>`**——終態殼彈出 |
 | **fallback** | 無 post-build 弧（user 直接 `/commit`、弧終止）→ implement 階段 6 | hook 2 同款產出由 implement 階段 6 承接 | 同 hook 2 | 同 hook 2 |
 
 **共通必備**：狀態 badge（📋 計畫／🟡 進行中／✅ 完成——與全域 UC 狀態標記同符號語義）；計畫 vs 既有顯式區分（計畫物 tag「S<N> 計畫中」——並列無區分＝誤導）；成果態區分 Built／Verified（實作完成≠驗證通過——未驗證不顯示 Verified，語義同 [metadata-sync](../metadata-sync/SKILL.md) SYSTEM-MAP 生命週期 `✅ Built`／`✅🔍 Verified`）；回源連結（本體檔案路徑＋baseline commit）；**board 反向連結已取消**（board 無 HTTP 位址——09-11 常駐退役；殼頭部可標「← backlog board（VSCode Backlog Cards）」提示文字、不帶 URL）；**EP（.md）連結形態**（09-14 退役 viewer 形態——:6421 report server 與 ai-guide 無關，殼內 EP 連結一律 **repo 相對路徑**（VSCode 一點即編輯器／preview），禁掛 `/viewer/_md-viewer.html?p=/…` http URL；歷史殼的舊 viewer 連結留原樣＝歷史態）——卡 refs 相對路徑制見 kanban-board 雙 ref 合約行；狀態隨本體結算更新、本體歸檔殼隨之（殼服務本體生命期）。

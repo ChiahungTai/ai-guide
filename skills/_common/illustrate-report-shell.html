@@ -19,13 +19,27 @@
     SLOT:backlinks         board 反向連結＋Report Shell／viewer 連結
     SLOT:source            本體路徑＋task baseline＋projection source＋卡號
   填法：覆寫所有 `{{UPPER_SNAKE_CASE}}` placeholder，增刪 nav/section 時整塊同步，再刪除所有 SLOT comments。
-  章節增刪：複製／刪除整塊 <section id="sN">…</section>＋對應 nav <li>；id 保持 s1…sN 順序；計畫物加 <span class="tag-plan">S&lt;N&gt; 計畫中</span>。
+  章節增刪：複製／刪除整塊 <section id="sN">…</section>＋對應 nav <li>；id 保持 s1…sN 順序；計畫物加 <span class="tag-plan">S&lt;N&gt; 計畫中</span>；成果 brief 首章（四桶）掛 class="first-screen"。
+
+  成果 brief 首屏四桶（decision-first——AIR-247；骨架規格單一源＝html-mode 檔「成果 brief 首屏四桶」段）：
+    成果 brief 殼首章掛 class="first-screen"（覆寫 AIR-14 首屏規則），內容區放入：
+      <div class="filter-bar">
+        <button type="button" onclick="return toggleFilter('only-decisions',this)" aria-pressed="false">Needs decision only</button>
+        <button type="button" onclick="return toggleFilter('only-exceptions',this)" aria-pressed="false">Exceptions only</button>
+      </div>
+      <div class="bucket bucket-outcome"><h3>Outcome</h3><ul class="dots"><li>before→after 實際改變</li></ul></div>
+      <div class="bucket bucket-exceptions"><h3>Exceptions</h3><ul class="dots"><li>未驗／失敗／降級／偏離（禁折疊）</li></ul></div>
+      <div class="bucket bucket-decisions"><h3>Decision points</h3><ul class="dots"><li>確認問題（0-5 個）</li></ul></div>
+      <div class="bucket bucket-evidence"><details><summary>Evidence（預設折疊，可 drill）</summary><ul class="dots"><li>review／receipt／test 證據</li></ul></details></div>
+    script 同步契約：第一 &lt;script&gt; 塊＝build_shell.py CANONICAL_JS 行為錨（逐字對比 gate）——改它必同步該常數；
+    第二 &lt;script&gt; 塊＝四桶過濾＋first-screen 覆寫（僅 authored 殼、掛 .first-screen 才生效），codegen 殼不內嵌。
 
   三條硬約束 rationale（失敗教訓的 durable 落點，瘦身後 prose 不再重述——改殼行為前先讀）：
     ① 首屏 active 規則＋AIR-14 教訓：無 hash 載入時 active 必須是首個含 .frame-wrap 的章節（.degraded 計入），
        無任何 .frame-wrap 才 fallback 首章。原因：iframe 若僅靠 display:none 章節承載首屏價值主張＝rect 0×0 失效
        （2026-09-03 Playwright 實錄：s1 active 時圖隱藏，改 s3 active 後可見 1172×710）。本規則已寫進下方
-       init JS（含 degraded），建殼者禁手改首屏 active 指向純文字章節。
+       init JS（含 degraded），建殼者禁手改首屏 active 指向純文字章節。唯一覆寫口：成果 brief 殼首章掛
+       class="first-screen"（decision-first 四桶——AIR-247）——覆寫腳本在第二 <script> 塊，hash deep-link 仍最優先。
     ② 折疊禁觸發 iframe 重載：sidebar 收合只許切 body.sidebar-collapsed class（nav width→0、main flex 吃滿——本
        template 連 nav 都不用 display:none），不碰 iframe／section 的顯示。註：章節切換的 section display:none 是
        既有模式（display 切換不重載 iframe；detach／重掛或改 src 才會重載），真正的禁令是折疊路徑不得隱藏承載——
@@ -105,6 +119,21 @@
   body.sidebar-collapsed #collapse-btn{display:none}
   #expand-btn{left:0;top:20px;transform:none;border-radius:0 8px 8px 0;display:none}
   body.sidebar-collapsed #expand-btn{display:block}
+  /* ── 成果 brief 首屏四桶（decision-first——AIR-247；規格單一源＝html-mode 檔「成果 brief 首屏四桶」段；authored 殼增益，codegen 殼不用）── */
+  .bucket{background:var(--panel);border:1px solid var(--border);border-left-width:3px;border-radius:8px;padding:12px 16px;margin:12px 0}
+  .bucket h3{margin:0 0 6px;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  .bucket-outcome{border-left-color:var(--green)}.bucket-outcome h3{color:var(--green)}
+  .bucket-exceptions{border-left-color:var(--rose)}.bucket-exceptions h3{color:var(--rose)}
+  .bucket-decisions{border-left-color:var(--amber)}.bucket-decisions h3{color:var(--amber)}
+  .bucket-evidence{border-left-color:var(--violet)}.bucket-evidence h3{color:var(--violet)}
+  .bucket-evidence summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--violet)}
+  .bucket-evidence details[open] summary{margin-bottom:6px}
+  .filter-bar{display:flex;gap:8px;margin:12px 0}
+  .filter-bar button{cursor:pointer;background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:12px;border-radius:6px;padding:4px 10px}
+  .filter-bar button:hover{color:var(--fg);border-color:var(--accent)}
+  .filter-bar button[aria-pressed="true"]{color:var(--fg);border-color:var(--accent);background:#1f242c}
+  body.only-decisions .bucket:not(.bucket-decisions){display:none}
+  body.only-exceptions .bucket:not(.bucket-exceptions){display:none}
 </style>
 </head>
 <body>
@@ -211,6 +240,25 @@ function setCollapsed(c,moveFocus){
   }
   var link=document.querySelector('#sidebar li a[href="#'+target+'"]');
   go(target,link);
+})();
+</script>
+<script>
+// 成果 brief 首屏四桶增益（AIR-247）——僅 authored 殼生效；上一塊 <script> 是 build_shell.py
+// CANONICAL_JS 行為錨（逐字對比 gate）禁改，本塊為 authored-shell 增益層，codegen 殼不內嵌。
+// first-screen 覆寫：無 hash 時首屏讓位給 .first-screen 章（decision-first 四桶）——display 切換不重載 iframe（硬約束②）
+function toggleFilter(cls,el){
+  var on=!document.body.classList.contains(cls);
+  document.body.classList.remove('only-decisions','only-exceptions');
+  if(on)document.body.classList.add(cls);
+  el.setAttribute('aria-pressed',String(on));
+  return false;
+}
+(function(){
+  if(location.hash)return;
+  var fs=document.querySelector('main section.first-screen');
+  if(!fs)return;
+  var link=document.querySelector('#sidebar li a[href="#'+fs.id+'"]');
+  go(fs.id,link);
 })();
 </script>
 </body>

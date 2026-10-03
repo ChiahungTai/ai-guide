@@ -87,9 +87,20 @@ allowed-tools: ["Read", "Grep", "Glob", "Write", "Edit", "Bash"]
 ### ⚠️ 需確認建議
 [原文 + 無法判斷原因 + 請確認問題]
 
+### ⚖️ 家族分歧軸（僅跨家族 verdict 相異時；無實質分歧整節省略）
+| finding 摘要 | family A 結論＋一句證據差異 | family B 結論＋一句證據差異 | judge 裁決理由 |
+
 ### 評估摘要
 採納 N / 不採納 N / 需確認 N
 ```
+
+**家族分歧軸（AIR-247）**：跨家族第二意見（層 2）findings 進 judge 時，**只列跨家族 verdict 相異**的 finding 成節——對照行＝finding 摘要／family A 結論＋一句證據差異／family B 結論＋證據差異／judge 裁決理由。紀律：
+
+- **無實質分歧整節不顯示**——不為儀式湊表
+- **禁 majority vote**：2:1 無 epistemic authority——多個 reviewer 可共享同一錯誤前提（與「『全採納』當警訊」三防線同族）
+- 禁 leaderboard／win-rate／confidence scoreboard
+- 「一致同意」不自動升 trusted——共識非獨立證據（證據獨立性見 [acceptance-evidence](../../rules/acceptance-evidence.md)）
+- 表格為主（純 markdown），不上 HTML——殼留既有決策 viewport 變體（[illustrate html-mode](../_common/illustrate-html-mode.md)「報告類型的敘事骨架變體」決策 viewport 列）
 
 ---
 
@@ -148,6 +159,7 @@ finding 含 negative verdict（唯一 caller／零消費者／可刪／不影響
 ## 特殊情況
 
 - **建議互相矛盾**：基於程式碼判斷採納哪一方，附理由
+- **跨家族 verdict 相異**：列「⚖️ 家族分歧軸」節（見「輸出格式」）逐項裁決——禁 majority vote（紀律見該節）
 - **找不到相關程式碼**：先按「自我否證義務」三工具交叉查證。仍找不到 → 標「查證失敗」並請用戶提供線索，**不直接 ❌ 不採納**（查證者可能是 pattern 失誤，非程式碼不存在）
 - **與專案規範衝突**：❌ 不採納（專案規範優先）
 
