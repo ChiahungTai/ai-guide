@@ -58,6 +58,8 @@ flowchart LR
 min-interval 裁決理由（AC#5）：--min-interval（預設 30min）＝防連續重複 fire 閘；wake fire 前機器已睡數小時、latest age 恆 ≥ 閘值，不擋 on-wake fire——縮短只增加無謂 probe 成本。03:00 窗快照最壞 ~40min 舊（GLM/codex 配額 5h 窗粒度可接受）。
 
 live wake-fire 實測步驟（pending——待 mosaic 側 pmset 03:00 wake 安裝）：次晨 `rg "03:0" ~/.mosaic/logs/ops/launchagent-ai-guide-entitlements-probe.log` 應有 wake 窗 entry；結果補記本節。安裝面提醒：plist 時刻變更須 user 手動 re-render＋reload LaunchAgent 才生效（AIR-110 形態）。
+
+**live wake-fire 實測結果（2026-10-04 晨補記——PASS）**：兩夜皆 fire。10-03 03:04:18（`20261002T190418Z`，pmset 安裝首窗）與 10-04 03:46:26（`20261003T194626Z`，無 session 夜＋AIR-237 夜測窗）各四 probe 全 fire（codex/glm status=ok failure_class=none、muse unsupported 如常）。**節奏細節**：fire 時刻對齊 StartInterval 的 `:46` 邊界（非 03:0x 整點）——10-04 機器 03:00 pmset 喚醒後 job 在 03:46 邊界觸發；卡面原判「03:00 窗快照最壞 ~40min 舊」的包絡實證成立。機制面（wake→fire 延遲 ~46min 的 launchd 排程細節）如需精化屬 mosaic 夜鏈設計側裁量，ai-guide 側 probe 角色驗證完成。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
