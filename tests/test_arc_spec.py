@@ -2118,3 +2118,176 @@ class TestSnapshotGeneratedAtPrerequisite:
         doc = _mod.__doc__ or ""
         assert "producer-attested" in doc
         assert "AvailabilitySnapshot" in doc
+
+
+# ---------------------------------------------------------------------------
+# validate-link：plan↔slice equality join（AIR-246）
+# ---------------------------------------------------------------------------
+
+
+class TestValidateLink:
+    """plan↔slice equality join（codex §D 契約）：slice 與 plan 源不同步即
+    mismatch 逐欄列出（identity 回指＋plan hash/version＋temporal triple）。
+    join 面＝一致性檢查，artifact 內部深檢仍歸 validate（職責分離）；
+    plan hash 自洽檢是例外——它是「原地改 plan」竄改向量的機械錨點。"""
+
+    def _plan(self, name: str) -> dict:
+        return _mod.parse_artifact_file(COVERAGE_FIXTURES / name, "arc-plan")
+
+    def _slice(self, name: str = "link-valid-slice.json") -> dict:
+        return _mod.parse_artifact_file(COVERAGE_FIXTURES / name, "dispatch-slice")
+
+    def test_consistent_pair_has_zero_mismatch(self) -> None:
+        assert _mod.validate_link(self._plan("link-valid-plan.json"), self._slice()) == []
+
+    def test_tampered_plan_reports_every_mismatched_field(self) -> None:
+        """plan 的 preferred_family／on_unavailable／fallback_families／plan
+        hash／version 任一被竄改 → 逐欄列出（一次全列，不擠牙膏）。"""
+        errors = _mod.validate_link(
+            self._plan("link-tampered-plan.json"), self._slice()
+        )
+        joined = "\n".join(errors)
+        for field in (
+            "plan_version",
+            "plan_hash",
+            "preferred_family",
+            "on_unavailable",
+            "fallback_families",
+        ):
+            assert f"link mismatch `{field}`" in joined, f"缺 {field} mismatch 行"
+        assert len(errors) == 5
+
+    def test_in_place_tamper_caught_by_plan_hash_self_check(self) -> None:
+        """原地改 plan（D2 禁）而不重算 hash——slice 帶的舊 hash 與 plan 一致
+        但 plan 內部 hash 自洽檔不住 → 自洽檢抓出（in-place 竄改向量）。"""
+        plan = self._plan("link-valid-plan.json")
+        assert plan["temporal_allocation"]["preferred_family"] == "muse"
+        plan["temporal_allocation"]["preferred_family"] = "glm"
+        errors = _mod.validate_link(plan, self._slice())
+        joined = "\n".join(errors)
+        assert "link mismatch `plan_hash`(self)" in joined
+        assert "link mismatch `preferred_family`" in joined
+
+    def test_unit_id_back_ref_breakage(self) -> None:
+        """slice.unit_id 不在 plan.work_units——回指斷鏈（無法解析 effective
+        temporal），fail-loud 列可用 unit ids。"""
+        slice_data = self._slice()
+        slice_data["unit_id"] = "AIR-246#GHOST"
+        errors = _mod.validate_link(self._plan("link-valid-plan.json"), slice_data)
+        assert any("link mismatch `unit_id`" in e for e in errors)
+        assert any("AIR-246#W1" in e for e in errors)
+
+    def test_card_id_mismatch(self) -> None:
+        slice_data = self._slice()
+        slice_data["card_id"] = "AIR-999"
+        errors = _mod.validate_link(self._plan("link-valid-plan.json"), slice_data)
+        assert any("link mismatch `card_id`" in e for e in errors)
+
+    def test_unit_level_temporal_refines_top_level(self) -> None:
+        """unit 級 temporal_allocation 細化頂層預設——join 以 unit 級為準
+        （在場即整塊採用，禁 merge）。"""
+        plan = self._plan("link-valid-plan.json")
+        plan["work_units"][0]["temporal_allocation"] = {
+            **plan["temporal_allocation"],
+            "preferred_family": "codex",
+        }
+        plan["plan_hash"] = _mod.plan_content_hash(plan)
+        slice_data = self._slice()
+        slice_data["preferred_family"] = "codex"
+        slice_data["plan_hash"] = plan["plan_hash"]
+        # slice 仍帶頂層的 delay/[]——unit 級 preferred 已變但 policy 未動：
+        # delay＋[] 與 unit 級一致 ⇒ 唯 preferred 一欄對上即可全綠
+        assert _mod.validate_link(plan, slice_data) == []
+
+    def test_slice_temporal_without_plan_temporal_is_mismatch(self) -> None:
+        """slice 投影了 plan 沒有的 temporal intent＝源不同步（多投影）。"""
+        plan = self._plan("link-valid-plan.json")
+        del plan["temporal_allocation"]
+        plan["plan_hash"] = _mod.plan_content_hash(plan)
+        slice_data = self._slice()
+        slice_data["plan_hash"] = plan["plan_hash"]
+        errors = _mod.validate_link(plan, slice_data)
+        joined = "\n".join(errors)
+        assert "link mismatch `preferred_family`" in joined
+        assert "link mismatch `on_unavailable`" in joined
+        assert "link mismatch `fallback_families`" in joined
+        assert len(errors) == 3
+
+    def test_cli_validate_link_exit_codes(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """CLI 面（AC#1/#2 原形）：一致 → exit 0；竄改 → exit 2 且 stderr 逐欄
+        指出 mismatch。"""
+        ok = _mod.main(
+            [
+                "validate-link",
+                "--plan",
+                str(COVERAGE_FIXTURES / "link-valid-plan.json"),
+                "--slice",
+                str(COVERAGE_FIXTURES / "link-valid-slice.json"),
+            ]
+        )
+        assert ok == 0
+        assert "LINK OK" in capsys.readouterr().out
+
+        bad = _mod.main(
+            [
+                "validate-link",
+                "--plan",
+                str(COVERAGE_FIXTURES / "link-tampered-plan.json"),
+                "--slice",
+                str(COVERAGE_FIXTURES / "link-valid-slice.json"),
+            ]
+        )
+        assert bad == 2
+        err = capsys.readouterr().err
+        assert "preferred_family" in err
+        assert "plan_version" in err
+
+    def test_cli_missing_file_exit_2(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        rc = _mod.main(
+            [
+                "validate-link",
+                "--plan",
+                str(COVERAGE_FIXTURES / "no-such-plan.json"),
+                "--slice",
+                str(COVERAGE_FIXTURES / "link-valid-slice.json"),
+            ]
+        )
+        assert rc == 2
+        assert "ERROR" in capsys.readouterr().err
+
+    def test_link_fixtures_pass_own_kind_validation(self) -> None:
+        """fixtures 衛生：三檔各自過 compile-stage validate（時間穩定——
+        now 注入 TEMPORAL_NOW 等值）。"""
+        now = TEMPORAL_NOW
+        plan = self._plan("link-valid-plan.json")
+        assert (
+            _errors(
+                "arc-plan",
+                plan,
+                stage="compile",
+                base_dir=COVERAGE_FIXTURES,
+                now=now,
+            )
+            == []
+        )
+        assert (
+            _errors(
+                "dispatch-slice", self._slice(), stage="compile", base_dir=COVERAGE_FIXTURES
+            )
+            == []
+        )
+        tampered = self._plan("link-tampered-plan.json")
+        assert (
+            _errors(
+                "arc-plan",
+                tampered,
+                stage="compile",
+                base_dir=COVERAGE_FIXTURES,
+                now=now,
+            )
+            == []
+        )

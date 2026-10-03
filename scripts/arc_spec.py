@@ -89,6 +89,11 @@ CLI：
 - `uv run python scripts/arc_spec.py validate --kind KIND [--stage compile|dispatch] FILE`
   — exit 0＝通過；exit 2＝校驗失敗／contract 錯（錯誤逐行 stderr）
   （exit 契約對齊 reconcile_memory_pool 慣例：2＝contract/infra 錯）
+- `uv run python scripts/arc_spec.py validate-link --plan PLAN --slice SLICE`
+  （AIR-246）——plan↔slice equality join：identity 回指（card_id/unit_id）＋
+  plan hash/version＋temporal triple 逐欄嚴格相等；一致 exit 0、源不同步
+  exit 2 逐欄列出 mismatch。artifact 內部深檢歸 validate（職責分離）；唯
+  plan hash 自洽檢在此——「原地改 plan 而 slice 帶舊 hash」竄改向量的機械錨點。
 
 stage 語義（D5）：compile＝ArcPlan 編譯當下（resolver 欄可缺席）；dispatch＝
 派工當下（family/model/binding/ledger/dispatch_id 必到——值歸 model-routing
@@ -1706,6 +1711,104 @@ def validate(
 
 
 # ---------------------------------------------------------------------------
+# plan↔slice equality join（AIR-246 validate-link）——slice 是 plan 的 JIT 投影，
+# 兩者源不同步（plan 被竄改／recompile 而 slice 未跟）即禁派工
+# ---------------------------------------------------------------------------
+
+# equality join 的 temporal triple（AIR-240 carry-through 三欄；逐欄嚴格相等，
+# None vs 值也算 mismatch——slice 漏投影或多投影都是源不同步）
+LINKED_TEMPORAL_FIELDS = (
+    "preferred_family",
+    "on_unavailable",
+    "fallback_families",
+)
+
+
+def resolve_plan_temporal(plan: dict, unit_id: object) -> dict | None:
+    """slice.unit_id 對應的 effective temporal_allocation——AIR-240 語義：
+    unit 級細化頂層預設（unit 區塊在場即整塊採用，禁 merge；unit 無區塊則用
+    頂層預設；兩處皆無＝None）。unit_id 無法定位（回指斷鏈）時不猜——回落
+    頂層，斷鏈本身由 validate_link 的 unit 回指檢報錯。"""
+    for wu in plan.get("work_units") or []:
+        if isinstance(wu, dict) and wu.get("unit_id") == unit_id:
+            block = wu.get("temporal_allocation")
+            if isinstance(block, dict):
+                return block
+            break  # unit 在場而無 unit 級細化 → 頂層預設
+    block = plan.get("temporal_allocation")
+    return block if isinstance(block, dict) else None
+
+
+def validate_link(plan: dict, slice_data: dict) -> list[str]:
+    """plan↔slice equality join——回 mismatch 行 list（空＝一致）。
+
+    join 面（codex §D 契約）：
+    1. identity：card_id 一致；slice.unit_id 須回指 plan.work_units（定位
+       不到 unit 即無從解析 effective temporal——fail-loud 列可用 ids）
+    2. plan hash/version：slice.plan_version↔plan.version、slice.plan_hash↔
+       plan.plan_hash；另驗 plan 內部 hash 自洽（原地改 plan 而 slice 帶舊
+       hash 的竄改向量——slice 側 hash 相等擋不住內容漂移）
+    3. temporal triple：preferred_family／on_unavailable／fallback_families
+       逐欄 equality（fallback_families 含序嚴格相等）
+
+    artifact 內部欄位深檢不在此（歸 `validate`——職責分離）；本函數只答
+    「slice 與 plan 是否同源同步」。
+    """
+    errors: list[str] = []
+    if plan.get("card_id") != slice_data.get("card_id"):
+        errors.append(
+            f"link mismatch `card_id`: plan=`{plan.get('card_id')}` "
+            f"slice=`{slice_data.get('card_id')}` — slice 與 plan 源不同步"
+        )
+    unit_id = slice_data.get("unit_id")
+    work_units = plan.get("work_units")
+    unit_ids = {
+        wu.get("unit_id") for wu in (work_units or []) if isinstance(wu, dict)
+    }
+    if unit_id not in unit_ids:
+        available = ", ".join(sorted(str(u) for u in unit_ids)) or "<none>"
+        errors.append(
+            f"link mismatch `unit_id`: slice=`{unit_id}` not found in plan "
+            f"work_units — slice 回指斷鏈（無從解析 effective temporal）. "
+            f"Available unit ids: {available}"
+        )
+
+    version = plan.get("version")
+    if slice_data.get("plan_version") != version:
+        errors.append(
+            f"link mismatch `plan_version`: plan=`{version}` "
+            f"slice=`{slice_data.get('plan_version')}` — slice 與 plan 源不同步"
+        )
+    plan_hash = plan.get("plan_hash")
+    if slice_data.get("plan_hash") != plan_hash:
+        errors.append(
+            f"link mismatch `plan_hash`: plan=`{plan_hash}` "
+            f"slice=`{slice_data.get('plan_hash')}` — slice 與 plan 源不同步"
+        )
+    # plan 內部 hash 自洽（in-place tamper 向量：slice 帶的舊 hash 與被原地改
+    # 的 plan 相等，唯 self-check 擋得住內容漂移）
+    if isinstance(plan_hash, str) and HEX64_RE.match(plan_hash):
+        recomputed = plan_content_hash(plan)
+        if plan_hash != recomputed:
+            errors.append(
+                f"link mismatch `plan_hash`(self): plan recorded `{plan_hash}`, "
+                f"recomputed `{recomputed}` — ArcPlan 原地改（D2 禁原地改；"
+                f"修訂走 plan_changes 或 recompile 新版本）"
+            )
+
+    plan_temporal = resolve_plan_temporal(plan, unit_id)
+    for field in LINKED_TEMPORAL_FIELDS:
+        plan_value = plan_temporal.get(field) if plan_temporal else None
+        slice_value = slice_data.get(field)
+        if slice_value != plan_value:
+            errors.append(
+                f"link mismatch `{field}`: plan=`{plan_value!r}` "
+                f"slice=`{slice_value!r}` — slice 與 plan 源不同步"
+            )
+    return errors
+
+
+# ---------------------------------------------------------------------------
 # 檔案解析＋schema 渲染＋CLI
 # ---------------------------------------------------------------------------
 
@@ -1786,6 +1889,14 @@ def main(argv: list[str] | None = None) -> int:
     pv.add_argument("--stage", default="dispatch", help="compile（plan 時；resolver 欄可缺席）｜dispatch（派工時；全必填）")
     pv.add_argument("file", help="artifact 檔路徑")
 
+    plink = sub.add_parser(
+        "validate-link",
+        help="plan↔slice equality join（AIR-246）：一致 exit 0；源不同步 "
+        "exit 2 逐欄指出 mismatch（version/hash/temporal triple/identity）",
+    )
+    plink.add_argument("--plan", required=True, help="ArcPlan 檔（.json 或 .md json 區塊）")
+    plink.add_argument("--slice", required=True, help="DispatchSlice 檔")
+
     args = p.parse_args(argv)
 
     if args.cmd == "schema":
@@ -1796,6 +1907,29 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
         print(render_schema(args.kind))
+        return 0
+
+    if args.cmd == "validate-link":
+        try:
+            plan = parse_artifact_file(Path(args.plan), "arc-plan")
+            slice_data = parse_artifact_file(Path(args.slice), "dispatch-slice")
+        except ArcSpecError as e:
+            print(f"[arc-spec] ERROR: {e}", file=sys.stderr)
+            return 2
+        mismatches = validate_link(plan, slice_data)
+        if mismatches:
+            for m in mismatches:
+                print(f"[arc-spec] {m}", file=sys.stderr)
+            print(
+                f"[arc-spec] {len(mismatches)} link mismatch(es) — slice 與 plan "
+                f"源不同步，禁派工（fail-loud）",
+                file=sys.stderr,
+            )
+            return 2
+        print(
+            f"LINK OK: plan `{args.plan}` ↔ slice `{args.slice}` "
+            f"(version {plan.get('version')}, unit {slice_data.get('unit_id')})"
+        )
         return 0
 
     # validate

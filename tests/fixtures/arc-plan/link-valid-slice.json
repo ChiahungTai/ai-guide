@@ -1,0 +1,37 @@
+{
+  "schema": "dispatch-slice/1",
+  "slice_id": "AIR-246#W1-slice",
+  "card_id": "AIR-246",
+  "card_baseline": "246a11c",
+  "plan_version": 1,
+  "plan_hash": "af6485ad1be7d473cebec045f0e7b9c31c8dcbda16013907efe02b5c44c4fa59",
+  "unit_id": "AIR-246#W1",
+  "role": "implement",
+  "authority": "writer",
+  "capability_mode": "ReadWrite",
+  "owning_wt": {
+    "path": "/Users/ctai/Github/ai-guide-air-246",
+    "branch": "air-246"
+  },
+  "read_set": {
+    "policy": "full-context"
+  },
+  "sink": {
+    "mode": "receipt-only"
+  },
+  "budget_context": {
+    "revert_remaining": 0,
+    "slice_budget": 0
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "carrier": "zcode-agent",
+  "collection_mode": "manual",
+  "commit_delegation": "none",
+  "preferred_family": "muse",
+  "on_unavailable": "delay",
+  "fallback_families": []
+}

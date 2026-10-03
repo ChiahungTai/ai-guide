@@ -1,0 +1,70 @@
+{
+  "schema": "arc-plan/1",
+  "card_id": "AIR-246",
+  "card_baseline": "246a11c",
+  "version": 2,
+  "supersedes": 1,
+  "plan_hash": "5346a4c333ba3c9a59de98e32e59b518fe5cb31101725f58e4dd71dce22061e1",
+  "work_units": [
+    {
+      "unit_id": "AIR-246#W1",
+      "title": "deep-work temporal batch scheduling＋ArcPlan↔Slice machine join",
+      "role": "implement",
+      "phase": "build",
+      "depends_on": []
+    }
+  ],
+  "closure_coverage": [
+    {
+      "station": "post-build",
+      "unit_ref": "AIR-246#W1",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "review",
+      "unit_ref": "AIR-246#W1",
+      "owner": "dispatch",
+      "gate": "none"
+    },
+    {
+      "station": "judge",
+      "unit_ref": "AIR-246#W1",
+      "owner": "main-session",
+      "gate": "human"
+    },
+    {
+      "station": "landing",
+      "unit_ref": "AIR-246#W1",
+      "owner": "main-session",
+      "gate": "commit-consent"
+    },
+    {
+      "station": "settle",
+      "unit_ref": "AIR-246#W1",
+      "owner": "main-session",
+      "gate": "human"
+    }
+  ],
+  "temporal_allocation": {
+    "preferred_family": "glm",
+    "planned_not_before": "2026-10-02T18:00:00Z",
+    "on_unavailable": "fallback",
+    "fallback_families": [
+      "codex"
+    ],
+    "entitlement_snapshot_ref": "entitlement-window-valid.json",
+    "entitlement_snapshot_hash": "efe9e68e48513603a815122e40297d44e9467e101148224f84e53a7f1da9a59d",
+    "entitlement_snapshot_as_of": "2026-10-02T12:00:00Z"
+  },
+  "budget_context": {
+    "revert_exposure_cap": 0,
+    "usage_cap": 0
+  },
+  "terminal_semantics": {
+    "on_budget_exhausted": "budget-limited",
+    "raise_cap": "human-action",
+    "settle_gate": "human"
+  },
+  "plan_changes": []
+}
