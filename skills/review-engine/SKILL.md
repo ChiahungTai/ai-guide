@@ -81,8 +81,8 @@ workflow-review-pattern 的 schema、各命令的輸出分類，皆引用此。
 **「找不到」≠「不存在」**。查證 0 hits 時必須：
 
 1. **核對工具與覆蓋**：依上述路由檢查 index／workspace 新鮮度及查詢範圍；文字搜尋未命中時補符號引用查詢，避免 pattern 漏查，但不得宣稱 CR／LSP 已排除動態引用。
-2. **換 pattern**：`rg "<Class>\("` 失敗 → 試 `rg "<Class>"`（去 `(`，建構方式可能不同）、`workspaceSymbol`
-3. **換位置**：以為在某檔 → `workspaceSymbol` 全域查定義位置
+2. **換 face**：`rg "<Class>\("` 失敗 → **CR refs／callers**（結構查證主面——repo 有 .code-reality/graph.db）→ **lsp-bridge hover／check_file**（簽名與即時回饋）→ **workspaceSymbol**（CC-native face——跨 harness 不在場，邊界見 symbol-query-routing）
+3. **換位置**：以為在某檔 → CR workspace 級查詢或 symbol-query-routing 決策樹（單一源）
 4. **標明證據限制**：完成可用查詢仍 0 hits，記「已查範圍未命中，尚無法確認不存在」及未覆蓋面；沒有查詢結果不等於程式碼不存在，也不能以工具數量升格成 confirmed。
 
 > 真實案例：審查者 rg 稱「`<ExecutorClass>` 無建構點」→ 不採納 finding。獨立查證：LSP `findReferences` 立刻列出 import 行 + 建構行。審查者 rg pattern 失誤，把「自己沒查到」誤判為「程式碼不存在」。
