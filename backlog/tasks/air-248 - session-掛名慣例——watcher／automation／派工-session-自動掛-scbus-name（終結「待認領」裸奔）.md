@@ -4,7 +4,7 @@ title: session 掛名慣例——watcher／automation／派工 session 自動掛
 status: In Progress
 assignee: []
 created_date: '2026-10-03 23:02'
-updated_date: '2026-10-03 23:18'
+updated_date: '2026-10-03 23:23'
 labels: []
 dependencies: []
 references:
@@ -38,10 +38,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 機制 A 落地——work-order.md §2/Role contract 新增 canonical session-name 用途欄（foreign-runtime 單一源） rg -c "session-name" skills/_common/work-order.md → ≥1
-- [ ] #2 agent-workflow SKILL.md dispatch preview 加 dispatcher rename 步驟（取得 native session id 後 scbus rename，名稱取 work unit＋role／用途） rg -c "scbus rename" skills/agent-workflow/SKILL.md → ≥1
-- [ ] #3 bridge-dispatch SKILL.md runbook 引用 session-name 欄（sessionId 首次可得即 rename） rg -c "scbus rename|session-name" skills/bridge-dispatch/SKILL.md → ≥1
-- [ ] #4 at SKILL.md Phase 3 capsule＋usage-ping SKILL.md prompt 模板冷 session 開場自命名 兩檔各自 rg -c "scbus rename" → 各 ≥1
+- [ ] #1 機制 A 落地——work-order.md §3 Baseline identity 新增 canonical session-name 用途欄（foreign-runtime 單一源） rg -c "session-name" skills/_common/work-order.md → ≥1
+- [ ] #2 agent-workflow SKILL.md 派工紀律加 item 8 session 掛名（dispatcher rename，名稱取 work unit＋role／用途） rg -c "scbus rename" skills/agent-workflow/SKILL.md → ≥1
+- [ ] #3 bridge-dispatch SKILL.md Canonical dispatch runbook 加 step 6（引用 session-name 欄；sessionId 首次可得即 rename） rg -c "scbus rename|session-name" skills/bridge-dispatch/SKILL.md → ≥1
+- [ ] #4 at SKILL.md Phase 3 capsule 冷 session 開場自命名 rg -c "scbus rename" skills/at/SKILL.md → ≥1（usage-ping 錨點不採——模板「禁止任何工具呼叫」＋冷 session 退化吸引子禁多步工具流，與 rename 矛盾；deviation 記 notes）
 - [ ] #5 hooks／rules 零命名邏輯（verdict 界定不加） rg -c "scbus rename" hooks/ rules/ → 0
 - [ ] #6 dogfood＋閉環回信：本 session scbus rename 實證（ai-guide-duty-1004morning 已掛）＋verdict 檔留存 .agent-tmp/scbus-naming/codex-verdict.md＋回信 mosaic-primary completed（機制選擇＋落地證據）
 <!-- AC:END -->
@@ -53,3 +53,9 @@ flowchart LR
 〔已決策勿重辯：①user 程序裁決（1004 晨）＝「codex 討論解法後再做」＋「一樣要開卡跑完整流程」——機制擇一以 codex verdict 為準，禁跳過討論腿直行；②mosaic 提案兩候選擇一即可（慣例行 vs hook 出生掛名）；③scbus rename 子命令已存在，零新機制、不改 scbus 本體；④不批量回填 1766 個歷史 null（存量 hygiene 另議）；⑤本卡半張（simple 級）〕
 範圍：ai-guide 慣例面——依 codex verdict 擇一錨點（skills 派工模板／hooks birth hook／rules），單一機制落地＋dogfood 驗證＋回信 mosaic-primary。AC 具體 verifier 待 verdict 落地後補齊（開工前過 spec gate）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+實作 receipt（1004 晨，WT ai-guide-air-248）：四錨點落地（work-order §3 session-name 欄單一源／agent-workflow item 8／bridge-dispatch runbook step 6／at capsule item 1 前綴 rename）；AC verifier 全跑（AC1-5 rg 值 1/1/1/1/0-0 合格）；drift sweep「session-name」全域四檔精確命中、無既有衝突慣例。deviations 兩筆（verdict 錨點微調，語義不變）：①work-order 欄位落 §3 Baseline identity 非 verdict 所寫 §2／Role contract——session 身份欄語義歸屬＋Role contract 子段「非 role 派發留空」會漏 ad-hoc 派工命名；②usage-ping 錨點不採——rung 模板「禁止任何工具呼叫」＋冷 context trigger 退化吸引子禁多步工具流，加 rename 違反該 skill 核心設計（ephemeral 單 turn session 由 cron title 承載用途，掛名無定位收益）。分類回執：classification=ordinary（程序性命名慣例；不觸 decision/authority/gate/authorization/acceptance 語義）／review=待 fresh-context 腿（本節補）／session-freshness=fresh／deployment-surfaces=healthy（skills symlink 母鏈即時生效）
+<!-- SECTION:NOTES:END -->

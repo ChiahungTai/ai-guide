@@ -75,7 +75,7 @@ uv run python /Users/ctai/Github/ai-guide/scripts/at_ticket.py new \
 🔴 /at resume — {resume_time}，task_ref: {task_ref}
 context: {ticket_path}
 
-1. 讀 ticket → 沿指針讀 durable owner（卡／EP 進度節／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
+1. `scbus rename --name {session_name}`（registry 掛名，session-name 欄語義＝{repo 絕對路徑}/skills/_common/work-order.md §3；scbus 缺席或失敗＝續行不阻塞）→ 讀 ticket → 沿指針讀 durable owner（卡／EP 進度節／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
 2. ⛔ 前卷 outward 授權已失效——commit/push/deploy/send 等 outward 一律 PENDING 等新授權；其餘工作自主完成
 3. ticket 缺失／不可讀 → 以 task_ref 定位 durable owner；仍無法確立任務身份 → 產出狀態報告（首行標 `at-ticket missing: {path}`），禁靜默結束、禁推測另一任務
 4. ticket 推進 SETTLED 的時機＝恢復已成功且（工作完成 OR 進度已 re-checkpoint 回 durable owner）

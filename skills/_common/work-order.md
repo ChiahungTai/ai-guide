@@ -41,6 +41,7 @@
 - 工作目錄：本次任務的 cwd（若與 repo root 不同需明示）
 - base commit：凍結基線 commit hash
 - 並行改動聲明：working tree 已有但不屬清理範圍的改動（如 backlog 卡、任務家產物），列出路徑與性質，避免誤判為本次改動
+- **session-name**：本派發在 scbus registry 的掛名（用途式名稱，如 `<work-unit>-<role>`；registry 人話定位面——AIR-248）——dispatcher 取得 native session id 後 `scbus rename --session-id <id> --name <值>`；冷 session 無 dispatcher 時由 capsule／prompt 開場自命名（同欄值）。名稱須可定位用途、禁通用值；carrier session 未註冊 scbus＝跳過不阻塞、禁捏造 id（掛名是 hygiene 非 gate）
 
 ## 4. 必讀（按序，絕對路徑）
 
