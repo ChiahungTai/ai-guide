@@ -3,9 +3,10 @@ id: AIR-238
 title: >-
   ArcPlan 時間×模型分配規劃——dispatch 依 memory spine 訂閱狀態排 family/model 時窗（user 概念凍結；明早
   tri）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 14:27'
+updated_date: '2026-10-03 01:01'
 labels: []
 dependencies: []
 ordinal: 229000
@@ -54,3 +55,30 @@ flowchart LR
 
 - [x] #1 tri 收斂 verdict 存檔＋方案定稿（含 AC grammar 草案）記本卡（tri 後結算時判定本條最終形） `rg -c "定稿" "backlog/tasks/air-238 - ArcPlan-時間×模型分配規劃——dispatch-依-memory-spine-訂閱狀態排-family-model-時窗（user-概念凍結；明早-tri）.md"` → ≥1
 - [x] #2 卡切落地——child-1（EntitlementWindowSnapshot 資料面）＋child-2（ArcPlan temporal schema）兩卡開立並帶各自的 grammar AC `rg -c "AIR-239|AIR-240" "backlog/tasks/air-238 - ArcPlan-時間×模型分配規劃——dispatch-依-memory-spine-訂閱狀態排-family-model-時窗（user-概念凍結；明早-tri）.md"` → ≥2
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**as-built 終態**：tri 定稿（codex job-murfan77 完備＋glm job-murfksif 地形圖；muse 四度 walled 缺席）→兩 child 落地——AIR-239（EntitlementWindowSnapshot 資料面，Done，main 8c72424d）＋AIR-240（ArcPlan temporal schema＋FAMILIES 擴 grok＋model-routing authority contract，Done，main 54a6a3d4）。三層 authority 全通：**ArcPlan 時間意圖（易爛真值禁令）→EntitlementWindowSnapshot 規劃證據→AvailabilitySnapshot 派工真值**。muse 真實案例已入 evaluator：停用至 10-05 08:00 台北（provider 錨點 2026-10-05T00:00Z）。deep-work 批量排序（原第三張）等 contract 穩定後另開。dogfood 連環：AIR-239 的 plan-v1 被自家 phase enum 閘攔後修正過閘＝AIR-235 AC#6 閉環證據。
+
+```mermaid
+flowchart LR
+    U['user 概念<br/>spine 規劃時間分配'] --> T['tri 定稿<br/>三層 authority']
+    T --> C1['AIR-239 Done<br/>snapshot 資料面']
+    T --> C2['AIR-240 Done<br/>temporal schema']
+    C1 --> M['muse 重置錨點實證<br/>2026-10-05T00:00Z']
+    C2 --> M
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
+__zcode_status=$?
+if [ "$__zcode_status" -eq 0 ]; then pwd -P > '/var/folders/h8/q6jpct1x4d1g4xt_7g2r06080000gp/T/zcode-eba8cd97-9dd8-4ced-9d21-0156026cc830-cwd'; fi
+exit "$__zcode_status"
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+收線紀錄：tri 腿 codex job-murfan77＋glm job-murfksif（muse 四度 failed-usage 缺席）；spine 更新＝muse 停用至 10-05 08:00 台北（as-of UTC 日級教訓：寫台北日期會被判未來日期 fail-closed——availability_snapshot 實證）。child 實測數據：AIR-239 四數（first TRUE／repair 1／direct 0／68min）、AIR-240 四數（first TRUE／repair 1／direct 0／124min——全 session 最重 worker 10.7M tokens）。
+<!-- SECTION:NOTES:END -->
+__zcode_status=$?
+if [ "$__zcode_status" -eq 0 ]; then pwd -P > '/var/folders/h8/q6jpct1x4d1g4xt_7g2r06080000gp/T/zcode-716fbced-a1ce-4e22-b9ab-ea7c4bd8d16b-cwd'; fi
+exit "$__zcode_status"
