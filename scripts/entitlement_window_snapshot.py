@@ -44,6 +44,11 @@ AIR-239 Description）：
   （canonical「無法判定」語義），禁造 unavailable 主張
 - R4：naive ISO（無時區）＝不合法 → [FAIL]＋exit 2（禁 naive/aware
   比較 TypeError traceback）
+- R5（AIR-243 truth normalization）：status=ok 必讀
+  raw.rate_limit.limit_reached——true＝exhausted 直讀證據（state=
+  unavailable），fresh direct 壓 spine/event 不得升格；false/欄缺席＝
+  available；stale exhausted 經 row 層 freshness 閘降 unknown（禁過期
+  冒充現值）；retryable_at 沿 D5（唯一 reset 才生成，歧義/缺席→None）
 - D5 retryable_at＝provider reset 時間戳 only、**禁 5h 週期合成**（全檔無
   週期推算路徑）：probe 勝者讀 glm-native parsed.limits[].nextResetTime
   （epoch ms）與 codex-native raw.rate_limit.reset_at（epoch s）——相異值
@@ -313,13 +318,25 @@ def _probe_evidence(rec: dict, now: datetime, stale_hours: float) -> Evidence:
     assert ts is not None
     fresh = (now - ts).total_seconds() / 3600 <= stale_hours
     if rec["status"] == "ok":
+        # R5（AIR-243 truth normalization）：probe 命令成功 ≠ 額度可用——
+        # 必讀 provider direct signal raw.rate_limit.limit_reached（實檔
+        # codex-native exhausted 形狀）。true＝exhausted 直讀證據，fresh 時
+        # 壓 spine/event 不得升格（muse 誠實條款同構：direct 輸了才輪慢
+        # 事實）；stale exhausted 由 row 層 freshness 閘降 unknown（禁過期
+        # 冒充現值）。缺席/非 true＝沿既有 available 語義（glm/muse raw 無
+        # 此欄）。
+        raw = rec.get("raw")
+        rate_limit = raw.get("rate_limit") if isinstance(raw, dict) else None
+        exhausted = isinstance(rate_limit, dict) and (
+            rate_limit.get("limit_reached") is True
+        )
         # retryable 抽取限 ok 態（unsupported/error 不供任何現值錨點）
         return Evidence(
             source="probe",
             observed_at=ts,
             fresh=fresh,
             has_state=True,
-            state="available",
+            state="unavailable" if exhausted else "available",
             retryable=_probe_retryable(rec) if fresh else None,
         )
     # muse 誠實條款：unsupported 是 capability 事實；error 是 probe 失敗

@@ -705,3 +705,154 @@ def test_human_mode_lists_rows(tmp_path, capsys) -> None:
     assert rc == 0
     assert "glm/glm-native" in out
     assert "state=available" in out
+
+
+# ---- probe truth normalization：status=ok 必讀 limit_reached（AIR-243）----
+# raw 形狀取樣自實檔 ~/.agents/probe-entitlements/（20261002T221024Z-codex-
+# codex-native.json 與 latest-codex-codex-native.json，兩筆 limit_reached:true
+# 命中）——probe 命令成功 ≠ 額度可用。
+
+
+def codex_native_raw(
+    *,
+    limit_reached: bool,
+    primary_reset_s: int,
+    secondary_reset_s: int | None,
+) -> dict[str, Any]:
+    rate_limit: dict[str, Any] = {
+        "allowed": not limit_reached,
+        "limit_reached": limit_reached,
+        "primary_window": {
+            "limit_window_seconds": 18000,
+            "reset_after_seconds": 13024,
+            "reset_at": primary_reset_s,
+            "used_percent": 100,
+        },
+        "secondary_window": None,
+    }
+    if secondary_reset_s is not None:
+        rate_limit["secondary_window"] = {
+            "limit_window_seconds": 604800,
+            "reset_after_seconds": 579213,
+            "reset_at": secondary_reset_s,
+            "used_percent": 32,
+        }
+    return {"rate_limit": rate_limit}
+
+
+def test_probe_limit_reached_true_fresh_yields_unavailable(
+    tmp_path, capsys
+) -> None:
+    # 實檔 latest-codex-codex-native.json 形狀（雙窗相異 reset）：fresh
+    # direct exhausted 證據——fresh spine 主張可用亦不得升格（muse 誠實
+    # 條款同構：direct 輸了才輪慢事實）
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(
+        probe_dir,
+        "codex",
+        "codex-native",
+        FRESH_TS,
+        parsed={"plan": "plus", "limits": None},
+        raw=codex_native_raw(
+            limit_reached=True,
+            primary_reset_s=1791014324,
+            secondary_reset_s=1791580512,
+        ),
+    )
+    spine = make_spine(tmp_path, SPINE_FRESH_AS_OF, "- **可用**：codex")
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    row = row_of(payload["rows"], "codex", "codex-native")
+    assert row["source"] == "probe"
+    assert row["state"] == "unavailable"
+    assert row["freshness"] == "fresh"
+    assert row["retryable_at"] is None  # 雙窗相異 reset＝歧義→缺（沿既有規則）
+
+
+def test_probe_limit_reached_true_unique_reset_pins_retryable(
+    tmp_path, capsys
+) -> None:
+    # 唯一 provider reset 時間戳（secondary=None 實檔形狀）→ 逐字帶出
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(
+        probe_dir,
+        "codex",
+        "codex-native",
+        FRESH_TS,
+        parsed={"plan": "plus", "limits": None},
+        raw=codex_native_raw(
+            limit_reached=True,
+            primary_reset_s=CODEX_RESET_S,
+            secondary_reset_s=None,
+        ),
+    )
+    spine = make_spine(tmp_path, SPINE_STALE_AS_OF, "- **可用**：codex")
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    row = row_of(payload["rows"], "codex", "codex-native")
+    assert row["state"] == "unavailable"
+    assert row["freshness"] == "fresh"
+    assert row["retryable_at"] == "2026-10-07T19:06:40Z"  # primary_window.reset_at
+
+
+def test_probe_limit_reached_false_yields_available(tmp_path, capsys) -> None:
+    # 反例（卡 AC#2）：probe 命令成功且 limit_reached=false → available
+    # （probe command 成功不得誤解成 quota available 的對稱面）
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(
+        probe_dir,
+        "codex",
+        "codex-native",
+        FRESH_TS,
+        parsed={"plan": "plus", "limits": None},
+        raw=codex_native_raw(
+            limit_reached=False,
+            primary_reset_s=CODEX_RESET_S,
+            secondary_reset_s=None,
+        ),
+    )
+    spine = make_spine(tmp_path, SPINE_STALE_AS_OF, "- **可用**：codex")
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    row = row_of(payload["rows"], "codex", "codex-native")
+    assert row["source"] == "probe"
+    assert row["state"] == "available"
+    assert row["freshness"] == "fresh"
+
+
+def test_probe_limit_reached_true_stale_yields_unknown(tmp_path, capsys) -> None:
+    # 卡 AC#3：stale 的 exhausted 禁冒充現值 → unknown（非 unavailable；
+    # retryable_at 屬考古錨點一併缺席）
+    probe_dir = tmp_path / "probe"
+    probe_dir.mkdir()
+    seed_probe(
+        probe_dir,
+        "codex",
+        "codex-native",
+        STALE_TS,
+        parsed={"plan": "plus", "limits": None},
+        raw=codex_native_raw(
+            limit_reached=True,
+            primary_reset_s=CODEX_RESET_S,
+            secondary_reset_s=None,
+        ),
+    )
+    spine = make_spine(tmp_path, SPINE_STALE_AS_OF, "- **可用**：codex")
+    rc, payload = run_json(
+        ["--probe-dir", str(probe_dir), "--spine", str(spine)], capsys
+    )
+    assert rc == 0
+    row = row_of(payload["rows"], "codex", "codex-native")
+    assert row["source"] == "probe"
+    assert row["state"] == "unknown"
+    assert row["freshness"] == "stale"
+    assert row["retryable_at"] is None
