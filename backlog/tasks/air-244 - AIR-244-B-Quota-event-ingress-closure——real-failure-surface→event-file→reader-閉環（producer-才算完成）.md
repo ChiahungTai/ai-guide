@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-10-03 04:44'
-updated_date: '2026-10-03 05:18'
+updated_date: '2026-10-03 09:38'
 labels: []
 dependencies: []
 ordinal: 235000
@@ -38,6 +38,10 @@ flowchart LR
 - [x] #4 production caller 在場（helper 直呼不算） `rg -n "capture_quota_event" scripts/ tests/` → ≥2 處含 production caller
 <!-- SECTION:DESCRIPTION:END -->
 
+__zcode_status=$?
+if [ "$__zcode_status" -eq 0 ]; then pwd -P > '/var/folders/h8/q6jpct1x4d1g4xt_7g2r06080000gp/T/zcode-07800139-c2a2-4030-b4f3-4c8a12761bcd-cwd'; fi
+exit "$__zcode_status"
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -46,6 +50,12 @@ flowchart LR
 **F1 排程掛點裁決（主 session）**：ingest 不自動化成 cron——掛兩個消費同時點：一、ArcPlan 組裝與 Plan Preview 前 marshal 跑 ingest（planning 證據按需新鮮）；二、AIR-241 walled failover 裁決當下跑（降級決策需 fresh events）。理由：events 檔是 advisory planning evidence，派工真值＝dispatch JIT AvailabilitySnapshot——為 advisory 面加常駐自動化違反 fast telemetry 不灌 slow state 的同一精神（與 spine 寫手契約同理）。**ingest 生產排程掛點就此裁決閉環**（handback unresolved 第一項解除）；GLM 1308 空格式解析缺口保留為另卡候選（真實 ledger 有實例）。
 
 fresh 腿四軸全過：production entry 真在場（11 測全經 main）；真 ledger errorExcerpt 抽驗含真 429 與 1308 訊息；否證 2 支轉紅；真實閉環 muse retryable_at＝2026-10-05T00:00Z 與 spine 錨點一致。
+
+## 交接更正（1003 晚——landing miss 揭露）
+
+**發現**：結案當下 code commit  **從未 merge 進 main**（結案 metadata commit 0ec58289 進了、branch 留存；main 缺 scripts/quota_event_ingest.py——卡面原載「main 7ff46526」不實）。交接盤點抓出，即修：rebase onto main（**as-landed 0bb643bf**）→11 測過→ff merge→branch/WT 已收。全套件 **3144 passed**。
+
+**影響窗評估**（13:07 落 commit→23:xx 修正）：掛點尚未自動化（ingest 掛 ArcPlan 組裝前＋walled 裁決當下，皆人/session 觸發）——窗內無 runtime 消費者，零實害；AIR-239 reader 驗證當時跑在 WT 內非 main。fail-loud 揭露此結案流程縫：**結案兩步前須驗 code commit 已在 main**（新增交接檢查）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -61,6 +71,3 @@ flowchart LR
     R --> P['ArcPlan 組裝前 ingest<br/>＋walled failover 裁決當下']
 ```
 <!-- SECTION:FINAL_SUMMARY:END -->
-__zcode_status=$?
-if [ "$__zcode_status" -eq 0 ]; then pwd -P > '/var/folders/h8/q6jpct1x4d1g4xt_7g2r06080000gp/T/zcode-07800139-c2a2-4030-b4f3-4c8a12761bcd-cwd'; fi
-exit "$__zcode_status"
