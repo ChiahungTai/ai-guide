@@ -34,4 +34,4 @@ schema 單一源在 [work-order review variant](../_common/work-order.md)（reme
 
 - **read-only 全程**：深審、裁決、報告皆不動 main working tree——不寫檔、不建卡、不 commit；產出＝對話內報告＋gate 候選清單
 - 報告落 `ai-analysis/reports/`、殘項建卡＝**顯式 `--persist` 或 user 拍板後**的後續動作，非本 skill 預設路徑（backlog 建卡即 commit——outward action 授權在 user，skill invocation 不構成授權）
-- 派發前查 model-routing 額度與 eligibility（review/advisory 形態條款——read-only 委派不以 implementation-loop 條件判定）；額度不足顯式降級（in-harness decision-grade 承接＋記錄），禁靜默略過
+- 派發前查 model-routing 額度與 eligibility（review/advisory 形態條款——read-only 委派不以 implementation-loop 條件判定）；額度不足顯式 failover／改派（in-harness decision-grade 承接＋記錄），禁靜默略過

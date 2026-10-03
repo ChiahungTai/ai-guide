@@ -394,4 +394,4 @@ GLM / 非 Claude harness 的 safety classifier 可能**間歇 unavailable**（sp
 | 收 note、無 findings、無錯誤碼 | classifier 間歇 unavailable（服務端暫態） | 重試 spawn ≤2 次（上段正解） |
 | 錯誤碼 **1301**（content filter） | 內容審查攔截——prompt 用詞觸發 provider 端關鍵詞過濾；**同 prompt 重試必再撞** | **禁原 prompt 重試**——改寫用詞後再 spawn；仍撞 → 換任務表述或升 full 層 |
 | 錯誤碼 **1308**（usage limit） | 額度窗口耗盡（錯誤內含重置時間戳；~2 秒即敗＝根本沒跑） | 等窗口重置再派（重置前重派無效）；中途陣亡 ≠ 沒跑——先查產物判進度；不用預先降級 |
-| 錯誤碼 **1302**（spawn 即敗／agent 中途陣亡） | 帳號級暫態（spawn 通道暫態，含 rate 相關）——**非模型專屬**（full 亦撞；晨間 full reviewer 連續兩案例） | 重試 spawn ≤2；仍撞 → **顯式降級記錄**（序列延後／in-harness 自做），禁靜默棄審 |
+| 錯誤碼 **1302**（spawn 即敗／agent 中途陣亡） | 帳號級暫態（spawn 通道暫態，含 rate 相關）——**非模型專屬**（full 亦撞；晨間 full reviewer 連續兩案例） | 重試 spawn ≤2；仍撞 → **顯式 failover／改派記錄**（序列延後／in-harness 自做），禁靜默棄審 |
