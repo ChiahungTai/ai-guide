@@ -53,7 +53,7 @@ fresh 腿四軸全過：production entry 真在場（11 測全經 main）；真 
 
 ## 交接更正（1003 晚——landing miss 揭露）
 
-**發現**：結案當下 code commit  **從未 merge 進 main**（結案 metadata commit 0ec58289 進了、branch 留存；main 缺 scripts/quota_event_ingest.py——卡面原載「main 7ff46526」不實）。交接盤點抓出，即修：rebase onto main（**as-landed 0bb643bf**）→11 測過→ff merge→branch/WT 已收。全套件 **3144 passed**。
+**發現**：結案當下 code commit 7ff46526 **從未 merge 進 main**（結案 metadata commit 0ec58289 進了、branch 留存；main 缺 scripts/quota_event_ingest.py——卡面原載「main 7ff46526」不實）。交接盤點抓出，即修：rebase onto main（**as-landed 0bb643bf**）→11 測過→ff merge→branch/WT 已收。全套件 **3144 passed**。
 
 **影響窗評估**（13:07 落 commit→23:xx 修正）：掛點尚未自動化（ingest 掛 ArcPlan 組裝前＋walled 裁決當下，皆人/session 觸發）——窗內無 runtime 消費者，零實害；AIR-239 reader 驗證當時跑在 WT 內非 main。fail-loud 揭露此結案流程縫：**結案兩步前須驗 code commit 已在 main**（新增交接檢查）。
 <!-- SECTION:NOTES:END -->
@@ -61,7 +61,7 @@ fresh 腿四軸全過：production entry 真在場（11 測全經 main）；真 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-**as-built 終態**（main 7ff46526）：quota-event ingress closure 落地——quota_event_ingest.py production writer（authoritative failure surface＝bridge ledger errorExcerpt；ingest-event 單事件＋ingest ledger sweep 兩入口；恰一筆 family/message/observed_at_utc 冪等去重；unknown 禁偽造；malformed fail-loud all-or-nothing）＋11 測全經 production entry。真 ledger 實跑：candidates=52 hits=11（muse 429×7＋glm 1308×3）冪等雙跑 0/11；閉環——AIR-239 reader 重 parse 出 muse unavailable＋retryable_at＝2026-10-05T00:00Z（spine 錨點一致）。排程掛點裁決：不自動化 cron——掛 ArcPlan 組裝前＋walled failover 裁決當下兩消費同時點。
+**as-built 終態**（原載 main 7ff46526 不實——landing miss 修正後 **as-landed 0bb643bf**，見 Notes 交接更正）：quota-event ingress closure 落地——quota_event_ingest.py production writer（authoritative failure surface＝bridge ledger errorExcerpt；ingest-event 單事件＋ingest ledger sweep 兩入口；恰一筆 family/message/observed_at_utc 冪等去重；unknown 禁偽造；malformed fail-loud all-or-nothing）＋11 測全經 production entry。真 ledger 實跑：candidates=52 hits=11（muse 429×7＋glm 1308×3）冪等雙跑 0/11；閉環——AIR-239 reader 重 parse 出 muse unavailable＋retryable_at＝2026-10-05T00:00Z（spine 錨點一致）。排程掛點裁決：不自動化 cron——掛 ArcPlan 組裝前＋walled failover 裁決當下兩消費同時點。
 
 ```mermaid
 flowchart LR
