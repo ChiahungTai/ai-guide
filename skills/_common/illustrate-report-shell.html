@@ -249,8 +249,11 @@ function setCollapsed(c,moveFocus){
 function toggleFilter(cls,el){
   var on=!document.body.classList.contains(cls);
   document.body.classList.remove('only-decisions','only-exceptions');
-  if(on)document.body.classList.add(cls);
-  el.setAttribute('aria-pressed',String(on));
+  document.querySelectorAll('.filter-bar button').forEach(function(b){b.setAttribute('aria-pressed','false')});
+  if(on){
+    document.body.classList.add(cls);
+    el.setAttribute('aria-pressed','true');
+  }
   return false;
 }
 (function(){
