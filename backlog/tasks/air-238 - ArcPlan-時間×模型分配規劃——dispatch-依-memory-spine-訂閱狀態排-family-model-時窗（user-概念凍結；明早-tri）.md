@@ -3,7 +3,7 @@ id: AIR-238
 title: >-
   ArcPlan 時間×模型分配規劃——dispatch 依 memory spine 訂閱狀態排 family/model 時窗（user 概念凍結；明早
   tri）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 14:27'
 updated_date: '2026-10-03 01:01'
