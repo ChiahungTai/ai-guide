@@ -1,10 +1,10 @@
 ---
 id: AIR-242
 title: 'review-engine:84-85 查詢 fallback 指引更新——workspaceSymbol 殘留 vs CR/lsp-bridge 優先序'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-02 22:48'
-updated_date: '2026-10-03 03:07'
+updated_date: '2026-10-03 03:32'
 labels: []
 dependencies: []
 ordinal: 233000
