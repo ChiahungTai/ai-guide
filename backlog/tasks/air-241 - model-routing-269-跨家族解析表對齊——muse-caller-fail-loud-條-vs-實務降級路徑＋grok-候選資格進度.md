@@ -1,9 +1,10 @@
 ---
 id: AIR-241
 title: 'model-routing:269 跨家族解析表對齊——muse caller fail-loud 條 vs 實務降級路徑＋grok 候選資格進度'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-02 22:48'
+updated_date: '2026-10-03 03:07'
 labels: []
 dependencies: []
 ordinal: 232000
@@ -22,5 +23,18 @@ flowchart LR
     X --> Y['實務：顯式降級 codex glm<br/>user 在場默認 未程序化']
     Y --> Z['本卡裁決：程序化降級條款<br/>或維持恆問加 fast-path 授權面']
 ```
-
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+user 裁決＝場景分岔（1003 晨）：interactive 恆問不變；autonomous/deep-work 場景 muse walled（failed-usage 實證）→顯式降級至相異家族合格 candidate＋強制記錄＋completion report 報備——禁靜默。單 impl unit 改 model-routing SKILL:269 區＋drift 掃描；收線鏈全形＋雙腿（政策語義變更走完整閘）。
+<!-- SECTION:PLAN:END -->
+
+## Acceptance Criteria
+
+- [ ] #1 場景分岔條款落地（interactive 恆問保留＋autonomous 顯式降級路徑） `rg -c "walled" skills/model-routing/SKILL.md` → ≥1
+- [ ] #2 三要素在場（顯式降級／強制記錄／報備） `rg -c "報備" skills/model-routing/SKILL.md` → ≥1
+- [ ] #3 禁靜默語義不破（既有 no-silent-downgrade 條文零改動） `uv run pytest tests/test_sync_agents.py` → exit 0
+- [ ] #4 drift 掃描執行並記 journal（fail-loud／explicit-only 引用面前後對照） `rg -n "fail-loud" skills/model-routing/SKILL.md` → exit 0
+
