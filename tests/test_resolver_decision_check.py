@@ -37,6 +37,8 @@ def _contract() -> dict:
         "qualifications": ["implement_from_accepted_ep"],
         "capabilities": [],
         "surface": "glm-family",
+        "escalation": "invariant-or-public-boundary→decision-escalation",
+        "independence": None,
     }
 
 
@@ -108,6 +110,21 @@ class TestInvariant1:
         }
         code = check.main(["validate", str(_write(tmp_path, data))])
         assert code == 2
+
+    def test_invariant1_message_names_zero_dispatch(self, tmp_path, capsys) -> None:
+        """F3（R1）：invariant-1 否證力——M1 mutation（移除 inv1 檢查）下
+        exit code 仍為 2（inv2a 同場景觸發），本測試以 stderr 錨點抓
+        mutation：訊息須含 invariant-1 與 zero dispatch。"""
+        data = copy.deepcopy(_base())
+        data["policy"] = {
+            "preferred_family": "muse",
+            "on_unavailable": "delay",
+            "fallback_families": [],
+        }
+        check.main(["validate", str(_write(tmp_path, data))])
+        err = capsys.readouterr().err
+        assert "invariant-1" in err
+        assert "zero dispatch" in err
 
     def test_delay_preferred_available_select_preferred_admissible(
         self, tmp_path
@@ -299,6 +316,31 @@ class TestInvariant4:
         del data["dispatched_contract"]
         code = check.main(["validate", str(_write(tmp_path, data))])
         assert code == 2
+
+    def test_dispatched_contract_missing_escalation_rejected(
+        self, tmp_path
+    ) -> None:
+        """F2（R1）：escalation 屬 contract-preserving hard 欄（model-routing
+        SKILL.md——Role／authority／surface／escalation 完整攜帶不降）——
+        dispatched 拿掉 → invariant-4。"""
+        data = copy.deepcopy(_base())
+        del data["dispatched_contract"]["escalation"]
+        code = check.main(["validate", str(_write(tmp_path, data))])
+        assert code == 2
+
+    def test_both_sides_missing_hard_field_input_error(
+        self, tmp_path, capsys
+    ) -> None:
+        """F4（R1）：hard 欄雙缺＝空洞相等縫（.get() 雙 None 相等的
+        vacuous pass）——selected 在場時須 input error exit 2。"""
+        data = copy.deepcopy(_base())
+        del data["contract"]["surface"]
+        del data["dispatched_contract"]["surface"]
+        code = check.main(["validate", str(_write(tmp_path, data))])
+        assert code == 2
+        err = capsys.readouterr().err
+        assert "INPUT ERROR" in err
+        assert "surface" in err
 
 
 # ---- admissible 語義（evaluator-not-router：不比 winner）----

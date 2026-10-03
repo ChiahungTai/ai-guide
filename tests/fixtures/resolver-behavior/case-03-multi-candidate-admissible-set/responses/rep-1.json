@@ -5,34 +5,73 @@
     "role": "implement",
     "authority": "apply",
     "judgment_floor": "execution",
-    "qualifications": ["implement_from_accepted_ep"],
+    "qualifications": [
+      "implement_from_accepted_ep"
+    ],
     "capabilities": [],
-    "surface": "glm-family"
+    "surface": "glm-family",
+    "escalation": "invariant-or-public-boundary→decision-escalation",
+    "independence": null
   },
   "dispatched_contract": {
     "role": "implement",
     "authority": "apply",
     "judgment_floor": "execution",
-    "qualifications": ["implement_from_accepted_ep"],
+    "qualifications": [
+      "implement_from_accepted_ep"
+    ],
     "capabilities": [],
-    "surface": "glm-family"
+    "surface": "glm-family",
+    "escalation": "invariant-or-public-boundary→decision-escalation",
+    "independence": null
   },
   "policy": {
     "preferred_family": "codex",
     "on_unavailable": "fallback",
-    "fallback_families": ["glm", "muse"]
+    "fallback_families": [
+      "glm",
+      "muse"
+    ]
   },
   "planning_rows": [
-    {"family": "codex", "freshness": "fresh", "state": "unavailable"},
-    {"family": "glm", "freshness": "fresh", "state": "available"},
-    {"family": "muse", "freshness": "fresh", "state": "available"}
+    {
+      "family": "codex",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    },
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "available"
+    }
   ],
   "live_availability": [
-    {"family": "codex", "freshness": "fresh", "state": "unavailable"},
-    {"family": "glm", "freshness": "fresh", "state": "available"},
-    {"family": "muse", "freshness": "fresh", "state": "available"}
+    {
+      "family": "codex",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    },
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "available"
+    }
   ],
-  "qualified_families": ["codex", "glm", "muse"],
+  "qualified_families": [
+    "codex",
+    "glm",
+    "muse"
+  ],
   "selected": {
     "family": "glm",
     "model": "GLM-5.3-Flash",

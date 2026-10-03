@@ -9,7 +9,9 @@
       "implement_from_accepted_ep"
     ],
     "capabilities": [],
-    "surface": "glm-family"
+    "surface": "glm-family",
+    "escalation": "invariant-or-public-boundary→decision-escalation",
+    "independence": null
   },
   "dispatched_contract": {
     "role": "implement",
@@ -19,7 +21,9 @@
       "implement_from_accepted_ep"
     ],
     "capabilities": [],
-    "surface": "glm-family"
+    "surface": "glm-family",
+    "escalation": "invariant-or-public-boundary→decision-escalation",
+    "independence": null
   },
   "policy": {
     "preferred_family": "codex",

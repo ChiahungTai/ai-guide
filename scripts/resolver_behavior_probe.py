@@ -23,10 +23,11 @@ corpus 形態：
   <corpus>/case-*/responses/rep-N.json   # N=1..reps；structured decision
                                          # 或 {"status":"inconclusive","reason":...}
 
-exit 契約：0＝所有完成樣本 admissible（INCONCLUSIVE 如實列出，不改變
-exit）；1＝≥1 完成樣本違反 hard invariant（behavior finding）；2＝corpus
-或參數不合法（dir 缺、case.json 缺/malformed、reps<1、全 corpus 零
-artifact）。
+exit 契約：0＝完成樣本 ≥1 且全 admissible（INCONCLUSIVE 如實列出）；
+1＝≥1 完成樣本違反 hard invariant（behavior finding）；2＝corpus 或參數
+不合法（dir 缺、case.json 缺/malformed、reps<1、全 corpus 零 artifact）；
+3＝有 artifact 但零完成 admissible 樣本（全 INCONCLUSIVE）——不可宣稱
+pass（F1，R1 修復批）。
 """
 
 import argparse
@@ -36,7 +37,6 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CASE_SCHEMA = "resolver-behavior-case/1"
 
 
 def _load_checker():
@@ -177,7 +177,18 @@ def main(argv: list[str] | None = None) -> int:
         f"violation={counts['violation']} inconclusive={counts['inconclusive']}"
         f"（INCONCLUSIVE 如實——禁 retry-to-green）"
     )
-    return 1 if counts["violation"] else 0
+    if counts["violation"]:
+        return 1
+    if counts["admissible"] == 0:
+        # F1（R1）：有 artifact 但零完成 admissible 樣本——全 INCONCLUSIVE
+        # 不可宣稱 pass（顯性非零 exit，禁 silent green）
+        print(
+            "[resolver-behavior-probe] NO-COMPLETED-SAMPLE: 零完成 admissible "
+            "樣本（全 INCONCLUSIVE）——不可宣稱 pass",
+            file=sys.stderr,
+        )
+        return 3
+    return 0
 
 
 if __name__ == "__main__":

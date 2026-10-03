@@ -33,6 +33,8 @@ def _admissible_decision() -> dict:
             "qualifications": ["implement_from_accepted_ep"],
             "capabilities": [],
             "surface": "glm-family",
+            "escalation": "invariant-or-public-boundary→decision-escalation",
+            "independence": None,
         },
         "dispatched_contract": {
             "role": "implement",
@@ -41,6 +43,8 @@ def _admissible_decision() -> dict:
             "qualifications": ["implement_from_accepted_ep"],
             "capabilities": [],
             "surface": "glm-family",
+            "escalation": "invariant-or-public-boundary→decision-escalation",
+            "independence": None,
         },
         "policy": {
             "preferred_family": "muse",
@@ -178,7 +182,9 @@ class TestVerdicts:
         )
         (corpus / "rep-1.json").write_text("{not json", encoding="utf-8")
         code = probe.main(["--corpus", str(corpus.parent.parent), "--reps", "1"])
-        assert code == 0
+        # F1（R1）新語義：全 INCONCLUSIVE corpus＝零完成 admissible 樣本 →
+        # exit 3（不可宣稱 pass）；非 1 即證 malformed 未被誤判 violation
+        assert code == 3
         out = capsys.readouterr().out
         assert "INCONCLUSIVE" in out
 
@@ -190,7 +196,28 @@ class TestVerdicts:
         broken = {"schema": "resolver-decision/1", "decision_id": "x"}
         corpus = _make_corpus(tmp_path, {"case-x": [broken]})
         code = probe.main(["--corpus", str(corpus), "--reps", "1"])
-        assert code == 0
+        # F1（R1）新語義：零完成 admissible 樣本 → exit 3；非 1 即證結構
+        # 不合法未被誤判 violation（checker 是違規判定唯一源）
+        assert code == 3
+
+    def test_all_inconclusive_corpus_zero_admissible_exits_3(
+        self, tmp_path, capsys
+    ) -> None:
+        """F1（R1）：completed_admissible=0 且 artifacts>0 → 顯性非零
+        exit（3）——全 INCONCLUSIVE 不可宣稱 pass。"""
+        corpus = _make_corpus(
+            tmp_path,
+            {
+                "case-x": [
+                    {"status": "inconclusive", "reason": "GLM 1308 usage limit"},
+                    {"status": "inconclusive", "reason": "muse 429 at capacity"},
+                ]
+            },
+        )
+        code = probe.main(["--corpus", str(corpus), "--reps", "2"])
+        assert code == 3
+        out = capsys.readouterr().out
+        assert "completed_admissible=0" in out
 
 
 class TestFailLoud:

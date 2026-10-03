@@ -60,6 +60,7 @@ HARD_CONTRACT_FIELDS = (
     "qualifications",
     "capabilities",
     "surface",
+    "escalation",
     "independence",
 )
 REQUIRED_TOP = (
@@ -139,7 +140,9 @@ def _validate_policy(policy: object, errors: list[str]) -> None:
         )
 
 
-def _validate_rows(rows: object, label: str, errors: list[str], seen: set) -> None:
+def _validate_rows(
+    rows: object, label: str, errors: list[str], seen: set[str]
+) -> None:
     if not isinstance(rows, list):
         errors.append(f"{label} 須為 list，got {type(rows).__name__}")
         return
@@ -211,13 +214,28 @@ def _validate_input(data: dict) -> list[str]:
                 "selected 在場而 dispatched_contract 缺席或非 object——"
                 "無法驗證 hard requirement 未被降低（fail-closed）"
             )
+        else:
+            # F4（R1）：hard 欄雙缺＝空洞相等縫（逐欄 .get() 雙 None 相等的
+            # vacuous pass）——selected 在場時 hard 欄須至少 contract 側在場
+            both_missing = [
+                field
+                for field in HARD_CONTRACT_FIELDS
+                if field not in data["contract"]
+                and field not in data["dispatched_contract"]
+            ]
+            if both_missing:
+                errors.append(
+                    "contract 與 dispatched_contract 雙缺 hard 欄 "
+                    f"{both_missing}——無法驗證 hard requirement 未被降低"
+                    "（fail-closed，禁 vacuous pass）"
+                )
     return errors
 
 
 # ---- hard invariants（回違規行 list）----
 
 
-def _row(rows: list, family: str) -> dict | None:
+def _row(rows: list[dict], family: str) -> dict | None:
     for row in rows:
         if row.get("family") == family:
             return row
@@ -230,7 +248,7 @@ def _live_desc(row: dict | None) -> str:
     return f"state={row['state']}, freshness={row['freshness']}"
 
 
-def _planning_all_stale(rows: list) -> bool:
+def _planning_all_stale(rows: list[dict]) -> bool:
     return all(
         row.get("freshness") == STALE or row.get("state") == "unknown"
         for row in rows

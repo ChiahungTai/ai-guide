@@ -5,9 +5,13 @@
     "role": "implement",
     "authority": "apply",
     "judgment_floor": "execution",
-    "qualifications": ["implement_from_accepted_ep"],
+    "qualifications": [
+      "implement_from_accepted_ep"
+    ],
     "capabilities": [],
-    "surface": "glm-family"
+    "surface": "glm-family",
+    "escalation": "invariant-or-public-boundary→decision-escalation",
+    "independence": null
   },
   "policy": {
     "preferred_family": "muse",
@@ -15,13 +19,32 @@
     "fallback_families": []
   },
   "planning_rows": [
-    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
-    {"family": "glm", "freshness": "fresh", "state": "available"}
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    }
   ],
   "live_availability": [
-    {"family": "muse", "freshness": "fresh", "state": "unavailable"},
-    {"family": "glm", "freshness": "fresh", "state": "available"}
+    {
+      "family": "muse",
+      "freshness": "fresh",
+      "state": "unavailable"
+    },
+    {
+      "family": "glm",
+      "freshness": "fresh",
+      "state": "available"
+    }
   ],
-  "qualified_families": ["muse", "glm"],
+  "qualified_families": [
+    "muse",
+    "glm"
+  ],
   "selected": null
 }
