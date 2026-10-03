@@ -1,0 +1,53 @@
+---
+id: AIR-248
+title: session 掛名慣例——watcher／automation／派工 session 自動掛 scbus name（終結「待認領」裸奔）
+status: To Do
+assignee: []
+created_date: '2026-10-03 23:02'
+updated_date: '2026-10-03 23:16'
+labels: []
+dependencies: []
+ordinal: 239000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+session 出生時 hook 自動向 scbus 註冊，但 name 永遠是 null——registry 裡 1766 個 session（跨全部 repo）在 SC extension 顯示「待認領」，人和 AI 都無法從名字知道這是誰、在幹嘛。mosaic 移交請求：兩機制擇一，讓 watcher／automation／被派工 session 有可定位的名字。
+
+**做什麼**：擇一落地——A）派工類 workorder／spawn prompt 模板加一行 scbus rename --session-id <自己> --name <用途>；B）session 出生 hook 直接以 title 自動掛名。機制選擇以 codex 討論腿 verdict 為準（已收線：裁定 A 慣例行、不混合；user 程序裁決「codex 討論解法後再做」）。
+
+**不做什麼**：不改 scbus 本體（rename 子命令已存在、零新機制）；不批量回填 1766 個歷史 null（枯萎 session 已由 mosaic 示範 end，存量 hygiene 另議）。
+
+**現在到哪／等 user**：卡已點卡確認（user「可以」），進實作。
+
+```mermaid
+flowchart LR
+    H['session 出生 hook 自動註冊 scbus'] --> Z['name=null 裸奔 1766 個待認領']
+    M['mosaic 移交請求'] --> C{'機制擇一依 codex verdict'}
+    C -->|A| P['派工模板加 scbus rename 行']
+    C -->|B| K['出生即以 title 掛名']
+    P --> D['SC 人話定位 新 session 裸奔止']
+    K --> D
+```
+
+證據指針：codex verdict＝.agent-tmp/scbus-naming/codex-verdict.md；mosaic 移交信見 scbus 信箱（ai-guide-primary drain 記錄 1004 晨）。
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 機制 A 落地——work-order.md §2/Role contract 新增 canonical session-name 用途欄（foreign-runtime 單一源） rg -c "session-name" skills/_common/work-order.md → ≥1
+- [ ] #2 agent-workflow SKILL.md dispatch preview 加 dispatcher rename 步驟（取得 native session id 後 scbus rename，名稱取 work unit＋role／用途） rg -c "scbus rename" skills/agent-workflow/SKILL.md → ≥1
+- [ ] #3 bridge-dispatch SKILL.md runbook 引用 session-name 欄（sessionId 首次可得即 rename） rg -c "scbus rename|session-name" skills/bridge-dispatch/SKILL.md → ≥1
+- [ ] #4 at SKILL.md Phase 3 capsule＋usage-ping SKILL.md prompt 模板冷 session 開場自命名 兩檔各自 rg -c "scbus rename" → 各 ≥1
+- [ ] #5 hooks／rules 零命名邏輯（verdict 界定不加） rg -c "scbus rename" hooks/ rules/ → 0
+- [ ] #6 dogfood＋閉環回信：本 session scbus rename 實證（ai-guide-duty-1004morning 已掛）＋verdict 檔留存 .agent-tmp/scbus-naming/codex-verdict.md＋回信 mosaic-primary completed（機制選擇＋落地證據）
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide d58158c7〕
+〔已決策勿重辯：①user 程序裁決（1004 晨）＝「codex 討論解法後再做」＋「一樣要開卡跑完整流程」——機制擇一以 codex verdict 為準，禁跳過討論腿直行；②mosaic 提案兩候選擇一即可（慣例行 vs hook 出生掛名）；③scbus rename 子命令已存在，零新機制、不改 scbus 本體；④不批量回填 1766 個歷史 null（存量 hygiene 另議）；⑤本卡半張（simple 級）〕
+範圍：ai-guide 慣例面——依 codex verdict 擇一錨點（skills 派工模板／hooks birth hook／rules），單一機制落地＋dogfood 驗證＋回信 mosaic-primary。AC 具體 verifier 待 verdict 落地後補齊（開工前過 spec gate）。
+<!-- SECTION:PLAN:END -->
