@@ -55,12 +55,16 @@ as_of 非未來且與快照 generated_at 一致、rows 非空且非全 stale（m
 stale provenance 逐行 exit 2）。**stale 閾值 ownership 在 producer**
 （entitlement_window_snapshot.py：probe 26h／spine 3d——AIR-239 單一時鐘
 R2），本 validator 消費 rows[].freshness 標籤、不自備第二時鐘；牆鐘只用於
-as_of 非未來（過去 frozen fixture 恆綠——AC 驗證器時間穩定）。**易爛真值
-禁令**：temporal block 閉集鎖定——quota 數字/reset 時刻等「現值」欄禁入
-plan（ArcPlan 是穩定版控 artifact，現值幾小時即腐爛；現值唯一合法歸宿＝
-snapshot 引用）；閉集選在 block 層而非全 plan 白名單（ArcPlan 載 producer
-自選 Optional 區塊——全 plan 白名單會耦合每個 producer；現值入侵點＝
-temporal block，禁令守在那裡）。DispatchSlice carry-through：preferred_
+as_of 非未來（過去 frozen fixture 恆綠——AC 驗證器時間穩定）。**provenance
+機驗＝producer-attested freshness（自簽自驗）；非防偽**——hash 只證明 plan
+引到「這份內容」，不證明 freshness 計算可信；真閘＝dispatch JIT
+AvailabilitySnapshot（resolver 七步第 4 步，model-routing 契約面）。
+**易爛真值禁令**——禁令範圍＝temporal_allocation block 閉集＋**全 plan
+volatile-key 黑名單**（頂層＋work_units[i] sibling，莖詞閉集
+VOLATILE_TRUTH_STEMS：quota／reset／retryable_at／available_now——
+quota_remaining／next_reset_at／reset_at 等現值欄經莖詞命中即錯）；
+**非全 plan 白名單**（ArcPlan 載 producer 自選 Optional 區塊——全 plan
+白名單會耦合每個 producer，非 volatile 新 key 不攔）。DispatchSlice carry-through：preferred_
 family／on_unavailable／fallback_families 同欄投影（選填 machine-invariant
 、值歸 resolver，schema 留欄）。FAMILIES 擴 grok（AIR-240 裁決：AIR-226
 bridge-grok-grok-4.7 binding 在場——有 binding 的 family 須有合法 slice 值
@@ -165,6 +169,11 @@ TEMPORAL_ALLOCATION_KEYS = (
     "entitlement_snapshot_hash",
     "entitlement_snapshot_as_of",
 )
+# 易爛真值黑名單（AIR-240 R1——repair-1）：全 plan volatile-key 掃描的莖詞
+# 閉集（key 子串命中即錯）——quota_remaining／next_reset_at／reset_at／quota
+# 及現值變體皆經莖詞覆蓋。黑名單非白名單：非 volatile 新 key 不攔（extension
+# surface 開放）；temporal_allocation block 另有閉集（更嚴）。
+VOLATILE_TRUTH_STEMS = ("quota", "reset", "retryable_at", "available_now")
 TERMINALS = ("completed", "budget-limited", "blocked-human-decision", "failed")
 CAPABILITY_MODES = ("ReadOnly", "ReadWrite", "Execute", "All")
 AUTHORITIES = ("writer", "read-only")
@@ -918,6 +927,23 @@ def _check_closure_coverage(
             )
 
 
+def _check_volatile_truth_keys(
+    block: dict, label: str, kind: str, errors: list[str]
+) -> None:
+    """易爛真值黑名單掃描（AIR-240 R1——repair-1）——key 命中莖詞閉集即逐行
+    error。禁令範圍＝temporal_allocation block 閉集＋本黑名單（掃頂層 plan 與
+    work_units[i] sibling）；**非全 plan 白名單**——非 volatile 新 key 不攔
+    （extension surface 開放）。"""
+    for key in block:
+        if any(stem in key for stem in VOLATILE_TRUTH_STEMS):
+            errors.append(
+                f"Volatile truth key `{key}` in {label} for {kind} — "
+                f"易爛真值禁令（現值欄如 quota 數字/reset 時刻禁入 plan；ArcPlan "
+                f"是穩定版控 artifact，現值幾小時即腐爛，唯一合法歸宿＝snapshot "
+                f"引用）. Volatile key stems: {', '.join(VOLATILE_TRUTH_STEMS)}"
+            )
+
+
 def _parse_iso_utc(value: object) -> datetime | None:
     """ISO 8601 tz-aware 解析——naive（無時區）＝不合法（AIR-239 R4 同姿態：
     禁與 aware 值混比時 TypeError）。"""
@@ -1108,11 +1134,20 @@ def _check_temporal_provenance(
                 f"`{as_of_raw}` — 未來非新（fail-loud；availability_snapshot F4 "
                 f"同姿態）"
             )
-        generated = _parse_iso_utc(payload.get("generated_at"))
-        if generated is not None and as_of != generated:
+        generated_raw = payload.get("generated_at")
+        generated = _parse_iso_utc(generated_raw)
+        if generated is None:
+            # R2（repair-1）：generated_at 存在＋可解析＋tz-aware＝prerequisite
+            # ——缺/壞即 fail-loud，禁靜默跳過 equality（原實作 fail-open）
+            errors.append(
+                f"snapshot `generated_at` 缺席或非合法 tz-aware ISO for {kind}: "
+                f"`{generated_raw}` — provenance 綁定 prerequisite（as_of 主張須"
+                f"錨定快照自身時戳；錨點缺席＝綁定不可機驗，fail-loud）"
+            )
+        elif as_of != generated:
             errors.append(
                 f"`{label}.entitlement_snapshot_as_of` `{as_of_raw}` 與快照 "
-                f"generated_at `{payload.get('generated_at')}` 不一致 for {kind} "
+                f"generated_at `{generated_raw}` 不一致 for {kind} "
                 f"— provenance 綁定：as_of 主張須錨定快照自身時戳（fail-loud）"
             )
 
@@ -1163,8 +1198,9 @@ def _check_temporal_allocation(
     if unknown:
         errors.append(
             f"Unknown temporal key(s) {', '.join(sorted(unknown))} in `{label}` "
-            f"for {kind} — 易爛真值禁令（quota 數字/reset 時刻等現值欄禁入 plan"
-            f"；ArcPlan 是穩定版控 artifact，現值唯一合法歸宿＝snapshot 引用）. "
+            f"for {kind} — 易爛真值禁令（禁令範圍＝temporal_allocation block "
+            f"閉集＋全 plan volatile-key 黑名單；非全 plan 白名單——現值欄如 "
+            f"quota 數字/reset 時刻禁入 plan，唯一合法歸宿＝snapshot 引用）. "
             f"Known temporal keys: {', '.join(TEMPORAL_ALLOCATION_KEYS)}"
         )
     for key in TEMPORAL_ALLOCATION_KEYS:
@@ -1189,6 +1225,8 @@ def _check_arc_plan(
     *, now: datetime, base_dir: Path,
 ) -> None:
     kind = "arc-plan"
+    # R1（repair-1）：全 plan volatile-key 黑名單——頂層＋work_units sibling
+    _check_volatile_truth_keys(data, "plan top level", kind, errors)
     version = data.get("version")
     version_ok = False
     if version is not None:
@@ -1272,6 +1310,7 @@ def _check_arc_plan(
                 errors.append(
                     f"work_units[{i}].depends_on must be a list for {kind}"
                 )
+            _check_volatile_truth_keys(wu, f"work_units[{i}]", kind, errors)
             if "temporal_allocation" in wu:
                 # AIR-240：work-unit 級 temporal 意圖——與頂層區塊同深檢
                 _check_temporal_allocation(

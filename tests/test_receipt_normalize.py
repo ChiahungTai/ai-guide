@@ -883,3 +883,12 @@ class TestMergedView:
         view = _mod.render_merged_view(receipts, title="t")
         assert view.startswith("# t\n")
         assert "| # | job |" in view
+
+    def test_grok_family_no_mapping_raises(self) -> None:
+        """R3（repair-1）：grok enum 值域合法（AIR-240）≠normalize 入口存在
+        ——與 local 同形 no-mapping raise（loud 恆 loud，禁靜默產出 receipt）。"""
+        with pytest.raises(_mod.NormalizeError) as ei:
+            _mod.normalize("grok", _env_codex())
+        assert "no receipt mapping in receipt_normalize v0" in str(ei.value)
+        assert "grok" in str(ei.value)
+        assert "muse, codex, glm" in str(ei.value)

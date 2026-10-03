@@ -411,6 +411,15 @@ def normalize(family: str, raw: dict) -> dict:
             f"Family `local` has no receipt mapping in receipt_normalize v0. "
             f"Mapped families: {', '.join(_MAPPED_FAMILIES)}（今晚範圍＝muse／codex／glm）"
         )
+    if family == "grok":
+        # R3（repair-1 AIR-240）：grok enum 值域合法（arc_spec.FAMILIES 擴
+        # grok）≠normalize 入口存在——與 local 同形 no-mapping raise（loud
+        # 恆 loud，禁靜默產出 receipt）
+        raise NormalizeError(
+            f"Family `grok` has no receipt mapping in receipt_normalize v0. "
+            f"Mapped families: {', '.join(_MAPPED_FAMILIES)}（grok 橋接面 receipt "
+            f"mapping 待另卡取證後新增）"
+        )
     if not isinstance(raw, dict):
         raise NormalizeError(
             f"raw must be an object for receipt_normalize, got {type(raw).__name__}"

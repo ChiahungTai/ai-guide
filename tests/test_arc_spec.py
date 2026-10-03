@@ -1982,3 +1982,139 @@ class TestTemporalFixtures:
             == 2
         )
         assert "stale provenance" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# repair-1（judge 裁決 R1/R2）——易爛真值禁令全 plan 黑名單＋generated_at
+# prerequisite
+# ---------------------------------------------------------------------------
+
+
+class TestVolatileTruthBlacklist:
+    """R1（repair-1）：易爛真值禁令範圍＝temporal_allocation block 閉集＋
+    全 plan volatile-key 黑名單（頂層＋work_units[i] sibling）；**非全 plan
+    白名單**——非 volatile 新 key 不攔（extension surface 開放）。
+
+    莖詞閉集（子串命中）＝VOLATILE_TRUTH_STEMS：quota（涵蓋 quota_remaining/
+    quota_used 等）、reset（涵蓋 reset_at/next_reset_at/reset_time/resets_at
+    等）、retryable_at、available_now——工單點名四詞（quota_remaining/
+    next_reset_at/reset_at/quota）全被莖詞覆蓋。
+    """
+
+    def test_top_level_quota_key_fails(self) -> None:
+        """否證（judge 驗收①）：quota_remaining 放頂層 → exit 2 逐行 error。"""
+        p = _plan_with_valid_hash()
+        p["quota_remaining"] = 42
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("quota_remaining" in e and "易爛真值禁令" in e for e in errs)
+        assert any("Volatile key stems" in e for e in errs)
+
+    def test_top_level_reset_at_key_fails(self) -> None:
+        p = _plan_with_valid_hash()
+        p["reset_at"] = "2026-10-02T18:00:00Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("`reset_at`" in e and "易爛真值禁令" in e for e in errs)
+
+    def test_work_unit_sibling_volatile_key_fails(self) -> None:
+        """work_units[i] sibling key 同掃——label 帶 unit 路徑。"""
+        p = _plan_with_valid_hash()
+        p["work_units"][0]["next_reset_at"] = "2026-10-02T18:00:00Z"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any(
+            "work_units[0]" in e and "next_reset_at" in e and "易爛真值禁令" in e
+            for e in errs
+        )
+
+    def test_non_volatile_new_key_still_allowed(self) -> None:
+        """黑名單≠白名單——非 volatile 新 sibling key 不攔。"""
+        p = _plan_with_valid_hash()
+        p["work_units"][0]["custom_coordination_note"] = "n"
+        p["custom_topology_hint"] = "h"
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert not any("易爛真值禁令" in e for e in errs)
+
+    def test_temporal_block_message_states_precise_scope(self) -> None:
+        """R1(b) 文案精確化：temporal 閉集錯誤明載禁令範圍兩面（block 閉集＋
+        全 plan 黑名單；非全 plan 白名單）。"""
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = {"quota_remaining": 42}
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors("arc-plan", p, stage="compile")
+        assert any("非全 plan 白名單" in e for e in errs)
+
+    def test_volatile_stems_constant_pinned(self) -> None:
+        assert _mod.VOLATILE_TRUTH_STEMS == (
+            "quota",
+            "reset",
+            "retryable_at",
+            "available_now",
+        )
+
+
+class TestSnapshotGeneratedAtPrerequisite:
+    """R2（repair-1）：snapshot generated_at 存在＋可解析＋tz-aware＝
+    provenance 綁定 prerequisite，然後無條件 as_of equality（修 fail-open
+    ——原實作 generated_at 缺/壞時靜默跳過 equality）。"""
+
+    def test_snapshot_missing_generated_at_fails(self, tmp_path: Path) -> None:
+        """否證（judge 驗收②）：generated_at missing → exit 2。"""
+        payload = {
+            "schema": "entitlement-window-snapshot/1",
+            "rows": [
+                {
+                    "family": "muse",
+                    "pool": "unknown",
+                    "source": "probe",
+                    "observed_at": "2026-10-02T12:00:00Z",
+                    "freshness": "fresh",
+                    "state": "available",
+                    "retryable_at": None,
+                }
+            ],
+        }
+        _write_snapshot(tmp_path / SNAPSHOT_NAME, payload)
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block()
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("generated_at" in e and "prerequisite" in e for e in errs)
+
+    def test_snapshot_malformed_generated_at_fails(self, tmp_path: Path) -> None:
+        """否證（judge 驗收③）：generated_at garbage → exit 2。"""
+        payload = _snapshot_payload(generated_at="not-a-timestamp")
+        _write_snapshot(tmp_path / SNAPSHOT_NAME, payload)
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block()
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("generated_at" in e and "prerequisite" in e for e in errs)
+
+    def test_snapshot_naive_generated_at_fails(self, tmp_path: Path) -> None:
+        """naive ISO（無時區）＝不可解析（tz 不合法）——同 fail-loud。"""
+        payload = _snapshot_payload(generated_at="2026-10-02T12:00:00")
+        _write_snapshot(tmp_path / SNAPSHOT_NAME, payload)
+        p = _plan_with_valid_hash()
+        p["temporal_allocation"] = _temporal_block()
+        p["temporal_allocation"]["entitlement_snapshot_hash"] = _snapshot_hash(payload)
+        p["plan_hash"] = _mod.plan_content_hash(p)
+        errs = _errors(
+            "arc-plan", p, stage="compile", base_dir=tmp_path, now=TEMPORAL_NOW
+        )
+        assert any("generated_at" in e and "prerequisite" in e for e in errs)
+
+    def test_docstring_states_producer_attested_freshness(self) -> None:
+        """R4：docstring 明載 provenance 機驗＝producer-attested freshness
+        （自簽自驗）；真閘＝dispatch JIT AvailabilitySnapshot。"""
+        doc = _mod.__doc__ or ""
+        assert "producer-attested" in doc
+        assert "AvailabilitySnapshot" in doc
