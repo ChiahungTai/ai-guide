@@ -36,6 +36,7 @@ scripts = [
     "hooks/post-build-gate.py",
     "hooks/scbus-address-pending-reminder.py",
     "hooks/stop-notification.sh",
+    "hooks/taskoutput_block_gate.py",
     "hooks/watcher_pairing_nag.py",
     "hooks/zcode_agent_background_gate.py",
 ]

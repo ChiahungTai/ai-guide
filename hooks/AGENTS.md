@@ -18,6 +18,10 @@
 - 實證（2026-09-12）：新 session 省略參數派發 → log `rewrite_from_absent`、主對話零阻塞、agent 以背景完成通知收尾
 - `zcode_agent_probe.py` 已刪——取證功能由 gate 的旁錄 log 吸收
 
+## TaskOutput 阻塞 gate（AIR-249，ZCode）
+
+- `taskoutput_block_gate.py`（PreToolUse，matcher `TaskOutput`）：deny 僅當 `block is True ∧ timeoutMs > 60000`——長阻塞等待背景任務是重犯失誤（背景 shell／agent exit 即自動發完成通知，長等從非必要；mid-turn 有界短等待 ≤60000 與 completed 即返是正當等待語義，照常放行——blanket deny 已被 codex 討論腿否證，fuse 即主規則）。stateless（零檔寫入）；fail-open（壞 JSON／字串 `"true"`／字串 timeoutMs／任何例外放行）；deny 文案帶 block=false 指引＋完成通知回收＋短 wait 例外。instruction owner＝`rules/tool-discipline.md`「背景執行」節（enforcement 非新規則）；與上節 Agent 背景 gate 同族（派發面補背景 vs 回收面禁長抱）。提案源＝mosaic mos-171（envelope 04efefd8）；live 觸發驗證須新 session（per-session 快照）
+
 ## marshal admission guard（AIR-135.10，ZCode/grok/codex 三面——CC 同形 dormant）
 
 - `marshal_admission_guard.py`（PreToolUse；ZCode/grok matcher `Edit|Write`——`tool_input.file_path`（grok `search_replace` alias 命中），codex matcher `apply_patch`——patch 標頭抽取 adapter 照 `codex_memory_path_deny.py` 形態、多檔 patch 任一命中即整 call deny）：控制面路徑 × canonical 主樹 → deny＋指路卡 WT——AIR-106 隔離閘從 commit 時點前移到編輯當下。canonical 判定＝git-common-dir→PRIMARY（`scripts/wt-open.sh` 同款拓撲錨，棄 wt-identity 存在性判據）；patterns 單一源＝`.githooks/control-plane-guard.sh --match-path` 子入口（Python 側零複製 regex）；repo self-gate（common dir 比對）防 user-level hook 殺其他 repo 同名路徑；crash fail-open（exit 0＋stderr 診斷)；**無 bypass env**——break-glass＝human 停 registration（本檔「註冊維護與 runtime」及 governance 安裝／trust 流程）
