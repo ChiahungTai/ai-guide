@@ -39,7 +39,7 @@ MCP tool dispatch 紀律（與 CLI dispatch 同構、入口不同）：
 
 ## codex web pool（webgpt）大內容
 
-ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷史計入；resume 中型舊 session 也會超標）；失敗**勿原樣重派**——carrier 會自動重試同一 payload，放大限流。精確觀測值與失敗態分流 → delegate-bridge repo `AGENTS.md`「Caller dispatch discipline」節。
+ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷史計入；resume 中型舊 session 也會超標）；失敗**勿原樣重派**——carrier 會自動重試同一 payload，放大限流。精確觀測值與失敗態分流 → delegate-bridge repo `docs/caller-dispatch.md`（webgpt 測得括弧、quota 簽名、大 review 交付梯；root AGENTS.md「Caller dispatch discipline」節僅留紅線骨架）。
 
 派工前過**雙軸預算**（兩軸量的是相反兩端——材料端 vs 整包端，禁互抵、禁共用「上限／安全線」一詞；預算值行在 `rules/bridge-dispatch.md`）：
 
@@ -77,7 +77,7 @@ watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄
 2. **provision 前置**：workspace 首次 glm 委派前 `delegate-bridge provision --family glm`（**唯一 sanctioned config write**；0924 自 rules 收編）；spawn verify-only（缺漏／drift＝fail-loud 附指引，不自動補）
 3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）
 4. **watcher 配對（cwd＝job workspace）**：派工同 step arm `uv run python <ai-guide repo>/scripts/bridge_waiter.py <jobId>`——**waiter 的 cwd 必須＝job 的 workspace**：job ledger 是 per-workspace（`<ws>/.delegate-bridge/`），cwd 錯位＝查無 job（not-found 誤入 reconcile 分支）
-5. **定向 resume（glm resume model-match 契約；0924 自 rules 收編，條文單一源＝本步驟）**：接續必帶**建立時** `--model <id>`（不帶＝落 manifest `defaultModel`；ledger row 有記；不符＝carrier `Select a model` fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`。定義源＝delegate-bridge repo `AGENTS.md`「Build loop」glm provisioning 段＋`docs/ep.md` S1（僅指針）
+5. **定向 resume（glm resume model-match 契約；0924 自 rules 收編，條文單一源＝本步驟）**：接續必帶**建立時** `--model <id>`（不帶＝落 manifest `defaultModel`；ledger row 有記；不符＝carrier `Select a model` fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`。定義源＝delegate-bridge repo `docs/runbook.md` §GLM provisioning＋`docs/build-loop.md`（細節）＋`docs/ep.md` S1（僅指針；root AGENTS.md「Build loop」節留骨架）
 6. **session 掛名（AIR-248）**：job spawn 回執取得 native session id（回執無 id 時 `scbus list` 對照 workspace／harness 最近註冊）後 `scbus rename --session-id <id> --name <session-name 欄值>`——欄定義與自 id 發現法單一源＝[work-order.md](../_common/work-order.md) §3；id 無法確立（carrier 未註冊 scbus）＝跳過不阻塞、禁捏造 id
 
 ## grok family authority profile（default contained writer vs --yolo/--marshal；AIR-226）
