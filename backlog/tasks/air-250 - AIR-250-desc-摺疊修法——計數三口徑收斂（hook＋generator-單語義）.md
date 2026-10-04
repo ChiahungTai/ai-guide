@@ -4,9 +4,11 @@ title: AIR-250 desc 摺疊修法——計數三口徑收斂（hook＋generator �
 status: In Progress
 assignee: []
 created_date: '2026-10-04 23:32'
-updated_date: '2026-10-04 23:33'
+updated_date: '2026-10-04 23:35'
 labels: []
 dependencies: []
+references:
+  - ai-analysis/_tasks/10-05-desc-fold-fix/ep.md
 ordinal: 241000
 ---
 
