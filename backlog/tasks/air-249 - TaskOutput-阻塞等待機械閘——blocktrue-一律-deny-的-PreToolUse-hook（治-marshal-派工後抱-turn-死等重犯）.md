@@ -3,12 +3,14 @@ id: AIR-249
 title: >-
   TaskOutput 阻塞等待機械閘——block=true 一律 deny 的 PreToolUse hook（治 marshal 派工後抱 turn
   死等重犯）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-04 13:07'
 updated_date: '2026-10-04 13:38'
 labels: []
 dependencies: []
+references:
+  - hooks/taskoutput_block_gate.py
 ordinal: 240000
 ---
 
