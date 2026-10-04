@@ -4,7 +4,7 @@ title: AIR-250 desc 摺疊修法——計數三口徑收斂（hook＋generator �
 status: In Progress
 assignee: []
 created_date: '2026-10-04 23:32'
-updated_date: '2026-10-04 23:35'
+updated_date: '2026-10-04 23:43'
 labels: []
 dependencies: []
 references:
@@ -44,5 +44,11 @@ flowchart LR
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-baseline：/Users/ctai/Github/ai-guide @ main（EP 建立時 rev-parse 為準）。〔已決策勿重辯：①A+B 都做（codex job-muufhibk＋GLM-5.3 job-muufhiqw converged）②B 收窄＝description scalar collector，禁泛化 parse_frontmatter（metadata.type 巢狀回歸）③>- marker 匹配 ^[>|][+-]?$ 先清空再接④接縫空格硬規則⑤A 存量不溯及——body-only Edit 且 desc 未變放行（鏡像 :286 既有模式）⑥共用 module 抽取否決⑦摺疊列 errs 否決（召回斷裂）⑧兩處 docstring 同步改。範圍：動＝skills/memory-audit/scripts/generate_index.py（parse_frontmatter description collector＋TRUNCATE_DESC 既有截斷接手）＋hooks/block-memory-index-write.py（extract_desc 對齊＋A 摺疊偵測 block＋:47/:124/:130 docstring 同步）＋tests/test_memory_lifecycle.py＋tests/test_block_memory_hook_suffix.py（codex 測試矩陣：single-line/plain continuation/>- folded/metadata 巢狀/duplicate last-wins/CRLF/接縫空格/摺疊>100 截斷/hook 全值>100 擋/A 存量 body-only 放行）＋skills/memory-audit/SKILL.md desc 文法段加單行規則與夜波計數單一源行；不動＝其他 hooks／其他 skills／夜波 cron prompt。〕
+⑨ 只掃尾不修碼——否決（glm 腿：寫入閘繞過與投影靜默丟失在掃尾窗口內照樣發生）
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+EP Review Cycle 完成：fresh needs-attention（F1/F2 TC 凍結表修正）＋intent aligned——九項 findings 全採納回寫 EP，帳本全 terminal＝EP accepted
+<!-- SECTION:NOTES:END -->
