@@ -64,6 +64,19 @@
             "timeoutMs": 10000
           }
         ]
+      },
+      {
+        "matcher": "TaskOutput",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/taskoutput_block_gate.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
       }
     ],
     "Stop": [
@@ -136,19 +149,6 @@
             "command": "{{HOOK_PYTHON}}",
             "args": [
               "{{REPO}}/hooks/kanban-skill-gate.py"
-            ],
-            "timeoutMs": 10000
-          }
-        ]
-      },
-      {
-        "matcher": "TaskOutput",
-        "hooks": [
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/taskoutput_block_gate.py"
             ],
             "timeoutMs": 10000
           }

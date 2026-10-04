@@ -151,5 +151,49 @@ def test_live_config_absent_yields_marker_not_silent_green(tmp_path):
     assert collected["absent"] is None
 
 
+def _registered_hook_scripts(doc: dict) -> dict[str, set[str]]:
+    """zcode.json 範本中每支 .py hook 註冊在哪些 event 區段（event → set）。"""
+    events = doc.get("events", {})
+    registered: dict[str, set[str]] = {}
+    for ev, groups in events.items():
+        if not isinstance(groups, list):
+            continue
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            for command in _commands(group):
+                for token in command.split():
+                    if token.startswith("{{REPO}}/hooks/") and token.endswith(".py"):
+                        registered.setdefault(token.split("/")[-1], set()).add(ev)
+    return registered
+
+
+def _asserted_event_names(script_src: str) -> set[str]:
+    """script 內 `hook_event_name(payload) ==/!= "X"` 斷言的 event 名集合。"""
+    return set(
+        re.findall(r'hook_event_name\(payload\)\s*[!=]=\s*"(\w+)"', script_src)
+    )
+
+
+def test_registered_hooks_event_section_parity():
+    """AIR-249 F2 防護網：註冊於範本的 hook，其 code 斷言的 event 名必須 ⊆
+    實際註冊的 event 區段——攔「matcher 區塊插錯 event 陣列」形（PreToolUse
+    閘註到 PostToolUse → runtime 靜默死碼，本卡 F1 實證形態）。"""
+    doc = json.loads(TEMPLATE.read_text(encoding="utf-8"))
+    registered = _registered_hook_scripts(doc)
+    assert registered, "範本 events 結構解析空＝registration 源斷裂（fail）"
+    hooks_dir = REPO_ROOT / "hooks"
+    for script, registered_events in sorted(registered.items()):
+        path = hooks_dir / script
+        if not path.exists():
+            continue
+        asserted = _asserted_event_names(path.read_text(encoding="utf-8"))
+        extra = asserted - registered_events
+        assert not extra, (
+            f"{script}: code 斷言 {sorted(extra)} 但僅註冊於 "
+            f"{sorted(registered_events)}——event 區段錯置（死接線，F1 形態）"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

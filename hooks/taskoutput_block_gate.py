@@ -10,8 +10,9 @@ r"""taskoutput_block_gate——TaskOutput 阻塞等待紀律閘（AIR-249）。
 correctness 閘——任何異常（壞 JSON／非 dict payload／字串 "true"／
 字串 timeoutMs／例外）一律放行（fail-open），禁擋死正當查詢。
 
-判準（三條全中才 deny）：event==PreToolUse ∧ tool==TaskOutput ∧
-block is True ∧ timeoutMs 為 number ∧ timeoutMs > 60000（60000 邊界含＝放行）。
+判準（routing 兩條＋tool_input 三條，全中才 deny）：event==PreToolUse ∧
+tool==TaskOutput（routing）∧ block is True ∧ timeoutMs 為 number（bool 排除）
+∧ timeoutMs > 60000（60000 邊界含＝放行）。
 
 deny 輸出＝zcode 官方 PreToolUse 拒絕 schema（同 kanban-skill-gate：
 `hookSpecificOutput.hookEventName="PreToolUse"`＋`permissionDecision:"deny"`
@@ -25,9 +26,10 @@ uv-managed Python 3.12（hooks/AGENTS.md）；維持 Python 3.9 語法相容
 """
 
 import json
+import os
 import sys
 
-sys.path.insert(0, __file__.rsplit("/", 1)[0])
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import hook_payload_compat as compat
 
 HOOK_TAG = "taskoutput-block-gate"

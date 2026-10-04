@@ -71,6 +71,12 @@ def test_timeoutms_string_fail_open(capsys):
     assert tbg.run(_taskoutput_payload(True, "120000")) == 0
 
 
+def test_timeoutms_bool_fail_open(capsys):
+    # timeoutMs=True（JSON true）——isinstance(True, int) 陷阱點：bool 排除後放行
+    assert tbg.run(_taskoutput_payload(True, True)) == 0
+    assert tbg.run(_taskoutput_payload(True, False)) == 0
+
+
 def test_non_taskoutput_tool_allowed(capsys):
     assert tbg.run(_payload("PreToolUse", "Bash", {"command": "ls"})) == 0
 
