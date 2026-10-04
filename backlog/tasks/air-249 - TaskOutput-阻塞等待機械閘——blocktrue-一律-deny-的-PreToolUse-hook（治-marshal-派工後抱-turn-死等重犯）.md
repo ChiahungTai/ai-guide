@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-10-04 13:07'
-updated_date: '2026-10-04 13:52'
+updated_date: '2026-10-04 13:53'
 labels: []
 dependencies: []
 references:
@@ -61,6 +61,8 @@ flowchart LR
 codex 討論腿收線（job-mutuoblo-ittztp，watcher exit 0＋sink 機驗 .agent-tmp/taskoutput-gate/codex-verdict.md）：verdict＝修正後 GO——①零誤判主張被否證（block=true 是 ZCode 正式等待語義；mid-turn running task 短等待＋completed 即返皆正當），blanket deny 不採，原提案保險絲反轉為主規則（deny 僅 timeoutMs>60000，60000 邊界含＝放行）；②fail-open（crash／malformed／"true" 字串皆放行）；③deny 文案＝原因＋block=false 指引＋完成通知回收＋短 wait 例外；④部署＝manifest＋registrations/zcode.json＋hooks/AGENTS.md 同步＋新 session live 驗；⑤probe 增 timeout 邊界／completed／malformed／字串／alias／crash fail-open／deny 零副作用；⑥覆蓋邊界＝僅 PreToolUse 可見的 TaskOutput 形狀（不保證通知、worker 活性）。設計 pivot 記錄（值星初評被糾正）：初評支持 blanket deny＋丟 fuse——被 codex 否證，fuse 保留為主規則。
 
 審查閉環（1004 夜）：fresh-context 腿 verdict＝NO-GO→修復批全收後收斂——F1 🔴 TaskOutput matcher 誤插 PostToolUse 陣列（錨在 kanban-skill-gate Read 腿後——jq 實證；閘成靜默死碼 enforcement 0%）→搬回 PreToolUse 陣列尾（marshal Edit|Write 群後）＋放置驗證；F2 🟡 無機械防護攔 event 區段錯置→新增 test_registered_hooks_event_section_parity（code 斷言 event ⊆ 範本註冊 event 區段——一般化 matcher parity，本形態防再生）；F3 🟢 sys.path 改 os.path.dirname(abspath) 家族形；F4 🟢 bool timeoutMs 測試補（isinstance(True,int) 陷阱點）；F5 🟢 docstring「三條」字面改「routing 兩條＋tool_input 三條」。修後 18 passed（含新 parity）＋hook/governance 切片 908 passed。回執四欄：classification=ordinary（紀律閘 enforcement，owner 已存在非新規則）／review=fresh-context NO-GO→F1-F5 修復批全收（R1=35ae0753）／session-freshness=fresh／deployment-surfaces=healthy（merge 後 canonical 安裝——guard 要求 WT 關閉前不安裝，.bak 已備份）。live 觸發驗證＝新 session 首用時補（per-session 快照）。
+
+post-merge 回執（1004 夜）：ff merge main @ 01326ef5（impl 44137a49＋修復批 35ae0753 皆在 main——結案前驗 code commit in main 通過）；canonical 安裝完成＝governance install --surface hooks，live ~/.zcode/cli/config.json 驗證 PreToolUse TaskOutput 在位＋JSON 可解析（.bak-20261005 備份在場）；ZCode 生效＝新 session（installer 明示重開 session 生效，per-session 快照）。mos-171 completed 回執已寄（message_id f04d9376-2bf7-45cb-b272-4bfa67665b9f）。live 首次觸發驗證留給新 session（本 session 快照不含新 hook，屬預期）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
