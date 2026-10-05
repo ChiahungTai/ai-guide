@@ -4,7 +4,7 @@ title: 借鏡 GPT-6-Sol 官方 prompts：授權來源白名單、任務連續性
 status: In Progress
 assignee: []
 created_date: '2026-10-05 12:09'
-updated_date: '2026-10-05 12:33'
+updated_date: '2026-10-05 12:44'
 labels: []
 dependencies: []
 references:
@@ -65,4 +65,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 [收斂 2026-10-05] 審查鏈收斂：muse job-muv7pjqe（F1 類推無錨點/F2 觸發詞缺消費面，Minor）＋codex job-muv7pjrh（1-2 段交付後 stream disconnect）＋job-muv85hq9 補完（C1 採納情境 AUTH quote 未閉合 Major；C2 繞道一詞兩義/C3 commit skill link pre-existing，Minor）；5.3 judge：C1 採納（採納句＝AUTH 引文、被採納內容＝specification 隨附）、C2＋F1 合併採納（「規避」消歧＋逃生口錨定控制面 guard 慣例）、C3 採納（link 順修）、F2 採納（quick-pass 用詞對齊＋desc/when_to_use 觸發詞＋索引 facet）——全部已 apply，open findings=0。scope amendment：＋skills/AGENTS.md:125 memory-audit 索引補消費端 facet（引用同步）。Receipt: classification=boundary／review=muse job-muv7pjqe completed＋codex job-muv7pjrh(1-2 段)+job-muv85hq9(findings/verdict)＋5.3 judge 全裁決／session-freshness=fresh（author session 即 judge session，條文變更未經 redeploy）／deployment-surfaces=pending（merge 後 release 部署 probe 補值）
+
+[slimming round 2026-10-05] 28353b43 合併後 muse/grok 30KiB gate 溢出（30,969>30,720B）→ 重開 WT 六處純壓縮 −289B（30,680B dry-run 過）；muse delta 腿 job-muv8p2k1 六 hunk 全語義等價（可落地）＋5.3 judge 接受；codex 本輪顯性降級（webgpt transport 兩敗：stream disconnect＋401 upstream——single muse 腿＋in-harness full 承接，bi→single 記錄）
 <!-- SECTION:NOTES:END -->

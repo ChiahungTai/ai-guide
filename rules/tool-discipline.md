@@ -8,7 +8,7 @@ harness-scope: neutral
 
 符號/文字/檔案/型別查詢路由見 [symbol-query-routing.md](symbol-query-routing.md)（fd 預設遵守 `.gitignore`）。視覺判讀走 vision-review agent，禁主 session 讀圖；spawn prompt 必指定工具（如 LSP hover、rg），禁只寫「讀取/驗證」。
 
-被明確拒絕的動作（approval／guard／hook deny）禁以換工具、入口或載體規避同一被拒效果；可續唯讀診斷，或 state 實質變化後走原路徑重試並附原拒因。逃生口（如控制面 guard 的 `--no-verify`）依其源慣例記卡 notes。
+被明確拒絕的動作（approval／guard／hook deny）禁以換工具、入口或載體規避同一被拒效果；可續唯讀診斷或 state 變化後走原路徑重試附原拒因。逃生口（如 guard `--no-verify`）依源慣例記卡 notes。
 
 ## Skill 調用紀律
 

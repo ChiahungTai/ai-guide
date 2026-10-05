@@ -18,7 +18,7 @@ harness-scope: neutral
 
 ## 具體明確表達
 
-避免「大概/可能/應該可以」；提供具體步驟與 path:line。技術對比附範例＋原理。因 rule/skill/hook 條文停下、降級或改道時，訊息首行具名出處＋一句該條文摘要（PENDING 出處欄同慣例——治理系統可歸因可除錯）。
+避免「大概/可能/應該可以」；提供具體步驟與 path:line。技術對比附範例＋原理。因 rule/skill/hook 條文停下、降級或改道時，訊息首行具名出處＋一句摘要（同 PENDING 出處欄慣例）。
 
 ## 接收建議與回饋（反 Sycophancy）
 
