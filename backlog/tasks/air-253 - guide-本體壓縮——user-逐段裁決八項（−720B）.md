@@ -1,11 +1,14 @@
 ---
 id: AIR-253
 title: guide 本體壓縮——user 逐段裁決八項（−720B）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-05 14:25'
+updated_date: '2026-10-05 14:25'
 labels: []
 dependencies: []
+references:
+  - AIR-253
 ordinal: 244000
 ---
 
@@ -29,3 +32,18 @@ flowchart LR
     E --> F["4/4 deploy"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 AC1 八處壓縮逐項在場且與 user 確認版逐字一致
+- [ ] #2 AC2 判準句保留清單逐字不變（rg 驗）
+- [ ] #3 AC3 dry-run 四端 OK 且 ≤28,700B
+- [ ] #4 AC4 muse 腿 consistency/drift 兜底收斂
+- [ ] #5 AC5 回執四欄＋deploy 4/4＋as-built 終態圖
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide 2dfba0a6（main）〕〔已決策勿重辯：八項壓縮全文＝user 於對話中逐項確認之 preview 版本（驗證表一句化/文檔角色壓短/UC 段頭合併/Marshal 輕壓/AIR-135 條2 指針合併/入口行微壓/架構尾句去重/量化鐵律短指針）；判準句逐字保留清單＝四類未決、三級分級、單向門恆停、outward 唯一準據、indexed identity 判準、鐵律本體四條、Summary Instructions 全段、跨 repo 主權、Solo 工作流、AIR-135 條 1/3/4。範圍：僅 ai-development-guide.md。審查形態：user 逐段裁決為主權威＋muse 腿機械/consistency 兜底。〕
+<!-- SECTION:PLAN:END -->
