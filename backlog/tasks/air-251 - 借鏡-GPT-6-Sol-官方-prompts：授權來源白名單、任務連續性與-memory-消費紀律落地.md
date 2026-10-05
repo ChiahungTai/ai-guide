@@ -1,10 +1,10 @@
 ---
 id: AIR-251
 title: 借鏡 GPT-6-Sol 官方 prompts：授權來源白名單、任務連續性與 memory 消費紀律落地
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-05 12:09'
-updated_date: '2026-10-05 12:44'
+updated_date: '2026-10-05 12:47'
 labels: []
 dependencies: []
 references:
@@ -37,16 +37,16 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 授權來源白名單：rules/outward-action-consent.md 有「user 親打文字」vs「貼入第三方內容＝evidence 非 AUTH」條文（rg "親打" 命中）
-- [ ] #2 AC2 PENDING 強化：模板含（依 <rule/skill/hook 名>）出處欄＋「沉默/逾時≠同意」條文
-- [ ] #3 AC3 steering 契約：rules/context-management.md 有「steering 現行任務非取代」＋「compact 不結束任務/單一邏輯鏈/不重做已完成」條文
-- [ ] #4 AC4 memory 消費端：context-management pointer 擴及消費面＋memory-audit SKILL.md 新增「消費端紀律」節（skip/use 邊界、≤4-6 步預算、drift×驗證成本、未驗證禁當 confirmed-current、實質依賴附出處）
-- [ ] #5 AC5 禁繞道：rules/tool-discipline.md 有「明確 rejection 禁換 tool/入口繞過同一被拒效果」條文
-- [ ] #6 AC6 具名出處：rules/collaboration-constraints.md 有「因 rule/skill/hook 條文停下/降級/改道時訊息具名出處」條文
-- [ ] #7 AC7 drift 掃描：六條變更的定義源引用面 rg 掃過、零未同步副本；instruction-writing 五維自洽
-- [ ] #8 AC8 跨家族審查：muse＋codex 兩腿（post-build/consistency 形態）findings 經 5.3 judge 裁決收斂
-- [ ] #9 AC9 落地回執：四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes；deploy bundle size gate 綠
-- [ ] #10 AC10 終態圖：Final Summary 含 as-built mermaid 圖
+- [x] #1 AC1 授權來源白名單：rules/outward-action-consent.md 有「user 親打文字」vs「貼入第三方內容＝evidence 非 AUTH」條文（rg "親打" 命中）
+- [x] #2 AC2 PENDING 強化：模板含（依 <rule/skill/hook 名>）出處欄＋「沉默/逾時≠同意」條文
+- [x] #3 AC3 steering 契約：rules/context-management.md 有「steering 現行任務非取代」＋「compact 不結束任務/單一邏輯鏈/不重做已完成」條文
+- [x] #4 AC4 memory 消費端：context-management pointer 擴及消費面＋memory-audit SKILL.md 新增「消費端紀律」節（skip/use 邊界、≤4-6 步預算、drift×驗證成本、未驗證禁當 confirmed-current、實質依賴附出處）
+- [x] #5 AC5 禁繞道：rules/tool-discipline.md 有「明確 rejection 禁換 tool/入口繞過同一被拒效果」條文
+- [x] #6 AC6 具名出處：rules/collaboration-constraints.md 有「因 rule/skill/hook 條文停下/降級/改道時訊息具名出處」條文
+- [x] #7 AC7 drift 掃描：六條變更的定義源引用面 rg 掃過、零未同步副本；instruction-writing 五維自洽
+- [x] #8 AC8 跨家族審查：muse＋codex 兩腿（post-build/consistency 形態）findings 經 5.3 judge 裁決收斂
+- [x] #9 AC9 落地回執：四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes；deploy bundle size gate 綠
+- [x] #10 AC10 終態圖：Final Summary 含 as-built mermaid 圖
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -67,4 +67,24 @@ flowchart LR
 [收斂 2026-10-05] 審查鏈收斂：muse job-muv7pjqe（F1 類推無錨點/F2 觸發詞缺消費面，Minor）＋codex job-muv7pjrh（1-2 段交付後 stream disconnect）＋job-muv85hq9 補完（C1 採納情境 AUTH quote 未閉合 Major；C2 繞道一詞兩義/C3 commit skill link pre-existing，Minor）；5.3 judge：C1 採納（採納句＝AUTH 引文、被採納內容＝specification 隨附）、C2＋F1 合併採納（「規避」消歧＋逃生口錨定控制面 guard 慣例）、C3 採納（link 順修）、F2 採納（quick-pass 用詞對齊＋desc/when_to_use 觸發詞＋索引 facet）——全部已 apply，open findings=0。scope amendment：＋skills/AGENTS.md:125 memory-audit 索引補消費端 facet（引用同步）。Receipt: classification=boundary／review=muse job-muv7pjqe completed＋codex job-muv7pjrh(1-2 段)+job-muv85hq9(findings/verdict)＋5.3 judge 全裁決／session-freshness=fresh（author session 即 judge session，條文變更未經 redeploy）／deployment-surfaces=pending（merge 後 release 部署 probe 補值）
 
 [slimming round 2026-10-05] 28353b43 合併後 muse/grok 30KiB gate 溢出（30,969>30,720B）→ 重開 WT 六處純壓縮 −289B（30,680B dry-run 過）；muse delta 腿 job-muv8p2k1 六 hunk 全語義等價（可落地）＋5.3 judge 接受；codex 本輪顯性降級（webgpt transport 兩敗：stream disconnect＋401 upstream——single muse 腿＋in-harness full 承接，bi→single 記錄）
+
+[deployment-surfaces 補值 2026-10-05] healthy——四端 bundle 4/4 部署＋逐端 rg 抽查各 6 命中（zcode/codex/muse/grok）；skills symlink 面（~/.agents/skills）memory-audit 消費端紀律 3 命中
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+六條共識落地（rules 四檔＋memory-audit「消費端紀律」節）；三腿陪審（flash 實作/muse＋codex 審查）＋5.3 judge 五 findings 全裁決閉環；round 2 瘦身 −289B 過 muse/grok 30KiB gate；四端 bundle 4/4 部署驗證。無 memory 池條目需結案蒸餾（本弧未寫池）。codex webgpt transport 兩敗已顯性降級記錄（bi→single）。
+
+```mermaid
+flowchart LR
+    A["outward-action-consent"] --> A1["授權來源: typed vs pasted"]
+    A --> A2["PENDING 出處欄+沉默不等於同意"]
+    B["context-management"] --> B1["steering 任務連續性"]
+    B --> B2["memory 消費 pointer"]
+    C["tool-discipline"] --> C1["rejection 禁規避"]
+    D["collaboration-constraints"] --> D1["暫停具名出處"]
+    E["memory-audit skill"] --> E1["消費端紀律節"]
+    F["四端 bundle 30680B"] --> G["4/4 deployed verified"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
