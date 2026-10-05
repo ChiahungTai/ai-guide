@@ -1,10 +1,10 @@
 ---
 id: AIR-250
 title: AIR-250 desc 摺疊修法——計數三口徑收斂（hook＋generator 單語義）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-04 23:32'
-updated_date: '2026-10-04 23:43'
+updated_date: '2026-10-05 00:56'
 labels: []
 dependencies: []
 references:
@@ -38,13 +38,15 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. generator parse_frontmatter：摺疊 desc（plain 續行＋>- block）全值抽出，projection 吃全值（TRUNCATE_DESC 截斷接手）；metadata.type/rank 巢狀回歸測試綠 2. hook extract_desc 與 generator canonical desc 逐 case 相同（parity 測試矩陣全綠）3. hook A 規則：新增/改 desc 成多行→block（訊息單行不變式措辭）；存量摺疊 body-only Edit→放行 4. memory-audit SKILL desc 文法段載單行規則＋夜波計數單一源行 5. 全套 pytest 綠（lifecycle＋hook_suffix＋回歸）6. fresh review 腿 verdict 無未解 blocker＋回執四欄齊
+- [x] #1 1. generator parse_frontmatter：摺疊 desc（plain 續行＋>- block）全值抽出，projection 吃全值（TRUNCATE_DESC 截斷接手）；metadata.type/rank 巢狀回歸測試綠 2. hook extract_desc 與 generator canonical desc 逐 case 相同（parity 測試矩陣全綠）3. hook A 規則：新增/改 desc 成多行→block（訊息單行不變式措辭）；存量摺疊 body-only Edit→放行 4. memory-audit SKILL desc 文法段載單行規則＋夜波計數單一源行 5. 全套 pytest 綠（lifecycle＋hook_suffix＋回歸）6. fresh review 腿 verdict 無未解 blocker＋回執四欄齊
 <!-- AC:END -->
 
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-⑨ 只掃尾不修碼——否決（glm 腿：寫入閘繞過與投影靜默丟失在掃尾窗口內照樣發生）
+〔baseline：ai-guide 17507fed（EP 掛卡時）→實作 8c83d2ab 起分支〕
+〔已決策勿重辯：①A+B 都做（codex job-muufhibk＋GLM-5.3 job-muufhiqw converged）②B 收窄＝description scalar collector 禁泛化③>- marker 清空④接縫空格⑤A 存量不溯及（值等比鏡像 :286）⑥共用 module 抽取否決⑦摺疊列 errs 否決⑧docstring 同步⑨只掃尾不修碼否決——全套細節單一源＝EP（ai-analysis/_tasks/10-05-desc-fold-fix/ep.md，TC 凍結表 10 條）〕
+〔範圍：generator＋hook＋memory-audit SKILL＋兩測試檔；不動其他 hooks/skills/cron prompt〕
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
@@ -52,3 +54,22 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 EP Review Cycle 完成：fresh needs-attention（F1/F2 TC 凍結表修正）＋intent aligned——九項 findings 全採納回寫 EP，帳本全 terminal＝EP accepted
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+desc 摺疊 collector 落地——hook/generator 計數單語義（A＋B：寫入端單行不變式＋讀端正確摺疊；TC 10 條矩陣 RED 17→GREEN 260 passed、全套 3173；fresh review approve 0H/M；main 6632d4df；池投影吃全值 65,069）。
+
+```mermaid
+flowchart LR
+    A["desc 寫入"] --> B{"hook 閘"}
+    B -->|"多行摺疊"| C["block: 單行不變式"]
+    B -->|"單行 ≤100"| D["放行"]
+    D --> E["generator parser"]
+    E --> F["正確摺疊: 全值投影"]
+    F --> G[">100 截斷 99+…"]
+    E --> H["夜波掃尾: 單一源計數"]
+```
+
+驗收：TC-B1-B7/A1-A3 全對帳（fresh review 報告）；metadata 巢狀回歸錨綠；池投影 377 條 65,069 chars、resident gate PASS；EP Review 帳本九項＋fresh 四項全 terminal。
+<!-- SECTION:FINAL_SUMMARY:END -->
