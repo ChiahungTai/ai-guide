@@ -1,7 +1,7 @@
 ---
 name: memory-audit
-description: "寫 memory 前的寫前一步＋memory 清理/稽核/過時/記憶健康檢查（memory audit / audit MEMORY.md / auto memory）。兩級稽核：full 四層（索引機械量測→內容核實 vs repo→清理執行→EP/任務盤點）/ lite 增量核實（git log 驅動）。內容核實預設必做——索引整潔 ≠ 記憶健康。狀態戳 _audit-state.md；advisory→用戶核可→執行三分離。寫入端紀律：一句話測試（核心事實提煉不出一句話＝還沒想清楚＝不寫）＋寫入六問（任務終態→卡/repo 可推導就不寫/同主題加段/cluster-first/尺寸/載體判定）、單一寫入點（條目檔 frontmatter 唯一、MEMORY.md 機械投影）、desc/條目尺寸預算（新建 3,000/膨脹 12,000 hook 硬擋）＋body 形態＋desc 三不＋弧結案蒸餾（含 mem-distill 執行形態）見「寫入端紀律」段。載體統一定義表（該寫哪——三處判準合一：載體職責×常駐-按需×寫入預設交叉表＋誤置→處置＋寫入摩擦設計）見同名節。觸發詞：一句話測試、寫入六問、任務終態、cluster-first、單一寫入點、索引投影、desc 上限、結案蒸餾、body 形態、載體判定、該寫哪、統一定義表、寫入摩擦、放置閘、寫 memory、確定才寫、歸因未定、rank 排序。"
-when_to_use: "Fires when the session is about to write a memory entry（寫前一步 gate：一句話測試/六問/載體判定）, when auditing MEMORY.md or the memory pool（full/lite 兩級）, or when MEMORY.md 投影與 _inventory.md 有 drift 疑慮. Load BEFORE writing any memory 條目檔."
+description: "寫 memory 前的寫前一步＋memory 清理/稽核/過時/記憶健康檢查（memory audit / audit MEMORY.md / auto memory）。兩級稽核：full 四層（索引機械量測→內容核實 vs repo→清理執行→EP/任務盤點）/ lite 增量核實（git log 驅動）。內容核實預設必做——索引整潔 ≠ 記憶健康。狀態戳 _audit-state.md；advisory→用戶核可→執行三分離。寫入端紀律：一句話測試（核心事實提煉不出一句話＝還沒想清楚＝不寫）＋寫入六問（任務終態→卡/repo 可推導就不寫/同主題加段/cluster-first/尺寸/載體判定）、單一寫入點（條目檔 frontmatter 唯一、MEMORY.md 機械投影）、desc/條目尺寸預算（新建 3,000/膨脹 12,000 hook 硬擋）＋body 形態＋desc 三不＋弧結案蒸餾（含 mem-distill 執行形態）見「寫入端紀律」段。載體統一定義表（該寫哪——三處判準合一：載體職責×常駐-按需×寫入預設交叉表＋誤置→處置＋寫入摩擦設計）見同名節。觸發詞：一句話測試、寫入六問、任務終態、cluster-first、單一寫入點、索引投影、desc 上限、結案蒸餾、body 形態、載體判定、該寫哪、統一定義表、寫入摩擦、放置閘、寫 memory、確定才寫、歸因未定、rank 排序、讀 memory 消費（何時查/查多少/未驗證事實標示＝「消費端紀律」節）。"
+when_to_use: "Fires when the session is about to write a memory entry（寫前一步 gate：一句話測試/六問/載體判定）, when auditing MEMORY.md or the memory pool（full/lite 兩級）, when MEMORY.md 投影與 _inventory.md 有 drift 疑慮, or when the session reads/relies on memory entries（消費端紀律：skip/use 邊界、quick-pass 預算、未驗證事實標示）. Load BEFORE writing any memory 條目檔."
 argument-hint: "full | lite | 無參數（讀狀態戳後建議）"
 allowed-tools: ["Read", "Grep", "Glob", "Bash", "Agent", "Edit", "Write"]
 ---
@@ -237,3 +237,12 @@ harness auto memory 預設「one file = one fact」的「fact」操作定義 = *
 **body 形態（寫入當下即蒸後形——09-06 user 拍板「不要寫一堆廢話後來再 audit」）**：lesson-first——一句教訓/事實領頭，實證錨最多一行；**禁 timeline 敘事**（過程步驟住 EP/卡）、**禁 in-flight 細節**（session 進度、commit 清單、findings 計數）、一行一事實、「為什麼」只在易被 rationalize 的規則處展開。**新建條目 >3,000 chars 被 PreToolUse hook 硬擋**（寫入當下就該是蒸後形，不是先寫肥再等 audit 壓；既有條目膨脹治理 12,000 不變，cluster merge 收斂覆寫不受新建閘約束）。弧結案條目同此形態：決策／教訓／勿重辯清單，禁規劃流水——結案 session 滿 context 細節時尤須自律，或改派 mem-distill 隔離蒸餾。
 
 量化清理（**合併判準＝同召回情境**——同一觸發情境下內容可互換才併；同 prefix／同主題詞但適用條件或細化粒度不同（如 rule 粗版 vs memory method/display 分離細化）**不併**——AIR-42.1；同主題散檔合併、收斂執行、audit）由本 skill 兩級稽核承載，寫入端只管六問。**弧結案蒸餾**（掛點＝[kanban-board](../kanban-board/SKILL.md) 結案兩步第三動）：弧收案時 owning session 將本弧 project_/feedback_ 條目一次性重寫為終態 facts——narrative 歸 repo（EP/卡/git），memory 留教訓；弧中「禁加段」的積累正是在此時收斂。**蒸餾形態定案**（MOS-36 實證，09-05）：蒸餾＝刪 repo 已承載（宣稱「repo 已承載」須逐項附 rg 驗證路徑——找不到證據的保守留）＋軌跡記卡（final-summary），**不新建歸檔檔**。**執行形態**：肥條目（>30K）派 mem-distill agent 隔離消化（context 不進主 session；prompt 必帶 repo 證據義務）；backref 修復與索引 regen 留主 session（清單外檔案 agent 禁碰）。實證：149K+37K+17K 三條歸線→5.1K（−96%）＋45K/36K 兩條→~5.9K（−86%），教訓帳 49 案流水壓六類一行後教訓模式零損失。**desc 三不**：不 hash（含 bare hash 形態）／不日期流水（MM-DD）／不 session id（皆 git/DB 可推導；三形態皆被 PreToolUse hook 硬擋，09-10 M2＋bare 擴）。
+
+## 消費端紀律（讀取面）
+
+適用面：session 消費 memory 條目（本池／他池觀察路由皆同判）。寫入面見上方「寫入端紀律」。
+
+- **skip/use 邊界**：self-contained 瑣碎任務（改錯字、單檔小修、單行命令、與 repo 脈絡無關的通用問題）不查池；涉及 prior decision、repo convention、跨 session 脈絡、或任務關鍵詞命中索引 desc → 查。不確定就 quick pass。
+- **quick-pass 預算**：≤4-6 步（guideline 非 gate）——索引 rg 定位 → 讀 1-2 條 body → 仍不足才下沉關聯條目；禁全池掃。
+- **drift×驗證成本**：高漂移現值（額度/帳號/版本/配置/路徑）＋驗證便宜 → 先驗再用；高漂移＋驗證貴 → 可用但輸出標「memory-derived，可能過期」＋附 refresh 提議；低漂移且穩定 → 直接用。
+- **未驗證禁當現值**：實質依賴的 memory-derived 事實未當場驗證，不得以 confirmed-current 姿態呈現；實質依賴的條目附出處（條目路徑或 desc 引用）。清單級列舉（UC 盤點、索引瀏覽）不逐條標，限「實質依賴」觸發。
