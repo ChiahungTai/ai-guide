@@ -3,13 +3,17 @@ id: AIR-255
 title: >-
   AIR-254 收線後續加固——installer prune（ownership-aware）＋removal receipt＋duty_receive
   併發鎖
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-05 22:38'
 updated_date: '2026-10-05 22:39'
 labels:
   - dutymail
 dependencies: []
+references:
+  - >-
+    backlog/tasks/air-255 -
+    AIR-254-收線後續加固——installer-prune（ownership-aware）＋removal-receipt＋duty_receive-併發鎖.md
 ordinal: 246000
 ---
 
