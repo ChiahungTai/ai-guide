@@ -1,10 +1,10 @@
 ---
 id: AIR-252
 title: 控制面衛生——bundle 瘦身（投影下沉＋壓縮）＋T3 殘留三項落地
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-05 13:25'
-updated_date: '2026-10-05 14:16'
+updated_date: '2026-10-05 13:59'
 labels: []
 dependencies: []
 references:
