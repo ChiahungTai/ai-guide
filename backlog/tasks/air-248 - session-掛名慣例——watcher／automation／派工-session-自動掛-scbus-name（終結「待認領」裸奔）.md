@@ -4,7 +4,7 @@ title: session 掛名慣例——watcher／automation／派工 session 自動掛
 status: Done
 assignee: []
 created_date: '2026-10-03 23:02'
-updated_date: '2026-10-03 23:41'
+updated_date: '2026-10-05 11:42'
 labels: []
 dependencies: []
 references:
@@ -62,6 +62,8 @@ flowchart LR
 審查閉環（1004 晨）：fresh-context 腿（code-reviewer，獨立 session）verdict＝GO-WITH-FIXES——F1 🔴 capsule rename 缺 required --session-id（scbus 無 self-face：whoami 需 env id、出生 hook 未注入，冷 session 必 argparse 失敗被「續行不阻塞」靜默吸收）／F2 🟡 in-harness 腿缺 id 發現 fallback／F3 🟢 {session_name} 值來源未定義／F4 🟢 steps 5-6 前導空格 spurious 修改／F5 🟢 deviation 揭露缺第三筆。修復批全收：F1＝自 id 發現法入 work-order §3 單一源（scbus list 對照 harness＋workspace_root 最新註冊；並列無法唯一確立＝不掛禁猜 id）＋capsule item 1 改引該法＋帶 --session-id；F2＝agent-workflow item 8 補 list fallback＋「id 無法確立＝跳過」自洽；F3＝capsule invariants 補 {session_name} arm 端自填語義；F4＝去前導空格；F5＝本筆即補。deviations 第三筆（F5）：verdict ③ 錨點「dispatch preview 內」實落為獨立 item 8（preview 是派前列印、rename 是 spawn 後動作——語義歸屬不同段）。回執四欄：classification=ordinary／review=fresh-context（in-harness code-reviewer 獨立 session）GO-WITH-FIXES→F1-F5 修復批全收／session-freshness=fresh／deployment-surfaces=healthy（skills symlink 母鏈即時生效）。外審腿（跨家族 second-opinion）額度已用於本弧 codex 討論腿（verdict 檔）；ordinary 分類 baseline＝一條獨立 context 腿已滿足。
 
 AC#6 閉環回執（post-merge）：ff merge 收線 main @ e34f6fbb（arc 三 commit 31110c19／6563a6f7／e34f6fbb 全在 main——結案前驗 code commit in main 檢查通過）；wt-close full 完成零殘留（WT＋branch 已滅）。mosaic completed 回執已寄（message_id 8fc0d119-8bcf-4962-851b-5961f499fb34，queued-awaiting-holder——mosaic-primary 無活躍 holder，下次對方 drain 時送達）。CR freshness：trunk 前進，graph stale 提醒在案（下次 review 前 rebuild，非本弧義務）。
+
+consumer-dry-run corpus 補跑回執（1005 晨——AIR-131 義務，弧結算時漏跑、user 稽查後補）：cold-navigation 型，fresh agent（zcode general-purpose spawn，與作者零共享 context；provenance＝corpus task AIR-248-coldnav-1）。五維量測：Discoverability ✓（首趟即找到 session-name 欄＝work-order §3＋rename 步驟＝agent-workflow 步 8，零提示）；Navigation cost ✓（10 來源全在自然查證路徑——rules→work-order→agents/AGENTS→skills，新慣例零額外 hop）；Ambiguity ✓ 雙源衝突零；Prompt repair ✓ 零；Workaround ✓ 零。受測輸出完整重現十節工單＋capability manifest 五要素＋派工前 13 步／後 8 步＋單一源注意——新慣例與既有 doctrine 無縫整合。結論：控制面變更弧 corpus 義務補行完成，單一 run（兩 contexts 再現條件未滿足，升格判定不適用）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
