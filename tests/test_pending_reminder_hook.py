@@ -670,7 +670,8 @@ class TestRegistrationWiring:
     def test_zcode_template_existing_entries_untouched(self):
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
-        assert len(ups) == 2  # compact-restore-inject ＋ pending-reminder
+        # compact-restore-inject ＋ pending-reminder ＋ duty-receive（AIR-254.3）
+        assert len(ups) == 3
         compact = [
             g for g in ups if "compact-restore-inject.py" in _hook_scripts(g)
         ]
@@ -763,13 +764,16 @@ class TestInstallMergeFace:
         live_ss = live["hooks"]["events"]["SessionStart"]
         assert ups[0] == live_ups[0]
         assert ups[1] == live_ups[1]
-        assert len(ups) == 3
-        assert len(ss) == 2
+        assert len(ups) == 4
+        assert len(ss) == 3
         assert ss[0] == live_ss[0]  # scbus async 條目零動
         tail_ups = gov._group_scripts(ups[2])
         tail_ss = gov._group_scripts(ss[1])
         assert tail_ups == frozenset({"scbus-address-pending-reminder.py"})
         assert tail_ss == tail_ups
+        # AIR-254.3：duty-receive group 同為 append 尾部（獨立 group）
+        assert gov._group_scripts(ups[3]) == frozenset({"duty_receive.py"})
+        assert gov._group_scripts(ss[2]) == gov._group_scripts(ups[3])
 
     def test_merge_idempotent(self):
         live = self._live()

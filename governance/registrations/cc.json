@@ -93,6 +93,20 @@
           "timeout": 10
         }
       ]
+    },
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/duty_receive.py",
+            "--address",
+            "ai-guide-marshal"
+          ],
+          "timeout": 10
+        }
+      ]
     }
   ],
   "PreToolUse": [
@@ -182,6 +196,20 @@
           "command": "{{HOOK_PYTHON}}",
           "args": [
             "{{REPO}}/hooks/scbus-address-pending-reminder.py",
+            "--address",
+            "ai-guide-marshal"
+          ],
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "{{HOOK_PYTHON}}",
+          "args": [
+            "{{REPO}}/hooks/duty_receive.py",
             "--address",
             "ai-guide-marshal"
           ],

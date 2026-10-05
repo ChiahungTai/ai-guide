@@ -1,0 +1,52 @@
+# dutymail 值星收信處理器——class×action 分診表（AIR-254.3 S2）
+#
+# 語義＝default-deny：一封信件要自動處理（auto），必須「本表列為
+# action = "auto" 的 class」×「intent 列於該 class 的 auto_intent」×
+# 「機械驗證全過」（body 可解析 JSON＋class 鍵在場；intent=receipt 另需
+# in_reply_to 或 body 內 task/card idempotency 鍵）。任一不成立＝surface
+# （全文呈報值星）。
+#
+# 兩條底線寫在代碼層、本表無法放寪：
+#   1. solicit intent 恆 surface（徵求意圖＝需要人判讀，永不自動吸收）
+#   2. 未列 class 恆 surface（未知類別＝不知道後果，先呈報）
+# （把 "solicit" 寫進 auto_intent 是配置錯誤——載入即 fail-loud exit 3。）
+#
+# 本表可編輯：新增 class row 即擴大 auto 範圍（仍受上述兩條底線與機械
+# 驗證約束）；未知鍵／壞形＝載入失敗（fail-loud，不靜默全 surface——
+# 配置錯誤要大聲）。
+#
+# 欄位：
+#   class       = body machine-header 的 class 值（exact match）
+#   auto_intent = 允許 auto 的 intent 清單（"inform" / "receipt"；surface
+#                 行列空 list）
+#   action      = "auto" | "surface"
+
+[[class_rule]]
+class = "usage-liveness"
+auto_intent = ["inform"]
+action = "auto"
+
+[[class_rule]]
+class = "terminal-completion"
+auto_intent = ["inform"]
+action = "auto"
+
+[[class_rule]]
+class = "receipt"
+auto_intent = ["receipt"]
+action = "auto"
+
+[[class_rule]]
+class = "handoff"
+auto_intent = []
+action = "surface"
+
+[[class_rule]]
+class = "patrol"
+auto_intent = []
+action = "surface"
+
+[[class_rule]]
+class = "work-order"
+auto_intent = []
+action = "surface"

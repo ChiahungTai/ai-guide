@@ -26,6 +26,7 @@ scripts = [
     "hooks/codex_memory_path_deny.py",
     "hooks/compact-restore-inject.py",
     "hooks/compact-tail-inject.py",
+    "hooks/duty_receive.py",
     "hooks/kanban-skill-gate.py",
     "hooks/marshal_admission_guard.py",
     "hooks/memory-dirty-sensor.py",
