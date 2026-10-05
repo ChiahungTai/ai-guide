@@ -20,6 +20,8 @@ when_to_use: "Fires when judging evidence strength for acceptance claims — no-
 - **自報元資料不可信**：agent 對自己輸出的 label 統計禁當驗收統計源；正解＝llm_label vs 標準答案逐案機械比對。
 （review 雙向應用條留在 rule——屬 code-review 消費端 bootstrap）
 
+**四態判定詞**：每個 claim 的證據判為 proves（證明成立）／contradicts（反證）／too weak（有證據但 authority、獨立性或深度不足）／missing（無 supporting evidence）。處置映射：proves→accept；contradicts→challenge（回查或推翻 claim）；too weak→supplement（補強證據再判）；missing→block（不得宣稱成立）。禁把 missing 誤當 contradicts、too weak 誤當 proves。
+
 ## 證據階層 L1–L6（lookup 表——自 rule 遷入）
 
 | 層 | 證據與覆蓋 | 限制/風險 |

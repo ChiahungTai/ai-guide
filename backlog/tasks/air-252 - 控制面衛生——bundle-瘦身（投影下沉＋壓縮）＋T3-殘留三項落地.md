@@ -4,7 +4,7 @@ title: 控制面衛生——bundle 瘦身（投影下沉＋壓縮）＋T3 殘留
 status: In Progress
 assignee: []
 created_date: '2026-10-05 13:25'
-updated_date: '2026-10-05 13:25'
+updated_date: '2026-10-05 13:55'
 labels: []
 dependencies: []
 references:
@@ -60,3 +60,9 @@ flowchart LR
 
 驗證式：每 commit 後 deploy dry-run bytes 實測＋AIR-251 六條 rg 逐字在場＋B1/B2/B3 在場＋bi 腿 findings 經 judge 收斂＋正式 deploy 4/4 逐端抽查。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[收斂 2026-10-05] tri 三座（muse job-muv9yx8x/codex job-muv9yxco/5.3）裁定混合策略＋T3 全做；impl-lite 兩段（c1 五檔 slimming/c2 三檔 T3）；bi 腿收斂：muse F1-F10＋codex Important（E1 pointer 語義損失——雙腿收斂，codex 實讀 deploy_agents.py:481-496 確認 pointer＝bundle 唯一正文）；5.3 judge：E1 pointer 補齊（timeout/gtimeout、uv 驗證、python -c 註解、過濾流、外部改動重讀、run_in_background 條件、dependency 句、lint 組單命令、換 agent 不換方法論）＋M1 不編造後果/M2-lite manual-paste 豁免/F4 檢討 prompt/F7 有才讀 補回；F5/F6/F8/F9 裁不擋（記錄）。bytes：30,680→28,725(c1)→28,884(c2)→29,378(judge 補齊後；headroom 1,342B≈450 CJK)。Receipt: classification=boundary（slimming＋T3 語義變更）／review=muse job-muvauhhf＋codex job-muvauhih（E1 收斂）＋5.3 judge 六項裁決全 apply／session-freshness=fresh／deployment-surfaces=pending（merge 後 deploy probe 補值）
+<!-- SECTION:NOTES:END -->

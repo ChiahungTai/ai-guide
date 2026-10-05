@@ -83,6 +83,8 @@ standard／parent-EP bounded child 不寫 standalone EP，規劃住卡 plan 段�
 
 standard 用 Planning Contract 跳過的是 EP 儀式（段落 pseudo-code、EP Review Cycle、report shell），不是跳過規劃。parent-EP bounded child 的 inherited decisions 引用 parent EP 錨點即可，禁整段抄錄 parent EP。
 
+❌ 反例（standard 段落驗證策略）：「驗證策略＝跑 pytest 確認綠燈」——缺具體 command＋expected result、TC/oracle 錨點與未覆蓋風險，不構成 self-contained 驗證策略；段落審查遇此形態退回補齊。
+
 ### Promotion ladder（升級觸發）
 
 contract 直行中發現新 **architecture** 決策（新 module 責任／依賴方向）**或**新 boundary 決策（state ownership／public contract／跨 context invariant／控制面 authority）——與 full tier 判準同一列舉 → 停止 contract 直行 → 升 EP amendment 或子 EP（full tier 流程）。判準：該決策是否超出卡前已 anchor 決策範圍。
