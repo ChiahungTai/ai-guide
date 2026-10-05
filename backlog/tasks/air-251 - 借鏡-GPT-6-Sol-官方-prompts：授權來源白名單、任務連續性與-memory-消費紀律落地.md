@@ -4,7 +4,7 @@ title: 借鏡 GPT-6-Sol 官方 prompts：授權來源白名單、任務連續性
 status: Done
 assignee: []
 created_date: '2026-10-05 12:09'
-updated_date: '2026-10-05 12:47'
+updated_date: '2026-10-05 13:08'
 labels: []
 dependencies: []
 references:
@@ -69,6 +69,8 @@ flowchart LR
 [slimming round 2026-10-05] 28353b43 合併後 muse/grok 30KiB gate 溢出（30,969>30,720B）→ 重開 WT 六處純壓縮 −289B（30,680B dry-run 過）；muse delta 腿 job-muv8p2k1 六 hunk 全語義等價（可落地）＋5.3 judge 接受；codex 本輪顯性降級（webgpt transport 兩敗：stream disconnect＋401 upstream——single muse 腿＋in-harness full 承接，bi→single 記錄）
 
 [deployment-surfaces 補值 2026-10-05] healthy——四端 bundle 4/4 部署＋逐端 rg 抽查各 6 命中（zcode/codex/muse/grok）；skills symlink 面（~/.agents/skills）memory-audit 消費端紀律 3 命中
+
+[行為面 dry-run 2026-10-05] instruction-testing decision 面協議：六歷史情境（貼入物授權/沉默逾時/steering-compact/memory 消費/rejection 規避/PENDING 具名）×兩 flash 腿（lite-verify，treatment＝部署版 ~/.zcode/AGENTS.md）＝12/12 對齊預固定答案卡、雙腿不確定點同收斂於 S1 delegation quote-scope（正確 defer 到 commit skill）。限制：A 軸 smoke、reps=2<5、lite-verify priming、情境卡作者=judge。S1/S2/S4/S5/S6 得 delta 正訊號；S3 為 no-regression 校準項。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
