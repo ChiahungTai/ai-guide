@@ -1,7 +1,7 @@
 ---
 id: AIR-254
 title: dutymail 信箱換裝——ai-guide 收信側四項接線（session 發現獨立＋掛名退役＋值星收信處理器＋提醒降級）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-05 16:20'
 updated_date: '2026-10-05 18:13'
