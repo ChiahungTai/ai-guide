@@ -28,7 +28,7 @@ allowed-tools:
 
 要「自己之後繼續」→ `/at`；要「別人現在接」→ `/handoff`；要「對方帶著完整對話記憶接」→ 定向接續（判準：任務可口述 → handoff doc；需對方記得整段對話才值得續卷成本）。通道現值：muse／codex 兩家族經 bridge（muse＝`task --session-id`，跨 workspace 加 `--allow-workspace-switch`；codex＝`task --family codex --session-id`，原卷不動查詢走 `codex exec fork` raw CLI）；glm／CC 驗證狀態隨 EP 推進變動（隨查 model-routing 專節）——語義矩陣與守衛處置見 [model-routing](../model-routing/SKILL.md)「session 定向接續」。
 
-> **STATE.md 非交接選項**：STATE.md（Last session 觀察，每 session 覆寫）不是命令、非 `/at`/`/handoff` 替代。`/at` resume 時讀它補 observation（寫入步驟見 [state-md-write](../_common/state-md-write.md)）；交接決策仍是 `/at` vs `/handoff` 二選一。
+> **STATE.md 非交接選項，但接手端開場必讀**：STATE.md（Last session 觀察，每 session 覆寫）不是命令、非 `/at`/`/handoff` 替代；交接決策仍是 `/at` vs `/handoff` 二選一。新 session **開場即讀 STATE.md**（全域 guide 開場導引，不限 `/at` resume）——packet 與 STATE.md 分層互補不重複：packet 帶任務指令＋決策脈絡（收取法形——AIR-168，狀態快照禁入），STATE.md 帶 last-session 觀察；兩者對同一事實宣稱衝突時，以事實層（git＋卡面）仲裁。來源 session 屬自主/deep-work 形態時，交接後 session 結束照 [state-md-write](../_common/state-md-write.md) 慣例寫 checkpoint（本命令不觸發寫入，session 結束慣例照走）。
 
 ---
 
