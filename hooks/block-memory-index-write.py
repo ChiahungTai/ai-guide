@@ -251,8 +251,10 @@ def main() -> None:
                 file=sys.stderr,
             )
             sys.exit(2)
-        if desc and folded:
+        if folded:
             # A leg（AIR-250）：單行不變式——摺疊形（plain 續行或 block marker）擋。
+            # 孤 marker（無續行）＝唯一 folded+空值類，必無合法案例（fresh-F2 收緊）；
+            # 落地後由 regen errs 面 loud（exit 1＋_regen-failed）。
             print(
                 "[Hook Blocked] 條目 description 為多行摺疊形（plain 續行或 >- block marker）。\n"
                 "desc 必須單行 ≤100——單行保簡易 parser 可機械解析；摺疊形請攤平重寫（AIR-250），\n"

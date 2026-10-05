@@ -1461,6 +1461,7 @@ def test_fold_overlong_hook_desc_limit_blocks(tmp_path):
     )
     assert r.returncode == 2
     assert "description" in r.stderr
+    assert "chars >" in r.stderr  # fresh-F1：釘 DESC_LIMIT 訊息（防閘序反轉假綠）
 
 
 def _folded_desc_block(form: str) -> str:
