@@ -4,6 +4,7 @@ title: 控制面衛生——bundle 瘦身至 ≤27KB（餘量 ≥3.7KB）＋ T3 
 status: To Do
 assignee: []
 created_date: '2026-10-05 14:16'
+updated_date: '2026-10-05 14:20'
 labels: []
 dependencies: []
 ordinal: 244000
@@ -31,3 +32,9 @@ flowchart LR
     G --> H["deploy 4/4 + 餘量驗證"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[誤建處置 2026-10-05] 重複承諾——平行 session 已以 AIR-252 完成同 scope（瘦身 30,680→29,378B＋T3 三項全落地，已部署驗證）。本卡誤建成因：task create 後未讀 CLI 回報 id（實配 AIR-253），後續 edit 誤打假設號 AIR-252——撞毀平行弧 Done 卡後已復原（commit 50678eb3）。教訓＝kanban 卡編輯前查驗既有條款（AIR-26/28 同款事故重演）。歸檔不執行。
+<!-- SECTION:NOTES:END -->
