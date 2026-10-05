@@ -75,13 +75,13 @@ uv run python /Users/ctai/Github/ai-guide/scripts/at_ticket.py new \
 🔴 /at resume — {resume_time}，task_ref: {task_ref}
 context: {ticket_path}
 
-1. 掛名：依 work-order §3 session-name 欄自 id 發現法（`scbus list` 對照 harness＋workspace_root 最新註冊行）取 id → `scbus rename --session-id <id> --name {session_name}`（scbus 缺席或 id 無法唯一確立＝續行不阻塞）→ 讀 ticket → 沿指針讀 durable owner（卡／EP 進度節／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
+1. 掛 label：依 work-order §3 session-label 欄自 id 發現法（`uv run --project /Users/ctai/Github/ai-guide python /Users/ctai/Github/ai-guide/scripts/session_discovery.py find --harness <h> --workspace-root <path>` 取最新註冊行）取 id → `uv run --project /Users/ctai/Github/ai-guide python /Users/ctai/Github/ai-guide/scripts/session_discovery.py label set --session-id <id> --label {session_label}`（seam 缺席或 id 無法唯一確立＝續行不阻塞）→ 讀 ticket → 沿指針讀 durable owner（卡／EP 進度節／journal）→ 按 {repo 絕對路徑}/skills/_common/task-recovery.md 恢復順序核對當前實物（git log/status），接續剩餘工作
 2. ⛔ 前卷 outward 授權已失效——commit/push/deploy/send 等 outward 一律 PENDING 等新授權；其餘工作自主完成
 3. ticket 缺失／不可讀 → 以 task_ref 定位 durable owner；仍無法確立任務身份 → 產出狀態報告（首行標 `at-ticket missing: {path}`），禁靜默結束、禁推測另一任務
 4. ticket 推進 SETTLED 的時機＝恢復已成功且（工作完成 OR 進度已 re-checkpoint 回 durable owner）
 ```
 
-> **capsule invariants**：第 2、3 條是 /at 特有語義（授權失效＋fail-loud）——**禁併入 generic recovery 指針、禁後續簡化移除**（review 時當 gate 查）。`task_ref` 在 capsule 與 ticket 各留一次＝刻意的**身份冗餘**（ticket 被清淤誤刪後 fresh session 仍能辨認任務），非 read-set 投影。`{session_name}`＝arm 當下依 work-order §3 session-name 語義取用途式名稱（arm 端自填，非 ticket 欄）。
+> **capsule invariants**：第 2、3 條是 /at 特有語義（授權失效＋fail-loud）——**禁併入 generic recovery 指針、禁後續簡化移除**（review 時當 gate 查）。`task_ref` 在 capsule 與 ticket 各留一次＝刻意的**身份冗餘**（ticket 被清淤誤刪後 fresh session 仍能辨認任務），非 read-set 投影。`{session_label}`＝arm 當下依 work-order §3 session-label 語義取用途式名稱（arm 端自填，非 ticket 欄）。
 
 **arm 結果必落票（禁靜默）**——helper exit code 是唯一判準：
 
