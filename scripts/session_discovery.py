@@ -139,28 +139,41 @@ def _default_sidecar_path() -> Path:
 
 
 def _load_labels(sidecar: Path | None = None) -> dict[str, dict[str, str]]:
+    """載入 label sidecar → mapping；**附屬性降級（U8）**：display metadata
+    損壞不擋 address 發現主功能——壞 JSON／OSError／非物件 → stderr 一行
+    註記＋回 {}（rows 照出、label 全 null）。CLI `label set` 對壞檔＝
+    覆寫自癒（load 得 {} 後整檔重寫）。"""
     path = sidecar if sidecar is not None else _default_sidecar_path()
     if not path.exists():
         return {}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise DiscoveryError(
-            "sidecar_malformed", f"label sidecar 讀取失敗（{path}）：{exc}"
-        ) from exc
+        print(
+            f"[session-discovery] label sidecar 損壞——label 降級 null 續行"
+            f"（{path}：{exc}）",
+            file=sys.stderr,
+        )
+        return {}
     if not isinstance(data, dict):
-        raise DiscoveryError("sidecar_malformed", f"label sidecar 須為物件（{path}）")
+        print(
+            f"[session-discovery] label sidecar 形狀非物件——label 降級"
+            f" null 續行（{path}）",
+            file=sys.stderr,
+        )
+        return {}
     return data
 
 
 def _save_labels(
     labels: dict[str, dict[str, str]], sidecar: Path | None = None
 ) -> None:
-    """atomic 寫（tmp＋os.replace）；目錄 0700／檔 0600（owner-only）。"""
+    """atomic 寫（pid 後綴 tmp＋os.replace——並行 writer 不互踩 tmp 檔，
+    與 duty_receive.save_state 慣例一致）；目錄 0700／檔 0600（owner-only）。"""
     path = sidecar if sidecar is not None else _default_sidecar_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     os.chmod(path.parent, 0o700)  # mkdir mode 受 umask 影響——顯式 chmod 保證
-    tmp = path.with_name(path.name + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
     tmp.write_text(
         json.dumps(labels, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

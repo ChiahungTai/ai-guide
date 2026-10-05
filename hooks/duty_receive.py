@@ -4,8 +4,9 @@
 薄前導：stdin payload（SessionStart／UserPromptSubmit——值星在場的
 interaction boundary）→ eligibility gate（cwd 在 repo 內，AIR-233 模式
 ——不過＝零查詢零輸出）→ session_id 取自 payload（per-session holder
-state key）→ import scripts/duty_receive 核心（hooks/ 與 scripts/ 同
-repo，import 面）→ hookSpecificOutput.additionalContext 輸出（sync；
+state key）→ 載入 scripts/duty_receive 核心（檔案路徑顯式載入——
+hooks/ 與 scripts/ 同 repo，核心單一源不複製）→
+hookSpecificOutput.additionalContext 輸出（sync；
 與 AIR-233 hook 同形）。核心邏輯（holder／prepare／triage／ack、
 default-deny 分診表、絕不 flush-ack）單一源＝scripts/duty_receive.py。
 
@@ -34,17 +35,26 @@ governance-resolved Python 3.12（hooks/AGENTS.md 部署紀律——本 hook
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_HERE)
-for _path in (_HERE, os.path.join(_REPO, "scripts")):
-    if _path not in sys.path:
-        sys.path.insert(0, _path)
-import duty_receive as core  # 核心單一源＝scripts/duty_receive.py
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)  # hook_payload_compat（hooks/ 同目錄）
 import hook_payload_compat as compat
+
+# 核心單一源＝scripts/duty_receive.py——以檔案路徑顯式載入（自建模組名
+# _duty_receive_core，不進 sys.modules["duty_receive"]）：sys.path dance 下
+# `import duty_receive` 在 scripts/ 已在 path 時會解析回 hooks/ 自己
+# （同名 circular import），對 scripts/ 的 path 依賴整段退役。
+_core_spec = importlib.util.spec_from_file_location(
+    "_duty_receive_core", os.path.join(_REPO, "scripts", "duty_receive.py")
+)
+core = importlib.util.module_from_spec(_core_spec)
+_core_spec.loader.exec_module(core)
 
 HOOK_TAG = core.HOOK_TAG
 SUPPORTED_EVENTS = ("SessionStart", "UserPromptSubmit")

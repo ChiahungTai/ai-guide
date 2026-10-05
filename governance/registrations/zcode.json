@@ -196,17 +196,6 @@
             ],
             "enabled": true,
             "timeoutMs": 10000
-          },
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/duty_mailbox_monitor.py",
-              "--address",
-              "ai-guide-primary"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
           }
         ]
       }
@@ -236,17 +225,6 @@
               "{{REPO}}/hooks/duty_mailbox_monitor.py",
               "--address",
               "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          },
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/duty_mailbox_monitor.py",
-              "--address",
-              "ai-guide-primary"
             ],
             "enabled": true,
             "timeoutMs": 10000

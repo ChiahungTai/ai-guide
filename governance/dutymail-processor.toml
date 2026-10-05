@@ -11,6 +11,11 @@
 #   2. 未列 class 恆 surface（未知類別＝不知道後果，先呈報）
 # （把 "solicit" 寫進 auto_intent 是配置錯誤——載入即 fail-loud exit 3。）
 #
+# 另有一份「恆人工名單」寫在代碼層（handoff／patrol／work-order）：
+# 這些 class 絕不可經本表放寬為 auto——表列 action = "auto" 即載入失敗
+# （fail-loud exit 3）。本表用於新增 class row（擴大 auto 範圍），不是
+# 放寪恆人工清單的後門。
+#
 # 本表可編輯：新增 class row 即擴大 auto 範圍（仍受上述兩條底線與機械
 # 驗證約束）；未知鍵／壞形＝載入失敗（fail-loud，不靜默全 surface——
 # 配置錯誤要大聲）。

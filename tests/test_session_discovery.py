@@ -395,12 +395,40 @@ class TestLabelSidecar:
         _mod.set_label("sess_x", ok, sidecar=tmp_path / "labels.json")
         assert _mod.get_label("sess_x", sidecar=tmp_path / "labels.json") == ok
 
-    def test_malformed_sidecar_fails_loud(self, tmp_path: Path) -> None:
+    def test_malformed_sidecar_get_label_degrades_not_found(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """U8：sidecar 壞 JSON → _load_labels 降級 {}＋stderr 一行註記——
+        get_label 落 label_not_found（typed exit 3），不擋發現主功能。"""
         sidecar = tmp_path / "labels.json"
         sidecar.write_text("{not json", encoding="utf-8")
         with pytest.raises(_mod.DiscoveryError) as ei:
             _mod.get_label("sess_x", sidecar=sidecar)
-        assert ei.value.code == "sidecar_malformed"
+        assert ei.value.code == "label_not_found"
+        assert "label sidecar" in capsys.readouterr().err
+
+    def test_malformed_sidecar_rows_still_out_labels_null(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """U8：display metadata 損壞不擋 address 發現（EP 原則 2 附屬性）
+        ——rows 照出、label 全 null＋stderr 一行註記。"""
+        sidecar = tmp_path / "labels.json"
+        sidecar.write_text("{not json", encoding="utf-8")
+        data = _mod.collect_rows(
+            _list_runner(_payload(_sess())), sidecar=sidecar
+        )
+        assert data["count"] == 1
+        assert data["rows"][0]["session_id"] == "sess_aaa-0001"
+        assert data["rows"][0]["label"] is None
+        assert "label sidecar" in capsys.readouterr().err
+
+    def test_label_set_heals_corrupt_sidecar(self, tmp_path: Path) -> None:
+        """U8：CLI label set 對壞檔＝覆寫自癒（壞內容不留殘）。"""
+        sidecar = tmp_path / "labels.json"
+        sidecar.write_text("{not json", encoding="utf-8")
+        assert _mod.set_label("sess_x", "healed", sidecar=sidecar) == "healed"
+        on_disk = json.loads(sidecar.read_text(encoding="utf-8"))
+        assert on_disk["sess_x"]["label"] == "healed"
 
     def test_env_var_overrides_default_sidecar_path(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

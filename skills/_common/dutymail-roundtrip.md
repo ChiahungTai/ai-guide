@@ -46,7 +46,7 @@ send（intent＋reply_address＋envelope_id）
 |---|---|---|
 | transport ack（delivery cursor） | dutymail store | duty receive processor（處置後） |
 | human seen/done | SC workspaceState | 人類（✓/Undo）——transport 永不代推 |
-| AI 提醒游標 | session-local advisory（AIR-254.4） | 各 session 自己（監看 hook） |
+| AI 提醒 baseline（holderless pending 計數） | session-local advisory（AIR-254.4；review 修復改 pendingCount 源） | 各 session 自己（監看 hook） |
 
 同一 address 任一時刻僅一個 consuming authority（epoch-fenced holder）；prepare 不消耗、
 ack 是唯一 cursor 前進邊、只前進連續前綴；crash 重送不跳信。
@@ -63,4 +63,4 @@ auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest �
 ## 閒置語義
 
 無 duty session＝零查詢零輸出（註冊面即邊界；無背景輪詢/watcher）。SC badge 的未處理數
-源＝dutymail projection（undone 數），不是 AI 提醒游標（AIR-254.4 降級）。
+源＝dutymail projection（undone 數），不是 AI 提醒 baseline（AIR-254.4 降級）。

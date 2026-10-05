@@ -13,8 +13,9 @@ hookSpecificOutput.additionalContext；CLI 層印純文字行）。
   下達——絕不 flush-ack（處置中斷＝ack 呼叫不到達；未完成批次以
   `--invalidate` 顯式作廢，信不動，下輪重 prepare，寧重不漏）。
 - 自動處理 default-deny：`triage` 需 class×action 表（config）允許＋
-  intent 機械驗證全過；兩條代碼層底線 config 無法放寪——solicit 恆
-  surface、未列 class 恆 surface。auto 處理＝digest 吸收（計數行），
+  intent 機械驗證全過；三條代碼層底線 config 無法放寪——solicit 恆
+  surface、未列 class 恆 surface、恆人工名單 class（handoff／patrol／
+  work-order）恆 surface。auto 處理＝digest 吸收（計數行），
   輸出語義「例行已處理」，絕不宣稱 work accepted。
 - holder 權威經 `holder bind` consent CAS 取得，絕不繞過；live holder
   在場＝不搶（換代正當路徑＝lease 到期後 rebind）；rebind CAS 失敗＝
@@ -75,6 +76,9 @@ BATCH_CONFLICT_CODE = "batch-conflict"
 IDEMPOTENCY_KEYS = ("task", "card")
 VALID_INTENTS = frozenset({"inform", "solicit", "receipt"})
 ALLOWED_AUTO_INTENTS = ("inform", "receipt")  # solicit 底線不可入表
+# 恆人工名單（EP owner 裁決）：這些 class 絕不可 auto——工作分派面需要
+# 人判讀；表列 action="auto" 即 ConfigError（比照 solicit 條款）
+ALWAYS_SURFACE_CLASSES = frozenset({"handoff", "patrol", "work-order"})
 ROW_KEYS = frozenset({"class", "auto_intent", "action"})
 
 MINUTES_US = 60_000_000
@@ -261,6 +265,12 @@ def receive_ack(runner, address, token, batch_token):
     )
 
 
+def receive_status(runner, address):
+    """`receive status` 唯讀 face——pendingCount 現值（monitor 消費面；
+    處理器本身不消費——digest 年齡取自批次 dispositions）。"""
+    return _call(runner, ["receive", "status", "--address", address])
+
+
 # ── per-session holder state（bearer capability；0600；atomic 寫）─────
 
 
@@ -326,15 +336,17 @@ def _valid_holder_state(st, address):
 
 
 class Policy:
-    """default-deny 判定。兩條代碼層底線（表無法放寪）：solicit 恆
-    deny、未列 class 恒 deny；列為 auto 需 intent 在該 class 的
-    auto_intent 內。"""
+    """default-deny 判定。三條代碼層底線（表無法放寪）：solicit 恆
+    deny、未列 class 恒 deny、恆人工名單 class（ALWAYS_SURFACE_CLASSES）
+    恒 deny；列為 auto 需 intent 在該 class 的 auto_intent 內。"""
 
     def __init__(self, rules):
         self._rules = rules  # class -> (action, frozenset(auto_intent))
 
     def allows(self, klass, intent):
         if intent == "solicit":
+            return False
+        if klass in ALWAYS_SURFACE_CLASSES:
             return False
         rule = self._rules.get(klass)
         if rule is None:
@@ -397,6 +409,11 @@ def load_policy(path):
         if action not in ("auto", "surface"):
             raise ConfigError(
                 f"class {klass}：action 應為 auto|surface，得 {action!r}"
+            )
+        if klass in ALWAYS_SURFACE_CLASSES and action == "auto":
+            raise ConfigError(
+                f"class {klass}：恆人工 class——action 不可為 auto"
+                "（代碼層 default-deny 底線，表不可放寪）"
             )
         if klass in rules:
             raise ConfigError(f"class {klass} 重複定義")
@@ -548,12 +565,14 @@ def render(address, dispositions, now_us):
     )
     ages = [
         # clamp 0：created_at_us 在未來（時鐘偏移）時 age 為負——負年齡
-        # 顯示不合理，下限 0 分鐘（S3 finding #3）
+        # 顯示不合理，下限 0 分鐘（S3 finding #3）。取全部 dispositions
+        # （auto＋surface）——全 auto 批次也顯示最舊年齡、auto 更舊時
+        # 不低估（review 修復 U9）。
         max(0, now_us - d.created_at_us)
-        for d in surf
+        for d in dispositions
         if d.created_at_us is not None
     ]
-    if surf and ages:
+    if ages:
         minutes = round(max(ages) / MINUTES_US)
         head += f"（最舊 {minutes} 分鐘）"
     head += "；class：" + "、".join(
@@ -753,7 +772,9 @@ def process_once(address, runner, policy, state_file,
     記 batch_token（undisposed——crash window 防線）→ 逐封 triage（
     全純計算；任一 raise＝ack 不被呼叫——絕不 flush-ack）→ render。
     commit＝ack＋state 收斂，由呼叫端在輸出寫出成功後執行（
-    advance-after-emit：先呈報後 ack）。空批次＝([], None) 零輸出。
+    advance-after-emit：先呈報後 ack）。空批次（正典形＝envelopes==[]
+    且 batchToken==None）＝([], None) 零輸出；其他非正典形 shape-drift
+    raise（fail-loud，交上層 fail-soft）。
     """
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
@@ -765,8 +786,21 @@ def process_once(address, runner, policy, state_file,
     )
     envelopes = prepared.get("envelopes")
     batch_token = prepared.get("batchToken")
-    if not envelopes or not isinstance(batch_token, str):
-        return [], None
+    if envelopes == [] and batch_token is None:
+        return [], None  # 正典空批（凍結契約：[]＋null token）——靜默
+    # 非正典形一律 shape-drift fail-loud（U6 收緊）：有信無 token／
+    # envelopes 非 list／空批帶 token——禁靜默返空吞信（交上層 fail-soft）。
+    if (
+        not isinstance(envelopes, list)
+        or envelopes == []
+        or not (isinstance(batch_token, str) and batch_token)
+    ):
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"prepare result 形漂移：envelopes={envelopes!r}、"
+            f"batchToken={batch_token!r}",
+            False, 0,
+        )
     st = dict(st)
     st["batch_token"] = batch_token
     st["batch_disposed"] = False

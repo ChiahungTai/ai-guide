@@ -329,6 +329,33 @@ class TestPolicy:
         with pytest.raises(mod.ConfigError):
             mod.load_policy(str(p))
 
+    def test_always_surface_classes_code_floor(self):
+        """恆人工名單（handoff/patrol/work-order）代碼層防護：繞過
+        load_policy 直構 Policy（表列 auto）也恆 surface。"""
+        for klass in ("handoff", "patrol", "work-order"):
+            rogue = mod.Policy({klass: ("auto", frozenset({"inform"}))})
+            assert rogue.allows(klass, "inform") is False
+
+    def test_table_auto_always_surface_class_fail_loud(self, tmp_path):
+        """表列恆人工 class 為 auto → ConfigError（比照 solicit 條款——
+        配置錯誤要大聲，不靜默降回 surface）。"""
+        p = tmp_path / "c.toml"
+        p.write_text(
+            '[[class_rule]]\nclass = "patrol"\n'
+            'auto_intent = ["inform"]\naction = "auto"\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(mod.ConfigError):
+            mod.load_policy(str(p))
+
+    def test_solicit_floor_unchanged(self):
+        """solicit 底線不變：直構 Policy（auto_intent 藏 solicit）也恆
+        surface——恆人工名單加入未動搖既有底線。"""
+        policy = mod.Policy({
+            "usage-liveness": ("auto", frozenset({"inform", "solicit"})),
+        })
+        assert policy.allows("usage-liveness", "solicit") is False
+
 
 # ── triage：default-deny 判定＋機械驗證────────────────────────────────
 
@@ -664,6 +691,55 @@ class TestProcessBatch:
         assert commit is None
         assert "batch_token" not in _read_state(state_file)
 
+    def test_prepare_mail_without_token_shape_drift_raise(self, state_file):
+        """有信無 token（batchToken 非 str）→ shape-drift raise（U6——
+        空批早退收緊為正面判定：非正典形禁靜默返空吞信）。"""
+        runner = _seq_runner([
+            _status_doc(), _bind_doc(),
+            _ok({
+                "addressId": "a1", "batchToken": None, "fromSeq": 1,
+                "throughSeq": 1, "envelopes": [_env_item("e-1")],
+                "expiresAtUs": NOW_US + 60_000_000,
+            }),
+        ])
+        with pytest.raises(mod.DutymailFaceError) as ei:
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert ei.value.code == "shape-drift"
+        assert not any(c[0:2] == ["receive", "ack"] for c in runner.calls)
+
+    def test_prepare_envelopes_missing_shape_drift_raise(self, state_file):
+        """envelopes 非 list（缺席）→ shape-drift raise（非正典形不得
+        靜默歸空）。"""
+        runner = _seq_runner([
+            _status_doc(), _bind_doc(),
+            _ok({"addressId": "a1", "batchToken": "bt-1"}),
+        ])
+        with pytest.raises(mod.DutymailFaceError) as ei:
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert ei.value.code == "shape-drift"
+
+    def test_prepare_empty_envelopes_with_token_shape_drift_raise(
+        self, state_file
+    ):
+        """空批帶 token（非正典空批形——凍結契約的空批＝envelopes==[] 且
+        batchToken==None）→ shape-drift raise。"""
+        runner = _seq_runner([
+            _status_doc(), _bind_doc(),
+            _ok({
+                "addressId": "a1", "batchToken": "bt-1", "fromSeq": None,
+                "throughSeq": None, "envelopes": [], "expiresAtUs": None,
+            }),
+        ])
+        with pytest.raises(mod.DutymailFaceError) as ei:
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert ei.value.code == "shape-drift"
+
     def test_legacy_undisposed_invalidates(self, state_file):
         """遺留批次未處置 → prepare --invalidate 重 prepare（寧重不漏）。"""
         _seed_state(state_file, batch_token="bt-stale", disposed=False)
@@ -798,11 +874,38 @@ class TestDigestRendering:
         assert "新到 3、1 件例行已處理、2 件等你（最舊 5 分鐘）" in digest
         assert "class：usage-liveness×1、handoff×2" in digest
 
-    def test_digest_k_zero_no_age_paren(self, state_file):
-        envs = [_env_item("e-1"), _env_item("e-2", klass="terminal-completion")]
+    def test_all_auto_batch_shows_oldest_age(self, state_file):
+        """U9：全部 auto（0 件 surface）的批次也顯示最舊年齡——ages 取
+        全部 dispositions（auto＋surface），非僅 surf。"""
+        envs = [
+            _env_item("e-1", created_us=NOW_US - 7 * 60_000_000),
+            _env_item("e-2", klass="terminal-completion",
+                      created_us=NOW_US - 3 * 60_000_000),
+        ]
         lines, _commit = self._run_lines(state_file, envs)
         digest = lines[0]
-        assert "新到 2、2 件例行已處理、0 件等你" in digest
+        assert "新到 2、2 件例行已處理、0 件等你（最舊 7 分鐘）" in digest
+
+    def test_auto_older_than_surface_drives_oldest_age(self, state_file):
+        """U9：混合批次 auto 項更舊時，最舊年齡反映 auto 項（不得低估）。"""
+        envs = [
+            _env_item("e-1", created_us=NOW_US - 9 * 60_000_000),  # auto 最舊
+            _env_item("e-2", klass="handoff",
+                      created_us=NOW_US - 4 * 60_000_000),
+        ]
+        lines, _commit = self._run_lines(state_file, envs)
+        assert "（最舊 9 分鐘）" in lines[0]
+
+    def test_no_timestamps_no_age_paren(self, state_file):
+        """全部 item 無有效 created_at_us（triage 判 None）→ 無年齡可算
+        ——不附「最舊」括節。"""
+        envs = [
+            _env_item("e-1", created_us=0),  # 非正整數 → disposition age None
+            _env_item("e-2", klass="handoff", created_us=0),
+        ]
+        lines, _commit = self._run_lines(state_file, envs)
+        digest = lines[0]
+        assert "新到 2、1 件例行已處理、1 件等你" in digest
         assert "最舊" not in digest
 
     def test_surface_full_text_first_three_then_summary(self, state_file):

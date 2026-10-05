@@ -13,7 +13,7 @@
 3. **同一 address 任一時刻僅一個 consuming authority**（epoch-fenced holder）——處理器經 `holder bind` 的 consent CAS 取得權威；絕不繞過 CAS 強取。
 4. **prepare 不消耗；ack 是唯一 cursor 前進邊**；ack 只在**全批次處置完成後**下達（auto 處理或呈報值星都算處置）——**絕不 flush-ack**（處置前 ack＝紅線）。
 5. **transport ack／human seen-done／AI 提醒三線獨立**——處理器的 ack 只推 delivery cursor，永不代 SC 的 seen/done，也不觸發 AIR-233 面的提醒語義。
-6. **自動處理 default-deny**——class×action 表（config 非 code）＋四條全成立才 auto：registered class、intent∈{inform, receipt}、schema 可判定＋可機械驗證、無 outward；**絕不宣稱 work accepted**（terminal status 只是 fact）。恆人工：handoffs、跨 repo 協調、人類寄信、不明意圖/類別。
+6. **自動處理 default-deny**——class×action 表（config 非 code）＋四條全成立才 auto：registered class、intent∈{inform, receipt}、schema 可判定＋可機械驗證、無 outward；**絕不宣稱 work accepted**（terminal status 只是 fact）。恆人工：handoffs、跨 repo 協調、人類寄信、不明意圖/類別——**具名恆人工名單（handoff/patrol/work-order）為代碼層硬底線**（`ALWAYS_SURFACE_CLASSES`；表列 auto＝ConfigError fail-loud。表的可編輯面＝新增 class，不是放寬 invariants——review code-F4 裁決，2026-10-06）。
 7. **絕不主動送信**——v1 處理器不呼叫 `send`／`replies`（回信＝outward，須逐次 AUTH，非本 EP 範圍）。
 8. **閒置完全安靜**——處理器只掛在 SessionStart／UserPromptSubmit 邊界（值星在場）；無 session＝零查詢零輸出。
 
@@ -42,7 +42,7 @@ dutymail receive ack     --address <alias> --token <T> --batch <BATCH-TOKEN>
 
 ## 分診與輸出（inbox-uc UC-a 裁定版）
 
-- **digest 優先**：每批次一行總結——「新到 N、M 件例行已處理、K 件等你」＋每 class 計數＋最舊 pending 年齡（`receive status`）。
+- **digest 優先**：每批次一行總結——「新到 N、M 件例行已處理、K 件等你」＋每 class 計數＋最舊年齡（**全批次項**計算——auto＋surface 皆計，review boundary-F3 修訂；非僅待辦項）。
 - **triage 項才給全文**：非 auto 項全文呈報，每邊界上限 3 筆全文（防 context 洪水）；超出者一行 header 摘要（from/class/intent/envelope_id）——全部都算「已呈報」（處置完成），細節可事後以 `events` 查。
 - 輸出通道＝ZCode `hookSpecificOutput.additionalContext`（sync；與 AIR-233 hook 同形）。
 - **body machine-headers**：`class`（handoff/patrol/work-order/receipt/terminal-completion/usage-liveness…）、`intent`（inform/solicit/receipt）、`task`/`card`、`reply_address`（地址模型裁定 2：從 repo mailbox 發出者 reply_address 一律 originating repo-marshal）。

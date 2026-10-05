@@ -1,32 +1,33 @@
-"""dutymail 信箱 monitor hook 測試（AIR-254.4——AIR-233 提醒面降級重寫）。
+"""dutymail 信箱 monitor hook 測試（AIR-254.4——review 修復 U2/U3/U4 重寫）。
+
+語義裁定（marshal judge 採納）：bounded monitor reports **holderless
+pending**（duty-active recovery window）。資料面只留兩個唯讀 face——
+`holder status`（live 偵測）＋`receive status`（pendingCount）；events face
+消費全面退役（collect_events／頁上限／events_cursor 游標語義不再存在）。
 
 涵蓋（工單覆蓋面）：
-- hold 偵測：duty-receive per-session state 在場（token＋epoch＋address 對上）
-  且 holder status bindingEpoch==state.epoch 且 live=true → 本 session
-  holding → 靜默＋游標推進至 head（查 events 拿最新 retained cursor 存入，
-  不輸出）；epoch 不符／live=False／status 失敗 → 未 hold（advisory 路徑）。
-- 未 hold advisory：events --kind accepted 自 session 本地游標起新事件
-  N>0 → 一行 advisory（「本 session 未 hold——新到 N 封信（recovery
-  window…）」）＋游標推進（advance-after-emit——commit 由呼叫端在 stdout
-  寫出後執行）；N=0 → 靜默（游標已在 head，零推進需求零寫入）。
-- 冷啟動（無游標）：掃到 head 只建游標靜默（防歷史洪水）；空 timeline
-  無游標可建（零寫入）。
-- 分頁：有 items 頁恆帶非 null nextCursor 續翻、空頁（nextCursor=null）
-  終止；頁數上限（10）raise → fail-soft 不 emit 不推進。
+- 決策表（per address）：①live=True（本 session hold 或他方 live——處理面
+  由 holder 承擔）→ 靜默＋last_pending baseline 歸零；②live=False
+  （holderless）→ receive status pendingCount：>0 且 ≠ baseline → 一行
+  advisory（holderless pending N 封）＋baseline=N；>0 且 == baseline →
+  靜默（防每 prompt 轟炸）；==0 → 靜默＋baseline 歸零。
+- baseline state：形 {"addresses": {"<alias>": {"last_pending": int}}}；
+  session-local、路徑可注入、0600 atomic 寫、advance-after-emit。
+- per-address 容錯（U4）：單 address face 失敗 → stderr 註記續跑其他門牌
+  （前位成功 advisory 保留）。
 - eligibility gate：cwd 在 script repo 外／缺席 → 零查詢零輸出零推進；
-  缺 session_id → 零查詢（session-local 游標無 key）。
-- fail-soft：store 缺席（storage class）／face 失敗／壞 JSON／未知事件 →
-  零 stdout exit 0＋stderr 註記；args 誤用 exit 2；游標推進失敗寧重不漏。
-- session 隔離：兩 session 游標互不干擾（per-session state 檔）＋hold
-  判定 per-session（s1 holding 不使 s2 靜默）。
-- 舊全域 scbus-address-monitor 檔零讀取：模組 source 零 scbus 字樣（
-  路徑常數缺席）＋monitor state 落 duty-monitor/<safe_session_id>.json。
-- monitor ≠ holder：呼叫面僅 events／holder status 唯讀——零 bind／
-  prepare／ack（三軸不互代理）。
-- governance 接線：zcode/cc 模板雙事件獨立 group（新拓撲：UPS groups＝
-  compact-restore-inject＋duty-receive＋duty-mailbox-monitor）＋manifest
-  inventory 換名＋舊名全面退役；install merge 面新 group append、既有條目
-  零動、冪等、uninstall 只拆本套件 group。
+  缺 session_id → 零查詢。
+- fail-soft：store 缺席（storage class）／unknown-address／pendingCount
+  形漂移 → 該門牌 stderr 註記＋零 stdout；stdin 壞 JSON／未知事件 → 靜默
+  exit 0；args 誤用 exit 2；baseline 寫入失敗寧重不漏。
+- session 隔離：兩 session baseline 互不干擾（per-session state 檔）。
+- 舊全域 scbus-address-monitor 檔零讀取（模組 source 零 scbus 字樣）＋
+  monitor state 落 duty-monitor/<safe_session_id>.json。
+- monitor ≠ holder：呼叫面僅 holder status／receive status 唯讀——零
+  bind／prepare／ack（三軸不互代理）。
+- governance 接線（U3）：zcode 模板 monitor group 單一 marshal 條目（
+  ai-guide-primary 死門牌條目退役）；cc dormant 同形；install merge 面
+  新 group append、既有條目零動、冪等、uninstall 只拆本套件 group。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
 （tmp_path）——不碰真 store（真 store 往返＝工單真實資料五步）。
@@ -68,35 +69,11 @@ def state_file(tmp_path):
     return str(tmp_path / "state" / "monitor" / "sess-1.json")
 
 
-@pytest.fixture
-def holder_dir(tmp_path):
-    return str(tmp_path / "holder")
-
-
 # ── fake dutymail（typed contract：成功 stdout 一個 JSON；失敗 raise）──
 
 
 def _ok(result):
     return json.dumps({"schemaVersion": 1, "ok": True, "result": result})
-
-
-def _events_doc(seqs, next_cursor):
-    """events face 頁（dutymail 3.1.0 凍結形）：items[]＋nextCursor。
-
-    payloadJson 帶可辨識秘密字串——釘 count-only 語義（item 內容絕不進輸出）。
-    """
-    items = [
-        {
-            "atUs": 1000 + i,
-            "eventSeq": seq,
-            "kind": "accepted",
-            "payloadJson": json.dumps(
-                {"envelopeId": f"env-{seq}", "secret": f"TOP-SECRET-{seq}"}
-            ),
-        }
-        for i, seq in enumerate(seqs)
-    ]
-    return _ok({"items": items, "nextCursor": next_cursor})
 
 
 def _status_doc(epoch=4, live=False):
@@ -106,39 +83,31 @@ def _status_doc(epoch=4, live=False):
     })
 
 
-def _page_runner(pages):
-    """injectable runner：pages 依呼叫序回傳（str stdout 或 Exception）。"""
+def _recv_doc(pending=0):
+    """receive status face（3.1.0 真機形）：pendingCount＋primaryCursor。"""
+    return _ok({
+        "addressId": "a1", "bindingEpoch": 4, "lastDeliverySeq": 5,
+        "liveBatch": None, "pendingCount": pending, "primaryCursor": 5,
+    })
+
+
+def _seq_runner(steps):
+    """injectable runner：steps 依呼叫序回傳（str stdout 或 Exception）。"""
     calls = []
 
     def run(argv):
         calls.append(list(argv))
-        page = pages[len(calls) - 1]
-        if isinstance(page, Exception):
-            raise page
-        return page
+        step = steps[len(calls) - 1]
+        if isinstance(step, Exception):
+            raise step
+        return step
 
     run.calls = calls
     return run
 
 
-def _seed_holder_state(holder_dir, session_id="sess-1", epoch=4,
-                       token="tok-holder", address=ADDRESS):
-    """duty-receive per-session holder state（monitor 只讀它的形）。"""
-    os.makedirs(holder_dir, exist_ok=True)
-    path = os.path.join(holder_dir, session_id + ".json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(
-            {
-                "address": address, "epoch": epoch, "token": token,
-                "bound_at_iso": "2026-10-05T00:00:00+00:00",
-            },
-            fh,
-        )
-    return path
-
-
-def _seed_monitor_state(state_file, cursor, address=ADDRESS):
-    """seed 游標檔（merge 進既有 doc——同檔多門牌場景不互相覆寫）。"""
+def _seed_baseline(state_file, last_pending, address=ADDRESS):
+    """seed baseline 檔（merge 進既有 doc——同檔多門牌場景不互相覆寫）。"""
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
     doc = {"addresses": {}}
     if os.path.exists(state_file):
@@ -148,7 +117,7 @@ def _seed_monitor_state(state_file, cursor, address=ADDRESS):
                 loaded.get("addresses"), dict
             ):
                 doc = loaded
-    doc["addresses"][address] = {"events_cursor": cursor}
+    doc["addresses"][address] = {"last_pending": last_pending}
     with open(state_file, "w", encoding="utf-8") as fh:
         json.dump(doc, fh)
 
@@ -158,217 +127,159 @@ def _read_state(state_file):
         return json.load(fh)
 
 
-def _monitor_cursor(state_file, address=ADDRESS):
-    doc = _read_state(state_file)
-    return doc["addresses"][address]["events_cursor"]
+def _last_pending(state_file, address=ADDRESS):
+    return _read_state(state_file)["addresses"][address]["last_pending"]
 
 
-# ── hold 偵測：holding 靜默＋游標推進至 head ──────────────────────────
+# ── 決策表：live=True（holding／他方 live）靜默＋baseline 歸零 ─────────
 
 
-class TestHoldDetection:
-    def test_holding_silent_cursor_to_head(self, state_file, holder_dir):
-        """本 session holding（state epoch==status epoch＋live）→ 零輸出、
-        游標推進至 head（查 events 拿最新 retained cursor，不輸出）。"""
-        _seed_monitor_state(state_file, "cur-0")
-        _seed_holder_state(holder_dir, epoch=4)
-        runner = _page_runner([
-            _status_doc(epoch=4, live=True),
-            _events_doc([4, 5], "cur-5"),
-            _events_doc([], None),
-        ])
+class TestHoldSilent:
+    def test_live_holder_silent_baseline_reset(self, state_file):
+        """live=True（本 session hold——duty-receive 同邊界已 bind/renew）
+        → 靜默＋baseline 歸零（處理面由 holder 承擔，提醒面安靜）。"""
+        _seed_baseline(state_file, 3)
+        runner = _seq_runner([_status_doc(epoch=4, live=True)])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out) == (0, "")
-        assert commit is not None
+        assert runner.calls == [
+            ["holder", "status", "--address", ADDRESS]
+        ]
         commit()
-        assert _monitor_cursor(state_file) == "cur-5"
-        assert runner.calls[0] == ["holder", "status", "--address", ADDRESS]
+        assert _last_pending(state_file) == 0
 
-    def test_holding_cold_cursor_still_silent(self, state_file, holder_dir):
-        """holding＋冷啟動（無游標）→ 同樣靜默建游標（head 掃描）。"""
-        _seed_holder_state(holder_dir, epoch=7)
-        runner = _page_runner([
-            _status_doc(epoch=7, live=True),
-            _events_doc([1], "cur-1"),
-            _events_doc([], None),
-        ])
+    def test_foreign_live_silent_covered(self, state_file):
+        """他方 live（另一 session holding——epoch 非本 session）→ 靜默
+        （covered：與 duty_receive 衝突行同語義——處理面由現 holder 承擔）
+        ＋baseline 歸零。"""
+        _seed_baseline(state_file, 2)
+        runner = _seq_runner([_status_doc(epoch=9, live=True)])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out) == (0, "")
         commit()
-        assert _monitor_cursor(state_file) == "cur-1"
+        assert _last_pending(state_file) == 0
 
-    def test_holding_already_at_head_no_write(self, state_file, holder_dir):
-        """holding 且游標已在 head（空頁）→ 零推進需求：commit=None、檔不動。"""
-        _seed_monitor_state(state_file, "cur-3")
-        _seed_holder_state(holder_dir, epoch=4)
-        runner = _page_runner([
-            _status_doc(epoch=4, live=True),
-            _events_doc([], None),
-        ])
+    def test_live_already_zero_baseline_no_write(self, state_file):
+        """live=True 且 baseline 已 0／缺席 → 零寫入需求：commit=None。"""
+        runner = _seq_runner([_status_doc(live=True)])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
-        assert _monitor_cursor(state_file) == "cur-3"
+        assert not os.path.exists(state_file)
 
-    def test_epoch_mismatch_not_holding_advisory(self, state_file,
-                                                 holder_dir):
-        """status epoch != state epoch（他方換代）→ 未 hold → advisory。"""
-        _seed_monitor_state(state_file, "cur-0")
-        _seed_holder_state(holder_dir, epoch=3)
-        runner = _page_runner([
-            _status_doc(epoch=9, live=True),  # 別的 session 持有
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out, _commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert "新到 1 封信" in out
 
-    def test_live_false_not_holding_advisory(self, state_file, holder_dir):
-        """live=False（lease 過期）→ 未 hold → advisory。"""
-        _seed_monitor_state(state_file, "cur-0")
-        _seed_holder_state(holder_dir, epoch=4)
-        runner = _page_runner([
-            _status_doc(epoch=4, live=False),
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out, _commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert "新到 1 封信" in out
+# ── 決策表：holderless pending advisory（recovery window）─────────────
 
-    def test_status_failure_falls_to_not_holding(self, state_file,
-                                                 holder_dir):
-        """status face 失敗 → 未 hold（4b）——events 照查、advisory 照出
-        （status 失敗不毒化本輪）。"""
-        _seed_monitor_state(state_file, "cur-0")
-        _seed_holder_state(holder_dir, epoch=4)
-        runner = _page_runner([
-            mod.core.DutymailFaceError(
-                code="store-incompatible", error_class="storage",
-                message="boom", retryable=False, exit_code=4,
-            ),
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+
+class TestHolderlessPending:
+    def test_advisory_exact_wording_and_baseline(self, state_file):
+        """live=False＋pendingCount=2 且 ≠ baseline → 一行 advisory（裁定
+        措辭逐字）＋baseline=2（advance-after-emit）。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
         ])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert code == 0
-        assert "新到 1 封信" in out
-        commit()
-        assert _monitor_cursor(state_file) == "cur-4"
-
-    def test_no_holder_state_skips_status_call(self, state_file, holder_dir):
-        """無 duty-receive state → 直接 events（零 holder status 呼叫）。"""
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out, _commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert "新到 1 封信" in out
-        assert runner.calls[0][0] == "events"
-
-    def test_holder_state_address_mismatch_skips_status(self, state_file,
-                                                        holder_dir):
-        """holder state 屬他門牌（--address 多門牌場景）→ 不代判 holding。"""
-        _seed_monitor_state(state_file, "cur-0", address="b-marshal")
-        _seed_holder_state(holder_dir, epoch=4, address="b-marshal")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, _out, _commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert runner.calls[0][0] == "events"  # 零 status 呼叫
-
-
-# ── 未 hold advisory：一行＋游標推進（advance-after-emit）────────────
-
-
-class TestNotHoldingAdvisory:
-    def test_advisory_line_exact_wording_and_count(self, state_file,
-                                                   holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4, 5], "cur-5"),
-            _events_doc([], None),
-        ])
-        code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert code == 0
         doc = json.loads(out)
         assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-        ctx = doc["hookSpecificOutput"]["additionalContext"]
-        assert ctx == (
-            "[duty-monitor] " + ADDRESS + "：本 session 未 hold——新到 2 封信"
-            "（recovery window；開 duty session 處理或 `dutymail receive"
-            " status` 查看待處理）"
+        assert doc["hookSpecificOutput"]["additionalContext"] == (
+            "[duty-monitor] " + ADDRESS + "：holderless pending 2 封"
+            "（recovery window——無 session hold；開 duty session 處理）"
         )
-        # 呼叫面凍結：events＋--kind accepted＋--limit＋--cursor（分頁續翻）
-        assert runner.calls[0] == [
-            "events", "--address", ADDRESS, "--kind", "accepted",
-            "--limit", "100", "--cursor", "cur-0",
+        # 呼叫面凍結：holder status → receive status（唯讀兩 face）
+        assert runner.calls == [
+            ["holder", "status", "--address", ADDRESS],
+            ["receive", "status", "--address", ADDRESS],
         ]
-        assert runner.calls[1][runner.calls[1].index("--cursor") + 1] == "cur-5"
+        assert commit is not None
         commit()
-        assert _monitor_cursor(state_file) == "cur-5"
+        assert _last_pending(state_file) == 2
 
-    def test_advance_after_emit_not_before(self, state_file, holder_dir):
-        """游標推進只發生在 commit()（stdout 寫出後）——run() 返回當下未動。"""
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-9"),
-            _events_doc([], None),
+    def test_same_pending_count_silent_anti_spam(self, state_file):
+        """pendingCount>0 且 == baseline（未變化）→ 靜默——防每 prompt
+        轟炸；baseline 保留（N 不被歸零）。"""
+        _seed_baseline(state_file, 2)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert (code, out, commit) == (0, "", None)
+        assert _last_pending(state_file) == 2
+
+    def test_pending_zero_silent_baseline_reset(self, state_file):
+        """live=False＋pendingCount==0 → 靜默＋baseline 歸零。"""
+        _seed_baseline(state_file, 5)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=0),
+        ])
+        code, out, commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert (code, out) == (0, "")
+        commit()
+        assert _last_pending(state_file) == 0
+
+    def test_pending_grows_new_advisory(self, state_file):
+        """baseline=1 → pendingCount=3（值變化）→ 新 advisory＋baseline=3。"""
+        _seed_baseline(state_file, 1)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=3),
+        ])
+        _code, out, commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert "holderless pending 3 封" in out
+        commit()
+        assert _last_pending(state_file) == 3
+
+    def test_cold_baseline_pending_alerts(self, state_file):
+        """冷啟動（無 baseline）＋holderless pending>0 → 立即 advisory——
+        pendingCount 是現值非事件史，無歷史洪水問題（裁定語義）。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=4),
+        ])
+        _code, out, _commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert "holderless pending 4 封" in out
+
+    def test_advance_after_emit_not_before(self, state_file):
+        """baseline 寫入只發生在 commit()（stdout 寫出後）——run() 返回
+        當下未動。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
         ])
         _code, _out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
-        assert commit is not None
-        assert _monitor_cursor(state_file) == "cur-0"
+        assert not os.path.exists(state_file)
         commit()
-        assert _monitor_cursor(state_file) == "cur-9"
+        assert _read_state(state_file) == {
+            "addresses": {ADDRESS: {"last_pending": 2}}
+        }
 
-    def test_sessionstart_event_name(self, state_file, holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+    def test_sessionstart_event_name(self, state_file):
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         _code, out, _commit = mod.run(
             SS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert json.loads(out)["hookSpecificOutput"][
             "hookEventName"] == "SessionStart"
 
-    def test_grok_snake_event_value_normalized(self, state_file, holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+    def test_grok_snake_event_value_normalized(self, state_file):
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         raw = json.dumps(
             {"hookEventName": "user_prompt_submit", "sessionId": "sess-1",
@@ -376,288 +287,138 @@ class TestNotHoldingAdvisory:
         )
         _code, out, _commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert json.loads(out)["hookSpecificOutput"][
             "hookEventName"] == "UserPromptSubmit"
 
-    def test_zero_new_silent_state_untouched(self, state_file, holder_dir):
-        """N=0 → 靜默——游標已在 head（空頁＝無新 token），零寫入。"""
-        _seed_monitor_state(state_file, "cur-3")
-        runner = _page_runner([_events_doc([], None)])
-        code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert (code, out, commit) == (0, "", None)
-        assert _monitor_cursor(state_file) == "cur-3"
-
-    def test_multiple_addresses_two_lines_both_advance(self, state_file,
-                                                       holder_dir):
-        _seed_monitor_state(state_file, "cur-0", address="a-marshal")
-        _seed_monitor_state(state_file, "cur-0", address="b-marshal")
-        runner = _page_runner([
-            _events_doc([4], "a-end"),
-            _events_doc([], None),
-            _events_doc([5, 6], "b-end"),
-            _events_doc([], None),
+    def test_multiple_addresses_two_lines_both_advance(self, state_file):
+        _seed_baseline(state_file, 0, address="a-marshal")
+        _seed_baseline(state_file, 0, address="b-marshal")
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
+            _status_doc(live=False), _recv_doc(pending=2),
         ])
         _code, out, commit = mod.run(
             UPS_STDIN, ["a-marshal", "b-marshal"], runner=runner,
-            state_file=state_file, holder_state_dir=holder_dir,
+            state_file=state_file,
         )
         ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
         assert ctx.count("\n") == 1
-        assert "a-marshal：本 session 未 hold——新到 1 封信" in ctx
-        assert "b-marshal：本 session 未 hold——新到 2 封信" in ctx
+        assert "a-marshal：holderless pending 1 封" in ctx
+        assert "b-marshal：holderless pending 2 封" in ctx
         commit()
         doc = _read_state(state_file)
-        assert doc["addresses"]["a-marshal"]["events_cursor"] == "a-end"
-        assert doc["addresses"]["b-marshal"]["events_cursor"] == "b-end"
+        assert doc["addresses"]["a-marshal"]["last_pending"] == 1
+        assert doc["addresses"]["b-marshal"]["last_pending"] == 2
 
-    def test_item_payload_never_leaks_into_output(self, state_file,
-                                                  holder_dir):
-        """count-only：payloadJson 內容（envelopeId／secret）絕不進輸出。"""
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+    def test_count_only_no_face_detail_leak(self, state_file):
+        """count-only：face 回應其他欄位（liveBatch／primaryCursor 等）絕不
+        進輸出——advisory 只含 alias＋整數計數。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
         ])
         _code, out, _commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
-        assert "TOP-SECRET" not in out
-        assert "envelopeId" not in out
-        assert "payloadJson" not in out
+        assert "primaryCursor" not in out
+        assert "addressId" not in out
 
 
-# ── 冷啟動：靜默建游標（防歷史洪水）──────────────────────────────────
+# ── per-address 容錯（U4）：單門牌失敗續跑其他 ─────────────────────────
 
 
-class TestColdStart:
-    def test_cold_start_builds_cursor_no_alert(self, state_file, holder_dir):
-        """無 state 檔＝冷啟動：掃到 head 只建游標、不告警；首查不帶
-        --cursor（自 timeline 開頭）。"""
-        assert not os.path.exists(state_file)
-        runner = _page_runner([
-            _events_doc([1, 2], "cur-2"),
-            _events_doc([3], "cur-3"),
-            _events_doc([], None),
+class TestPerAddressFaultTolerance:
+    def test_partial_failure_keeps_earlier_advisory(self, state_file, capsys):
+        """前位門牌成功 advisory 保留；後位 face 失敗 → stderr 註記續跑、
+        不擋 turn、exit 0。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),  # a-marshal 成功
+            mod.core.DutymailFaceError(  # b-marshal holder status 失敗
+                code="unknown-address", error_class="admission",
+                message="no address with alias", retryable=False,
+                exit_code=3,
+            ),
         ])
         code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
+            UPS_STDIN, ["a-marshal", "b-marshal"], runner=runner,
+            state_file=state_file,
         )
-        assert (code, out) == (0, "")
-        assert "--cursor" not in runner.calls[0]
-        assert runner.calls[1][runner.calls[1].index("--cursor") + 1] == "cur-2"
-        commit()
-        assert _read_state(state_file) == {
-            "addresses": {ADDRESS: {"events_cursor": "cur-3"}}
-        }
-
-    def test_cold_start_empty_timeline_no_state_write(self, state_file,
-                                                      holder_dir):
-        """空 timeline（首查即空頁 null）＝無游標可建——零寫入。"""
-        runner = _page_runner([_events_doc([], None)])
-        code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert (code, out, commit) == (0, "", None)
-        assert not os.path.exists(state_file)
-
-    def test_cold_start_then_new_events_alerts_only_delta(self, state_file,
-                                                          holder_dir):
-        """冷啟動建游標後，新事件才 advisory——歷史不重灌。"""
-        runner = _page_runner([
-            _events_doc([1], "cur-base"),
-            _events_doc([], None),
-        ])
-        _code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert out == ""  # 冷啟動不告警
-        commit()
-        runner2 = _page_runner([
-            _events_doc([2], "cur-next"),
-            _events_doc([], None),
-        ])
-        _code, out2, _ = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner2, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert "新到 1 封信" in out2
-        assert "新到 2" not in out2
-
-
-# ── 分頁：nextCursor 非空續翻、空頁終止、頁數上限 fail-soft ───────────
-
-
-class TestPaging:
-    def test_multipage_collected_before_advance(self, state_file, holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4, 5], "cur-mid"),
-            _events_doc([6], "cur-end"),
-            _events_doc([], None),
-        ])
-        _code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
+        assert code == 0
         ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
-        assert "新到 3 封信" in ctx
+        assert "a-marshal：holderless pending 1 封" in ctx
+        assert "b-marshal" not in ctx
+        err = capsys.readouterr().err
+        assert "b-marshal" in err
+        assert "unknown-address" in err
         commit()
-        assert _monitor_cursor(state_file) == "cur-end"
+        assert _last_pending(state_file, address="a-marshal") == 1
 
-    def test_paging_cap_exceeded_fail_soft(self, state_file, holder_dir):
-        """頁數上限（EVENTS_MAX_PAGES=10）→ raise → fail-soft：不 emit 不
-        推進（防 face 異常無限迴圈）。"""
-        _seed_monitor_state(state_file, "cur-0")
-        pages = [
-            _events_doc([i], f"cur-p{i}") for i in range(mod.EVENTS_MAX_PAGES)
-        ]
-        runner = _page_runner(pages)
+    def test_receive_status_failure_stderr_note(self, state_file, capsys):
+        """holder status 過（live=False）但 receive status 失敗 → 該門牌
+        stderr 註記＋零 stdout、baseline 不動。"""
+        _seed_baseline(state_file, 2)
+        runner = _seq_runner([
+            _status_doc(live=False),
+            mod.core.DutymailFaceError(
+                code="wait-timeout", error_class="wait-timeout",
+                message="busy", retryable=True, exit_code=6,
+            ),
+        ])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
-        assert len(runner.calls) == mod.EVENTS_MAX_PAGES
-        assert _monitor_cursor(state_file) == "cur-0"
+        err = capsys.readouterr().err
+        assert "fail-soft" in err
+        assert "wait-timeout" in err
+        assert _last_pending(state_file) == 2
 
-    def test_shape_drift_silent(self, state_file, holder_dir):
-        """items 非 list／nextCursor 形漂移 → DutymailFaceError → fail-soft。"""
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([_ok({"items": 3, "nextCursor": None})])
+    def test_pending_count_shape_drift_fail_soft(self, state_file, capsys):
+        """pendingCount 非非負整數 → shape-drift fail-soft（stderr 註記、
+        零 stdout——禁靜默歸零）。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _ok({"pendingCount": "many"}),
+        ])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
-
-    def test_unparsable_stdout_silent(self, state_file, holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner(["Traceback (most recent call last):"])
-        code, out, commit = mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
-        )
-        assert (code, out, commit) == (0, "", None)
-
-
-# ── session 隔離：per-session 游標＋per-session hold 判定 ─────────────
-
-
-class TestSessionIsolation:
-    def test_two_sessions_cursors_isolated(self, tmp_path, holder_dir):
-        """兩 session 游標互不干擾：s1 推進不影響 s2（各自 state 檔）。"""
-        s1 = str(tmp_path / "monitor" / "s1.json")
-        s2 = str(tmp_path / "monitor" / "s2.json")
-        _seed_monitor_state(s1, "cur-0")
-        raw1 = _stdin(session_id="s1")
-        raw2 = _stdin(session_id="s2")
-        runner1 = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out1, commit1 = mod.run(
-            raw1, [ADDRESS], runner=runner1, state_file=s1,
-            holder_state_dir=holder_dir,
-        )
-        assert "新到 1 封信" in out1
-        commit1()
-        assert _monitor_cursor(s1) == "cur-4"
-        # s2 冷啟動：s1 的推進不洩入 s2——靜默建自己的游標。
-        runner2 = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        code2, out2, commit2 = mod.run(
-            raw2, [ADDRESS], runner=runner2, state_file=s2,
-            holder_state_dir=holder_dir,
-        )
-        assert (code2, out2) == (0, "")  # 冷啟動靜默
-        commit2()
-        assert _monitor_cursor(s2) == "cur-4"
-        assert _monitor_cursor(s1) == "cur-4"  # s1 不被 s2 動
-
-    def test_hold_scoped_to_session(self, tmp_path, holder_dir):
-        """s1 holding 不使 s2 靜默——hold 判定讀 per-session duty-receive
-        state（session 隔離的 hold 面）。"""
-        s1 = str(tmp_path / "monitor" / "s1.json")
-        s2 = str(tmp_path / "monitor" / "s2.json")
-        _seed_monitor_state(s1, "cur-0")
-        _seed_monitor_state(s2, "cur-0")
-        _seed_holder_state(holder_dir, session_id="s1", epoch=4)
-        raw1 = _stdin(session_id="s1")
-        raw2 = _stdin(session_id="s2")
-        # s1：holding → status＋events 靜默推進
-        runner1 = _page_runner([
-            _status_doc(epoch=4, live=True),
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out1, _c1 = mod.run(
-            raw1, [ADDRESS], runner=runner1, state_file=s1,
-            holder_state_dir=holder_dir,
-        )
-        assert out1 == ""
-        # s2：無 holder state → 未 hold → advisory
-        runner2 = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
-        ])
-        _code, out2, _c2 = mod.run(
-            raw2, [ADDRESS], runner=runner2, state_file=s2,
-            holder_state_dir=holder_dir,
-        )
-        assert "本 session 未 hold——新到 1 封信" in out2
+        assert "shape-drift" in capsys.readouterr().err
 
 
 # ── monitor eligibility gate（cwd 鎖——照 AIR-225.1 模式）─────────────
 
 
 class TestEligibilityGate:
-    def test_cwd_outside_repo_silent_no_query_no_state(self, state_file,
-                                                       holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_cwd_outside_repo_silent_no_query_no_state(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         raw = _stdin(cwd="/tmp/other-project")
         code, out, commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []  # 零查詢
-        assert _monitor_cursor(state_file) == "cur-0"  # 零推進
+        assert not os.path.exists(state_file)  # 零推進
 
-    def test_cwd_missing_fail_closed(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_cwd_missing_fail_closed(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         raw = json.dumps({"hook_event_name": "UserPromptSubmit",
                           "session_id": "sess-1"})
         code, out, commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_cwd_subdirectory_of_repo_proceeds(self, state_file, holder_dir):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+    def test_cwd_subdirectory_of_repo_proceeds(self, state_file):
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         raw = _stdin(cwd=REPO + "/hooks/deep/dir")
         _code, out, _commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
-        assert "新到 1 封信" in out
+        assert "holderless pending 1 封" in out
 
     def test_prefix_sibling_path_not_eligible(self):
         assert mod.is_eligible(REPO + "-x/sub") is False
@@ -667,102 +428,90 @@ class TestEligibilityGate:
         assert mod.is_eligible(REPO) is True
         assert mod.is_eligible(REPO + "/sub") is True
 
-    def test_missing_session_id_zero_queries(self, state_file, holder_dir):
-        """缺 session_id → session-local 游標無 key——零查詢零輸出。"""
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_missing_session_id_zero_queries(self, state_file):
+        """缺 session_id → session-local baseline 無 key——零查詢零輸出。"""
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         raw = json.dumps({"hook_event_name": "UserPromptSubmit", "cwd": REPO})
         code, out, commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
 
-# ── fail-soft 決策表（照 AIR-225.1 模式）─────────────────────────────
+# ── fail-soft 決策表（stdin 面）───────────────────────────────────────
 
 
 class TestFailSoftContract:
-    def test_store_absent_stderr_note_zero_stdout(self, state_file,
-                                                  holder_dir, capsys):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([mod.core.DutymailFaceError(
+    def test_store_absent_stderr_note_zero_stdout(self, state_file, capsys):
+        """store 缺席（storage class）＝stderr 一行註記＋零 stdout exit 0。"""
+        runner = _seq_runner([mod.core.DutymailFaceError(
             code="store-incompatible", error_class="storage",
             message="pre-migration", retryable=False, exit_code=4,
         )])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         err = capsys.readouterr().err
         assert "store 缺席" in err
         assert "duty-monitor" in err
-        assert _monitor_cursor(state_file) == "cur-0"
 
-    def test_other_face_failure_stderr_note(self, state_file, holder_dir,
-                                            capsys):
-        _seed_monitor_state(state_file, "cur-0")
-        runner = _page_runner([mod.core.DutymailFaceError(
+    def test_unknown_address_stderr_note(self, state_file, capsys):
+        runner = _seq_runner([mod.core.DutymailFaceError(
             code="unknown-address", error_class="admission",
             message="no address with alias", retryable=False, exit_code=3,
         )])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         err = capsys.readouterr().err
         assert "dutymail face 失敗" in err
-        assert "unknown-address" in err  # 實際錯誤摘要隨行
+        assert "unknown-address" in err
 
-    def test_bad_stdin_json(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_bad_stdin_json(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         code, out, commit = mod.run(
             "{not json", [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_empty_stdin(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_empty_stdin(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         code, out, commit = mod.run(
             "", [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
 
-    def test_stdin_not_object(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_stdin_not_object(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         code, out, commit = mod.run(
             "[1,2]", [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
 
-    def test_unknown_event_silent(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_unknown_event_silent(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         raw = _stdin(event="Stop")
         code, out, commit = mod.run(
             raw, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
-    def test_no_address_flag_zero_stdout(self, state_file, holder_dir):
-        runner = _page_runner([AssertionError("must not call dutymail")])
+    def test_no_address_flag_zero_stdout(self, state_file):
+        runner = _seq_runner([AssertionError("must not call dutymail")])
         code, out, commit = mod.run(
             UPS_STDIN, [], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         assert (code, out, commit) == (0, "", None)
         assert runner.calls == []
 
     def test_args_misuse_exit2(self, tmp_path, monkeypatch):
         """註冊 args 誤用（未知 flag——argparse 拒絕）＝exit 2 大聲；
-        缺 --address 非誤用（舊 hook 語義——無監看責任靜默）。"""
+        缺 --address 非誤用（無監看責任靜默）。"""
         monkeypatch.setattr(sys, "stdin", io.StringIO(UPS_STDIN))
         with pytest.raises(SystemExit) as exc:
             mod.main(["--bogus-flag"])
@@ -770,18 +519,11 @@ class TestFailSoftContract:
 
     def test_main_commit_failure_exit0_stderr_note(self, tmp_path, capsys,
                                                    monkeypatch):
-        """游標推進失敗不擋 turn——advisory 照出、exit 0、stderr 註記
+        """baseline 寫入失敗不擋 turn——advisory 照出、exit 0、stderr 註記
         （寧重不漏——下次重複提醒）。"""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        state = tmp_path / "ai-guide" / "duty-monitor" / "sess-1.json"
-        os.makedirs(str(state.parent), exist_ok=True)
-        state.write_text(
-            json.dumps({"addresses": {ADDRESS: {"events_cursor": "cur-0"}}}),
-            encoding="utf-8",
-        )
-        runner = _page_runner([
-            _events_doc([4], "cur-9"),
-            _events_doc([], None),
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
 
         def boom(path, doc):
@@ -792,48 +534,40 @@ class TestFailSoftContract:
         rc = mod.main(["--address", ADDRESS], runner=runner)
         assert rc == 0
         captured = capsys.readouterr()
-        assert "新到 1 封信" in captured.out
-        assert "游標推進失敗" in captured.err
-        # cursor 不動——下次重複提醒
-        assert json.loads(state.read_text())["addresses"][ADDRESS][
-            "events_cursor"] == "cur-0"
+        assert "holderless pending 1 封" in captured.out
+        assert "baseline 寫入失敗" in captured.err
 
 
 # ── monitor ≠ holder：呼叫面僅唯讀 faces ─────────────────────────────
 
 
 class TestMonitorNotHolder:
-    def test_readonly_faces_only(self, state_file, holder_dir):
-        """全情境掃描：runner 呼叫僅 events／holder status——零 bind／
-        prepare／ack（三軸不互代理，monitor ≠ holder）。"""
-        _seed_monitor_state(state_file, "cur-0")
-        _seed_holder_state(holder_dir, epoch=4)
-        runner = _page_runner([
-            _status_doc(epoch=4, live=True),
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+    def test_readonly_faces_only(self, state_file):
+        """全情境掃描：runner 呼叫僅 holder status／receive status——零
+        bind／prepare／ack（三軸不互代理，monitor ≠ holder）。"""
+        runner = _seq_runner([
+            _status_doc(live=True),  # 門牌一：live 靜默
+            _status_doc(live=False), _recv_doc(pending=1),  # 門牌二：advisory
         ])
         mod.run(
-            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
+            UPS_STDIN, ["a-marshal", ADDRESS], runner=runner,
+            state_file=state_file,
         )
         for call in runner.calls:
             if call[0] == "holder":
                 assert call[1] == "status"
             else:
-                assert call[0] == "events"
+                assert call[0] == "receive" and call[1] == "status"
 
-    def test_state_file_0600_atomic(self, state_file, holder_dir):
-        """session-local 游標檔 0600＋atomic 寫（不留 tmp 殘屍）。"""
+    def test_state_file_0600_atomic(self, state_file):
+        """session-local baseline 檔 0600＋atomic 寫（不留 tmp 殘屍）。"""
         import stat
 
-        runner = _page_runner([
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         _code, _out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
         commit()
         mode = stat.S_IMODE(os.stat(state_file).st_mode)
@@ -844,24 +578,88 @@ class TestMonitorNotHolder:
         ]
         assert leftovers == []
 
-    def test_corrupt_state_treated_as_cold_start(self, state_file, holder_dir,
-                                                 capsys):
+    def test_corrupt_state_treated_as_cold_start(self, state_file, capsys):
         """state 檔壞形 → 視同冷啟動重建（stderr 註記）——不擋 turn。"""
         os.makedirs(os.path.dirname(state_file), exist_ok=True)
         with open(state_file, "w", encoding="utf-8") as fh:
             fh.write("{not json")
-        runner = _page_runner([
-            _events_doc([1], "cur-1"),
-            _events_doc([], None),
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
-            holder_state_dir=holder_dir,
         )
-        assert (code, out) == (0, "")  # 冷啟動語義——靜默重建
+        assert code == 0
+        assert "holderless pending 1 封" in out  # 冷 baseline＝None≠1——告警
         assert "監看 state" in capsys.readouterr().err
         commit()
-        assert _monitor_cursor(state_file) == "cur-1"
+        assert _last_pending(state_file) == 1
+
+    def test_baseline_value_shape_drift_treated_as_cold(self, state_file,
+                                                        capsys):
+        """baseline 值形漂移（非整數）→ stderr 註記後視同 None 重建。"""
+        _seed_baseline(state_file, "many")
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        _code, out, _commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert "holderless pending 2 封" in out
+        assert "baseline" in capsys.readouterr().err
+
+
+# ── session 隔離：per-session baseline ────────────────────────────────
+
+
+class TestSessionIsolation:
+    def test_two_sessions_baselines_isolated(self, tmp_path):
+        """兩 session baseline 互不干擾：s1 推進不影響 s2（各自 state 檔）。"""
+        s1 = str(tmp_path / "monitor" / "s1.json")
+        s2 = str(tmp_path / "monitor" / "s2.json")
+        raw1 = _stdin(session_id="s1")
+        raw2 = _stdin(session_id="s2")
+        runner1 = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        _code, out1, commit1 = mod.run(
+            raw1, [ADDRESS], runner=runner1, state_file=s1,
+        )
+        assert "holderless pending 2 封" in out1
+        commit1()
+        assert _last_pending(s1) == 2
+        # s2 冷啟動：s1 的 baseline 不洩入 s2——同值也各自告警一次。
+        runner2 = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code2, out2, commit2 = mod.run(
+            raw2, [ADDRESS], runner=runner2, state_file=s2,
+        )
+        assert code2 == 0
+        assert "holderless pending 2 封" in out2
+        commit2()
+        assert _last_pending(s2) == 2
+        assert _last_pending(s1) == 2  # s1 不被 s2 動
+
+    def test_s1_silent_does_not_silence_s2(self, tmp_path):
+        """s1 邊界 live=True 靜默（當時有 holder）不使 s2 靜默——per-session
+        baseline 各自判定。"""
+        s1 = str(tmp_path / "monitor" / "s1.json")
+        s2 = str(tmp_path / "monitor" / "s2.json")
+        runner1 = _seq_runner([_status_doc(live=True)])
+        raw1 = _stdin(session_id="s1")
+        _code, out1, _c1 = mod.run(
+            raw1, [ADDRESS], runner=runner1, state_file=s1,
+        )
+        assert out1 == ""
+        runner2 = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
+        ])
+        raw2 = _stdin(session_id="s2")
+        _code, out2, _c2 = mod.run(
+            raw2, [ADDRESS], runner=runner2, state_file=s2,
+        )
+        assert "holderless pending 1 封" in out2
 
 
 # ── 舊全域 scbus 檔零讀取＋monitor state 路徑形 ──────────────────────
@@ -888,17 +686,13 @@ class TestLegacyGlobalStateZeroRead:
     def test_legacy_global_file_never_created(self, tmp_path, monkeypatch):
         """跑一輪全流程——XDG state 樹下零 scbus-address-monitor 檔。"""
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        holder_dir = str(tmp_path / "holder")
-        _seed_holder_state(holder_dir, session_id="s9", epoch=4)
-        runner = _page_runner([
-            _status_doc(epoch=4, live=True),
-            _events_doc([4], "cur-4"),
-            _events_doc([], None),
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
         ])
         raw = _stdin(session_id="s9")
-        code, out, commit = mod.run(raw, [ADDRESS], runner=runner,
-                                    holder_state_dir=holder_dir)
-        assert (code, out) == (0, "")
+        code, out, commit = mod.run(raw, [ADDRESS], runner=runner)
+        assert code == 0
+        assert "holderless pending 1 封" in out
         commit()
         for root, _dirs, files in os.walk(str(tmp_path)):
             for name in files:
@@ -919,45 +713,36 @@ class TestRunnerEnvShim:
             "if argv[:2] == ['holder', 'status']:\n"
             "    print(json.dumps({'schemaVersion': 1, 'ok': True,"
             " 'result': {'addressId': 'a1', 'alias': 'ai-guide-marshal',"
-            " 'bindingEpoch': 0, 'leaseExpiresAtUs': None, 'live': False}}))\n"
+            " 'bindingEpoch': 4, 'leaseExpiresAtUs': None, 'live': False}}))\n"
             "    raise SystemExit(0)\n"
-            "cur = argv[argv.index('--cursor') + 1] if '--cursor' in argv"
-            " else None\n"
-            "if cur == 'tok-0':\n"
-            "    items = [{'atUs': 1, 'eventSeq': 9, 'kind': 'accepted',"
-            " 'payloadJson': '{}'}]\n"
+            "if argv[:2] == ['receive', 'status']:\n"
             "    print(json.dumps({'schemaVersion': 1, 'ok': True,"
-            " 'result': {'items': items, 'nextCursor': 'tok-9'}}))\n"
-            "else:\n"
-            "    print(json.dumps({'schemaVersion': 1, 'ok': True,"
-            " 'result': {'items': [], 'nextCursor': None}}))\n",
+            " 'result': {'addressId': 'a1', 'bindingEpoch': 4,"
+            " 'lastDeliverySeq': 5, 'liveBatch': None,"
+            " 'pendingCount': 1, 'primaryCursor': 5}}))\n"
+            "    raise SystemExit(0)\n",
             encoding="utf-8",
         )
         shim.chmod(0o755)
         return shim
 
     def test_env_bin_shim_main_flow(self, tmp_path, monkeypatch, capsys):
-        """DUTYMAIL_BIN 指向 shim——main() 真 subprocess 整合面：暖游標
-        tok-0 → 新 1 封 → advisory＋游標推進 tok-9。"""
+        """DUTYMAIL_BIN 指向 shim——main() 真 subprocess 整合面：holderless
+        pending 1 → advisory＋baseline 寫入。"""
         monkeypatch.setenv("DUTYMAIL_BIN", str(self._shim(tmp_path)))
         monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        state = tmp_path / "ai-guide" / "duty-monitor" / "sess-1.json"
-        os.makedirs(str(state.parent), exist_ok=True)
-        state.write_text(
-            json.dumps({"addresses": {ADDRESS: {"events_cursor": "tok-0"}}}),
-            encoding="utf-8",
-        )
         monkeypatch.setattr(sys, "stdin", io.StringIO(UPS_STDIN))
         rc = mod.main(["--address", ADDRESS])
         assert rc == 0
         captured = capsys.readouterr()
-        assert "新到 1 封信" in captured.out
+        assert "holderless pending 1 封" in captured.out
+        state = tmp_path / "ai-guide" / "duty-monitor" / "sess-1.json"
         assert json.loads(state.read_text())["addresses"][ADDRESS][
-            "events_cursor"] == "tok-9"
+            "last_pending"] == 1
         # main() 未注入 runner——走 core._default_runner＋env binary 解析
 
 
-# ── governance 接線：registrations 雙事件獨立 group＋manifest 換名 ────
+# ── governance 接線：registrations 單一 marshal 條目＋manifest ────────
 
 
 def _registration(rel):
@@ -995,23 +780,23 @@ class TestRegistrationWiring:
             assert entry["args"][1:] == ["--address", "ai-guide-marshal"]
 
     def test_zcode_group_composition_new_topology(self):
-        """UPS groups＝compact-restore-inject＋duty-receive＋duty-monitor
-        （monitor group 兩門牌條目——marshal＋primary，args 照舊）。"""
+        """UPS groups＝compact-restore-inject＋duty-receive＋duty-monitor（
+        monitor group 單一 marshal 條目——primary 死門牌已退役）。"""
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
         ss = _groups(doc, "SessionStart")
         assert _hook_scripts(ups[0]) == ["compact-restore-inject.py"]
         assert _hook_scripts(ups[1]) == ["duty_receive.py"]
-        assert _hook_scripts(ups[2]) == [
-            "duty_mailbox_monitor.py", "duty_mailbox_monitor.py",
-        ]
-        assert ups[2]["hooks"][1]["args"][1:] == [
-            "--address", "ai-guide-primary",
-        ]
+        assert _hook_scripts(ups[2]) == ["duty_mailbox_monitor.py"]
         assert _hook_scripts(ss[0]) == ["duty_receive.py"]
-        assert _hook_scripts(ss[1]) == [
-            "duty_mailbox_monitor.py", "duty_mailbox_monitor.py",
-        ]
+        assert _hook_scripts(ss[1]) == ["duty_mailbox_monitor.py"]
+
+    def test_primary_dead_entry_retired_everywhere(self):
+        """ai-guide-primary 死門牌條目退役 pin（AC——rg 零命中的測試面
+        鏡像）：zcode/cc registrations 零殘留。"""
+        for rel in ("registrations/zcode.json", "registrations/cc.json"):
+            raw = (gov.MANIFEST_PATH.parent / rel).read_text(encoding="utf-8")
+            assert "ai-guide-primary" not in raw
 
     def test_zcode_template_existing_entries_untouched(self):
         doc = _registration("registrations/zcode.json")
