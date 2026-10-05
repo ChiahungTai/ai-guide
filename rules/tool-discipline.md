@@ -1,5 +1,8 @@
 ---
 harness-scope: neutral
+bundle-projection: pointer
+pointer-target: tool-discipline
+bootstrap-pointer: "工具查詢路由與 fd/rg 分工＝symbol-query-routing（符號優先 code-reality）；視覺判讀走 vision-review agent，spawn prompt 必指定工具。意圖對應 skill 先讀再動手再派發（換 agent 不換方法論）。Python 一律 `uv run python`/`uv run pytest` 前綴（禁 python/python3/PYTHONPATH）；pytest 背景跑、禁外部 timeout/gtimeout（macOS 無此命令）；hook 註冊面例外依 owner runtime 契約但仍以 uv 驗證；多行 python -c 禁換行後 # 註解。禁 sed 修改 .py/.md/.yaml/.json/.toml（僅可過濾流）；Edit/Write 前先 Read、外部改動後重讀，共享檔先 rg 唯一錨點。被明確拒絕的動作（approval/guard/hook deny）禁以換工具、入口或載體規避同一被拒效果；可續唯讀診斷或 state 變化後走原路徑重試附原拒因；逃生口（如 guard `--no-verify`）依源慣例記卡 notes。閘門命令禁 pipe 到 tail/grep（重導再讀或 pipefail）。zsh 動態 flags 用陣列禁純量。已完整讀過的檔案重查用 rg/offset/limit 禁全讀。長命令與 agent 預設非阻塞、派發配回收；背景化僅 schema 有 run_in_background 才傳 true。獨立呼叫同 block 批次發（下步需本步結果才算依賴）；lint/type/test 組單命令、各自重導標失敗段再讀。輸出＝繁中＋英文術語。深層（Edit 失敗階梯/zsh 細則/Read 案例）＝tool-discipline skill。"
 ---
 
 # 工具紀律
