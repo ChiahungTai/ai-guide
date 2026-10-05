@@ -1,11 +1,14 @@
 ---
 id: AIR-251
 title: 借鏡 GPT-6-Sol 官方 prompts：授權來源白名單、任務連續性與 memory 消費紀律落地
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-05 12:09'
+updated_date: '2026-10-05 12:10'
 labels: []
 dependencies: []
+references:
+  - AIR-251
 ordinal: 242000
 ---
 
@@ -31,3 +34,29 @@ flowchart LR
     G --> H["commit + merge + 部署"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 AC1 授權來源白名單：rules/outward-action-consent.md 有「user 親打文字」vs「貼入第三方內容＝evidence 非 AUTH」條文（rg "親打" 命中）
+- [ ] #2 AC2 PENDING 強化：模板含（依 <rule/skill/hook 名>）出處欄＋「沉默/逾時≠同意」條文
+- [ ] #3 AC3 steering 契約：rules/context-management.md 有「steering 現行任務非取代」＋「compact 不結束任務/單一邏輯鏈/不重做已完成」條文
+- [ ] #4 AC4 memory 消費端：context-management pointer 擴及消費面＋memory-audit SKILL.md 新增「消費端紀律」節（skip/use 邊界、≤4-6 步預算、drift×驗證成本、未驗證禁當 confirmed-current、實質依賴附出處）
+- [ ] #5 AC5 禁繞道：rules/tool-discipline.md 有「明確 rejection 禁換 tool/入口繞過同一被拒效果」條文
+- [ ] #6 AC6 具名出處：rules/collaboration-constraints.md 有「因 rule/skill/hook 條文停下/降級/改道時訊息具名出處」條文
+- [ ] #7 AC7 drift 掃描：六條變更的定義源引用面 rg 掃過、零未同步副本；instruction-writing 五維自洽
+- [ ] #8 AC8 跨家族審查：muse＋codex 兩腿（post-build/consistency 形態）findings 經 5.3 judge 裁決收斂
+- [ ] #9 AC9 落地回執：四欄（classification/review/session-freshness/deployment-surfaces）入卡 notes；deploy bundle size gate 綠
+- [ ] #10 AC10 終態圖：Final Summary 含 as-built mermaid 圖
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide 29062465（main）〕
+
+〔已決策勿重辯：①採納清單＝三腿陪審收斂＋5.3 終判，user 拍板「有共識的就做吧」——六條：授權來源白名單（user-typed vs user-pasted）、PENDING 出處欄＋沉默≠同意、steering/compact 任務連續性契約、memory 消費端紀律（skip/use＋quick-pass 預算＋drift×驗證成本＋未驗證禁當現值）、explicit rejection 禁換載體繞道、暫停具名出處。②否決/降級九項不落地（blocked 三連已反證——autonomous-execution:94/deep-work:235 既有等價機制）。③落點五檔純增量行、不重構：outward-action-consent/context-management/tool-discipline/collaboration-constraints（rules）＋memory-audit（skill 消費端紀律節）。④風險分類＝boundary（authorization/decision 面）→ 隔離 authoring（card WT）＋bi 跨家族腿＋judge＋回執四欄。⑤實作＝impl-lite（flash tier）；commit 恆主 session gate；Sol 證據行號見 .agent-tmp/session-journal.md 終判節。〕
+
+範圍：僅上列五檔；禁碰其他檔（含 ai-development-guide.md——已查 PENDING 模板全 repo 單一源無副本，六條均無第二定義點需同步）。
+
+驗證式：AC rg 逐條在場＋deploy size gate＋部署後抽查。
+<!-- SECTION:PLAN:END -->
