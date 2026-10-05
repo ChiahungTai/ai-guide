@@ -4,7 +4,7 @@ title: guide 本體壓縮——user 逐段裁決八項（−720B）
 status: In Progress
 assignee: []
 created_date: '2026-10-05 14:25'
-updated_date: '2026-10-05 14:25'
+updated_date: '2026-10-05 14:29'
 labels: []
 dependencies: []
 references:
@@ -47,3 +47,9 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2dfba0a6（main）〕〔已決策勿重辯：八項壓縮全文＝user 於對話中逐項確認之 preview 版本（驗證表一句化/文檔角色壓短/UC 段頭合併/Marshal 輕壓/AIR-135 條2 指針合併/入口行微壓/架構尾句去重/量化鐵律短指針）；判準句逐字保留清單＝四類未決、三級分級、單向門恆停、outward 唯一準據、indexed identity 判準、鐵律本體四條、Summary Instructions 全段、跨 repo 主權、Solo 工作流、AIR-135 條 1/3/4。範圍：僅 ai-development-guide.md。審查形態：user 逐段裁決為主權威＋muse 腿機械/consistency 兜底。〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[收斂 2026-10-05] 八項壓縮全落地（guide 6,518→5,880B，實收 −638B；bundle 29,378→28,740B，headroom 1,980B）；審查權威＝user 逐段裁決（8/8 對話確認，含壓縮前後對照）＋muse 兜底腿 job-muvcg94b（consistency/drift/diff 三軸全過；3 個 🟢 findings 均為 user 已確認項，意圖已認）；判準句 rg 驗證全在。Receipt: classification=boundary（guide 語義壓縮）／review=user 逐段裁決 8/8＋muse job-muvcg94b 兜底 converged／session-freshness=fresh／deployment-surfaces=pending（merge 後補值）
+<!-- SECTION:NOTES:END -->

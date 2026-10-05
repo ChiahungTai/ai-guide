@@ -7,7 +7,7 @@
 ## Session 開場導引
 
 - **先定位現在在哪**：有 STATE.md 先讀最近 session 觀察，再以 active card／board 狀態與 card notes／EP 進度節核對目前工作、已完成處與 resume point；觀察層不能取代現況來源。
-- **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；需求釐清、審查、修復等分支及各步方法論查 skills/AGENTS.md 索引與對應 skill。
+- **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；分支與各步方法論＝skills/AGENTS.md 索引。
 - **skill 優先序**：skill 方法論衝突時，ai-guide 部署的 skills 優先於 harness 內建／marketplace bundled 同功能 skill。
 - **需要跨 context 接續時先結算**：context 將耗盡先把進度與待辦寫回 EP／card；同一工作稍後續跑用 /at，交給另一個 session／repo／provider 用 /handoff。
 
@@ -15,21 +15,15 @@
 
 修改後須實跑，再查語法/import 並依風險驗證；純文檔/註解例外見 [must-execute-before-complete.md](rules/must-execute-before-complete.md)，順序/消費端要求見 [quality-constraints.md](rules/quality-constraints.md)。
 
-| 風險 | 範圍 | 驗證深度 |
-|---|---|---|
-| 高 | 核心架構、跨 context domain service、會計/風控總量與 sizing、數據庫、安全、重大 API | 完整驗證相關功能 |
-| 中 | 新功能、演算法/性能優化 | 核心功能測試＋經驗分析 |
-| 低 | 樣式、文檔、配置 | 至少確認語法；執行例外依上述 rule |
+風險分級驗證：高（核心架構/跨 context service/會計風控 sizing/DB/安全/重大 API）完整驗證；中（新功能/演算法性能優化）核心功能測試＋經驗分析；低（樣式/文檔/配置）至少確認語法。
 
 評估提供相對複雜度、風險、依賴、里程碑與排序；不預測絕對耗時或精確進度。
 
 ## UC-Driven Development
 
-功能先定義 Use Case。AGENTS.md Capabilities＝已完成能力索引，backlog＝承諾池；多卡優先序可由 project blueprint dependency graph 決定（backbone），未被支撐的卡走 kanban triage；操作/refs/precheck 單一源為 kanban-board skill。
+功能先定義 Use Case。AGENTS.md Capabilities＝已完成能力索引，backlog＝承諾池；多卡優先序＝project blueprint dependency graph（backbone），未支撐卡走 kanban triage；操作/refs/precheck 單一源＝kanban-board skill；UC 狀態流轉與 Capabilities 寫入＝metadata-sync skill。
 
-文檔角色：AGENTS.md＝導航/完成能力 what/where；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph（機械產生；手繪 dependency-graph.md 已由 CR 取代——mosaic/ai-guide 均不再維護）；backlog/＝任務卡。長文按需 link，禁全量 transclude。
-
-UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
+文檔角色：AGENTS.md＝導航/完成能力；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph（手繪版已退役）；backlog/＝任務卡。長文按需 link 禁全量 transclude。
 
 規模：simple（單檔小 tweak/bug）→card AC 直行；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→owning 卡＋**card Planning Contract**；full（架構/跨模組/🔴高風險/新 boundary）→standalone EP。promotion／public contract 判準、bounded child、六欄定義＝execution-plan skill 流程規模分級節。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
 
@@ -41,14 +35,14 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 ## Marshal 姿勢（互動 session 預設）
 
-需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解 → 派工依 model-routing resolver → 機械閘照跑 → 一般工程取捨自判、批次回報，檢查點照 quality-constraints。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外（含互動 commit 機械例外）恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution，不適用本節。implementation work unit 一律 spawn（定義與 fallback＝agents/AGENTS.md execution contract；canonical 控制面直寫由 admission guard 機械擋）。
+需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解→派工（model-routing resolver）→機械閘照跑→工程取捨自判批次回報（檢查點＝quality-constraints）。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution。implementation work unit 一律 spawn（定義/fallback＝agents/AGENTS.md execution contract）。
 
 ## AIR-135 協作 invariant（Marshal 必守）
 
 定義源：條 1/4＝所指 skill；條 2 freshness 判準＝本節。
 
 1. **instruction owner**：durable mechanism 誕生弧必取 owner；coverage 看 owner 不看文件數。predicate 單一源＝[instruction-writing](skills/instruction-writing/SKILL.md)；接線＝implement 5b＋post-build coverage gate。
-2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。freshness 判準＝indexed identity 對比（含 dirty WT/content；HEAD-only ≠ fresh）；機械求值＝code-reality `freshness` face，消費語法單一源＝cr-query「Stale graph check」。消費面＝review-engine＋cr-query。
+2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。freshness 判準＝indexed identity 對比（含 dirty WT/content；HEAD-only ≠ fresh）；機械求值＝code-reality `freshness` face（消費語法/消費面＝cr-query）。
 3. **advisory startup**：startup hook 只 advisory；correctness gate 在 consumer boundary。
 4. **supervision fence**：弱訊號只 wake；hard death／redispatch 需 authoritative evidence＋scope fence。契約＝[agent-workflow](skills/agent-workflow/SKILL.md)。
 
@@ -58,11 +52,11 @@ UC 狀態流轉與 Capabilities 寫入格式見 metadata-sync skill。
 
 ## 架構設計紀律
 
-spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 [design-thinking.md](rules/design-thinking.md)，SOLID 見 [edit-discipline.md](rules/edit-discipline.md)；結構查證用 arch-thinking，介面合約設計（API／模組邊界／公開介面）用 arch-thinking 的 interface-design 側檔。
+spec/EP/implement/review 用 Clean Architecture＋DDD 視角，不強制模板/過度分層；決策證據與直接／間接後果見 design-thinking，SOLID 見 edit-discipline；結構查證與介面合約設計（interface-design 側檔）＝arch-thinking。
 
 ## 量化交易專屬鐵律
 
-- 數據完整性優先：損壞比缺失更危險，禁靜默傳播（正文與 Crash-Only 適用範圍見 [quality-constraints.md](rules/quality-constraints.md)）。
+- 數據完整性優先：損壞比缺失更危險，禁靜默傳播（適用範圍＝quality-constraints）。
 - 回測完全可重現（hash＋config＋seed），波動 >0.01 必須重做。
 - 狀態外部化；Live/Backtest 共用邏輯，避免模式分支。
 - 隨機 seed 必須可注入，避免 np.random。
