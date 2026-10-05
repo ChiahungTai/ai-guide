@@ -175,20 +175,9 @@
             "type": "process",
             "command": "{{HOOK_PYTHON}}",
             "args": [
-              "{{REPO}}/hooks/scbus-address-pending-reminder.py",
+              "{{REPO}}/hooks/duty_receive.py",
               "--address",
               "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          },
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/scbus-address-pending-reminder.py",
-              "--address",
-              "ai-guide-primary"
             ],
             "enabled": true,
             "timeoutMs": 10000
@@ -201,9 +190,20 @@
             "type": "process",
             "command": "{{HOOK_PYTHON}}",
             "args": [
-              "{{REPO}}/hooks/duty_receive.py",
+              "{{REPO}}/hooks/duty_mailbox_monitor.py",
               "--address",
               "ai-guide-marshal"
+            ],
+            "enabled": true,
+            "timeoutMs": 10000
+          },
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/duty_mailbox_monitor.py",
+              "--address",
+              "ai-guide-primary"
             ],
             "enabled": true,
             "timeoutMs": 10000
@@ -218,20 +218,9 @@
             "type": "process",
             "command": "{{HOOK_PYTHON}}",
             "args": [
-              "{{REPO}}/hooks/scbus-address-pending-reminder.py",
+              "{{REPO}}/hooks/duty_receive.py",
               "--address",
               "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          },
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/scbus-address-pending-reminder.py",
-              "--address",
-              "ai-guide-primary"
             ],
             "enabled": true,
             "timeoutMs": 10000
@@ -244,9 +233,20 @@
             "type": "process",
             "command": "{{HOOK_PYTHON}}",
             "args": [
-              "{{REPO}}/hooks/duty_receive.py",
+              "{{REPO}}/hooks/duty_mailbox_monitor.py",
               "--address",
               "ai-guide-marshal"
+            ],
+            "enabled": true,
+            "timeoutMs": 10000
+          },
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/duty_mailbox_monitor.py",
+              "--address",
+              "ai-guide-primary"
             ],
             "enabled": true,
             "timeoutMs": 10000

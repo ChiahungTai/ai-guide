@@ -1029,8 +1029,11 @@ class TestRegistrationWiring:
         manifest = tomllib.loads(raw.decode("utf-8"))
         assert "hooks/duty_receive.py" in manifest["surfaces"]["hooks"]["scripts"]
 
-    def test_scbus_entries_untouched(self):
-        """原 scbus-address-pending-reminder 條目數不減（zcode=4、cc=2）。"""
+    def test_duty_receive_entries_untouched(self):
+        """AIR-254.4 monitor 改名重寫不動 duty-receive 條目（zcode=2、cc=2）。
+        （原 test_scbus_entries_untouched pin 的 scbus-address-pending-reminder
+        條目已由 AIR-254.4 裁定退役——guard 前提失效，改 pin 相鄰卡不可動的
+        duty-receive 接線面。）"""
         zc = self._doc("registrations/zcode.json")
         cc = self._doc("registrations/cc.json")
 
@@ -1040,10 +1043,9 @@ class TestRegistrationWiring:
                 for g in groups:
                     for h in g.get("hooks", []):
                         args = h.get("args", [])
-                        if any("scbus-address-pending-reminder.py" in a
-                               for a in args):
+                        if any("duty_receive.py" in a for a in args):
                             n += 1
             return n
 
-        assert count(zc) == 4
+        assert count(zc) == 2
         assert count(cc) == 2

@@ -86,7 +86,7 @@
           "type": "command",
           "command": "{{HOOK_PYTHON}}",
           "args": [
-            "{{REPO}}/hooks/scbus-address-pending-reminder.py",
+            "{{REPO}}/hooks/duty_receive.py",
             "--address",
             "ai-guide-marshal"
           ],
@@ -100,7 +100,7 @@
           "type": "command",
           "command": "{{HOOK_PYTHON}}",
           "args": [
-            "{{REPO}}/hooks/duty_receive.py",
+            "{{REPO}}/hooks/duty_mailbox_monitor.py",
             "--address",
             "ai-guide-marshal"
           ],
@@ -195,7 +195,7 @@
           "type": "command",
           "command": "{{HOOK_PYTHON}}",
           "args": [
-            "{{REPO}}/hooks/scbus-address-pending-reminder.py",
+            "{{REPO}}/hooks/duty_receive.py",
             "--address",
             "ai-guide-marshal"
           ],
@@ -209,7 +209,7 @@
           "type": "command",
           "command": "{{HOOK_PYTHON}}",
           "args": [
-            "{{REPO}}/hooks/duty_receive.py",
+            "{{REPO}}/hooks/duty_mailbox_monitor.py",
             "--address",
             "ai-guide-marshal"
           ],

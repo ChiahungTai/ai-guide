@@ -122,32 +122,30 @@
   session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手
   不動搖 ownership。因監控需求 acquire/renew/force-reclaim canonical address
   皆違反本節。
-- **interaction-boundary hook monitor（AIR-225.1 建面、AIR-233 消費面重寫）**：
-  `hooks/scbus-address-pending-reminder.py`（zcode UserPromptSubmit＋SessionStart
-  各獨立 sync 條目，註冊單一源＝governance registrations）以 delivery-event
-  timeline 為唯一資料源——`scbus address receipts --address <addr>
-  --after-cursor <emitted_cursor> --limit N` 查新到收件紀錄，新到 N 封注入一行
-  （計數＋語義校注「accepted≠送達 UI≠內文可讀」＋讀取指針；count-only——禁
-  body/preview 注入、禁 recv/ack/acquire；fail-soft＝零 stdout exit 0 不擋
-  turn）。consumer-owned 狀態＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/
-  scbus-address-monitor.json`（按 address 記 `emitted_cursor`；atomic 寫、
-  **advance-after-emit**——stdout 寫出成功後才推進，寫失敗寧可下次重複提醒）。
-  冷啟動與 cursor 損壞分離：冷啟動（無 state 檔——正常首輪）只建 cursor 不
-  告警，防歷史洪水；cursor 損壞顯性 reconcile——stderr 警示＋提醒行「
-  （cursor 重建）」注記，視同冷啟動重建＝**已知 miss window**（last-good-save
-  後未提醒事件整批錯過——非寧重不漏，self-heal 取捨記錄在案；state 檔無鎖，
-  多 address／多 consumer 並發擴張時需補 filelock/CAS——現行單 address 風險
-  低，後果恆為重複提醒）。**monitor eligibility gate**：session cwd 在本 repo
+- **interaction-boundary hook monitor（AIR-225.1 建面；AIR-233 scbus receipts
+  消費面從未落地——AIR-254.4 降級重寫為 dutymail 面）**：
+  `hooks/duty_mailbox_monitor.py`（zcode UserPromptSubmit＋SessionStart 各
+  獨立 sync 條目，註冊單一源＝governance registrations；AIR-225.1/233 舊
+  提醒 hook 檔隨重寫退役）以 dutymail 唯讀面為資料
+  源——`events --kind accepted`（keyset paging，retained cursor）＋`holder
+  status`（hold 偵測）。本 session holding（duty-receive per-session state
+  有 token 且 status bindingEpoch 對上＋live=true）→ 靜默＋游標推進至 head
+  （收信處理面單一源＝duty_receive 處理器；monitor ≠ holder——禁
+  bind/prepare/ack，三軸不互代理）；未 hold → session 本地游標起新事件
+  N>0 出一行 advisory（「本 session 未 hold——新到 N 封信（recovery
+  window…）」——「本 session 提醒到哪」語義，絕不宣稱 global 狀態、不觸
+  human seen/done）；N=0／冷啟動（只建游標，防歷史洪水）靜默。游標＝
+  `${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-monitor/
+  <safe_session_id>.json`（session-local——兩 session 游標互不干擾；按
+  address 記 `events_cursor`；0600 atomic 寫、**advance-after-emit**——
+  stdout 寫出成功後才推進，寫失敗寧可下次重複提醒；閒置完全安靜＝註冊面
+  即邊界，無背景迴圈/watcher）。**舊全域游標檔
+  `scbus-address-monitor.json` 隨本重寫停用——不刪不改零讀取（留歷史
+  對帳）**。**monitor eligibility gate**：session cwd 在 script 所在 repo
   內才查詢／提醒／推進（user-level 註冊跨專案觸發——防錯誤 session 吃掉
-  watermark；最低限度字面前綴鎖，card WT 路徑不在鎖內——WT session 不提醒
-  不推進，寧重不漏方向安全）。face 失敗 hook 呈 **degraded**（零 stdout
-  exit 0；stderr 分註：缺席型——CLI 拒絕子命令——「receipts face 未落地
-  ——sc-router 卡追蹤中」，其他失敗型「receipts face 不可用（細節見
-  stderr）」帶實際錯誤摘要；不退化相容 `ls --pending`——snapshot 與
-  timeline 語義不同，雙路徑
-  fallback 已裁示不採）；face 落地即自動生效（同一呼叫面）。人工輪詢（上段
-  開場快照）保留為 point-in-time fallback——hook 未註冊機器、degraded／
-  fail-soft 靜默時的兜底皆走它。
+  游標；fail-closed——cwd 缺席亦不推進）。face 失敗 hook 呈 fail-soft
+  （零 stdout exit 0；stderr 註記帶實際錯誤摘要）；人工輪詢
+  （`dutymail receive status`）保留為 point-in-time fallback。
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
 - ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
