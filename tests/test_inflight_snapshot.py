@@ -156,6 +156,38 @@ class TestScbusSessions:
         assert row["age_min"] == 15
         assert out["registry_total"] == 4
 
+    def test_name_column_reflects_seam_sidecar_label(
+        self, tmp_path: Path
+    ) -> None:
+        """路 2 吃 session_discovery seam（AIR-254.1）——name 欄＝seam label.
+
+        seam label 合併 sidecar 優先：sidecar 有值時 name 欄顯示 sidecar
+        label（非 scbus name）——證明 rows 來自 seam 正規化層非本檔直查。
+        """
+        payload = {
+            "count": 1,
+            "sessions": [
+                {
+                    "session_id": "sess_sidecar-1",
+                    "name": "sc-name",
+                    "workspace_root": "/Users/ctai/Github/ai-guide",
+                    "status": "active",
+                    "observed_liveness": "live",
+                    "age": 60,
+                }
+            ],
+        }
+        seam = load_module("scripts/session_discovery.py")
+        sidecar = tmp_path / "labels.json"
+        seam.set_label("sess_sidecar-1", "seam-tag", sidecar=sidecar)
+
+        def fake_run(cmd: list[str], **kwargs: object) -> str:
+            assert cmd[0] == "scbus"
+            return json.dumps(payload)
+
+        out = _mod.collect_scbus_sessions(run=fake_run, sidecar=sidecar)
+        assert out["rows"][0]["name"] == "seam-tag"
+
 
 class TestFaultTolerance:
     def test_single_source_failure_marks_unavailable(self, tmp_path: Path) -> None:

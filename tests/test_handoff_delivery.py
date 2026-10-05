@@ -5,7 +5,8 @@
   ownership-restored；receipt＝queued-visible 非完成（scbus proto 無 ack／
   user-read 第三態，transport receipt ≠ semantic ACK 禁互升格）。
 - target 解析：已知 session 第一路＝scbus send；未知／歧義／self／ended
-  fail-closed 降 manual paste fallback。
+  fail-closed 降 manual paste fallback；rows 形狀＝session_discovery seam
+  正規化 rows（`label` 鍵——AIR-254.1）。
 - consent gate：跨 ownership envelope 直送必帶 consent.evidence（AI 發起
   逐次授權的 AUTH 指針）；bus 凍結面 body ≤8192。
 - 審計錨條款：完成宣稱須 receipt（command_id）＋ACK（correlation）同時對上。
@@ -47,16 +48,20 @@ def _ack(reply_type: str, in_reply_to: str = "mid-1", **extra: str) -> dict:
 
 def _row(
     sid: str = "sess-a",
-    name: str | None = None,
+    label: str | None = None,
     status: str = "active",
     workspace_root: str = "/Users/ctai/Github/ai-guide",
 ) -> dict:
+    """seam `session_discovery list --json` 正規化 row 形狀（AIR-254.1）。"""
     return {
         "session_id": sid,
-        "name": name,
-        "status": status,
         "harness": "zcode",
         "workspace_root": workspace_root,
+        "label": label,
+        "liveness": "live",
+        "status": status,
+        "last_seen_iso": None,
+        "age_min": None,
     }
 
 
@@ -170,13 +175,13 @@ class TestResolveTarget:
         assert r.session_id == "sess-a"
         assert r.cross_ownership is False
 
-    def test_name_match_other_workspace_is_known_direct_cross_ownership(self) -> None:
+    def test_label_match_other_workspace_is_known_direct_cross_ownership(self) -> None:
         r = _mod.resolve_target(
             "southchariot-worker",
             [
                 _row(
                     sid="sess-b",
-                    name="southchariot-worker",
+                    label="southchariot-worker",
                     workspace_root="/Users/ctai/Github/southchariot",
                 )
             ],
@@ -185,6 +190,16 @@ class TestResolveTarget:
         )
         assert r.disposition == _mod.TargetDisposition.KNOWN_DIRECT
         assert r.cross_ownership is True
+
+    def test_scbus_name_key_no_longer_matched(self) -> None:
+        """rows 鍵＝seam `label`（AIR-254.1）——舊 `name` 鍵殘留不作匹配依據。"""
+        rows = [_row(sid="sess-b", label=None)]
+        rows[0]["name"] = "legacy-name"  # 非 seam 形狀的殘鍵
+        r = _mod.resolve_target(
+            "legacy-name", rows, own_session_id="s", own_workspace_root="/w"
+        )
+        assert r.disposition == _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.reason == "no-match"
 
     def test_no_match_falls_back_to_manual(self) -> None:
         r = _mod.resolve_target(
@@ -204,7 +219,7 @@ class TestResolveTarget:
         assert r.reason == "target-ended"
 
     def test_ambiguous_live_rows_fail_closed_to_fallback(self) -> None:
-        rows = [_row(sid="sess-1", name="dup"), _row(sid="sess-2", name="dup")]
+        rows = [_row(sid="sess-1", label="dup"), _row(sid="sess-2", label="dup")]
         r = _mod.resolve_target(
             "dup", rows, own_session_id="s", own_workspace_root="/w"
         )
@@ -364,7 +379,7 @@ class TestCli:
 
     def test_resolve_target_cli(self, tmp_path: Path) -> None:
         rows_path = tmp_path / "rows.json"
-        rows_path.write_text(json.dumps([_row()]))
+        rows_path.write_text(json.dumps([_row(label="tagged")]))
         r = _run_cli(
             "resolve-target",
             "--target",
@@ -377,12 +392,25 @@ class TestCli:
             "/Users/ctai/Github/ai-guide",
         )
         assert r.returncode == 0, r.stderr
-        assert json.loads(r.stdout)["disposition"] == "known-direct"
+        parsed = json.loads(r.stdout)
+        assert parsed["disposition"] == "known-direct"
+        assert parsed["label"] == "tagged"  # 輸出鍵隨 seam 形狀（name→label）
 
-    def test_resolve_target_cli_accepts_scbus_list_object(self, tmp_path: Path) -> None:
-        """`scbus list` 原樣輸出（count＋sessions 物件）直接餵檔即用——文檔命令逐字可跑。"""
+    def test_resolve_target_cli_accepts_session_discovery_list_json(
+        self, tmp_path: Path
+    ) -> None:
+        """seam `list --json` 輸出（rows 物件）直接餵檔即用——文檔命令逐字可跑。"""
         rows_path = tmp_path / "rows.json"
-        rows_path.write_text(json.dumps({"count": 1, "sessions": [_row()]}))
+        rows_path.write_text(
+            json.dumps(
+                {
+                    "generated_at": "2026-10-05T00:00:00+00:00",
+                    "rows": [_row()],
+                    "count": 1,
+                    "registry_total": 1,
+                }
+            )
+        )
         r = _run_cli(
             "resolve-target",
             "--target",

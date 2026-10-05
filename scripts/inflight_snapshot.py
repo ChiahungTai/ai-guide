@@ -15,10 +15,13 @@ markdown 表（`--json` 輸出同構 JSON），表頭帶生成時間。每路獨
    BFS 找 `model` 鍵，無則 `-`。timestamp＝`recorded_at`（µs epoch）轉
    ISO，無則檔案 mtime。壞 JSONL 行標 `parse-error` 續跑；無 jobs 目錄＝
    `skipped`（非錯）。
-2. **scbus sessions**：`scbus list`（JSON）——過濾 `observed_liveness ==
-   "live"` 且 `session_id` 以 `sess_` 開頭（排除 scbus-ext-* 幽靈與雜訊）。
-   欄位：session_id 前 13 碼／name／workspace 尾段／status／age_min
-   （`age` 秒 → 分；缺 `age` 時以 `last_seen_us` 對 now 推算）。
+2. **session 發現（seam）**：`session_discovery.collect_rows(live_only=
+   True)`（AIR-254.1——本檔不再直呼 `scbus list`，registry 讀取單一
+   choke point 在 seam）。--live 過濾＝`observed_liveness == "live"` 且
+   `session_id` 以 `sess_` 開頭（排除 scbus-ext-* 幽靈與雜訊）。欄位：
+   session_id 前 13 碼／name（←seam label，sidecar 優先合併）／
+   workspace 尾段／status／age_min（`age` 秒 → 分；缺 `age` 時以
+   `last_seen_us` 對 now 推算）。
 3. **git 面**：`git worktree list --porcelain`（非 primary 的 WT）＋
    `git branch --list 'air-*'`＋`git status --porcelain`（dirty 檔計數）。
    三個子命令各自容錯，一個失敗只標該區段 unavailable。
@@ -40,10 +43,14 @@ from datetime import UTC, datetime
 from pathlib import Path, PurePath
 from typing import Any
 
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent)
+)  # scripts/ 非 package——同目錄 seam import（AIR-254.1）
+
+from session_discovery import collect_rows
+
 BRIDGE_JOBS_DIR = Path(".delegate-bridge") / "jobs"
 COMPLETED_STATUSES = frozenset({"completed", "turn.completed"})
-LIVE_VALUE = "live"
-SESS_PREFIX = "sess_"
 
 
 def _run_cmd(cmd: list[str], *, cwd: Path | None = None) -> str:
@@ -166,49 +173,39 @@ def collect_bridge_jobs(jobs_dir: Path) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# 路 2：scbus sessions
+# 路 2：session 發現（經 seam——AIR-254.1）
 # ---------------------------------------------------------------------------
 
 
-def collect_scbus_sessions(run: Callable[..., str] | None = None) -> dict[str, Any]:
-    """`scbus list` 過濾 live＋`sess_` 前綴；幽靈與雜訊排除。"""
-    runner = run if run is not None else _run_cmd
-    payload = json.loads(runner(["scbus", "list"]))
-    sessions = payload["sessions"]
+def collect_scbus_sessions(
+    run: Callable[..., str] | None = None, *, sidecar: Path | None = None
+) -> dict[str, Any]:
+    """seam `collect_rows(live_only=True)`——live＋`sess_` 過濾在 seam 做。
+
+    欄位映射語義不變：session 前 13 碼／name←seam label（sidecar 優先
+    合併）／workspace 尾段／status／age_min；runner 注入形態保留（seam
+    `_collect_raw` 收 runner）。
+    """
+    data = collect_rows(
+        run if run is not None else _run_cmd, sidecar=sidecar, live_only=True
+    )
     rows = []
-    for session in sessions:
-        if not isinstance(session, dict):
-            continue
-        sid = str(session.get("session_id") or "")
-        if not sid.startswith(SESS_PREFIX):
-            continue
-        if session.get("observed_liveness") != LIVE_VALUE:
-            continue
-        age = session.get("age")
-        if not isinstance(age, (int, float)):
-            last_seen = session.get("last_seen_us")
-            age = (
-                datetime.now(tz=UTC).timestamp() - last_seen / 1_000_000
-                if isinstance(last_seen, (int, float))
-                else -1.0
-            )
-        workspace = PurePath(str(session.get("workspace_root") or "-")).name
+    for row in data["rows"]:
+        workspace = PurePath(str(row.get("workspace_root") or "-")).name
         rows.append(
             {
-                "session": sid[:13],
-                "name": session.get("name") or "-",
+                "session": row["session_id"][:13],
+                "name": row.get("label") or "-",
                 "workspace": workspace or "-",
-                "status": str(session.get("status") or "-"),
-                "age_min": round(age / 60)
-                if isinstance(age, (int, float)) and age >= 0
-                else None,
+                "status": str(row.get("status") or "-"),
+                "age_min": row.get("age_min"),
             }
         )
     return {
         "unavailable": False,
         "rows": rows,
         "count": len(rows),
-        "registry_total": payload.get("count", len(sessions)),
+        "registry_total": data["registry_total"],
     }
 
 

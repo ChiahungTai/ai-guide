@@ -4,7 +4,9 @@
 單一源關係：delivery 條文權威＝skills/handoff/SKILL.md「Delivery——scbus 直送」節；
 本檔只承載條文中可純函式化的判定，供 tests/test_handoff_delivery.py 鎖行為——
 改條文必同步改這裡與測試。純邏輯零 I/O（CLI 的檔案讀取除外）：呼叫端（session
-流程）負責跑 `scbus list`／`scbus send`、餵 dict／檔。
+流程）負責跑 `session_discovery list --json`（AIR-254.1 seam——registry 讀取
+單一 choke point 在 scripts/session_discovery.py）／`scbus send`（送信面
+不動）、餵 dict／檔。
 
 契約錨（card AIR-156 已決策勿重辯）：
 - receipt＝queued-visible 非完成（scbus proto §5.7 兩 stage 一次寫成、§5.8
@@ -68,7 +70,7 @@ class TargetResolution:
     disposition: TargetDisposition
     reason: str | None  # fallback 時的原因碼；known-direct 時 None
     session_id: str | None
-    name: str | None
+    label: str | None  # seam 正規化 label（AIR-254.1；原 name 鍵隨 rows 形狀退役）
     harness: str | None
     workspace_root: str | None
     cross_ownership: bool
@@ -187,12 +189,13 @@ def resolve_target(
     own_session_id: str,
     own_workspace_root: str | None,
 ) -> TargetResolution:
-    """把交接目標對 scbus registry rows 解析成已知直送／fallback 分流。
+    """把交接目標對 session 發現 rows 解析成已知直送／fallback 分流。
 
-    rows＝`scbus list` 輸出的 sessions 陣列。解析序：session_id 精確→
-    claimed name 精確；ended 列不當 target；多列 live＝ambiguous fail-closed
-    （與 scbus send 對撞 id fail-closed 同姿）；own ownership 無法確立時
-    cross_ownership 恆 True（consent gate fail-closed）。
+    rows＝`session_discovery list --json` 的正規化 rows（AIR-254.1——
+    session_id/harness/workspace_root/label/liveness/status 形）。解析序：
+    session_id 精確→label 精確；ended 列不當 target；多列 live＝ambiguous
+    fail-closed（與 scbus send 對撞 id fail-closed 同姿）；own ownership
+    無法確立時 cross_ownership 恆 True（consent gate fail-closed）。
     """
     if not isinstance(target, str) or not target:
         raise DeliveryContractError("target 不得為空——交接目標須可指認")
@@ -201,7 +204,7 @@ def resolve_target(
         r
         for r in rows
         if r.get("session_id") == target
-        or (r.get("name") is not None and r.get("name") == target)
+        or (r.get("label") is not None and r.get("label") == target)
     ]
     live = [r for r in matches if r.get("status") != "ended"]
     if not live:
@@ -210,7 +213,7 @@ def resolve_target(
             disposition=TargetDisposition.FALLBACK_MANUAL,
             reason=reason,
             session_id=None,
-            name=None,
+            label=None,
             harness=None,
             workspace_root=None,
             cross_ownership=False,
@@ -220,7 +223,7 @@ def resolve_target(
             disposition=TargetDisposition.FALLBACK_MANUAL,
             reason="ambiguous",
             session_id=None,
-            name=None,
+            label=None,
             harness=None,
             workspace_root=None,
             cross_ownership=False,
@@ -231,7 +234,7 @@ def resolve_target(
             disposition=TargetDisposition.FALLBACK_MANUAL,
             reason="self",
             session_id=None,
-            name=None,
+            label=None,
             harness=None,
             workspace_root=None,
             cross_ownership=False,
@@ -246,7 +249,7 @@ def resolve_target(
         disposition=TargetDisposition.KNOWN_DIRECT,
         reason=None,
         session_id=row.get("session_id"),
-        name=row.get("name"),
+        label=row.get("label"),
         harness=row.get("harness"),
         workspace_root=target_ws,
         cross_ownership=cross_ownership,
@@ -333,7 +336,7 @@ def _cli(argv: list[str]) -> int:
 
     p_resolve = sub.add_parser(
         "resolve-target",
-        help="target＋scbus list rows → 直送/fallback 分流（stdout JSON）",
+        help="target＋session_discovery rows → 直送/fallback 分流（stdout JSON）",
     )
     p_resolve.add_argument("--target", required=True)
     p_resolve.add_argument("--rows-file", required=True)
@@ -374,11 +377,11 @@ def _cli(argv: list[str]) -> int:
             )
         else:
             loaded = json.loads(Path(args.rows_file).read_text())
-            # `scbus list` 原樣輸出＝{"count", "sessions": [...]}；裸 sessions 陣列亦收。
-            rows = loaded.get("sessions") if isinstance(loaded, dict) else loaded
+            # seam `list --json` 輸出＝{"generated_at", "rows": [...], ...}；裸 rows 陣列亦收。
+            rows = loaded.get("rows") if isinstance(loaded, dict) else loaded
             if not isinstance(rows, list):
                 raise DeliveryContractError(
-                    "rows-file 須為 `scbus list` 輸出（count＋sessions 物件）或 sessions 陣列"
+                    "rows-file 須為 `session_discovery list --json` 輸出（rows 物件）或 rows 陣列"
                 )
             r = resolve_target(
                 args.target,
@@ -392,7 +395,7 @@ def _cli(argv: list[str]) -> int:
                         "disposition": str(r.disposition),
                         "reason": r.reason,
                         "session_id": r.session_id,
-                        "name": r.name,
+                        "label": r.label,
                         "harness": r.harness,
                         "workspace_root": r.workspace_root,
                         "cross_ownership": r.cross_ownership,

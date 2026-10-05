@@ -97,11 +97,12 @@ packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產�
 **target 解析**（已知/未知分流——判定邏輯抽在 `scripts/handoff_delivery.py`，行為由單元測試鎖定）：
 
 ```bash
-scbus list > .agent-tmp/scbus-rows.json     # registry rows
-scbus whoami                                # 本側 session_id／workspace_root
+# session 發現經 seam（AIR-254.1）——session_discovery 是 registry 唯一讀取點
+uv run python scripts/session_discovery.py list --json > .agent-tmp/session-rows.json  # 正規化 rows（label 已合併 sidecar）
+uv run python scripts/session_discovery.py whoami                                # 本側 session_id／workspace_root
 uv run python scripts/handoff_delivery.py resolve-target \
-  --target "<對方 session_id 或 claimed name>" \
-  --rows-file .agent-tmp/scbus-rows.json \
+  --target "<對方 session_id 或 label>" \
+  --rows-file .agent-tmp/session-rows.json \
   --own-session-id "<本側 sid>" --own-workspace-root "<本側 WT>"
 ```
 
