@@ -10,6 +10,9 @@ PreToolUse hook（matcher Edit|Write）: memory 寫入治理（兩層）。
    寫入五問 Q1/Q2/Q4：
    - frontmatter description >100 chars → 擋（索引行原料＝寫入紀律值，
      name×2 重複已佔索引行 40% 開銷，desc 是主要槓桿）
+   - desc 單行不變式（AIR-250）：摺疊續行／`>`/`>-` block marker 形 → 擋
+     （B leg collector 展開後兩閘量到同一真值；存量摺疊 desc 值不變的
+     Edit 放行——存量不溯及）
    - desc 含 hash 兩形態（commit-前綴 09-05 S2/AIR-25＋同日 digit-lookahead 補強；
      bare hash 09-10 擴——mosaic「收案 93715b60a」繞過實證）→ 擋：
      hash 屬 git log 可推導（官方 skip-derivable），desc＝觸發詞＋一句鉤子。
@@ -44,8 +47,12 @@ mem-distill）的上限是 prompt 紀律非機械強制。ZCode 端 exit 2 產�
 hook crash（非 0 非 2 exit）為非阻斷，工具仍執行。
 部署 runtime＝governance-resolved Python 3.12；mixed-session／rollback 窗期保留
 Python 3.9 語法相容。
-desc 量測近似已知形態（品質洞非完整性洞，不修）：YAML folded scalar（`>-`——
-量到摺疊符號本身，超長 desc 放行；generator flat-parse 同不展開，索引不膨脹）。
+desc 摺疊續行（AIR-250，2026-10——原「品質洞非完整性洞，不修」契約廢止）：plain 續行
+與 `>`/`>-`/`>+` block marker 由 collector 摺疊展開——hook 量到全值（>100 照擋，
+與 generator parse_frontmatter 鏡像 parity，兩端 canonical 鎖於 tests）；寫入端另加
+單行不變式閘：新增/改 desc 成摺疊形即擋。存量不溯及：存量摺疊檔 body-only Edit 且
+desc 值不變→放行（鏡像 `desc == previous_desc` skip；已知殘餘＝同值摺疊-in-place
+重寫放行——A 風格面，B 仍擋 >100）。
 Write 收斂豁免：content 比既有檔短即放行（與 Edit delta 豁免對稱——部分收斂
 結果仍 >12K 但方向正確，不擋）。
 """
@@ -65,6 +72,68 @@ BODY_LIMIT = 12_000  # 條目檔總長上限（chars）
 NEW_ENTRY_LIMIT = (
     3_000  # 新建條目上限——寫入當下即蒸後形（cur=0 時 12K 膨脹治理無約束力，此閘補真空）
 )
+_BLOCK_SCALAR_RE = re.compile(
+    r"^[>|][+-]?$"
+)  # YAML block scalar marker（`>`/`>-`/`>+`/`|` family）——desc 摺疊語法記號
+#   （AIR-250；與 generator parse_frontmatter 鏡像同義——非 import，兩份實作
+#   cross-layer parity tests 鎖住）。`>- ` 尾隨空白形由 strip 後比對涵蓋。
+
+
+def extract_desc_fields(text: str) -> "tuple[str, bool]":
+    """extract_desc 的完整形：回（desc 全值，摺疊標記）。
+
+    摺疊標記＝值曾跨行（plain 續行接回，或 block marker 出現——含無續行的
+    孤 marker 形，此時值為空）。摺疊語義與 generator parse_frontmatter 鏡像
+    （AIR-250）：plain join 單空格、marker 清空後接內容、空值形同；其他 key
+    縮排行維持巢狀語義（非 desc 續行）。
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    folded = False
+    if not text.startswith("---\n"):
+        return "", folded
+    end = text.find("\n---", 4)
+    if end < 0:
+        return "", folded
+    desc_value = None  # 最後一個頂層 description 原始值（last-wins；遇其他 key 不丟）
+    desc_open = False  # 摺疊窗口：僅緊跟 description 的縮排續行；遇下一個頂層 key 關窗
+    for line in text[4:end].splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line.startswith((" ", "\t")):
+            if desc_open and desc_value is not None:
+                base = desc_value.strip()
+                if _BLOCK_SCALAR_RE.match(base):
+                    base = ""  # marker 是語法記號——首個續行接上時清空
+                cont = line.strip()
+                desc_value = f"{base} {cont}" if base else cont
+                folded = True
+            continue
+        key, _, value = line.partition(":")
+        desc_open = key.strip() == "description"
+        if desc_open:
+            desc_value = value
+    if desc_value is None:
+        return "", folded
+    value = desc_value.strip()
+    if _BLOCK_SCALAR_RE.match(value):
+        value = ""  # 無續行的孤 marker 形（`>-`）——desc 空＝generator errs 面
+        folded = True
+    return " ".join(value.strip("'\"").split()), folded
+
+
+def extract_desc(text: str) -> str:
+    """取 generator 實際投影的 description，不擴成通用 YAML parser。
+
+    對齊 skills/memory-audit/scripts/generate_index.py 的 parse_frontmatter
+    與 main 的 read_text：universal newlines、首行／終界、頂層 key trim、
+    最後同名 key 勝出、值去引號與空白。
+    description 例外（AIR-250，2026-10）：頂層 description（含空值形）後的
+    縮排續行摺疊接回全值——plain join 單空格、`>`/`>-`/`>+` marker 清空後接
+    內容；其他 key 維持巢狀語義（metadata.type 等 parent 分支不變）。
+    """
+    return extract_desc_fields(text)[0]
+
+
 HASH_RE = re.compile(
     r"\bcommit[s]?\s+(?=[0-9a-fA-F]*[0-9])[0-9a-fA-F]{7,}"
     r"|\b(?=[0-9a-fA-F]*[0-9])(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{7,}\b"
@@ -121,34 +190,6 @@ def is_entry_file(file_path: str, has_generator: bool) -> bool:
     )
 
 
-def extract_desc(text: str) -> str:
-    """取 generator 實際投影的 description，不擴成通用 YAML parser。
-
-    對齊 skills/memory-audit/scripts/generate_index.py 的 parse_frontmatter
-    與 main 的 read_text：universal newlines、首行／終界、頂層 key trim、
-    最後同名 key 勝出、值去引號與空白。
-    縮排行是巢狀 key，不是 description 的續行。
-    """
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-    if not text.startswith("---\n"):
-        return ""
-    end = text.find("\n---", 4)
-    if end < 0:
-        return ""
-    desc = ""
-    for line in text[4:end].splitlines():
-        if (
-            not line.strip()
-            or line.lstrip().startswith("#")
-            or line.startswith((" ", "\t"))
-        ):
-            continue
-        key, _, value = line.partition(":")
-        if key.strip() == "description":
-            desc = value.strip().strip("'\"")
-    return " ".join(desc.split())
-
-
 def main() -> None:
     try:
         data = json.load(sys.stdin)
@@ -201,12 +242,21 @@ def main() -> None:
         print(PLACEMENT_REMINDER, file=sys.stderr)
     if tool == "Write":
         content = tool_input.get("content", "") or ""
-        desc = extract_desc(content)
+        desc, folded = extract_desc_fields(content)
         if len(desc) > DESC_LIMIT:
             print(
                 f"[Hook Blocked] 條目 description {len(desc)} chars > {DESC_LIMIT}。\n"
                 "description 是索引行的投影原料（索引行 = name×2 重複 + desc，desc 佔一半 chars）。\n"
                 "修正方式：精簡到主題＋一個鉤子（紀律 ≤100 chars），細節寫進 body。",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if desc and folded:
+            # A leg（AIR-250）：單行不變式——摺疊形（plain 續行或 block marker）擋。
+            print(
+                "[Hook Blocked] 條目 description 為多行摺疊形（plain 續行或 >- block marker）。\n"
+                "desc 必須單行 ≤100——單行保簡易 parser 可機械解析；摺疊形請攤平重寫（AIR-250），\n"
+                "展開的細節寫進 body。",
                 file=sys.stderr,
             )
             sys.exit(2)
@@ -270,7 +320,7 @@ def main() -> None:
             sys.exit(2)
         candidate = cur_text.replace(old_string, new_string, -1 if replace_all else 1)
         previous_desc = extract_desc(cur_text)
-        desc = extract_desc(candidate)
+        desc, folded = extract_desc_fields(candidate)
         if not replace_all and cur_text.count(old_string) > 1:
             # Body-only ambiguity stays with the tool's uniqueness gate, as
             # before (including shrink allowance). A description-changing
@@ -285,10 +335,21 @@ def main() -> None:
                 sys.exit(2)
         if desc == previous_desc:
             desc = ""  # 存量不溯及：body-only 或攜帶未變 desc 的編輯仍可收斂。
+            folded = False  # AIR-250：canonical 值相等→摺疊面一併放行（已知殘餘＝
+            # 同值摺疊-in-place 重寫放行——A 風格面，B 仍擋 >100）。
         if len(desc) > DESC_LIMIT:
             print(
                 f"[Hook Blocked] 新 description {len(desc)} chars > {DESC_LIMIT}。\n"
                 "修正方式：精簡到主題＋一個鉤子（紀律 ≤100 chars），細節寫進 body。",
+                file=sys.stderr,
+            )
+            sys.exit(2)
+        if desc and folded:
+            # A leg（AIR-250）：單行不變式——新/改 desc 成摺疊形擋；存量值不變已在上面的 skip 放行。
+            print(
+                "[Hook Blocked] 新 description 為多行摺疊形（plain 續行或 >- block marker）。\n"
+                "desc 必須單行 ≤100——單行保簡易 parser 可機械解析；摺疊形請攤平重寫（AIR-250），\n"
+                "展開的細節寫進 body。",
                 file=sys.stderr,
             )
             sys.exit(2)

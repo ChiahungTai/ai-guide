@@ -18,6 +18,7 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
 from conftest import REPO_ROOT, load_module
 
 ASSET_REL = "skills/memory-audit/scripts/generate_index.py"
@@ -533,9 +534,10 @@ def test_entry_write_desc_commit_word_false_positive_allowed(tmp_path):
     assert r.returncode == 0
 
 
-def test_entry_write_folded_desc_hash_passthrough(tmp_path):
-    """F7 反例（EP review）：folded（>-）desc 含 hash → 放行——釘住「與長度檢查
-    同界」承諾（folded 量到摺疊符號本身、desc 值抽取不到——既有品質洞邊界不擴大）。"""
+def test_entry_write_folded_desc_hash_blocked(tmp_path):
+    """F7 反例反轉（AIR-250 B leg）：folded（>-）desc 不再 passthrough——collector
+    摺疊量到全值，摺疊形由單行不變式閘擋（exit 2）。原「量到摺疊符號本身放行」
+    品質洞已關（2026-10 AIR-250）。"""
     pool = make_pool(tmp_path, n=1)
     target = pool / "folded.md"
     r = run_hook(
@@ -548,7 +550,7 @@ def test_entry_write_folded_desc_hash_passthrough(tmp_path):
             ),
         )
     )
-    assert r.returncode == 0
+    assert r.returncode == 2
 
 
 def test_entry_write_desc_bare_hash_blocked(tmp_path):
@@ -1341,3 +1343,184 @@ def test_placement_gate_no_generator_silent(tmp_path):
     r = run_hook(hook_payload("Write", nogen / "new.md", content="x"))
     assert r.returncode == 0
     assert "放置閘" not in r.stderr
+
+
+# ---------------------------------------------------------------------------
+# AIR-250：description 摺疊續行——generator/hook collector 對齊（TC-B1-B7、TC-A1-A3）
+# 語義：plain 續行 join 單空格、`>`/`>-`/`>+` block marker 清空後接內容、空值形同；
+# 其他 key 續行維持巢狀丟棄（禁泛化——泛化＝metadata.type 回歸）。
+# ---------------------------------------------------------------------------
+
+
+def test_fold_plain_continuation_joined_single_space():
+    """TC-B1 P1/P2：plain 續行接回全值——兩行 join 恰一空格（兩端 canonical 相同）。"""
+    text = (
+        "---\nname: folded\ndescription: 摺疊第一行\n  摺疊第二行\n"
+        "metadata:\n  type: project\n---\nbody\n"
+    )
+    fm = generator.parse_frontmatter(text)
+    assert fm["description"] == "摺疊第一行 摺疊第二行"  # P2：接縫恰一空格
+    assert block_memory.extract_desc(text) == "摺疊第一行 摺疊第二行"  # 兩端 parity
+
+
+def test_fold_empty_value_takes_continuation():
+    """TC-B1 P3：`description:` 空值形＋縮排續行 → 抽得續行全值（glm Q3 空值形錨）。"""
+    text = "---\nname: e\ndescription:\n  空值後續行全值\n---\nbody\n"
+    assert generator.parse_frontmatter(text)["description"] == "空值後續行全值"
+    assert block_memory.extract_desc(text) == "空值後續行全值"
+
+
+def test_fold_block_marker_cleared():
+    """TC-B2 P1：`>-` marker 是語法記號——清空後接內容（結果不含 `>-` 前綴）。"""
+    text = "---\nname: e\ndescription: >-\n  marker 後內容\n---\nbody\n"
+    assert generator.parse_frontmatter(text)["description"] == "marker 後內容"
+    assert block_memory.extract_desc(text) == "marker 後內容"
+
+
+def test_fold_marker_without_continuation_errs(tmp_path):
+    """TC-B2 P2：`>-` 無續行 → desc 空＝落 errs（條目不出投影）。"""
+    pool = make_pool(tmp_path, n=0)
+    entry = pool / "marker-only.md"
+    entry.write_text(
+        "---\nname: marker-only\ndescription: >-\nmetadata:\n  type: project\n---\nbody\n",
+        encoding="utf-8",
+    )
+    fm = generator.parse_frontmatter(entry.read_text(encoding="utf-8"))
+    assert fm["description"] == ""
+    r = run_gen(pool)
+    assert r.returncode == 1
+    assert "marker-only.md" in r.stdout  # 違規清單在場（條目不出投影）
+
+
+def test_fold_metadata_nesting_not_regressed():
+    """TC-B3：metadata 巢狀不回歸——摺疊 collector 不吃 parent 分支（SM-7 回歸錨）。"""
+    text = (
+        "---\nname: a\ndescription: 第一行\n  第二行\n"
+        "metadata:\n  type: project\n  rank: hot\n---\nbody\n"
+    )
+    fm = generator.parse_frontmatter(text)
+    assert fm["description"] == "第一行 第二行"
+    assert fm["metadata.type"] == "project"
+    assert fm["metadata.rank"] == "hot"
+
+
+def test_fold_duplicate_description_last_wins():
+    """TC-B4：重複頂層 description → last-wins（兩端一致；既有語義在摺疊改造後不變）。"""
+    text = "---\nname: e\ndescription: 第一個\n  其續行\ndescription: 第二個\n---\nbody\n"
+    assert generator.parse_frontmatter(text)["description"] == "第二個"
+    assert block_memory.extract_desc(text) == "第二個"
+
+
+def test_fold_crlf_parity():
+    """TC-B5：CRLF 檔兩端 canonical desc 與 LF 版相同（SM-8）。"""
+    lf = (
+        "---\nname: e\ndescription: 第一行\n  第二行\n"
+        "metadata:\n  type: project\n---\nbody\n"
+    )
+    crlf = lf.replace("\n", "\r\n")
+    lf_desc = " ".join(generator.parse_frontmatter(lf)["description"].split())
+    crlf_desc = " ".join(generator.parse_frontmatter(crlf)["description"].split())
+    assert lf_desc == crlf_desc == "第一行 第二行"
+    assert block_memory.extract_desc(crlf) == "第一行 第二行"
+
+
+def test_fold_overlong_projection_truncated(tmp_path):
+    """TC-B6：摺疊全值 >100 → 既有投影截斷接手（99＋`…`）。
+
+    canonical 定義＝兩端各過 `" ".join(split())` 後比較（EP TC 凍結表）。"""
+    pool = make_pool(tmp_path, n=0)
+    entry = pool / "long-folded.md"
+    entry.write_text(
+        "---\nname: long-folded\ndescription: " + "摺" * 60 + "\n  " + "疊" * 45
+        + "\nmetadata:\n  type: project\n---\nbody\n",
+        encoding="utf-8",
+    )
+    canonical = " ".join(
+        block_memory.extract_desc(entry.read_text(encoding="utf-8")).split()
+    )
+    assert len(canonical) == 106  # 摺疊全值在場（60＋45＋接縫空格 1——>100）
+    r = run_gen(pool)
+    assert r.returncode == 0, r.stdout
+    idx = (pool / "MEMORY.md").read_text(encoding="utf-8")
+    projected = canonical[: generator.TRUNCATE_DESC - 1] + "…"
+    assert projected in idx  # 投影截斷語義接手
+
+
+def test_fold_overlong_hook_desc_limit_blocks(tmp_path):
+    """TC-B7：摺疊全值 >100 經 hook → DESC_LIMIT 觸發 block（閘量到真值）。"""
+    pool = make_pool(tmp_path, n=1)
+    r = run_hook(
+        hook_payload(
+            "Write",
+            pool / "fold-fat.md",
+            content=(
+                "---\nname: fold-fat\ndescription: " + "長" * 60 + "\n  " + "長" * 45
+                + "\nmetadata:\n  type: project\n---\nbody\n"
+            ),
+        )
+    )
+    assert r.returncode == 2
+    assert "description" in r.stderr
+
+
+def _folded_desc_block(form: str) -> str:
+    """TC-A1 fixture：desc 摺疊兩形——plain 續行／`>-` block marker（全值 ≤100，A 風格閘範圍）。"""
+    if form == "plain":
+        return "description: 摺疊 desc 首行\n  摺疊 desc 續行"
+    return "description: >-\n  block marker 後的 desc"
+
+
+@pytest.mark.parametrize("form", ["plain", "block"])
+@pytest.mark.parametrize("tool", ["Write", "Edit"])
+def test_fold_multiline_desc_single_line_gate_blocks(tmp_path, tool, form):
+    """TC-A1：新增/改 desc 成多行 → exit 2＋單行不變式措辭（Write 新檔／Edit 單行改摺疊，candidate≠previous）。"""
+    pool = make_pool(tmp_path, n=1)
+    target = pool / "style-fold.md"
+    folded = _folded_desc_block(form)
+    if tool == "Write":
+        content = f"---\nname: style-fold\n{folded}\nmetadata:\n  type: project\n---\nbody\n"
+        r = run_hook(hook_payload("Write", target, content=content))
+    else:
+        target.write_text(
+            "---\nname: style-fold\ndescription: 原單行 desc\nmetadata:\n  type: project\n---\nbody\n",
+            encoding="utf-8",
+        )
+        r = run_hook(
+            hook_payload(
+                "Edit",
+                target,
+                old_string="description: 原單行 desc",
+                new_string=folded,
+            )
+        )
+    assert r.returncode == 2, r.stderr
+    assert "單行" in r.stderr
+
+
+def test_fold_legacy_body_only_edit_allowed(tmp_path):
+    """TC-A2：存量摺疊檔 body-only Edit（canonical desc 值相等）→ exit 0（存量不溯及——
+    鏡像 :286 `desc == previous_desc` skip；值等比非物理形，fresh-F1）。"""
+    pool = make_pool(tmp_path, n=1)
+    target = pool / "legacy-folded.md"
+    target.write_text(
+        "---\nname: legacy-folded\ndescription: 存量摺疊首行\n  存量摺疊續行\n"
+        "metadata:\n  type: project\n---\nbody\n",
+        encoding="utf-8",
+    )
+    r = run_hook(hook_payload("Edit", target, old_string="body", new_string="body 新段"))
+    assert r.returncode == 0, r.stderr
+
+
+def test_fold_metadata_description_not_matched(tmp_path):
+    """TC-A3：metadata 區縮排 description（含摺疊形）不誤中——A 不擋、B 只認頂層 desc。"""
+    pool = make_pool(tmp_path, n=1)
+    content = (
+        "---\nname: meta-desc\nmetadata:\n  description: >-\n      縮排摺疊不誤中\n"
+        "  type: project\ndescription: 頂層單行 desc\n---\nbody\n"
+    )
+    r = run_hook(hook_payload("Write", pool / "meta-desc.md", content=content))
+    assert r.returncode == 0, r.stderr
+    assert "單行" not in r.stderr
+    fm = generator.parse_frontmatter(content)
+    assert fm["description"] == "頂層單行 desc"  # B：頂層錨定不變
+    assert "metadata.description" in fm  # 巢狀歸巢狀（不出 projection 的 desc 欄）

@@ -99,7 +99,17 @@ class Entry(NamedTuple):
     mtime: float
 
 
+_BLOCK_SCALAR_RE = re.compile(r"^[>|][+-]?$")  # YAML block scalar marker（`>`/`>-`/`>+`/`|` family）——desc 摺疊語法記號（AIR-250）
+
+
 def parse_frontmatter(text: str) -> dict:
+    """頂層 key 平面解析；唯一摺疊例外＝description 續行接回全值（AIR-250）。
+
+    plain 續行 join 單空格、block marker 清空後接內容（`description:` 空值形同）；
+    其他 key 的縮排行維持巢狀語義（parent 分支——metadata.type 等），
+    無 parent 的縮排行丟棄（既有行為）。禁泛化摺疊（泛化＝巢狀回歸）。
+    與 hooks/block-memory-index-write.py extract_desc 鏡像 parity（tests cross-layer 錨）。
+    """
     if not text.startswith(("---\n", "---\r\n")):
         return {}
     end = text.find("\n---", 4)
@@ -107,17 +117,35 @@ def parse_frontmatter(text: str) -> dict:
         return {}
     out: dict = {}
     parent = None
+    desc_value = None  # 最後一個頂層 description 原始值（last-wins；遇其他 key 不丟）
+    desc_open = False  # 摺疊窗口：僅緊跟 description 的縮排續行；遇下一個頂層 key 關窗
     for line in text[4:end].splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         if line.startswith((" ", "\t")):
+            if desc_open and desc_value is not None:
+                base = desc_value.strip()
+                if _BLOCK_SCALAR_RE.match(base):
+                    base = ""  # marker 是語法記號——首個續行接上時清空
+                cont = line.strip()
+                desc_value = f"{base} {cont}" if base else cont
+                continue
             k, _, v = line.strip().partition(":")
             if parent:
                 out[f"{parent}.{k.strip()}"] = v.strip()
             continue
         k, _, v = line.partition(":")
+        desc_open = k.strip() == "description"
+        if desc_open:
+            desc_value = v
         parent = k.strip() if not v.strip() else None
         out[k.strip()] = v.strip().strip("'\"")
+    if desc_value is not None:
+        # 收尾：marker 清空（`>- ` 尾隨空白形 strip 後比對——fresh-F4）＋去引號（既有）
+        value = desc_value.strip()
+        if _BLOCK_SCALAR_RE.match(value):
+            value = ""
+        out["description"] = value.strip("'\"")
     return out
 
 
