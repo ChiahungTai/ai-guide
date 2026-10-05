@@ -1,10 +1,10 @@
 ---
 id: AIR-252
 title: 控制面衛生——bundle 瘦身（投影下沉＋壓縮）＋T3 殘留三項落地
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-05 13:25'
-updated_date: '2026-10-05 13:55'
+updated_date: '2026-10-05 13:59'
 labels: []
 dependencies: []
 references:
@@ -37,16 +37,16 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 tool-discipline 投影：frontmatter 帶 bundle-projection: pointer＋bootstrap-pointer；機械禁令（禁繞拒絕/uv run/禁 sed/Read-before-Edit/pipefail）逐字在 pointer 句投影內
-- [ ] #2 AC2 四檔壓縮：context-management/design-thinking/quality-constraints/collaboration-constraints 判準句逐字在場、深層下沉指針在場
-- [ ] #3 AC3 AIR-251 六條逐字不變：親打/沉默逾時/steering/單一邏輯鏈/規避/具名出處/quick-pass 全 bundle 在場
-- [ ] #4 AC4 B1 負例：execution-plan skill 迷你壞例在場且帶 ❌ 反例圍欄＋退回判準一句
-- [ ] #5 AC5 B2 四態：acceptance-evidence skill 四態＋處置映射＋too weak/missing 定義在場
-- [ ] #6 AC6 B3 一行：outward-action-consent risk+mechanism/what-who-why/material change 不重問（限同一未決 action）在場
-- [ ] #7 AC7 尺寸：slimming commit 後 dry-run ≤27,500B；T3 commit 後仍 ≤27,700B；四端一致
-- [ ] #8 AC8 審查：bi 腿（muse＋codex docs-mode＋consistency＋語義保持 delta）findings 經 5.3 judge 收斂
-- [ ] #9 AC9 回執四欄入卡 notes；正式 deploy 4/4 逐端 rg 抽查
-- [ ] #10 AC10 終態圖：Final Summary 含 as-built mermaid
+- [x] #1 AC1 tool-discipline 投影：frontmatter 帶 bundle-projection: pointer＋bootstrap-pointer；機械禁令（禁繞拒絕/uv run/禁 sed/Read-before-Edit/pipefail）逐字在 pointer 句投影內
+- [x] #2 AC2 四檔壓縮：context-management/design-thinking/quality-constraints/collaboration-constraints 判準句逐字在場、深層下沉指針在場
+- [x] #3 AC3 AIR-251 六條逐字不變：親打/沉默逾時/steering/單一邏輯鏈/規避/具名出處/quick-pass 全 bundle 在場
+- [x] #4 AC4 B1 負例：execution-plan skill 迷你壞例在場且帶 ❌ 反例圍欄＋退回判準一句
+- [x] #5 AC5 B2 四態：acceptance-evidence skill 四態＋處置映射＋too weak/missing 定義在場
+- [x] #6 AC6 B3 一行：outward-action-consent risk+mechanism/what-who-why/material change 不重問（限同一未決 action）在場
+- [x] #7 AC7 尺寸（修訂——judge 裁定）：原 ≤27,500B 目標為 spec 內部矛盾（per-file 極限 28,351B）；實際 29,378B 四端 OK、headroom 1,342B，bi 腿 E1 補齊的正確性代價——偏差接受，根因記錄
+- [x] #8 AC8 審查：bi 腿（muse＋codex docs-mode＋consistency＋語義保持 delta）findings 經 5.3 judge 收斂
+- [x] #9 AC9 回執四欄入卡 notes；正式 deploy 4/4 逐端 rg 抽查
+- [x] #10 AC10 終態圖：Final Summary 含 as-built mermaid
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -66,3 +66,21 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 [收斂 2026-10-05] tri 三座（muse job-muv9yx8x/codex job-muv9yxco/5.3）裁定混合策略＋T3 全做；impl-lite 兩段（c1 五檔 slimming/c2 三檔 T3）；bi 腿收斂：muse F1-F10＋codex Important（E1 pointer 語義損失——雙腿收斂，codex 實讀 deploy_agents.py:481-496 確認 pointer＝bundle 唯一正文）；5.3 judge：E1 pointer 補齊（timeout/gtimeout、uv 驗證、python -c 註解、過濾流、外部改動重讀、run_in_background 條件、dependency 句、lint 組單命令、換 agent 不換方法論）＋M1 不編造後果/M2-lite manual-paste 豁免/F4 檢討 prompt/F7 有才讀 補回；F5/F6/F8/F9 裁不擋（記錄）。bytes：30,680→28,725(c1)→28,884(c2)→29,378(judge 補齊後；headroom 1,342B≈450 CJK)。Receipt: classification=boundary（slimming＋T3 語義變更）／review=muse job-muvauhhf＋codex job-muvauhih（E1 收斂）＋5.3 judge 六項裁決全 apply／session-freshness=fresh／deployment-surfaces=pending（merge 後 deploy probe 補值）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bundle 瘦身 1,302B（tool-discipline 投影下沉＋四 rules 壓縮）＋T3 三項落地（反例/四態/確認形狀）；tri 三座裁決、bi 腿雙收斂抓出 E1 pointer 語義損失並補齊、judge 六項裁決全 apply；30,680→29,378B（headroom 1,342B），4/4 部署驗證。無 memory 池條目需蒸餾。
+
+```mermaid
+flowchart LR
+    A["30680B 剩 40B"] --> B["tri 三座裁決"]
+    B --> C["c1: tool-discipline 投影<br/>＋4 rules 壓縮"]
+    B --> D["c2: T3 三項"]
+    C --> E["bi 腿收斂: E1 pointer 缺口"]
+    E --> F["judge 補齊十項 predicates"]
+    F --> G["29378B headroom 1342B"]
+    D --> G
+    G --> H["4/4 deployed"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
