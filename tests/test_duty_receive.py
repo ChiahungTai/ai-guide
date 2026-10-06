@@ -11,8 +11,9 @@
   ack 只在全批處置後（advance-after-emit——commit 由呼叫端在輸出後執行）。
 - invalidate 路徑：遺留未 ack 批次（state 記錄）——已處置→先試 ack；
   未處置→prepare --invalidate 重 prepare（寧重不漏）。
-- digest 輸出形（N/M/K＋最舊 X 分鐘＋class 計數）；surface 全文前 3 筆、
-  超出者一行摘要；無新信零輸出。
+- digest 輸出形（N/M/K＋最舊 X 分鐘＋class 計數）；surface＝一行摘要
+  （class 計數＋envelope_id 前 3＋SC INBOX 指針，無 body——B′ AIR-258：
+  全文判讀面＝SC INBOX）；無新信零輸出。
 - hook 面：stdin payload 驅動 run()——eligibility gate（cwd repo 外＝
   零查詢零輸出）、store 缺席（class 4 storage）fail-soft＝零 stdout
   exit 0＋stderr 註記、stdin 壞 JSON/未知事件靜默、config 壞形 fail-loud
@@ -908,23 +909,41 @@ class TestDigestRendering:
         assert "新到 2、1 件例行已處理、1 件等你" in digest
         assert "最舊" not in digest
 
-    def test_surface_full_text_first_three_then_summary(self, state_file):
+    def test_surface_summary_one_line_no_full_text(self, state_file):
+        """B′（AIR-258）：surface 項不再注入全文——壓成一行摘要（class 計數
+        ＋envelope_id 前 3＋SC INBOX 指針，無 body）；5 封恆人工信輸出恰
+        兩行（digest 主行＋摘要行），envelope 全文不在任何行。"""
         envs = [_env_item(f"e-{i}", klass="handoff") for i in range(1, 6)]
         lines, _commit = self._run_lines(state_file, envs)
-        surf = [ln for ln in lines if "待你處置" in ln]
-        assert len(surf) == 5
-        full = [ln for ln in surf if "摘要" not in ln]
-        summary = [ln for ln in surf if "摘要" in ln]
-        assert len(full) == 3 and len(summary) == 2
-        # 全文＝canonical envelope 逐字（verbatim——非摘要非重排）
-        assert full[0] == (
-            "[duty-receive] 待你處置（1/5）：" + envs[0]["canonicalEnvelope"]
-        )
-        for i, ln in enumerate(summary, 4):
-            assert (
-                f"from=s-e-{i} class=handoff intent=inform "
-                f"envelope_id=e-{i}" in ln
-            )
+        assert len(lines) == 2  # digest 主行＋surface 摘要行——無逐封全文
+        assert "新到 5、0 件例行已處理、5 件等你" in lines[0]  # K 計數保留
+        summary = lines[1]
+        assert summary.startswith("[duty-receive] " + ADDR + "：")
+        assert "5 件等你" in summary and "handoff×5" in summary
+        assert "全文見 SC INBOX" in summary
+        # envelope_id 列表前 3——第 4 封起不出現（截斷）
+        assert "e-1、e-2、e-3" in summary
+        assert "e-4" not in summary and "e-5" not in summary
+        # 全文（canonical envelope 原文）絕不注入任何行
+        joined = "\n".join(lines)
+        for env in envs:
+            assert env["canonicalEnvelope"] not in joined
+        assert "待你處置" not in joined  # 舊逐封全文標記退役
+
+    def test_surface_summary_mixed_classes_within_cap(self, state_file):
+        """摘要行 class 計數＝surface 項各自 class 計數；≤3 封時 envelope_id
+        全列、零截斷標記。"""
+        envs = [
+            _env_item("e-1", klass="handoff"),
+            _env_item("e-2", klass="handoff"),
+            _env_item("e-3", klass="patrol"),
+        ]
+        lines, _commit = self._run_lines(state_file, envs)
+        summary = lines[1]
+        assert "3 件等你" in summary
+        assert "handoff×2" in summary and "patrol×1" in summary
+        assert "e-1、e-2、e-3" in summary
+        assert "…" not in summary
 
     def test_auto_items_no_full_text(self, state_file):
         envs = [_env_item("e-1"), _env_item("e-2")]
@@ -973,7 +992,8 @@ class TestHookRun:
         assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
         ctx = doc["hookSpecificOutput"]["additionalContext"]
         assert "新到 1、0 件例行已處理、1 件等你" in ctx
-        assert "待你處置（1/1）" in ctx
+        assert "全文見 SC INBOX" in ctx and "e-1" in ctx
+        assert envs[0]["canonicalEnvelope"] not in ctx  # B′：全文不注入
         commit()
         state = tmp_path / "sess-1.json"
         assert "batch_token" not in _read_state(str(state))

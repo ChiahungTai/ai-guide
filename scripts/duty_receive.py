@@ -5,8 +5,9 @@
 epoch-fenced holder 身分對 per-repo mailbox（alias＝exact alias，如
 ai-guide-marshal）執行一個完整收信週期——`holder` 面取權威 →
 `receive prepare` 取 bounded 批次 → 逐封 triage → 全部處置完才
-`receive ack`。輸出＝digest 行＋surface 項（hook 層包成
-hookSpecificOutput.additionalContext；CLI 層印純文字行）。
+`receive ack`。輸出＝digest 行＋surface 一行摘要（hook 層包成
+hookSpecificOutput.additionalContext；CLI 層印純文字行；B′ AIR-258——
+envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
 
 核心不變量（EP invariant 對應）：
 - ack 是唯一 cursor 前進邊，只在本批每一封都有 disposition 紀錄後
@@ -52,7 +53,7 @@ from datetime import UTC, datetime
 
 HOOK_TAG = "duty-receive"
 DEFAULT_MAX_COUNT = 8  # bounded batch（EP：max-count 預設 8）
-SURFACE_FULL_TEXT_LIMIT = 3  # 每邊界全文呈報上限（防 context 洪水）
+SURFACE_ID_LIMIT = 3  # surface 摘要行 envelope_id 列表上限（B′：全文面＝SC INBOX）
 DUTYMAIL_TIMEOUT_SECONDS = 30
 RUNNER_ENV = "DUTYMAIL_BIN"
 PLUGIN_CACHE_BASE = "~/.zcode/cli/plugins/cache/delegate-market/delegate"
@@ -561,7 +562,8 @@ def load_policy(path):
 
 @dataclass
 class Disposition:
-    """單封處置紀錄。action＝auto（digest 吸收）｜surface（全文呈報）。"""
+    """單封處置紀錄。action＝auto（digest 吸收）｜surface（摘要呈報——
+    B′：全文面＝SC INBOX，canonical 欄位僅供內部，不進輸出）。"""
 
     action: str
     reason: str
@@ -679,13 +681,15 @@ def triage(item, policy):
     )
 
 
-# ── 輸出渲染（digest-first；全文上限 3）──────────────────────────────
+# ── 輸出渲染（digest-first；surface 一行摘要）──────────────────────────
 
 
 def render(address, dispositions, now_us):
-    """dispositions → 輸出行（digest 行＋surface 項）。auto 由 digest
-    吸收（「例行已處理」——絕不宣稱 work accepted）；surface 前 3 筆
-    全文（canonical envelope 原文），超出者一行 header 摘要。"""
+    """dispositions → 輸出行（digest 行＋surface 一行摘要）。auto 由 digest
+    吸收（「例行已處理」——絕不宣稱 work accepted）；B′ 解凍（AIR-258，
+    SC-305 上線）後 surface 項不注入全文——人類判讀面＝SC INBOX（durable
+    投影），本處壓成 class 計數＋envelope_id 前 SURFACE_ID_LIMIT 封的
+    指針摘要（無 body；處置語義不變——surface 項照樣計入 ack 前處置）。"""
     if not dispositions:
         return []
     surf = [d for d in dispositions if d.action == "surface"]
@@ -714,19 +718,20 @@ def render(address, dispositions, now_us):
         f"{k}×{v}" for k, v in counts.items()
     )
     lines = [head]
-    for i, d in enumerate(surf, 1):
-        if i <= SURFACE_FULL_TEXT_LIMIT:
-            lines.append(
-                f"[{HOOK_TAG}] 待你處置（{i}/{len(surf)}）：{d.canonical}"
-            )
-        else:
-            lines.append(
-                f"[{HOOK_TAG}] 待你處置（{i}/{len(surf)}，摘要）"
-                f"from={d.from_session or 'unknown'} "
-                f"class={d.klass or 'unknown'} "
-                f"intent={d.intent or 'unknown'} "
-                f"envelope_id={d.envelope_id or 'unknown'}"
-            )
+    if surf:
+        surf_counts: dict[str, int] = {}
+        for d in surf:
+            label = d.klass if d.klass else "unknown"
+            surf_counts[label] = surf_counts.get(label, 0) + 1
+        ids = [d.envelope_id if d.envelope_id else "unknown" for d in surf]
+        id_list = "、".join(ids[:SURFACE_ID_LIMIT])
+        if len(ids) > SURFACE_ID_LIMIT:
+            id_list += "…"
+        lines.append(
+            f"[{HOOK_TAG}] {address}：{len(surf)} 件等你——"
+            + "、".join(f"{k}×{v}" for k, v in surf_counts.items())
+            + f"（全文見 SC INBOX／dutymail events {id_list}）"
+        )
     return lines
 
 

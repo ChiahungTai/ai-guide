@@ -14,7 +14,7 @@ default-deny 分診表、絕不 flush-ack）單一源＝scripts/duty_receive.py�
 
 | 情境 | stdout | exit |
 |---|---|---|
-| 新到信件（digest＋surface 項） | hookSpecificOutput | 0 |
+| 新到信件（digest＋surface 一行摘要——B′ AIR-258：全文面＝SC INBOX） | hookSpecificOutput | 0 |
 | 無新信（空批次）／無 session_id | 空（安靜） | 0 |
 | eligibility gate 不過（cwd 在 repo 外） | 空（零查詢零輸出） | 0 |
 | store 缺席（face class 4 storage） | 空＋stderr 一行註記 | 0 |

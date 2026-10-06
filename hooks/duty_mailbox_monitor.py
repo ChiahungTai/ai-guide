@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """dutymail 信箱 monitor 提醒 hook（AIR-254.4——AIR-233 提醒面降級重寫；
-review 修復 U2：holderless pending 語義重設計）。
+AIR-258 B′ 解凍：holderless pending 語義改常態）。
 
 trigger 骨架沿用 AIR-225.1：UserPromptSubmit（每次 user 打字）與
 SessionStart（session 回場）兩個 interaction boundary，單一 script 服務
@@ -9,7 +9,8 @@ SessionStart（session 回場）兩個 interaction boundary，單一 script 服�
 233 面）已隨本重寫退役。
 
 **語義裁定（marshal judge 採納）**：bounded monitor reports **holderless
-pending**（duty-active recovery window）。資料面只留兩個唯讀 face——
+pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判讀；B′ 前
+為 duty-active 異常窗口語義）。資料面只留兩個唯讀 face——
 `holder status`（live 偵測）＋`receive status`（pendingCount 現值）；
 events face 消費（accepted 事件史計數）全面退役——事件史不因 ack 消失，
 對他方 holding 的門牌會誤報、且與 duty_receive 衝突行（「處理面照舊由
@@ -25,11 +26,11 @@ only——pendingCount 整數以外絕不進輸出。
 1. `holder status` live=True（本 session hold——duty-receive state
    epoch==status.epoch，或他方 live）→ 靜默（covered：處理面由 holder
    承擔）＋`last_pending` baseline 歸零。
-2. live=False（**holderless**——recovery window）→ `receive status`
-   pendingCount：
-   - >0 且 ≠ baseline → 一行 advisory `[duty-monitor] <alias>：holderless
-     pending N 封（recovery window——無 session hold；開 duty session
-     處理）`＋baseline=N；
+2. live=False（**holderless**——B′ 常態：pending 在 INBOX 等人判讀）→
+   `receive status` pendingCount：
+   - >0 且 ≠ baseline → 一行 advisory `[duty-monitor] <alias>：
+     holderless pending N 封（pending 在 INBOX 等人判讀——B′：workspace
+     信終點＝durable INBOX；dutymail receive status 可查）`＋baseline=N；
    - >0 且 == baseline（未變化）→ 靜默（防每 prompt 轟炸）；
    - ==0 → 靜默＋baseline 歸零。
 3. face 失敗（store 缺席／unknown-address／pendingCount 形漂移）→ 該門牌
@@ -220,12 +221,14 @@ def _pending_count(runner, address):
 
 
 def advisory_line(address, count):
-    """單門牌 advisory 行——holderless pending 計數＋recovery window 語義
-    ＋動作指針。語義＝「本 session 提醒到哪」：不宣稱 global 狀態、不觸
+    """單門牌 advisory 行——holderless pending 計數＋常態語義（B′：
+    workspace 信終點＝durable INBOX，pending 等人判讀非異常）＋查詢
+    指針。語義＝「本 session 提醒到哪」：不宣稱 global 狀態、不觸
     human seen/done、非責任結清點。"""
     return (
         f"[{HOOK_TAG}] {address}：holderless pending {count} 封"
-        "（recovery window——無 session hold；開 duty session 處理）"
+        "（pending 在 INBOX 等人判讀——B′：workspace 信終點＝durable INBOX；"
+        "dutymail receive status 可查）"
     )
 
 

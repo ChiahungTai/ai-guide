@@ -56,11 +56,15 @@ ack 是唯一 cursor 前進邊、只前進連續前綴；crash 重送不跳信�
 `hooks/duty_receive.py`（SessionStart＋UserPromptSubmit 邊界）→ `scripts/duty_receive.py`：
 bind（consent CAS）→ prepare（bounded batch ≤8）→ triage（**default-deny**：class×action 表
 〔`governance/dutymail-processor.toml`，user 可編輯〕＋intent∈{inform,receipt}＋可機械驗證才
-auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest 吸收；surface＝呈報值星，
-全文≤3 筆）→ ack（**絕不 flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
+auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest 吸收；surface＝一行摘要
+——class 計數＋envelope_id 前 3、無 body，全文判讀面＝SC INBOX〔B′ 解凍 2026-10-06，
+SC-305 上線——surface 項照樣計入 ack 前處置，差別只是不注入全文〕）→ ack（**絕不
+flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 （terminal status 只是 fact）。**v1 不主動送信**（send/replies＝outward，逐次 AUTH）。
 
 ## 閒置語義
 
 無 duty session＝零查詢零輸出（註冊面即邊界；無背景輪詢/watcher）。SC badge 的未處理數
-源＝dutymail projection（undone 數），不是 AI 提醒 baseline（AIR-254.4 降級）。
+源＝dutymail projection（undone 數），不是 AI 提醒 baseline（AIR-254.4 降級）。monitor 的
+holderless advisory＝常態語義（B′ 解凍 2026-10-06，SC-305 上線：pending 在 INBOX 等人
+判讀——workspace 信終點＝durable INBOX；`dutymail receive status` 可查，非異常窗口）。

@@ -1,8 +1,9 @@
 """dutymail 信箱 monitor hook 測試（AIR-254.4——review 修復 U2/U3/U4 重寫）。
 
 語義裁定（marshal judge 採納）：bounded monitor reports **holderless
-pending**（duty-active recovery window）。資料面只留兩個唯讀 face——
-`holder status`（live 偵測）＋`receive status`（pendingCount）；events face
+pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判讀，非
+異常窗口）。資料面只留兩個唯讀 face——`holder status`（live 偵測）＋
+`receive status`（pendingCount）；events face
 消費全面退役（collect_events／頁上限／events_cursor 游標語義不再存在）。
 
 涵蓋（工單覆蓋面）：
@@ -174,7 +175,7 @@ class TestHoldSilent:
         assert not os.path.exists(state_file)
 
 
-# ── 決策表：holderless pending advisory（recovery window）─────────────
+# ── 決策表：holderless pending advisory（B′ 常態語義）─────────────────
 
 
 class TestHolderlessPending:
@@ -192,7 +193,8 @@ class TestHolderlessPending:
         assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
         assert doc["hookSpecificOutput"]["additionalContext"] == (
             "[duty-monitor] " + ADDRESS + "：holderless pending 2 封"
-            "（recovery window——無 session hold；開 duty session 處理）"
+            "（pending 在 INBOX 等人判讀——B′：workspace 信終點＝durable"
+            " INBOX；dutymail receive status 可查）"
         )
         # 呼叫面凍結：holder status → receive status（唯讀兩 face）
         assert runner.calls == [
