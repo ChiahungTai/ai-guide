@@ -84,3 +84,5 @@ fake `wait`/`events` stub binary（記 argv＋可注入行為序列）；state d
 ## 完成閘
 
 `uv run pytest tests/test_mail_waiter.py -v` 全綠＋全套 `uv run pytest` 無新失敗＋ruff clean＋AC5 rg 收執＋AC6 smoke 收執落卡。
+
+> **amendment（tri-panel 修復 J-1..J-7）**：waiter 自帶 runner（timeout＝輪詢切片＋30s margin、TimeoutExpired 歸 skip-round fail-soft）；state 寫入面（start/stop/guarded update）flock 序列化；coalesce 快照＝觸發門牌以外全部（before＋after）；非空頁缺 nextCursor＝shape-drift fail-loud；worker 頂先驗 generation（superseded 先於 stopped）；snapshot 全容忍（一切 DutymailFaceError→round_failed、主 watch 路徑 fail-loud 不變）。

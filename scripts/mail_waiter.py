@@ -37,6 +37,14 @@ skills/mail-watch/SKILL.md「waiter 家族憲章」節）：
   一輪彙總＋cursor 推進——一次 exit 報該輪全部新事件，re-arm 從新
   cursor 起，舊信不再觸發；不需額外合併窗口。
 
+tri-panel 修復（AIR-266 J-1..J-7）：waiter 自帶 runner（timeout＝輪詢
+切片＋30s margin；TimeoutExpired 歸 skip-round fail-soft 續輪）；state
+寫入面（start/stop/guarded update）flock 序列化；coalesce 快照＝觸發
+門牌以外全部（before＋after）；非空頁缺 nextCursor＝shape-drift
+fail-loud（絕不回 None token）；worker 頂先驗 generation（stale 恆報
+superseded）；snapshot 全容忍（一切 DutymailFaceError→round_failed，
+主 watch 路徑 fail-loud 不變）。
+
 State schema（EP 凍結；XDG state 機器級、0600 atomic 寫）：
 `$ {XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`
 {"desired": "running|stopped", "generation": <int>, "armed_at": <unix>,
@@ -63,11 +71,14 @@ tests/test_mail_waiter.py（TC-W1..W9＋控制面）。
 """
 
 import argparse
+import fcntl
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import time
+from contextlib import contextmanager
 from functools import partial
 
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -106,6 +117,30 @@ OBSERVED_FACES = frozenset({WAIT_FACE, EVENTS_FACE})
 WAIT_TIMEOUT_CLASS = "wait-timeout"
 SKIP_ROUND_CLASSES = frozenset({"storage", "fencing"})
 FAIL_LOUD_CLASSES = frozenset({"usage", "admission"})
+# J-1：runner 層 subprocess timeout＝wait 切片＋margin——wait 可合法佔滿
+# 整個 60s 切片，core 固定 30s 會先殺 wait（TimeoutExpired 裸炸、到不了
+# class-6、無尾行）。
+RUNNER_TIMEOUT_MARGIN_SECONDS = 30
+# J-2：state 寫入面序列化鎖（dedicated lock file；flock 用 fd——state
+# 本檔走 tmp＋os.replace，inode 更換＝鎖 state 檔本身是假鎖）。
+STATE_LOCK_FILENAME = "state.lock"
+
+
+def _waiter_runner(argv):
+    """mail_waiter 專屬 runner（J-1）：最小 wrapper 包 subprocess.run
+    （timeout＝POLL_SLICE_SECONDS＋margin）後交 core 解析——binary 解析
+    與 typed-failure 同源 core 不複製；TimeoutExpired 由呼叫端歸
+    skip-round fail-soft。"""
+    proc = subprocess.run(
+        [core._resolve_binary()] + list(argv),
+        capture_output=True,
+        text=True,
+        timeout=POLL_SLICE_SECONDS + RUNNER_TIMEOUT_MARGIN_SECONDS,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise core._face_error_from_stderr(proc.stderr, proc.returncode)
+    return proc.stdout
 
 
 # ── state 路徑與載入（XDG state／ai-guide/mail-waiter；可注入）─────────
@@ -193,13 +228,28 @@ def _classify_face_error(exc):
     raise exc
 
 
+def _missing_next_cursor(address, detail):
+    """J-4：非空頁缺 nextCursor＝契約違反（nextCursor 恒由頁末項編碼）
+    ——shape-drift fail-loud，絕不回 None token（防 cursor 退回冷啟
+    null、下輪全歷史重計）。"""
+    return core.DutymailFaceError(
+        "shape-drift", "unknown",
+        f"非空頁缺 nextCursor（address {address}）：{detail!r}"[:200],
+        False, 0,
+    )
+
+
 def advance_to_head(runner, address, seen, tok):
     """續翻到 head（事件計數＋cursor 推進）——到底判準＝空頁。
 
     seen＝已計數事件數、tok＝最後一頁 nextCursor；回 (total, cursor)。
-    空頁時 cursor 維持前一頁 token（該 token 之後已無事件）。
+    空頁時 cursor 維持前一頁 token（該 token 之後已無事件）；非空頁
+    （含呼叫端傳入的首頁——seen>0）缺 nextCursor＝shape-drift raise
+    （J-4——契約 violation 大聲）。
     """
     total = seen
+    if seen and tok is None:
+        raise _missing_next_cursor(address, f"first page {seen} items")
     while tok is not None:
         result = core._call(runner, _events_face_argv(address, tok))
         items = _page_items(result)
@@ -207,6 +257,8 @@ def advance_to_head(runner, address, seen, tok):
         if not items:
             break
         tok = _page_next(result)
+        if tok is None:
+            raise _missing_next_cursor(address, result)
     return total, tok
 
 
@@ -244,41 +296,68 @@ def watch_address(runner, address, cursor):
 
 
 def snapshot_address(runner, address, cursor):
-    """非阻塞快照（喚醒時 coalesce 掃其餘門牌）→ (count, cursor)。
+    """非阻塞快照（喚醒時 coalesce 掃其餘門牌）→ (count, cursor, failed)。
 
-    events 對滾（不 wait——喚醒不延遲）；typed failure 比照分流消化
-    （usage/admission 類 raise 交上層 fail-loud）。
+    events 對滾（不 wait——喚醒不延遲）；J-6/J-7 快照面全容忍：捕捉
+    一切 DutymailFaceError（含 usage/admission——不再 raise）與 runner
+    timeout，回 (0, cursor, True) 交 caller 標記 round_failed——喚醒
+    不因快照失敗延遲或吞掉（主 watch 路徑 fail-loud 行為不變）。
     """
     try:
         result = core._call(runner, _events_face_argv(address, cursor))
         items = _page_items(result)
         if not items:
-            return 0, cursor
-        return advance_to_head(
+            return 0, cursor, False
+        count, tok = advance_to_head(
             runner, address, len(items), _page_next(result)
         )
-    except core.DutymailFaceError as exc:
-        action = _classify_face_error(exc)
-        if action == "digest":
-            return 0, cursor
-        return 0, cursor  # skip 類：快照面靜默跳過（主輪標記由觸發門牌路徑負責）
+        return count, tok, False
+    except (core.DutymailFaceError, subprocess.TimeoutExpired):
+        return 0, cursor, True
 
 
 # ── generation CAS：guarded read-modify-write（invariant 6）───────────
 
 
+def state_lock_path(base_dir=None):
+    """state 寫入面 dedicated lock file（與 state.json 同目錄、獨立檔）。"""
+    return os.path.join(state_base_dir(base_dir), STATE_LOCK_FILENAME)
+
+
+@contextmanager
+def _state_lock(base_dir):
+    """blocking flock（J-2）：read-check-mutate-save 整段 critical
+    section 序列化——start/stop/guarded update 同走此鎖，消滅
+    load→check→save 的 TOCTOU 窗（同 process 兩 fd 亦互斥）。"""
+    path = state_lock_path(base_dir)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+
 def _guarded_update(state_file, generation, mutate):
     """寫入前重讀比對 generation——不匹配＝已被新 arm 取代，回 False
     （呼叫端 superseded 靜默退、不寫 state）。state 缺席＝無衝突證據
-    （冷啟面）以 fresh schema 為底照寫。"""
-    current = core.load_state(state_file)
-    if current is None:
-        current = _fresh_state(generation, [])
-    elif current.get("generation") != generation:
-        return False
-    mutate(current)
-    core.save_state(state_file, current)
-    return True
+    （冷啟面）以 fresh schema 為底照寫。J-2：compare+write 包進
+    _state_lock critical section（與 start/stop 序列化——TOCTOU 窗
+    不存在）。"""
+    base_dir = os.path.dirname(state_file)
+    with _state_lock(base_dir):
+        current = core.load_state(state_file)
+        if current is None:
+            current = _fresh_state(generation, [])
+        elif current.get("generation") != generation:
+            return False
+        mutate(current)
+        core.save_state(state_file, current)
+        return True
 
 
 def _record_exit(state_file, generation, code, reason):
@@ -328,16 +407,20 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
                stdout=None, stderr=None, sleep=time.sleep):
     """worker loop（per address 輪轉）→ exit code。
 
-    每輪：load state → desired=stopped／generation 不匹配＝安靜退（尾行
-    state=stopped|superseded）→ 逐門牌 watch_address（wait 掛哨 60s 切片）
-    → 新事件：coalesce 快照其餘門牌 → guarded 寫（cursor 推進＋心跳）
-    → exit 0＋尾行 {"state":"mail","new":[{address,count}...],"rearm":...}
-    。整輪 timeout/空頁＝內部消化（冷啟空頁輪末睡切片）；class 4/5＝跳輪
-    ＋last_round_failed；class 2/3／形漂移＝exit 2 fail-loud。
+    每輪：load state → generation 不匹配（J-5：先驗代——stale worker
+    恆報 superseded）／desired=stopped＝安靜退（尾行 state=
+    superseded|stopped）→ 逐門牌 watch_address（wait 掛哨 60s 切片）
+    → 新事件：coalesce 快照「觸發門牌以外全部」門牌（J-3）→ guarded
+    寫（cursor 推進＋心跳）→ exit 0＋尾行 {"state":"mail","new":
+    [{address,count}...],"rearm":...}。整輪 timeout/空頁＝內部消化
+    （冷啟空頁輪末睡切片）；class 4/5＝跳輪＋last_round_failed；
+    class 2/3／形漂移＝exit 2 fail-loud；runner 層 TimeoutExpired＝
+    skip-round fail-soft（J-1——log 續輪絕不裸崩）。預設 runner＝
+    _waiter_runner（timeout＝切片＋margin，非 core 固定 30s）。
     """
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
-    run = runner if runner is not None else core._default_runner
+    run = runner if runner is not None else _waiter_runner
     state_file = state_file_path(base_dir)
 
     def _superseded():
@@ -360,10 +443,10 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
             # 視 argv generation 為當代——寧重不漏對滾，寫入仍走 guard）
             state = _fresh_state(generation, addresses)
         else:
+            if state.get("generation") != generation:
+                return _superseded()  # J-5：先驗代——stale 恆報 superseded
             if state.get("desired") == "stopped":
                 return _stopped()
-            if state.get("generation") != generation:
-                return _superseded()
         entries = state.get("addresses")
         if not isinstance(entries, dict):
             entries = {}
@@ -379,11 +462,23 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
                 if kind == "mail":
                     new_events.append({"address": address, "count": count})
                     advanced[address] = (count, tok)
-                    # coalesce（invariant 8）：其餘門牌非阻塞快照——
-                    # 一次 exit 報該輪全部新事件
-                    for other in addresses[index + 1:]:
+                    # coalesce（invariant 8；J-3 修訂）：快照「觸發門牌
+                    # 以外」全部門牌（before＋after——非僅 index 之後）
+                    # ——一次 exit 報該輪全部新事件；快照失敗全容忍
+                    # （J-6/J-7）——round_failed 標記、喚醒不延遲不崩。
+                    for j, other in enumerate(addresses):
+                        if j == index:
+                            continue
                         o_cursor = _entry_cursor(entries, other)
-                        o_count, o_tok = snapshot_address(run, other, o_cursor)
+                        o_count, o_tok, o_failed = snapshot_address(
+                            run, other, o_cursor
+                        )
+                        if o_failed:
+                            round_failed = True
+                            _emit_diag(
+                                err, f"coalesce 快照失敗（{other}）——"
+                                     "round_failed 標記、續行",
+                            )
                         if o_count:
                             new_events.append(
                                 {"address": other, "count": o_count}
@@ -401,6 +496,12 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
             _emit_tail(out, {"state": "fail-loud",
                              "reason": f"{exc.error_class}: {exc}"})
             return EXIT_FAIL_LOUD
+        except subprocess.TimeoutExpired as exc:
+            # J-1：runner 層 timeout（wait 佔滿切片＋margin 仍無回應）
+            # ＝skip-round fail-soft——log 續輪＋last_round_failed 標記，
+            # 絕不裸崩（skip 輪零尾行——喚醒仍是唯一 exit 面）。
+            round_failed = True
+            _emit_diag(err, f"runner timeout——skip-round fail-soft（{exc}）")
 
         if new_events:
             if not _guarded_update(
@@ -451,26 +552,28 @@ def cmd_start(addresses, base_dir=None):
     """arm：desired=running＋generation+=1 → 印 arm 命令（可直接複製）。
 
     既有 per-address cursor 保留（coalesce 延續——舊信不再觸發）；state
-    缺席/損壞＝generation 歸零重 arm（1 起）。
+    缺席/損壞＝generation 歸零重 arm（1 起）。J-2：load→+1→save 包進
+    _state_lock（與 stop/worker 寫入序列化——generation 無 lost update）。
     """
     state_file = state_file_path(base_dir)
-    existing = core.load_state(state_file)
-    generation = 1 if existing is None else int(
-        existing.get("generation") or 0
-    ) + 1
-    state = _fresh_state(generation, addresses)
-    if existing is not None:
-        kept = existing.get("addresses")
-        if isinstance(kept, dict):
-            state["addresses"] = kept
-        for address in addresses:
-            state["addresses"].setdefault(
-                address, {"cursor": None, "last_event_seq": 0}
-            )
-        last_exit = existing.get("last_exit")
-        if last_exit is not None:
-            state["last_exit"] = last_exit
-    core.save_state(state_file, state)
+    with _state_lock(base_dir):
+        existing = core.load_state(state_file)
+        generation = 1 if existing is None else int(
+            existing.get("generation") or 0
+        ) + 1
+        state = _fresh_state(generation, addresses)
+        if existing is not None:
+            kept = existing.get("addresses")
+            if isinstance(kept, dict):
+                state["addresses"] = kept
+            for address in addresses:
+                state["addresses"].setdefault(
+                    address, {"cursor": None, "last_event_seq": 0}
+                )
+            last_exit = existing.get("last_exit")
+            if last_exit is not None:
+                state["last_exit"] = last_exit
+        core.save_state(state_file, state)
     print(f"[{TAG}] armed：generation {generation}、"
           f"addresses {','.join(addresses)}、state {state_file}")
     print(arm_command(addresses, generation, base_dir))
@@ -479,14 +582,15 @@ def cmd_start(addresses, base_dir=None):
 
 def cmd_stop(base_dir=None):
     """落 flag（desired=stopped；generation 不動）——worker 下輪自退，
-    尾行回報 stopped。"""
+    尾行回報 stopped。J-2：與 start/worker 寫入同走 _state_lock。"""
     state_file = state_file_path(base_dir)
-    state = core.load_state(state_file)
-    if state is None:
-        state = _fresh_state(0, [])
-        state["generation"] = 0
-    state["desired"] = "stopped"
-    core.save_state(state_file, state)
+    with _state_lock(base_dir):
+        state = core.load_state(state_file)
+        if state is None:
+            state = _fresh_state(0, [])
+            state["generation"] = 0
+        state["desired"] = "stopped"
+        core.save_state(state_file, state)
     print(f"[{TAG}] stop flag 落下（desired=stopped；state {state_file}）"
           "——worker 下輪自退，尾行回報 stopped")
     return EXIT_OK

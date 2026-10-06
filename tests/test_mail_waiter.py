@@ -26,6 +26,7 @@ import io
 import json
 import os
 import stat
+import threading
 import time
 
 from conftest import load_module
@@ -559,3 +560,244 @@ class TestStateHygiene:
         assert mode == 0o600
         leftovers = [f for f in os.listdir(str(base)) if f.endswith(".tmp")]
         assert leftovers == []
+
+
+# ── tri-panel 修復（J-1..J-7——GLM-5.3 judge 8 findings）───────────────
+
+
+class TestTriPanelFixes:
+    def test_j1_runner_timeout_skip_round_real_stub(self, tmp_path,
+                                                    monkeypatch):
+        """J-1：stub binary 真睡 5s 超過 runner timeout（切片 1s＋margin
+        2s＝3s）→ TimeoutExpired 歸 skip-round fail-soft——續輪不崩、skip
+        輪零尾行外洩，第 3 輪事件到照常喚醒（waiter 自帶 runner，非
+        core 固定 30s）。"""
+        base = tmp_path / "st"
+        _seed_state(base, cursors={ADDR: "tok0"})
+        events_empty = json.dumps({
+            "schemaVersion": 1, "ok": True,
+            "result": {"items": [], "nextCursor": None},
+        })
+        wait_page = json.dumps({
+            "schemaVersion": 1, "ok": True,
+            "result": {"items": [_item(9)], "nextCursor": "tok9"},
+        })
+        stub = tmp_path / "stub-dutymail"
+        stub.write_text("\n".join([
+            "#!/bin/sh",
+            'n=$(cat "$STUB_CNT" 2>/dev/null || echo 0)',
+            "n=$((n + 1))",
+            'printf "%s" "$n" > "$STUB_CNT"',
+            'if [ "$1" = "wait" ] && [ "$n" -lt 3 ]; then sleep 5; fi',
+            'if [ "$1" = "events" ]; then',
+            f"  printf '%s' '{events_empty}'",
+            "else",
+            f"  printf '%s' '{wait_page}'",
+            "fi",
+        ]) + "\n", encoding="utf-8")
+        stub.chmod(0o755)
+        monkeypatch.setenv("DUTYMAIL_BIN", str(stub))
+        monkeypatch.setenv("STUB_CNT", str(tmp_path / "calls"))
+        monkeypatch.setattr(mod, "POLL_SLICE_MS", 1_000)
+        monkeypatch.setattr(mod, "POLL_SLICE_SECONDS", 1.0)
+        monkeypatch.setattr(mod, "RUNNER_TIMEOUT_MARGIN_SECONDS", 2.0)
+        out = io.StringIO()
+        err = io.StringIO()
+        rc = mod.run_worker(
+            [ADDR], 1, base_dir=str(base), stdout=out, stderr=err,
+            sleep=lambda _s: None,
+        )
+        assert rc == mod.EXIT_OK
+        lines = [ln for ln in out.getvalue().splitlines() if ln.strip()]
+        assert len(lines) == 1  # skip 輪零尾行外洩——唯一尾行＝喚醒
+        tail = json.loads(lines[0])
+        assert tail["state"] == "mail"
+        assert tail["new"] == [{"address": ADDR, "count": 1}]
+        assert err.getvalue().count("runner timeout") == 2  # 兩輪 fail-soft
+        st = _read_state(base)
+        assert st["generation"] == 1
+        assert st["addresses"][ADDR]["cursor"] == "tok9"
+        assert st["last_exit"]["reason"] == "mail"
+        assert st["last_round_failed"] is False
+
+    def test_j2_concurrent_start_stop_update_consistency(self, tmp_path):
+        """J-2：真 race——50 並發 start/stop/guarded-update 交錯，flock
+        序列化下事後不變式：generation 恰＝種子＋start 次數（單調零
+        lost update）、全部門牌不丟、desired＝最後寫入者勝（第二波純
+        update——mutate 在 critical section 內記錄鎖序本體）。"""
+        base = str(tmp_path / "st")
+        _seed_state(base, generation=1, cursors={ADDR: "tok0"})
+        state_file = _state_file(base)
+        errors = []
+        update_ok = []
+        order = []  # (i, desired)——mutate 內 append＝flock 鎖序本體
+
+        def _start(i):
+            try:
+                assert mod.cmd_start([f"start-{i}"], base) == mod.EXIT_OK
+            except Exception as exc:
+                errors.append(f"start-{i}: {exc!r}")
+
+        def _stop():
+            try:
+                assert mod.cmd_stop(base) == mod.EXIT_OK
+            except Exception as exc:
+                errors.append(f"stop: {exc!r}")
+
+        def _update(i):
+            try:
+                desired = "running" if i % 2 else "stopped"
+
+                def mutate(st):
+                    entries = st.setdefault("addresses", {})
+                    entry = entries.setdefault(
+                        f"upd-{i}", {"cursor": None, "last_event_seq": 0}
+                    )
+                    entry["last_event_seq"] = (
+                        int(entry.get("last_event_seq") or 0) + 1
+                    )
+                    st["desired"] = desired
+                    order.append((i, desired))  # critical section 內＝鎖序
+
+                current = mod.core.load_state(state_file)
+                generation = current.get("generation") if current else 1
+                if mod._guarded_update(state_file, generation, mutate):
+                    update_ok.append(i)
+            except Exception as exc:
+                errors.append(f"upd-{i}: {exc!r}")
+
+        threads = (
+            [threading.Thread(target=_start, args=(i,))
+             for i in range(16)]
+            + [threading.Thread(target=_stop) for _ in range(16)]
+            + [threading.Thread(target=_update, args=(i,))
+               for i in range(18)]
+        )
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert errors == []
+        st = _read_state(base)
+        assert st["generation"] == 17  # 種子 1＋16 start——零 lost increment
+        entries = st["addresses"]
+        assert entries[ADDR]["cursor"] == "tok0"  # 原始 cursor 不丟
+        for i in range(16):
+            assert f"start-{i}" in entries  # start 門牌全在
+        for i in update_ok:
+            assert entries[f"upd-{i}"]["last_event_seq"] == 1  # update 不丟
+
+        # 第二波：純 update（無 start/stop 干擾）——最後寫入者勝精確釘
+        order.clear()
+        wave2 = [
+            threading.Thread(target=_update, args=(100 + i,))
+            for i in range(20)
+        ]
+        for t in wave2:
+            t.start()
+        for t in wave2:
+            t.join()
+        assert errors == []
+        st = _read_state(base)
+        assert st["generation"] == 17  # 無人動 generation
+        assert len(order) == 20
+        assert st["desired"] == order[-1][1]  # 鎖序最後一筆＝終值
+
+    def test_j3_coalesce_snapshots_addresses_before_trigger(self, tmp_path):
+        """J-3：第一門牌 timeout 後第二門牌觸發——觸發門牌「之前」的門牌
+        有新信也要併入本次 exit（快照＝觸發門牌以外全部，非 index+1
+        之後）。"""
+        base = tmp_path / "st"
+        first, second, third = "m1", "m2", "m3"
+        _seed_state(base, cursors={first: "a0", second: "b0", third: "c0"})
+        runner = ScriptRunner([
+            _face_err("wait-timeout", "wait-timeout", 6),  # 1. wait m1
+            _ok_page([21, 22], "b1"),                      # 2. wait m2：mail
+            _ok_page([], None),                            # 3. m2 續翻到底
+            _ok_page([11], "a1"),                          # 4. 快照 m1（前段）
+            _ok_page([], None),                            # 5. m1 續翻到底
+            _ok_page([], None),                            # 6. 快照 m3（後段）
+        ])
+        rc, tail, _out = _run(
+            base, runner, addresses=(first, second, third)
+        )
+        assert rc == 0
+        assert tail["state"] == "mail"
+        got = {(row["address"], row["count"]) for row in tail["new"]}
+        assert got == {(second, 2), (first, 1)}
+        st = _read_state(base)
+        assert st["addresses"][first]["cursor"] == "a1"  # 前段 cursor 推進
+        assert st["addresses"][second]["cursor"] == "b1"
+        assert st["addresses"][third]["cursor"] == "c0"  # 無新信不動
+
+    def test_j4_wait_page_nonempty_without_next_cursor_fail_loud(
+        self, tmp_path,
+    ):
+        """J-4：wait 非空頁缺 nextCursor（契約違反——nextCursor 恒由頁末
+        項編碼）＝shape-drift fail-loud——絕不回 None token（cursor 不退
+        回冷啟 null）。"""
+        base = tmp_path / "st"
+        _seed_state(base, cursors={ADDR: "tok0"})
+        runner = ScriptRunner([
+            _ok_page([1, 2], None),  # 非空頁卻無 nextCursor
+        ])
+        rc, tail, _out = _run(base, runner)
+        assert rc == mod.EXIT_FAIL_LOUD
+        assert tail["state"] == "fail-loud"
+        assert "shape-drift" in tail["reason"]
+        st = _read_state(base)
+        assert st["addresses"][ADDR]["cursor"] == "tok0"  # 不退回 null
+        assert st["last_exit"]["code"] == mod.EXIT_FAIL_LOUD
+
+    def test_j4_events_page_nonempty_without_next_cursor_fail_loud(
+        self, tmp_path,
+    ):
+        """J-4（續翻頁）：events 續翻非空頁缺 nextCursor 同契約違反——
+        shape-drift fail-loud。"""
+        base = tmp_path / "st"
+        _seed_state(base, cursors={ADDR: "tok0"})
+        runner = ScriptRunner([
+            _ok_page([1], "t1"),
+            _ok_page([2], None),  # 續翻頁非空卻無 nextCursor
+        ])
+        rc, tail, _out = _run(base, runner)
+        assert rc == mod.EXIT_FAIL_LOUD
+        assert tail["state"] == "fail-loud"
+        assert "shape-drift" in tail["reason"]
+
+    def test_j5_superseded_precedes_stopped(self, tmp_path):
+        """J-5：worker loop 頂先查 generation 再查 stopped——舊代 worker
+        （gen 1）＋state 已停（gen 2、desired=stopped）→ 尾行 superseded
+        非 stopped（stale worker 恆報 superseded）。"""
+        base = tmp_path / "st"
+        _seed_state(base, desired="stopped", generation=2,
+                    cursors={ADDR: "tok0"})
+        runner = ScriptRunner([])
+        rc, tail, _out = _run(base, runner, generation=1)
+        assert rc == 0
+        assert tail["state"] == "superseded"
+        assert runner.calls == []
+        st = _read_state(base)
+        assert st["last_exit"] is None  # superseded 不寫 state
+
+    def test_j67_snapshot_failure_tolerated_round_failed(self, tmp_path):
+        """J-6/J-7：主門牌 mail 後續 snapshot 撞 usage（原 fail-loud 類）
+        ——快照面全容忍：照樣 exit 0 報 mail＋last_round_failed=True、
+        該門牌 cursor 不推進（主 watch 路徑 fail-loud 行為不變）。"""
+        base = tmp_path / "st"
+        other = "other-marshal"
+        _seed_state(base, cursors={ADDR: "a0", other: "b0"})
+        runner = ScriptRunner([
+            _ok_page([11], "a1"),                          # 1. wait 主：mail
+            _ok_page([], None),                            # 2. 主續翻到底
+            _face_err("unknown-flag", "usage", 2, "bad"),   # 3. 快照：usage
+        ])
+        rc, tail, _out = _run(base, runner, addresses=(ADDR, other))
+        assert rc == 0  # 快照失敗不吞喚醒、不崩
+        assert tail["state"] == "mail"
+        got = {(row["address"], row["count"]) for row in tail["new"]}
+        assert got == {(ADDR, 1)}
+        st = _read_state(base)
+        assert st["last_exit"]["reason"] == "mail"
+        assert st["last_round_failed"] is True  # 快照失敗標記
+        assert st["addresses"][other]["cursor"] == "b0"  # 不推進
