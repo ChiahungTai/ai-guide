@@ -4,7 +4,7 @@ title: mail-waiter——session 級信件喚醒 watcher（waiter 家族第三員
 status: In Progress
 assignee: []
 created_date: '2026-10-06 21:22'
-updated_date: '2026-10-06 21:23'
+updated_date: '2026-10-06 22:04'
 labels:
   - dutymail
 dependencies: []
@@ -44,5 +44,15 @@ flowchart LR
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-tri verdict 全文：muse job-mux6l3zj-7d10b8＋codex job-mux6l413-qsdwof（2026-10-07）。5.3 裁決：Q2 折中（契約文件化＋自含實作＋core 延後）；Q3 採 codex 加強版 state schema；coalesce=cursor 推進天然（muse 漏看面解法）。brief=.agent-tmp/mail-waiter-brief.md。前置研究腿：waiter 家族喚醒鏈實證（bridge_waiter T1-T9/harness_waiter/dutymail wait class-6=124 等價）。
+## Tri-panel review verdict（GLM-5.3 judge，2026-10-07）
+
+三腿：muse review face＋codex WO task face（review face 撞 28K 閘改自跑 git diff）＋5.3 自審（四 findings 親驗 code 屬實）。合併 8 findings——**全採納**：
+J-1 HIGH（codex）真實 runner 30s timeout 殺 60s wait——fake-runner 遮蔽、真場 smoke 靠運氣未曝；修＝waiter 專用 runner（timeout>deadline）＋TimeoutExpired 歸 skip-round fail-soft。
+J-2 HIGH（codex）generation CAS＝TOCTOU（load→check→save 無鎖；測試把 race 排在 guard load 前＝沒測到真 race）；修＝flock critical section（compare+write＋start increment 同一原子邊界）。
+J-3 HIGH（muse+codex 同發）coalesce 只掃觸發後段 addresses[index+1:]；修＝snapshot 全部 other。
+J-4 HIGH（muse）非空頁無 nextCursor 靜默 cursor 歸 null→冷啟重掃；修＝shape-drift fail-loud。
+J-5 MED（muse）stopped 先於 generation 檢查→stale worker 誤標 stopped；修＝generation 先查。
+J-6 MED（muse）snapshot usage raise 丟已找到 mail 報告（持續壞配置→主門牌永不醒）；J-7 MED（codex）snapshot class4/5 靜默無 round_failed——合併修＝snapshot 全容忍（一切 typed failure→round_failed=True、不 raise），fail-loud 只在主 watch 路徑。
+J-8 MED（muse）AC5/AC6 收據落卡＝結案時主 session 補。
+被拒：無（8/8）。可逆性：全雙向。最大教訓＝J-1：fake-runner 測試面加真 subprocess timeout 案例釘住。
 <!-- SECTION:NOTES:END -->
