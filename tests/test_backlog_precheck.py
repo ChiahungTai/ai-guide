@@ -104,3 +104,46 @@ def test_cross_line_and_reverse_both_fire(tmp_path):
     assert "跨線訊號" in r.stdout
     assert "[需裁決]" in r.stdout
     assert r.stdout.count("[可清]") == 0
+
+
+def test_body_mention_not_attribution(tmp_path):
+    """他卡 commit 的 body 提及本卡 id（fixture 引用）→ 非歸屬，不觸發 [需裁決]
+    （AIR-135.4 誤聯回歸釘：air-135.1.1 body 提「AIR-135.4 真實卡 golden」，
+    原 git --grep 全文匹配誤斷 135.4 做完未收卡——歸屬訊號＝subject scope 前綴）。"""
+    repo = _init_repo(tmp_path)
+    _card(repo, "AIR-905", "To Do")
+    _commit(
+        repo,
+        "feat(air-135.1.1): goal compiler core\n\nAIR-905 真實卡 golden（fixture 引用）",
+    )
+    r = _run(repo, "AIR-905")
+    assert r.returncode == 0
+    assert "[可清]" in r.stdout
+    assert "[需裁決]" not in r.stdout
+
+
+def test_giant_single_segment_subject_midmention_not_attribution(tmp_path):
+    """巨型單段 subject（無空行分格——59ba8ce5 真實形）中段提及本卡 → 不觸發。
+    冒號後描述段＝引用位置非歸屬位置（AGENTS.md git 慣例：卡 id 帶在 scope 前綴）。"""
+    repo = _init_repo(tmp_path)
+    _card(repo, "AIR-907", "To Do")
+    _commit(
+        repo,
+        "feat(air-135.1.1): goal compiler core——三態 predicate＋24+14 測＋"
+        "AIR-907 真實卡 golden（fixture 引用）；210 passed",
+    )
+    r = _run(repo, "AIR-907")
+    assert r.returncode == 0
+    assert "[可清]" in r.stdout
+    assert "[需裁決]" not in r.stdout
+
+
+def test_scope_prefix_attribution_still_fires(tmp_path):
+    """subject scope 前綴帶本卡 id（歸屬位置）→ 照樣觸發 [需裁決]（收窄只排除引用位置）。"""
+    repo = _init_repo(tmp_path)
+    _card(repo, "AIR-906", "To Do")
+    _commit(repo, "feat(air-906): 實作某功能")
+    r = _run(repo, "AIR-906")
+    assert r.returncode == 1
+    assert "[需裁決]" in r.stdout
+    assert "feat(air-906)" in r.stdout

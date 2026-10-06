@@ -47,14 +47,23 @@ for id in "${ids[@]}"; do
     echo "[不可清] $id — 跨線訊號（其他 branch commit 提及）："; echo "$hits" | sed 's/^/    /'; blocked=1
   fi
   # 反向檢查（AIR-108）：本線已有實作 commit、卡面未翻（To Do）＝做完未收卡。
-  # 只對 To Do 生效——翻 Done 即視為裁決完成（結案序列＝先翻卡再 precheck，Done 卡自動跳過）；
-  # 過濾 bookkeeping（chore(backlog) 建卡/開工/結案 metadata），其餘 subject 命中即訊號。
+  # 只對 To Do 生效——翻 Done 即視為裁決完成（結案序列＝先翻卡再 precheck，Done 卡自動跳過）。
+  # 歸屬訊號＝subject 的 scope 前綴段（第一個冒號前——AGENTS.md git 慣例「(air-46) scope
+  # 或 air-46: 前綴」）；冒號後描述段／commit body 提及他卡＝引用非歸屬。AIR-135.4 誤聯
+  # 教訓 2026-10-07：air-135.1.1 的巨型單段 subject（無空行分格）中段出現「AIR-135.4
+  # 真實卡 golden」＝fixture 引用，git --grep 全文匹配誤斷「做完未收卡」——收窄到
+  # scope 前綴段後冒號後文字不再算歸屬。
+  # 過濾 bookkeeping（chore(backlog) 建卡/開工/結案 metadata），其餘命中即訊號。
   impl_hit=""
   if [ "$s" = "To Do" ]; then
-    if ! own=$(git log HEAD -i -E --grep "${id}([^0-9]|$)" --oneline 2>&1); then
+    if ! own=$(git log HEAD --oneline 2>&1); then
       echo "[ERROR] $id — git log 失敗（runtime，非 policy）：$own" >&2; exit 2
     fi
-    impl=$(printf '%s\n' "$own" | grep -v 'chore(backlog)' || true)
+    # 每行截成「hash scope前綴」（第一個冒號前）再 grep——顯示亦為截斷形（歸屬錨）
+    impl=$(printf '%s\n' "$own" \
+      | sed -E 's/^([0-9a-f]+ [^:]*):.*/\1/' \
+      | grep -i -E "${id}([^0-9]|$)" \
+      | grep -v 'chore(backlog)' || true)
     if [ -n "$impl" ]; then
       echo "[需裁決] $id — 本線已有實作 commit、卡面未翻（To Do）：收 Done（結案兩步）或記錄阻擋理由："
       echo "$impl" | sed 's/^/    /'
