@@ -1,7 +1,7 @@
 ---
 id: AIR-265
 title: mail-watch skill——dutymail 信件 watcher（holderless pending 音訊通知；唯讀 daemon）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 14:12'
 updated_date: '2026-10-06 14:47'
@@ -61,3 +61,39 @@ stop   → [mail-watch] stopped（pid 18822 退出；state.json 保留）exit 0
 
 tests/test_duty_mail_watch.py 24 passed（18→24：新增 bad-config fail-before-ready／say retry 兩輪／persistent recover／long alias／fresh-dir zero residue／heartbeat mark）；全套 3383 passed 1 skipped；ruff clean；`rg "holder|prepare|\.ack\b|dutymail send"` 零命中；J-2 語義抽查（say_pending 在場 line 302）＋J-3 常數抽查（READY 10/GRACE 8/SAY 5）屬實。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+**交付**：dutymail 信件 watcher 全弧——`scripts/duty_mail_watch.py`（唯讀單 face daemon：start/stop/status、flock singleton、rising edge＋冷啟通知、say 中性句 advisory）＋`skills/mail-watch/SKILL.md`（machine-level 第四通知通道操作手冊）＋契約同步兩處（voice-notification 通道表第四行、roundtrip 三線表 machine-level baseline 註記）＋`tests/test_duty_mail_watch.py`（24 案例，TC-W1..W9 含 subprocess 面結構證）。
+
+**管線**（user 指定全序，2026-10-06 深夜弧）：muse+codex+5.3 設計討論（Q3 真分歧裁決採 codex——watcher 不依賴 holder face，呼叫面收斂唯讀單 face）→ 開卡 → EP（d42bb1f5）→ WT flash 實作（11c6da9e）→ tri-panel 四腿審查（muse×2＋codex＋5.3 自審）→ GLM-5.3 judge（11 findings 全採納——J-1 HIGH start 誤報 ready、J-2 say 失敗永久消耗 edge＝EP amendment 等）→ 修復腿（506315d0，tests 18→24）→ smoke receipt 落卡 → 結案。
+
+**驗證**：AC1 rg 零命中＋W9 allowlist（含 subprocess 面）；AC2/AC3 fixture 24 案例；AC4 rg 兩處命中；AC5 真 store smoke（start pid 18822→status 證活新鮮→stop 乾淨＋state.json pid 清場）。全套 3383 passed 1 skipped；ruff clean；precheck 綠（exit 0）。
+
+**known limitations**：face 掛死（罕見）阻塞期間 stop 可能誤報失敗——daemon 於阻塞結束後自行退出（記 skill＋docstring）；macOS 睡眠中 say 被系統丟棄＝一次性邊角（advisory 非保證）。
+
+```mermaid
+flowchart LR
+    subgraph 終態（as-built）
+        U[user] -->|mail-watch start/stop/status| SK[skills/mail-watch]
+        SK --> DW[scripts/duty_mail_watch.py<br/>daemon：flock singleton]
+        DW -->|唯讀 30s 輪詢| RS[dutymail receive status<br/>pendingCount]
+        RS -->|rising edge＋冷啟一次| SAY[say Meijia r180<br/>中性句 advisory]
+        DW -->|baseline＋say_pending<br/>心跳 last_poll_at| ST[XDG state duty-watch/]
+        DR[duty_receive holder] -.prompt 邊界處理.-> RS
+        MH[monitor hook] x--x DW
+        SK2[voice-notification] & RT[roundtrip 文檔] ---|契約同步第四通道<br/>machine-level baseline| DW
+        T[tests 24 案例<br/>含 subprocess allowlist] --> DW
+    end
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Plan
+<!-- SECTION:PLAN:BEGIN -->
+1. S1＋S4 TDD：daemon 核心＋tests（TC-W1..W9 先 RED 再 GREEN）
+2. S2 skill：操作手冊（定位＋分工表＋生命週期）
+3. S3 契約同步兩處：voice-notification 第四通道行＋roundtrip baseline 註記
+4. tri-panel 四腿審查→judge→修復循環→smoke receipt→結案
+（EP 單一源＝ai-analysis/_tasks/10-06-mail-watch/ep.md；amendment 見 notes J-2）
+<!-- SECTION:PLAN:END -->
+
