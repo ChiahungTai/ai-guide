@@ -1,9 +1,10 @@
 ---
 id: AIR-267
 title: bridge-ledger-sweeper——prompt邊界收線backstop（liveness台帳⋈runs；WT證據drain）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 22:00'
+updated_date: '2026-10-06 22:00'
 labels:
   - bridge
 dependencies: []
