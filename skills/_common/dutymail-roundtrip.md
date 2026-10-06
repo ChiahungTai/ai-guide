@@ -48,7 +48,7 @@ send（intent＋reply_address＋envelope_id）
 |---|---|---|
 | transport ack（delivery cursor） | dutymail store | duty receive processor（處置後） |
 | human seen/done | SC workspaceState | 人類（✓/Undo）——transport 永不代推 |
-| AI 提醒 baseline（holderless pending 計數） | session-local advisory（AIR-254.4；review 修復改 pendingCount 源） | 各 session 自己（監看 hook） |
+| AI 提醒 baseline（holderless pending 計數） | session-local advisory（AIR-254.4；review 修復改 pendingCount 源）；machine-level watcher baseline（AIR-265 duty-watch daemon）與此並存、互不代理 | 各 session 自己（監看 hook） |
 
 同一 address 任一時刻僅一個 consuming authority（epoch-fenced holder）；prepare 不消耗、
 ack 是唯一 cursor 前進邊、只前進連續前綴；crash 重送不跳信。
