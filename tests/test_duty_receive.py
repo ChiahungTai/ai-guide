@@ -1087,6 +1087,304 @@ class TestHookRun:
         assert "batch_token" not in _read_state(str(state))
 
 
+# ── per-session 併發鎖（AIR-255 B：dedicated lock file＋bounded fallback）──
+
+
+class FakeLock:
+    """注入用 fake lock（測試不真 flock 阻塞——lock 注入面模擬兩形）。"""
+
+    def __init__(self, held=True, error=None):
+        self.held = held
+        self.error = error
+        self.released = 0
+
+    def release(self):
+        self.released += 1
+
+
+def _factory_for(lock):
+    """lock_factory 產生器——閉包綁定當輪 lock（避 B023 loop binding）。"""
+    return lambda session_id, state_dir: lock
+
+
+class TestSessionLock:
+    def test_lock_path_dedicated_sidecar(self, tmp_path):
+        """<safe_sid>.lock 固定路徑 dedicated lock file——與 state 檔同目錄
+        但獨立檔（state 存放走 tmp+rename 換 inode＝禁鎖 state 檔本身）。"""
+        base = str(tmp_path)
+        assert mod.lock_path("sess-1", base).endswith("sess-1.lock")
+        assert mod.lock_path("sess-1", base) != mod.state_path("sess-1", base)
+        # session id 消毒與 state_path 同規（路徑安全字元外全折 _）
+        assert mod.lock_path("a/b c", base).endswith("a_b_c.lock")
+
+    def test_real_flock_exclusion_and_release(self, tmp_path):
+        """flock LOCK_EX|LOCK_NB 真語義：持鎖中第二次 acquire（delays 空＝
+        零重試）→fallback handle；release 後可再取。"""
+        first = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
+        assert first.held
+        second = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
+        assert not second.held  # 撞鎖＝fallback（不阻塞）
+        first.release()
+        third = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
+        assert third.held
+        third.release()
+
+    def test_lock_open_failure_fail_open(self, tmp_path):
+        """lock 檔開不了（父路徑是普通檔）＝fail-open 走 fallback——
+        不擋 prompt；OSError 細節隨行。"""
+        blocker = tmp_path / "blocker"
+        blocker.write_text("not a dir")
+        lock = mod.acquire_session_lock("s", str(blocker), delays=())
+        assert not lock.held
+        assert lock.error
+
+    def test_lock_file_empty_not_state_carrier(self, tmp_path):
+        """鎖檔不承載 state 內容（空檔即可——flock 用）。"""
+        lock = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
+        assert lock.held
+        lock.release()
+        assert (tmp_path / "sess-1.lock").read_text() == ""
+
+    def test_retry_delays_injectable(self, tmp_path):
+        """短重試注入面：首試＋delays 逐次（sleep 可注入——測試不真等）。"""
+        sleeps: list[float] = []
+        first = mod.acquire_session_lock("s", str(tmp_path), delays=())
+        try:
+            second = mod.acquire_session_lock(
+                "s", str(tmp_path), delays=(0.25, 0.25), sleep=sleeps.append
+            )
+            assert not second.held
+            assert sleeps == [0.25, 0.25]
+        finally:
+            first.release()
+
+    def test_fallback_path_dedicated_sidecar(self, tmp_path):
+        """F-2：計數走 dedicated sidecar <safe_sid>.fallbacks——與 state/
+        lock 同目錄獨立檔（bump 不再碰 state 主檔）。"""
+        base = str(tmp_path)
+        assert mod.fallback_path("sess-1", base).endswith("sess-1.fallbacks")
+        assert mod.fallback_path("sess-1", base) != mod.state_path("sess-1", base)
+        assert mod.fallback_path("a/b c", base).endswith("a_b_c.fallbacks")
+
+    def test_bump_lock_fallback_counter(self, tmp_path):
+        """sidecar 計數遞增（內容＝單一 int、atomic overwrite）。"""
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        assert mod.read_lock_fallbacks(
+            mod.fallback_path("sess-1", str(tmp_path))
+        ) == 1 + 1
+        assert (tmp_path / "sess-1.fallbacks").read_text().strip() == "2"
+
+    def test_bump_preserves_holder_state(self, tmp_path):
+        """F-2：bump 後 state 主檔 mtime/內容不變（bearer 記錄零觸碰）。"""
+        sf = str(tmp_path / "sess-1.json")
+        _seed_state(sf, token="tok", epoch=4)
+        with open(sf, "rb") as fh:
+            before = fh.read()
+        mtime_before = os.stat(sf).st_mtime_ns
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        with open(sf, "rb") as fh:
+            assert fh.read() == before
+        assert os.stat(sf).st_mtime_ns == mtime_before
+        assert "lock_fallbacks" not in _read_state(sf)
+        assert mod.read_lock_fallbacks(
+            str(tmp_path / "sess-1.fallbacks")
+        ) == 1
+
+    def test_bump_corrupted_sidecar_self_heals(self, tmp_path, capsys):
+        """壞 sidecar 自癒：視同 0 重計＋stderr 一行註記。"""
+        fb = tmp_path / "sess-1.fallbacks"
+        fb.write_text("not-an-int")
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        assert mod.read_lock_fallbacks(str(fb)) == 1
+        assert "fallback" in capsys.readouterr().err
+
+    def test_read_lock_fallbacks_api(self, tmp_path, capsys):
+        """讀數 API（--help／hook 端未來消費）：缺檔＝0；合法 int＝直讀；
+        壞檔＝0＋stderr 一行註記。"""
+        missing = tmp_path / "missing.fallbacks"
+        assert mod.read_lock_fallbacks(str(missing)) == 0
+        ok = tmp_path / "ok.fallbacks"
+        ok.write_text("7")
+        assert mod.read_lock_fallbacks(str(ok)) == 7
+        bad = tmp_path / "bad.fallbacks"
+        bad.write_text("x")
+        assert mod.read_lock_fallbacks(str(bad)) == 0
+        assert "fallback" in capsys.readouterr().err
+
+    def test_bind_fresh_does_not_reset_fallback_counter(self, tmp_path):
+        """F-3：_bind_fresh 全新 dict 落盤不掃計數——sidecar 跨 rebind
+        保留（主檔不再承載計數，歸零路徑自然消失）。"""
+        sf = str(tmp_path / "sess-1.json")
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        _seed_state(sf, token="", epoch=4)  # 無效 token → 落 _bind_fresh
+        runner = _seq_runner([_status_doc(), _bind_doc()])
+        st = mod.ensure_holder(ADDR, runner, sf)
+        assert st["token"] == "tok-fresh"
+        assert "lock_fallbacks" not in _read_state(sf)
+        assert mod.read_lock_fallbacks(
+            mod.fallback_path("sess-1", str(tmp_path))
+        ) == 1
+
+
+class TestHookLockIntegration:
+    """hook 前導層鎖整合：critical section 涵蓋 process_once→ack commit
+    全序列（取鎖後 load state 重新判定——process_once 內部 load 自然滿足）。"""
+
+    def test_lock_held_release_only_after_commit(self, tmp_path):
+        """持鎖正常路徑：run() 返回時仍持鎖（ack commit 在鎖內）、
+        commit() 後釋放。"""
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner(
+            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
+        )
+        lock = FakeLock(held=True)
+        code, _out, commit = _hook_run(
+            UPS_STDIN, runner, tmp_path,
+            lock_factory=_factory_for(lock),
+        )
+        assert code == 0
+        assert lock.released == 0  # critical section 未結束——ack 前不釋放
+        commit()
+        assert lock.released == 1
+
+    def test_lock_released_when_no_commit(self, tmp_path):
+        """空批次（commit=None）→ 即刻釋放。"""
+        runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
+        lock = FakeLock(held=True)
+        code, out, commit = _hook_run(
+            UPS_STDIN, runner, tmp_path,
+            lock_factory=_factory_for(lock),
+        )
+        assert (code, out, commit) == (0, "", None)
+        assert lock.released == 1
+
+    def test_lock_released_on_face_failure(self, tmp_path):
+        """face 失敗 fail-soft 路徑也釋放（不留洩漏鎖）。"""
+        runner = _seq_runner(
+            [_hook_err("store-incompatible", "storage", exit_code=4)]
+        )
+        lock = FakeLock(held=True)
+        code, _out, commit = _hook_run(
+            UPS_STDIN, runner, tmp_path,
+            lock_factory=_factory_for(lock),
+        )
+        assert (code, _out, commit) == (0, "", None)
+        assert lock.released == 1
+
+    def test_lock_timeout_fallback_runs_and_counts(self, tmp_path, capsys):
+        """撞鎖逾時 fallback：照跑（輸出照常）＋stderr 一行「lock timeout
+        ——可能重複呈報（bounded）」＋sidecar 計數 +1（state 主檔零觸碰）。"""
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner(
+            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
+        )
+        holder = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
+        assert holder.held
+        try:
+            lock = FakeLock(held=False)
+            code, out, commit = _hook_run(
+                UPS_STDIN, runner, tmp_path,
+                lock_factory=_factory_for(lock),
+            )
+        finally:
+            holder.release()
+        assert code == 0
+        assert "新到 1" in json.loads(out)[
+            "hookSpecificOutput"
+        ]["additionalContext"]  # 照跑不擋
+        err = capsys.readouterr().err
+        assert "lock timeout" in err
+        assert "可能重複呈報" in err and "bounded" in err
+        commit()
+        assert mod.read_lock_fallbacks(
+            mod.fallback_path("sess-1", str(tmp_path))
+        ) == 1
+        assert "lock_fallbacks" not in _read_state(
+            str(tmp_path / "sess-1.json")
+        )
+
+    def test_fallback_counter_accumulates_across_cycles(self, tmp_path):
+        """fallback 計數跨輪累積（muse 可觀測性——重報率突增才複議重鎖）。"""
+        for _ in range(2):
+            runner = _seq_runner(
+                [_status_doc(), _bind_doc(), _prepare_doc([])]
+            )
+            lock = FakeLock(held=False)
+            code, _out, _commit = _hook_run(
+                UPS_STDIN, runner, tmp_path,
+                lock_factory=_factory_for(lock),
+            )
+            assert code == 0
+        assert mod.read_lock_fallbacks(
+            mod.fallback_path("sess-1", str(tmp_path))
+        ) == 2
+
+    def test_release_bump_failure_does_not_mask_commit_exception(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """F-4：bump 例外不得遮蔽 commit 原例外——ack raise 時 bump 也 raise，
+        原例外（storage DutymailFaceError）須原樣傳播、release 照走＋
+        stderr 一行計數丟失註記。"""
+
+        def _boom(session_id, base_dir=None):
+            raise RuntimeError("bump boom")
+
+        monkeypatch.setattr(hook.core, "bump_lock_fallback", _boom)
+        envs = [_env_item("e-1", klass="handoff")]
+        ack_err = _hook_err("storage-down", "storage", exit_code=4)
+        runner = _seq_runner(
+            [_status_doc(), _bind_doc(), _prepare_doc(envs), ack_err]
+        )
+        lock = FakeLock(held=False)
+        code, _out, commit = _hook_run(
+            UPS_STDIN, runner, tmp_path,
+            lock_factory=_factory_for(lock),
+        )
+        assert code == 0 and commit is not None
+        with pytest.raises(hook.core.DutymailFaceError):
+            commit()
+        assert lock.released == 1  # release 照走
+        assert "計數丟失" in capsys.readouterr().err
+
+    def test_release_bump_failure_noted_release_runs(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """F-4 補面：commit 正常、bump 失敗——只 stderr 註記、零例外外洩。"""
+
+        def _boom(session_id, base_dir=None):
+            raise RuntimeError("bump boom")
+
+        monkeypatch.setattr(hook.core, "bump_lock_fallback", _boom)
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner(
+            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
+        )
+        lock = FakeLock(held=False)
+        code, _out, commit = _hook_run(
+            UPS_STDIN, runner, tmp_path,
+            lock_factory=_factory_for(lock),
+        )
+        assert code == 0
+        commit()  # 不 raise 即通過
+        assert lock.released == 1
+        err = capsys.readouterr().err
+        assert "計數丟失" in err and "lock timeout" in err
+
+    def test_real_lock_default_factory_no_contention(self, tmp_path):
+        """不注入 lock_factory（生產路徑）＝真 flock 取放——單 process 無
+        競爭零 stderr、行為與既有測試一致。"""
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner(
+            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
+        )
+        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
+        assert code == 0
+        assert "新到 1" in out
+        commit()
+        assert (tmp_path / "sess-1.lock").exists()  # dedicated 檔在場
+
+
 # ── governance 接線：registrations 雙事件＋manifest scripts 登記───────
 
 

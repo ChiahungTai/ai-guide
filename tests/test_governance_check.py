@@ -1276,7 +1276,7 @@ def test_air126_install_all_completion_prints_warnings(tmp_path, monkeypatch, ca
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
     monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
@@ -1302,7 +1302,7 @@ def test_air126_install_single_surface_no_monitor_line(tmp_path, monkeypatch, ca
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
     monkeypatch.setattr(mod, "subprocess", SimpleNamespace(run=_git_hooks_probe(1, "")))
@@ -1320,7 +1320,7 @@ def test_air126_uninstall_and_dryrun_no_warnings(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     monkeypatch.setattr(mod, "apply_plan", lambda m, plan, journal=True: mod.EXIT_OK)
     monkeypatch.setattr(mod, "run_wrap", lambda argv, extra=None: 0)
@@ -1502,7 +1502,7 @@ def test_air132_dry_run_wrap_failure_propagates(monkeypatch):
         }
     }
     monkeypatch.setattr(
-        mod, "build_plan", lambda m, s, mode: {"surface": s, "mode": mode}
+        mod, "build_plan", lambda m, s, mode, **kw: {"surface": s, "mode": mode}
     )
     monkeypatch.setattr(mod, "print_plan", lambda plan: None)
     calls: list[tuple[list, list | None]] = []

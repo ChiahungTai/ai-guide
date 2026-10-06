@@ -332,6 +332,141 @@ def _valid_holder_state(st, address):
     )
 
 
+# ── per-session 併發鎖（AIR-255 B：dedicated lock file＋bounded fallback）──
+#
+# 同 session 兩邊界（SessionStart／UserPromptSubmit）或 hook 重疊執行時，
+# process_once 的 load→decide→save＋ack commit 序列可能交錯（double-present
+# ／state lost update）。防護＝同一 session 一把短 critical-section advisory
+# lock：dedicated 固定路徑 lock file（duty-receive/<safe_sid>.lock——禁鎖
+# state 檔本身：save 走 tmp+os.replace，inode 更換＝兩 process 各鎖到不同
+# inode 的假鎖）。鎖失敗永不擋 prompt 熱路徑：非阻塞短重試（總等待 ≤2s）後
+# fallback 照跑——容許 bounded 重複呈報（fencing／one-live-batch／ack 冪等
+# 仍是信不丟的最後防線），fallback 計數走 dedicated sidecar（<safe_sid>
+# .fallbacks——muse 可觀測性：重報率突增才複議更重的鎖；F-2 修復輪起不寫
+# state 主檔：無鎖 read-modify-write 對主檔有回滾 holder token/epoch 的
+# race，_bind_fresh 全新 dict 落盤也會掃掉計數）。macOS/Linux fcntl 可用，
+# 不做跨平台抽象。
+
+import fcntl  # 同區塊定位（鎖段落）而非檔首
+
+LOCK_RETRY_DELAYS = (0.5, 0.5, 0.5, 0.5)  # 4×0.5s＝總等待 ≤2s
+
+
+def lock_path(session_id, base_dir=None):
+    """dedicated per-session lock file 路徑（與 state 同目錄、獨立檔）。"""
+    safe = _SAFE_SESSION_RE.sub("_", session_id) or "unknown"
+    root = base_dir if base_dir is not None else _state_base_dir()
+    return os.path.join(root, safe + ".lock")
+
+
+class SessionLockHandle:
+    """flock handle。held=False＝fallback 形（未持有鎖，release 無副作用）。"""
+
+    def __init__(self, held, path, fd=None, error=None):
+        self.held = held
+        self.path = path
+        self._fd = fd
+        self.error = error
+
+    def release(self):
+        if self._fd is not None:
+            try:
+                fcntl.flock(self._fd, fcntl.LOCK_UN)
+            finally:
+                os.close(self._fd)
+                self._fd = None
+
+
+def acquire_session_lock(
+    session_id, base_dir=None, delays=LOCK_RETRY_DELAYS, sleep=time.sleep
+):
+    """取 per-session advisory lock → SessionLockHandle。
+
+    LOCK_EX|LOCK_NB 失敗→delays 逐次重試（首試不睡）；仍失敗＝fallback
+    handle（held=False——呼叫端照跑＋stderr 註記＋計數）。開檔／權限
+    OSError＝fail-open 同 fallback 路徑（不擋 prompt）。鎖檔空內容——
+    不承載 state（flock 只用 fd）。
+    """
+    path = lock_path(session_id, base_dir)
+    fd = None
+    try:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    except OSError as exc:
+        return SessionLockHandle(False, path, error=repr(exc))
+    for delay in (None, *delays):
+        if delay is not None:
+            sleep(delay)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return SessionLockHandle(True, path, fd=fd)
+        except OSError:
+            continue
+    os.close(fd)
+    return SessionLockHandle(False, path)
+
+
+def fallback_path(session_id, base_dir=None):
+    """lock fallback 計數 sidecar 路徑（與 state/lock 同目錄、獨立檔）。"""
+    safe = _SAFE_SESSION_RE.sub("_", session_id) or "unknown"
+    root = base_dir if base_dir is not None else _state_base_dir()
+    return os.path.join(root, safe + ".fallbacks")
+
+
+def read_lock_fallbacks(path):
+    """讀 sidecar 計數 → int（--help／hook 端未來消費的讀數 API）。
+
+    缺檔＝0；壞內容／不可讀＝0＋stderr 一行註記——可觀測性計數（趨勢
+    偵測用途，非 authoritative），讀失敗不 raise。
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            raw = fh.read().strip()
+    except FileNotFoundError:
+        return 0
+    except OSError as exc:
+        print(
+            f"[{HOOK_TAG}] fallback 計數檔不可讀——視同 0"
+            f"（{exc!r}；路徑 {path}）",
+            file=sys.stderr,
+        )
+        return 0
+    try:
+        return int(raw)
+    except ValueError:
+        print(
+            f"[{HOOK_TAG}] fallback 計數檔損壞——視同 0 重計"
+            f"（內容 {raw!r}；路徑 {path}）",
+            file=sys.stderr,
+        )
+        return 0
+
+
+def bump_lock_fallback(session_id, base_dir=None):
+    """fallback 計數 += 1——dedicated sidecar（<safe_sid>.fallbacks，內容＝
+    單一 int，atomic overwrite：pid 後綴 tmp＋os.replace＋0600）。
+
+    F-2（修復輪）：計數不寫 state 主檔——原實作對主檔無鎖 read-modify-
+    write，與 holder 寫入並發時會以 stale dict 落盤（回滾他方 token/
+    epoch 記錄）；_bind_fresh 全新 dict 落盤也把計數歸零（F-3）。sidecar
+    讓主檔只剩 holder 權威、計數生命週期獨立——兩問題自然解。計數在
+    並發 bump 間仍可少量丟失（可觀測性趨勢用途，非 authoritative）。
+    壞檔由 read_lock_fallbacks 視同 0 重計（stderr 一行）。
+    """
+    path = fallback_path(session_id, base_dir)
+    count = read_lock_fallbacks(path)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + "." + str(os.getpid()) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(str(count + 1))
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
 # ── policy：class×action 表（default-deny；未知鍵 fail-loud）──────────
 
 

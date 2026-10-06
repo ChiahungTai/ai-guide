@@ -20,6 +20,7 @@ default-deny 分診表、絕不 flush-ack）單一源＝scripts/duty_receive.py�
 | store 缺席（face class 4 storage） | 空＋stderr 一行註記 | 0 |
 | 其他 face 失敗（含 shape 漂移） | 空＋stderr 註記帶錯誤摘要 | 0 |
 | holder 衝突（live holder 在場／rebind CAS 失敗——皆不搶不重試） | 衝突訊息行（surface） | 0 |
+| 併發鎖逾時（fallback——照跑，可能重複呈報 bounded） | 照常輸出＋stderr 一行 lock timeout＋sidecar 計數 | 0 |
 | stdin 壞 JSON／缺或未知事件 | 空（fail-soft） | 0 |
 | config 缺席／壞形 | 空＋stderr 註記 | 3（fail-loud——配置錯誤要大聲） |
 | 註冊 args 誤用（argparse 拒絕） | 空（stderr 用法） | 2（大聲、刻意——misconfig 歸註冊單一源修復） |
@@ -87,15 +88,27 @@ def _default_config_path():
 
 
 def run(raw, address, runner=None, state_dir=None, config_path=None,
-        now_us=None):
+        now_us=None, lock_factory=None):
     """stdin 原文 → (exit_code, stdout, commit | None)。
 
     永不 raise、exit 恆 0（唯二例外：config 壞形＝3 fail-loud；args
-    誤用由 argparse exit 2）。runner／state_dir／config_path／now_us
-    可注入（測試 fake face＋fake state，不碰真 store）。commit＝ack
-    closure——呼叫端在 stdout 寫出成功後才執行（advance-after-emit）。
+    誤用由 argparse exit 2）。runner／state_dir／config_path／now_us／
+    lock_factory 可注入（測試 fake face＋fake state＋fake lock，不碰真
+    store）。commit＝ack closure——呼叫端在 stdout 寫出成功後才執行
+    （advance-after-emit）。
+
+    併發鎖（AIR-255 B）：process_once 前取 per-session advisory lock，
+    critical section 涵蓋 load→decide→save＋ack commit 全序列（取鎖後
+    process_once 內部 load state＝重新判定——double-present 防護）；
+    commit 由回傳的 wrapped closure 於執行後釋鎖。撞鎖逾時＝fallback
+    照跑（stderr 一行＋dedicated sidecar 計數 <safe_sid>.fallbacks——
+    不碰 state 主檔）——絕不擋 prompt。
     """
     runner = runner if runner is not None else core._default_runner
+    lock_acquire = (
+        lock_factory if lock_factory is not None
+        else core.acquire_session_lock
+    )
     try:
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
@@ -119,6 +132,39 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
             )
             return 3, "", None
         state_file = core.state_path(session_id, state_dir)
+        lock = lock_acquire(session_id, state_dir)
+        released = False
+
+        def _release():
+            # 每路徑恰一次：fallback 計數在週期末落 dedicated sidecar
+            # （F-2 修復輪起不碰 state 主檔），再釋鎖。
+            nonlocal released
+            if released:
+                return
+            released = True
+            try:
+                if not lock.held:
+                    core.bump_lock_fallback(session_id, state_dir)
+            except Exception as exc:
+                # F-4（修復輪）：計數丟失可容忍——bump 失敗只 stderr 一行
+                # 註記；例外不得從此處外洩（_commit_with_release 的 finally
+                # 鏈中，本例外會取代 original_commit 的原例外——遮蔽 ack
+                # 真原委）。
+                print(
+                    f"[{HOOK_TAG}] fallback 計數失敗——計數丟失（可容忍）"
+                    f"：{exc!r}",
+                    file=sys.stderr,
+                )
+            finally:
+                lock.release()
+
+        if not lock.held:
+            detail = f"（{lock.error}）" if lock.error else ""
+            print(
+                f"[{HOOK_TAG}] lock timeout——可能重複呈報（bounded）"
+                f"{detail}",
+                file=sys.stderr,
+            )
         try:
             lines, commit = core.process_once(
                 address, runner, policy, state_file, now_us=now_us
@@ -126,6 +172,7 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
         except core.HolderConflict as exc:
             lines, commit = [f"[{HOOK_TAG}] {exc}"], None
         except core.DutymailFaceError as exc:
+            _release()
             kind = (
                 "store 缺席（pre-migration）" if exc.is_storage
                 else "dutymail face 失敗"
@@ -134,6 +181,9 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
                 f"[{HOOK_TAG}] fail-soft：{kind}——{exc}", file=sys.stderr
             )
             return 0, "", None
+        except Exception:
+            _release()
+            raise  # 交外層 fail-soft
         out = ""
         if lines:
             out = json.dumps(
@@ -145,7 +195,18 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
                 },
                 ensure_ascii=False,
             )
-        return 0, out, commit
+        if commit is None:
+            _release()
+            return 0, out, None
+        original_commit = commit
+
+        def _commit_with_release():
+            try:
+                return original_commit()
+            finally:
+                _release()
+
+        return 0, out, _commit_with_release
     except Exception as exc:  # fail-soft by design——絕不擋 turn
         print(f"[{HOOK_TAG}] fail-soft（{exc!r}）", file=sys.stderr)
         return 0, "", None

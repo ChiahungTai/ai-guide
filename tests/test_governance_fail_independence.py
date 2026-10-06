@@ -65,7 +65,7 @@ def test_f1_memory_face_failure_does_not_block_other_faces(
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     rc = mod.cmd_install_uninstall(_all_face_manifest(), "all", "install")
     assert rc == mod.EXIT_EXEC  # 失敗面進彙整＋非零總 exit
@@ -99,7 +99,7 @@ def test_f1_skills_face_failure_does_not_block_other_faces(
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     rc = mod.cmd_install_uninstall(_all_face_manifest(), "all", "install")
     assert rc == mod.EXIT_EXEC
@@ -123,7 +123,7 @@ def test_f1_hooks_face_failure_still_prints_manual_steps(tmp_path, monkeypatch, 
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     rc = mod.cmd_install_uninstall(_all_face_manifest(), "hooks", "install")
     assert rc == mod.EXIT_EXEC
@@ -147,7 +147,7 @@ def test_f1_uninstall_face_failure_returns_exec_not_swallowed(
     monkeypatch.setattr(
         mod,
         "build_plan",
-        lambda m, s, mode: {"surface": s, "mode": mode, "targets": []},
+        lambda m, s, mode, **kw: {"surface": s, "mode": mode, "targets": []},
     )
     rc = mod.cmd_install_uninstall(_all_face_manifest(), "hooks", "uninstall")
     assert rc == mod.EXIT_EXEC

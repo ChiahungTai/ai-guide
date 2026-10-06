@@ -530,8 +530,124 @@ def _group_identity(group: dict) -> tuple:
     return (group.get("matcher"), _group_scripts(group))
 
 
+# ── AIR-255 A：ownership-aware prune（reconciliation plan 單源）────────
+#
+# 語義（雙顧問合成，卡 AIR-255 已決策勿重辯）：prune ≠「script 不存在」
+# 判準（漏 rename、誤刪用戶 group——muse/codex 同向拒絕）。live group 為
+# 移除候選 ⇔（i）全部 script 路徑落 repo hooks/ 受管目錄（ownership fence；
+# 外部路徑只 orphan_warn 不刪）且（ii）identity 不在現行模板（涵蓋 rename：
+# 舊 group 即使 script 仍在也移除——判準是「不在模板」不是「檔案在否」）。
+# dry-run 與 apply 消費同一份 _hooks_reconcile_plan（純計算，禁兩套
+# heuristic）；remove 永不預設執行——--prune-stale 顯式 flag 門控。
+
+
+def _group_script_paths(group: dict) -> list[str]:
+    """group 內 hook 的 script 路徑引用（command/args 逐字串判定：含
+    /hooks/ 且以 .py/.sh 結尾；{{REPO}} 先展開）。
+
+    installer render 的 group 形態＝args 內恰一絕對路徑，本判定涵蓋（checkout
+    路徑含空白也成立）；command 字串內嵌路徑的用戶自訂形不保證涵蓋——
+    fail-safe（不刪）。空 list＝無 script 引用（純 command 用戶條目）。
+    """
+    paths: list[str] = []
+    for h in group.get("hooks", []):
+        if not isinstance(h, dict):
+            continue
+        args = h.get("args", [])
+        candidates = [str(h.get("command", ""))]
+        candidates += [
+            str(a) for a in args if not isinstance(a, (dict, list))
+        ]
+        for s in candidates:
+            rendered = render_uninstall(s.strip())
+            if "/hooks/" in rendered and rendered.endswith((".py", ".sh")):
+                paths.append(rendered)
+    return paths
+
+
+def _ownership_class(group: dict, repo_hooks_dir: Path) -> str:
+    """live group ownership 分類：managed（有 script 引用且全部落 repo
+    hooks/ 圍欄內——可證明受管，prune 候選）｜external（有 script 引用但
+    部分在圍欄外——他 checkout/用戶自裝，只警示不刪）｜user（無 script
+    引用——零動作零警示）。"""
+    paths = _group_script_paths(group)
+    if not paths:
+        return "user"
+    fence = str(repo_hooks_dir) + "/"
+    if all(p.startswith(fence) for p in paths):
+        return "managed"
+    return "external"
+
+
+def _hooks_reconcile_plan(
+    live_doc: dict, template_doc: dict, repo_hooks_dir: Path
+) -> dict:
+    """JSON hooks 面 reconciliation plan（純計算；dry-run 預覽與 apply 單源）。
+
+    live_doc/template_doc＝merge_root 子樹形 doc（zcode {enabled, events}／
+    cc plain event map）。回四清單：
+      add:         模板 group live 缺席 → append（entry: event/group）
+      update:      identity 命中但內容差 → 原位替換（entry: event/index/group）
+      remove:      live group 受管（ownership fence）且 identity 不在模板
+                   （entry: event/index/scripts）——含 rename 殘留與 script
+                   已刪兩形，無視 script 檔案存在性
+      orphan_warn: external（有 script 引用但圍欄外）——只列不刪
+    user group（無 script 引用）零動作零警示。live 事件條目非 list → 跳過
+    （merge 層 malformed guard fail-loud；本函式只做純計算）。
+    """
+    plan: dict[str, list] = {"add": [], "update": [], "remove": [],
+                             "orphan_warn": []}
+    tmpl_events = template_doc.get("events", template_doc)
+    live_events = live_doc.get("events", live_doc)
+    if not isinstance(tmpl_events, dict) or not isinstance(live_events, dict):
+        return plan
+    for evt, tmpl_groups in tmpl_events.items():
+        live_groups = live_events.get(evt, [])
+        if not isinstance(live_groups, list):
+            live_groups = []
+        for tg in tmpl_groups:
+            ident = _group_identity(tg)
+            hit = next(
+                (i for i, g in enumerate(live_groups)
+                 if _group_identity(g) == ident),
+                None,
+            )
+            if hit is None:
+                plan["add"].append({"event": evt, "group": tg})
+            elif live_groups[hit] != tg:
+                plan["update"].append(
+                    {"event": evt, "index": hit, "group": tg}
+                )
+    for evt, live_groups in live_events.items():
+        if not isinstance(live_groups, list):
+            continue
+        tmpl_idents = {
+            _group_identity(g) for g in tmpl_events.get(evt, [])
+        }
+        for i, g in enumerate(live_groups):
+            if _group_identity(g) in tmpl_idents:
+                continue
+            entry = {
+                "event": evt,
+                "index": i,
+                "scripts": sorted(_group_script_paths(g)),
+            }
+            kind = _ownership_class(g, repo_hooks_dir)
+            if kind == "managed":
+                plan["remove"].append(entry)
+            elif kind == "external":
+                plan["orphan_warn"].append(entry)
+    return plan
+
+
 def merge_json_hooks(
-    live_root: dict, package: dict, merge_root_key: str, *, remove: bool
+    live_root: dict,
+    package: dict,
+    merge_root_key: str,
+    *,
+    remove: bool,
+    prune_stale: bool = False,
+    repo_hooks_dir: Path | None = None,
 ) -> tuple[dict, bool]:
     """merge_root_key 子樹層級 merge/uninstall（F-5：manifest membership 權威）。
 
@@ -539,6 +655,12 @@ def merge_json_hooks(
     live 子樹缺席（乾淨機器）＝install 自空子樹建、uninstall 零動作。
     回 (new_root, changed)。1201 事故教訓：merge 必在 manifest 宣告的子樹內操作，
     禁把模板鍵散落 root 頂層。
+
+    AIR-255 A：install 分支的 add/update 走 _hooks_reconcile_plan（與
+    --prune-stale dry-run/apply 同一單源——行為對既有 case 零變更）；
+    prune_stale=True 時另移除 plan["remove"]（managed 且不在模板的 live
+    group——ownership fence 判準見 _hooks_reconcile_plan）。prune 預設
+    關閉：不帶 flag 的 merge 零移除。
     """
     root = copy.deepcopy(live_root)
     raw_subtree = root.get(merge_root_key)
@@ -560,37 +682,71 @@ def merge_json_hooks(
     ):
         subtree["enabled"] = package["enabled"]
         changed = True
-    events = package.get("events", package)
     # live event map 位置：zcode 子樹有 events 鍵；cc 子樹本體即 event map
     ev_container = subtree.setdefault("events", {}) if "events" in package else subtree
-    for evt, tmpl_groups in events.items():
-        raw_groups = ev_container.get(evt)
-        if raw_groups is not None and not isinstance(raw_groups, list):
-            # F2：非 list 條目原在 setdefault 後 .append／enumerate 崩（裸
-            # AttributeError/TypeError）——收斂成乾淨 GovernanceError。
-            raise GovernanceError(
-                f"malformed config，拒寫 fail-loud：live「{merge_root_key}/{evt}」"
-                f"條目為 {type(raw_groups).__name__}（非 list）——先手工修正再重跑"
-            )
-        groups = ev_container.setdefault(evt, [])
-        for tg in tmpl_groups:
-            ident = _group_identity(tg)
-            idx = next(
-                (i for i, g in enumerate(groups) if _group_identity(g) == ident), None
-            )
-            if remove:
+    if remove:  # uninstall：模板 identity 刪除（原語義不變）
+        for evt, tmpl_groups in package.get("events", package).items():
+            raw_groups = ev_container.get(evt)
+            if raw_groups is not None and not isinstance(raw_groups, list):
+                # F2：非 list 條目原在 setdefault 後 .append／enumerate 崩（裸
+                # AttributeError/TypeError）——收斂成乾淨 GovernanceError。
+                raise GovernanceError(
+                    f"malformed config，拒寫 fail-loud："
+                    f"live「{merge_root_key}/{evt}」"
+                    f"條目為 {type(raw_groups).__name__}（非 list）"
+                    "——先手工修正再重跑"
+                )
+            groups = ev_container.setdefault(evt, [])
+            for tg in tmpl_groups:
+                ident = _group_identity(tg)
+                idx = next(
+                    (i for i, g in enumerate(groups)
+                     if _group_identity(g) == ident),
+                    None,
+                )
                 if idx is not None:
                     groups.pop(idx)
                     changed = True
-            elif idx is None:
-                groups.append(copy.deepcopy(tg))
+            if evt in ev_container and not ev_container[evt]:
+                del ev_container[evt]
                 changed = True
-            elif groups[idx] != tg:
-                groups[idx] = copy.deepcopy(tg)
-                changed = True
-        if remove and evt in ev_container and not ev_container[evt]:
-            del ev_container[evt]
+    else:  # install：add/update（＋可選 prune）——plan 單源
+        fence = (
+            repo_hooks_dir
+            if repo_hooks_dir is not None
+            else _canonical_root() / "hooks"
+        )
+        plan = _hooks_reconcile_plan(subtree, package, fence)
+        # F2 malformed guard：plan 涉及的模板事件條目非 list → fail-loud
+        touched = {e["event"] for e in plan["add"]}
+        touched |= {e["event"] for e in plan["update"]}
+        for evt in sorted(touched):
+            raw_groups = ev_container.get(evt)
+            if raw_groups is not None and not isinstance(raw_groups, list):
+                raise GovernanceError(
+                    f"malformed config，拒寫 fail-loud："
+                    f"live「{merge_root_key}/{evt}」"
+                    f"條目為 {type(raw_groups).__name__}（非 list）"
+                    "——先手工修正再重跑"
+                )
+        for e in plan["add"]:
+            ev_container.setdefault(e["event"], []).append(
+                copy.deepcopy(e["group"])
+            )
             changed = True
+        for e in plan["update"]:
+            ev_container[e["event"]][e["index"]] = copy.deepcopy(e["group"])
+            changed = True
+        if prune_stale:
+            # 降序 pop——plan index 對應原始 live 清單（add 只追加於尾，不位移）
+            for e in sorted(plan["remove"], key=lambda x: -x["index"]):
+                ev_container[e["event"]].pop(e["index"])
+                changed = True
+            for e in plan["remove"]:
+                evt = e["event"]
+                if evt in ev_container and not ev_container[evt]:
+                    del ev_container[evt]  # 清空的事件鍵一併收乾淨
+                    changed = True
     if remove and (
         (isinstance(subtree.get("events"), dict) and not subtree["events"])
         or ("events" not in package and not subtree)
@@ -905,8 +1061,14 @@ def run_wrap(argv: list[str], extra: list[str] | None = None) -> int:
 # ── plan 建構與 apply ────────────────────────────────────────────
 
 
-def build_plan(manifest: dict, surface: str, mode: str) -> dict:
-    """compute-then-apply：任何寫入前完成全部分析。"""
+def build_plan(
+    manifest: dict, surface: str, mode: str, *, prune_stale: bool = False
+) -> dict:
+    """compute-then-apply：任何寫入前完成全部分析。
+
+    AIR-255 A：prune_stale=True 只標記 json-subtree target（grok 整檔
+    render 自癒、codex 文面另案——不參與 prune）。
+    """
     targets: list[dict] = []
     reg = manifest.get("registrations", {})
     if surface in ("hooks", "all"):
@@ -920,15 +1082,16 @@ def build_plan(manifest: dict, surface: str, mode: str) -> dict:
                     kind = "toml-groups"
                 else:
                     kind = f"json-subtree:{harness}"
-                targets.append(
-                    {
-                        "kind": kind,
-                        "target": cfg["target"],
-                        "template": cfg["template"],
-                        "merge_root": cfg.get("merge_root", "hooks"),
-                        "action": "remove" if mode == "uninstall" else "merge",
-                    }
-                )
+                target = {
+                    "kind": kind,
+                    "target": cfg["target"],
+                    "template": cfg["template"],
+                    "merge_root": cfg.get("merge_root", "hooks"),
+                    "action": "remove" if mode == "uninstall" else "merge",
+                }
+                if prune_stale and kind.startswith("json-subtree:"):
+                    target["prune_stale"] = True
+                targets.append(target)
             except KeyError as exc:  # F2：缺 registration 欄位禁裸 KeyError
                 raise _exec_error(
                     f"manifest 缺 registrations.{harness} 必要欄位（hooks 面）",
@@ -991,7 +1154,10 @@ def print_plan(plan: dict) -> None:
     print(f"plan（surface={plan['surface']} mode={plan['mode']}，零寫入）：")
     for t in plan["targets"]:
         label = render(t.get("target") or t.get("link") or "")
-        print(f"  [{t['kind']}] {label} → {t['action']}")
+        action = t["action"]
+        if t.get("prune_stale"):
+            action += "+prune-stale"
+        print(f"  [{t['kind']}] {label} → {action}")
     if plan["surface"] in ("memory", "all"):
         muse_cmds = (
             ["muse plugins disable <id>（CLI 無 remove）"]
@@ -1081,10 +1247,27 @@ def _apply_target(reg: dict, t: dict, mode: str) -> str:
         tmpl = render_template_json(
             raw_tmpl, uninstall=(mode == "uninstall"), label=t["template"]
         )
+        # AIR-255 A：--prune-stale 門控（不帶 flag＝零移除）；plan 與 dry-run
+        # 預覽同源（_hooks_reconcile_plan 單一計算）。
+        prune = bool(t.get("prune_stale")) and mode != "uninstall"
+        removed: list[dict] = []
+        if prune:
+            live_sub = live.get(t["merge_root"])
+            removed = _hooks_reconcile_plan(
+                live_sub if isinstance(live_sub, dict) else {},
+                tmpl,
+                _canonical_root() / "hooks",
+            )["remove"]
         new_root, _changed = merge_json_hooks(
-            live, tmpl, t["merge_root"], remove=(mode == "uninstall")
+            live,
+            tmpl,
+            t["merge_root"],
+            remove=(mode == "uninstall"),
+            prune_stale=prune,
         )
         outcome = apply_text_change(target, serialize_json(new_root))
+        if removed and outcome == "written":
+            _print_removal_receipt(removed)  # S4：restart receipt（移除才輸出）
         return outcome
     if t["kind"] == "toml-groups":
         target = real_target(home_path(t["target"]))
@@ -1230,6 +1413,84 @@ def print_manual_steps(surface: str) -> None:
         print("  - ZCode：重開 session 生效（舊 session 不生效非失敗）")
 
 
+# ── AIR-255 A：prune 預覽／removal receipt（S4 restart receipt）────────
+
+
+def _script_labels(entry: dict) -> str:
+    """plan entry → script 名集合標籤（add/update entry 取 group 路徑；
+    remove/orphan_warn entry 取 scripts）。"""
+    scripts = entry.get("scripts") or _group_script_paths(
+        entry.get("group", {})
+    )
+    return "{" + "、".join(p.rsplit("/", 1)[-1] for p in scripts) + "}"
+
+
+def _print_removal_receipt(removed: list[dict]) -> None:
+    """S4：removal restart receipt——只有實際移除 managed 條目時輸出。
+
+    逐條 removed 行＋總結行；禁宣稱 N 個 running session（程序枚舉是啟發式
+    會錯）、禁自動殺／restart session——config reconciliation 修的是下一個
+    snapshot，已啟動 session 的 startup snapshot 是另一個 lifecycle boundary。
+    """
+    for e in removed:
+        print(f"  removed: {e['event']}/{_script_labels(e)}")
+    print(
+        f"  ⚠ 已移除 {len(removed)} 條 hook 引用——既有 ZCode sessions"
+        " 可能仍持 startup snapshot，重開 session 前舊 session 每 prompt"
+        " 可能報錯"
+    )
+
+
+def _print_prune_preview(manifest: dict) -> None:
+    """--prune-stale --dry-run 預覽：live vs 模板的 reconciliation plan
+    （與 apply 同一份 _hooks_reconcile_plan 計算——人可 diff 形態；零寫入）。
+
+    範圍＝JSON 面（zcode）；grok＝merge=file 整檔 render 自癒、codex 文面
+    group 單位另案——不在本預覽。live 缺席＝自空建（無 stale 可列）。
+    """
+    reg = manifest.get("registrations", {}).get("zcode")
+    if not reg:
+        return
+    try:
+        cfg_target, cfg_template = reg["target"], reg["template"]
+    except KeyError:
+        return
+    target = real_target(home_path(cfg_target))
+    print(f"[prune-preview] zcode 面（{target}）reconciliation plan：")
+    live = read_json_config(target) if target.exists() else {}
+    try:
+        tmpl = render_template_json(
+            _read_template(cfg_template), label=cfg_template
+        )
+    except GovernanceError as exc:
+        print(f"  （模板 render 失敗——{exc}）")
+        return
+    live_sub = live.get(reg.get("merge_root", "hooks"))
+    plan = _hooks_reconcile_plan(
+        live_sub if isinstance(live_sub, dict) else {},
+        tmpl,
+        _canonical_root() / "hooks",
+    )
+    for label, key in (
+        ("add", "add"),
+        ("update", "update"),
+        ("remove", "remove"),
+        ("warn  ", "orphan_warn"),
+    ):
+        for e in plan[key]:
+            note = ""
+            if key == "remove":
+                note = "（將移除——apply 前自動 backup）"
+            elif key == "orphan_warn":
+                note = "（外部路徑——只列不刪）"
+            print(f"  {label} {e['event']}/{_script_labels(e)}{note}")
+    print(
+        f"  plan 合計：add {len(plan['add'])}、update {len(plan['update'])}、"
+        f"remove {len(plan['remove'])}、orphan_warn "
+        f"{len(plan['orphan_warn'])}（remove 僅 --prune-stale apply 執行）"
+    )
+
+
 # ── 模式入口（S3 verify／S4 check／S5 monitor 於後續段落實裝）────
 
 
@@ -1246,9 +1507,78 @@ def _record_face_failure(
         face_failures.append(face)
 
 
-def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
+# ── AIR-255 修復輪 F-1：--zcode-config 旁路面收斂（僅演練 zcode 面）──
+
+
+def _zcode_drill_skip_note(surface: str) -> str:
+    """F-1：--zcode-config 演練的 skip 註記（一行）。
+
+    被跳過面清單由 surface 推導（install/dry-run 同語義）：hooks 面拆
+    grok/codex 兩 registration（zcode 保留）；其餘面整面 skip。uninstall
+    不演練（行為不變——旗標只覆寫 zcode 面 target）。
+    """
+    skipped: list[str] = []
+    if surface in ("skills", "all"):
+        skipped.append("skills")
+    for wrapped in ("rules", "agents"):
+        if surface in (wrapped, "all"):
+            skipped.append(wrapped)
+    if surface in ("memory", "all"):
+        skipped.append("memory")
+    if surface == "monitor":
+        skipped.append("monitor")
+    if surface in ("hooks", "all"):
+        skipped.extend(["hooks:grok", "hooks:codex"])
+    return (
+        f"[zcode-config] --zcode-config 在場——僅演練 zcode 面，"
+        f"跳過 {len(skipped)} 面（{'、'.join(skipped) or '無'}）"
+    )
+
+
+def _zcode_drill_plan(manifest: dict, mode: str, *, prune_stale: bool) -> dict:
+    """F-1：演練 plan＝hooks plan 過濾為 json-subtree:zcode 單面。
+
+    旗標只覆寫 zcode 面 target——其他面（grok/codex registration 等）寫入
+    目標仍是真 $HOME，進 plan 照跑＝與旗標名稱及 help 宣稱不符，故在
+    plan 層收斂為單面。
+    """
+    plan = build_plan(manifest, "hooks", mode, prune_stale=prune_stale)
+    plan["targets"] = [
+        t for t in plan["targets"] if t["kind"] == "json-subtree:zcode"
+    ]
+    return plan
+
+
+def cmd_install_uninstall(
+    manifest: dict,
+    surface: str,
+    mode: str,
+    *,
+    prune_stale: bool = False,
+    zcode_override: bool = False,
+) -> int:
+    # F-1（修復輪）：--zcode-config 在場（install/dry-run）＝僅演練 zcode 面
+    # ——旗標只覆寫 zcode 面 target，其他面寫入目標仍是真 $HOME，照跑＝與
+    # 旗標名稱及 help 宣稱不符 → 全 skip＋一行註記；uninstall 行為不變。
+    zcode_drill = zcode_override and mode != "uninstall"
     if mode == "dry-run":
-        print_plan(build_plan(manifest, surface, mode))
+        if zcode_drill:
+            # F-1（修復輪）：演練語義同 install——僅預覽 zcode 面（wrap 面零
+            # 執行）；prune 預覽本就 zcode-scoped（_print_prune_preview）。
+            print(_zcode_drill_skip_note(surface))
+            if surface in ("hooks", "all"):
+                print_plan(
+                    _zcode_drill_plan(
+                        manifest, mode, prune_stale=prune_stale
+                    )
+                )
+            if prune_stale:
+                _print_prune_preview(manifest)
+            return EXIT_OK
+        print_plan(build_plan(manifest, surface, mode, prune_stale=prune_stale))
+        if prune_stale:
+            # AIR-255 A：--prune-stale --dry-run＝同一份 plan 的人可 diff 預覽
+            _print_prune_preview(manifest)
         # AIR-132 codex finding：wrap 面非零＝真 FAIL（README「退出碼串接」＋
         # AIR-116 TC-11「子工具非零 → installer 非零」）——禁吞碼假綠。
         rc = EXIT_OK
@@ -1273,7 +1603,13 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
     else:  # install
         # canonical 錨定 guard（basename-agnostic 修復配套）：card WT 安裝會使
         # live 指向隨 WT 關閉而消失的路徑（deny 閘靜默失效）——安裝面限 canonical。
-        if not _DRY_RUN and _canonical_root() != REPO_ROOT:
+        # AIR-255：--zcode-config 測試旗標（寫入目標＝注入路徑非 live config）
+        # 旁路本 guard——演練/測試用，正常安裝路徑 guard 不變。
+        if (
+            not _DRY_RUN
+            and _canonical_root() != REPO_ROOT
+            and not zcode_override
+        ):
             print(
                 f"[guard] install 應從 canonical worktree 執行：本 checkout"
                 f"（{REPO_ROOT}）非 canonical（{_canonical_root()}）——"
@@ -1281,19 +1617,29 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
                 "先收線回 main，再從 canonical 安裝。"
             )
             return EXIT_GUARD
+        if zcode_override and not _DRY_RUN and _canonical_root() != REPO_ROOT:
+            print(
+                "[guard] canonical guard 旁路：--zcode-config 測試旗標"
+                "（zcode 寫入目標＝注入路徑，非 live config）"
+            )
+        # F-1（修復輪）：--zcode-config 在場＝僅演練 zcode 面——其他面全 skip
+        # ＋一行註記（apply 在下方 plan 層過濾；surface 非 hooks/all 時 zcode
+        # 面不在 scope＝零 apply）。
+        if zcode_drill:
+            print(_zcode_drill_skip_note(surface))
         # 編排語義（AC-6.3 fixture 實證後定案）：面與面獨立——單面失敗照常安裝
         # 其他面（機器不留半套無告警），結束以最壞 rc 彙整報告。F1（AIR-178）：
         # 任一面 GovernanceError 收進 face_failures（行為對齊本注釋，非 abort）。
         # rules 面 pointer preflight 驗證 skill runtime 可達（~/.agents/skills/...）
         # ——skills 母鏈必須先於 rules wrap 建置，乾淨機器否則 deploy_agents abort。
-        if surface in ("skills", "all"):
+        if surface in ("skills", "all") and not zcode_drill:
             try:
                 # F-E 契約：apply_plan 回 EXIT_OK 或 raise——非零 rc 分支不存在
                 apply_plan(manifest, build_plan(manifest, "skills", mode))
             except GovernanceError as exc:
                 _record_face_failure(face_failures, "skills", exc)
         for wrapped in ("rules", "agents"):
-            if surface not in (wrapped, "all"):
+            if surface not in (wrapped, "all") or zcode_drill:
                 continue
             try:
                 rc = run_wrap(manifest["surfaces"][wrapped]["argv"])
@@ -1302,7 +1648,7 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
             else:
                 if rc != 0:  # AIR-132：wrap 非零＝真 FAIL（禁吞碼假綠）
                     face_failures.append(wrapped)
-        if surface in ("memory", "all"):
+        if surface in ("memory", "all") and not zcode_drill:
             try:
                 _require_muse_cli()  # R2 codex#4：FileNotFoundError 前置乾淨化
                 plugin_path = REPO_ROOT / manifest["surfaces"]["memory"]["plugin_path"]
@@ -1350,15 +1696,35 @@ def cmd_install_uninstall(manifest: dict, surface: str, mode: str) -> int:
                     face_failures.append("memory")
             except GovernanceError as exc:
                 _record_face_failure(face_failures, "memory", exc)
-    if surface in ("hooks", "skills", "all", "memory", "monitor"):
+    if zcode_drill:
+        # F-1（修復輪）：apply targets 過濾為 json-subtree:zcode 單面——
+        # surface 非 hooks/all 時 zcode 面不在 scope，零 apply。
+        if surface in ("hooks", "all"):
+            try:
+                # F-E 契約：apply_plan 回 EXIT_OK 或 raise——非零 rc 分支不存在
+                apply_plan(
+                    manifest,
+                    _zcode_drill_plan(
+                        manifest, mode, prune_stale=prune_stale
+                    ),
+                )
+            except GovernanceError as exc:
+                _record_face_failure(face_failures, "hooks", exc)
+    elif surface in ("hooks", "skills", "all", "memory", "monitor"):
         try:
             # F-E 契約：apply_plan 回 EXIT_OK 或 raise——非零 rc 分支不存在
-            apply_plan(manifest, build_plan(manifest, surface, mode))
+            apply_plan(
+                manifest,
+                build_plan(
+                    manifest, surface, mode, prune_stale=prune_stale
+                ),
+            )
         except GovernanceError as exc:  # F1：面失敗收彙整，完成輸出照跑
             _record_face_failure(face_failures, surface, exc)
-    print_manual_steps(surface)
-    if mode == "install":
-        _print_default_state_warnings(manifest, surface)
+    if not zcode_drill:
+        print_manual_steps(surface)
+        if mode == "install":
+            _print_default_state_warnings(manifest, surface)
     if face_failures:
         print(
             f"[{mode}] 部分面失敗：{'、'.join(face_failures)}"
@@ -1590,13 +1956,31 @@ def check_json_face(
                 drifts.append((harness, f"內容差 {evt}/{sorted(ident[1])}"))
         for g in live_groups:
             gi = _group_identity(g)
-            if gi not in tmpl_idents and _group_scripts(g) & pkg_scripts:
+            if gi in tmpl_idents:
+                continue
+            if _group_scripts(g) & pkg_scripts:
                 drifts.append(
                     (
                         harness,
                         f"多條目（套件腳本現身非模板 group）"
-                        f"{evt}/{sorted(gi[1])}——install 不清除，"
-                        f"手工移除或 --uninstall --surface hooks 後重裝",
+                        f"{evt}/{sorted(gi[1])}——手工移除，或受管形可"
+                        f" install --surface hooks --prune-stale 清"
+                        f"（--prune-stale --dry-run 先預覽）、"
+                        f"--uninstall --surface hooks 後重裝亦可",
+                    )
+                )
+            elif _ownership_class(
+                g, _canonical_root() / "hooks"
+            ) == "managed":
+                # AIR-255 A：stale 受管殘留（不在模板——rename/撤下遺留，
+                # 語義 diff 抓不到 script 名不比對的死者）
+                drifts.append(
+                    (
+                        harness,
+                        f"stale 受管條目（不在現行模板）"
+                        f"{evt}/{sorted(gi[1])}——install --surface hooks"
+                        f" --prune-stale 清除"
+                        f"（--prune-stale --dry-run 可先預覽）",
                     )
                 )
 
@@ -2419,6 +2803,24 @@ def main() -> int:
     group = ap.add_mutually_exclusive_group()
     for flag in ("dry_run", "uninstall", "check", "verify"):
         group.add_argument(f"--{flag.replace('_', '-')}", action="store_true")
+    # AIR-255 A：--prune-stale＝修飾旗標（非四互斥 mode flag——CLI_FLAGS
+    # 凍結契約不動）；--zcode-config＝測試/演練注入面（僅影響 zcode 讀寫
+    # 目標＋旁路 canonical guard；F-1 修復輪起 install/--dry-run 在場＝僅
+    # 演練 zcode 面——其他面全 skip，uninstall 行為不變）。
+    ap.add_argument(
+        "--prune-stale",
+        action="store_true",
+        help="install/--dry-run 附加：移除受管（repo hooks/ 圍欄內）且不在"
+        "現行模板的 stale hook group（rename/撤下殘留）；dry-run 同 plan 預覽",
+    )
+    ap.add_argument(
+        "--zcode-config",
+        default=None,
+        metavar="PATH",
+        help="測試/演練旗標：zcode 面 config 讀寫目標覆寫（不碰 live config）；"
+        "install/--dry-run 在場＝僅演練 zcode 面（其他面全 skip），"
+        "uninstall 行為不變",
+    )
     args = ap.parse_args()
 
     flags = [f for f in ("dry_run", "uninstall", "check", "verify") if getattr(args, f)]
@@ -2428,6 +2830,15 @@ def main() -> int:
     mode = (
         flags[0].replace("_", "-") if flags else "install"
     )  # 1201 事故教訓：attribute 名歸一化
+    if args.prune_stale and mode not in ("install", "dry-run"):
+        # prune 是 install/--dry-run 的附加語義——uninstall 本身已移除模板
+        # 條目；check 面自帶 stale drift＋--prune-stale 修法提示（唯讀）
+        print(
+            "--prune-stale 僅搭配 install／--dry-run（check 面見 stale drift"
+            " 提示行；uninstall 已移除模板條目）",
+            file=sys.stderr,
+        )
+        return EXIT_GUARD
     if mode == "dry-run":
         set_dry_run()
     # F5（AIR-181）：sudo/HOME 守衛——寫入面（install/uninstall）在 manifest
@@ -2443,13 +2854,33 @@ def main() -> int:
         # EXIT_EXEC(4)（原裸 traceback 面）。main 只接 GovernanceError：預期
         # lookup 失敗乾淨 exit 4；程式 bug 照樣 traceback——禁全域 catch。
         manifest = load_manifest()
+        if args.zcode_config:
+            # 測試注入面：只覆寫 zcode 面 target（讀寫目標）；模板/merge_root
+            # 等 registration 欄位不動。
+            print(
+                f"[zcode-config] 測試旗標：zcode 讀寫目標覆寫為"
+                f" {args.zcode_config}"
+            )
+            manifest["registrations"]["zcode"]["target"] = args.zcode_config
         if mode == "dry-run":
-            return cmd_install_uninstall(manifest, args.surface, "dry-run")
+            return cmd_install_uninstall(
+                manifest,
+                args.surface,
+                "dry-run",
+                prune_stale=args.prune_stale,
+                zcode_override=bool(args.zcode_config),
+            )
         if mode == "check":
             return cmd_check(manifest, args.surface)
         if mode == "verify":
             return cmd_verify(manifest, args.surface)
-        return cmd_install_uninstall(manifest, args.surface, mode)
+        return cmd_install_uninstall(
+            manifest,
+            args.surface,
+            mode,
+            prune_stale=args.prune_stale,
+            zcode_override=bool(args.zcode_config),
+        )
     except GovernanceError as exc:
         print(f"[FAIL] {exc}", file=sys.stderr)
         return EXIT_EXEC
