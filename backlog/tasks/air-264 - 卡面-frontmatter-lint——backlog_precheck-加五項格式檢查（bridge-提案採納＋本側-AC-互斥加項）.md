@@ -1,10 +1,10 @@
 ---
 id: AIR-264
 title: 卡面 frontmatter lint——backlog_precheck 加五項格式檢查（bridge 提案採納＋本側 AC 互斥加項）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 13:15'
-updated_date: '2026-10-06 13:16'
+updated_date: '2026-10-06 13:27'
 labels:
   - kanban
   - db-crossover
@@ -30,3 +30,25 @@ flowchart LR
     P --> T["fixtures 測試"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 五項 fixture 逐項命中＋好形零誤報（RED→GREEN）
+- [x] #2 real board 293 卡全綠＋兩 drafts handoff 信件型命中（真命中非誤報——查證屬實）
+- [x] #3 純新增 50 行不動既有邏輯；bash -n 乾淨
+- [x] #4 bridge 參考語義對齊（lintBacklogFrontmatter）；exit 語義一致（命中 1/失敗 2）
+<!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+frontmatter lint 落地：backlog_precheck.sh 加五項零依賴 awk lint（49 行）——①首行/閉合 frontmatter ②重複 top-level key（bridge 事故型）③tab 縮排 ④未閉合雙引號 ⑤AC 行外框 checkbox 與內容 [x] 前綴互斥（本側今天三次事故型）。fixture 七命中（五壞形逐一＋好形零誤報）＋real board 293 卡全綠唯二命中＝drafts 兩封 handoff 信件型檔（非卡形——處置待 user：補 frontmatter／移出／排除規則）。
+
+```mermaid
+flowchart LR
+    B["bridge 四項"] --> A["awk 適配（49 行）"]
+    E["本側 AC 互斥"] --> A
+    A --> P["backlog_precheck.sh"]
+    P --> F["fixture 7 命中＋real 293 綠＋2 信件型"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
