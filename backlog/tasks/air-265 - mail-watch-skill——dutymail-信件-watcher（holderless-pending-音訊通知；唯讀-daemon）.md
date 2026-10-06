@@ -1,9 +1,10 @@
 ---
 id: AIR-265
 title: mail-watch skill——dutymail 信件 watcher（holderless pending 音訊通知；唯讀 daemon）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 14:12'
+updated_date: '2026-10-06 14:14'
 labels:
   - dutymail
 dependencies: []
