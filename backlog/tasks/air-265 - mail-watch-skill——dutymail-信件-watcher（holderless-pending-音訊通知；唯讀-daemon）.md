@@ -8,6 +8,8 @@ updated_date: '2026-10-06 14:14'
 labels:
   - dutymail
 dependencies: []
+references:
+  - ai-analysis/_tasks/10-06-mail-watch/ep.md
 ordinal: 256000
 ---
 
