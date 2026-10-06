@@ -1,9 +1,10 @@
 ---
 id: AIR-259
 title: tool-discipline 補 zsh echo 轉義陷阱——JSON 禁 +echo 往返
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 08:27'
+updated_date: '2026-10-06 08:27'
 labels:
   - tooling
 dependencies: []
