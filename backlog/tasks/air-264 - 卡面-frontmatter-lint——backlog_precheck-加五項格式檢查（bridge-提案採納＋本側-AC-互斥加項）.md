@@ -1,9 +1,10 @@
 ---
 id: AIR-264
 title: 卡面 frontmatter lint——backlog_precheck 加五項格式檢查（bridge 提案採納＋本側 AC 互斥加項）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 13:15'
+updated_date: '2026-10-06 13:16'
 labels:
   - kanban
   - db-crossover
