@@ -66,4 +66,54 @@ for id in "${ids[@]}"; do
     echo "[可清] $id (status=$s)"
   fi
 done
+
+# fm-lint:BEGIN — 卡面 frontmatter lint（AIR-264；bridge db-precheck-lint-proposal 採納）
+# 掃 backlog/{tasks,completed,drafts,archive} 所有 *.md——五類卡面壞形（bridge db-80 四類＋本側 AC 雙 checkbox）：
+# 首行/閉合 ---、重複 top-level key（CLI last-wins 寬容、SC ext fail-loud）、行首 tab、未閉雙引號、AC 外框包 [x] 前綴內容。
+# 語義對齊 delegate-bridge tests/backlog-frontmatter.test.mjs（line-based，非 YAML parser）；零命中靜默、不擋正常路徑。
+fm_lint_fail=0
+for _d in tasks completed drafts archive; do
+  for _f in backlog/"$_d"/*.md; do
+    [ -e "$_f" ] || continue
+    if ! _hits=$(awk '
+      { sub(/\r$/, "") }
+      NR == 1 {
+        if ($0 != "---") { print "1 no-frontmatter first line is not ---"; _bad = 1; exit }
+        _fm = 1; next
+      }
+      _fm == 1 && $0 == "---" { for (_i = 0; _i < _pi; _i++) print _pend[_i]; _pi = 0; _fm = 2; next }
+      _fm == 1 {
+        if ($0 ~ /^\t/) _pend[_pi++] = NR " tab-indent leading tab in frontmatter line"
+        if ($0 ~ /^[A-Za-z_][A-Za-z0-9_-]*:([ \t]|$)/) {
+          _k = $0; sub(/:.*/, "", _k)
+          if (_k in _seen) _pend[_pi++] = NR " duplicate-key duplicated top-level key \"" _k "\" (first at L" _seen[_k] ")"
+          else _seen[_k] = NR
+          _v = $0; sub(/^[^:]*:[ \t]*/, "", _v)
+          if ((_v ~ /^"/) != (_v ~ /"$/)) _pend[_pi++] = NR " unclosed-quote top-level value starts/ends with exactly one double quote"
+        }
+        next
+      }
+      _fm == 2 {
+        if ($0 ~ /<!-- AC:BEGIN -->/) { _ac = 1; next }
+        if ($0 ~ /<!-- AC:END -->/) { _ac = 0; next }
+        if (_ac && $0 ~ /^[ \t]*- \[[ x]\] \[x\]([ \t]|$)/) print NR " ac-double-checkbox outer checkbox wraps [x]-prefixed content"
+      }
+      END {
+        if (NR == 0) print "1 no-frontmatter empty card file"
+        else if (!_bad && _fm == 1) print "1 unclosed-frontmatter no closing --- found"
+      }
+    ' "$_f"); then
+      echo "[ERROR] $_f — frontmatter awk lint 失敗（runtime，非 policy）" >&2; exit 2
+    fi
+    if [ -n "$_hits" ]; then
+      while IFS= read -r _l; do printf '[frontmatter-lint] %s:%s\n' "$_f" "$_l"; done <<< "$_hits"
+      fm_lint_fail=$((fm_lint_fail + $(printf '%s\n' "$_hits" | wc -l)))
+    fi
+  done
+done
+if [ "$fm_lint_fail" -gt 0 ]; then
+  echo "[不可清] frontmatter lint 命中 $fm_lint_fail 項（卡面解析壞形——SC ext Unparsed／AC 誤勾類）"
+  blocked=1
+fi
+# fm-lint:END
 exit $blocked
