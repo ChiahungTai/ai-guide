@@ -25,6 +25,8 @@ send（intent＋reply_address＋envelope_id）
 - **per-repo mailbox**：`<repo>-marshal`（本 repo＝`ai-guide-marshal`）＝repo 的長期責任入口
   （durable alias）。**holder**＝目前哪個 session 值星（epoch-fenced、可換代不搬信）——
   責任 identity 與執行者 identity 分開。
+- **門牌建立**：新 repo 加入 dutymail 時由該 repo 值星建 `<repo>-marshal` 門牌
+  （`address create` 一次性；跨 repo 對址慣例）。
 - **reply_address 慣例**：從 repo mailbox 發出者，body machine-header `reply_address` 一律
   ＝originating repo-marshal；只有明確 direct-session 對話才回 session address。
 - **session address 殘餘角色＝direct channel**（指定特定 session／session-exit continuation）；
@@ -61,6 +63,32 @@ auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest �
 SC-305 上線——surface 項照樣計入 ack 前處置，差別只是不注入全文〕）→ ack（**絕不
 flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 （terminal status 只是 fact）。**v1 不主動送信**（send/replies＝outward，逐次 AUTH）。
+
+## 回信發現與收信面
+
+- **回信發現正典**：等回信/查回信恆用 scoped 形 `dutymail replies --envelope-id <parent>
+  --address <自己門牌>`——已知回信回到哪個 mailbox 就 scope 那個 mailbox。**跨地址禁用
+  unscoped**：unscoped 從 parent 信出現過的地址推導 scope——跨 repo 往返中 parent 常在
+  對方信箱，回信回到自己信箱，unscoped 合法地查錯邊回空。**回空不蘊含語義**（不等於
+  未寄/未 ack/不存在）——它只證明「此查詢形下未見」。等回信推進鏈：`wait --address <self>`
+  （bounded；wake 是提示、requery 才是 correctness）→醒後 `receive status`→`prepare`→
+  `replies`。unscoped 完整語義以 bridge 為準（delegate-bridge repo dutymail CLI 源碼＋
+  docs——本節不複製定義）。
+
+| face | 正確用途 | 不能拿來推什麼 |
+|---|---|---|
+| wait | 等自己門牌新事件（bounded） | 有事件≠已讀到信件內容 |
+| events | transition timeline／audit 流 | **無 body——不是讀信面**；不能判信內容 |
+| receive status | pendingCount／cursor 投影 | 無 body，不能判信內容 |
+| receive prepare | 讀信面（canonical envelope＋body；reserve 不 consume） | prepare≠ack |
+| replies（scoped） | 回信執行緒視圖 | 未消費回信也查得到——查不到≠未寄 |
+
+- **查證一行**：查詢回空只授權「此查詢形下未見」；對外做根因陳述前須源碼或實測（真相源：
+  delegate-bridge repo `dutymail/crates/` 源碼與 `00-tasks/2026-10/10-04-dutymail/` 契約
+  文檔＋CLI `--help`——實證：2026-10-06 unscoped 回空被誤歸因「只索引已 ack」，源碼證偽）。
+- **對外信慣例**：對外信（通知/歸因/更正）中的因果或機制斷言須攜證據基（查詢形/源碼行/
+  實測輸出），攜不了自標「未查證推測」；更正信顯式 supersede——`in_reply_to` 指原信＋一句
+  推翻證據＋新結論，禁兩信互不相認。
 
 ## 閒置語義
 
