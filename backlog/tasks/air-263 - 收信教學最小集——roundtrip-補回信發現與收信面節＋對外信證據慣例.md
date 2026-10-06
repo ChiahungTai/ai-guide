@@ -4,7 +4,7 @@ title: 收信教學最小集——roundtrip 補回信發現與收信面節＋對
 status: In Progress
 assignee: []
 created_date: '2026-10-06 12:16'
-updated_date: '2026-10-06 12:16'
+updated_date: '2026-10-06 12:28'
 labels:
   - dutymail
   - teaching
@@ -29,3 +29,24 @@ flowchart LR
     C --> O["對外信：證據標注＋更正 supersede"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 新節在場（rg 命中）
+- [x] #2 face 表五列＋events 禁讀信面在場
+- [x] #3 對外信證據慣例＋supersede 條款在場
+- [x] #4 恰一檔 +28 行；獨立審查 PASS 零 findings（四欄回執）
+<!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+收信教學最小集落地（tri-consultant muse/codex/5.3 收斂定稿語義照抄）：roundtrip 新增「回信發現與收信面」節——①回信發現正典（scoped --address <self> 唯一正典；跨地址禁 unscoped——parent 出現地址推導 scope 跨 repo 查錯邊合法回空；回空不蘊含語義；wait→status→prepare→replies 鏈）②face 五行表（wait/events/status/prepare/replies 用途×不能推什麼——events 無 body 禁當讀信面）③查證一行（回空只授權「此形下未見」＋就近真相源指針）④對外信慣例（斷言攜證據或自標未查證推測；更正信顯式 supersede）＋地址模型補門牌建立一句。獨立審查 PASS 零 findings（10 條宣稱×bridge 源碼逐條對照——observe.rs TC-D13 定義性 commit 對上；四欄回執記 FS）。
+
+```mermaid
+flowchart LR
+    F["收信失誤×2"] --> C["三顧問收斂"] --> R["roundtrip 新節 28 行"]
+    R --> V["獨立審查（10 宣稱×源碼對照）"]
+    V -->|PASS 零 findings| M["落地"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
