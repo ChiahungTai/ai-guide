@@ -1,7 +1,7 @@
 ---
 id: AIR-258
 title: B′ 解凍——G3 surface 縮窄（恆人工留 INBOX）＋G4 holderless 改常態
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 08:27'
 updated_date: '2026-10-06 08:45'
