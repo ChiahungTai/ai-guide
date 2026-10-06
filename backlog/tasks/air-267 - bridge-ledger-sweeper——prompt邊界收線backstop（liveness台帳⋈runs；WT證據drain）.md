@@ -4,7 +4,7 @@ title: bridge-ledger-sweeper——prompt邊界收線backstop（liveness台帳⋈
 status: In Progress
 assignee: []
 created_date: '2026-10-06 22:00'
-updated_date: '2026-10-06 22:00'
+updated_date: '2026-10-06 22:38'
 labels:
   - bridge
 dependencies: []
@@ -42,5 +42,15 @@ flowchart LR
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-tri verdict：muse（pgrep false-covered 最大風險/liveness 配對正解/節流先例 duty_mailbox_monitor/reconcile 不蓋）＋codex（語義分層 retrieved_at/SessionStart+60-120s 節流/WT drain 帶證據鏈/worker-無行不納入）；5.3 裁決全採納——B 側車撤（liveness 已存在實證 132KB 台帳）。brief=.agent-tmp/bridge-sweeper-brief.md。
+## Tri-panel review verdict（GLM-5.3 judge，2026-10-07）
+
+三腿：muse review face＋codex WO task face＋5.3 自審（R2 洪水已於 smoke 期自抓自修：無 armed 痕跡安靜——578→5 真孤兒實證）。合併 7 findings——**全採納**：
+J-1 MED（muse）runs JSON contract 只由 fake 斷言——真樣本 frozen fixture 釘（bridge schema 變更防靜默死）。
+J-2 MED（muse）R2 armed 前提未同步 EP 表/skill 段（doc drift）。
+J-3 LOW（muse）hook 核心 import 在 fail-soft 邊界外——移入 run() try 內。
+J-4 HIGH（codex）15m freshness 違反 waiter 20m 合法輪詢契約（death threshold 30m 刻意＞T_GROW_CAP）——假孤兒+重複 arm 風險；修＝floor 30m 鏡像＋16-20m healthy 回歸釘。
+J-5 HIGH（codex）advisory（完結事件）被算活心跳——stall 後 running 行誤判有活 waiter 到窗期末；修＝live ts（armed/heartbeat/rearmed）與 concluded（collected/advised）分離。
+J-6 HIGH（codex）signature 對顯示文字（count+前3）非完整集合——尾部交換漏報/順序假變化；修＝排序完整 {r1,r2} id 集合簽章、顯示層才截。
+J-7 MED（codex）ZCode host 10s timeout < 內層 bridge 30s——fail-soft catch 來不及跑；修＝內層 timeout 8s 並釘關係。
+被拒：無（7/7）。可逆性：全雙向。
 <!-- SECTION:NOTES:END -->
