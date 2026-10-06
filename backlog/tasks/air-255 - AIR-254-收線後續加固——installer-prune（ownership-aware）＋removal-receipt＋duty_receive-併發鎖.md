@@ -3,10 +3,10 @@ id: AIR-255
 title: >-
   AIR-254 收線後續加固——installer prune（ownership-aware）＋removal receipt＋duty_receive
   併發鎖
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-05 22:38'
-updated_date: '2026-10-05 22:39'
+updated_date: '2026-10-06 01:29'
 labels:
   - dutymail
 dependencies: []
@@ -36,6 +36,15 @@ flowchart LR
 ```
 <!-- SECTION:DESCRIPTION:END -->
 
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 全套 3351 tests 綠（prune 17＋鎖 13＋repair 增 10；基線只增不減）
+- [x] #2 真機複本演練：死引用→dry-run 預覽→apply 移除＋receipt＋backup；fixture 死引用歸零、用戶鍵保留
+- [x] #3 prune 僅顯式路徑可達（無 flag install/check 行為逐字不變；fuzz 17K trials 零 mismatch）
+- [x] #4 鎖 critical section 涵蓋 load→decide→ack；逾時 fallback 不擋 prompt；state 主檔零觸碰（sidecar 計數）
+- [x] #5 快審 4 findings 全閉（F-1 演練面收斂/F-2+F-3 sidecar/F-4 例外不遮蔽）
+<!-- AC:END -->
+
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
@@ -54,3 +63,20 @@ AC：
 3. rg 驗證 prune 僅顯式路徑可達（預設 install 零移除行為）
 4. duty_receive 既有測試零回歸（3311 基線上只增不減）
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AIR-254 收線後續加固落地（雙顧問 muse+codex 合成 spec）：①installer ownership-aware prune（--prune-stale 顯式旗標；managed∧不在模板才刪；dry-run 與 apply 同一 reconciliation plan；restart receipt）②duty_receive 併發鎖（dedicated .lock 檔、critical section 涵蓋 load→decide→ack、逾時 bounded-duplication fallback＋sidecar 計數）③快審 4 findings 修復（--zcode-config 演練面收斂、fallback sidecar、例外不遮蔽）。3341→3351 tests 綠；17K trials 等值 fuzz 零 mismatch；複本演練（fixture 死引用→prune→receipt→backup）真機驗證。commits：writer 輪＋9efd6ae7（repair）。
+
+```mermaid
+flowchart LR
+    T["註冊模板 source of truth"] --> P["reconciliation plan 單源"]
+    L["live config"] --> P
+    P -->|"--prune-stale --dry-run"| D["同 plan 預覽"]
+    P -->|"--prune-stale apply"| R["remove：managed∧absent"]
+    R --> W["restart receipt（不宣稱 session 數）"]
+    H["hook 邊界"] --> K["session lock"] --> C["critical section load→decide→ack"]
+    K -->|逾時| F["fallback＋sidecar 計數"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
