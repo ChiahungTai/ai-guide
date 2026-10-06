@@ -1,7 +1,7 @@
 ---
 id: AIR-263
 title: 收信教學最小集——roundtrip 補回信發現與收信面節＋對外信證據慣例
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 12:16'
 updated_date: '2026-10-06 12:28'
