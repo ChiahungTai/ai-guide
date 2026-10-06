@@ -8,6 +8,8 @@ updated_date: '2026-10-06 22:00'
 labels:
   - bridge
 dependencies: []
+references:
+  - ai-analysis/_tasks/10-07-bridge-sweeper/ep.md
 ordinal: 258000
 ---
 
