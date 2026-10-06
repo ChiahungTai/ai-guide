@@ -9,7 +9,8 @@
 - invariant 1 提醒面非處置面：只讀（runs 唯讀 face＋liveness 台帳唯讀）——
   絕不 arm/stop/寫 liveness/寫 ledger。
 - invariant 2 機械真相源＝liveness 台帤（waiter 自有；本模組只讀）：在場判據
-  ＝armed−collected 配對＋heartbeat 新鮮度（default 15 分鐘，可調）——
+  ＝armed−collected 配對＋heartbeat 新鮮度（default 30 分鐘，可調——對齊
+  waiter HEARTBEAT_STALE_THRESHOLD，J-4）——
   禁進程掃描判在場（跨 session false-covered，tri 最大風險項）。
 - invariant 3 語義分層：只報機械層——措辭恆「可能未收」；「session 層驗收
   已完成」是另一層，本模組零宣稱（一次 show 不等於真正收線）。
@@ -22,12 +23,13 @@
 
 偵測規則（每輪掃描；值變化才出聲——EP 規則表）：
 - R1 孤兒 running：running 行 且 該 jobId 無 armed 事件、或 armed 但
-  heartbeat 逾新鮮度窗（default 15 分鐘）
+  heartbeat 逾新鮮度窗（default 30 分鐘，可調）
   → `[bridge-sweeper] running job <id> 無活 waiter——恢復 playbook：arm waiter`
   running 行卻帶 collected＝ledger staleness（reconcile 面）——不提醒
   （watcher_pairing_nag 同款不誤發裁定）。
 - R2 terminal 未收：terminal(completed) 行 且 無 collected 事件 且 終態
-  逾齡（default 30 分鐘）
+  逾齡（default 30 分鐘）——前提＝liveness 有 armed 痕跡（真孤兒類）；
+  無痕跡（pre-liveness 時代/手動收線）不可判安靜（J-2）
   → `[bridge-sweeper] <N> 個 terminal job 可能未收（<ids 前 3>）——收線：bridge_show`
   terminal 非 completed（failed-* 等）不提醒——失敗態處置是 dispatch 語義
   非收線語義（v1 收窄；known limitation 記 bridge-dispatch skill）。
@@ -40,8 +42,9 @@
 節流與安靜（tri Q3 收斂；先例＝duty_mailbox_monitor）：
 - SessionStart：全掃（無節流、無 signature 壓制——session 回場提醒一次）。
 - UserPromptSubmit：90s 節流窗（state 記 last_scan_at；窗內＝零查詢零輸出）
-  ＋anomaly signature 去重（R1/R2 集合簽章==baseline→靜默；變化才出聲
-  ＋更新 baseline；異常消失→baseline 歸零）。
+  ＋anomaly signature 去重（R1/R2 **id 全集**結構簽章（sorted＋json+sha256
+  ——J-6）==baseline→靜默；變化才出聲＋更新 baseline；異常消失→baseline
+  歸零；R2 顯示層前 3 截斷不參與簽章——第四成員起交換照出聲）。
 - cwd eligibility gate：cwd 在本 repo（script 所在 checkout，含卡 WT）或
   帶 liveness 台帤的 repo（bridge 派工發生在任何 repo）才跑；否則零查詢
   零輸出。
@@ -97,15 +100,21 @@ SUPPORTED_BOUNDARIES = ("SessionStart", "UserPromptSubmit")
 RUNNING = "running"
 COMPLETED = "completed"
 
-# R1 heartbeat 新鮮度窗（分鐘；EP default 15、可調）
-HEARTBEAT_FRESH_WINDOW_MIN = 15.0
+# R1 heartbeat 新鮮度窗（分鐘；可調）。J-4（tri Important 1）：對齊
+# bridge_waiter HEARTBEAT_STALE_THRESHOLD_MIN=30——waiter 合法輪詢間距
+# 可達 20m（動態 T 的 T_GROW_CAP），15m 窗會把 healthy long wait 誤判死
+# 亡（scripts/bridge_waiter.py 卡死判準註解同據）。
+HEARTBEAT_FRESH_WINDOW_MIN = 30.0
 # R2 終態逾齡窗（分鐘；EP default 30）
 TERMINAL_AGE_MIN = 30.0
 # UserPromptSubmit 節流窗（秒；tri Q3 收斂 90s）
 THROTTLE_WINDOW_S = 90.0
 
 RUNNER_ENV = "DELEGATE_BRIDGE_BIN"
-BRIDGE_TIMEOUT_SECONDS = 30
+# J-7（tri MED）：內層 bridge subprocess timeout（秒）——8s＜host 註冊
+# timeoutMs 10s（governance zcode 條目）：host 面先到前，內層逾時已轉
+# SweeperFaceError 進 fail-soft catch——catch 必有機會跑（階梯順序保證）。
+BRIDGE_RUNS_TIMEOUT_SECONDS = 8
 PLUGIN_CACHE_BASE = "~/.zcode/cli/plugins/cache/delegate-market/delegate"
 PLUGIN_BIN_PATTERNS = (
     os.path.join("*", "bin", "delegate-bridge"),
@@ -120,6 +129,11 @@ LIVENESS_REL = os.path.join(".agent-tmp", "liveness.jsonl")
 # liveness 台帤 schema liveness/1（waiter 自有；本模組只讀）——時間戳鍵全集
 # （watcher_pairing_nag 同款鏡像；drift 由 tests regex/fixture 釘）
 LIVENESS_TS_KEYS = ("ts", "armedAt", "collectedAt", "advisedAt", "rearmedAt")
+# live heartbeat 面（J-5，tri Important 2）：算「waiter 近期在場」的活事件
+# 時間戳鍵＝armed/heartbeat/rearmed 三鍵；advisory(advisedAt)/collected
+# (collectedAt) 是完結類事件——不算活心跳（advisedAt 誤算＝把 waiter 的
+# 卡死提醒當成在場證據→誤安靜）。全集常數保留作 schema 聲明。
+LIVENESS_LIVE_TS_KEYS = ("ts", "armedAt", "rearmedAt")
 
 _SAFE_SESSION_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -171,15 +185,21 @@ def _resolve_binary():
 
 def _default_runner(argv, cwd=None):
     """真實 bridge 呼叫（唯讀 face；無 shell）；cwd＝repo root（ledger
-    per-workspace 解析）。非零 exit＝SweeperFaceError（hook 上層 fail-soft）。"""
-    proc = subprocess.run(
-        [_resolve_binary()] + list(argv),
-        capture_output=True,
-        text=True,
-        timeout=BRIDGE_TIMEOUT_SECONDS,
-        check=False,
-        cwd=cwd,
-    )
+    per-workspace 解析）。非零 exit／逾時＝SweeperFaceError（hook 上層
+    fail-soft；逾時階梯見 BRIDGE_RUNS_TIMEOUT_SECONDS 註解）。"""
+    try:
+        proc = subprocess.run(
+            [_resolve_binary()] + list(argv),
+            capture_output=True,
+            text=True,
+            timeout=BRIDGE_RUNS_TIMEOUT_SECONDS,
+            check=False,
+            cwd=cwd,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise SweeperFaceError(
+            f"bridge CLI timeout（>{BRIDGE_RUNS_TIMEOUT_SECONDS}s）"
+        ) from exc
     if proc.returncode != 0:
         raise SweeperFaceError(
             f"bridge CLI exit {proc.returncode}：{proc.stderr.strip()[:200]}"
@@ -282,8 +302,9 @@ def _liveness_index(events):
     """事件 list → per-jobId {armed, collected, latest_ts}。
 
     jobId 全等比對（禁子串——`job-a` 會誤配 `job-a-1`，watcher_pairing_nag
-    152-C4 同款）；latest_ts＝該 job 全部事件時間戳最大者（heartbeat 新鮮度
-    判準的基準——任一新事件（heartbeat/rearmed）都證明 watcher 近期在場）。"""
+    152-C4 同款）；latest_ts＝該 job 活事件（heartbeat 新鮮度判準的基準）
+    時間戳最大者——只認 live 鍵（armedAt/ts/rearmedAt：任一活事件都證明
+    watcher 近期在場）；advisory/collected 完結事件不計（J-5）。"""
     index = {}
     for rec in events:
         if not isinstance(rec, dict):
@@ -299,7 +320,7 @@ def _liveness_index(events):
             entry["armed"] = True
         elif event == "collected":
             entry["collected"] = True
-        for key in LIVENESS_TS_KEYS:
+        for key in LIVENESS_LIVE_TS_KEYS:
             ts = _iso_to_aware(rec.get(key))
             if ts is not None and (
                 entry["latest_ts"] is None or ts > entry["latest_ts"]
@@ -324,16 +345,16 @@ def _fetch_runs(runner):
     return rows
 
 
-def scan_once(
+def _scan_ids(
     runner,
     liveness_events,
     now,
     heartbeat_fresh_min=HEARTBEAT_FRESH_WINDOW_MIN,
     terminal_age_min=TERMINAL_AGE_MIN,
 ):
-    """runs（runner 回 JSON）⋈ liveness 事件（None＝台帤缺席）→ advisories。
+    """runs（runner 回 JSON）⋈ liveness 事件（None＝台帤缺席）→ (r1, r2)。
 
-    純函式：R1 每孤兒一行＋R2 聚合一行（EP 規則表措辭凍結）；乾淨＝[]；
+    純函式回 id 集合（signature 與顯示的共同上游——集合語義先於截斷）；
     face 失敗 raise SweeperFaceError（hook 上層 fail-soft 吸收）。"""
     rows = _fetch_runs(runner)
     per_job = _liveness_index(liveness_events or [])
@@ -380,6 +401,12 @@ def scan_once(
                 continue
             if not ((now - term_ts).total_seconds() <= terminal_age_min * 60):
                 r2.append(job_id)  # 終態逾齡且 armed 無 collected——可能未收
+    return r1, r2
+
+
+def _advisory_lines(r1, r2):
+    """(r1, r2) id 集合 → advisory 行（顯示層：R2 前 3 截斷只在這裡——
+    signature 對集合全集簽，截斷不影響去重判準；J-6）。"""
     lines = [
         f"[{HOOK_TAG}] running job {job} 無活 waiter"
         "——恢復 playbook：arm waiter"
@@ -392,6 +419,24 @@ def scan_once(
             "——收線：bridge_show"
         )
     return lines
+
+
+def scan_once(
+    runner,
+    liveness_events,
+    now,
+    heartbeat_fresh_min=HEARTBEAT_FRESH_WINDOW_MIN,
+    terminal_age_min=TERMINAL_AGE_MIN,
+):
+    """runs ⋈ liveness → advisories（CLI/smoke 面；EP 規則表措辭凍結）。
+
+    乾淨＝[]；face 失敗 raise SweeperFaceError（hook 上層 fail-soft 吸收）。"""
+    r1, r2 = _scan_ids(
+        runner, liveness_events, now,
+        heartbeat_fresh_min=heartbeat_fresh_min,
+        terminal_age_min=terminal_age_min,
+    )
+    return _advisory_lines(r1, r2)
 
 
 # ── per-session state（節流窗＋anomaly signature baseline；0600 atomic）──
@@ -443,9 +488,16 @@ def save_state(path, doc):
     os.replace(tmp, path)
 
 
-def _signature(lines):
-    """advisories 集合簽章（sorted——值語義穩定；空集合照簽＝baseline 歸零）。"""
-    payload = "\n".join(sorted(lines))
+def _signature(r1_ids, r2_ids):
+    """anomaly 結構簽章（J-6，tri Important 3）。
+
+    對 {"r1": sorted, "r2": sorted} id 全集做 json.dumps+sha256——對
+    R2 顯示層前 3 截斷免疫（第四成員起交換＝簽章變→出聲）；sorted 對
+    runs 順序免疫。空集合照簽＝baseline 歸零。"""
+    payload = json.dumps(
+        {"r1": sorted(r1_ids), "r2": sorted(r2_ids)},
+        ensure_ascii=False, sort_keys=True,
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -500,8 +552,9 @@ def run_hook(
         run_fn = runner
         if run_fn is None:
             run_fn = functools.partial(_default_runner, cwd=repo)
-        lines = scan_once(run_fn, events, now)
-        signature = _signature(lines)
+        r1, r2 = _scan_ids(run_fn, events, now)
+        lines = _advisory_lines(r1, r2)
+        signature = _signature(r1, r2)
         speak = bool(lines) and (
             boundary == "SessionStart"
             or signature != state.get("signature")

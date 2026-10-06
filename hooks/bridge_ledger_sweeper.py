@@ -4,7 +4,8 @@
 薄前導：stdin payload（SessionStart／UserPromptSubmit——收線 backstop 的
 interaction boundary）→ boundary 判定＋session_id 取自 payload → importlib
 載入 scripts/bridge_sweeper 核心（檔案路徑顯式載入——hooks/ 與 scripts/
-同 repo，核心單一源不複製；與 duty_receive hook 同形）→
+同 repo，核心單一源不複製；載入點在 run() 內 lazy cache（J-3：載入失敗
+＝fail-soft，非 duty_receive 的 module-level 形））→
 hookSpecificOutput.additionalContext 輸出（sync；duty 家族同形）。核心邏輯
 （兩態偵測／節流／signature 去重／唯讀面）單一源＝scripts/bridge_sweeper.py
 （invariants 見該檔 module docstring）。
@@ -15,7 +16,8 @@ hookSpecificOutput.additionalContext 輸出（sync；duty 家族同形）。核�
 |---|---|---|
 | 偵測命中且值變化（R1/R2 advisory） | hookSpecificOutput | 0 |
 | 乾淨／同 signature／節流窗內／eligibility gate 不過／缺 session_id | 空（零查詢） | 0 |
-| face 失敗（runs 面／binary 缺席／壞形） | 空＋stderr 註記 | 0 |
+| face 失敗（runs 面／binary 缺席／壞形／內層逾時） | 空＋stderr 註記 | 0 |
+| 核心載入失敗（scripts/bridge_sweeper.py 檔缺/語法錯——J-3） | 空＋stderr 註記 | 0 |
 | liveness 台帤缺席（R2 退化——R1 照跑） | 視 R1 而定＋stderr 註記 | 0 |
 | stdin 壞 JSON／缺或未知事件 | 空（fail-soft） | 0 |
 | 註冊 args 誤用（argparse 拒絕） | 空（stderr 用法） | 2（大聲、刻意——misconfig 歸註冊單一源修復） |
@@ -40,16 +42,31 @@ if _HERE not in sys.path:
     sys.path.insert(0, _HERE)  # hook_payload_compat（hooks/ 同目錄）
 import hook_payload_compat as compat
 
+# 字面鏡像 core.HOOK_TAG——核心載入失敗（檔缺/語法錯）時 stderr 註記仍可
+# 標名出處（J-3：import 邊界也在 fail-soft 界內）。
+HOOK_TAG = "bridge-sweeper"
+SUPPORTED_EVENTS = ("SessionStart", "UserPromptSubmit")
+
 # 核心單一源＝scripts/bridge_sweeper.py——以檔案路徑顯式載入（自建模組名
 # _bridge_sweeper_core，不進 sys.modules：duty_receive hook 同款形態）。
-_core_spec = importlib.util.spec_from_file_location(
-    "_bridge_sweeper_core", os.path.join(_REPO, "scripts", "bridge_sweeper.py")
-)
-core = importlib.util.module_from_spec(_core_spec)
-_core_spec.loader.exec_module(core)
+# J-3：載入移入 run() 的 try 內（lazy cache）——module-level 載入會把
+# 檔缺/語法錯炸成 traceback exit 1，擋 prompt 面；fail-soft 界內吸收。
+_core_cache = None
 
-HOOK_TAG = core.HOOK_TAG
-SUPPORTED_EVENTS = ("SessionStart", "UserPromptSubmit")
+
+def _core_module():
+    global _core_cache
+    if _core_cache is None:
+        spec = importlib.util.spec_from_file_location(
+            "_bridge_sweeper_core",
+            os.path.join(_REPO, "scripts", "bridge_sweeper.py"),
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("core spec 不可載入（bridge_sweeper.py）")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _core_cache = module
+    return _core_cache
 
 
 def run(raw, runner=None, state_dir=None, liveness_path=None):
@@ -60,6 +77,7 @@ def run(raw, runner=None, state_dir=None, liveness_path=None):
     零真 bridge 呼叫）。事件名／session_id 經 hook_payload_compat 正規化
     （grok snake 值同款處理；防禦性相容）。"""
     try:
+        core = _core_module()  # J-3：載入失敗＝fail-soft（stderr＋零 stdout）
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
             return 0, "", None

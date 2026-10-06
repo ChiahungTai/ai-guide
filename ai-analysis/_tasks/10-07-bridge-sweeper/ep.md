@@ -19,12 +19,13 @@
 
 | 態 | 判據 | 輸出（一行） |
 |---|---|---|
-| R1 孤兒 running | running 行 且 該 jobId 無 armed 事件、或 armed 但 heartbeat 逾新鮮度窗（default 15 分鐘，可調） | `[bridge-sweeper] running job <id> 無活 waiter——恢復 playbook：arm waiter` |
+| R1 孤兒 running | running 行 且 該 jobId 無 armed 事件、或 armed 但 heartbeat 逾新鮮度窗（default 30 分鐘，可調——tri-panel J-4 修正：原 15 違 waiter 20m 合法輪詢間距契約） | `[bridge-sweeper] running job <id> 無活 waiter——恢復 playbook：arm waiter` |
 | R2 terminal 未收 | terminal(completed) 行 且 無 collected 事件 且 終態逾齡（default 30 分鐘） | `[bridge-sweeper] <N> 個 terminal job 可能未收（<ids 前 3>）——收線：bridge_show` |
 | 乾淨 | 以上皆無 | 靜默（零 stdout） |
 
 - terminal 非 completed（failed-\* 等）不提醒（失敗態處置是 dispatch 語義非收線語義——v1 收窄；記 skill known limitation）。
 - liveness 缺席（新機器/清過 .agent-tmp）＝R2 退化不可判——只跑 R1（runs 自身可判）；stderr 註記不轟炸。
+- amendment（tri-panel 修復 J-2，2026-10-07）：R2 前提＝liveness 有 armed 痕跡（真孤兒類）；無痕跡（pre-liveness/手動收線）不可判安靜——AC5 smoke 實證全報＝578 行誤報洪水。
 
 ## 節流與安靜（tri Q3 收斂；先例＝duty_mailbox_monitor）
 
