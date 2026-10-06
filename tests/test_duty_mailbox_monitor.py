@@ -783,16 +783,19 @@ class TestRegistrationWiring:
             assert entry["args"][1:] == ["--address", "ai-guide-marshal"]
 
     def test_zcode_group_composition_new_topology(self):
-        """UPS groups＝compact-restore-inject＋duty-receive＋duty-monitor（
-        monitor group 單一 marshal 條目——primary 死門牌已退役）。"""
+        """UPS groups＝compact-restore-inject＋duty-receive＋duty-monitor＋
+        bridge-sweeper（monitor group 單一 marshal 條目——primary 死門牌已
+        退役；AIR-267 追加 sweeper prompt 邊界腿）。"""
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
         ss = _groups(doc, "SessionStart")
         assert _hook_scripts(ups[0]) == ["compact-restore-inject.py"]
         assert _hook_scripts(ups[1]) == ["duty_receive.py"]
         assert _hook_scripts(ups[2]) == ["duty_mailbox_monitor.py"]
+        assert _hook_scripts(ups[3]) == ["bridge_ledger_sweeper.py"]
         assert _hook_scripts(ss[0]) == ["duty_receive.py"]
         assert _hook_scripts(ss[1]) == ["duty_mailbox_monitor.py"]
+        assert _hook_scripts(ss[2]) == ["bridge_ledger_sweeper.py"]
 
     def test_primary_dead_entry_retired_everywhere(self):
         """ai-guide-primary 死門牌條目退役 pin（AC——rg 零命中的測試面
@@ -804,7 +807,7 @@ class TestRegistrationWiring:
     def test_zcode_template_existing_entries_untouched(self):
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
-        assert len(ups) == 3
+        assert len(ups) == 4  # AIR-267 追加 bridge-sweeper group
         compact = [
             g for g in ups if "compact-restore-inject.py" in _hook_scripts(g)
         ]
@@ -904,14 +907,17 @@ class TestInstallMergeFace:
         live_ss = live["hooks"]["events"]["SessionStart"]
         assert ups[0] == live_ups[0]
         assert ups[1] == live_ups[1]
-        assert len(ups) == 4
-        assert len(ss) == 3
+        assert len(ups) == 5  # scbus＋compact＋duty-receive＋duty-monitor＋sweeper（AIR-267）
+        assert len(ss) == 4  # scbus＋duty-receive＋duty-monitor＋sweeper（AIR-267）
         assert ss[0] == live_ss[0]  # scbus async 條目零動
-        # 新拓撲 append 順序＝模板順序：duty-receive group 先、duty-monitor 尾
+        # 新拓撲 append 順序＝模板順序：duty-receive group 先、duty-monitor、
+        # bridge-sweeper 尾（AIR-267）
         assert gov._group_scripts(ups[2]) == frozenset({"duty_receive.py"})
         assert gov._group_scripts(ups[3]) == frozenset({"duty_mailbox_monitor.py"})
+        assert gov._group_scripts(ups[4]) == frozenset({"bridge_ledger_sweeper.py"})
         assert gov._group_scripts(ss[1]) == frozenset({"duty_receive.py"})
         assert gov._group_scripts(ss[2]) == frozenset({"duty_mailbox_monitor.py"})
+        assert gov._group_scripts(ss[3]) == frozenset({"bridge_ledger_sweeper.py"})
 
     def test_merge_idempotent(self):
         live = self._live()

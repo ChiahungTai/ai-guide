@@ -23,6 +23,7 @@ scripts = [
     "hooks/block-memory-index-write.py",
     "hooks/block-python-c-comment.py",
     "hooks/block-python-file-write.py",
+    "hooks/bridge_ledger_sweeper.py",
     "hooks/codex_memory_path_deny.py",
     "hooks/compact-restore-inject.py",
     "hooks/compact-tail-inject.py",

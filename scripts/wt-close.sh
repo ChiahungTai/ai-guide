@@ -35,12 +35,18 @@
 #   含於 trunk）→ 印「graph 可能 stale——下次 review 前 code-reality rebuild」到 stderr
 #   並落 receipt（result=pass;graph-stale-reminded）。非正確性依賴、不自動 build
 #   （rebuild 決策歸 marshal）。
+# - bridge 證據 drain（AIR-267 S2）：preflight 報告在場證據（零變更）；full 移除 WT 前
+#   歸檔 <wt>/.delegate-bridge/jobs/＋<wt>/.agent-tmp/liveness.jsonl 至
+#   ~/.agents/bridge-ledger-archive/<wt>-<YYYYMMDD-HHMMSS>/（0600、防碰撞；v1 無
+#   TTL/GC）。歸檔失敗即 die 保現場——證據隨 WT 移除即滅（drain 段函式＝
+#   scripts/bridge_sweeper.py archive_wt_bridge_evidence）。
 #
 # 依賴：git、bash 3.2+。退出碼：0 成功／2 鎖衝突／3 驗證失敗／4 preflight 未過。
 
 set -euo pipefail
 
 prog="$(basename "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"  # bridge 證據 drain 用（AIR-267 S2——bridge_sweeper.py 同目錄）
 die() { printf 'ERROR[%s]: %s\n' "$prog" "$*" >&2; receipt "die: $*"; exit 3; }
 info() { printf '[wt-close] %s\n' "$*"; }
 warn() { printf '[wt-close] WARN: %s\n' "$*" >&2; }
@@ -187,6 +193,10 @@ fi
 
 if [ "$PREFLIGHT" = "1" ]; then
   rm -rf "$LOCK"; trap - EXIT
+  # bridge 證據 drain 預檢（AIR-267 S2）：preflight 面報告在場證據（零變更——
+  # 歸檔在 full 模式）；清單一行，缺席靜默
+  DRAIN_LIST="$(python3 "$SCRIPT_DIR/bridge_sweeper.py" drain --wt "$WT_PATH" --list-only)" || DRAIN_LIST=""
+  if [ -n "$DRAIN_LIST" ]; then info "$DRAIN_LIST"; fi
   if [ "$FAIL" = "1" ]; then
     receipt "fail(preflight-checks)"
     printf '[wt-close] preflight 未過（零變更）\n' >&2; exit 4
@@ -256,6 +266,16 @@ git -C "$PRIMARY" merge-base --is-ancestor "$MERGE_TARGET_BRANCH" "$TRUNK" || \
 
 # ── finalization 提醒（board 單寫者＝board-control；腳本不代寫）─────────────
 info "board finalization 提醒：git 收斂已完成——結案兩步（status Done＋final summary／done refs）與 metadata commit 由 board-control（marshal／主 session）依 kanban-board skill 執行"
+
+# ── bridge 證據 drain（AIR-267 S2）：移除 WT 前歸檔 jobs/＋liveness.jsonl ──────
+# 證據（untracked）隨 WT 移除即滅——歸檔失敗即 die 保現場（drain CLI fail-loud）；
+# 0600、防碰撞時間戳命名；v1 無 TTL/GC（量測後再議）；歸檔根可經
+# BRIDGE_LEDGER_ARCHIVE 覆寫（測試注入面）
+BRIDGE_LEDGER_ARCHIVE="${BRIDGE_LEDGER_ARCHIVE:-$HOME/.agents/bridge-ledger-archive}"
+if ! DRAIN_OUT="$(python3 "$SCRIPT_DIR/bridge_sweeper.py" drain --wt "$WT_PATH" --archive-root "$BRIDGE_LEDGER_ARCHIVE")"; then
+  die "bridge 證據歸檔失敗——現場保留，人工歸檔後重跑 wt-close（歸檔根：$BRIDGE_LEDGER_ARCHIVE）"
+fi
+if [ -n "$DRAIN_OUT" ]; then info "$DRAIN_OUT"; fi
 
 # ── 移除卡 WT → 刪 branch → 暫時 WT 收掉＋釋鎖─────────────────────────────
 # 順序依據：ff merge 已保證吸收；git 拒刪「被任何 WT checkout」的 branch——必須先移除
