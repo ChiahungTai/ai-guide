@@ -1,60 +1,73 @@
 ---
 name: mail-watch
-description: "machine-level dutymail 信件 watcher daemon — 跨 session 常駐輪詢 pendingCount，rising edge 時 say 音訊提醒（advisory 非保證）。涵蓋 start/stop/status 控制、唯讀單 face 不變式、與 duty_receive 處理器／monitor hook／SC INBOX 的分工、sleep/resume 行為與機器級 state 生命週期。觸發詞：信件待判讀、信箱監看、mail-watch、dutymail watcher、新信提醒、duty-watch。"
+description: "session 級 dutymail 信件喚醒 waiter — 背景 shell 掛哨 dutymail wait，新事件到＝worker exit 0 喚醒本 session（尾行 JSON 帶門牌×事件數＋re-arm 命令）；喚醒回合＝①duty_receive process ②re-arm 兩步完成才算完。涵蓋 start/stop/status 控制、waiter 純觀察軸紅線（零收信處理面呼叫）、generation CAS 雙 arm 防護、session 級生命週期（隨 session 存亡）與 waiter 家族憲章。觸發詞：信件喚醒、信箱掛哨、mail-watch、mail_waiter、dutymail watcher、waiter re-arm、背景 shell 喚醒。"
 allowed-tools: [Bash]
 ---
 
-# mail-watch：dutymail 信件 watcher daemon
+# mail-watch：session 級信件喚醒 waiter
 
-> **載入時機**：要啟動／停止／證活 mail watcher、收到「信箱有 N 封新信待判讀」語音想查來源、或需釐清 watcher 與收信處理鏈職責邊界時載入。
+> **載入時機**：要掛哨／停哨／查哨信件喚醒（start/stop/status）、背景 shell 喚醒你且尾行 JSON 是 mail_waiter 收據、或需釐清 waiter 與收信處理鏈職責邊界時載入。
 
-## 定位聲明（先讀）
+## 定位聲明（先讀——session 級生命週期）
 
-- **machine-level 第四通知通道**：daemon 跨 session 存活、baseline 機器級（不歸任一 session）——與三既有機制並存互不代理（見分工表）。
-- **advisory 非保證**：say 音訊是召回提示，不是處理動作——不代理 transport cursor、不代理 SC human seen/done、不代理 monitor hook 的 session advisory。daemon 可能靜默死亡（crash／機器重啟後無人再 start）；**證活靠 `status`**（lock 持有態＋PID 活性＋last_poll_at 新鮮度）。
-- **唯讀不變式**：watcher 的 dutymail 呼叫面只有 `receive status --address <alias>`——絕不觸達 bind/prepare/ack 等收信處理面（處理面單一源＝duty_receive 處理器；`scripts/duty_mail_watch.py` 結構上只 import 唯讀 face）。
+- **`start` 的承諾僅及本 session 存活期間**：worker 是背景 shell，隨 session／app 存亡——session 結束＝worker 消失，**不是**跨 session 常駐 daemon（AIR-265 daemon 已退場）。新 session 接手時先 `status` 看 `desired` 與 staleness——見 `desired=running` 但 worker stale（armed_at 距今 > 輪詢週期×3）＝提示重新 arm。
+- **waiter 純觀察軸（紅線，零例外）**：worker 的 dutymail 呼叫面只有 `wait`＋`events`——絕不觸達 holder 綁定／批次預取／回執／送信面；**處理面恆＝`duty_receive process`**（唯一 consuming authority 鏈）。waiter 推進的是自己的 events 觀察游標，絕不代推收信面的 delivery 游標。
+- **waiter 只喚醒不處理**：處置權恆歸 caller（被喚醒的 LLM）——worker exit 是通知，不是處理動作。
 
-## 用法
+## 用法（命令可直接複製）
 
 ```bash
-# 啟動（detach daemon；預設 ai-guide-marshal、30s 輪詢；singleton by flock）
-uv run python scripts/duty_mail_watch.py start
+# arm：generation+=1＋印 worker 背景命令（複製到背景 shell 執行）
+uv run python scripts/mail_waiter.py start
 
-# 多門牌＋自訂間隔（--address 可重複；--interval 下限 5s）
-uv run python scripts/duty_mail_watch.py start --address ai-guide-marshal --interval 30
+# 多門牌（--address 可重複；預設 ai-guide-marshal）
+uv run python scripts/mail_waiter.py start --address ai-guide-marshal
 
-# 證活＋新鮮＋baseline＋現值（唯讀、可隨時跑）
-uv run python scripts/duty_mail_watch.py status
+# 唯讀五欄報告：desired/generation/armed_at（＋staleness）/per-address cursor/last_exit
+uv run python scripts/mail_waiter.py status
 
-# 停止（驗鎖不盲殺；state.json 保留——restart 後 edge 邏輯接手）
-uv run python scripts/duty_mail_watch.py stop
+# 停止＝落 flag（desired=stopped）——worker 下輪自退、尾行回報 stopped
+uv run python scripts/mail_waiter.py stop
 ```
 
-觸發語義（per address，每輪）：
+`start` 印出的 `worker` 命令（`uv run python scripts/mail_waiter.py worker --address … --generation N --state-dir …`）放到背景 shell 執行即完成 arm；喚醒收據的 `rearm` 欄位同形可直接複製。
 
-- `pendingCount > baseline` → say 一次＋baseline 落到現值（rising edge）。
-- `pendingCount <= baseline` → 靜默＋baseline 落到現值（落下同步更新——收信處理清空信箱後歸零，下次上升會再通知）。
-- 冷啟（state 缺席／損壞）＝baseline 0 起算＋pending>0 通知一次（寧重不漏——最多一次重複 advisory）。
-- say 失敗＝fail-soft 續跑：baseline 不前進＋entry 標 `say_pending`、下輪重試——成功後清標記＋baseline 前進；持久失敗後恢復＝一次通知最新值（不逐輪補播）。
-- say 文案：中性句 ≤20 字（「ai-guide 信箱有 N 封新信待判讀」；長 alias label 截 8 字）、`say -v Meijia -r 180`、無稱謂——不入 voice skill 稱謂清單同步面、非 LLM say 面。
+## 喚醒回合 invariant（skill 明文合約）
 
-## 四機制分工（誰管什麼——不互代理）
+worker exit 0（尾行 JSON `state=mail`）喚醒你後，**你的回合＝兩步，兩者完成才算結束**：
+
+1. **處理**：跑 `duty_receive process`（唯一處理面——收信、分診、呈報；waiter 絕不代勞）。
+2. **re-arm**：把尾行 JSON 的 `rearm` 命令（或 `start` 新印的命令）放上背景 shell。
+
+漏掉 ②＝本 session 之後無人再喚醒你。尾行 `state=stopped`＝stop flag 權威（不 re-arm）；`state=superseded`＝新 arm 已接管（不需動作，除非 `status` 顯示無活 worker）；`state=fail-loud`＝配置面壞了（查 stderr 修因，不硬重試）。
+
+## waiter 家族憲章（契約單一源——tri Q2 裁決）
+
+三員同契約：`scripts/bridge_waiter.py`（delegate-bridge fan-in）、harness_waiter、`scripts/mail_waiter.py`（本卡）。
+
+- **背景 shell exit＝唯一 push 原語**：harness 無原生回呼——watcher 以退出喚醒 session。
+- **exit 0＝喚醒**：stdout 尾行單行 JSON＝唯一機判面（mail_waiter：`{"state":"mail","new":[{address,count}...],"rearm":"..."}`）；其餘進度行走 stdout、診斷走 stderr。
+- **timeout 恆內部消化**：等待超時（dutymail class-6／bridge 124 等價語義）內部 re-arm 續輪，絕不外洩成喚醒。
+- **處置權恆歸 caller**：watcher 只喚醒；stalled／錯誤面交人（或 woken LLM）判斷，watcher 不 stop 不重派不代處理。
+- typed-failure 分流：storage/fencing＝跳輪＋心跳標記；usage/admission＝fail-loud exit 2（壞配置不硬跑）。
+- coalesce：一次 exit 報該輪全部新事件（門牌×事件數；多門牌喚醒時其餘門牌以 events 非阻塞快照併入）——re-arm 從新 cursor 起，舊信不再觸發，不需合併窗口。
+- `_waiter_core` 共用程式抽取：列為下次新 waiter 時的 follow-up（現三員各自內含，YAGNI）。
+
+## generation CAS（雙 arm 防護）
+
+每次 `start` 推進 `generation`；worker 每輪開頭驗 state.generation 仍＝自己的代、每次 state 寫入前重讀比對（read-modify-write guard）。效果：雙 arm 後舊 worker 自退（尾行 `superseded`、不寫 state）；events cursor 不回退；stale worker 不覆蓋新 generation 的 state。**同一輪喚醒只需貼一次 rearm 命令**——重複 arm 無害（舊代自退）但浪費背景 shell。
+
+## state 與觀察軸游標
+
+- state＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`（0600 atomic 寫）：`desired`／`generation`／`armed_at`（worker 每輪刷新＝活性證據）／per-address `cursor`（events 觀察游標，null=冷啟）＋`last_event_seq`／`last_exit`／`last_round_failed`。
+- 冷啟（cursor null／state 缺席或損壞）：首輪 events 由頭對滾到 head＋彙總喚醒（寧重不漏——歷史事件可能重複觸發一次喚醒，處理面冪等吸收）。
+- **觀察軸 vs transport 軸不互代理**：waiter 的 events cursor 只標記「已看到的時間線位置」；收信面的 delivery cursor 由 `duty_receive process` 在處置後推進——兩線獨立，waiter 推進自己的不等於信已處理。
+
+## 職責分工（誰管什麼——不互代理）
 
 | 機制 | 面 | 時間軸 | 職責 |
 |---|---|---|---|
-| duty_receive 處理器 | 收信處理 | prompt 邊界 | 唯一 transport cursor 前進邊（全批處置後才推進） |
+| **mail_waiter（本 skill）** | 觀察軸掛哨 | 背景 shell（session 級） | 新事件喚醒本 session（wait＋events 唯讀面） |
+| duty_receive 處理器 | 收信處理 | prompt 邊界／喚醒回合① | 唯一 transport cursor 前進邊（全批處置後才推進） |
 | monitor hook（duty-monitor） | session advisory | prompt 邊界 | session-local baseline 提醒（值變化才一行） |
 | SC INBOX | 人類 viewport | 永續 | human seen/done 權威、信件全文判讀面 |
-| **mail-watch daemon（本 skill）** | 時間軸人類音訊 | 30s 輪詢 | machine-level rising edge say 提醒（advisory） |
-
-## sleep/resume 行為
-
-macOS 睡眠時 daemon loop 凍結（不補跑睡眠期間輪詢）；喚醒後下一輪照常——喚醒時 pendingCount 已上升者 rising edge 照觸發。睡眠中觸發的 say 若被系統丟棄＝已知一次性邊角（advisory 非保證；say 呼叫本身失敗者由下輪重試補）。
-
-## 生命週期與 state
-
-- daemon 跨 session 存活（start 後持續到 stop／機器重啟）；singleton 由 flock 保證——`${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-watch/watch.lock`，crash（含 kill -9）自動釋放，直接再 start 即可。
-- state＝同目錄 `state.json`（pid＋started_at＋last_poll_at＋per-address baseline；0600 atomic 寫）；`daemon.log`＝daemon stdout/stderr。**stop 不刪 state.json**——restart 後 baseline 接手：stop→新信→start＝pending>baseline＝rising edge 通知（stop 成功時清 pid/started_at runtime 殘留、baseline 保留）。
-- start 的 ready 信號＝首輪 poll 完成（pid 就位＋last_poll_at 在場）——壞配置 daemon 首輪 fail-loud＝ready 前退出，start 帶 exit code 報失敗。
-- fail 分級：dutymail storage/transient 失敗＝跳輪＋心跳標記（下輪重試；status heartbeat 附「上輪 face 失敗」註記）；usage/admission（壞配置）＝daemon exit 2 fail-loud 不硬跑——查 `daemon.log` 修配置後再 start；say 失敗＝fail-soft 續跑（baseline 不前進、下輪重試）。
-- 已知邊角：face 呼叫掛死（罕見）阻塞期間 stop 可能誤報失敗（grace 8s）——daemon 於阻塞結束後自行退出（SIGTERM 旗標在下一中斷點生效），誤報後稍候再 `status` 確認。

@@ -12,18 +12,15 @@ allowed-tools: [Bash]
 
 語音通知的本質是**召回用戶注意力** —— 用戶離開時提醒「該回來檢查了」。**誤報無害**（回來看一眼沒損失），**漏報才有成本**（成果閒置、用戶不知任務推進）。設計因此傾向「寧可多提醒」，不追求精準的完成判斷。
 
-## 四條語音通道（職責分工，台詞不重疊 = 天然 single-source）
+## 三條語音通道（職責分工，台詞不重疊 = 天然 single-source）
 
 | 通道 | 觸發 | 載體 | 誰執行 |
 |------|------|------|--------|
 | **系統召回** | AI agent 需使用者輸入（權限確認等） | [notification.sh](../../hooks/notification.sh) hook | 機械（Notification event） |
 | **進度提醒** | 長任務進行中，每 10 分鐘 | [stop-notification.sh](../../hooks/stop-notification.sh) hook | 機械（Stop event + sentinel） |
 | **完成通知** | 任務完成 | 本 skill say 樣板 | LLM 自主 |
-| **信件待判讀** | holderless pending 上升（時間軸 30s 輪詢） | duty_mail_watch daemon | 機械（rising edge） |
 
-> 系統召回與進度提醒由 hook 機械執行（不靠 LLM 記得）；完成通知由 LLM 在 command 內 say。四通道台詞語意不重疊，稱謂清單只在本 skill 定義一處。
-
-> 信件待判讀由 mail-watch daemon（AIR-265）機械輪詢觸發；daemon 面中性句（不入稱謂清單同步面、非 LLM say 面）。
+> 系統召回與進度提醒由 hook 機械執行（不靠 LLM 記得）；完成通知由 LLM 在 command 內 say。三通道台詞語意不重疊，稱謂清單只在本 skill 定義一處。信件喚醒不經語音——session 級 mail-waiter（AIR-266）以背景 shell exit 喚醒 LLM，非人類音訊面。
 
 ## 機械白名單（哪些任務觸發語音）
 
