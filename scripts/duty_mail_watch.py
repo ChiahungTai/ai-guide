@@ -18,16 +18,19 @@ duty_receive 處理器）只在 prompt 邊界觸發——閒置時段的 rising 
   advisory；baseline 跨 session 機器級（不歸任一 session），與
   roundtrip 三線表的 session-local advisory baseline 並存互不代理。
 - 寧重不漏：state 損壞視同冷啟（baseline 0 起算、pending>0 通知一次
-  ——最多一次重複 advisory）；say 失敗 fail-soft（log 續跑、baseline
-  已更新不回滾、下輪不重試本輪）；face typed-failure（storage/
-  transient 類）跳過該輪＋心跳標記，不崩潰；usage/admission 類＝
-  壞配置 fail-loud exit 2（不硬跑）。
+  ——最多一次重複 advisory）；say 失敗 fail-soft（log 續跑、該
+  address baseline 不前進＋entry 標 say_pending、下輪重試——恢復後
+  一次通知最新值）；face typed-failure（storage/transient 類）跳過
+  該輪＋心跳標記，不崩潰；usage/admission 類＝壞配置 fail-loud
+  exit 2（不硬跑）。
 - singleton by flock：跨進程互斥靠 fcntl.flock 狀態鎖（watch.lock）
   ——crash 自動釋放＝stale 偵測免費；stop 驗鎖不盲殺（鎖可取＝無
   daemon、清殘留回報 clean-stale；鎖被持才讀 state.json pid 發
-  SIGTERM，bounded grace 5s 內未退＝回報失敗、不升級 SIGKILL 留
-  human）；stop 不刪 state.json——restart 後 edge 邏輯自然接手
-  （stop→新信→start＝pending>baseline＝rising edge 通知）。
+  SIGTERM，bounded grace 8s 內未退＝回報失敗、不升級 SIGKILL 留
+  human；stop 不刪 state.json——restart 後 edge 邏輯自然接手
+  （stop→新信→start＝pending>baseline＝rising edge 通知）。已知
+  邊角：face 掛死（罕見）阻塞期間 stop 可能誤報失敗——daemon 於
+  阻塞結束後自行退出（SIGTERM 旗標在下一中斷點生效）。
 - say 慣例：`say -v Meijia -r 180`＋中性句 ≤20 字（無稱謂——不製造
   稱謂清單第三份同步副本；對齊 voice skill 開始通知先例）。
 - macOS sleep/resume：loop 凍結、resume 後下一輪補上（rising edge
@@ -40,17 +43,25 @@ duty_receive 處理器）只在 prompt 邊界觸發——閒置時段的 rising 
 1. pendingCount > baseline → say 一次（文案見 notify_text）＋
    baseline=count。
 2. pendingCount <= baseline → 靜默＋baseline=count（落下同步更新
-   ——下次上升可再通知）。
+   ——下次上升可再通知；say_pending 一併清除）。
 3. state 缺席/損壞（冷啟）＝該 address baseline 0 起算＋pending>0
    通知一次。
 4. face typed-failure：storage/fencing/wait-timeout/unknown＝該
    address 跳輪＋心跳失敗標記（baseline 不動）；usage/admission＝
    raise（daemon exit 2 fail-loud——壞配置不硬跑）。
+5. say 失敗＝該 address baseline 不前進（entry 標 say_pending）＋
+   last_seen 記現值；下輪 count>baseline 仍成立→重試 say——成功後
+   清標記＋baseline 前進（持久失敗＋pending 續升：恢復後一次通知
+   最新值）。
 
 CLI 面：start／stop／status（＋內部 daemon 子命令＝start 的 detach
 目標，help 隱藏）。state＝`${XDG_STATE_HOME:-~/.local/state}/
 ai-guide/duty-watch/`（watch.lock＋state.json＋daemon.log；0600
-atomic 寫、路徑可注入——測試 tmp state dir，不碰真 store）。
+atomic 寫、路徑可注入——測試 tmp state dir，不碰真 store）。ready
+信號＝首輪 poll 完成（state.json pid 就位＋last_poll_at 在場）
+——daemon 啟動即清 last_poll_at、首輪（含 say）完成才回填；壞配置
+fail-loud 首輪炸＝daemon 在 ready 前退出（start 帶 exit code 回報
+失敗）。
 
 測試形態：核心函式吃 injectable runner（fake dutymail 回固定 JSON）
 與 injectable say（捕獲 argv；禁測試實播語音）——見
@@ -86,12 +97,12 @@ STATE_DIRNAME = "duty-watch"
 LOCK_FILENAME = "watch.lock"
 STATE_FILENAME = "state.json"
 DAEMON_LOG_FILENAME = "daemon.log"
-READY_WAIT_SECONDS = 3.0
-STOP_GRACE_SECONDS = 5.0
+READY_WAIT_SECONDS = 10.0
+STOP_GRACE_SECONDS = 8.0
 SLEEP_SLICE_SECONDS = 0.5
 START_POLL_SECONDS = 0.1
 STOP_POLL_SECONDS = 0.2
-SAY_TIMEOUT_SECONDS = 15
+SAY_TIMEOUT_SECONDS = 5
 EXIT_OK = 0
 EXIT_FAIL = 1
 EXIT_BAD_CONFIG = 2
@@ -132,16 +143,28 @@ def state_file_path(base_dir=None):
 # ── singleton 狀態鎖（flock；crash 自動釋放＝stale 偵測免費）───────────
 
 
-def try_lock(path):
-    """非阻塞 flock → fd | None（None＝鎖被持——singleton 訊號）。
+def try_lock(path, create=True):
+    """非阻塞 flock → fd | None | False。
 
-    開檔失敗（權限等）OSError 原樣傳出——無鎖即無 single-instance 保證，
-    fail-loud 寧崩不靜默。
+    fd＝取得；None＝鎖被持（singleton 訊號）；False＝lock 檔缺席
+    （僅 create=False——無鎖且無檔可鎖）。開檔失敗（權限等）OSError
+    原樣傳出——無鎖即無 single-instance 保證，fail-loud 寧崩不靜默。
+    create=False（status 唯讀探測）：不建目錄不建檔（O_RDWR 無
+    O_CREAT），ENOENT→False——fresh state 目錄上 status 零殘留。
     """
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    if create:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        flags = os.O_CREAT | os.O_RDWR
+    else:
+        flags = os.O_RDWR
+    try:
+        fd = os.open(path, flags, 0o600)
+    except FileNotFoundError:
+        if not create:
+            return False
+        raise
     try:
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -176,8 +199,9 @@ def _reap_registered(pid):
 
 def notify_text(address, count):
     """say 文案——中性句模板「<label> 信箱有 N 封新信待判讀」（label＝
-    address 去 -marshal 尾；無稱謂——不製造稱謂清單第三份同步副本）。"""
-    label = address.removesuffix("-marshal")
+    address 去 -marshal 尾後截 8 字——長 alias 不破 ≤20 字上限；無稱謂
+    ——不製造稱謂清單第三份同步副本）。"""
+    label = address.removesuffix("-marshal")[:8]
     return f"{label} 信箱有 {count} 封新信待判讀"
 
 
@@ -234,13 +258,13 @@ def _entry_baseline(entries, address):
 
 def poll_round(state, addresses, runner, say, state_file, now=None):
     """一輪輪詢（決策表見 module docstring）→ notified list[(address,
-    count)]。
+    count)]（僅實際 say 成功者）。
 
-    每輪：逐 address 唯讀 `receive status` → edge 判定 → say（fail-soft
-    ：baseline 已更新不回滾、不重試本輪）→ 心跳 atomic 0600 寫
-    （last_poll_at／per-address last_seen／失敗輪標記）。fail-loud
-    typed failure（usage/admission）raise——由 daemon loop 轉 exit 2
-    （壞配置不硬跑）。
+    每輪：逐 address 唯讀 `receive status` → edge 判定 → say（失敗輪
+    fail-soft：baseline 不前進＋標 say_pending、下輪重試）→ 心跳
+    atomic 0600 寫（last_poll_at／per-address last_seen／失敗輪標記）
+    。fail-loud typed failure（usage/admission）raise——由 daemon
+    loop 轉 exit 2（壞配置不硬跑）。
     """
     moment = now if now is not None else time.time()
     entries = state.get("addresses")
@@ -266,12 +290,18 @@ def poll_round(state, addresses, runner, say, state_file, now=None):
         if count > baseline:
             try:
                 say(say_argv(notify_text(address, count)))
-            except Exception as exc:  # say 失敗 fail-soft——log 續跑
+            except Exception as exc:  # say 失敗 fail-soft——下輪重試
                 print(
-                    f"[{TAG}] say 失敗（fail-soft 續跑，不重試本輪——殘缺"
-                    f"通知由冷啟/stale 週期補）：{exc!r}",
+                    f"[{TAG}] say 失敗（fail-soft：baseline 不前進、"
+                    f"下輪重試）：{exc!r}",
                     file=sys.stderr,
                 )
+                entries[address] = {
+                    "baseline": baseline,  # 不前進——下輪 count>baseline 仍成立
+                    "last_seen": count,
+                    "say_pending": True,
+                }
+                continue
             notified.append((address, count))
         entries[address] = {"baseline": count, "last_seen": count}
     state["last_poll_at"] = moment
@@ -298,13 +328,15 @@ def _interruptible_sleep(seconds, flag):
 
 
 def run_daemon(addresses, interval, base_dir=None, runner=None, say=None):
-    """daemon 主迴圈：取 flock → 寫 ready state → loop（poll→sleep）→
-    SIGTERM 乾淨退。
+    """daemon 主迴圈：取 flock → 寫 pid state → 首輪 poll（含 say）→
+    loop（poll→sleep）→ SIGTERM 乾淨退。
 
     鎖被持＝single-instance 拒絕（exit 3 帶現 PID）；成功＝寫 state.json
-    （pid＋started_at）後進 loop（starter 以 state.json pid 就位為 ready
-    信號）。退出時 fd 關＝鎖自動釋放、state.json 保留（stop 不刪——
-    restart 後 edge 邏輯自然接手）。
+    （pid＋started_at；last_poll_at 先清——ready 判準唯一屬本代 daemon）
+    → 進 loop。ready 信號＝首輪 poll 完成後的 state（pid 就位＋
+    last_poll_at 在場）——壞配置 fail-loud 在首輪炸＝daemon 在 ready
+    前退出（exit 2）。退出時 fd 關＝鎖自動釋放、state.json 保留
+    （stop 不刪——restart 後 edge 邏輯自然接手）。
     """
     runner = runner if runner is not None else core._default_runner
     say = say if say is not None else _default_say
@@ -326,7 +358,8 @@ def run_daemon(addresses, interval, base_dir=None, runner=None, say=None):
     state["pid"] = os.getpid()
     state["started_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["interval"] = interval
-    core.save_state(spath, state)  # ready 信號（state.json pid 就位）
+    state.pop("last_poll_at", None)  # 前代殘留清場——首輪完成才回填
+    core.save_state(spath, state)
     flag = _StopFlag()
 
     def _on_sigterm(_signum, _frame):
@@ -366,12 +399,15 @@ def daemon_argv(addresses, interval, base_dir=None):
 
 def cmd_start(addresses, interval, base_dir=None):
     """啟動 daemon：Popen detach（start_new_session）＋等 ready 信號
-    （state.json pid 就位，bounded 3s）再回報。
+    （state.json pid 就位＋last_poll_at 在場＝首輪 poll 完成，bounded
+    10s——首輪含 say 最多 ~5s）再回報。
 
     快速預檢鎖（被持＝already running 拒絕、exit 3 帶現 PID）；最終
-    互斥仍由 daemon 自取 flock 仲裁（預檢後 race 由 daemon 擋）。
-    daemon stdout/stderr 落 state 目錄 daemon.log（靜默死亡 postmortem
-    面——status 證活是正道，log 是驗屍）。
+    互斥仍由 daemon 自取 flock 仲裁（預檢後 race 由 daemon 擋——本
+    進程 daemon 輸鎖早死時，失敗分支重查鎖被持＝改報 already running
+    exit 3）。等待迴圈先查 proc.poll() 再查 ready——死 daemon 不誤報
+    started。daemon stdout/stderr 落 state 目錄 daemon.log（靜默死亡
+    postmortem 面——status 證活是正道，log 是驗屍）。
     """
     lpath = lock_path(base_dir)
     spath = state_file_path(base_dir)
@@ -396,18 +432,37 @@ def cmd_start(addresses, interval, base_dir=None):
         )
     _spawned_daemons.append(proc)
     deadline = time.monotonic() + READY_WAIT_SECONDS
+    early_death = False
     while time.monotonic() < deadline:
+        if proc.poll() is not None:  # 先查死活——死 daemon 不誤報 ready
+            early_death = True
+            break
         state = core.load_state(spath)
-        if state and state.get("pid") == proc.pid:
+        last_poll = state.get("last_poll_at") if state else None
+        if (
+            state
+            and state.get("pid") == proc.pid
+            and isinstance(last_poll, (int, float))
+            and not isinstance(last_poll, bool)
+        ):
             print(
                 f"[{TAG}] started（pid {proc.pid}；addresses "
                 f"{','.join(addresses)}；interval {interval}s；"
                 f"state {spath}）"
             )
             return EXIT_OK
-        if proc.poll() is not None:
-            break  # daemon 早死（race 輸鎖／壞配置 fail-loud）
         time.sleep(START_POLL_SECONDS)
+    if early_death:  # daemon 早死——重查鎖：被持＝race 輸給另一 daemon
+        probe = try_lock(lpath)
+        if probe is None:
+            pid = _pid_from_state(spath)
+            print(
+                f"[{TAG}] start 失敗：already running"
+                f"（pid {pid if pid is not None else 'unknown'}）",
+                file=sys.stderr,
+            )
+            return EXIT_ALREADY_RUNNING
+        os.close(probe)
     print(
         f"[{TAG}] start 失敗：daemon 未就緒（exit {proc.poll()}；"
         f"log {log_path}）",
@@ -421,8 +476,8 @@ def cmd_stop(base_dir=None):
 
     鎖可取＝無 daemon：清 stale runtime 殘留（pid/started_at；baseline
     保留）回報 clean-stale。鎖被持＝讀 state.json pid → SIGTERM →
-    bounded grace（5s）內鎖釋放＝成功；未退＝回報失敗（不升級
-    SIGKILL——留 human）。
+    bounded grace（8s）內鎖釋放＝成功（pop pid/started_at 再存檔
+    ——baseline 保留）；未退＝回報失敗（不升級 SIGKILL——留 human）。
     """
     lpath = lock_path(base_dir)
     spath = state_file_path(base_dir)
@@ -475,6 +530,11 @@ def cmd_stop(base_dir=None):
         )
         return EXIT_FAIL
     _reap_registered(pid)
+    state = core.load_state(spath)
+    if isinstance(state, dict) and state.get("pid") is not None:
+        state.pop("pid", None)  # runtime 殘留清場——baseline 保留
+        state.pop("started_at", None)
+        core.save_state(spath, state)
     print(f"[{TAG}] stopped（pid {pid} 退出；state.json 保留：{spath}）")
     return EXIT_OK
 
@@ -494,16 +554,18 @@ def pid_alive(pid):
 
 
 def cmd_status(base_dir=None, addresses=None, runner=None):
-    """唯讀證活報告（可隨時跑）：lock 持有態＋PID 活性（kill(pid,0)）＋
-    last_poll_at 新鮮度（> interval×3＝stale-heartbeat 警告）＋
-    per-address baseline＋現值 pendingCount（一發 live probe）。"""
+    """唯讀證活報告（可隨時跑、零殘留）：lock 持有態（無 O_CREAT 探測
+    ——不建目錄不建檔）＋PID 活性（kill(pid,0)）＋last_poll_at 新鮮度
+    （> interval×3＝stale-heartbeat 警告；last_round_failed＝上輪
+    face 失敗註記）＋per-address baseline＋現值 pendingCount（一發
+    live probe）。"""
     runner = runner if runner is not None else core._default_runner
     spath = state_file_path(base_dir)
     state = core.load_state(spath)
     state = state if isinstance(state, dict) else {}
-    probe = try_lock(lock_path(base_dir))
-    lock_held = probe is None
-    if probe is not None:
+    probe = try_lock(lock_path(base_dir), create=False)
+    lock_held = probe is None  # None＝被持；False＝lock 檔缺席＝無鎖
+    if isinstance(probe, int) and not isinstance(probe, bool):
         os.close(probe)
     pid = state.get("pid")
     if lock_held:
@@ -529,6 +591,8 @@ def cmd_status(base_dir=None, addresses=None, runner=None):
             if age > threshold
             else "fresh"
         )
+        if state.get("last_round_failed") is True:
+            mark += "；上輪 face 失敗"
         print(
             f"[{TAG}] heartbeat：last_poll {age:.0f}s 前（{mark}；"
             f"threshold {threshold}s）"

@@ -49,6 +49,7 @@ dutymail receive status --address <alias>
 - **daemon loop**：每 interval＝`receive status`（逐 address）→ edge 判定 → 心跳寫入（atomic 0600：`last_poll_at`/`last_seen`/失敗輪標記）→ sleep。SIGTERM handler＝乾淨退出（fd 關＝鎖自動釋放；state.json 保留）。
 - **edge 判定**（per address）：`count > baseline` → say＋baseline=count；`count <= baseline` → 靜默＋baseline=count（落下更新）。state 缺席/損壞（冷啟）＝baseline 0 起算＋pending>0 通知一次。
 - **fail-soft 面**：face typed-failure（storage/transient）＝跳過該輪＋心跳標記；usage/config 類＝exit 2 fail-loud（壞配置不硬跑）；say 失敗＝log 續跑（寧重不漏：baseline 已更新、下輪不重試本輪——殘缺通知由冷啟/stale 週期補）。
+  > amendment 2026-10-06 tri-panel J-2：say 失敗改 baseline 不前進下輪重試（原：不回滾不重試）——恢復後一次通知最新值。
 - **macOS sleep/resume**：loop 凍結、resume 後下一輪補上（rising edge 照觸發）；睡眠中觸發的 say 若被系統丟棄＝已知一次性邊角（advisory 非保證；記 skill）。
 
 ### S2 — skill（`skills/mail-watch/SKILL.md`）

@@ -1,4 +1,4 @@
-"""mail-watch daemon 測試（AIR-265 S4——TC-W1..W9）。
+"""mail-watch daemon 測試（AIR-265 S4——TC-W1..W9＋tri-panel 修復項）。
 
 EP＝ai-analysis/_tasks/10-06-mail-watch/ep.md。涵蓋：
 - 觸發語義（W1/W2/W3）：冷啟一次（state 缺席/損壞＝baseline 0 起算）、
@@ -6,20 +6,25 @@ EP＝ai-analysis/_tasks/10-06-mail-watch/ep.md。涵蓋：
   新信→start＝say 一次 4>2、無冷啟重複通知）。
 - fail-soft/fail-loud（W4）：storage typed failure＝跳輪＋心跳標記、
   baseline 不動、不崩；usage 類＝fail-loud raise（壞配置不硬跑）；
-  say 失敗＝log 續跑＋baseline 已更新不回滾。
+  say 失敗＝log 續跑＋baseline 不前進＋say_pending 標記（下輪重試
+  ——恢復後一次通知最新值）。
 - 監督契約（W5/W6/W7）：singleton（daemon 活著二次 start＝拒絕帶現
   PID）、kill -9 後 flock 自動釋放（crash 清理免費）、SIGTERM 乾淨
-  退出（exit 0＋鎖釋放＋state.json 保留）。
+  退出（exit 0＋鎖釋放＋state.json 保留＋pid/started_at 清場）；ready
+  信號＝首輪 poll 完成（pid 就位＋last_poll_at 在場）——壞配置 daemon
+  首輪 fail-loud＝start 帶 exit code 報失敗；W5/W7 收尾斷言 face
+  呼叫記錄全行 `receive status --address`（subprocess 面 allowlist）。
 - say 慣例（W8）：`say -v Meijia -r 180`＋中性句 ≤20 字（去空白計）
-  ＋無稱謂。
+  ＋無稱謂；長 alias label 截 8 字。
 - 唯讀結構證（W9）：全生命週期（冷啟輪→rising→falling→restart→
   status live probe）dutymail 呼叫面只出現 `receive status --address`。
 
 測試形態同 tests/test_duty_receive.py：injectable runner（fake
 dutymail 回固定 JSON）＋tmp state dir 注入＋say stub 捕獲（禁測試
 實播語音）。W5/W6/W7 走真 subprocess daemon——DUTYMAIL_BIN 指向
-pending=0 的 stub binary（daemon 全程零通知零 say）、--state-dir 注入
-tmp 路徑（不碰真 ~/.local/state）。
+stub binary（成功態回 pending=0 凍結 JSON——daemon 零通知零 say；
+每呼叫 argv 記錄至 face-calls.log 供 allowlist 斷言）、--state-dir
+注入 tmp 路徑（不碰真 ~/.local/state）。
 """
 
 import json
@@ -94,7 +99,8 @@ def _read_state(base):
         return json.load(fh)
 
 
-def _seed_state(base, addresses=None, pid=None, last_poll_at=None):
+def _seed_state(base, addresses=None, pid=None, last_poll_at=None,
+                last_round_failed=None):
     os.makedirs(str(base), exist_ok=True)
     doc = {"addresses": addresses if addresses is not None else {},
            "interval": mod.MIN_INTERVAL_SECONDS}
@@ -102,6 +108,8 @@ def _seed_state(base, addresses=None, pid=None, last_poll_at=None):
         doc["pid"] = pid
     if last_poll_at is not None:
         doc["last_poll_at"] = last_poll_at
+    if last_round_failed is not None:
+        doc["last_round_failed"] = last_round_failed
     with open(_state_file(base), "w", encoding="utf-8") as fh:
         json.dump(doc, fh)
 
@@ -120,12 +128,16 @@ def _poll(base, runner, say=None, addresses=(ADDR,)):
 
 
 def _fake_dutymail(tmp_path, pending=0):
-    """stub binary：恆回 pendingCount=0 的凍結 JSON——daemon 零通知零 say。"""
+    """stub binary：恆回 pendingCount 凍結 JSON（pending=0＝daemon 零通知
+    零 say）；每呼叫一行 append argv 至 ../face-calls.log（W5/W7 收尾
+    allowlist 斷言消費——subprocess 面）。"""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
     script = bin_dir / "dutymail"
     script.write_text(
-        "#!/bin/sh\necho '"
+        "#!/bin/sh\n"
+        'echo "$@" >> "$(dirname "$0")/../face-calls.log"\n'
+        "echo '"
         + json.dumps(
             {"schemaVersion": 1, "ok": True, "result": {"pendingCount": pending}}
         )
@@ -136,14 +148,56 @@ def _fake_dutymail(tmp_path, pending=0):
     return str(script)
 
 
-def _wait_ready(base, pid, timeout=5.0):
+def _bad_config_dutymail(tmp_path):
+    """stub binary：恆回 usage typed failure（stderr JSON＋exit 2）——
+    daemon 首輪 fail-loud、ready 前退出（start 帶 exit code 報失敗）。"""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    script = bin_dir / "dutymail"
+    script.write_text(
+        "#!/bin/sh\n"
+        "echo '"
+        + json.dumps(
+            {"schemaVersion": 1, "ok": False,
+             "error": {"code": "unknown-flag", "class": "usage",
+                       "message": "bad flag", "retryable": False}}
+        )
+        + "' >&2\n"
+        "exit 2\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    return str(script)
+
+
+def _assert_only_status_face_calls(tmp_path, aliases=(ADDR,)):
+    """face-calls.log 全行皆 `receive status --address <alias>`——
+    subprocess 面 allowlist（W5/W7 收尾）。"""
+    log = tmp_path / "face-calls.log"
+    assert log.exists(), "face 呼叫記錄缺席——daemon 未完成任何輪"
+    lines = log.read_text(encoding="utf-8").splitlines()
+    assert lines, "face 呼叫記錄空——ready 判準含首輪，至少一行"
+    allowed = {f"receive status --address {alias}" for alias in aliases}
+    for line in lines:
+        assert line in allowed, line
+
+
+def _wait_ready(base, pid, timeout=10.0):
+    """ready＝首輪 poll 完成後的 state（pid 就位＋last_poll_at 在場）。"""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         state = mod.core.load_state(_state_file(base))
-        if state and state.get("pid") == pid:
+        if (
+            state
+            and state.get("pid") == pid
+            and isinstance(state.get("last_poll_at"), (int, float))
+            and not isinstance(state.get("last_poll_at"), bool)
+        ):
             return state
         time.sleep(0.05)
-    raise AssertionError(f"daemon pid {pid} 未在 {timeout}s 內就緒")
+    raise AssertionError(
+        f"daemon pid {pid} 未在 {timeout}s 內就緒（首輪 poll 未完成）"
+    )
 
 
 def _wait_lock_free(base, timeout=5.0):
@@ -243,18 +297,66 @@ class TestFailSoft:
                 _state_file(base),
             )
 
-    def test_say_failure_fail_soft_baseline_advances(self, tmp_path, capsys):
-        """say 失敗＝log 續跑＋baseline 已更新不回滾（寧重不漏——殘缺通知
-        由冷啟/stale 週期補，下輪不重試本輪）。"""
+    def test_say_failure_fail_soft_baseline_holds(self, tmp_path, capsys):
+        """say 失敗＝log 續跑＋baseline 不前進＋say_pending 標記（下輪
+        count>baseline 仍成立→重試——恢復後一次通知最新值）。"""
         base = tmp_path / "st"
         runner = ScriptRunner([_ok_pending(3)])
         say = SayRecorder(fail=True)
-        mod.poll_round(
+        notified = mod.poll_round(
             {"addresses": {}}, [ADDR], runner, say, _state_file(base)
         )
+        assert notified == []  # say 失敗——未列入已通知
         assert len(say.calls) == 1  # 呼叫了但失敗
-        assert _read_state(base)["addresses"][ADDR]["baseline"] == 3
+        entry = _read_state(base)["addresses"][ADDR]
+        assert entry["baseline"] == 0  # 冷啟起算值不前進
+        assert entry["last_seen"] == 3
+        assert entry["say_pending"] is True
         assert "say" in capsys.readouterr().err  # log 註記
+
+    def test_say_failure_retry_next_round_notifies_latest(
+        self, tmp_path, capsys
+    ):
+        """say 失敗一輪→baseline 不動；下輪 say 恢復→補通知＋baseline
+        前進＋say_pending 清除。"""
+        base = tmp_path / "st"
+        _seed_state(base, addresses={ADDR: {"baseline": 2, "last_seen": 2}})
+        runner = ScriptRunner([_ok_pending(5), _ok_pending(5)])
+        notified, _failing = _poll(base, runner, say=SayRecorder(fail=True))
+        assert notified == []
+        entry = _read_state(base)["addresses"][ADDR]
+        assert entry["baseline"] == 2  # 不前進
+        assert entry["say_pending"] is True
+        recovered = SayRecorder()
+        notified, _say = _poll(base, runner, say=recovered)
+        assert notified == [(ADDR, 5)]  # 5>2——補通知
+        assert "5" in recovered.calls[0][-1]
+        entry = _read_state(base)["addresses"][ADDR]
+        assert entry["baseline"] == 5  # 前進
+        assert "say_pending" not in entry  # 標記清除
+        assert "say" in capsys.readouterr().err  # 失敗輪 log 註記
+
+    def test_say_failure_persistent_recovers_to_latest(self, tmp_path):
+        """say 連續失敗兩輪（pending 續升 5→7）→第三輪恢復＝一次通知
+        最新值 7（正確語義——不逐輪補播）。"""
+        base = tmp_path / "st"
+        _seed_state(base, addresses={ADDR: {"baseline": 2, "last_seen": 2}})
+        runner = ScriptRunner(
+            [_ok_pending(5), _ok_pending(7), _ok_pending(7)]
+        )
+        for _round in range(2):
+            notified, _failing = _poll(
+                base, runner, say=SayRecorder(fail=True)
+            )
+            assert notified == []
+        assert _read_state(base)["addresses"][ADDR]["baseline"] == 2
+        notified, say = _poll(base, runner)  # 第三輪恢復
+        assert notified == [(ADDR, 7)]
+        text = say.calls[0][-1]
+        assert "7" in text  # 一次通知最新值
+        entry = _read_state(base)["addresses"][ADDR]
+        assert entry["baseline"] == 7
+        assert "say_pending" not in entry
 
     def test_corrupt_state_cold_start(self, tmp_path):
         """state 損壞（壞 JSON）視同冷啟——baseline 0 起算＋通知一次。"""
@@ -290,6 +392,7 @@ class TestSingletonLifecycle:
             assert str(_read_state(base)["pid"]) in err
         finally:
             assert mod.cmd_stop(base) == mod.EXIT_OK
+            _assert_only_status_face_calls(tmp_path)
 
     def test_w6_kill9_then_start_succeeds(self, tmp_path, monkeypatch):
         """kill -9 daemon 後再 start：鎖已釋（flock 隨 fd 消亡——crash 清理
@@ -311,7 +414,8 @@ class TestSingletonLifecycle:
     def test_w7_stop_clean_exit0_lock_released_state_kept(
         self, tmp_path, monkeypatch, capsys
     ):
-        """SIGTERM＝exit 0、鎖釋放、state.json 保留。"""
+        """SIGTERM＝exit 0、鎖釋放、state.json 保留（pid/started_at 清場
+        ；baseline 跨 stop 存活）＋face 呼叫面全行 receive status。"""
         monkeypatch.setenv("DUTYMAIL_BIN", _fake_dutymail(tmp_path))
         base = str(tmp_path / "st")
         proc = subprocess.Popen(
@@ -321,7 +425,8 @@ class TestSingletonLifecycle:
             stderr=subprocess.DEVNULL,
         )
         try:
-            _wait_ready(base, proc.pid)
+            state = _wait_ready(base, proc.pid)
+            assert isinstance(state.get("last_poll_at"), float)  # 首輪完成
             assert mod.cmd_stop(base) == mod.EXIT_OK
             assert proc.wait(
                 timeout=mod.STOP_GRACE_SECONDS + 5
@@ -331,11 +436,30 @@ class TestSingletonLifecycle:
             os.close(fd)
             st = _read_state(base)  # state.json 保留（baseline 跨 stop 存活）
             assert st["addresses"][ADDR]["baseline"] == 0
+            assert st.get("pid") is None  # runtime 殘留清場（baseline 保留）
+            assert st.get("started_at") is None
             assert "stopped" in capsys.readouterr().out
+            _assert_only_status_face_calls(tmp_path)
         finally:
             if proc.poll() is None:
                 proc.terminate()
                 proc.wait(timeout=10)
+
+    def test_start_bad_config_fails_before_ready(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """壞配置（usage typed failure）＝daemon 首輪 fail-loud、ready 前
+        退出——start 報失敗帶 exit code＋log 路徑。"""
+        monkeypatch.setenv("DUTYMAIL_BIN", _bad_config_dutymail(tmp_path))
+        base = str(tmp_path / "st")
+        rc = mod.cmd_start([ADDR], mod.MIN_INTERVAL_SECONDS, base)
+        err = capsys.readouterr().err
+        assert rc == mod.EXIT_FAIL
+        assert "start 失敗" in err
+        assert "exit 2" in err  # daemon fail-loud exit code 帶回
+        state = mod.core.load_state(mod.state_file_path(base))
+        assert state is not None  # pid state 已寫
+        assert "last_poll_at" not in state  # ready 從未成立（首輪未完成）
 
 
 # ── W8：say 慣例（voice/rate/中性句/長度/無稱謂）──────────────────────
@@ -353,6 +477,20 @@ class TestSayConvention:
             assert title not in text  # 無稱謂（中性句）
         assert len(text.replace(" ", "")) <= 20  # ≤20 字（去空白計）
         assert text == "ai-guide 信箱有 3 封新信待判讀"
+
+    def test_w8_long_alias_label_truncated(self, tmp_path):
+        """長 alias（southchariot-sc-310-marshal）→ label 截 8 字
+        （southcha）——去空白後仍 ≤20 字。"""
+        alias = "southchariot-sc-310-marshal"
+        base = tmp_path / "st"
+        runner = ScriptRunner([_ok_pending(3)])
+        say = SayRecorder()
+        mod.poll_round(
+            {"addresses": {}}, [alias], runner, say, _state_file(base)
+        )
+        text = say.calls[0][-1]
+        assert text.startswith("southcha ")
+        assert len(text.replace(" ", "")) <= 20
 
 
 # ── W9：唯讀結構證（allowlist runner——全生命週期只 receive status）────
@@ -430,6 +568,41 @@ class TestStatusReport:
         out = capsys.readouterr().out
         assert "not running" in out
         assert "baseline=2" in out and "pending=4" in out
+
+    def test_status_fresh_dir_zero_residue(self, tmp_path, capsys):
+        """fresh state 目錄（不存在／空目錄）上 status＝零殘留——lock 探測
+        無 O_CREAT（不建目錄不建檔）。"""
+        absent = tmp_path / "absent" / "st"
+        assert mod.cmd_status(
+            str(absent), [], runner=ScriptRunner([])
+        ) == mod.EXIT_OK
+        assert "not running" in capsys.readouterr().out
+        assert not os.path.exists(str(absent))  # 不建目錄
+        empty = tmp_path / "empty-st"
+        empty.mkdir()
+        assert mod.cmd_status(
+            str(empty), [], runner=ScriptRunner([])
+        ) == mod.EXIT_OK
+        assert os.listdir(str(empty)) == []  # 不建 lock/state 檔
+
+    def test_heartbeat_marks_last_round_failed(self, tmp_path, capsys):
+        """last_round_failed=True → heartbeat 行附「上輪 face 失敗」註記。"""
+        base = str(tmp_path / "st")
+        _seed_state(
+            base, pid=os.getpid(), last_poll_at=time.time() - 5,
+            last_round_failed=True,
+        )
+        fd = mod.try_lock(mod.lock_path(base))
+        assert fd is not None
+        try:
+            assert mod.cmd_status(
+                base, [], runner=ScriptRunner([])
+            ) == mod.EXIT_OK
+            out = capsys.readouterr().out
+            assert "fresh" in out
+            assert "上輪 face 失敗" in out
+        finally:
+            os.close(fd)
 
 
 # ── state 慣例（0600 atomic；多門牌獨立 edge）─────────────────────────

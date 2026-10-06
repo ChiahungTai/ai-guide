@@ -35,7 +35,8 @@ uv run python scripts/duty_mail_watch.py stop
 - `pendingCount > baseline` → say 一次＋baseline 落到現值（rising edge）。
 - `pendingCount <= baseline` → 靜默＋baseline 落到現值（落下同步更新——收信處理清空信箱後歸零，下次上升會再通知）。
 - 冷啟（state 缺席／損壞）＝baseline 0 起算＋pending>0 通知一次（寧重不漏——最多一次重複 advisory）。
-- say 文案：中性句 ≤20 字（「ai-guide 信箱有 N 封新信待判讀」）、`say -v Meijia -r 180`、無稱謂——不入 voice skill 稱謂清單同步面、非 LLM say 面。
+- say 失敗＝fail-soft 續跑：baseline 不前進＋entry 標 `say_pending`、下輪重試——成功後清標記＋baseline 前進；持久失敗後恢復＝一次通知最新值（不逐輪補播）。
+- say 文案：中性句 ≤20 字（「ai-guide 信箱有 N 封新信待判讀」；長 alias label 截 8 字）、`say -v Meijia -r 180`、無稱謂——不入 voice skill 稱謂清單同步面、非 LLM say 面。
 
 ## 四機制分工（誰管什麼——不互代理）
 
@@ -48,10 +49,12 @@ uv run python scripts/duty_mail_watch.py stop
 
 ## sleep/resume 行為
 
-macOS 睡眠時 daemon loop 凍結（不補跑睡眠期間輪詢）；喚醒後下一輪照常——喚醒時 pendingCount 已上升者 rising edge 照觸發。睡眠中觸發的 say 若被系統丟棄＝已知一次性邊角（advisory 非保證；殘缺通知由冷啟／stale 週期補）。
+macOS 睡眠時 daemon loop 凍結（不補跑睡眠期間輪詢）；喚醒後下一輪照常——喚醒時 pendingCount 已上升者 rising edge 照觸發。睡眠中觸發的 say 若被系統丟棄＝已知一次性邊角（advisory 非保證；say 呼叫本身失敗者由下輪重試補）。
 
 ## 生命週期與 state
 
 - daemon 跨 session 存活（start 後持續到 stop／機器重啟）；singleton 由 flock 保證——`${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-watch/watch.lock`，crash（含 kill -9）自動釋放，直接再 start 即可。
-- state＝同目錄 `state.json`（pid＋started_at＋last_poll_at＋per-address baseline；0600 atomic 寫）；`daemon.log`＝daemon stdout/stderr。**stop 不刪 state.json**——restart 後 baseline 接手：stop→新信→start＝pending>baseline＝rising edge 通知。
-- fail 分級：dutymail storage/transient 失敗＝跳輪＋心跳標記（下輪重試）；usage/admission（壞配置）＝daemon exit 2 fail-loud 不硬跑——查 `daemon.log` 修配置後再 start。
+- state＝同目錄 `state.json`（pid＋started_at＋last_poll_at＋per-address baseline；0600 atomic 寫）；`daemon.log`＝daemon stdout/stderr。**stop 不刪 state.json**——restart 後 baseline 接手：stop→新信→start＝pending>baseline＝rising edge 通知（stop 成功時清 pid/started_at runtime 殘留、baseline 保留）。
+- start 的 ready 信號＝首輪 poll 完成（pid 就位＋last_poll_at 在場）——壞配置 daemon 首輪 fail-loud＝ready 前退出，start 帶 exit code 報失敗。
+- fail 分級：dutymail storage/transient 失敗＝跳輪＋心跳標記（下輪重試；status heartbeat 附「上輪 face 失敗」註記）；usage/admission（壞配置）＝daemon exit 2 fail-loud 不硬跑——查 `daemon.log` 修配置後再 start；say 失敗＝fail-soft 續跑（baseline 不前進、下輪重試）。
+- 已知邊角：face 呼叫掛死（罕見）阻塞期間 stop 可能誤報失敗（grace 8s）——daemon 於阻塞結束後自行退出（SIGTERM 旗標在下一中斷點生效），誤報後稍候再 `status` 確認。
