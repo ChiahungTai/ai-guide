@@ -1,6 +1,6 @@
 ---
 name: tool-discipline
-description: "工具紀律深層載體 — Edit 失敗處置階梯全文（re-Read 取當前狀態→第二次同型 not found 停止盲試禁第三次→Python repr 唯讀診斷 bytes→縮小 old_string〔多位元組字元跨行匹配常是肇因〕→full Read＋Write 整檔覆寫前提：剛完成完整 Read 且確認無並行變更）、zsh 動態 flag 細則（未引號變數不 word-split、純量陷阱真實案例 --primary 1 被當單參數而 argparse 拒絕、≤2 組合可分支、單 flag 用 --flag=1、禁 setopt shwordsplit 與 ${=var}）、Read 紀律細則（已完整讀過的檔案重查用 rg/offset/limit 禁再全讀、大檔具體問題先定位、86KB 檔重讀十九次案例）。always-on 核心（uv run 前綴、禁 sed 修改、pytest 背景跑、pipe gate、批次化）在 rules/tool-discipline.md；Edit 連續配不上、組 zsh 動態命令列、重查已讀大檔前載入。觸發詞：Edit 失敗、old_string not found、多位元組、word-split、args 陣列、shwordsplit、flag 純量、重讀、context 佔用、repr 診斷、整檔覆寫。"
+description: "工具紀律深層載體 — Edit 失敗處置階梯全文（re-Read 取當前狀態→第二次同型 not found 停止盲試禁第三次→Python repr 唯讀診斷 bytes→縮小 old_string〔多位元組字元跨行匹配常是肇因〕→full Read＋Write 整檔覆寫前提：剛完成完整 Read 且確認無並行變更）、zsh 動態 flag 細則（未引號變數不 word-split、純量陷阱真實案例 --primary 1 被當單參數而 argparse 拒絕、≤2 組合可分支、單 flag 用 --flag=1、禁 setopt shwordsplit 與 ${=var}、builtin echo 解釋反斜線轉義、JSON 承載禁命令代換＋echo 往返）、Read 紀律細則（已完整讀過的檔案重查用 rg/offset/limit 禁再全讀、大檔具體問題先定位、86KB 檔重讀十九次案例）。always-on 核心（uv run 前綴、禁 sed 修改、pytest 背景跑、pipe gate、批次化）在 rules/tool-discipline.md；Edit 連續配不上、組 zsh 動態命令列、重查已讀大檔前載入。觸發詞：Edit 失敗、old_string not found、多位元組、word-split、args 陣列、shwordsplit、flag 純量、重讀、context 佔用、repr 診斷、整檔覆寫、echo 轉義、printf、JSON 承載。"
 ---
 
 # tool-discipline — 工具紀律深層
@@ -14,6 +14,8 @@ Edit 失敗 → 先 re-Read 取得當前狀態；第二次同型 not found 後�
 ## zsh 動態 flag 組合（陣列、禁純量）
 
 zsh 未引號變數不 word-split；動態 flags 用 `args=(--flag 1)`＋`cmd "${args[@]}"`，禁 `"--flag 1"` 純量（真實案例：`--primary 1` 被當單參數而 argparse 拒絕）。≤2 組合可分支、單 flag 用 `--flag=1`；禁 `setopt shwordsplit`/`${=var}`。
+
+zsh builtin `echo` 解釋反斜線轉義——JSON 經命令代換＋`echo` 往返必壞（真實案例：bridge 歸證 leg——`\n` 變真 LF、`\\` 折半）；JSON 承載禁 `x=$(cmd)` 後 `echo $x` 形——用直管線（`cmd | 下游`）、`printf %s "$x"` 或檔案承載。
 
 ## Read 紀律（context 佔用）
 
