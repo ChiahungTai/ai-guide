@@ -1,9 +1,10 @@
 ---
 id: AIR-261
 title: post-build 258/259 findings 修復——F1 doc drift/F2 幻影指針/F3 helper
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 08:56'
+updated_date: '2026-10-06 08:56'
 labels:
   - dutymail
 dependencies: []
