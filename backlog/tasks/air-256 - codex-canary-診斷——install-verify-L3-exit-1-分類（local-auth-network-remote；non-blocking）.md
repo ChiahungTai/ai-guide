@@ -3,13 +3,17 @@ id: AIR-256
 title: >-
   codex canary 診斷——install --verify L3 exit 1
   分類（local/auth/network/remote；non-blocking）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-05 22:38'
-updated_date: '2026-10-05 22:39'
+updated_date: '2026-10-06 01:38'
 labels:
   - diagnostics
 dependencies: []
+references:
+  - >-
+    backlog/tasks/air-256 -
+    codex-canary-診斷——install-verify-L3-exit-1-分類（local-auth-network-remote；non-blocking）.md
 ordinal: 247000
 ---
 
