@@ -3,7 +3,7 @@ id: AIR-260
 title: >-
   SC session loading 撈全量——7d archive 語義調查（arch-thinking 無向後相容；三顧問
   codex/muse/5.3）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 08:53'
 updated_date: '2026-10-06 13:05'
