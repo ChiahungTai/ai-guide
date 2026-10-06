@@ -1,9 +1,10 @@
 ---
 id: AIR-257
 title: codex webgpt 裁決收編——user 原話入 model-routing dispatch 預設段（native 例外＝指名即可派）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 01:40'
+updated_date: '2026-10-06 01:41'
 labels:
   - model-routing
 dependencies: []
