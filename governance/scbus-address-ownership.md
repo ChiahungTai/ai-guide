@@ -135,11 +135,15 @@
   duty-receive per-session state epoch==status.epoch，或他方 live）→ 靜默
   （covered：處理面由 holder 承擔；收信處理面單一源＝duty_receive 處理器
   ；monitor ≠ holder——禁 bind/prepare/ack，三軸不互代理）＋baseline 歸零
-  ；live=false（holderless）→ `receive status` pendingCount >0 且 ≠
-  baseline 出一行 advisory（「holderless pending N 封（recovery window
-  ——無 session hold；開 duty session 處理）」——「本 session 提醒到哪」
-  語義，絕不宣稱 global 狀態、不觸 human seen/done）；>0 且 ==baseline
-  靜默（防每 prompt 轟炸）；==0 靜默＋baseline 歸零。baseline＝
+  ；live=false（holderless——B′ 常態：pending 在 INBOX 等人判讀）→
+  `receive status` pendingCount >0 且 ≠ baseline 出一行 advisory
+  （「holderless pending N 封（pending 在 INBOX 等人判讀——B′：
+  workspace 信終點＝durable INBOX；dutymail receive status 可查）」
+  ——「本 session 提醒到哪」語義，絕不宣稱 global 狀態、不觸 human
+  seen/done）；>0 且 ==baseline 靜默（防每 prompt 轟炸）；==0 靜默＋
+  baseline 歸零。holderless＝常態（B′ 語義——AIR-258 解凍；2026-10-06
+  SC-305 上線後 pending 落 durable INBOX 等人判讀，非 B′ 前 duty-active
+  異常窗口語義；monitor 只提醒不代開 duty session）。baseline＝
   `${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-monitor/
   <safe_session_id>.json`（session-local——兩 session baseline 互不干擾
   ；按 address 記 `last_pending`；0600 atomic 寫、

@@ -684,20 +684,28 @@ def triage(item, policy):
 # ── 輸出渲染（digest-first；surface 一行摘要）──────────────────────────
 
 
-def render(address, dispositions, now_us):
-    """dispositions → 輸出行（digest 行＋surface 一行摘要）。auto 由 digest
-    吸收（「例行已處理」——絕不宣稱 work accepted）；B′ 解凍（AIR-258，
-    SC-305 上線）後 surface 項不注入全文——人類判讀面＝SC INBOX（durable
-    投影），本處壓成 class 計數＋envelope_id 前 SURFACE_ID_LIMIT 封的
-    指針摘要（無 body；處置語義不變——surface 項照樣計入 ack 前處置）。"""
-    if not dispositions:
-        return []
-    surf = [d for d in dispositions if d.action == "surface"]
-    n_auto = len(dispositions) - len(surf)
+def _klass_counts(dispositions):
+    """dispositions → class 計數 dict（klass 缺席歸 unknown）——digest
+    主行與 surface 摘要行共用（AIR-261 F3：原兩處內聯迴圈抽 helper）。"""
     counts: dict[str, int] = {}
     for d in dispositions:
         label = d.klass if d.klass else "unknown"
         counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def render(address, dispositions, now_us):
+    """dispositions → 輸出行（digest 行＋surface 一行摘要）。auto 由 digest
+    吸收（「例行已處理」——絕不宣稱 work accepted）；B′ 解凍（AIR-258，
+    SC-305 上線）後 surface 項不注入全文——人類判讀面＝SC INBOX（durable
+    投影），本處壓成 class 計數＋可執行查詢指針（dutymail events
+    --address）＋前 SURFACE_ID_LIMIT 封 id 對照（無 body；處置語義不變
+    ——surface 項照樣計入 ack 前處置）。"""
+    if not dispositions:
+        return []
+    surf = [d for d in dispositions if d.action == "surface"]
+    n_auto = len(dispositions) - len(surf)
+    counts = _klass_counts(dispositions)
     head = (
         f"[{HOOK_TAG}] {address}：新到 {len(dispositions)}、"
         f"{n_auto} 件例行已處理、{len(surf)} 件等你"
@@ -719,18 +727,19 @@ def render(address, dispositions, now_us):
     )
     lines = [head]
     if surf:
-        surf_counts: dict[str, int] = {}
-        for d in surf:
-            label = d.klass if d.klass else "unknown"
-            surf_counts[label] = surf_counts.get(label, 0) + 1
+        surf_counts = _klass_counts(surf)
         ids = [d.envelope_id if d.envelope_id else "unknown" for d in surf]
         id_list = "、".join(ids[:SURFACE_ID_LIMIT])
         if len(ids) > SURFACE_ID_LIMIT:
             id_list += "…"
+        # F2（AIR-261）：fallback 指針須可執行——events face 無 positional
+        # id 形（僅 --address/--kind/--limit/--cursor）；id 清單留行內供對照
+        # （ids：段），不再是命令參數。
         lines.append(
             f"[{HOOK_TAG}] {address}：{len(surf)} 件等你——"
             + "、".join(f"{k}×{v}" for k, v in surf_counts.items())
-            + f"（全文見 SC INBOX／dutymail events {id_list}）"
+            + f"（全文見 SC INBOX／dutymail events --address {address}"
+            + f"；ids：{id_list}）"
         )
     return lines
 

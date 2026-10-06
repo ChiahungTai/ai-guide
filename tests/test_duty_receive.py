@@ -945,6 +945,22 @@ class TestDigestRendering:
         assert "e-1、e-2、e-3" in summary
         assert "…" not in summary
 
+    def test_surface_summary_fallback_pointer_executable(self, state_file):
+        """F2（AIR-261）：摘要行 fallback 指針須可執行——events face 無
+        positional id 形（僅 --address/--kind/--limit/--cursor），指針＝
+        `dutymail events --address <alias>`；id 清單保留行內供對照
+        （ids：段），不再是命令參數（幻影回歸防護）。"""
+        envs = [
+            _env_item("e-1", klass="handoff"),
+            _env_item("e-2", klass="handoff"),
+            _env_item("e-3", klass="patrol"),
+        ]
+        lines, _commit = self._run_lines(state_file, envs)
+        summary = lines[1]
+        assert "dutymail events --address " + ADDR in summary
+        assert "events e-" not in summary  # 幻影形（id 假裝命令參數）禁回歸
+        assert "ids：e-1、" in summary  # id 清單仍在行內供人工對照
+
     def test_auto_items_no_full_text(self, state_file):
         envs = [_env_item("e-1"), _env_item("e-2")]
         lines, _commit = self._run_lines(state_file, envs)
