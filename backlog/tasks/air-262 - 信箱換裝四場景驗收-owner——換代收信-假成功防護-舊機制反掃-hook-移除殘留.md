@@ -1,10 +1,10 @@
 ---
 id: AIR-262
 title: 信箱換裝四場景驗收 owner——換代收信/假成功防護/舊機制反掃/hook 移除殘留
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-06 10:04'
-updated_date: '2026-10-06 12:33'
+updated_date: '2026-10-06 12:34'
 labels:
   - dutymail
   - db-crossover
@@ -35,3 +35,27 @@ flowchart LR
 
 （代號指針：源卡＝delegate-bridge backlog db-80.6；場景＝TC-C4..C7，定義凍結於 00-tasks/2026-10/10-04-dutymail/test-contracts.md；③所指＝本 repo AIR-254.2 退役面）
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 C4 PASS——跨代收信兩實例＋cursor 連續＋named trigger 在場
+- [x] #2 C5 PASS-by-contract——契約凍結＋live 空 prepare 不動 cursor
+- [x] #3 C6 PASS——scbus rename 六目錄零命中＋新慣例在場
+- [x] #4 C7 PASS——live config 乾淨＋installer 五面綠
+<!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+信箱換裝四場景驗證 4/4 PASS（獨立 lite-verify 腿實測）：C4 換代收信（events timeline 兩跨代實例＋cursor 連續＋named trigger 在場）；C5 假成功防護（契約凍結＋live 空 prepare 不動 cursor）；C6 舊機制反掃（scbus rename 六目錄零命中＋新慣例四檔在場）；C7 hook 移除殘留（live config 乾淨＋installer 五面綠＋restart receipt）。Evidence：.agent-tmp/air262/。已通知 bridge（envelope air-dbwaves-tc-c4c7-verified-001）——db-80.6 AC#2 ai-guide 側完備。
+
+```mermaid
+flowchart LR
+    T["凍結四場景"] --> V["lite-verify 實測"]
+    V -->|"C4 跨代收信"| P1["PASS"]
+    V -->|"C5 契約+live"| P2["PASS-by-contract"]
+    V -->|"C6 反掃"| P3["PASS"]
+    V -->|"C7 live+installer"| P4["PASS"]
+    P1 & P2 & P3 & P4 --> N["通知 bridge"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
