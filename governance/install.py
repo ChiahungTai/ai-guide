@@ -2557,6 +2557,33 @@ def codex_mixed_rep_warnings(
     return warnings
 
 
+# AIR-256：L3 canary stderr 環境面簽名——命中＝ENV-BLOCKED 文案分類（查
+# relay/auth/network，非 installer regression）。對 stderr 小寫化比對（實證
+# 大小寫混雜：426 Upgrade Required／Usage Limit …）；ENV-BLOCKED 非放行——
+# cmd_verify 仍映 EXIT_DRIFT（fail-closed exit 1）。
+CODEX_L3_ENV_BLOCKED_SIGNATURES = (
+    "429",
+    "usage limit",
+    "auth",
+    "failed to connect",
+    "upgrade required",
+    "not supported",
+    "timeout",
+    "network",
+)
+
+
+def _stderr_tail(stderr: str, limit: int = 300) -> str:
+    """stderr 尾段證據（AIR-256）：單行化（換行/連續空白摺疊單空格）＋尾段截斷。
+
+    exit-code-only 訊息無從歸因（本卡診斷痛點）——失敗 detail 一律帶尾段。
+    """
+    collapsed = " ".join(stderr.split())
+    if len(collapsed) > limit:
+        return f"…{collapsed[-limit:]}"
+    return collapsed
+
+
 def codex_host_level_fixture(codex_home: Path | None = None) -> tuple[str, str]:
     """TC-9 層三：真 codex runtime 的 apply_patch deny——canary byte-level 未改。
 
@@ -2586,6 +2613,12 @@ def codex_host_level_fixture(codex_home: Path | None = None) -> tuple[str, str]:
                 [
                     "codex",
                     "exec",
+                    # AIR-256：釘 AIR-221 sanctioned transport。不釘時落
+                    # ~/.codex/config.toml 預設 model（native slug），ChatGPT
+                    # 帳號路徑不可用（實證 426 Upgrade Required→rc 1）；本
+                    # canary 測的是治理鏈實際使用的通道，非 config 預設。
+                    "--model",
+                    "chatgpt-web/high",
                     "--skip-git-repo-check",
                     "--sandbox",
                     "workspace-write",
@@ -2607,16 +2640,24 @@ def codex_host_level_fixture(codex_home: Path | None = None) -> tuple[str, str]:
                 "FAIL",
                 "fixture timeout（180s）——無法證明 deny 生效（fail-closed 判 FAIL）",
             )
+        tail = _stderr_tail(proc.stderr)
         if canary.read_text() != before:
             return "FAIL", (
-                f"canary 被改——host-level deny 未生效（{detail}）；證據保留：{canary}"
+                f"canary 被改——host-level deny 未生效（{detail}；stderr：{tail}）；"
+                f"證據保留：{canary}"
             )
         if proc.returncode != 0:
+            low = proc.stderr.lower()
+            if any(sig in low for sig in CODEX_L3_ENV_BLOCKED_SIGNATURES):
+                return "ENV-BLOCKED", (
+                    "環境面——查 relay/auth/network，非 installer regression；"
+                    f"證據：{tail}"
+                )
             # I-1 fail-closed：rc≠0＝codex exec 本身未正常完成——canary 雖未變，
             # 無法證明是 deny 擋下（可能 CLI/auth/網路失敗根本沒跑 patch）。
             return "FAIL", (
-                f"codex exec 異常結束（{detail}）——canary 雖未變但無法證明 "
-                f"deny 生效（fail-closed）；檢查 codex CLI/auth/網路後重驗"
+                f"codex exec 異常結束（{detail}；stderr：{tail}）——canary 雖未變但"
+                f"無法證明 deny 生效（fail-closed）；檢查 codex CLI/auth/網路後重驗"
             )
         canary.unlink(missing_ok=True)
         if not any(pseudo_pool.iterdir()):
@@ -2712,6 +2753,10 @@ def probe_codex(manifest: dict, *, passive: bool = False) -> tuple[str, str, lis
         return "GUARD", "L1/L2 已報告；L3 host-level 需 codex CLI", lines
     s, d = codex_host_level_fixture()
     lines.append(f"  [L3] {s}——{d}")
+    if s == "ENV-BLOCKED":
+        # AIR-256：probe 面保 verdict 字串（L3 行＋[verify:codex] 行可見）——
+        # cmd_verify 映 EXIT_DRIFT，verify 整體仍 fail-closed exit 1（非放行）。
+        return "ENV-BLOCKED", "層三 host-level fixture 環境面受阻（見 L3 行）", lines
     if s == "FAIL":
         return "FAIL", "層三 host-level fixture FAIL（見 L3 行）", lines
     if s == "GUARD":
@@ -2748,7 +2793,8 @@ def cmd_verify(manifest: dict, surface: str) -> int:
     codex L1/L2，**永不 codex exec**、codex CLI 缺席非 GUARD）；其餘（all/hooks）
     ＝manual full（codex 含 L3 host-level fixture，消費 native 額度）；memory 面
     ＝muse only 不觸 codex。
-    FAIL 權重大於 GUARD（真驗證失敗比環境缺席重要）。
+    FAIL 權重大於 GUARD（真驗證失敗比環境缺席重要）。AIR-256：ENV-BLOCKED
+    （codex L3 環境面受阻）同 FAIL 權重映 exit 1——文案分類非放行。
     """
     if surface in ("rules", "skills", "agents"):
         print(f"[verify:{surface}] 無 probe 定義（wrap/symlink 面 parity 歸 --check）")
@@ -2776,7 +2822,7 @@ def cmd_verify(manifest: dict, surface: str) -> int:
         print(f"[verify:{name}] {status}——{detail}")
         for ln in extra:
             print(ln)
-        if status == "FAIL":
+        if status in ("FAIL", "ENV-BLOCKED"):  # AIR-256：ENV-BLOCKED 非放行
             worst = EXIT_DRIFT
         elif status == "GUARD" and worst == EXIT_OK:
             worst = EXIT_GUARD

@@ -441,3 +441,124 @@ def test_cmd_verify_fail_dominates_guard(monkeypatch):
     assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_DRIFT
     _seq = iter([("GUARD", "", []), ("PASS", "", []), ("GUARD", "", [])])
     assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_GUARD
+
+
+# ── AIR-256：L3 canary 釘 model＋stderr 證據＋ENV-BLOCKED 第三態 ─────────
+# 根因（本卡診斷）：canary argv 未釘 --model → 落 ~/.codex/config.toml 預設
+# native slug（gpt-6-astra）→ ChatGPT 帳號路徑拒（426 Upgrade Required→rc 1）。
+# 對照 --model chatgpt-web/high 同 argv rc=0——webgpt 本身健康。
+
+
+def _patch_l3_runner(monkeypatch, *, returncode, stderr=""):
+    """AIR-256：fake subprocess runner 注入——L3 fixture 單元測試永不真跑 codex。"""
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **kwargs):
+        seen.append(list(argv))
+        return SimpleNamespace(returncode=returncode, stdout="", stderr=stderr)
+
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(run=fake_run, TimeoutExpired=subprocess.TimeoutExpired),
+    )
+    monkeypatch.setattr(
+        mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/codex")
+    )
+    return seen
+
+
+def test_l3_canary_pins_sanctioned_transport_model(tmp_path, monkeypatch):
+    """AC-1：canary argv 必釘 --model chatgpt-web/high（AIR-221 sanctioned
+    transport）——config 預設 native slug 在 ChatGPT 帳號路徑不可用；canary
+    測的是治理鏈實際使用的通道，非 config 預設。"""
+    seen = _patch_l3_runner(monkeypatch, returncode=0)
+    status, _detail = mod.codex_host_level_fixture(codex_home=tmp_path)
+    assert status == "PASS"
+    argv = seen[0]
+    assert argv[argv.index("--model") + 1] == "chatgpt-web/high"
+
+
+def test_l3_fail_detail_carries_single_line_stderr_tail(tmp_path, monkeypatch):
+    """AC-2：rc≠0 FAIL detail 附 stderr 尾段證據（單行化）；無環境簽名命中
+    時仍 FAIL——exit-code-only 訊息無從歸因（本卡診斷痛點）。"""
+    stderr = "noise line\n" * 90 + "responses_websocket handshake aborted\n"
+    _patch_l3_runner(monkeypatch, returncode=1, stderr=stderr)
+    status, detail = mod.codex_host_level_fixture(codex_home=tmp_path)
+    assert status == "FAIL"
+    assert "responses_websocket handshake aborted" in detail
+    assert "\n" not in detail  # 單行化：stderr 證據不得把報告行拆開
+
+
+def test_l3_env_blocked_on_signature_hit(tmp_path, monkeypatch):
+    """AC-3：stderr 命中環境面簽名（本卡實證 426 Upgrade Required）→
+    ENV-BLOCKED——訊息明寫環境面歸因（非 installer regression）＋證據尾段。"""
+    _patch_l3_runner(
+        monkeypatch,
+        returncode=1,
+        stderr="ERROR: responses_websocket: 426 Upgrade Required\n",
+    )
+    status, detail = mod.codex_host_level_fixture(codex_home=tmp_path)
+    assert status == "ENV-BLOCKED"
+    assert "環境面" in detail
+    assert "非 installer regression" in detail
+    assert "Upgrade Required" in detail
+
+
+def test_l3_env_blocked_signature_match_is_case_insensitive(tmp_path, monkeypatch):
+    """簽名比對大小寫不敏感——實證 stderr 大小寫混雜（Usage Limit/Upgrade Required）。"""
+    _patch_l3_runner(monkeypatch, returncode=1, stderr="Usage Limit reached on plan")
+    status, _detail = mod.codex_host_level_fixture(codex_home=tmp_path)
+    assert status == "ENV-BLOCKED"
+
+
+def test_probe_codex_env_blocked_propagates_with_l3_line(tmp_path, monkeypatch):
+    """AC-3：probe 面保 verdict 字串 ENV-BLOCKED（L3 行可見），非吞成 FAIL。"""
+    manifest = _codex_config_manifest(tmp_path)
+
+    def _fake_fixture(*a, **k):
+        return "ENV-BLOCKED", "環境面——查 relay/auth/network；證據：426"
+
+    monkeypatch.setattr(mod, "codex_host_level_fixture", _fake_fixture)
+    monkeypatch.setattr(
+        mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/codex")
+    )
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(
+            run=lambda *a, **k: SimpleNamespace(
+                returncode=0, stdout="codex-cli 0.5", stderr=""
+            ),
+            TimeoutExpired=subprocess.TimeoutExpired,
+        ),
+    )
+    status, _detail, lines = mod.probe_codex(manifest)
+    assert status == "ENV-BLOCKED"
+    assert any("[L3] ENV-BLOCKED" in ln for ln in lines)
+
+
+def test_cmd_verify_env_blocked_still_fail_closed(tmp_path, monkeypatch):
+    """AC-3：ENV-BLOCKED 是文案分類不是放行——cmd_verify 映 EXIT_DRIFT
+    （verify 整體仍 fail-closed exit 1）。"""
+    manifest = {**_manifest_four_probes(), **_codex_config_manifest(tmp_path)}
+
+    def _fake_fixture(*a, **k):
+        return "ENV-BLOCKED", "環境面——查 relay/auth/network；證據：426"
+
+    monkeypatch.setattr(mod, "codex_host_level_fixture", _fake_fixture)
+    _patch_local_probes_pass(monkeypatch)
+    monkeypatch.setattr(
+        mod, "shutil", SimpleNamespace(which=lambda n: "/usr/bin/codex")
+    )
+    monkeypatch.setattr(
+        mod,
+        "subprocess",
+        SimpleNamespace(
+            run=lambda *a, **k: SimpleNamespace(
+                returncode=0, stdout="codex-cli 0.5", stderr=""
+            ),
+            TimeoutExpired=subprocess.TimeoutExpired,
+        ),
+    )
+    assert mod.cmd_verify(manifest, "hooks") == mod.EXIT_DRIFT
