@@ -8,6 +8,8 @@ updated_date: '2026-10-06 21:23'
 labels:
   - dutymail
 dependencies: []
+references:
+  - ai-analysis/_tasks/10-07-mail-waiter/ep.md
 ordinal: 257000
 ---
 
