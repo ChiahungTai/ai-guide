@@ -1,13 +1,16 @@
 ---
 id: AIR-262
 title: 信箱換裝四場景驗收 owner——換代收信/假成功防護/舊機制反掃/hook 移除殘留
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 10:04'
+updated_date: '2026-10-06 12:33'
 labels:
   - dutymail
   - db-crossover
 dependencies: []
+references:
+  - .agent-tmp/air262/tc-c4-c7-evidence.md
 ordinal: 253000
 ---
 
