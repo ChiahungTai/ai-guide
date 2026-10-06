@@ -1,9 +1,10 @@
 ---
 id: AIR-266
 title: mail-waiter——session 級信件喚醒 watcher（waiter 家族第三員；AIR-265 daemon 退場）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-06 21:22'
+updated_date: '2026-10-06 21:23'
 labels:
   - dutymail
 dependencies: []
