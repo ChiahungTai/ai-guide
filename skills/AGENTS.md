@@ -140,7 +140,8 @@
 - `tool-discipline` — 工具紀律深層載體（reference skill：Edit 失敗處置階梯全文、zsh 動態 flag 細則、Read 紀律細則；rule 端留 uv run／pipe gate／檔案修改禁令／背景執行核心——rule+skill 分層控制 bundle 尺寸）
 - `bridge-dispatch` — delegate-bridge 委派深層載體（reference skill：webgpt 大內容紀律、dispatch⇄collection 完整模式、brief capability 契約五要素；rule 端留 pin 唯一源＋caller surface 對照表＋禁第二 pin——rule+skill 分層控制 bundle 尺寸）
 - `context7` — Context7 MCP 文檔查詢（library/framework/SDK/API 用法先查最新文檔再回答，優先於 web search；跨 harness MCP 支援）
-- `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知）
+- `voice-notification` — 四通道語音通知（系統召回 / 進度提醒 / 完成通知 / 信件待判讀）
+- `mail-watch` — dutymail 信件 watcher 操作手冊（machine-level daemon：start/stop/status、唯讀 receive status 輪詢、rising edge say advisory；AIR-265）
 
 ### UI / 協作
 - `ui-collab` — 互動式 UI 的 LLM 協作模式（`[ACTION]` 操作日誌）；SC tour 走讀跟隨（Tour 走讀流節——消費契約單一源指針）
