@@ -12,7 +12,7 @@ bootstrap-pointer: "跨 repo 呼叫 delegate-bridge 時以 `bridge-dispatch` ski
 - glm provision 前置：glm 首派前 primary checkout 需已 provision（`delegate-bridge provision --family glm`——db-87 起 worktree 經 fallback 自動繼承 primary 的 provision dir，per-WT 儀式已除，bridge 6874411）。
 - 派工必配回收：waiter exit 即通知、全 terminal 喚醒輸出 CollectionReceipt；watcher＝`scripts/bridge_waiter.py` 背景 shell fan-in 包 wait（124 內部消化、exit 3 stalled advisory wake、exit 2 禁重派）；裸 `wait` 背景 shell 降為 fallback（exit 124 仍＝re-arm 非失敗、禁重派）。terminal ≠ complete：有 sink 登記者以 artifact 機驗（存在＋非空＋錨點）為完成，無登記者以 bounded receipt 非空為完成；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
 - 長輸出：預期輸出逼近上限→交付一律檔案承載（分塊＋checkpoint），禁純文字長文。
-- codex web 整包預算 <100K chars（死亡線 ~100K–126K）；估算式、替代路由、大內容細節＝bridge-dispatch skill（webgpt 節）。
-- MCP face（2.2.0+）：ZCode/CC plugin 安裝即註冊九個 `bridge_*` tools（免接線免 rot）；codex 走 config wiring（易腐，更新後重跑 apply＋doctor）；`bridge_task` 恆 `--background`＋`bridge_wait` 短等回收——接線、wiring、knownFalseNegative 等完整細節＝bridge-dispatch skill「MCP face 接線與 MCP tool dispatch」節。
+- codex web 整包預算 <100K chars（死亡線 ~100K–126K）；估算式、替代路由、大內容細節＝`delegate:bridge-dispatch` plugin skill webgpt 節（隨 bridge release 出貨；本地 skill「模組定位」節＝redirect 錨）。
+- MCP face（2.2.0+）：ZCode/CC plugin 安裝即註冊九個 `bridge_*` tools（免接線免 rot）；codex 走 config wiring（易腐，更新後重跑 apply＋doctor）；`bridge_task` 恆 `--background`＋`bridge_wait` 短等回收——接線、wiring、knownFalseNegative 等完整細節＝`delegate:bridge-dispatch` plugin skill「Legal entry points」節（隨 bridge release 出貨；本地 skill「模組定位」節＝redirect 錨）。
 
 webgpt、glm resume model-match、Brief 動詞紀律、失敗態分流等細節＝bridge-dispatch skill。

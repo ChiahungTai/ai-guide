@@ -45,7 +45,7 @@
 
 ## 背景工作回收邊界
 
-本套件 SessionEnd 的通知 hook 不承擔 external-runtime job 清理。工作回收由派發端持有 collection owner，依 [agent-workflow](../skills/agent-workflow/SKILL.md) 與 [bridge-dispatch](../skills/bridge-dispatch/SKILL.md) 收取 authoritative terminal 狀態及產物；程序重啟或一段時間無輸出不能代替完成／死亡證據。外部 plugin 的 lifecycle 接線由該 plugin 的 registration/runtime 負責，需獨立查證。
+本套件 SessionEnd 的通知 hook 不承擔 external-runtime job 清理。工作回收由派發端持有 collection owner，依 [agent-workflow](../skills/agent-workflow/SKILL.md) 與 bridge-dispatch 紀律（操作知識＝`delegate:bridge-dispatch` plugin skill，隨 bridge release 出貨；本地 skill＝bootstrap pointer）收取 authoritative terminal 狀態及產物；程序重啟或一段時間無輸出不能代替完成／死亡證據。外部 plugin 的 lifecycle 接線由該 plugin 的 registration/runtime 負責，需獨立查證。
 
 ## 多機移植（clone 到新機器）
 

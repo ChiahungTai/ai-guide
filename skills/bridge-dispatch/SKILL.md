@@ -1,107 +1,25 @@
 ---
 name: bridge-dispatch
-description: "delegate-bridge 委派深層載體 — codex web pool（webgpt）大內容紀律（雙軸預算：材料軸／整包軸，與 fat-AGENTS 替代路由；失敗勿原樣重派；失敗態分流）與 dispatch⇄collection 完整模式（背景 detach 完成不通知——waiter exit 即通知；exit 124 re-arm 禁重派；重啟後恢復 playbook；綠 runs 不證健康）。always-on 核心（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）在 rules/bridge-dispatch.md；caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、Brief capability 契約五要素在本檔（0924 bundle 瘦身自 rules 收編）；跨 repo 呼叫 delegate-bridge、派工後收結果、背景 job 卡死或 app 重啟後恢復時載入。觸發詞：delegate-bridge、task --background、wait、fan-in、webgpt、codex web pool、chatgpt-web、stuck-after、runner id、re-arm、exit 124、prune、pin resolver、installed_plugins.json、caller surface、dispatch collection、派工回收、bridge_waiter、CollectionReceipt、stalled-advisory、雙軸預算、材料軸、整包軸、fat-AGENTS、MCP face、bridge_task、bridge_wait、capability manifest、availability lint、bash-allow、空轉、Brief capability、review face 28K、承載形、transport stamp、thin-slice、structural-evidence route、unverified-by-graph、收線工具面核對。"
+description: "跨 repo 呼叫 delegate-bridge 的 bootstrap gate 面才載——bridge 派工首個有後果決策前（rule 錨帶入），或結構證據收線核對／waiter watcher 治理／grok authority profile／session label 面載入。操作知識（caller surface 入口對照、MCP face 接線、dispatch⇄collection 完整模式、webgpt 雙軸預算、Brief capability 契約五要素、glm provision/resume）已隨 bridge release 出貨為 delegate:bridge-dispatch plugin skill（版本凍結、隨版控）；本檔只留 plugin pointer＋consumer governance 留守面（AIR-216 route 值域與收線核對、bridge_waiter 治理、grok contained writer、seam label、Brief 動詞紀律）。觸發詞：delegate-bridge、bridge 派工、結構證據收線核對、structural-evidence route、unverified-by-graph、bridge_waiter、CollectionReceipt、stalled-advisory、liveness、grok contained writer、session label。"
+when_to_use: "Fires only at the bridge bootstrap gate face — the first consequential delegate-bridge dispatch decision (anchored by rules/bridge-dispatch.md), or the retained consumer-governance faces: AIR-216 structural-evidence collection check, bridge_waiter governance, grok authority profile, session label. Operational dispatch how-to lives in the delegate:bridge-dispatch plugin skill."
 ---
 
-# bridge-dispatch — delegate-bridge 委派深層
+# bridge-dispatch — bootstrap gate 面＋consumer governance 留守
 
-> 本 skill 是 `rules/bridge-dispatch.md` 的 on-demand 深層載體：rule 端保留 always-on 核心（registry pin 唯一真相源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 收法配對、長輸出檔案承載）；本檔承載 caller surface 完整對照表、glm resume model-match 契約、Brief 動詞紀律、webgpt 大內容段與 dispatch⇄collection 完整模式（0924 自 rules 收編——bundle 瘦身，知識不滅）。事故脈絡與權威細節在 delegate-bridge repo（各節附路徑）。
+> **退役形態（AIR-268）**：bridge-native 操作知識已隨 delegate-bridge release 出貨為 **`delegate:bridge-dispatch` plugin skill**（版本凍結、隨版控——skill 快照＝出貨 plugin 版本，`delegate-bridge --version` 判讀在讀哪份）；Muse caller kit（delegate-bridge repo `docs/muse-caller-kit.md`）＝legacy projection。本檔＝ai-guide 側 always-on bootstrap 最小核心＋consumer governance 留守面。as-of bridge plugin 3.4.1（2026-10-07 對齊）。
 
-手拼版本化 cache 路徑事故（rule 端禁手拼的 why）：反覆 GLM 派工摸到 stale 舊版 binary，`Model creation failed` 連敗且被誤分類為額度問題，診斷燒掉一輪——修好的新版就在同一個 cache。「第二 pin」的常見形態另有 `ls | sort -V | tail` 猜最大版。
+## 模組定位
 
-## Caller surface → 合法入口對照表（registry pin 唯一源的唯一展開；0924 自 rules 收編）
+- **bootstrap gate 面**：跨 repo bridge 派工的首個有後果決策前，always-on 錨＝[rules/bridge-dispatch.md](../../rules/bridge-dispatch.md)（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 配對、長輸出檔案承載——最小核心與資格論證在 rule 端，本檔不重複）；本檔只做 plugin redirect＋留守面承載。
+- **操作知識消費方式（pointer 接手可達）**：
+  - ZCode／CC plugin session：`delegate:bridge-dispatch`（delegate plugin 安裝即達）。
+  - Muse session：plugin projection（`plugin:delegate:bridge-dispatch`，stage-muse-projection 安裝）；caller kit＝legacy fallback。
+  - bare shell／repo checkout fallback：caller-surface 合法入口對照表已隨 plugin skill「Legal entry points」節——plugin 面外從 registry pin（`installed_plugins.json` 取 `installPath`）或 repo checkout 解析，禁手拼版本化 cache 路徑、禁第二 pin。
+- **已隨 plugin 出貨（本檔不再承載；rule／model-routing 端指針經此 redirect）**：caller surface 入口對照表、MCP face 接線與 MCP tool dispatch（knownFalseNegative、codex config wiring）、dispatch⇄collection 完整模式（waiter 配對／124 語義／terminal ≠ complete／sink 三步驗收——驗收程序單一源＝`delegate:delegate-run-output` plugin skill「Receipt acceptance」節）、webgpt 大內容（雙軸預算／fat-AGENTS 替代路由／review face 28K 閘階梯／失敗態分流）、Brief capability contract 五要素、glm provision fallback 語義／resume model-match／`--steps` 禁令、Dispatch prompt 禁以 `/` 開頭。
 
-| Caller surface | 合法路徑 |
-|---|---|
-| ZCode／Claude Code plugin surface | `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`——harness 自動注入並解析 pin |
-| Codex plugin context（delegate-codex skill） | `${PLUGIN_ROOT}/bin/delegate-bridge`（`CLAUDE_PLUGIN_ROOT` 僅 alias）；任務必帶 `--caller-harness codex` |
-| ZCode／Claude Code bare shell | 讀 `~/.zcode/cli/plugins/installed_plugins.json`（Claude Code 同名檔）取 `installPath` 拼 `bin/delegate-bridge` |
-| Codex bare shell | **無 pin resolver**——禁猜 cache 路徑；走 plugin surface 或 repo checkout |
-| Muse session | plugin-less caller kit（delegate-bridge repo `docs/muse-caller-kit.md`） |
-| 任何 harness 的 repo checkout | dev binary `rust/target/release/delegate-bridge` |
-| MCP face（plugin `.mcp.json`，ZCode/CC 安裝即註冊；codex 不走 plugin `.mcp.json` 形態——走 db-52 wiring 接**同一個** 9-tool MCP server） | 九個 `bridge_*` tools 原生呼叫；`bridge_task` 恆 --background→bridge_wait（短等；長工 arm watcher）（2.2.0+） |
+## 結構證據收線核對（terminal collection；AIR-216；as-of 2026-10-01——rg pattern 隨 bridge jsonl schema 漂移以實際欄位為準，且各 family ledger 事件鍵不同（四形）：glm＝`"toolName"`；muse/codex＝`payload_type`（tool.result／tool.search／tool.bash 等）；grok＝NDJSON camelCase tool 事件（toolCallId/toolName/rawInput）＋**事件錨定 status**（in-stream tool failure 永非終局、exit code 僅佐證；anchor-less text 串流＝`output-token-limit` 大聲失敗——bridge 2.10.0 DB-72，源＝delegate-bridge docs/ep.md S1 honest-completion 條款）——先判讀該 job 的 schema 再核，0 命中 floor 以 schema 確認後為準）
 
-入口偏好：ZCode/CC 派工優先 MCP face（免 pin 解析、receipts 結構化）；**長工回收恆 watcher script**——MCP `bridge_wait` 受客端 timeout 上限（120s cap）、僅適短等（0926 AIR-201 弧 MCP 派＋watcher 收全程實證）。codex 作為 caller：其 MCP face 須 db-52 config wiring（config.toml 易腐）——派工走 CLI 為預設；ZCode/CC 派工**給** codex carrier 不受此限。CLI 面為跨 harness 等價 fallback。跨家族 review 語義派工優先 bridge review face（`review --base` 四態消費契約，owner＝review-engine「bridge review 的 CR 證據分類與消費」節）；attach 不可用時 `crsurface` 註記已涵蓋，不另造 marker（AIR-206 術語對帳）。MCP server 斷線（如 plugin 自動更新後「MCP server is not connected」）→ 續作走 CLI face，重啟紀律單一源＝delegate-bridge repo SOP（本 skill 不重抄步驟；0926 2.2.0→2.3.0 自動升級斷線實證）。
-
-禁手拼版本化 cache 絕對路徑（`.../delegate/<version>/bin/...`）、禁造第二 pin——第二真相源必漂移；殘留靠 prune 清，stale 恆大聲失敗。
-
-## MCP face 接線與 MCP tool dispatch（2.2.0+，DB-40 Stage 2／db-52＋db-53）
-
-兩種合法接線，按 harness 分流：
-- ZCode／Claude Code：plugin 樹自帶 `.mcp.json`（`delegate-bridge` → `${CLAUDE_PLUGIN_ROOT}/bin/<arch>/delegate-bridge mcp`）——安裝即註冊九個 `bridge_*` tools（plugin 安裝＝pin transition，免 rot）。已實證：CC canary server 連線＋9 tools；ZCode process 層 spawn（app 重啟即載入）。限制：command 綁 arch（aarch64 先行）；ZCode MCP 面變數展開 mirror-silent（hooks 面已實證注入）——fresh session tools/list probe 為驗收手段。
-- codex：無 plugin MCP 聲明機制 → `scripts/codex-mcp-wiring.mjs` apply/verify/doctor/remove 將 stanza 接進 `~/.codex/config.toml`（surgical 手術保留他 section byte-for-byte＋時間戳備份＋原子寫入）。config.toml 易腐：codex 整檔重寫＋launcher 更新拆自訂段——每次 codex 更新後重跑 apply＋doctor。`--args` 後至 bare `--` 或 argv 結束屬 server args；吞到 wiring-flag token（--config/--command/--binary）＝exit 2 fail-loud。
-
-MCP tool dispatch 紀律（與 CLI dispatch 同構、入口不同）：
-- `bridge_task` 恆 `--background`：呼叫即得 receipt（jobId＋status）→ `bridge_wait` 回收（短等；長工 arm watcher——見 caller surface 節「入口偏好」）→ `bridge_show`/`bridge_save_result` 收尾。
-- codex-web known false-negative（upstream #674，DB-51 issue／db-53 落地）：terminal row 帶 `knownFalseNegative` extra（web transport＋disconnect 簽名）＝回應可能已完整渲染在 ChatGPT tab——**先查 tab／worktree 產物再論重派**（re-dispatch trap：ledger 記 failed、工作已完成）。muse/glm/native-codex 不受影響。
-
-錨點：delegate-bridge `docs/ep.md`（MCP face 節頭 known false-negative 條款、`plugin MCP declaration (DB-53)` 節、`codex config.toml wiring tool (DB-40 Stage 2)` 節）；`plugins/delegate/.mcp.json`；delegate-bridge repo root `REPORT-DB47.md`（sandbox 盤點——MCP 消費端的 sandbox 情報）。
-
-## codex web pool（webgpt）大內容
-
-ChatGPT web edge 拒絕過大 turn body，計算含**整個 turn**（session 歷史計入；resume 中型舊 session 也會超標）；失敗**勿原樣重派**——carrier 會自動重試同一 payload，放大限流。精確觀測值與失敗態分流 → delegate-bridge repo `docs/caller-dispatch.md`（webgpt 測得括弧、quota 簽名、大 review 交付梯；root AGENTS.md「Caller dispatch discipline」節僅留紅線骨架）。
-
-派工前過**雙軸預算**（兩軸量的是相反兩端——材料端 vs 整包端，禁互抵、禁共用「上限／安全線」一詞；預算值行在 `rules/bridge-dispatch.md`）：
-
-- **材料軸**（量待審材料）：待審材料內聯 prompt ≤8KB 實測安全——webgpt agent 讀不到 caller 本地檔，工單只帶 repo 檔案路徑＝未驗形態（agent 無從審起，09-16 實證）。超標 → chunk／改形態。
-- **整包軸**（量 composer 整包＝工單＋repo AGENTS.md 鏈＋全域 `~/.codex/AGENTS.md` ~30K＋envelope buffer ~20K）：須 <100K chars——死亡線 ~100K–126K 實測收斂（as-of 2026-09，codex CLI 0.155.0-alpha.16），工單小 ≠ payload 小。超標 → fat-AGENTS 替代路由。
-
-**fat-AGENTS 替代**：判準以估算式為準、不以 repo AGENTS.md 單一數字為準（教訓正在於工單小＋fat AGENTS 才爆）——repo AGENTS.md ≳50K 即進估算參考錨（dispatch 前 `wc -c AGENTS.md` 為低成本可選機械檢查；實例：62K AGENTS.md＋3KB 工單已死）。順序＝①降 payload（改 repo 檔案路徑交付〔材料軸未驗形態，採用前先驗 agent 可達〕／減 inline／用既有 artifact）→②native codex（credits 訂閱池——帳號路徑分界與額度現值依 model-routing）→③muse／glm（依 model-routing resolver）→④in-harness。
-
-**review face 28K 閘——換承載形，不是換 model**（「不是換 model」限同 transport——native credits 池是 sanctioned transport bypass，可作替代路由）：review diff 走 o200k 單則上限（28K），60K-token 級弧 diff 被擋是常態——**派工前先概估：`git diff <base> | wc -c`，code 主導 diff 粗略 chars÷3.5 保守取**；閘實際消費 assembled prompt（diff 為主項，另計工單與 CR 附加段），近邊界或估不準寧可直接走 (b)，不試錯燒次數。命中後階梯＝(a) `--base` thin-slice（較窄 diff 範圍；**acceptance 承諾全弧覆蓋時不可僅縮 base 躲閘**——審查範圍縮水≠過閘，全弧過大直走 (b)）→(b) **改 task face＋work-order（WO）檔案承載**：工單派 repo 檔路徑、reviewer 自跑 `git diff` 讀（db-69 實證：62K-token 弧 diff 走此形完全可用，job-mulsjljd-q71eco；WO 照 Brief 動詞紀律帶唯讀宣告——task face 預設可寫，`no git` 限定 mutation 面，唯讀 git 檢視經 capability manifest 顯式宣告；收線沿用正常 dispatch/collection，勿重抄 waiter 面）→(c) in-harness subagent。(b) 與材料軸「路徑＝未驗形態」的表面張力＝工具面差異——task face 帶執行工具可自跑 git 讀（db-69 實證），09-16 被擋形是唯讀 review；採用前照材料軸慣例先驗 agent 可達。
-
-**額度牆 transport 池判讀**：native slug 撞 ChatGPT plan 額度（usage 頁 reset 時間）≠ web pool 28K payload 閘——判讀面＝ledger row 的 transport stamp＋錯誤文案，禁一杆打翻成 codex 全家不可用；native 掛→web 續用（(b) 形）**優先於棄家族**（同 family 有健康 transport 時優先留 codex——偏好非 invariant），transport 降級由 ledger stamp 機錄，跨家族降級另照 dual-family 顯性記錄。
-
-**觀察項**（單次實測值不升格永久規格）：
-- CLI 注入量 drift：估算式的全域 instructions 與 envelope 兩項綁當前 CLI 版本，升級即過時——條文只認 as-of 標記，精確觀測值留 delegate-bridge AGENTS.md。
-- envelope buffer 漂移：buffer 佔比隨版本增加，估算式逐項須定期對照。
-- 回應段死亡（09-16 `displayed an error` 形態，分流表見 model-routing webgpt 節）×整包預算交互未對照實證——下次回應段死時記整包估算值回填死亡線 bracket。
-
-## Dispatch⇄collection 配對（派工必配回收）——完整模式
-
-delegated job 完成時**不會通知任何人**——`task --background` detach 是設計（setsid 背景工人生存過 app 重啟），代價＝完成無人觸發；root cause 是 caller 紀律缺口（派了沒安排回收），**waiter exit 就是通知**。單顆短工＝前景 `task` 丟 harness 背景 shell（shell exit＝完成通知；app 重啟即死，僅廉價輪可受）；N 顆平行／長工（muse 6–15+ min）／須活過重啟＝各 `--background`＋**派工同 step 自動 arm watcher**——開**一顆**背景 shell 跑 `uv run python scripts/bridge_waiter.py <jobId...> [--kind discussion|implementation|research] [--sink jobId:PATH] [--anchor jobId:TOKEN]`（watcher 內部包 fan-in `wait`：正常長跑期間零喚醒、exit 124 恆內部消化 re-arm 永不外洩；全 terminal 才叫醒並 stdout 尾行輸出 CollectionReceipt JSON——exit 0＝全 terminal completed 且 delivery 過（manual-anchor 視同過）、exit 1＝任一 terminal 非 completed，或 completed 但 sink 三步驗收不過（兩者皆出 receipt）、exit 2＝fail-loud（reconcile＝ledger 重生／重派跡象——**禁 retry 禁重派**；error、usage 透傳）、exit 3＝stalled-advisory 只喚醒不處置——偵測與處置分離，stop／重派決策恆歸主 session）。手動 fan-in `wait` 全部 id 降為 fallback：script 不可用時的替代（`wait` exit 124＝timeout 到仍在跑→**re-arm 非失敗**、禁重派——detached worker 仍在燒額度）與 app 重啟後手動恢復路徑——**重啟後對 running id 重新 arm watcher（同主路徑）；playbook＝script 不可用時的手動替代**（playbook 見下指針）；`--stuck-after` 起跳值按 family scale；`--sink`／`--anchor` 可重複（N 顆多 sink 常態）。push／daemon＝out-of-scope（forwarder 紀律）。
-
-完整模式（場景表＋sh 範例＋family 起跳值＋重啟後恢復 playbook：先 `runs` 禁盲重派、`show <id> --json` 收完成、running 重掛 `wait <id> --stuck-after`——綠 runs 不證健康）→ delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Dispatch ⇄ collection discipline」節。**terminal ≠ complete**：有 sink 登記者以 artifact 機驗（存在＋非空＋錨點）為完成，無登記者以 bounded receipt 非空為完成（0924 自 rules 收編；驗收程序見上段 sink 三步驗收）。
-
-**結構證據收線核對（terminal collection；AIR-216；as-of 2026-10-01——rg pattern 隨 bridge jsonl schema 漂移以實際欄位為準，且各 family ledger 事件鍵不同（四形）：glm＝`"toolName"`；muse/codex＝`payload_type`（tool.result／tool.search／tool.bash 等）；grok＝NDJSON camelCase tool 事件（toolCallId/toolName/rawInput）＋**事件錨定 status**（in-stream tool failure 永非終局、exit code 僅佐證；anchor-less text 串流＝`output-token-limit` 大聲失敗——bridge 2.10.0 DB-72，源＝delegate-bridge docs/ep.md S1 honest-completion 條款）——先判讀該 job 的 schema 再核，0 命中 floor 以 schema 確認後為準）**：對 brief 宣告的 structural-evidence route 核實際 evidence channel——live-cr:MCP 核 job tool events（glm 形例：`rg -o '"toolName":"[^"]+"' <job workspace>/.delegate-bridge/jobs/<id>.jsonl | sort | uniq -c`；ledger per-workspace，cwd 須＝job workspace）；live-cr:CLI 核 command payload 是否實際呼叫 code-reality 查詢（toolName=Bash 不代表零 CR；例：`rg -o 'code-reality (refs|callers|closure|impact-radius)' <job>.jsonl | sort | uniq -c`）；preprovided-cr 核 read-set artifact／provenance receipt（cr-query `[SRC]` provenance 戳）；degraded 核受影響的結構 finding／claim 是否逐條帶 unverified-by-graph，降級原因依成因記值——bridge worker 無 CR query face＝`no-cr-query-face`、WT graph 缺席／過期＝`WT-graph-absent`／`WT-graph-stale`（值清單指涉單一源＝[cr-query](../cr-query/SKILL.md)「card-WT 結構證據供給（AIR-228）」節）。**宣告 live-cr 卻無相應 evidence channel（0 命中＝fail-loud floor；零星命中＋Read 主導＝實質違反 live-cr 禁令〔禁逐檔 Read 重建結構事實〕，照該禁令條判）、或宣告 degraded 卻漏標記＝delivery defect**——處置：逐條補標或退回；histogram 行貼進卡 notes／receipt（證據非自報；loopback 紀律管報告內部一致性，不涉 histogram 語義）。本核對只證 route 遵循，**不證 query 正確或 graph freshness**（CR hit>0 不洗白 stale graph 上的負存在斷言——仍依 cr-query／symbol-query-routing 判定）。腳本化門檻：需自動阻擋 collection、跨 MCP／CLI／family tool-name normalization、或 parser 誤報出現時再議；此前禁腳本化。
-
-watcher 節（本 repo）：自動 arm 規約與場景分工見上「Dispatch⇄collection 配對——完整模式」段；watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；bare shell 呼叫 watcher 須帶 `DELEGATE_BRIDGE_BIN=<bridge 絕對路徑>`（watcher 預設只查 PATH，找不到即 clean fail-loud exit 2 附修法——路徑由 installed_plugins.json registry pin 解析，見本檔上方 caller surface 對照表；0921 dogfood 實證）；雙軸 stalled 判準已對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」——0921 codex 腿 drift finding 修復）；**codex web 長生成期 heartbeat 滯後→worker 軸 5m floor 常態性誤報**（0921 高強度研究工單實證×3，job 本體活躍）——研究類派工帶 `--kind research` 抬 runtime floor 並容忍 advisory；watcher 增量定位＝124 透明 re-arm＋advisory wake＋CollectionReceipt 機驗（native wait 已原生支援 N-job batch fan-in 與雙軸 stuck 觀察——勿重複實作，長期 liveness 語義下沉回 producer）；0921 消費同步已落地：bridge ≥2.0.23 時 waiter 內部自動走 native wake（版本閘自選，arm 命令不帶 wake 參數——`--wake-on-stuck/--wake-axis` 是 bridge `wait` 的旗，由 waiter 內部傳遞），exit 3 wake JSON 轉譯為現行 stalled-advisory（自算雙軸輪詢退役；124 re-arm／terminal collect／exit 2 分流保留）——選 runtime 軸不選 worker，因 codex web 長生成期 heartbeat 滯後誤報×3（前述），選軸即把誤報消化在 producer；<2.0.23 維持自算雙軸（版本閘控雙模，MIN pin 不變 2.0.22——ZCode pin 翻轉後自動走 native）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝delegate-run-output「Receipt acceptance」節，本檔引用不自創）；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
-
-**prompt 邊界 backstop（AIR-267）**：`hooks/bridge_ledger_sweeper.py`（核心＝`scripts/bridge_sweeper.py`；SessionStart 全掃／UserPromptSubmit 90s 節流＋anomaly signature 去重、cwd eligibility、fail-soft 恆安靜）在 prompt 邊界掃 `bridge runs ⋈ .agent-tmp/liveness.jsonl`——running 行無活 waiter（armed−collected 配對＋heartbeat 30m 新鮮度窗，不掃進程）→一行「恢復 playbook：arm waiter」；terminal completed 有 armed 痕跡且無 collected 逾 30 分鐘→一行「可能未收——收線：bridge_show」（R2 前提＝liveness 有 armed 痕跡——真孤兒類；無痕跡〔pre-liveness／手動收線〕不可判安靜）（措辭恆機械層「可能未收」，session 層驗收是另一層零宣稱；terminal 非 completed＝failed-\* 不提醒——v1 收窄，失敗態處置是 dispatch 語義）。提醒面非處置面——arm/show/收線處置恆歸 session LLM；liveness 台帳 waiter 自有、sweeper 只讀。收線三腿家族分工：**waiter＝時間軸（背景盯場）／sweeper＝prompt 邊界（收線 backstop 提醒）／watcher_pairing_nag＝Stop 配對（離場攔）**；WT 證據（`.delegate-bridge/jobs/`＋liveness.jsonl）隨 wt-close drain 歸檔至 `~/.agents/bridge-ledger-archive/<wt>-<ts>/`（0600；v1 無 TTL）。
-
-## Canonical dispatch runbook（glm writer lane）
-
-> glm writer（implementation）派發的全命令模板鏈——把 bridge-dispatch 紀律收斂成單一序列；條文語義單一源：always-on 核心在 rule 端，caller surface 對照表與 resume model-match 契約在本檔（0924 收編；步驟 1/5 引用）。
-
-**四家族寫面語義差異**（派工前判斷用；逐 flag 事實單一源＝delegate-bridge repo `AGENTS.md`，禁重刻）：muse／codex 預設可寫；glm 預設 plan tier 唯讀——file-writing 腿漏帶 `--write-mode edit --wt --card`＝job 回報成功但零產出（驗收以交付檔案存在＋非空＋錨點為準，job status 不可信；AIR-201 四踩實證）；grok default leg＝contained writer（kernel-enforced Seatbelt——authority facts 見下方「grok family authority profile」段）。brief 步驟須配 carrier 工具面：非 `--yolo` 的 glm spawn 被 bridge 注入 `--disallowed-tools Bash`、plain（plan tier）另無 Write——派 git／命令步驟或 Write 產出給這類 carrier＝空轉（0926 judge v1 空轉 6.5h 實證）；材料預落 repo 檔案；唯讀產出處置（seal 模式）定義單一源＝下方「Brief capability contract」要素 4。
-
-1. **registry pin 解析**：plugin surface 用 `${CLAUDE_PLUGIN_ROOT}/bin/delegate-bridge`；bare shell 讀 `~/.zcode/cli/plugins/installed_plugins.json` 取 `installPath` 拼 `bin/delegate-bridge`——禁手拼版本化 cache 路徑（第二 pin，見本檔上方 caller surface 對照表）
-2. **provision 前置**：glm 首派前 **primary checkout** 需已 provision（`delegate-bridge provision --family glm`——**唯一 sanctioned config write**；0924 自 rules 收編）——db-87 起 worktree/新 WT 經 verify fallback 自動繼承 primary 的 provision dir，**per-WT 儀式已除**（bridge 6874411）；spawn verify-only（primary 缺漏／drift＝fail-loud 附指引，不自動補）
-3. **派發**：`delegate-bridge task --family glm --write-mode edit --yolo --wt --card <card-id> --background`——**`--wt` 是布林旗標、不帶值；`--card <card-id>` 帶值**；**禁 `--steps`**（glm carrier 不支援（validate_flags fail-loud）；此為 muse 旗標勿搬入 glm 配方）；prompt 大材料寫 repo 檔案只派路徑（長輸出任務形狀條，family 通用）
-4. **watcher 配對（cwd＝job workspace）**：派工同 step arm `uv run python <ai-guide repo>/scripts/bridge_waiter.py <jobId>`——**waiter 的 cwd 必須＝job 的 workspace**：job ledger 是 per-workspace（`<ws>/.delegate-bridge/`），cwd 錯位＝查無 job（not-found 誤入 reconcile 分支）
-5. **定向 resume（glm resume model-match 契約；0924 自 rules 收編，條文單一源＝本步驟）**：接續必帶**建立時** `--model <id>`（不帶＝落 manifest `defaultModel`；ledger row 有記；不符＝carrier `Select a model` fail-closed）；`--resume` 是布林、指定 session 走 `--session-id`。定義源＝delegate-bridge repo `docs/runbook.md` §GLM provisioning＋`docs/build-loop.md`（細節）＋`docs/ep.md` S1（僅指針；root AGENTS.md「Build loop」節留骨架）
-6. **session label（AIR-248 掛名退役→AIR-254.2 seam label）**：job spawn 回執取得 native session id（回執無 id 時 seam `find` 對照 workspace／harness 最新註冊）後 `uv run --project /Users/ctai/Github/ai-guide python /Users/ctai/Github/ai-guide/scripts/session_discovery.py label set --session-id <id> --label <session-label 欄值>`——欄定義與自 id 發現法單一源＝[work-order.md](../_common/work-order.md) §3；id 無法確立（carrier 未註冊 seam）＝跳過不阻塞、禁捏造 id
-
-## grok family authority profile（default contained writer vs --yolo/--marshal；AIR-226）
-
-> 決定性事實源＝delegate-bridge repo `docs/ep.md` db-71 grok 段＋carrier docs `~/.grok/docs/user-guide/18-sandbox.md`——本段只記消費端判斷面 authority facts，**不複刻 sandbox spec**（producer 文件為事實 source）。
-
-- **default leg＝contained writer**（`--always-approve --sandbox workspace`；hand-face invariant——每個 spawn argv 恆恰一個顯式 permission face）：Seatbelt 於 process 啟動時套用、kernel-enforced、process-wide、irreversible，涵蓋全部工具與子進程；write 集＝CWD＋`~/.grok/`＋temp dirs（`/tmp`、`/var/tmp`＋macOS temp）——**`/tmp` 是 in-bounds 契約面，非缺口**。
-- **AC10 兩段翻轉終態（2026-10-01 live 雙向驗證）**：1ade5b3e FALSIFIED（初判「`/tmp` 寫成功＝containment 破口」——探針把契約內 temp dir 當界外，probe 設計錯誤）→ 3c1d0492 CORRECTION（`/tmp` in-bounds 契約面非缺口）。決定性 probe＝界外 write tool 寫 `$HOME` 根 REFUSED＋bash 子進程界外（OOB）寫 REFUSED（皆附 `FsViolation` 事件、磁碟無檔）＋`~/.grok/sessions/sandbox-events.jsonl` 記 `ProfileApplied(enforced:true, macos/seatbelt)`——containment 雙向確認。
-- **contained writer 語義限 default binding/profile**：`--yolo`／`--marshal`＝`--always-approve` **無 `--sandbox`**（full access——另一 authority profile，非 contained；`--yolo` 走 family-neutral DB-18 閘、marshal＝DB-33 parity）。禁把 default face 的 containment 證據外推到 `--yolo`／`--marshal` 腿。
-- **kernel 證據邊界**：上述 enforcement 事實限當前 macOS/Seatbelt face，不擴寫跨平台通用保證；enforcement 前提＝profile 套用成功（套用失敗 carrier warn 後**不帶圍欄續跑**——read-only profile 於本機曾拒啟動）。review face 騎 default contained-writer face——reviewer 的唯讀紀律是 work-order 紀律，carrier 沙箱面照樣可寫。
-
-## Brief capability contract（派工前工具面契約——空轉預防；bridge db-58/59/60 對端條款）
-
-派工 brief 的每條工作腿須附能力契約五要素（語意 gate 歸 caller——bridge 只做 declared↔derived 機械一致性驗證，矛盾 exit 2（pre-ledger 前置閘，非 watcher exit 2）；0926 judge v1 空轉 6.5h 事故的契約化）：
-
-1. **capability manifest**：brief 逐腿宣告預期工具面（開放列，如 Bash／Write／Read／Grep／Glob 有無；例：唯讀裁定腿 `[tools: Read/Grep/Glob only]`）。結構查證腿另須宣告 structural-evidence route——見下方「結構查證腿——evidence route 宣告」節（要素 1＋2 之實例化）。
-2. **availability lint**：動詞指令只可引用 availability 集合內的工具（衍生 surface；`--bash-allow` 白名單為 db-58 增補，落地前 availability＝衍生 surface、db-62 homeMode 落地後端到端可用——屆時本 as-of 標記翻正（bridge release 追蹤）；命令級比對）。引用集合外工具的動詞＝brief 缺陷，禁派（caller 側 lint 標籤，非 bridge 錯誤碼——db-59 落地後以其實際碼為準）。
-3. **materialize-first 排序（分腿型明示主語）**：唯讀腿＝dispatcher 預先落檔、隨單附路徑（read-only 腿不製造需要 execution capability 的證據；對端模板 §6 同義）；寫腿 diff 形＝carrier 落檔為預設，`--bash-allow` 為例外通道（allow-exception），不作預設。
-4. **one-shot＋具名 sink**：唯讀裁定腿走 one-shot 產出＋具名 sink 檔；plan tier 無 Write 面——verdict 以 final text 承載由 marshal 落盤（seal 模式定義單一源＝本要素），sink 登記驗收。
-5. **envelope 給值**：預算／kill 封頂走 opt-in envelope 顯式給值（bounded kill），不依賴隱式預設。
-
-對端：bridge 側 declared-surface consistency gate（db-59）＋budget envelope/bounded kill（db-60）＋`--bash-allow` stamp 與 consistency 條款（db-58）；brief 模板六→八節擴充由 delegate-bridge repo 承接。
+對 brief 宣告的 structural-evidence route 核實際 evidence channel——live-cr:MCP 核 job tool events（glm 形例：`rg -o '"toolName":"[^"]+"' <job workspace>/.delegate-bridge/jobs/<id>.jsonl | sort | uniq -c`；ledger per-workspace，cwd 須＝job workspace）；live-cr:CLI 核 command payload 是否實際呼叫 code-reality 查詢（toolName=Bash 不代表零 CR；例：`rg -o 'code-reality (refs|callers|closure|impact-radius)' <job>.jsonl | sort | uniq -c`）；preprovided-cr 核 read-set artifact／provenance receipt（cr-query `[SRC]` provenance 戳）；degraded 核受影響的結構 finding／claim 是否逐條帶 unverified-by-graph，降級原因依成因記值——bridge worker 無 CR query face＝`no-cr-query-face`、WT graph 缺席／過期＝`WT-graph-absent`／`WT-graph-stale`（值清單指涉單一源＝[cr-query](../cr-query/SKILL.md)「card-WT 結構證據供給（AIR-228）」節）。**宣告 live-cr 卻無相應 evidence channel（0 命中＝fail-loud floor；零星命中＋Read 主導＝實質違反 live-cr 禁令〔禁逐檔 Read 重建結構事實〕，照該禁令條判）、或宣告 degraded 卻漏標記＝delivery defect**——處置：逐條補標或退回；histogram 行貼進卡 notes／receipt（證據非自報；loopback 紀律管報告內部一致性，不涉 histogram 語義）。本核對只證 route 遵循，**不證 query 正確或 graph freshness**（CR hit>0 不洗白 stale graph 上的負存在斷言——仍依 cr-query／symbol-query-routing 判定）。腳本化門檻：需自動阻擋 collection、跨 MCP／CLI／family tool-name normalization、或 parser 誤報出現時再議；此前禁腳本化。
 
 ## 結構查證腿——evidence route 宣告（條件節；AIR-216）
 
@@ -113,9 +31,24 @@ brief 含結構事實查證（callers／refs／closure／impact radius／符號�
 
 工具路由階梯與 freshness 語義以 symbol-query-routing／cr-query 為單一源，本節不重刻。**降級不可靜默**——選到無 CR query face 的 carrier 時，unverified-by-graph 標記是強制義務（carrier 選擇與 capability 篩選歸 model-routing，本節不設家族偏好）。
 
-## 下沉細節（自 rules 精煉遷入——on-demand 參考）
+## waiter／watcher consumer governance（`scripts/bridge_waiter.py` 家族）
 
-- provision 機制細節：user-invoked；stage per-model read-only configs＋sha256 manifest。glm 建立 job 的 model 記在 ledger row（resume 對帳用）；fail-closed 錯誤附 actionable hint。
-- 第二 pin 形態例：stable symlink、「latest」 shim——殘留靠 prune 清。
-- **Brief 動詞紀律（可寫 carrier；0924 自 rules 收編）**：brief 的動詞決定可寫 carrier 的行為——審查／調查／盤點類 brief 必帶顯式 `READ-ONLY / no writes / no git`（work-order 模板 review/advisory variant，§6 動＝零），實作類 brief 必帶 scope fence（格式＝work-order 模板範圍限定節）＋禁 commit（commit 恆為主 session gate）；**省略動詞約束＋brief 內出現 CHANGE/ADD/DELETE 條目＝實質實作授權**。`no git` 限定 mutation 面（checkout／commit／push）——唯讀 git 檢視（diff/log/show）經 capability manifest 顯式宣告後可用（先例＝db-69 WO「git diff/log 只讀」）。各 carrier 寫檔能力表單一源＝delegate-bridge repo `AGENTS.md`，禁兩 repo 重刻。案例：muse 審查 job 收到全 CHANGE 條目的 spec brief、漏 read-only 指令→muse 讀完逕行實作 444 行（Writer/Reviewer 分離被打破）。
-- Dispatch prompt 禁以 `/` 開頭——zcode 系 carrier 會當 slash command 拒執→exit 0 假完成（AIR-165 實證，DB-26 bridge 側修復中）。
+dispatch⇄collection 完整模式（自動 arm 規約與場景分工、family 起跳值、重啟後恢復 playbook）已隨 plugin skill（「Dispatch ⇄ collection pairing」節）；本節只載本 repo wrapper 治理。watcher 狀態機 frozen spec T1-T9、exit 契約、動態 T 公式（T0=clamp(P50/3, 5m, 15m)、fresh progress T×1.5 cap 20m）單一源＝`scripts/bridge_waiter.py` module docstring（變更走卡 amendment）；bare shell 呼叫 watcher 須帶 `DELEGATE_BRIDGE_BIN=<bridge 絕對路徑>`（watcher 預設只查 PATH，找不到即 clean fail-loud exit 2 附修法——路徑由 installed_plugins.json registry pin 解析，解析面＝plugin skill「Legal entry points」節；0921 dogfood 實證）；雙軸 stalled 判準已對齊 bridge producer canonical（task.rs 單一實作「no ageable data is never reported」——0921 codex 腿 drift finding 修復）；**codex web 長生成期 heartbeat 滯後→worker 軸 5m floor 常態性誤報**（0921 高強度研究工單實證×3，job 本體活躍）——研究類派工帶 `--kind research` 抬 runtime floor 並容忍 advisory；watcher 增量定位＝124 透明 re-arm＋advisory wake＋CollectionReceipt 機驗（native wait 已原生支援 N-job batch fan-in 與雙軸 stuck 觀察——勿重複實作，長期 liveness 語義下沉回 producer）；0921 消費同步已落地：bridge ≥2.0.23 時 waiter 內部自動走 native wake（版本閘自選，arm 命令不帶 wake 參數——`--wake-on-stuck/--wake-axis` 是 bridge `wait` 的旗，由 waiter 內部傳遞），exit 3 wake JSON 轉譯為現行 stalled-advisory（自算雙軸輪詢退役；124 re-arm／terminal collect／exit 2 分流保留）——選 runtime 軸不選 worker，因 codex web 長生成期 heartbeat 滯後誤報×3（前述），選軸即把誤報消化在 producer；<2.0.23 維持自算雙軸（版本閘控雙模，MIN pin 不變 2.0.22——ZCode pin 翻轉後自動走 native）；CollectionReceipt 欄位集權威＝AIR-135.7 AC#2 bounded receipt（watcher 側投影定義在 bridge_waiter.py docstring，非新 schema；AIR-149 EP＝bridge／harness 兄弟契約同源文件；sink 三步驗收程序單一源＝`delegate:delegate-run-output` plugin skill「Receipt acceptance」節，本檔引用不自創）；workflow 層配套（bounded slices／checkpoint 續寫）單一源＝AIR-135.7 契約。
+
+**prompt 邊界 backstop（AIR-267）**：`hooks/bridge_ledger_sweeper.py`（核心＝`scripts/bridge_sweeper.py`；SessionStart 全掃／UserPromptSubmit 90s 節流＋anomaly signature 去重、cwd eligibility、fail-soft 恆安靜）在 prompt 邊界掃 `bridge runs ⋈ .agent-tmp/liveness.jsonl`——running 行無活 waiter（armed−collected 配對＋heartbeat 30m 新鮮度窗，不掃進程）→一行「恢復 playbook：arm waiter」；terminal completed 有 armed 痕跡且無 collected 逾 30 分鐘→一行「可能未收——收線：bridge_show」（R2 前提＝liveness 有 armed 痕跡——真孤兒類；無痕跡〔pre-liveness／手動收線〕不可判安靜）（措辭恆機械層「可能未收」，session 層驗收是另一層零宣稱；terminal 非 completed＝failed-\* 不提醒——v1 收窄，失敗態處置是 dispatch 語義）。提醒面非處置面——arm/show/收線處置恆歸 session LLM；liveness 台帳 waiter 自有、sweeper 只讀。收線三腿家族分工：**waiter＝時間軸（背景盯場）／sweeper＝prompt 邊界（收線 backstop 提醒）／watcher_pairing_nag＝Stop 配對（離場攔）**；WT 證據（`.delegate-bridge/jobs/`＋liveness.jsonl）隨 wt-close drain 歸檔至 `~/.agents/bridge-ledger-archive/<wt>-<ts>/`（0600；v1 無 TTL）。
+
+## Canonical dispatch runbook——session label（步驟 6；步驟 1–5 registry pin／provision／派發／watcher 配對／resume 已隨 plugin skill）
+
+**session label（AIR-248 掛名退役→AIR-254.2 seam label）**：job spawn 回執取得 native session id（回執無 id 時 seam `find` 對照 workspace／harness 最新註冊）後 `uv run --project /Users/ctai/Github/ai-guide python /Users/ctai/Github/ai-guide/scripts/session_discovery.py label set --session-id <id> --label <session-label 欄值>`——欄定義與自 id 發現法單一源＝[work-order.md](../_common/work-order.md) §3；id 無法確立（carrier 未註冊 seam）＝跳過不阻塞、禁捏造 id
+
+## grok family authority profile——consumer 判讀面（AIR-226；producer facts 歸 bridge）
+
+> producer facts 單一源＝delegate-bridge repo `docs/ep.md` db-71 grok 段（＋carrier docs `~/.grok/docs/user-guide/18-sandbox.md`）；plugin skill 家族寫面速查已含 contained writer 一行。本節只留消費端判讀依據（AIR-268 收縮——sandbox spec 複刻面刪除改指針）。
+
+- **default leg＝contained writer**（kernel-enforced Seatbelt；AC10 live 雙向驗證終態：containment 成立、`/tmp`＝in-bounds 契約面非缺口）——write 集＝CWD＋`~/.grok/`＋temp dirs。
+- **profile 判讀**：`--yolo`／`--marshal`＝無 sandbox 的另一 authority profile（非 contained）——禁把 default face 的 containment 證據外推到該兩腿；enforcement 前提＝profile 套用成功（套用失敗 carrier 不帶圍欄續跑，細節＝db-71 段）。
+- **kernel 證據邊界**：enforcement 事實限當前 macOS/Seatbelt face，不擴寫跨平台通用保證；review face 騎 default contained-writer face——reviewer 唯讀紀律是 work-order 紀律，carrier 沙箱面照樣可寫。
+
+## Brief 動詞紀律（caller-side 語義留守；五要素契約本體隨 plugin skill）
+
+brief 的動詞決定可寫 carrier 的行為——審查／調查／盤點類 brief 必帶顯式 `READ-ONLY / no writes / no git`（work-order 模板 review/advisory variant，§6 動＝零），實作類 brief 必帶 scope fence（格式＝work-order 模板範圍限定節）＋禁 commit（commit 恆為主 session gate）；**省略動詞約束＋brief 內出現 CHANGE/ADD/DELETE 條目＝實質實作授權**。`no git` 限定 mutation 面（checkout／commit／push）——唯讀 git 檢視（diff/log/show）經 capability manifest 顯式宣告後可用（先例＝db-69 WO「git diff/log 只讀」）。各 carrier 寫檔能力表單一源＝delegate-bridge repo `AGENTS.md`，禁兩 repo 重刻。案例：muse 審查 job 收到全 CHANGE 條目的 spec brief、漏 read-only 指令→muse 讀完逕行實作 444 行（Writer/Reviewer 分離被打破）。

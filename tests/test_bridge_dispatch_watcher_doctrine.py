@@ -4,11 +4,13 @@ D1-D5 doctrine 改寫的不可退化錨點固化為機械檢查（lite 寫的測
 驗收證據由 full 複驗）：
 - D1 rules/bridge-dispatch.md Dispatch⇄collection 條——waiter 主路徑、
   裸 wait 背景 shell 降 fallback、「terminal ≠ complete」句不動
-- D2 skills/bridge-dispatch 完整模式段——watcher 主路徑、手動 fan-in wait
-  降 fallback／重啟後手動恢復、stalled-advisory 語義（卡 AC#4）
+- D2 skills/bridge-dispatch watcher 治理節——watcher 主路徑指涉、完整模式
+  redirect 錨（AIR-268 amendment：dispatch⇄collection 模式本體隨 plugin skill
+  出貨，本地改斷 redirect/pointer 行）、stalled-advisory 轉譯與偵測/處置
+  分離錨（卡 AC#4）
 - D3 skill desc 觸發詞（AC#2）＋ desc 值 ≤1024 chars 機驗（scan_skills_desc
   LIMIT 同源）
-- D4 完整模式指針段——watcher 節指針（frozen spec、動態 T 公式、
+- D4 完整模式指針段——watcher 治理節指針（frozen spec、動態 T 公式、
   CollectionReceipt schema 落點＝AIR-149 EP）
 - D5 agent-workflow——harness_waiter 工具化指涉保留（AIR-149 S3 防退化）
   ＋bridge_waiter auto-arm 規約一行
@@ -68,30 +70,38 @@ def test_d1_rules_terminal_not_complete_untouched():
 
 
 def test_d2_skill_full_mode_watcher_main_path():
+    # AIR-268 amendment：完整模式本體（背景 shell 跑／watcher 內部包 fan-in／
+    # exit 0／exit 1 語義）隨 plugin skill 出貨——本地錨點改斷 redirect 行
+    # ＋wrapper 治理節（exit 契約單一源＝bridge_waiter.py docstring）
     text = _skill_text()
-    assert "scripts/bridge_waiter.py" in text  # N 顆平行主路徑＝watcher
-    assert "背景 shell 跑" in text  # 一顆背景 shell 跑 watcher
-    assert "watcher 內部包 fan-in" in text  # watcher 取代手動 fan-in
+    assert "scripts/bridge_waiter.py" in text  # watcher 主路徑工具指涉（wrapper 留守）
+    assert "已隨 plugin skill" in text  # 完整模式 redirect 行（pointer 形）
+    assert "Dispatch ⇄ collection pairing" in text  # plugin 節名錨（模式本體落點）
+    assert "watcher 狀態機 frozen spec" in text  # exit 契約單一源指針
     assert "CollectionReceipt" in text
-    assert "exit 0＝全 terminal completed 且 delivery 過" in text
-    assert "exit 1＝任一 terminal 非 completed" in text
 
 
 def test_d2_skill_manual_fanin_downgraded_with_recovery():
+    # AIR-268 amendment：手動 fan-in 降 fallback／重啟後手動恢復 playbook 本體
+    # 隨 plugin skill——本地錨點＝redirect 清單行（124 語義枚舉）；124 re-arm／
+    # 禁重派語義錨在 rules 端（d1 兩測不變）
     text = _skill_text()
-    assert "fallback" in text  # 手動 fan-in wait 降 fallback
-    assert "重啟後手動恢復" in text  # 重啟後恢復路徑保留
-    assert "re-arm 非失敗" in text  # 124 re-arm 語義不變
-    assert "禁重派" in text
+    assert "fallback" in text  # fallback 語義錨（caller kit legacy fallback）
+    assert "重啟後恢復 playbook" in text  # redirect 行枚舉（playbook 落點＝plugin）
+    assert "124 語義" in text  # redirect 清單行（124 語義歸屬標記）
+    assert "delegate:bridge-dispatch" in text  # plugin pointer 可達
 
 
 def test_d2_skill_stalled_advisory_disposal_sentence():
-    # 卡 AC#4：stalled-advisory 處置句進 doctrine——喚醒不處置；stop 恆為主 session 判斷
+    # 卡 AC#4／AIR-268 amendment：stalled-advisory「只喚醒不處置」處置句本體
+    # 隨 plugin skill——本地錨點＝wrapper 轉譯行＋sweeper 偵測/處置分離句
+    # （處置恆歸主 session 的 doctrine 在 rules 端 d1＋agent-workflow
+    # 偵測與處置分離條續存）
     text = _skill_text()
     assert "stalled-advisory" in text
-    assert "只喚醒不處置" in text
-    assert "偵測與處置分離" in text
-    assert "恆歸主 session" in text
+    assert "exit 3 wake JSON 轉譯" in text  # wrapper advisory 轉譯行（喚醒面留守）
+    assert "提醒面非處置面" in text  # sweeper 偵測/處置分離句
+    assert "處置恆歸 session LLM" in text
 
 
 def test_d3_desc_trigger_words():
@@ -109,8 +119,11 @@ def test_d3_desc_length_within_budget():
 
 
 def test_d4_skill_watcher_section_pointer():
+    # AIR-268 amendment：watcher 節更名「waiter／watcher consumer governance」
+    # （agent-workflow auto-arm 行同錨）——指針職責（frozen spec、動態 T 公式、
+    # CollectionReceipt schema 權威、AIR-149 EP）不變
     text = _skill_text()
-    assert "watcher 節" in text  # 指針段自身
+    assert "waiter／watcher consumer governance" in text  # 指針段自身（新節名）
     assert "scripts/bridge_waiter.py" in text
     assert "動態 T 公式" in text  # T 公式指針
     assert "CollectionReceipt 欄位集權威" in text  # schema 權威指針（＝AIR-135.7 AC#2）

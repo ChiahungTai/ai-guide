@@ -138,7 +138,7 @@
 - `symbol-query-routing` — 符號查詢路由深層參考（reference skill：LSP operation 速查表、驗證 workflow/輸出格式、rg 陷阱案例群、方法論限制 loopback、Agent prompt 工具指定模板、跨 harness 載體對照、workspace staleness/reindex 處置；rule 留 cr-first 路由/任務啟動 gate 核心——rule+skill 分層控制 bundle 尺寸）
 - `modern-cli-preference` — 搜尋工具陷阱細則（reference skill：fd/rg 旗標與 alternation 陷阱、grep 旗標遷移、glob 錨定、git pathspec 三陷阱、統計用途禁 head 截斷、盤點執行點雙掃；rule 退為指針——分工權威＝symbol-query-routing rule，rule+skill 分層控制 bundle 尺寸）
 - `tool-discipline` — 工具紀律深層載體（reference skill：Edit 失敗處置階梯全文、zsh 動態 flag 細則、Read 紀律細則；rule 端留 uv run／pipe gate／檔案修改禁令／背景執行核心——rule+skill 分層控制 bundle 尺寸）
-- `bridge-dispatch` — delegate-bridge 委派深層載體（reference skill：webgpt 大內容紀律、dispatch⇄collection 完整模式、brief capability 契約五要素；rule 端留 pin 唯一源＋caller surface 對照表＋禁第二 pin——rule+skill 分層控制 bundle 尺寸）
+- `bridge-dispatch` — bridge 委派 bootstrap gate 面＋consumer governance 留守（AIR-268 退役形態：操作知識隨 bridge release 出貨為 `delegate:bridge-dispatch` plugin skill——版本凍結、隨版控；本檔只留 plugin pointer＋AIR-216 收線核對／route 值域／waiter 治理／grok authority profile／session label；always-on 核心＝rules/bridge-dispatch.md）
 - `context7` — Context7 MCP 文檔查詢（library/framework/SDK/API 用法先查最新文檔再回答，優先於 web search；跨 harness MCP 支援）
 - `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知；信件喚醒非語音面——AIR-266 起 mail-waiter 走背景 shell exit）
 - `mail-watch` — session 級信件喚醒 waiter 手冊（start/stop/status、dutymail wait 挂哨＋尾行 JSON 喚醒、喚醒回合兩步合約（①process ②re-arm）、generation CAS 雙 arm 防護、waiter 家族憲章；AIR-266）
