@@ -4,7 +4,7 @@ title: db807 換源三面——Claude-hooks/discovery/G5（回信承諾 10-08 EO
 status: In Progress
 assignee: []
 created_date: '2026-10-07 04:09'
-updated_date: '2026-10-07 06:12'
+updated_date: '2026-10-07 08:40'
 labels:
   - dutymail
 dependencies: []
@@ -53,3 +53,20 @@ flowchart LR
 〔已決策勿重辯：①面 2 選案 (c)（user 核——折衷：保持 scbus 源＋fail-closed 已就緒、真換源綁 M7 另開卡）②INTENT-02 不動 scbus home ③send 面另一波次 ④技術計畫單一源＝.agent-tmp/air272-recon-plan.md（面1 三條 hooks 換 duty 兩條＋備份回滾；面3 兩檔措辭＋roundtrip 一行；面2 驗證 fail-closed＋probe 草擬＋memory 檔 disposition）⑤settings.json 為 primary repo root gitignored live 檔——WT 隔離例外，派工明示 ⑥前置 consultation（user 指定）〕
 〔範圍：面1 settings.json＋hooks/AGENTS.md 一句；面3 governance/scbus-address-ownership.md＋skills/_common/dutymail-roundtrip.md；面2 驗證＋probe 草擬＋memory 檔 disposition；不動其他〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【AC4 補齊——probe 步驟可執行版（durability 修復：muse F1＋codex important）】
+
+Pending-user-probe 三項（需真實 CC session；由 user 或下個含 CC 的班執行）：
+P1 Running-session UPS hot-reload：既有 CC session 送新 prompt → PASS 判準＝duty-monitor baseline 檔（${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-monitor/<sid>.json）mtime 前進＋transcript 無 scbus hook 觸發跡。
+P2 Fresh CC session SessionStart：開新 CC session → PASS＝duty hooks fire（SessionStart baseline 檔誕生）＋dutymail receive status --address ai-guide-marshal 可查（經 resolver zcode-cache rung）。
+P3 Negative evidence：跨 session 邊界 stat -f %m ~/.sc-router/registry.db mtime 穩定（舊 scbus hook 未再觸碰）。
+
+【handoff Phase 5 M7 缺口（codex important——durable 成文）】skills/handoff/SKILL.md Phase 5（現 :105-107）先直跑 session_discovery list/whoami（M7 拔源後 exit 3 source_unavailable/whoami_unavailable）才輪到 :115/:134 的 fallback-manual 分流——流程到不了降級路徑。後續卡＝consumer contract 補齊：source_unavailable/whoami_unavailable → fallback-manual（reason=discovery-unavailable、禁 direct send）＋consumer-level regression。已開 AIR-273 承接。
+
+【resolver coupling 記錄】_resolve_binary() 階梯只查 zcode cache（不查 claude cache）——CC standalone 需擴第四 rung 或 env 導 DUTYMAIL_BIN（後續卡併 AIR-273 或獨立）。本機現況可解析（zcode cache 3.2.1/3.4.0/3.4.1 三候選）。
+
+【AC4 判定更新】probe 步驟（本 note）＋handoff 缺口 durable 成文（本 note＋AIR-273）＋fail-closed 實跑（author 證據）＋memory disposition（codex PASS）→ AC4 完成。
+<!-- SECTION:NOTES:END -->

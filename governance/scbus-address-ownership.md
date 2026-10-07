@@ -111,15 +111,14 @@
 
 - 值星/Marshal session 的收件義務＝**知會新到 delivery events＋掃自己的
   session inbox**，兩面都免 holder 身分：canonical 面由 receipt-timeline hook
-  自動知會（下條）；人工 point-in-time 輪詢（`scbus address ls --pending`
-  read-only badge，AIR-168 驗收③——ls 不帶 caller identity）保留為 fallback
-  快照（語義＝目前 `new/` 目錄，非 delivery authority——holder-less 位址每封
-  pending header 附首行 preview 供 triage；實證錨＝scbus v0.2.0
-  `scbus address ls --help`）。**已知崩潰史（SCR-8）**：address row 在而磁上
-  `new/` 目錄缺時，pending 視圖曾整命令崩（raw FileNotFoundError）；上游已修
-  （sc-router scr-8——缺目錄讀面 fail-soft 回空清單＋pending_note，修復入
-  v0.2.0），本機已升級（歷史事實；maildir 直讀降級路徑隨 invariant 條退役）。
-  session inbox 用 `scbus pending`（只掃 session mailboxes）。session 換手
+  自動知會（下條）；人工 point-in-time 輪詢＝`dutymail receive status`
+  （scbus 時代 address pending badge 已隨換代退役——現行面見下條 monitor；
+  歷史實證錨 AIR-168 驗收③保留標註）。**已知崩潰史（SCR-8，scbus 時代）**：
+  address row 在而磁上 `new/` 目錄缺時，pending badge 視圖曾整命令崩
+  （raw FileNotFoundError）；上游已修（sc-router scr-8——缺目錄讀面 fail-soft
+  回空清單＋pending_note，修復入 v0.2.0），本機已升級（歷史事實；maildir 直讀
+  降級路徑隨 invariant 條退役）。scbus 時代 session inbox 輪詢已退役——現行
+  收信處理面＝duty_receive 處理器＋monitor advisory（下條）。session 換手
   不動搖 ownership。因監控需求 acquire/renew/force-reclaim canonical address
   皆違反本節。
 - **interaction-boundary hook monitor（AIR-225.1 建面；AIR-233 scbus receipts
@@ -135,13 +134,14 @@
   duty-receive per-session state epoch==status.epoch，或他方 live）→ 靜默
   （covered：處理面由 holder 承擔；收信處理面單一源＝duty_receive 處理器
   ；monitor ≠ holder——禁 bind/prepare/ack，三軸不互代理）＋baseline 歸零
+  （session-local advisory baseline，非遷移 zero-pending gate）
   ；live=false（holderless——B′ 常態：pending 在 INBOX 等人判讀）→
   `receive status` pendingCount >0 且 ≠ baseline 出一行 advisory
   （「holderless pending N 封（pending 在 INBOX 等人判讀——B′：
   workspace 信終點＝durable INBOX；dutymail receive status 可查）」
   ——「本 session 提醒到哪」語義，絕不宣稱 global 狀態、不觸 human
   seen/done）；>0 且 ==baseline 靜默（防每 prompt 轟炸）；==0 靜默＋
-  baseline 歸零。holderless＝常態（B′ 語義——AIR-258 解凍；2026-10-06
+  baseline 歸零（session-local advisory baseline，非遷移 zero-pending gate）。holderless＝常態（B′ 語義——AIR-258 解凍；2026-10-06
   SC-305 上線後 pending 落 durable INBOX 等人判讀，非 B′ 前 duty-active
   異常窗口語義；monitor 只提醒不代開 duty session）。baseline＝
   `${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-monitor/

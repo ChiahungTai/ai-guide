@@ -96,3 +96,9 @@ flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 源＝dutymail projection（undone 數），不是 AI 提醒 baseline（AIR-254.4 降級）。monitor 的
 holderless advisory＝常態語義（B′ 解凍 2026-10-06，SC-305 上線：pending 在 INBOX 等人
 判讀——workspace 信終點＝durable INBOX；`dutymail receive status` 可查，非異常窗口）。
+
+## zero-pending gate 語義（G5 正典——本檔為 ai-guide 側定義源）
+
+bridge G5/TC-R5 zero-pending gate＝archive bytes 保留＋零 unowned/unexplained pending
+obligations；archived＝已對帳 records，非「清檔歸零」——ai-guide 側文檔禁以 zero-pending
+語義宣稱檔案歸零（monitor advisory baseline 歸零是 session-local 另層語義，兩者不可混用）。
