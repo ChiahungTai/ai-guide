@@ -306,6 +306,7 @@ class TestBuildDeliveryBody:
         body = _mod.build_delivery_body(
             summary="handoff packet 見 card notes",
             source="ai-guide/air-156",
+            reply_address="ai-guide-marshal",
             correlation_id="corr-1",
             want="session 承接後回 accept",
             card_ref="ai-guide/air-156",
@@ -314,6 +315,7 @@ class TestBuildDeliveryBody:
         assert parsed["want"] == "session 承接後回 accept"
         assert parsed["card_ref"] == "ai-guide/air-156"
         assert parsed["correlation_id"] == "corr-1"
+        assert parsed["reply_address"] == "ai-guide-marshal"
         assert "\n" not in body
 
     def test_cross_ownership_without_consent_is_blocked(self) -> None:
@@ -322,6 +324,7 @@ class TestBuildDeliveryBody:
             _mod.build_delivery_body(
                 summary="s",
                 source="ai-guide/air-156",
+                reply_address="ai-guide-marshal",
                 correlation_id="c",
                 want="accept",
                 cross_ownership=True,
@@ -331,6 +334,7 @@ class TestBuildDeliveryBody:
         body = _mod.build_delivery_body(
             summary="s",
             source="ai-guide/air-156",
+            reply_address="ai-guide-marshal",
             correlation_id="c",
             want="accept",
             cross_ownership=True,
@@ -345,15 +349,19 @@ class TestBuildDeliveryBody:
             _mod.build_delivery_body(
                 summary="x" * 9000,
                 source="s",
+                reply_address="r",
                 correlation_id="c",
                 want="accept",
             )
 
-    @pytest.mark.parametrize("field", ["summary", "source", "correlation_id", "want"])
+    @pytest.mark.parametrize(
+        "field", ["summary", "source", "reply_address", "correlation_id", "want"]
+    )
     def test_missing_required_field_fails_loud(self, field: str) -> None:
         kwargs: dict = {
             "summary": "s",
             "source": "src",
+            "reply_address": "ai-guide-marshal",
             "correlation_id": "c",
             "want": "accept",
         }
@@ -385,6 +393,8 @@ class TestCli:
             "packet",
             "--source",
             "ai-guide/air-156",
+            "--reply-address",
+            "ai-guide-marshal",
             "--correlation-id",
             "c1",
             "--want",
@@ -395,6 +405,42 @@ class TestCli:
         assert r.returncode == 0, r.stderr
         assert json.loads(r.stdout)["card_ref"] == "ai-guide/air-156"
 
+    def test_build_body_cli_reply_address_lands_in_body(self) -> None:
+        """judge 案①：--reply-address 值須原樣落 body JSON reply_address 鍵
+        （in-band 回信管道——send 面無 from-address，收件方靠此鍵回信）。"""
+        r = _run_cli(
+            "build-body",
+            "--summary",
+            "packet",
+            "--source",
+            "ai-guide/air-156",
+            "--reply-address",
+            "ai-guide-marshal",
+            "--correlation-id",
+            "c1",
+            "--want",
+            "accept",
+        )
+        assert r.returncode == 0, r.stderr
+        assert json.loads(r.stdout)["reply_address"] == "ai-guide-marshal"
+
+    def test_build_body_cli_missing_reply_address_exit_2(self) -> None:
+        """judge 案②：缺 --reply-address＝exit 2 fail loud（非靜默送出
+        無回信門牌的信）。"""
+        r = _run_cli(
+            "build-body",
+            "--summary",
+            "packet",
+            "--source",
+            "ai-guide/air-156",
+            "--correlation-id",
+            "c1",
+            "--want",
+            "accept",
+        )
+        assert r.returncode == 2
+        assert "reply-address" in r.stderr
+
     def test_build_body_cli_consent_gate_exit_2(self) -> None:
         r = _run_cli(
             "build-body",
@@ -402,6 +448,8 @@ class TestCli:
             "packet",
             "--source",
             "ai-guide/air-156",
+            "--reply-address",
+            "ai-guide-marshal",
             "--correlation-id",
             "c1",
             "--want",

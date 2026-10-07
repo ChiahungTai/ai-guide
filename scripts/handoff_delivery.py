@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """handoff scbus 直送純邏輯層（AIR-156）——completion 四段分類＋target 分流＋body 組裝。
 
-單一源關係：delivery 條文權威＝skills/handoff/SKILL.md「Delivery——scbus 直送」節；
+單一源關係：delivery 條文權威＝skills/handoff/SKILL.md「Delivery——dutymail 直送」節；
 本檔只承載條文中可純函式化的判定，供 tests/test_handoff_delivery.py 鎖行為——
 改條文必同步改這裡與測試。純邏輯零 I/O（CLI 的檔案讀取除外）：呼叫端（session
 流程）負責跑 `session_discovery list --json`（AIR-254.1 seam——registry 讀取
@@ -277,6 +277,7 @@ def build_delivery_body(
     *,
     summary: str,
     source: str,
+    reply_address: str,
     correlation_id: str,
     want: str,
     card_ref: str | None = None,
@@ -294,6 +295,7 @@ def build_delivery_body(
     for name, value in (
         ("summary", summary),
         ("source", source),
+        ("reply_address", reply_address),
         ("correlation_id", correlation_id),
         ("want", want),
     ):
@@ -307,6 +309,7 @@ def build_delivery_body(
     body: dict = {
         "handoff_delivery": True,  # 消費端約定標記（先例＝proto §5.9 控制信 body 約定）
         "source": source,
+        "reply_address": reply_address,  # machine header——in-band 回信門牌（send 面無 from-address）
         "correlation_id": correlation_id,
         "want": want,
         "body": summary,
@@ -335,6 +338,7 @@ def _cli(argv: list[str]) -> int:
     p_build = sub.add_parser("build-body", help="組單行 JSON delivery body（stdout）")
     p_build.add_argument("--summary", required=True)
     p_build.add_argument("--source", required=True)
+    p_build.add_argument("--reply-address", required=True)
     p_build.add_argument("--correlation-id", required=True)
     p_build.add_argument("--want", required=True)
     p_build.add_argument("--card-ref", default=None)
@@ -375,6 +379,7 @@ def _cli(argv: list[str]) -> int:
                 build_delivery_body(
                     summary=args.summary,
                     source=args.source,
+                    reply_address=args.reply_address,
                     correlation_id=args.correlation_id,
                     want=args.want,
                     card_ref=args.card_ref,

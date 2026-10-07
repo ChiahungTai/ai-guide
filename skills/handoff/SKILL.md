@@ -85,19 +85,19 @@ packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產�
 
 > **有卡任務優先「卡即 handoff」**：卡 `desc`＋`notes`＋`references`＋`EP` 已 self-contained（見 [kanban-board](../kanban-board/SKILL.md)「卡即 handoff」），交接優先掛卡 notes（`--append-notes`）；原寫檔路徑已退場。**無追蹤卡**（跨 provider 一次性等）→ 不落檔，直接複製輸出貼給目標——`--save` 無標的可掛＝不適用（manual paste fallback；分流見 Phase 5）。
 
-### Phase 5：Delivery——scbus 直送第一路＋manual paste fallback（AIR-156）
+### Phase 5：Delivery——dutymail 直送第一路＋manual paste fallback（AIR-156）
 
 「prompt 產完」≠「對方收到」。packet 落卡只是 completion 四段的第一段，送達證明照本段追蹤：
 
 | 段 | 判定證據 | 語義 |
 |----|---------|------|
 | 1 packet-produced | packet 掛卡 notes／落檔 | 起點，非完成 |
-| 2 queued-visible | `scbus send` 的 transport receipt（`receipts/<command_id>.json`，stage=accepted＋visible） | 已達收件匣——**receipt＝queued-visible 非完成** |
-| 3 consumed/accepted | 對方 recv 消費（pending→consumed）＋回 semantic ACK（`reply_type=accept`、`in_reply_to=<message_id>`） | 對方 session 承接 |
+| 2 queued-visible | `dutymail send` 的 acceptance receipt（stdout `envelopeId`＋`acceptanceSeq`＋`envelopeSha256`）。另詞形勿混：`receipts` 軸＝holder 逐條 `append` 的 append-only 運輸觀察、**send 不自動落軸**（`receipts list --address <alias>` 回空≠未寄） | 已達收件匣——**receipt＝queued-visible 非完成** |
+| 3 consumed/accepted | 對方 duty receive 處置→transport ack（delivery cursor 前進）＋回 semantic ACK（`reply_type=accept`、`in_reply_to=<parent envelope_id>`，查法＝scoped `dutymail replies --envelope-id <parent> --address <自己門牌>`——跨地址禁 unscoped，回空不蘊含語義） | 對方 session 承接 |
 | 4 ownership-restored | 對方回 `reply_type=completed`＋`result_pointer`＋`evidence` | 交接閉環，可關 correlation |
 
-- **審計錨條款**：receipt（command_id 鍵）＋ACK（correlation 鍵）兩錨同時對上才算完成證據，僅其一＝未閉環禁記完成（[conventions.md](../../governance/conventions.md) 節一對照表）。`declined`＝禁原樣重發；`needs-info`＝補件後同 correlation 重發。
-- **ack protocol 本輪不擴**：receipt 語義上限＝queued-visible（bus 無 ack／user-read 第三態）；correlated upper-layer reply 已是語義面承接，amendment 須多弧實證。
+- **審計錨條款**：receipt（envelope_id 鍵——`receipts list --address <alias> --envelope-id <id>`）＋ACK（`in_reply_to` correlation 鍵）兩錨同時對上才算完成證據，僅其一＝未閉環禁記完成（[conventions.md](../../governance/conventions.md) 節一對照表）。`declined`＝禁原樣重發；`needs-info`＝補件後同 correlation 重發。
+- **ack protocol 本輪不擴**：receipt 語義上限＝queued-visible（transport ack 非 human seen/done——人類 ✓ 恆 SC 面權威，dutymail 三線獨立）；correlated upper-layer reply 已是語義面承接，amendment 須多弧實證。
 
 **target 解析**（已知/未知分流——判定邏輯抽在 `scripts/handoff_delivery.py`，行為由單元測試鎖定）：
 
@@ -113,22 +113,26 @@ uv run python scripts/handoff_delivery.py resolve-target \
 
 - `disposition=known-direct` → 走直送第一路（先過下方 Consent gate）；`cross_ownership=true` 時 build-body 加 `--cross-ownership --consent-evidence "<AUTH 指針>"`
 - `disposition=fallback-manual`（reason：`no-match`／`ambiguous`／`target-ended`／`self`）→ 降 manual paste fallback
-- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`whoami_unavailable`——registry 來源缺席或失敗）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 scbus 直送（target 未確立＝第一路不可達）。M7 拔源後預期進入此路徑；此前 scbus 缺席或指令失敗時亦適用（session_discovery 對 OSError/CalledProcessError 皆吐同型 code）——契約預置
+- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`whoami_unavailable`——registry 來源缺席或失敗）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 dutymail 直送（target 未確立＝第一路不可達）。M7 拔源後預期進入此路徑；此前 scbus 缺席或指令失敗時亦適用（session_discovery 對 OSError/CalledProcessError 皆吐同型 code）——契約預置
 
-**第一路：scbus 直送**（已知 session；body 結構欄對齊 conventions v2；helper 的機械把關——≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → `--body ""` 空 envelope 照送＝fail-silent，禁用單行形）：
+**第一路：dutymail 直送**（已知 session；delivery body 結構欄對齊 conventions v2；helper 的機械把關——body ≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → 空 body 包進 envelope 照送＝fail-silent，禁用單行形）：
 
 ```bash
-# 段 1：先組 body——exit 非 0（consent gate／超 8192／缺欄）即停不送，顯式 || 閘勿依賴 set -e
+# 段 1：先組 delivery body——exit 非 0（consent gate／超 8192／缺欄）即停不送，顯式 || 閘勿依賴 set -e
 uv run python scripts/handoff_delivery.py build-body \
   --summary "<packet 指針＋一句話>" --source "<repo-id/card-id>" \
   --correlation-id "<uuid>" --want "session 承接後回 accept" \
-  --card-ref "<repo-id/card-id>" > .agent-tmp/handoff-body.json || return
+  --card-ref "<repo-id/card-id>" \
+  --reply-address "<本repo>-marshal" > .agent-tmp/handoff-body.json || return
 
-# 段 2：段 1 成功才送
-scbus send --to "<session_id>" --body "$(cat .agent-tmp/handoff-body.json)"
+# 段 2：段 1 成功才包 envelope v2 並送——strict grammar 正典＝[dutymail-roundtrip](../_common/dutymail-roundtrip.md)
+# （schema_version 2／message_id uuid4／from.name,harness 鍵恆在、null 是值／in_reply_to 缺席非 null；
+#   queue 模式 wake 恆 none、fallback 恆 null（值域 queue|null；非 null fallback 僅 steer/notify 模式合法——typed 驗證會拒））
+uv run python -c "import json,sys,time,uuid; json.dump({'schema_version':2,'message_id':str(uuid.uuid4()),'envelope_id':str(uuid.uuid4()),'from':{'session_id':sys.argv[1],'name':None,'harness':None},'to':{'address':sys.argv[2]},'delivery':{'mode':'queue','fallback':None,'intent':'solicit','wake':'none','fallback_used':False},'created_at_us':time.time_ns()//1000,'body':open('.agent-tmp/handoff-body.json').read().rstrip('\n')},open('.agent-tmp/handoff-envelope.json','w'))" "<本側 session_id＝whoami>" "<對方門牌>" \
+  && dutymail send --envelope-file .agent-tmp/handoff-envelope.json
 ```
 
-send stdout 的 `message_id`／`command_id` 即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。
+send stdout 的 `envelopeId`／`acceptanceSeq` 即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。門牌選址照 dutymail 地址模型（`<repo>-marshal`＝長期入口、session address＝direct channel；intent=solicit＝交接求承接回應）——跨 repo 交接 `to.address`＝`<對方 repo basename>-marshal`；指定特定 session 才用對方 session address（CLI 無 address 查詢面，自協調上下文取得；缺→降 manual paste）。body machine-header `reply_address`＝本側回信門牌（正典「reply_address 慣例」——收件方回信/查回信的落點依據；send 面無 from-address，缺此鍵＝回信只剩 out-of-band 推導）。
 
 > **msg_type 註記**：conventions v2 的 msg_type 四值枚舉（cross-repo-bug／fix-ready／verify-pass／breaking-intent）不涵蓋 handoff 交接——delivery body 以消費端約定 `handoff_delivery` 標記（先例＝proto §5.9 控制信 body 約定），不冒用枚舉值；晉升共用 schema 須 conventions.md amendment，非本 skill 權限。
 
@@ -143,7 +147,7 @@ send stdout 的 `message_id`／`command_id` 即 queued-visible 證據，記進�
 
 user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session mailbox，授權面重新設計——**不為機械化拆安全閘**：
 
-- **scbus 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權
+- **dutymail 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權
 - **跨 ownership envelope**（target `workspace_root` ≠ 本側，即 resolve-target 的 `cross_ownership`）：delivery body 必帶 consent 欄——`"consent": {"granted_by": "user", "evidence": "<AUTH 指針>"}`（`build-body --cross-ownership` 無 `--consent-evidence` 即 fail loud）。欄位語義＝審計註記：**transport consent ≠ mutation authority**，送達≠取得對方寫入權，承接後 mutation 仍歸對方主權（[conventions.md](../../governance/conventions.md) 節一 evidence 條款）
 - **同 ownership**：gate 不豁免——直送仍是 outward，逐次 AUTH 照走；僅 body 免 consent 欄
 
@@ -165,7 +169,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - **已決策（為何選 X 不選 Y）必含**（決策脈絡是最常漏的）
 - 嵌 code 必須讀回 commit 版本（drift 防護）
 - 跨 provider 必須跑機密檢查
-- 直送必過 consent gate：每次 `scbus send` 逐次 AUTH（Phase 5；跨 ownership 另帶 consent 欄）
+- 直送必過 consent gate：每次 `dutymail send` 逐次 AUTH（Phase 5；跨 ownership 另帶 consent 欄）
 - 直送後照 completion 四段記錄送達狀態（receipt／ACK 證據進交接卡 notes）
 
 ### 禁止
@@ -174,15 +178,15 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - ❌ 把用戶沒交代的決策硬擠進去
 - ❌ 跨 provider 未跑機密檢查就產出
 - ❌ 處理 usage resume（那是 `/at`）
-- ❌ 無 user 逐次授權的 `scbus send`（outward action；skill 條文≠授權）
+- ❌ 無 user 逐次授權的 `dutymail send`（outward action；skill 條文≠授權）
 - ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
-- ❌ discovery exit 3（`source_unavailable`／`whoami_unavailable`）仍嘗試 scbus 直送——降 manual paste fallback（reason=`discovery-unavailable`，Phase 5 consumer contract）
+- ❌ discovery exit 3（`source_unavailable`／`whoami_unavailable`）仍嘗試 dutymail 直送——降 manual paste fallback（reason=`discovery-unavailable`，Phase 5 consumer contract）
 - ❌ 交接對象為排程／autonomous session 時，把 holder bind／`duty_receive` 處置面列入交接指示（真實案例：cron session 搶章吃掉催辦信——holder 態觀察〔status 盤點〕可帶，bind／收信處置指示禁入）
 
 ## 流程位置
 
 ```
-（主 session 在忙 / 跨家族第二意見 / 跨 repo）→ /handoff [接手方] → delivery：已知 session 走 scbus 直送（consent gate 後）／否則 manual paste fallback → completion 四段追蹤
+（主 session 在忙 / 跨家族第二意見 / 跨 repo）→ /handoff [接手方] → delivery：已知 session 走 dutymail 直送（consent gate 後）／否則 manual paste fallback → completion 四段追蹤
 ```
 
 第二意見走跨家族：`/handoff` 產 self-contained 工單 → bridge 派發（`task --family muse|codex`）→ 對方 findings 貼回原 session → `/judge-review` 評估採納（獨立性階梯見 [review-engine](../review-engine/SKILL.md) 執行預設點 7——跨家族是 systematic bias 的升級軸）。非第二意見的一般交接 → 接手方回覆 → 貼回原 session → `/judge-review` 評估採納。
