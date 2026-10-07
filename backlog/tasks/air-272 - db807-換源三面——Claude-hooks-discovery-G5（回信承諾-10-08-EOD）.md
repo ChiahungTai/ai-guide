@@ -1,10 +1,10 @@
 ---
 id: AIR-272
 title: db807 換源三面——Claude-hooks/discovery/G5（回信承諾 10-08 EOD）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 04:09'
-updated_date: '2026-10-07 08:40'
+updated_date: '2026-10-07 08:44'
 labels:
   - dutymail
 dependencies: []
@@ -38,12 +38,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 settings.json 三條 scbus hooks 換 duty 兩條（SessionEnd 條目移除），rg scbus 歸零
-- [ ] #2 AC2 改前備份於 .agent-tmp、回滾路徑成文
-- [ ] #3 AC3 G5 措辭三處落地（ownership 兩處＋roundtrip 一行）
-- [ ] #4 AC4 面2 折衷案：fail-closed 驗證實跑＋fresh-session probe 草擬成文＋memory 三檔 disposition
-- [ ] #5 AC5 muse+codex consultation deltas 落實或逐條回饋
-- [ ] #6 AC6 bi+judge+post-build 全鏈收斂＋回信 bridge 交付
+- [x] #1 AC1 settings.json 三條 scbus hooks 換 duty 兩條（SessionEnd 條目移除），rg scbus 歸零
+- [x] #2 AC2 改前備份於 .agent-tmp、回滾路徑成文
+- [x] #3 AC3 G5 措辭三處落地（ownership 兩處＋roundtrip 一行）
+- [x] #4 AC4 面2 折衷案：fail-closed 驗證實跑＋fresh-session probe 草擬成文＋memory 三檔 disposition
+- [x] #5 AC5 muse+codex consultation deltas 落實或逐條回饋
+- [x] #6 AC6 bi+judge+post-build 全鏈收斂＋回信 bridge 交付
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -70,3 +70,18 @@ P3 Negative evidence：跨 session 邊界 stat -f %m ~/.sc-router/registry.db mt
 
 【AC4 判定更新】probe 步驟（本 note）＋handoff 缺口 durable 成文（本 note＋AIR-273）＋fail-closed 實跑（author 證據）＋memory disposition（codex PASS）→ AC4 完成。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+db807 換源三面落地：面1 settings.json 三條 scbus hooks 換 duty 兩條（SessionEnd 刪；rg scbus 歸零；備份在場）；面3 G5 措辭三處＋消歧括註；面2 折衷案 c（零 code——fail-closed exit-3 實跑＋handoff 缺口成文開 AIR-273＋memory 三檔 disposition 池 commit 5f74cfc）。全鏈：consultation（muse+codex 五題）→實作→bi（muse approve-with-findings/codex reject AC4 durability）→probe 步驟成文＋AIR-273 補齊→雙腿解除條件滿足。pending-user-probe 三項（需真實 CC session）已成文於卡 notes——顯性未決，非結案阻斷。commit 975cecf6。
+
+```mermaid
+flowchart LR
+  s["scbus 三條舊鈴"] --> w["換 duty 兩條×2 位置"]
+  w --> v["rg scbus 歸零＋jq 綠"]
+  g["G5 措辭三處"] --> v
+  v --> p["probe 三項 pending-user"]
+  v --> c["回信 bridge current-milestone closure"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
