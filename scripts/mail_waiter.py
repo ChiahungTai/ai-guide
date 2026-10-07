@@ -186,16 +186,23 @@ def _entry_cursor(entries, address):
 
 # ── 觀察軸 face 包裝（argv 凍結語義；allowlist＝wait/events）───────────
 
+# 喚醒述語收窄（AIR-268 AC3 / tri Q5）：只認 accepted（新信落地）事件——
+# 外箱與自家的 bound/prepared/acked 處理波不喚醒（live 實測連續零動作回音）。
+# --kind 綁進 cursor（dutymail 凍結語義）——re-arm 一致性隨 cursor 攜帶。
+WAKE_EVENT_KIND = "accepted"
+
 
 def _wait_face_argv(address, cursor, deadline_ms):
     return [
         WAIT_FACE, "--address", address, "--cursor", cursor,
+        "--kind", WAKE_EVENT_KIND,
         "--deadline-ms", str(int(deadline_ms)),
     ]
 
 
 def _events_face_argv(address, cursor):
     argv = [EVENTS_FACE, "--address", address,
+            "--kind", WAKE_EVENT_KIND,
             "--limit", str(EVENTS_PAGE_LIMIT)]
     if cursor is not None:
         argv += ["--cursor", cursor]

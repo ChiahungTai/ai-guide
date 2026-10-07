@@ -124,15 +124,29 @@ def _run(base, runner, addresses=(ADDR,), generation=1):
 
 def _wait_face_call(alias=ADDR, cursor="tok0", deadline_ms=60000):
     return ["wait", "--address", alias, "--cursor", cursor,
-            "--deadline-ms", str(deadline_ms)]
+            "--kind", "accepted", "--deadline-ms", str(deadline_ms)]
 
 
 def _events_face_call(alias=ADDR, cursor=None):
-    argv = ["events", "--address", alias, "--limit",
-            str(mod.EVENTS_PAGE_LIMIT)]
+    argv = ["events", "--address", alias, "--kind", "accepted",
+            "--limit", str(mod.EVENTS_PAGE_LIMIT)]
     if cursor is not None:
         argv += ["--cursor", cursor]
     return argv
+
+
+# ── K：喚醒述語收窄釘（AIR-268 AC3——--kind accepted 全 face）──────────
+
+
+def test_k_kind_filter_pinned_on_all_faces():
+    """wait/events argv 恆帶 --kind accepted——外箱/自家處理波（bound/
+    prepared/acked）不喚醒（live 實測連續零動作回音的修正；--kind 綁進
+    cursor，re-arm 一致性隨 cursor 攜帶）。"""
+    w = mod._wait_face_argv(ADDR, "tok0", 60000)
+    assert "--kind" in w and w[w.index("--kind") + 1] == "accepted"
+    for cursor in (None, "tok9"):
+        e = mod._events_face_argv(ADDR, cursor)
+        assert "--kind" in e and e[e.index("--kind") + 1] == "accepted"
 
 
 # ── W1/W2：喚醒契約＋timeout 消化 ──────────────────────────────────────
