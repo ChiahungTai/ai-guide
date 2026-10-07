@@ -15,7 +15,7 @@ description: "當設計或審查模組邊界、依賴、共用契約、重用、
 
 ## 一、設計視角
 
-三 lens 對照（rules/design-thinking「架構三視角」語義落點）：政策不依賴外部細節＝「依賴規則」；按語義與責任定 bounded context＝「Bounded context 與共用契約」；先問消費者行為＝「Use case 與責任」。
+三 lens 對照（rules/design-thinking「決策分級與三視角」節語義落點）：政策不依賴外部細節＝「依賴規則」；按語義與責任定 bounded context＝「Bounded context 與共用契約」；先問消費者行為＝「Use case 與責任」。
 
 ### Use case 與責任
 

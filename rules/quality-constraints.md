@@ -6,17 +6,17 @@ harness-scope: neutral
 
 ## 完整交付標準
 
-方向明確就做到可用：核心功能、相關測試、邊界處理、文檔同步；完成後檢查變更所在與上層 AGENTS.md 的架構/API/職責描述，必要時同步。需方案選擇、需求不明或風險裁決時請示。
+方向明確就做到可用：核心功能、相關測試、邊界處理、文檔同步；完成後核對上層 AGENTS.md 的架構/API/職責描述必要時同步。需方案選擇、需求不明或風險裁決時請示。
 
 ## 數據完整性優先（Crash-Only Design）
 
-損壞數據比缺失更危險。無效輸入、溢出、轉型/解析失敗立即崩潰，禁吞錯續行或修補損壞輸入；驗非空、必要欄位、NaN、inf。適用量化交易、高頻、實時風控、批次；不適用長會話、複雜 UI 狀態、UX 優先互動。設計方法與誤用邊界見 validation-strategy skill「crash-only 邊界」。
+損壞數據比缺失更危險。無效輸入、溢出、轉型/解析失敗立即崩潰，禁吞錯續行或修補損壞輸入；驗非空、必要欄位、NaN、inf。適用量化交易/高頻/實時風控/批次；不適用長會話、複雜 UI 狀態、UX 優先互動；設計方法與誤用邊界＝validation-strategy skill「crash-only 邊界」。
 
 寫入保障必須至少匹配下游讀取契約：機械依賴的資料欄位，成為 authoritative state 前必須通過 consumer-equivalent 的機械驗證（fail-closed）；LLM 可決定語義值，自由文字格式不得單獨承擔機械契約。寫入權是時間函數：機械讀者上線才收緊對應面；人／LLM-only 記錄面不因此 schema 化（自由度明文保護）。
 
 ## 派生產物投影紀律（upstream 追溯）
 
-派生產物須可追溯 upstream：manifest 宣告 upstream 清單＋content hash 快照（projection freshness check）。upstream 變更未重驗＝stale，**不得以 current 姿態呈現**。
+派生產物須可追溯 upstream：manifest 宣告 upstream 清單＋content hash 快照（projection freshness check）；upstream 變更未重驗＝stale，**不得以 current 姿態呈現**。
 
 ## 主動揭露錯誤（Fail Loud）
 
@@ -24,7 +24,7 @@ harness-scope: neutral
 
 ### 消費端驗證＋漸進深度
 
-先定位主要消費者並跑完整流程（測試集範圍須機械反查；symbol 命中≠接線被驅動）；一律 DEPTH-MIN→SAMPLE→FULL，失敗先分析/修正並回 MIN，禁直跑 FULL 或盲重跑。細則見 validation-strategy skill；證據分層見 acceptance-evidence rule。
+先定位主要消費者並跑完整流程；symbol 命中≠接線被驅動，測試集範圍須機械反查；一律 DEPTH-MIN→SAMPLE→FULL，失敗先分析並回 MIN，禁直跑 FULL 或盲重跑——細則＝validation-strategy skill。
 
 ## 多步驟任務檢查點
 
