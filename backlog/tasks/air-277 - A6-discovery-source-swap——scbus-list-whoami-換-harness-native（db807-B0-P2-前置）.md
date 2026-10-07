@@ -1,10 +1,10 @@
 ---
 id: AIR-277
 title: A6 discovery source swap——scbus list/whoami 換 harness-native（db807 B0/P2 前置）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 21:44'
-updated_date: '2026-10-07 21:50'
+updated_date: '2026-10-07 23:09'
 labels:
   - dutymail
 dependencies: []
@@ -28,3 +28,29 @@ flowchart LR
   h --> ok["M7 拔源安全"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 list 換源 harness-native sqlite＋zcode-only typed 宣稱三處——✅
+- [x] #2 whoami workspace 對照＋fail-closed exit 3 語義保留——✅ 兩腿一致確認
+- [x] #3 消費端介面零破壞（八欄 row＋registry_total）——✅ codex 軸4
+- [x] #4 judge 三 caveat 修全落＋70 passed／全套 3485 passed——✅ 錨點親驗
+- [x] #5 ledger＋receipt 落盤——✅ .review/air-277.md＋.agent-tmp/post-build-receipts/air-277.json
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【A6 交付收口——merge e2e0888c】3 檔 615+/344−；bi job-muyosb3l（muse approve 3 Minor）／job-muyosb4w（codex REJECT 3M1m）；judge job-muyozl5n approve-with-findings（muse 勝：store 無存活訊號/caller-identity API 係設計層缺失非實作錯；必修降為三處 docstring 宣稱誠實化——live=未封存非存活觀測、whoami=活躍度代理非身份保證、directory 精確匹配未正規化）。receipt=.agent-tmp/post-build-receipts/air-277.json。跟進兩卡已開（M7 拔源前完成）。【調查紀錄】本弧曾誤記 bi/judge 已跑（壓縮混記）——重派補跑， Chain 完整性以落盤 job 為準。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  s["scbus registry 來源"] --> h["harness-native sqlite 掃描＋zcode-only 宣稱"] --> j["judge：muse 勝三 caveat 誠實化"] --> m["merge main e2e0888c Done"]
+  m -.-> f1["跟進：inflight/SKILL 適配卡"]
+  m -.-> f2["跟進：caller-identity＋存活訊號探勘卡"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
