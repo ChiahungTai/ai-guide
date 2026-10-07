@@ -1,10 +1,10 @@
 ---
 id: AIR-274
 title: dutymail binary 解析根治——stable executable face（tri 合成設計）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 11:26'
-updated_date: '2026-10-07 11:26'
+updated_date: '2026-10-07 13:13'
 labels:
   - dutymail
 dependencies: []
@@ -36,11 +36,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 BinaryMissing typed error（resolver 全 miss 時拋出，有別於 store-absent 合法軟 path）
-- [ ] #2 AC2 hook 面 consecutive-miss 計數（state/sidecar）達門檻升級 surface 可見 advisory；exit 恆 0
-- [ ] #3 AC3 CLI 面接 BinaryMissing → typed exit（不再 traceback）
-- [ ] #4 AC4 測試：typed error/advisory/CLI 三面＋既有 103 案零回歸
-- [ ] #5 AC5 bi+judge（若分歧）+post-build 全鏈
+- [x] #1 AC1 BinaryMissing typed error（resolver 全 miss 時拋出，有別於 store-absent 合法軟 path）
+- [x] #2 AC2 hook 面 consecutive-miss 計數（state/sidecar）達門檻升級 surface 可見 advisory；exit 恆 0
+- [x] #3 AC3 CLI 面接 BinaryMissing → typed exit（不再 traceback）
+- [x] #4 AC4 測試：typed error/advisory/CLI 三面＋既有 103 案零回歸
+- [x] #5 AC5 bi+judge（若分歧）+post-build 全鏈
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -50,3 +50,17 @@ flowchart LR
 〔已決策勿重辯：①tri 合成（muse job-muy09tfy/codex job-muy09ti3/GLM-5.3 job-muy09u4u）——根修方向＝bridge stable executable face；無 postinstall 機制（三 harness 皆無 lifecycle）故 provisioner＝bridge 自有 idempotent 指令/release SOP 步驟 ②本卡只做 M1（消音缺口服務）；M2 歸 bridge（另信請求）；M3 綁 M2 後另弧 ③bridge_sweeper out-of-scope（解析目標不同）④fail-soft 修正窄幅：不翻 exit code（hook 非零擋 prompt），消滅靜默——BinaryMissing typed error＋consecutive-miss advisory〕
 〔範圍：動 scripts/duty_receive.py＋hooks/duty_receive.py＋tests/test_duty_receive.py；不動其他〕
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+M1 消音缺口服務落地：BinaryMissing typed error（resolver 全 miss 分流，store-absent 合法軟 path 零變）＋hook consecutive-miss advisory（≥3 門檻、exit 恆 0、成功 face 歸零）＋CLI typed exit 1＋sidecar non-negative gate。全鏈：tri 合成（muse/codex/GLM-5.3）→實作→bi（muse approve-with-findings/codex reject stale-count Critical）→GLM-5.3 judge 裁決（stale-count Major 必修＋負計數 gate 共用 helper）→修正→followup 114/3477 全綠。commit e9a332fd。M2（bridge provisioner 請求已寄 seq 26）／M3（cutover）待後續。
+
+```mermaid
+flowchart LR
+  m["binary 全 miss"] --> b["BinaryMissing typed"]
+  b --> c["hook 計數 <3 靜默 ≥3 advisory"]
+  c --> e["exit 恆 0 非靜默漏信"]
+  e --> f["成功 face 歸零重計"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
