@@ -31,7 +31,8 @@ stdout `{"schemaVersion":1,"ok":true,"result":{...}}`；typed failure＝
 stderr `{"schemaVersion":1,"ok":false,"error":{code,class,message,
 retryable}}`＋空 stdout，exit class 2 usage／3 admission／4 storage／
 5 fencing／6 wait-timeout。binary 解析順序：env DUTYMAIL_BIN →
-PATH `dutymail` → plugin cache 版本最新（禁手 pin 版化路徑）。
+PATH `dutymail` → zcode plugin cache → claude plugin cache（各 rung
+取版本最新；禁手 pin 版化路徑）。
 
 測試形態：核心函式吃 injectable runner（`runner(argv) -> stdout`
 str；typed failure 以 DutymailFaceError raise）——fake dutymail 回
@@ -57,6 +58,11 @@ SURFACE_ID_LIMIT = 3  # surface 摘要行 envelope_id 列表上限（B′：全�
 DUTYMAIL_TIMEOUT_SECONDS = 30
 RUNNER_ENV = "DUTYMAIL_BIN"
 PLUGIN_CACHE_BASE = "~/.zcode/cli/plugins/cache/delegate-market/delegate"
+# 第四 rung（AIR-273）：CC 端 hooks 的 binary 存活不依賴 zcode cache——
+# zcode cache 清掉時 fallback 到 claude plugin cache（形態同第三 rung）。
+CLAUDE_PLUGIN_CACHE_BASE = (
+    "~/.claude/plugins/cache/delegate-market/delegate"
+)
 PLUGIN_BIN_PATTERN = os.path.join(
     "*", "bin", "aarch64-apple-darwin", "dutymail"
 )
@@ -121,7 +127,7 @@ class HolderConflict(RuntimeError):
     （status 與 bind 之間 race window 内他方先 bind——epoch 已前進）。"""
 
 
-# ── binary 解析（DUTYMAIL_BIN → PATH → plugin cache 版本最新）────────
+# ── binary 解析（DUTYMAIL_BIN → PATH → zcode cache → claude cache 版本最新）──
 
 
 def _version_key(candidate):
@@ -147,14 +153,18 @@ def _resolve_binary():
     on_path = shutil.which("dutymail")
     if on_path:
         return on_path
-    base = os.path.expanduser(PLUGIN_CACHE_BASE)
-    candidates = glob.glob(os.path.join(base, PLUGIN_BIN_PATTERN))
-    if not candidates:
-        raise RuntimeError(
-            "dutymail binary not found（" + RUNNER_ENV
-            + " / PATH / plugin cache 皆缺席）"
+    # cache rungs 依序（zcode 先、claude 後——既有優先序零變，AIR-273
+    # 第四 rung 只在 candidates 追加）；每 rung 內取版本最新。
+    for base in (PLUGIN_CACHE_BASE, CLAUDE_PLUGIN_CACHE_BASE):
+        candidates = glob.glob(
+            os.path.join(os.path.expanduser(base), PLUGIN_BIN_PATTERN)
         )
-    return max(candidates, key=_version_key)
+        if candidates:
+            return max(candidates, key=_version_key)
+    raise RuntimeError(
+        "dutymail binary not found（" + RUNNER_ENV
+        + " / PATH / zcode・claude plugin cache 皆缺席）"
+    )
 
 
 def _default_runner(argv):

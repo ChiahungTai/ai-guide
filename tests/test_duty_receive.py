@@ -206,7 +206,7 @@ def state_file(tmp_path):
     return str(tmp_path / "state" / "sess-1.json")
 
 
-# ── binary 解析順序（DUTYMAIL_BIN → PATH → plugin cache 最新版）────────
+# ── binary 解析順序（DUTYMAIL_BIN → PATH → zcode cache → claude cache）──
 
 
 class TestBinaryResolution:
@@ -233,6 +233,51 @@ class TestBinaryResolution:
         got = mod._resolve_binary()
         assert got.endswith("/10.0.0/bin/aarch64-apple-darwin/dutymail")
         assert "/3.1.0/" not in got  # 禁手 pin 版化路徑——數值版本排序
+
+    def test_claude_cache_fourth_rung(self, monkeypatch):
+        """第四 rung（AIR-273）：zcode cache 缺席 → claude plugin cache
+        glob（形態同第三 rung——版本排序取最新）。"""
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(
+            mod.os.path, "expanduser",
+            lambda p: "/fake/zc" if ".zcode" in p else "/fake/cc",
+        )
+
+        def fake_glob(pattern):
+            if "/fake/zc" in pattern:
+                return []
+            return [
+                "/fake/cc/delegate/3.0.9/bin/aarch64-apple-darwin/dutymail",
+                "/fake/cc/delegate/4.2.0/bin/aarch64-apple-darwin/dutymail",
+            ]
+
+        monkeypatch.setattr(mod.glob, "glob", fake_glob)
+        got = mod._resolve_binary()
+        assert got.endswith("/4.2.0/bin/aarch64-apple-darwin/dutymail")
+
+    def test_zcode_cache_precedes_claude_cache(self, monkeypatch):
+        """優先序釘死：兩 cache 皆在場 → zcode rung 勝（既有行為零變——
+        第四 rung 只在 candidates 追加，不重排；claude 版本較新也不搶）。"""
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(
+            mod.os.path, "expanduser",
+            lambda p: "/fake/zc" if ".zcode" in p else "/fake/cc",
+        )
+
+        def fake_glob(pattern):
+            if "/fake/zc" in pattern:
+                return [
+                    "/fake/zc/delegate/3.1.0/bin/aarch64-apple-darwin/dutymail"
+                ]
+            return [
+                "/fake/cc/delegate/99.0.0/bin/aarch64-apple-darwin/dutymail"
+            ]
+
+        monkeypatch.setattr(mod.glob, "glob", fake_glob)
+        got = mod._resolve_binary()
+        assert got == "/fake/zc/delegate/3.1.0/bin/aarch64-apple-darwin/dutymail"
 
     def test_none_found_raises(self, monkeypatch):
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)

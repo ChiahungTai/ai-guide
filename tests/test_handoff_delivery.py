@@ -4,9 +4,13 @@
 - completion 四段：packet-produced→queued-visible→consumed/accepted→
   ownership-restored；receipt＝queued-visible 非完成（scbus proto 無 ack／
   user-read 第三態，transport receipt ≠ semantic ACK 禁互升格）。
-- target 解析：已知 session 第一路＝scbus send；未知／歧義／self／ended
-  fail-closed 降 manual paste fallback；rows 形狀＝session_discovery seam
-  正規化 rows（`label` 鍵——AIR-254.1）。
+- target 解析：已知 session 第一路＝scbus send；未知／歧義／self／ended／
+  discovery-unavailable fail-closed 降 manual paste fallback；rows 形狀＝
+  session_discovery seam 正規化 rows（`label` 鍵——AIR-254.1）。
+- consumer contract（AIR-273）：discovery exit 3（source_unavailable／
+  whoami_unavailable）＝源缺席 → FALLBACK_MANUAL（reason=
+  discovery-unavailable）、直送第一路不可達——即使 rows 內容形式上
+  match 也不得走 known-direct。
 - consent gate：跨 ownership envelope 直送必帶 consent.evidence（AI 發起
   逐次授權的 AUTH 指針）；bus 凍結面 body ≤8192。
 - 審計錨條款：完成宣稱須 receipt（command_id）＋ACK（correlation）同時對上。
@@ -252,6 +256,45 @@ class TestResolveTarget:
                 "", [_row()], own_session_id="s", own_workspace_root="/w"
             )
 
+    def test_discovery_unavailable_falls_back_no_direct_send(self) -> None:
+        """consumer contract（AIR-273）：discovery exit 3（source_unavailable
+        ／whoami_unavailable typed envelope）＝源缺席 → FALLBACK_MANUAL
+        （reason=discovery-unavailable）、非 known-direct——直送第一路
+        不可達（resolve_target 純邏輯零 I/O：分流即送信判準）。"""
+        r = _mod.resolve_target(
+            "sess-a",
+            [],  # rows 不可得——discovery 源缺席
+            own_session_id="s",
+            own_workspace_root="/w",
+            discovery_unavailable=True,
+        )
+        assert r.disposition == _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.reason == "discovery-unavailable"
+        assert r.session_id is None
+        assert r.label is None
+        assert r.cross_ownership is False
+
+    def test_discovery_unavailable_short_circuits_before_rows_match(self) -> None:
+        """flag 語義＝源缺席時 rows 不可信——形式上 live match 也不得走
+        known-direct（禁 direct send 的機械面）。"""
+        r = _mod.resolve_target(
+            "sess-a",
+            [_row()],  # 形式上 match——但 discovery 已 unavailable
+            own_session_id="sess-other",
+            own_workspace_root="/w",
+            discovery_unavailable=True,
+        )
+        assert r.disposition == _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.reason == "discovery-unavailable"
+
+    def test_empty_rows_without_flag_still_no_match(self) -> None:
+        """既有契約不變：空 rows 無 flag（registry 空非源缺席）→ no-match。"""
+        r = _mod.resolve_target(
+            "ghost", [], own_session_id="s", own_workspace_root="/w"
+        )
+        assert r.disposition == _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.reason == "no-match"
+
 
 # ---------------------------------------------------------------------------
 # delivery body 組裝（conventions.md 節一 v2 結構欄對齊）
@@ -440,3 +483,37 @@ class TestCli:
             "/w",
         )
         assert r.returncode == 2
+
+    def test_resolve_target_cli_discovery_unavailable(self) -> None:
+        """consumer contract CLI 面（AIR-273）：--discovery-unavailable →
+        fallback-manual（reason=discovery-unavailable）——無 rows-file 也
+        可跑（源缺席場景的降級入口）。"""
+        r = _run_cli(
+            "resolve-target",
+            "--target",
+            "sess-a",
+            "--discovery-unavailable",
+            "--own-session-id",
+            "sess-me",
+            "--own-workspace-root",
+            "/w",
+        )
+        assert r.returncode == 0, r.stderr
+        parsed = json.loads(r.stdout)
+        assert parsed["disposition"] == "fallback-manual"
+        assert parsed["reason"] == "discovery-unavailable"
+
+    def test_resolve_target_cli_without_rows_file_fails_loud(self) -> None:
+        """--rows-file 缺席且無 --discovery-unavailable＝contract 錯（exit 2）——
+        非靜默當空 registry。"""
+        r = _run_cli(
+            "resolve-target",
+            "--target",
+            "sess-a",
+            "--own-session-id",
+            "sess-me",
+            "--own-workspace-root",
+            "/w",
+        )
+        assert r.returncode == 2
+        assert "rows-file" in r.stderr

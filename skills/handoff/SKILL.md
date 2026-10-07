@@ -113,6 +113,7 @@ uv run python scripts/handoff_delivery.py resolve-target \
 
 - `disposition=known-direct` → 走直送第一路（先過下方 Consent gate）；`cross_ownership=true` 時 build-body 加 `--cross-ownership --consent-evidence "<AUTH 指針>"`
 - `disposition=fallback-manual`（reason：`no-match`／`ambiguous`／`target-ended`／`self`）→ 降 manual paste fallback
+- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`whoami_unavailable`——registry 來源缺席或失敗）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 scbus 直送（target 未確立＝第一路不可達）。M7 拔源後預期進入此路徑；此前 scbus 缺席或指令失敗時亦適用（session_discovery 對 OSError/CalledProcessError 皆吐同型 code）——契約預置
 
 **第一路：scbus 直送**（已知 session；body 結構欄對齊 conventions v2；helper 的機械把關——≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → `--body ""` 空 envelope 照送＝fail-silent，禁用單行形）：
 
@@ -133,7 +134,7 @@ send stdout 的 `message_id`／`command_id` 即 queued-visible 證據，記進�
 
 **fallback：manual paste**（直送 unavailable 時的降級路徑，非預設）：
 
-- 觸發條件＝`fallback-manual`（對方 session 未誕生／跨 provider 無法進 registry／ambiguous／ended）——此時印 code block 由 user 手貼
+- 觸發條件＝`fallback-manual`（對方 session 未誕生／跨 provider 無法進 registry／ambiguous／ended／discovery 源缺席——exit 3，見上方 consumer contract）——此時印 code block 由 user 手貼
 - user 親手貼＝隱式授權載體但**無送達證明**：completion 停在第 1 段 packet-produced＋user 見證，禁記 queued-visible 以上任一段
 
 > **同repo 預設路徑標記（tri 裁決 4，勿重辯）**：同repo 預設＝新 session 尚未存在於 registry → 天然落 manual paste fallback，現況路徑本輪不斷路；「同 repo 交接意圖遷 Marshal continuation」方向已定，等該路徑 dogfood 後再收斂，本節僅標記。
@@ -175,6 +176,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - ❌ 處理 usage resume（那是 `/at`）
 - ❌ 無 user 逐次授權的 `scbus send`（outward action；skill 條文≠授權）
 - ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
+- ❌ discovery exit 3（`source_unavailable`／`whoami_unavailable`）仍嘗試 scbus 直送——降 manual paste fallback（reason=`discovery-unavailable`，Phase 5 consumer contract）
 - ❌ 交接對象為排程／autonomous session 時，把 holder bind／`duty_receive` 處置面列入交接指示（真實案例：cron session 搶章吃掉催辦信——holder 態觀察〔status 盤點〕可帶，bind／收信處置指示禁入）
 
 ## 流程位置

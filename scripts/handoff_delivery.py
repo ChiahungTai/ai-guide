@@ -12,8 +12,8 @@
 - receipt＝queued-visible 非完成（scbus proto §5.7 兩 stage 一次寫成、§5.8
   consume 兩態、無 ack／user-read 第三態）；transport receipt ≠ semantic ACK，
   禁互升格（governance/conventions.md 節一對照表＝審計錨）。
-- 已知 session 第一路＝scbus send；未知／歧義／self／ended fail-closed 降
-  manual paste fallback。
+- 已知 session 第一路＝scbus send；未知／歧義／self／ended／
+  discovery-unavailable fail-closed 降 manual paste fallback。
 - scbus 直送＝outward action（AI 發起逐次授權，rules/outward-action-consent）；
   跨 ownership envelope 的 delivery body 必帶 consent.evidence（AUTH 指針）。
 - 訊息結構欄對齊 governance/conventions.md 節一 v2（want/card_ref/
@@ -188,6 +188,7 @@ def resolve_target(
     *,
     own_session_id: str,
     own_workspace_root: str | None,
+    discovery_unavailable: bool = False,
 ) -> TargetResolution:
     """把交接目標對 session 發現 rows 解析成已知直送／fallback 分流。
 
@@ -196,9 +197,25 @@ def resolve_target(
     session_id 精確→label 精確；ended 列不當 target；多列 live＝ambiguous
     fail-closed（與 scbus send 對撞 id fail-closed 同姿）；own ownership
     無法確立時 cross_ownership 恆 True（consent gate fail-closed）。
+
+    discovery_unavailable=True（AIR-273 consumer contract）＝session_discovery
+    以 exit 3 typed envelope 終止（source_unavailable／whoami_unavailable）
+    ——discovery 源缺席，rows 不可得也不可信：跳過匹配逕降 fallback-manual
+    （reason=discovery-unavailable），直送第一路不可達（禁 direct send）。
     """
     if not isinstance(target, str) or not target:
         raise DeliveryContractError("target 不得為空——交接目標須可指認")
+
+    if discovery_unavailable:
+        return TargetResolution(
+            disposition=TargetDisposition.FALLBACK_MANUAL,
+            reason="discovery-unavailable",
+            session_id=None,
+            label=None,
+            harness=None,
+            workspace_root=None,
+            cross_ownership=False,
+        )
 
     matches = [
         r
@@ -339,9 +356,17 @@ def _cli(argv: list[str]) -> int:
         help="target＋session_discovery rows → 直送/fallback 分流（stdout JSON）",
     )
     p_resolve.add_argument("--target", required=True)
-    p_resolve.add_argument("--rows-file", required=True)
+    p_resolve.add_argument("--rows-file", default=None)
     p_resolve.add_argument("--own-session-id", required=True)
     p_resolve.add_argument("--own-workspace-root", default=None)
+    p_resolve.add_argument(
+        "--discovery-unavailable",
+        action="store_true",
+        help=(
+            "session_discovery exit 3（source_unavailable／whoami_unavailable）"
+            "——跳過 rows 解析，逕降 fallback-manual（reason=discovery-unavailable）"
+        ),
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -376,18 +401,28 @@ def _cli(argv: list[str]) -> int:
                 )
             )
         else:
-            loaded = json.loads(Path(args.rows_file).read_text())
-            # seam `list --json` 輸出＝{"generated_at", "rows": [...], ...}；裸 rows 陣列亦收。
-            rows = loaded.get("rows") if isinstance(loaded, dict) else loaded
-            if not isinstance(rows, list):
-                raise DeliveryContractError(
-                    "rows-file 須為 `session_discovery list --json` 輸出（rows 物件）或 rows 陣列"
-                )
+            if args.discovery_unavailable:
+                rows: list[dict] = []
+            else:
+                if args.rows_file is None:
+                    raise DeliveryContractError(
+                        "rows-file 必填——discovery 可用時須餵 "
+                        "`session_discovery list --json` 輸出（源缺席改用 "
+                        "--discovery-unavailable）"
+                    )
+                loaded = json.loads(Path(args.rows_file).read_text())
+                # seam `list --json` 輸出＝{"generated_at", "rows": [...], ...}；裸 rows 陣列亦收。
+                rows = loaded.get("rows") if isinstance(loaded, dict) else loaded
+                if not isinstance(rows, list):
+                    raise DeliveryContractError(
+                        "rows-file 須為 `session_discovery list --json` 輸出（rows 物件）或 rows 陣列"
+                    )
             r = resolve_target(
                 args.target,
                 rows,
                 own_session_id=args.own_session_id,
                 own_workspace_root=args.own_workspace_root,
+                discovery_unavailable=args.discovery_unavailable,
             )
             print(
                 json.dumps(
