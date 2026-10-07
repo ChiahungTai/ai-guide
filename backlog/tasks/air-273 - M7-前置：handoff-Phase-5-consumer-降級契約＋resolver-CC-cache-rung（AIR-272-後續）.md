@@ -1,12 +1,16 @@
 ---
 id: AIR-273
 title: M7 前置：handoff Phase 5 consumer 降級契約＋resolver CC-cache rung（AIR-272 後續）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-07 08:40'
+updated_date: '2026-10-07 10:25'
 labels:
   - dutymail
 dependencies: []
+references:
+  - scripts/duty_receive.py
+  - skills/handoff/SKILL.md
 ordinal: 264000
 ---
 
