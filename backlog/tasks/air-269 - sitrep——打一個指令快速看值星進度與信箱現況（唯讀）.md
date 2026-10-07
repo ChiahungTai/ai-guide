@@ -1,10 +1,10 @@
 ---
 id: AIR-269
 title: sitrep——打一個指令快速看值星進度與信箱現況（唯讀）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 01:46'
-updated_date: '2026-10-07 02:46'
+updated_date: '2026-10-07 04:06'
 labels:
   - skills
 dependencies: []
@@ -39,13 +39,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 /sitrep 觸發輸出七面各一行，異常面才展開
-- [ ] #2 AC2 每個資料面引用的命令實跑可過（機械來源驗證，附輸出）
-- [ ] #3 AC3 紅線節在場——唯讀宣告＋不處置清單（信/watcher/job/sub 四項）
-- [ ] #4 AC4 bridge 與 subagent 兩面帶運行時間＋產出活性（最後活動距今＋增長趨勢），terminal 未收／靜默完成會現形
-- [ ] #5 AC5 skills/AGENTS.md 索引行在場
-- [ ] #6 AC6 frontmatter desc 值 ≤1024 chars（scripts/scan_skills_desc.py 過）
-- [ ] #7 AC7 muse+codex 審查無 blocker（落地前審查閘）
+- [x] #1 AC1 /sitrep 觸發輸出七面各一行，異常面才展開
+- [x] #2 AC2 每個資料面引用的命令實跑可過（機械來源驗證，附輸出）
+- [x] #3 AC3 紅線節在場——唯讀宣告＋不處置清單（信/watcher/job/sub 四項）
+- [x] #4 AC4 bridge 與 subagent 兩面帶運行時間＋產出活性（最後活動距今＋增長趨勢），terminal 未收／靜默完成會現形
+- [x] #5 AC5 skills/AGENTS.md 索引行在場
+- [x] #6 AC6 frontmatter desc 值 ≤1024 chars（scripts/scan_skills_desc.py 過）
+- [x] #7 AC7 muse+codex 審查無 blocker（落地前審查閘）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -61,3 +61,17 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 post-build 收斂態：ledger .review/air-269.md findings=5 全 verified ✅（lint converged PASS，未決=0）；review=bi muse job-muxh8jwo-dqpy4w＋codex job-muxh8k01-yxm5b0（分歧）→GLM-5.3 judge job-muxhns3i-xbphl5 5/5 採納＋十處逐字修正→apply 完成→followup 全 verified＋consistency 六維零 fail＋面5 sweep 實跑複驗 22s exit 0（agent_fd435fcf）；回執四欄：classification=ordinary（新唯讀 viewport skill）／review=bi+judge（evidence=上列 jobIds）／session-freshness=fresh／deployment-surfaces=N/A（四 surface touches 對本 diff 零命中；新 skill 經 ~/.agents/skills symlink 母鏈自動生效）；AGENTS coverage：新入口已由 skills/AGENTS.md 索引行涵蓋；receipt=.agent-tmp/post-build-receipts/air-269.json；後續卡建議（judge 提）：sweep bounded/增量掃描根治（本卡外）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+sitrep skill 落地：/sitrep 一發七面唯讀快照（卡/STATE/信箱/watcher/bridge job 雙 root/subagent 四態/git），bridge 與 sub 面帶運行時間＋產出增長取樣——卡住與靜默終態（completed/failed/stopped）現形；紅線＝只報告零處置。全鏈：bi 分歧→GLM-5.3 judge 5/5 十處修正→followup 全 verified→consistency 零 fail；commit e376ea3b。
+
+```mermaid
+flowchart LR
+  u["user /sitrep"] --> c["唯讀彙總 七面各一行"]
+  c --> ok["正常面 帶過"]
+  c --> ab["異常面 展開 1-3 行"]
+  ab --> d["處置權歸 session 判斷"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

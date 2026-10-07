@@ -1,10 +1,10 @@
 ---
 id: AIR-270
 title: handoff skill 補新機制交接——watcher 重掛、holder 換手、bridge job 收線
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 01:46'
-updated_date: '2026-10-07 02:39'
+updated_date: '2026-10-07 04:06'
 labels:
   - skills
 dependencies: []
@@ -33,14 +33,14 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 Phase 0 含「在飛 watcher＋收信現況」盤點步
-- [ ] #2 AC2 交接單欄位帶 watcher re-arm 命令＋status 驗證行（先例＝code-reality snapshot 條款形）
-- [ ] #3 AC3 收信面交接在場——holder 態（lease 到期自然換手禁搶）＋未處理信清單帶法
-- [ ] #4 AC4 bridge job 未收線離場盤點——packet 帶 jobId＋收線指引（收線三腿分工只指針不重刻）
-- [ ] #5 AC5 冷啟歷史彙總喚醒＝正常非異常一句在場
-- [ ] #6 AC6 執行約束含：交接對象為排程/autonomous session 時禁 holder/處置面指示
-- [ ] #7 AC7 既有 11 引用方不破壞（rg 驗證引用形態不變）
-- [ ] #8 AC8 muse+codex 審查無 blocker（落地前審查閘——紅線行屬 gate 面，boundary 分類）
+- [x] #1 AC1 Phase 0 含「在飛 watcher＋收信現況」盤點步
+- [x] #2 AC2 交接單欄位帶 watcher re-arm 命令＋status 驗證行（先例＝code-reality snapshot 條款形）
+- [x] #3 AC3 收信面交接在場——holder 態（lease 到期自然換手禁搶）＋未處理信清單帶法
+- [x] #4 AC4 bridge job 未收線離場盤點——packet 帶 jobId＋收線指引（收線三腿分工只指針不重刻）
+- [x] #5 AC5 冷啟歷史彙總喚醒＝正常非異常一句在場
+- [x] #6 AC6 執行約束含：交接對象為排程/autonomous session 時禁 holder/處置面指示
+- [x] #7 AC7 既有 11 引用方不破壞（rg 驗證引用形態不變）
+- [x] #8 AC8 muse+codex 審查無 blocker（落地前審查閘——紅線行屬 gate 面，boundary 分類）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -56,3 +56,19 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 post-build 收斂態：ledger .review/air-270.md findings=8 全 verified ✅（lint converged PASS，未決=0）；review=bi muse job-muxh4ask-vqrhop＋codex job-muxh4au9-6goisc（分歧）→GLM-5.3 judge job-muxhgsyk-zrt6k2 8/8 採納＋五處逐字修正→apply 完成→followup 全 verified＋consistency 六維零 fail（agent_0ab86632）；回執四欄：classification=boundary／review=bi+judge（evidence=上列 jobIds）／session-freshness=fresh／deployment-surfaces=N/A（四 surface touches 零命中）；receipt=.agent-tmp/post-build-receipts/air-270.json
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+handoff skill 補五處：Phase 0 盤點在飛 watcher＋收信現況（pendingCount count-only 禁冒充清單、holder 態 epoch 比對推定）、Phase 1 re-arm 命令＋機驗行＋冷啟說明、bridge job 未收線判據（runs ⋈ liveness）、執行約束排程/autonomous 禁 holder 紅線。全鏈：bi 分歧→GLM-5.3 judge 8/8 五處修正→followup 全 verified→consistency 零 fail；commit ce85607f（rebase 後）。
+
+```mermaid
+flowchart LR
+  a["舊班交接"] --> p["handoff packet"]
+  p --> w["watcher re-arm＋機驗行"]
+  p --> m["收信現況＋holder 換手註記"]
+  p --> j["未收線 jobId＋收線指引"]
+  p --> r["排程禁 holder 紅線"]
+  p --> n["新班自足接手"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
