@@ -4,7 +4,7 @@ title: sitrep——打一個指令快速看值星進度與信箱現況（唯讀�
 status: In Progress
 assignee: []
 created_date: '2026-10-07 01:46'
-updated_date: '2026-10-07 02:03'
+updated_date: '2026-10-07 02:46'
 labels:
   - skills
 dependencies: []
@@ -55,3 +55,9 @@ flowchart LR
 〔已決策勿重辯：①名字＝sitrep（user 委任選名；B 線調研全域撞名零命中；watch/pulse/duty/status 已否決）②唯讀紅線——不處理信（duty_receive process 為 holder-gated 另一鏈）、不 re-arm、不收線 job、不 kill 卡住 sub、不 commit ③與 standup（昨日回顧）/state-review（深審）分工——sitrep 是現在快照，新建不併入 ④七面清單與每面機械來源（B 線調研已驗證命令實存；subagent 面來源候選＝~/.zcode/cli/agents/ 轉錄活性掃描＋child heartbeat sidecar，撰寫時實證擇一）⑤雙 state-root——值星實務橫跨 ai-guide＋delegate-bridge 兩 workspace，bridge 面須雙根盤點 ⑥pending 分層措辭——receive status 的 pendingCount 是 delivery cursor 面，禁宣稱「信都看過了」（SC INBOX 人類 seen/done 是另一層）〕
 〔範圍：動 skills/sitrep/SKILL.md（新建）＋skills/AGENTS.md（索引一行）；不動其他一切〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+post-build 收斂態：ledger .review/air-269.md findings=5 全 verified ✅（lint converged PASS，未決=0）；review=bi muse job-muxh8jwo-dqpy4w＋codex job-muxh8k01-yxm5b0（分歧）→GLM-5.3 judge job-muxhns3i-xbphl5 5/5 採納＋十處逐字修正→apply 完成→followup 全 verified＋consistency 六維零 fail＋面5 sweep 實跑複驗 22s exit 0（agent_fd435fcf）；回執四欄：classification=ordinary（新唯讀 viewport skill）／review=bi+judge（evidence=上列 jobIds）／session-freshness=fresh／deployment-surfaces=N/A（四 surface touches 對本 diff 零命中；新 skill 經 ~/.agents/skills symlink 母鏈自動生效）；AGENTS coverage：新入口已由 skills/AGENTS.md 索引行涵蓋；receipt=.agent-tmp/post-build-receipts/air-269.json；後續卡建議（judge 提）：sweep bounded/增量掃描根治（本卡外）
+<!-- SECTION:NOTES:END -->

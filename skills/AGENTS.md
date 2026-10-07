@@ -142,6 +142,7 @@
 - `context7` — Context7 MCP 文檔查詢（library/framework/SDK/API 用法先查最新文檔再回答，優先於 web search；跨 harness MCP 支援）
 - `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知；信件喚醒非語音面——AIR-266 起 mail-waiter 走背景 shell exit）
 - `mail-watch` — session 級信件喚醒 waiter 手冊（start/stop/status、dutymail wait 挂哨＋尾行 JSON 喚醒、喚醒回合兩步合約（①process ②re-arm）、generation CAS 雙 arm 防護、waiter 家族憲章；AIR-266）
+- `sitrep` — 值星 session 唯讀即時全景快照（一次彙總七面各一行、異常才展開：active 卡／STATE.md 起手點／信箱 pending〔delivery cursor 面，禁宣稱「都看過了」〕／watcher 態／bridge job 收線＋運行時間＋產出活性〔雙 state-root，terminal 未收與 zombie 現形〕／spawn subagent 進度＋活性〔mtime＋size 增長趨勢——卡住與靜默終態（completed/failed/stopped）現形〕／git 乾淨度；紅線＝只報告不處置——不處理信、不 re-arm、不收線、不 kill sub、不 commit；消費端——呼叫各機制唯讀面不重刻；與 standup 分工＝sitrep 現在快照、standup 昨日回顧）
 
 ### UI / 協作
 - `ui-collab` — 互動式 UI 的 LLM 協作模式（`[ACTION]` 操作日誌）；SC tour 走讀跟隨（Tour 走讀流節——消費契約單一源指針）
