@@ -4,7 +4,7 @@ title: 'grok bundle 瘦身 28,792B→≤25,000B——壓縮優先＋語義地板
 status: In Progress
 assignee: []
 created_date: '2026-10-07 14:08'
-updated_date: '2026-10-07 14:08'
+updated_date: '2026-10-07 15:04'
 labels:
   - grok
 dependencies: []
@@ -29,3 +29,9 @@ flowchart LR
   t --> p["fresh grok probe 無方向退化"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【Wave 1 milestone 收口——commit 09a3563e】bundle 28,792→27,780B（−1,012B，93.7%→90.4%）＋judge 五修（AGPL 可研究句/回 MIN 句/message_id 條件/回信段歸位/arch-thinking 指針，+70B→27,852B deployed）。全鏈：consultation（muse job-muy62n5v ✓／codex job-muy62n82 sandbox-error——3.5.0 升級剪除）→實作→tri 審查（muse muy7gzjb＋codex muy7gzkr＋GLM job-muy7h01r 全 approve-with-findings、無方向衝突）→marshal 依共識直接套用五處 Low 措辭修（免 judge——tri 收斂無分歧）。【主 AC ≤25,000B 未達＝結構性】floor 逐字釘死＋兩候選反向定義源＋凍結面——Wave 2（outward 等凍結面解凍）等 user 另議。【程序記錄】作者自報 /tmp diff 側檔即比即刪（三面掃描無殘留）；計數修正：pointer 化 6 檔（卡文 4）／未動 12 檔（申報 11）。【receipt】.agent-tmp/post-build-receipts/air-275.json
+<!-- SECTION:NOTES:END -->
