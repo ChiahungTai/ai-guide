@@ -1,7 +1,7 @@
 ---
 id: AIR-268
 title: bridge-dispatch-skill-遷移-plugin-退役——知識隨版本載送（含-mail-waiter-kind-filter-修正）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-07 00:19'
 updated_date: '2026-10-07 00:23'
