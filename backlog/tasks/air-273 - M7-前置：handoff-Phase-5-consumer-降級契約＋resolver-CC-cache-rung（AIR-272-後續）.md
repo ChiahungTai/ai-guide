@@ -1,10 +1,10 @@
 ---
 id: AIR-273
 title: M7 前置：handoff Phase 5 consumer 降級契約＋resolver CC-cache rung（AIR-272 後續）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 08:40'
-updated_date: '2026-10-07 10:25'
+updated_date: '2026-10-07 10:50'
 labels:
   - dutymail
 dependencies: []
@@ -34,3 +34,26 @@ flowchart LR
   r --> ok["M7 安全"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 缺口 1 handoff Phase 5 consumer 降級契約三處落地（contract bullet／fallback 觸發清單／禁止清單）＋M7 前提措辭修正
+- [x] #2 缺口 2 resolver claude-cache 第四 rung（zcode 優先序零變有對抗測試釘死；全 miss fail-loud）
+- [x] #3 consumer-level regression：resolve_target discovery_unavailable 短路 5 案＋duty_receive 2 案（pytest 149＋3465 全綠）
+- [x] #4 bi 複核雙腿收斂（muse approve／codex reject 兩項→修正迴圈→followup 全 verified）
+<!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+M7 前置兩缺口補齊：①handoff Phase 5 consumer 降級契約——session_discovery exit 3（source_unavailable/whoami_unavailable）→ fallback-manual（reason=discovery-unavailable）短路、禁直送；resolve-target 加 --discovery-unavailable flag＋exit-2 契約；skill 三處（contract/fallback 觸發清單/禁止清單）＋M7 前提措辭修正 ②resolver claude-cache 第四 rung（zcode 優先序零變、全 miss fail-loud）。全鏈：consultation 併 AIR-272 弧→實作→bi（muse approve/codex reject 兩項）→修正迴圈（consumer regression 5 案＋措辭）→followup pytest 149＋3465 全綠。commit 06baba1a；WT 收線零殘留。觀察項：mail_waiter/bridge_sweeper 同形 resolver 未同步——後續卡候選。
+
+```mermaid
+flowchart LR
+  m7["M7 拔 scbus home"] --> c["discovery exit 3 typed"]
+  c --> f["fallback-manual reason=discovery-unavailable"]
+  f --> n["禁直送 測試釘死"]
+  c -. "另一線" .-> r["resolver 四 rung zcode→claude"]
+  r --> ok["CC standalone 可達"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
