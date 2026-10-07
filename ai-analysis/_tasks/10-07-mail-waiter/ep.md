@@ -87,4 +87,4 @@ fake `wait`/`events` stub binary（記 argv＋可注入行為序列）；state d
 
 > **amendment（tri-panel 修復 J-1..J-7）**：waiter 自帶 runner（timeout＝輪詢切片＋30s margin、TimeoutExpired 歸 skip-round fail-soft）；state 寫入面（start/stop/guarded update）flock 序列化；coalesce 快照＝觸發門牌以外全部（before＋after）；非空頁缺 nextCursor＝shape-drift fail-loud；worker 頂先驗 generation（superseded 先於 stopped）；snapshot 全容忍（一切 DutymailFaceError→round_failed、主 watch 路徑 fail-loud 不變）。
 
-> amendment 2026-10-07 AIR-268 AC3（tri Q5 雙 agree）：喚醒述語收窄——wait/events 全 face 帶 `--kind accepted`（新信落地才算喚醒；外箱/自家處理波回音不喚醒。--kind 綁進 cursor；跨形態升級須冷啟重掃一次）。
+> amendment 2026-10-07 AIR-268 kind-filter 修復（**覆蓋前項 `--kind accepted` 全 face 設計——已實證不可行**：wait face 無 `--kind` 旗標（class-2 usage）且 kinded cursor 餵 kind=None 查詢＝cursor-scope-mismatch）：架構改「wait＝中斷器、events＝真值」——wait 無 `--kind`（unkinded cursor 軸，任意事件種類觸發）＋`events --kind accepted`＝喚醒真值（kinded cursor 軸）；per-address state 雙 cursor（`cursor` unkinded＋`accepted_cursor` kinded）；wait 觸發後 kinded 計數 0＝處理波回音內部消化（swallow——推進雙 cursor 續輪不 exit 不計數）；冷啟雙軸初始化（plain events 對滾取 unkinded head token＋kinded 全量對滾）；跨形態舊 state（entry 缺 accepted_cursor）視同冷啟。

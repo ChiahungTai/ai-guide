@@ -45,23 +45,41 @@ fail-loud（絕不回 None token）；worker 頂先驗 generation（stale 恆報
 superseded）；snapshot 全容忍（一切 DutymailFaceError→round_failed，
 主 watch 路徑 fail-loud 不變）。
 
+AIR-268 喚醒述語修復（wait＝中斷器、events＝真值）：wait face 無
+`--kind` 旗標且 wait 內部硬編 kind=None（dutymail CLI 凍結語義——帶
+--kind＝class-2 usage error）＝純中斷器（unkinded cursor 軸，任意事件
+種類觸發）；喚醒真值恆由 `events --kind accepted` 計數（kind filter 綁
+進 cursor——kinded cursor 餵無 kind 查詢＝class-2 cursor-scope-mismatch，
+兩軸嚴格不互混）。wait 成功頁後 kinded 對滾：count>0＝新信喚醒；
+count==0＝處理波回音（外箱與自家 holder 綁定／批次預取／回執面的
+echo 事件）內部消化（swallow——推進雙 cursor 續輪，不 exit 不計新
+事件）。冷啟雙軸初始化：
+unkinded `events`（無 --kind）首頁對滾取 head token（空 mailbox 空頁不
+發 cursor——取不到 token 即輪末睡切片重試）＋kinded 全量對滾計數（寧重
+不漏）。跨形態舊 state（entry 缺 accepted_cursor 欄位）視同冷啟——單欄
+cursor 的 kind-ness 無從判定，重掃免 wedge 於 fail-loud 迴圈。
+
 State schema（EP 凍結；XDG state 機器級、0600 atomic 寫）：
 `$ {XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`
 {"desired": "running|stopped", "generation": <int>, "armed_at": <unix>,
- "addresses": {"<alias>": {"cursor": "<events token|null=冷啟>",
- "last_event_seq": <int>}}, "last_exit": {"code","reason","at"}|null,
- "last_round_failed": <bool>}
+ "addresses": {"<alias>": {"cursor": "<unkinded events token|null=冷啟>",
+ "accepted_cursor": "<kinded token|null=冷啟>", "last_event_seq": <int>}},
+ "last_exit": {"code","reason","at"}|null, "last_round_failed": <bool>}
+- cursor（unkinded）＝wait 掛哨軸（wait 頁 nextCursor／冷啟 plain 對滾
+  終點）；accepted_cursor（kinded）＝計數軸（`events --kind accepted`
+  對滾終點）——兩欄各推進各消費，不可互換餵 face。
 - armed_at＝worker 活性證據（start 初始化、worker 每輪刷新——staleness
-  判準消費面）；冷啟（cursor null）＝events 由頭對滾到 head（寧重不漏
-  ：歷史事件照計入首輪彙總）；state 損壞視同冷啟（generation 歸零重 arm）。
+  判準消費面）；冷啟（cursor null）＝雙軸由頭對滾到 head（寧重不漏：
+  歷史事件照計入首輪彙總）；state 損壞視同冷啟（generation 歸零重 arm）。
 
 dutymail face 消費面（凍結語義，實作引用——真相源＝delegate-bridge repo
 dutymail CLI）：`wait --address <alias> --cursor <tok> --deadline-ms <ms>`
-（cap 600000；成功＝exit 0＋非空頁；deadline 盡＝class-6）與
-`events --address <alias> [--cursor <tok>] [--limit <n>]`（keyset paging，
-event_seq 遞增；payload 無 body）。成功頁形＝{items:[{eventSeq,kind,
-payloadJson,atUs}...], nextCursor}——nextCursor 恒由頁末項編碼，故對滾
-到底判準＝空頁（不依賴 rust 端 DEFAULT_LIMIT 鏡像）。binary 解析與 typed
+（無 --kind 旗標；cap 600000；成功＝exit 0＋非空頁；deadline 盡＝
+class-6）與 `events --address <alias> [--kind <k>] [--cursor <tok>]
+[--limit <n>]`（keyset paging，event_seq 遞增；payload 無 body；--kind
+綁進 cursor）。成功頁形＝{items:[{eventSeq,kind,payloadJson,atUs}...],
+nextCursor}——nextCursor 恒由頁末項編碼（空頁不發 cursor），故對滾到底
+判準＝空頁（不依賴 rust 端 DEFAULT_LIMIT 鏡像）。binary 解析與 typed
 contract（DutymailFaceError code/class/exit_code）經同源 import
 scripts/duty_receive.py 複用，不複製邏輯。
 
@@ -167,7 +185,8 @@ def _fresh_state(generation, addresses):
         "generation": generation,
         "armed_at": time.time(),
         "addresses": {
-            alias: {"cursor": None, "last_event_seq": 0}
+            alias: {"cursor": None, "accepted_cursor": None,
+                    "last_event_seq": 0}
             for alias in addresses
         },
         "last_exit": None,
@@ -176,7 +195,8 @@ def _fresh_state(generation, addresses):
 
 
 def _entry_cursor(entries, address):
-    """該 address 的 events cursor → str | None（無紀錄/形漂移＝冷啟）。"""
+    """該 address 的 unkinded cursor（wait 軸）→ str | None
+    （無紀錄/形漂移＝冷啟）。"""
     entry = entries.get(address) if isinstance(entries, dict) else None
     if not isinstance(entry, dict):
         return None
@@ -184,26 +204,62 @@ def _entry_cursor(entries, address):
     return cursor if isinstance(cursor, str) and cursor else None
 
 
+def _entry_accepted(entries, address):
+    """該 address 的 kinded cursor（`events --kind accepted` 計數軸）→
+    str | None（無紀錄/形漂移＝kinded 冷啟——全量對滾寧重不漏）。"""
+    entry = entries.get(address) if isinstance(entries, dict) else None
+    if not isinstance(entry, dict):
+        return None
+    cursor = entry.get("accepted_cursor")
+    return cursor if isinstance(cursor, str) and cursor else None
+
+
+def _normalize_entries(entries):
+    """跨形態舊 state 視同冷啟（AIR-268）：entry 缺 accepted_cursor 欄位
+    ＝單 cursor 版遺留——其 cursor 的 kind-ness 無從判定（--kind 版寫入
+    kinded、更早版 unkinded），餵錯軸＝class-2 cursor-scope-mismatch
+    fail-loud 迴圈 wedge。重置雙 cursor 為冷啟重掃（寧重不漏，
+    last_event_seq 計數欄保留）。"""
+    if not isinstance(entries, dict):
+        return {}
+    normalized = {}
+    for alias, entry in entries.items():
+        if isinstance(entry, dict) and "accepted_cursor" in entry:
+            normalized[alias] = entry
+            continue
+        seq = entry.get("last_event_seq") if isinstance(entry, dict) else 0
+        normalized[alias] = {
+            "cursor": None, "accepted_cursor": None,
+            "last_event_seq": int(seq or 0),
+        }
+    return normalized
+
+
 # ── 觀察軸 face 包裝（argv 凍結語義；allowlist＝wait/events）───────────
 
-# 喚醒述語收窄（AIR-268 AC3 / tri Q5）：只認 accepted（新信落地）事件——
-# 外箱與自家的 bound/prepared/acked 處理波不喚醒（live 實測連續零動作回音）。
-# --kind 綁進 cursor（dutymail 凍結語義）——re-arm 一致性隨 cursor 攜帶。
+# 喚醒述語（AIR-268 修訂——wait＝中斷器、events＝真值）：喚醒真值＝
+# `events --kind accepted` 計數（kind filter 綁進 cursor）；wait face 無
+# --kind 旗標（dutymail CLI 凍結）＝純中斷器（unkinded cursor 軸，任意
+# 事件種類觸發）——外箱與自家處理波回音（holder 綁定／批次預取／回執
+# 面 echo）經 wait 觸發後由 kinded 計數歸零內部消化（swallow），不喚醒。
 WAKE_EVENT_KIND = "accepted"
 
 
 def _wait_face_argv(address, cursor, deadline_ms):
+    """wait argv（無 --kind——face 無此旗標，帶了＝class-2 usage error）。"""
     return [
         WAIT_FACE, "--address", address, "--cursor", cursor,
-        "--kind", WAKE_EVENT_KIND,
         "--deadline-ms", str(int(deadline_ms)),
     ]
 
 
-def _events_face_argv(address, cursor):
-    argv = [EVENTS_FACE, "--address", address,
-            "--kind", WAKE_EVENT_KIND,
-            "--limit", str(EVENTS_PAGE_LIMIT)]
+def _events_face_argv(address, cursor, kind=None):
+    """events argv——kind=None＝unkinded 軸（冷啟 head 定位，餵 wait 用）；
+    kind 給定＝kinded 計數軸（--kind 綁進 cursor，兩軸 token 不可互餵）。"""
+    argv = [EVENTS_FACE, "--address", address]
+    if kind is not None:
+        argv += ["--kind", kind]
+    argv += ["--limit", str(EVENTS_PAGE_LIMIT)]
     if cursor is not None:
         argv += ["--cursor", cursor]
     return argv
@@ -246,10 +302,11 @@ def _missing_next_cursor(address, detail):
     )
 
 
-def advance_to_head(runner, address, seen, tok):
+def advance_to_head(runner, address, seen, tok, kind=None):
     """續翻到 head（事件計數＋cursor 推進）——到底判準＝空頁。
 
     seen＝已計數事件數、tok＝最後一頁 nextCursor；回 (total, cursor)。
+    kind 給定＝kinded 軸（--kind 綁進 cursor）；None＝unkinded 軸。
     空頁時 cursor 維持前一頁 token（該 token 之後已無事件）；非空頁
     （含呼叫端傳入的首頁——seen>0）缺 nextCursor＝shape-drift raise
     （J-4——契約 violation 大聲）。
@@ -258,7 +315,7 @@ def advance_to_head(runner, address, seen, tok):
     if seen and tok is None:
         raise _missing_next_cursor(address, f"first page {seen} items")
     while tok is not None:
-        result = core._call(runner, _events_face_argv(address, tok))
+        result = core._call(runner, _events_face_argv(address, tok, kind))
         items = _page_items(result)
         total += len(items)
         if not items:
@@ -269,23 +326,55 @@ def advance_to_head(runner, address, seen, tok):
     return total, tok
 
 
-def watch_address(runner, address, cursor):
-    """單門牌掛哨 →（count, cursor, kind）。
+def _kinded_count(runner, address, accepted_cursor):
+    """kinded 計數軸：`events --kind accepted` 由 accepted_cursor 對滾到
+    head → (count, accepted_cursor)。首頁空＝零新 accepted（cursor 維持
+    原位——空頁不發 cursor）。"""
+    result = core._call(
+        runner, _events_face_argv(address, accepted_cursor, WAKE_EVENT_KIND)
+    )
+    items = _page_items(result)
+    if not items:
+        return 0, accepted_cursor
+    return advance_to_head(
+        runner, address, len(items), _page_next(result), WAKE_EVENT_KIND
+    )
 
-    cursor null＝冷啟：events 由頭對滾（寧重不漏——歷史事件照計入），
-    空頁＝空 mailbox 續輪。有 cursor＝wait 掛哨（class-6 內部消化回
-    (0, cursor)）；wait 成功頁起續翻到 head（一次喚醒報全部新事件）。
-    typed-failure 分流見 _classify_face_error；fail-loud 類原樣 raise。
+
+def _scroll_unkinded_to_head(runner, address):
+    """unkinded 軸冷啟：plain events（無 --kind）首頁對滾到 head →
+    head token | None（空 mailbox 空頁不發 cursor＝None——wait 無從
+    掛哨，caller 睡切片重試）。"""
+    result = core._call(runner, _events_face_argv(address, None))
+    items = _page_items(result)
+    if not items:
+        return None
+    _total, tok = advance_to_head(
+        runner, address, len(items), _page_next(result)
+    )
+    return tok
+
+
+def watch_address(runner, address, cursor, accepted_cursor):
+    """單門牌掛哨 →（count, cursor, accepted_cursor, kind）。
+
+    wait＝中斷器（AIR-268）：cursor null＝冷啟雙軸初始化——plain events
+    對滾取 unkinded head token（空頁＝"empty" 空 mailbox 續輪），再 kinded
+    全量對滾計數（寧重不漏）。有 cursor＝wait 掛哨（無 --kind；class-6
+    內部消化回原雙 cursor "timeout"）。wait 成功頁（任意事件種類）＝
+    kinded 對滾定真值：count>0 → (count, wait 頁 nextCursor, kinded 終點,
+    "mail")；count==0 → 純處理波 "swallow"（雙 cursor 照推進——不推進
+    unkinded 會重觸發同頁，caller 續輪不 exit）。typed-failure 分流見
+    _classify_face_error；fail-loud 類原樣 raise。
     """
     if cursor is None:
-        result = core._call(runner, _events_face_argv(address, None))
-        items = _page_items(result)
-        if not items:
-            return 0, None, "empty"
-        count, tok = advance_to_head(
-            runner, address, len(items), _page_next(result)
-        )
-        return count, tok, "mail"
+        tok = _scroll_unkinded_to_head(runner, address)
+        if tok is None:
+            return 0, None, accepted_cursor, "empty"
+        count, atok = _kinded_count(runner, address, accepted_cursor)
+        if count:
+            return count, tok, atok, "mail"
+        return 0, tok, atok, "swallow"
     try:
         result = core._call(
             runner, _wait_face_argv(address, cursor, POLL_SLICE_MS)
@@ -293,34 +382,40 @@ def watch_address(runner, address, cursor):
     except core.DutymailFaceError as exc:
         action = _classify_face_error(exc)
         if action == "digest":
-            return 0, cursor, "timeout"
-        return 0, cursor, "skip"
+            return 0, cursor, accepted_cursor, "timeout"
+        return 0, cursor, accepted_cursor, "skip"
     items = _page_items(result)
-    count, tok = advance_to_head(
-        runner, address, len(items), _page_next(result)
-    )
-    return count, tok, "mail"
+    tok = _page_next(result)
+    if not items:
+        # wait 契約：成功恆非空頁（deadline 盡走 class-6）——空頁＝契約
+        # 外形狀漂移，fail-loud（吞了會丟 unkinded cursor）。
+        raise core.DutymailFaceError(
+            "shape-drift", "unknown",
+            f"wait face 回空頁（契約：成功恆非空；address {address}）",
+            False, 0,
+        )
+    if tok is None:
+        raise _missing_next_cursor(address, f"wait page {len(items)} items")
+    count, atok = _kinded_count(runner, address, accepted_cursor)
+    if count:
+        return count, tok, atok, "mail"
+    return 0, tok, atok, "swallow"
 
 
-def snapshot_address(runner, address, cursor):
+def snapshot_address(runner, address, accepted_cursor):
     """非阻塞快照（喚醒時 coalesce 掃其餘門牌）→ (count, cursor, failed)。
 
-    events 對滾（不 wait——喚醒不延遲）；J-6/J-7 快照面全容忍：捕捉
-    一切 DutymailFaceError（含 usage/admission——不再 raise）與 runner
-    timeout，回 (0, cursor, True) 交 caller 標記 round_failed——喚醒
-    不因快照失敗延遲或吞掉（主 watch 路徑 fail-loud 行為不變）。
+    kinded events 對滾（不 wait——喚醒不延遲；只推 kinded 軸，該門牌
+    unkinded cursor 不動——計數恆由 kinded 軸決定，下輪它的 wait 自會
+    觸發補齊）；J-6/J-7 快照面全容忍：捕捉一切 DutymailFaceError（含
+    usage/admission——不再 raise）與 runner timeout，回 (0, cursor,
+    True) 交 caller 標記 round_failed——喚醒不因快照失敗延遲或吞掉
+    （主 watch 路徑 fail-loud 行為不變）。
     """
     try:
-        result = core._call(runner, _events_face_argv(address, cursor))
-        items = _page_items(result)
-        if not items:
-            return 0, cursor, False
-        count, tok = advance_to_head(
-            runner, address, len(items), _page_next(result)
-        )
-        return count, tok, False
+        return (*_kinded_count(runner, address, accepted_cursor), False)
     except (core.DutymailFaceError, subprocess.TimeoutExpired):
-        return 0, cursor, True
+        return 0, accepted_cursor, True
 
 
 # ── generation CAS：guarded read-modify-write（invariant 6）───────────
@@ -381,13 +476,17 @@ def _apply_exit(st, code, reason, now):
 
 
 def _apply_advance(st, advanced, now, round_failed):
-    """喚醒輪寫入：cursor 推進＋last_event_seq 累加＋心跳＋跳輪標記。"""
+    """喚醒輪／swallow 輪寫入：雙 cursor 推進＋last_event_seq 累加＋
+    心跳＋跳輪標記（advanced 值＝(count, unkinded_tok, kinded_tok)——
+    swallow 波 count=0 照推進 cursor）。"""
     entries = st.setdefault("addresses", {})
-    for alias, (count, tok) in advanced.items():
+    for alias, (count, tok, atok) in advanced.items():
         entry = entries.setdefault(
-            alias, {"cursor": None, "last_event_seq": 0}
+            alias, {"cursor": None, "accepted_cursor": None,
+                    "last_event_seq": 0}
         )
         entry["cursor"] = tok
+        entry["accepted_cursor"] = atok
         entry["last_event_seq"] = int(entry.get("last_event_seq") or 0) + count
     st["armed_at"] = now
     st["last_round_failed"] = round_failed
@@ -416,14 +515,16 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
 
     每輪：load state → generation 不匹配（J-5：先驗代——stale worker
     恆報 superseded）／desired=stopped＝安靜退（尾行 state=
-    superseded|stopped）→ 逐門牌 watch_address（wait 掛哨 60s 切片）
-    → 新事件：coalesce 快照「觸發門牌以外全部」門牌（J-3）→ guarded
-    寫（cursor 推進＋心跳）→ exit 0＋尾行 {"state":"mail","new":
-    [{address,count}...],"rearm":...}。整輪 timeout/空頁＝內部消化
-    （冷啟空頁輪末睡切片）；class 4/5＝跳輪＋last_round_failed；
-    class 2/3／形漂移＝exit 2 fail-loud；runner 層 TimeoutExpired＝
-    skip-round fail-soft（J-1——log 續輪絕不裸崩）。預設 runner＝
-    _waiter_runner（timeout＝切片＋margin，非 core 固定 30s）。
+    superseded|stopped）→ 逐門牌 watch_address（wait 掛哨 60s 切片——
+    中斷器；kinded events 定喚醒真值）→ 新事件：coalesce 快照「觸發
+    門牌以外全部」門牌（J-3）→ guarded 寫（雙 cursor 推進＋心跳）→
+    exit 0＋尾行 {"state":"mail","new":[{address,count}...],"rearm":
+    ...}。swallow 波（wait 觸發但 kinded 計數 0）＝雙 cursor 推進寫入
+    後續輪不 exit；整輪 timeout/空頁＝內部消化（冷啟空頁輪末睡切片）；
+    class 4/5＝跳輪＋last_round_failed；class 2/3／形漂移＝exit 2
+    fail-loud；runner 層 TimeoutExpired＝skip-round fail-soft（J-1
+    ——log 續輪絕不裸崩）。預設 runner＝_waiter_runner（timeout＝
+    切片＋margin，非 core 固定 30s）。
     """
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
@@ -454,9 +555,7 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
                 return _superseded()  # J-5：先驗代——stale 恆報 superseded
             if state.get("desired") == "stopped":
                 return _stopped()
-        entries = state.get("addresses")
-        if not isinstance(entries, dict):
-            entries = {}
+        entries = _normalize_entries(state.get("addresses"))
 
         round_failed = False
         saw_empty_cold_start = False
@@ -465,20 +564,25 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
         try:
             for index, address in enumerate(addresses):
                 cursor = _entry_cursor(entries, address)
-                count, tok, kind = watch_address(run, address, cursor)
+                accepted = _entry_accepted(entries, address)
+                count, tok, atok, kind = watch_address(
+                    run, address, cursor, accepted
+                )
                 if kind == "mail":
                     new_events.append({"address": address, "count": count})
-                    advanced[address] = (count, tok)
+                    advanced[address] = (count, tok, atok)
                     # coalesce（invariant 8；J-3 修訂）：快照「觸發門牌
                     # 以外」全部門牌（before＋after——非僅 index 之後）
-                    # ——一次 exit 報該輪全部新事件；快照失敗全容忍
-                    # （J-6/J-7）——round_failed 標記、喚醒不延遲不崩。
+                    # ——一次 exit 報該輪全部新事件；快照只推 kinded 軸
+                    # （unkinded 留給該門牌下輪 wait 自推）；快照失敗全
+                    # 容忍（J-6/J-7）——round_failed 標記、喚醒不延遲不崩。
                     for j, other in enumerate(addresses):
                         if j == index:
                             continue
                         o_cursor = _entry_cursor(entries, other)
-                        o_count, o_tok, o_failed = snapshot_address(
-                            run, other, o_cursor
+                        o_accepted = _entry_accepted(entries, other)
+                        o_count, o_atok, o_failed = snapshot_address(
+                            run, other, o_accepted
                         )
                         if o_failed:
                             round_failed = True
@@ -490,8 +594,12 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
                             new_events.append(
                                 {"address": other, "count": o_count}
                             )
-                            advanced[other] = (o_count, o_tok)
+                            advanced[other] = (o_count, o_cursor, o_atok)
                     break
+                if kind == "swallow":
+                    # 處理波回音（kinded 計數 0）：推進雙 cursor 續輪——
+                    # 不 break、不計新事件（喚醒仍是唯一 exit 面）。
+                    advanced[address] = (0, tok, atok)
                 if kind == "skip":
                     round_failed = True
                 if kind == "empty":
@@ -525,14 +633,24 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
             })
             return EXIT_OK
 
-        # 整輪無新事件：輪末心跳（armed_at 刷新＝活性證據；跳輪標記）
-        if not _guarded_update(
+        if advanced:
+            # swallow 波收尾：零新事件但雙 cursor 已推進（處理波內部
+            # 消化）——推進寫入含心跳；不 exit（喚醒仍是唯一 exit 面）。
+            if not _guarded_update(
+                state_file, generation,
+                partial(_apply_advance, advanced=advanced, now=time.time(),
+                        round_failed=round_failed),
+            ):
+                return _superseded()
+        elif not _guarded_update(
             state_file, generation,
             partial(_apply_beat, now=time.time(), round_failed=round_failed),
         ):
+            # 整輪無新事件無推進：輪末心跳（armed_at 刷新＝活性證據；
+            # 跳輪標記）
             return _superseded()
         if saw_empty_cold_start:
-            # 冷啟空 mailbox：wait 面未自帶等待（無 cursor 可掛哨）——
+            # 冷啟空 mailbox：空頁不發 cursor——unkinded 無從掛哨 wait，
             # 睡一切片防 busy loop（timeout 輪不吃此睡：wait 已等 60s）
             sleep(POLL_SLICE_SECONDS)
 
@@ -575,7 +693,8 @@ def cmd_start(addresses, base_dir=None):
                 state["addresses"] = kept
             for address in addresses:
                 state["addresses"].setdefault(
-                    address, {"cursor": None, "last_event_seq": 0}
+                    address, {"cursor": None, "accepted_cursor": None,
+                              "last_event_seq": 0}
                 )
             last_exit = existing.get("last_exit")
             if last_exit is not None:

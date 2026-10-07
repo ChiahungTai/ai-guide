@@ -59,8 +59,8 @@ worker exit 0（尾行 JSON `state=mail`）喚醒你後，**你的回合＝兩�
 
 ## state 與觀察軸游標
 
-- state＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`（0600 atomic 寫）：`desired`／`generation`／`armed_at`（worker 每輪刷新＝活性證據）／per-address `cursor`（events 觀察游標，null=冷啟）＋`last_event_seq`／`last_exit`／`last_round_failed`。
-- 冷啟（cursor null／state 缺席或損壞）：首輪 events 由頭對滾到 head＋彙總喚醒（寧重不漏——歷史事件可能重複觸發一次喚醒，處理面冪等吸收）。
+- state＝`${XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`（0600 atomic 寫）：`desired`／`generation`／`armed_at`（worker 每輪刷新＝活性證據）／per-address 雙 cursor（`cursor`＝unkinded events 觀察游標供 `wait` 掛哨（face 無 `--kind`）；`accepted_cursor`＝kinded 游標供 `events --kind accepted` 計數——喚醒真值恆 kinded 軸（wait 只是中斷器），兩軸 token 不可互餵；null=冷啟）＋`last_event_seq`／`last_exit`／`last_round_failed`。
+- 冷啟（cursor null／state 缺席或損壞）：首輪雙軸 events 由頭對滾到 head＋彙總喚醒（寧重不漏——歷史事件可能重複觸發一次喚醒，處理面冪等吸收）。
 - **觀察軸 vs transport 軸不互代理**：waiter 的 events cursor 只標記「已看到的時間線位置」；收信面的 delivery cursor 由 `duty_receive process` 在處置後推進——兩線獨立，waiter 推進自己的不等於信已處理。
 
 ## 職責分工（誰管什麼——不互代理）
