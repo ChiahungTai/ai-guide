@@ -49,12 +49,17 @@ git rev-parse HEAD            # baseline commit hash
 + 從當前對話摘「已交代的決策（為何選 X 不選 Y）+ 下一步 + 待決項」（用戶交代過的才帶，見 skill「決策脈絡原則」）。
 + 識別當前 EP（有 → 引用段落）。
 + EP 弧交接且 build 未完（repo 可跑 code_reality 時）：交接 prompt「下一步」含 `code-reality snapshot --repo <repo> --label <弧id>`（[implement](../implement/SKILL.md) 階段 1 對應物——接力 session 依 handoff 行動、不重讀 skill 階段，不寫就漏；實測 09-06 handoff 續跑弧 4/4 跳過 snapshot）＋**機械驗證行**（cr-audit R8）：「接力首動 `ls .code-reality/snapshots/` 確認 label 在場；缺 → 補跑，不以為已跑」。
++ 盤點在飛 watcher＋收信現況：watcher 是 session 級（`scripts/mail_waiter.py start` 掛的背景 shell 隨來源 session 存亡——session 結束即消失，交接單必須教接手方重掛，不能以「已在跑」帶過）；收信現況＝各門牌 `dutymail receive status --address <alias>` 的 pendingCount（count-only 現值——禁冒充清單；未處理信清單帶法＝SC INBOX 收取法形，見 Phase 1.5）＋holder 態（`dutymail holder status --address <alias>`：live＋bindingEpoch——無持章者身份欄，自持／他持靠與本地 per-session state 的 epoch 比對推定）。盤出在飛 → 交接單照 Phase 1「下一步」欄條款帶 re-arm 指示。
++ 來源 session 若持 duty holder：session 結束＝停止 renew，lease 到期後自然釋放（holder token 存 per-session state 檔、落盤留存——不隨 session 消亡，釋放靠 lease 到期）；接手方為互動 session 時，lease 到期後 rebind 是正當換手路徑、禁搶章——live holder 在場＝不搶（排程／autonomous 接手方禁 holder 指示，見「執行約束」）；換代條款單一源＝`scripts/duty_receive.py` module docstring。
++ 離場前盤點 bridge job：`delegate-bridge runs --json` terminal job 的未收線判斷不能單靠 runs（row 無 collected 欄）——正典判據＝runs ⋈ `.agent-tmp/liveness.jsonl` 的 armed−collected 配對（prompt 邊界 sweeper 同掃法；無 armed 痕跡＝不可判，`bridge show <id> --json` 逐 job 核實）；有未收線 → 交接單「下一步」帶 jobId＋收線指引（收線三腿家族分工——waiter／sweeper／watcher_pairing_nag——單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)，指針不重刻）。
 
 ### Phase 1：套標準 schema
 
 依 [self-contained-prompt](../self-contained-prompt/SKILL.md)「標準 schema」十欄（任務一句話 / baseline commit / 來源 EP / 已完成清單 / 已決策 / 下一步 / 驗收 / 承接 commit 不重做／建議執行 tier／workspace／卡歸屬）。
 
 其中「建議執行 tier」是 user 開新 session 的路由輸入（條件式，條款見 model-routing skill），「workspace／卡歸屬」為強制欄。
+
+Phase 0 盤出在飛 watcher／未收線 bridge job → 「下一步」欄照 code-reality snapshot 條款同形帶可執行命令＋機驗行：watcher re-arm＝[mail-watch](../mail-watch/SKILL.md) 掛哨（`uv run python scripts/mail_waiter.py start [--address <alias>]`，start 印出的 worker 命令放背景 shell 才完成 arm）＋機驗行「接力首動 `uv run python scripts/mail_waiter.py status` 確認 desired=running、armed_at fresh；stale → 補 re-arm，不以為已掛」。新 session 重掛後首次喚醒若為冷啟歷史事件彙總（僅 state 缺席／損壞時——start 保留既有 cursor，state 在場則從既有 cursor 續；冷啟＝由頭對滾，寧重不漏）＝預期非異常，照常 triage 不當故障處理。
 
 > 欄位盤點對齊 [task-recovery](../_common/task-recovery.md) checkpoint 欄位（目標／已決策理由／已驗未驗證據／open findings／背景 job 收法／授權範圍／下一步＋read-set）；接手端恢復順序亦以 task-recovery 為單一源。接手方自足 prompt 形態不變——三層嵌入照 skill。
 
@@ -170,6 +175,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - ❌ 處理 usage resume（那是 `/at`）
 - ❌ 無 user 逐次授權的 `scbus send`（outward action；skill 條文≠授權）
 - ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
+- ❌ 交接對象為排程／autonomous session 時，把 holder bind／`duty_receive` 處置面列入交接指示（真實案例：cron session 搶章吃掉催辦信——holder 態觀察〔status 盤點〕可帶，bind／收信處置指示禁入）
 
 ## 流程位置
 

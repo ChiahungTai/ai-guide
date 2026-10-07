@@ -4,7 +4,7 @@ title: handoff skill 補新機制交接——watcher 重掛、holder 換手、br
 status: In Progress
 assignee: []
 created_date: '2026-10-07 01:46'
-updated_date: '2026-10-07 02:03'
+updated_date: '2026-10-07 02:39'
 labels:
   - skills
 dependencies: []
@@ -50,3 +50,9 @@ flowchart LR
 〔已決策勿重辯：①C 線審計差距表為修訂依據（必改：watcher 交接；宜改：holder 換手、bridge job 收線指引；可緩：冷啟說明）②收信面交接納入（user 修訂——不只 watcher：pending 現況＋holder 態＋處理面接手）③排程/autonomous 禁 holder 紅線只落 handoff 交接約束一行；主落點擴 autonomous-execution 另開卡不做 ④Phase 5 scbus 直送與收取法形不動 ⑤引用連動已驗證——11 個引用方全屬整檔/Phase 5/邊界表級引用，段落級新增不破壞〕
 〔範圍：動 skills/handoff/SKILL.md；不動其他一切〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+post-build 收斂態：ledger .review/air-270.md findings=8 全 verified ✅（lint converged PASS，未決=0）；review=bi muse job-muxh4ask-vqrhop＋codex job-muxh4au9-6goisc（分歧）→GLM-5.3 judge job-muxhgsyk-zrt6k2 8/8 採納＋五處逐字修正→apply 完成→followup 全 verified＋consistency 六維零 fail（agent_0ab86632）；回執四欄：classification=boundary／review=bi+judge（evidence=上列 jobIds）／session-freshness=fresh／deployment-surfaces=N/A（四 surface touches 零命中）；receipt=.agent-tmp/post-build-receipts/air-270.json
+<!-- SECTION:NOTES:END -->
