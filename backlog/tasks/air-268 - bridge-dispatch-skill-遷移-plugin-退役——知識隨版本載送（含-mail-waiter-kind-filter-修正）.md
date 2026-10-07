@@ -4,7 +4,7 @@ title: bridge-dispatch-skill-遷移-plugin-退役——知識隨版本載送（�
 status: In Progress
 assignee: []
 created_date: '2026-10-07 00:19'
-updated_date: '2026-10-07 00:23'
+updated_date: '2026-10-07 00:50'
 labels:
   - bridge
 dependencies: []
@@ -35,7 +35,5 @@ flowchart LR
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-## tri verdict（GLM-5.3 裁決，2026-10-07）
-
-兩腿（muse job-muxd1k7e＋codex job-muxd1k8z）收斂＋互補：Q1 三層切分（bridge-native 操作知識→plugin；always-on bootstrap 核心留 ai-guide rule 薄 pointer——plugin skill on-demand 扛不住首決策 gate；consumer governance（structural-evidence/cr-query/waiter 家族）留不搬）；Q2 雙 agree（隨 release 凍結＋易漂移數值改 runtime 查證）；Q3 採 codex projection（muse caller kit＝canonical 生成，非人工副本）；Q4 信帶 ownership map＋兩段式 migration gate（plugin 出貨驗 consumer→才退役）；Q5 雙 agree＝AIR-266 amendment＋裁決深化（--kind accepted 先落消處理波；外箱 accepted 若實測仍擾→direction predicate；投遞閉環訊號留 status 不喚醒）。雙最大風險同指向雙 owner 過渡 silent drift→gate 化＋退役驗收 rg 零命中＋fresh-session/upgrade/rollback 矩陣（codex 漏看面）。提報信 air-skill-migration-proposal-001 已寄 delegate-bridge-marshal。
+外側狀態（2026-10-07 上午）：bridge db-91（wait kind 過濾——user 升級馬上做，形①=--kind 旗標＋waiter scope kind；出貨後本卡 watcher 做 simplify amendment 回單跳）；db-92（skill 遷移 plugin 化——In Progress，user 強化裁定 bridge ship 自己的 skills）。AC2 退役段 standby 等 db-92 出貨通知→四 harness consumer 驗收→退役本地。
 <!-- SECTION:NOTES:END -->
