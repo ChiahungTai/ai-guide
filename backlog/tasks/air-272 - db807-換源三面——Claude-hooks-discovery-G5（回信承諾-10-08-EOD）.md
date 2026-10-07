@@ -4,7 +4,7 @@ title: db807 換源三面——Claude-hooks/discovery/G5（回信承諾 10-08 EO
 status: Done
 assignee: []
 created_date: '2026-10-07 04:09'
-updated_date: '2026-10-07 08:44'
+updated_date: '2026-10-07 09:25'
 labels:
   - dutymail
 dependencies: []
@@ -69,6 +69,8 @@ P3 Negative evidence：跨 session 邊界 stat -f %m ~/.sc-router/registry.db mt
 【resolver coupling 記錄】_resolve_binary() 階梯只查 zcode cache（不查 claude cache）——CC standalone 需擴第四 rung 或 env 導 DUTYMAIL_BIN（後續卡併 AIR-273 或獨立）。本機現況可解析（zcode cache 3.2.1/3.4.0/3.4.1 三候選）。
 
 【AC4 判定更新】probe 步驟（本 note）＋handoff 缺口 durable 成文（本 note＋AIR-273）＋fail-closed 實跑（author 證據）＋memory disposition（codex PASS）→ AC4 完成。
+
+【user 裁決 2026-10-07】pending-user-probe 三項免跑——「cc 就當會跑，我以後有問題再開卡修」。三項步驟保留在上方 notes（未來 CC 異常時的排查清單）。本卡就此收口。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
