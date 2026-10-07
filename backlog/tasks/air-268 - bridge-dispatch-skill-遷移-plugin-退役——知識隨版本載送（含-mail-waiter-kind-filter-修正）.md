@@ -1,10 +1,10 @@
 ---
 id: AIR-268
 title: bridge-dispatch-skill-遷移-plugin-退役——知識隨版本載送（含-mail-waiter-kind-filter-修正）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 00:19'
-updated_date: '2026-10-07 05:32'
+updated_date: '2026-10-07 05:47'
 labels:
   - bridge
 dependencies: []
@@ -27,9 +27,9 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AC1 tri 三方收斂＋遷移提報信寄出（bridge 側承接確認前不動本地）
-- [ ] #2 AC2 bridge 側 plugin skill 出貨後：ai-guide 側退役落地（skill 遷出＋rule/AGENTS.md 引用面縮改＋rg 殘留清場）
-- [ ] #3 AC3 mail-waiter kind filter 修正落地（--kind accepted；回音喚醒歸零實測）
+- [x] #1 AC1 tri 三方收斂＋遷移提報信寄出（bridge 側承接確認前不動本地）
+- [x] #2 AC2 bridge 側 plugin skill 出貨後：ai-guide 側退役落地（skill 遷出＋rule/AGENTS.md 引用面縮改＋rg 殘留清場）
+- [x] #3 AC3 mail-waiter kind filter 修正落地（--kind accepted；回音喚醒歸零實測）
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -47,3 +47,17 @@ AC2 驗收狀態：runner 12 腿全綠→bi 複核分歧（muse approve／codex 
 
 gate 重審通過（2026-10-07 12:5X-13:06，證據補落）：bridge ①commit bump 0e5b88e＋⑤措辭/runbook a1ebac7 已落地（git show HEAD 兩 manifest=3.4.1、porcelain 空——judge 判準①過）；ai-guide ②從 primary main @a1ebac7 重 stage（manifest 3.4.1）→ muse plugins install --scope user（delegate 3.4.1 enabled，cache 4bd22cb2）；③穩定性複探 10.5min 後 3.4.1 穩定在列、零 retention（judge 新判準過）；④retention 未復發＝根因記錄 muse 側未決。Muse 三腿重跑：a＝fresh headless muse exec 100 skills 載入並列出 plugin:delegate:bridge-dispatch（exit 0）；b＝staged/installed 3.4.1、installed cache ≡ staged 全等、staged vs source 僅三 sanctioned 差異；c＝重 stage 零 delta＋prose 恰一份。gate 重審＝12/12（九腿照舊成立＋Muse 三腿新基準重驗綠）——**兩段式 gate 過，退役解禁**。退役 diff 已派 bi 複核（muxo02j2/muxo02l8，雙 reject 四項小修：doctrine 測試錨點同步/rule 懸空節名/grok 雙 owner 縮指針/一字還原——修正迴圈進行中）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bridge-dispatch skill 退役完成：本地縮為 always-on 核心＋pointer（56 行，知識隨 bridge 3.4.1 plugin 出貨＝delegate:bridge-dispatch），rg 殘留清零（18 檔處置）、doctrine 測試錨點 pointer 形同步（pytest 11/11）、6 處引用縮改。兩段式 gate：出貨→12 腿矩陣驗收（bi 分歧→GLM-5.3 judge HOLD 抓出 Muse 紅腿＋根因鏈 bridge manifest 漏 commit）→bridge 修復→重驗全綠＋穩定性判準→退役。全鏈：runner→bi→judge→apply→followup→consistency；commit b4a71803。
+
+```mermaid
+flowchart LR
+  s["bridge 3.4.1 出貨"] --> g["三探針矩陣 12 腿"]
+  g --> h["Muse 紅→根因 manifest 漏 bump"] --> fix["bridge commit 修復"] --> rg2["Muse 重跑全綠 gate 12/12"]
+  rg2 --> r["本地縮 pointer＋殘留清零"]
+  r --> d["done：知識隨 bridge 版控 單一源"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
