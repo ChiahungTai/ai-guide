@@ -1,33 +1,55 @@
 ---
 id: AIR-272
 title: db807 換源三面——Claude-hooks/discovery/G5（回信承諾 10-08 EOD）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-07 04:09'
-updated_date: '2026-10-07 04:24'
+updated_date: '2026-10-07 06:12'
 labels:
   - dutymail
 dependencies: []
+references:
+  - governance/scbus-address-ownership.md
 ordinal: 263000
 ---
 
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-bridge db807 協調信換源三面落地（ack 已寄，承諾 10-08 EOD 前完成＋驗證＋回信）。偵察已完成（變更計畫逐檔逐條到手）。
+bridge 那邊正在把舊信箱系統（scbus）換成新信箱系統（dutymail）。換完之前他們寄信問我們：ai-guide 這邊有三個地方還掛著舊系統，請改掉並給期限。我們已回信承諾 **10-08 晚上前完成＋驗證＋回信**。偵察已完成，變更計畫逐檔逐條存放在 `.agent-tmp/air272-recon-plan.md`。
 
-**面 1 Claude-hooks（S）**：~/.claude/settings.json 是 symlink → repo 的 settings.json（live 同檔、gitignored）。三條 scbus hooks 在線（SessionEnd/SessionStart/UPS）→ 照 governance/registrations/cc.json 模板替換：SessionEnd scbus 移除（dutymail 無 SessionEnd 收信面）、SessionStart/UPS 換 duty_receive＋duty_mailbox_monitor 兩條。改前備份、改後 rg scbus 歸零驗證。
-**面 3 G5 措辭（S）**：governance/scbus-address-ownership.md 兩處 scbus 指令教學改 dutymail receive status 現行面；dutymail-roundtrip.md 加一行 G5 語義（archive bytes 保留＋零 unowned obligations，非檔案歸零）；「baseline 歸零」加括註防混淆。
-**面 2 discovery（需裁決）**：session_discovery.py 的 scbus list/whoami 是全 repo 唯一消費點，但 dutymail 設計上無 session registry——三案：(a) harness-native 掃描（M/L）(b) bridge ledger 涵蓋不足 (c) 折衷：保持 scbus 源＋typed fail-closed 已就緒、實作綁 M7 reader window（S）。**建議 (c)，真換源另開卡綁 M7。**
-**不做什麼**：M7 前不動 scbus home（INTENT-02）；handoff_delivery 的 scbus send 面屬另一波次不動；凍結資產（frozen 標註檔、歷史 EP）保留。
+**三件事**：
+1. **Claude 設定檔裡的三條舊鈴**——`~/.claude/settings.json`（其實就是 repo 裡那個 settings.json）有三條 hooks 還在喊舊信箱的命令：「收工鈴」那條直接刪（新系統沒這個鈴），另外兩條照現成模板換成新信箱的兩條。改前備份，改完檢查 scbus 這個字歸零。
+2. **文件裡的舊說法**——兩三份文件還在教舊信箱的查詢指令，還有「信箱清空」的說法跟新規矩（備份要留、責任要清，不是把檔案刪光）打架——改成一致。
+3. **找 session 的小功能**（等你選案）——「現在誰在上班」的查詢還依賴舊系統，但新信箱設計上故意不做登記簿。建議：暫時留著舊查詢（查不到會明確報錯，不會裝沒事），等 bridge 換代窗口開了再真換——**選哪案等你拍板**。
+
+**不做**：舊信箱本體不動（bridge 還沒換完，動了會斷線）；寄信功能面不動（另一波）；歷史文件保留。
 
 ```mermaid
 flowchart LR
-  l["db807 信"] --> f1["面1 hooks 換 duty 三條"]
-  l --> f3["面3 G5 措辭三處"]
-  l --> f2["面2 discovery 折衷案 c 待裁決"]
-  f1 --> v["rg 歸零＋probe 驗證"]
+  l["bridge 來信"] --> f1["1 換掉 Claude 設定檔三條舊鈴"]
+  l --> f3["3 文件舊說法改成一致"]
+  l --> f2["2 找 session 功能 等你選案"]
+  f1 --> v["驗證 舊字歸零"]
   f3 --> v
   v --> r["回信 bridge 10-08 前"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 AC1 settings.json 三條 scbus hooks 換 duty 兩條（SessionEnd 條目移除），rg scbus 歸零
+- [ ] #2 AC2 改前備份於 .agent-tmp、回滾路徑成文
+- [ ] #3 AC3 G5 措辭三處落地（ownership 兩處＋roundtrip 一行）
+- [ ] #4 AC4 面2 折衷案：fail-closed 驗證實跑＋fresh-session probe 草擬成文＋memory 三檔 disposition
+- [ ] #5 AC5 muse+codex consultation deltas 落實或逐條回饋
+- [ ] #6 AC6 bi+judge+post-build 全鏈收斂＋回信 bridge 交付
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide 95982514〕
+〔已決策勿重辯：①面 2 選案 (c)（user 核——折衷：保持 scbus 源＋fail-closed 已就緒、真換源綁 M7 另開卡）②INTENT-02 不動 scbus home ③send 面另一波次 ④技術計畫單一源＝.agent-tmp/air272-recon-plan.md（面1 三條 hooks 換 duty 兩條＋備份回滾；面3 兩檔措辭＋roundtrip 一行；面2 驗證 fail-closed＋probe 草擬＋memory 檔 disposition）⑤settings.json 為 primary repo root gitignored live 檔——WT 隔離例外，派工明示 ⑥前置 consultation（user 指定）〕
+〔範圍：面1 settings.json＋hooks/AGENTS.md 一句；面3 governance/scbus-address-ownership.md＋skills/_common/dutymail-roundtrip.md；面2 驗證＋probe 草擬＋memory 檔 disposition；不動其他〕
+<!-- SECTION:PLAN:END -->
