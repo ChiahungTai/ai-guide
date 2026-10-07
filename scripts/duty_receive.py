@@ -32,7 +32,10 @@ stderr `{"schemaVersion":1,"ok":false,"error":{code,class,message,
 retryable}}`＋空 stdout，exit class 2 usage／3 admission／4 storage／
 5 fencing／6 wait-timeout。binary 解析順序：env DUTYMAIL_BIN →
 PATH `dutymail` → zcode plugin cache → claude plugin cache（各 rung
-取版本最新；禁手 pin 版化路徑）。
+取版本最新；禁手 pin 版化路徑）。全 miss＝`BinaryMissing` typed
+raise——與 store 缺席（class 4 storage 合法軟 path）分流：hook 面
+consecutive-miss sidecar 計數、達門檻 stderr advisory（exit 恆 0，
+AIR-274 M1）；CLI 面 typed 訊息 exit 1（不再 traceback）。
 
 測試形態：核心函式吃 injectable runner（`runner(argv) -> stdout`
 str；typed failure 以 DutymailFaceError raise）——fake dutymail 回
@@ -57,6 +60,10 @@ DEFAULT_MAX_COUNT = 8  # bounded batch（EP：max-count 預設 8）
 SURFACE_ID_LIMIT = 3  # surface 摘要行 envelope_id 列表上限（B′：全文面＝SC INBOX）
 DUTYMAIL_TIMEOUT_SECONDS = 30
 RUNNER_ENV = "DUTYMAIL_BIN"
+# binary consecutive-miss advisory 門檻（AIR-274 M1）：hook 面連續 miss
+# 達此數才 stderr advisory（未達靜默；binary 在場呼叫歸零——resolve
+# 已過，含 face 失敗；唯 BinaryMissing 不歸零）。
+MISS_ADVISORY_THRESHOLD = 3
 PLUGIN_CACHE_BASE = "~/.zcode/cli/plugins/cache/delegate-market/delegate"
 # 第四 rung（AIR-273）：CC 端 hooks 的 binary 存活不依賴 zcode cache——
 # zcode cache 清掉時 fallback 到 claude plugin cache（形態同第三 rung）。
@@ -127,6 +134,14 @@ class HolderConflict(RuntimeError):
     （status 與 bind 之間 race window 内他方先 bind——epoch 已前進）。"""
 
 
+class BinaryMissing(RuntimeError):
+    """dutymail binary 解析全 miss（DUTYMAIL_BIN／PATH／zcode・claude
+    plugin cache 皆缺席）——環境壞，有別於 store 缺席的合法軟 path
+    （DutymailFaceError class 4）。hook 面＝consecutive-miss sidecar
+    計數、達門檻 stderr advisory（exit 恆 0——AIR-274 M1 消音缺口
+    服務）；CLI 面＝typed 訊息 exit 1（不再 generic traceback）。"""
+
+
 # ── binary 解析（DUTYMAIL_BIN → PATH → zcode cache → claude cache 版本最新）──
 
 
@@ -161,7 +176,7 @@ def _resolve_binary():
         )
         if candidates:
             return max(candidates, key=_version_key)
-    raise RuntimeError(
+    raise BinaryMissing(
         "dutymail binary not found（" + RUNNER_ENV
         + " / PATH / zcode・claude plugin cache 皆缺席）"
     )
@@ -426,12 +441,10 @@ def fallback_path(session_id, base_dir=None):
     return os.path.join(root, safe + ".fallbacks")
 
 
-def read_lock_fallbacks(path):
-    """讀 sidecar 計數 → int（--help／hook 端未來消費的讀數 API）。
-
-    缺檔＝0；壞內容／不可讀＝0＋stderr 一行註記——可觀測性計數（趨勢
-    偵測用途，非 authoritative），讀失敗不 raise。
-    """
+def _read_int_sidecar(path, label):
+    """sidecar 單一 int 讀數（.fallbacks／.misses 共用）。缺檔＝0；
+    不可讀／壞內容（含負數）＝0＋stderr 一行註記——可觀測性計數（非
+    authoritative），讀失敗不 raise。"""
     try:
         with open(path, "r", encoding="utf-8") as fh:
             raw = fh.read().strip()
@@ -439,20 +452,51 @@ def read_lock_fallbacks(path):
         return 0
     except OSError as exc:
         print(
-            f"[{HOOK_TAG}] fallback 計數檔不可讀——視同 0"
+            f"[{HOOK_TAG}] {label} 計數檔不可讀——視同 0"
             f"（{exc!r}；路徑 {path}）",
             file=sys.stderr,
         )
         return 0
     try:
-        return int(raw)
+        value = int(raw)
     except ValueError:
         print(
-            f"[{HOOK_TAG}] fallback 計數檔損壞——視同 0 重計"
+            f"[{HOOK_TAG}] {label} 計數檔損壞——視同 0 重計"
             f"（內容 {raw!r}；路徑 {path}）",
             file=sys.stderr,
         )
         return 0
+    if value < 0:
+        # 負 int 非合法計數——同壞檔處置（.fallbacks/.misses 共用契約）。
+        print(
+            f"[{HOOK_TAG}] {label} 計數檔含負數——視同 0 重計"
+            f"（內容 {raw!r}；路徑 {path}）",
+            file=sys.stderr,
+        )
+        return 0
+    return value
+
+
+def _atomic_write_int(path, value):
+    """sidecar 單一 int 寫入（.fallbacks／.misses 共用形態）：pid 後綴
+    tmp＋os.replace（atomic overwrite）＋0600。"""
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + "." + str(os.getpid()) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(str(value))
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def read_lock_fallbacks(path):
+    """讀 sidecar 計數 → int（--help／hook 端未來消費的讀數 API）。
+
+    缺檔＝0；壞內容／不可讀＝0＋stderr 一行註記——可觀測性計數（趨勢
+    偵測用途，非 authoritative），讀失敗不 raise。
+    """
+    return _read_int_sidecar(path, "fallback")
 
 
 def bump_lock_fallback(session_id, base_dir=None):
@@ -467,15 +511,63 @@ def bump_lock_fallback(session_id, base_dir=None):
     壞檔由 read_lock_fallbacks 視同 0 重計（stderr 一行）。
     """
     path = fallback_path(session_id, base_dir)
-    count = read_lock_fallbacks(path)
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    tmp = path + "." + str(os.getpid()) + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        fh.write(str(count + 1))
-    os.chmod(tmp, 0o600)
-    os.replace(tmp, path)
+    count = read_lock_fallbacks(path) + 1
+    _atomic_write_int(path, count)
+
+
+# ── binary consecutive-miss 計數（AIR-274 M1：消音缺口服務）──────────
+#
+# BinaryMissing（resolver 全 miss——環境壞）與 store 缺席（class 4 合法
+# 軟 path）分流：前者以 per-session sidecar 連續計數，達門檻 stderr
+# advisory（hook 面消音不再靜默）；binary 在場呼叫歸零（resolve 已過
+# ——含 face 失敗；唯 BinaryMissing 不歸零）。形態與 .fallbacks sidecar
+# 同（state 同目錄獨立檔、單一 int、atomic overwrite 0600、壞檔視同
+# 0 重計）——非 authoritative，計數少量丟失可容忍。
+
+
+def miss_path(session_id, base_dir=None):
+    """binary miss 計數 sidecar 路徑（與 state/lock 同目錄、獨立檔）。"""
+    safe = _SAFE_SESSION_RE.sub("_", session_id) or "unknown"
+    root = base_dir if base_dir is not None else _state_base_dir()
+    return os.path.join(root, safe + ".misses")
+
+
+def read_miss_count(path):
+    """讀 miss 計數 → int。缺檔＝0；壞內容／不可讀＝0＋stderr 一行
+    註記（非 authoritative——讀失敗不 raise）。"""
+    return _read_int_sidecar(path, "miss")
+
+
+def bump_binary_miss(session_id, base_dir=None):
+    """miss 計數 += 1 → 新計數（atomic overwrite 0600）。寫失敗只
+    stderr 一行註記、照回計數——advisory 判準不受阻。"""
+    path = miss_path(session_id, base_dir)
+    count = read_miss_count(path) + 1
+    try:
+        _atomic_write_int(path, count)
+    except OSError as exc:
+        print(
+            f"[{HOOK_TAG}] miss 計數寫入失敗——照回計數"
+            f"（{exc!r}；路徑 {path}）",
+            file=sys.stderr,
+        )
+    return count
+
+
+def reset_binary_miss(session_id, base_dir=None):
+    """計數歸零（binary 在場呼叫＝resolve 已過——含 face 失敗；唯
+    BinaryMissing 不歸零）——sidecar 檔移除；
+    缺檔 no-op；失敗只 stderr 一行、不 raise（呼叫端在 face 熱路徑）。"""
+    path = miss_path(session_id, base_dir)
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        print(
+            f"[{HOOK_TAG}] miss 計數歸零失敗（{exc!r}；路徑 {path}）",
+            file=sys.stderr,
+        )
 
 
 # ── policy：class×action 表（default-deny；未知鍵 fail-loud）──────────
@@ -1059,6 +1151,10 @@ def main(argv=None) -> int:
             )
             return 0
         print(f"[{HOOK_TAG}] dutymail face 失敗：{exc}", file=sys.stderr)
+        return 1
+    except BinaryMissing as exc:
+        # AIR-274 M1：環境壞 typed 訊息＋exit 1（不再 generic traceback）。
+        print(f"[{HOOK_TAG}] binary missing：{exc}", file=sys.stderr)
         return 1
     for line in lines:
         print(line)

@@ -18,6 +18,11 @@
   零查詢零輸出）、store 缺席（class 4 storage）fail-soft＝零 stdout
   exit 0＋stderr 註記、stdin 壞 JSON/未知事件靜默、config 壞形 fail-loud
   exit 3、args 誤用 exit 2。
+- BinaryMissing 消音缺口（AIR-274 M1）：resolver 全 miss typed raise、
+  hook 面 consecutive-miss sidecar 計數（<3 靜默／≥3 stderr advisory、
+  exit 恆 0）、binary 在場呼叫歸零（resolve 已過——含 face 失敗；唯
+  BinaryMissing 不歸零）、store-absent 不入計數、CLI typed
+  exit 1。
 - policy 載入 governance/dutymail-processor.toml（default-deny 表；未知
   鍵／壞形 fail-loud）；代碼層底線：solicit 恆 surface、未列 class 恆
   surface（config 無法放寪）。
@@ -284,6 +289,17 @@ class TestBinaryResolution:
         monkeypatch.setattr(mod.shutil, "which", lambda name: None)
         monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
         with pytest.raises(RuntimeError, match="dutymail binary not found"):
+            mod._resolve_binary()
+
+    def test_none_found_typed_binary_missing(self, monkeypatch):
+        """M1（AIR-274）：resolver 全 miss 拋 BinaryMissing（typed——
+        有別於 store 缺席的 DutymailFaceError class-4 合法軟 path）。"""
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
+        with pytest.raises(
+            mod.BinaryMissing, match="dutymail binary not found"
+        ):
             mod._resolve_binary()
 
 
@@ -1464,6 +1480,149 @@ class TestHookLockIntegration:
         assert "新到 1" in out
         commit()
         assert (tmp_path / "sess-1.lock").exists()  # dedicated 檔在場
+
+
+# ── BinaryMissing 消音缺口服務（AIR-274 M1）──────────────────────────
+
+
+def _hook_binary_missing():
+    """hook 面 BinaryMissing——用 hook.core 的類別實例（except 面看後者，
+    同 _hook_err 慣例）。"""
+    return hook.core.BinaryMissing("dutymail binary not found")
+
+
+class TestBinaryMissingSink:
+    def test_miss_sidecar_path_and_read_api(self, tmp_path):
+        """<safe_sid>.misses 與 state/lock 同目錄獨立檔；缺檔＝0。"""
+        base = str(tmp_path)
+        assert mod.miss_path("sess-1", base).endswith("sess-1.misses")
+        assert mod.miss_path("sess-1", base) != mod.state_path("sess-1", base)
+        assert mod.miss_path("a/b c", base).endswith("a_b_c.misses")
+        assert mod.read_miss_count(mod.miss_path("sess-1", base)) == 0
+
+    def test_hook_miss_accumulates_below_threshold_silent(
+        self, tmp_path, capsys
+    ):
+        """BinaryMissing（環境壞）與 store-absent 分流：sidecar 計數累積；
+        未達門檻（<3）靜默、零 stdout、exit 恆 0。"""
+        runner = _seq_runner([_hook_binary_missing() for _ in range(2)])
+        for expected in (1, 2):
+            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
+            assert (code, out, commit) == (0, "", None)
+            assert mod.read_miss_count(
+                mod.miss_path("sess-1", str(tmp_path))
+            ) == expected
+            assert "binary missing" not in capsys.readouterr().err
+
+    def test_hook_miss_threshold_advisory_stderr(self, tmp_path, capsys):
+        """達門檻（≥3）→ stderr advisory 一行（surface 可見）；exit 恆 0、
+        零 stdout（advisory 不擋 prompt）。"""
+        runner = _seq_runner([_hook_binary_missing() for _ in range(3)])
+        for i in range(1, 4):
+            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
+            assert (code, out, commit) == (0, "", None)
+            err = capsys.readouterr().err
+            if i < 3:
+                assert "binary missing" not in err  # 未達門檻靜默
+            else:
+                assert "dutymail binary missing x 3" in err
+                assert "請檢查 plugin 安裝" in err
+
+    def test_hook_miss_counter_0600_no_tmp_leftover(self, tmp_path):
+        """sidecar 寫入形態釘死：0600、atomic 寫不留 tmp 殘屍。"""
+        _hook_run(
+            UPS_STDIN, _seq_runner([_hook_binary_missing()]), tmp_path
+        )
+        p = mod.miss_path("sess-1", str(tmp_path))
+        assert stat.S_IMODE(os.stat(p).st_mode) == 0o600
+        assert [f for f in os.listdir(tmp_path) if f.endswith(".tmp")] == []
+
+    def test_hook_success_face_call_resets_counter(self, tmp_path):
+        """計數歸零時機＝binary 在場呼叫（resolve 已過——含 face 失敗；
+        唯 BinaryMissing 不歸零）——sidecar 檔移除；之後再 miss 從 1
+        重計（連續 miss 語義）。"""
+        miss_runner = _seq_runner([_hook_binary_missing() for _ in range(2)])
+        for _ in range(2):
+            _hook_run(UPS_STDIN, miss_runner, tmp_path)
+        p = mod.miss_path("sess-1", str(tmp_path))
+        assert mod.read_miss_count(p) == 2
+        ok_runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
+        code, _out, _commit = _hook_run(UPS_STDIN, ok_runner, tmp_path)
+        assert code == 0
+        assert not os.path.exists(p)  # binary 在場呼叫歸零（resolve 已過）
+        again = _seq_runner([_hook_binary_missing()])
+        code, _out, _commit = _hook_run(UPS_STDIN, again, tmp_path)
+        assert code == 0
+        assert mod.read_miss_count(p) == 1
+
+    def test_store_absent_path_still_zero_counter(self, tmp_path):
+        """既有行為零變：store-absent（合法軟 path）不走 miss 計數。"""
+        runner = _seq_runner([
+            _hook_err("store-incompatible", "storage", exit_code=4),
+            _hook_err("store-incompatible", "storage", exit_code=4),
+        ])
+        for _ in range(2):
+            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
+            assert (code, out, commit) == (0, "", None)
+        assert not os.path.exists(mod.miss_path("sess-1", str(tmp_path)))
+
+    def test_hook_face_error_between_misses_resets_counter(
+        self, tmp_path, capsys
+    ):
+        """binary 在場呼叫歸零（resolve 已過——含 face 失敗）：miss×2 →
+        store-absent face 失敗（binary 已執行）→ 計數歸零；再 miss 從 1
+        重計、未達門檻靜默。"""
+        miss_runner = _seq_runner([_hook_binary_missing() for _ in range(3)])
+        for _ in range(2):
+            _hook_run(UPS_STDIN, miss_runner, tmp_path)
+        p = mod.miss_path("sess-1", str(tmp_path))
+        assert mod.read_miss_count(p) == 2
+        face_err_runner = _seq_runner([
+            _hook_err("store-incompatible", "storage", exit_code=4),
+        ])
+        code, out, commit = _hook_run(UPS_STDIN, face_err_runner, tmp_path)
+        assert (code, out, commit) == (0, "", None)
+        assert mod.read_miss_count(p) == 0  # face 失敗但 resolve 已過——歸零
+        code, out, commit = _hook_run(UPS_STDIN, miss_runner, tmp_path)
+        assert (code, out, commit) == (0, "", None)
+        assert mod.read_miss_count(p) == 1
+        assert "binary missing" not in capsys.readouterr().err
+
+    def test_negative_miss_sidecar_treated_as_zero(self, tmp_path, capsys):
+        """負 int 非合法計數——.misses 同壞檔處置：讀 0、bump 從 1 起。"""
+        p = mod.miss_path("sess-1", str(tmp_path))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write("-9")
+        assert mod.read_miss_count(p) == 0
+        assert mod.bump_binary_miss("sess-1", str(tmp_path)) == 1
+        assert "負數" in capsys.readouterr().err
+
+    def test_negative_fallback_sidecar_treated_as_zero(self, tmp_path):
+        """共用契約收緊同時涵蓋 .fallbacks：負 int 讀 0、bump 從 1 起。"""
+        p = mod.fallback_path("sess-1", str(tmp_path))
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write("-4")
+        assert mod.read_lock_fallbacks(p) == 0
+        mod.bump_lock_fallback("sess-1", str(tmp_path))
+        assert mod.read_lock_fallbacks(p) == 1
+
+    def test_cli_binary_missing_typed_exit1(self, tmp_path, monkeypatch,
+                                            capsys):
+        """CLI 面：main 接 BinaryMissing → stderr typed 訊息＋exit 1
+        （不再 traceback；其他 Exception 維持現狀）。"""
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
+        rc = mod.main([
+            "process", "--address", ADDR, "--session-id", "sess-cli",
+            "--config", REAL_CONFIG, "--state-dir", str(tmp_path),
+        ])
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "duty-receive" in err
+        assert "dutymail binary not found" in err
 
 
 # ── governance 接線：registrations 雙事件＋manifest scripts 登記───────

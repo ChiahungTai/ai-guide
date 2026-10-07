@@ -18,6 +18,7 @@ default-deny 分診表、絕不 flush-ack）單一源＝scripts/duty_receive.py�
 | 無新信（空批次）／無 session_id | 空（安靜） | 0 |
 | eligibility gate 不過（cwd 在 repo 外） | 空（零查詢零輸出） | 0 |
 | store 缺席（face class 4 storage） | 空＋stderr 一行註記 | 0 |
+| binary 缺席（resolver 全 miss＝BinaryMissing——環境壞，非 store 軟 path） | 空；consecutive miss <3 靜默、≥3 stderr advisory 一行（sidecar 計數；binary 在場呼叫歸零——resolve 已過，含 face 失敗；唯 BinaryMissing 不歸零——AIR-274 M1） | 0（advisory 不擋 prompt） |
 | 其他 face 失敗（含 shape 漂移） | 空＋stderr 註記帶錯誤摘要 | 0 |
 | holder 衝突（live holder 在場／rebind CAS 失敗——皆不搶不重試） | 衝突訊息行（surface） | 0 |
 | 併發鎖逾時（fallback——照跑，可能重複呈報 bounded） | 照常輸出＋stderr 一行 lock timeout＋sidecar 計數 | 0 |
@@ -165,9 +166,25 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
                 f"{detail}",
                 file=sys.stderr,
             )
+
+        def _runner_resets_miss(argv):
+            # AIR-274 M1：binary 在場證據＝resolver 已過（成功 return
+            # 或 face 失敗——DutymailFaceError 必在 binary 已執行後）
+            # ——consecutive-miss 計數歸零；唯 BinaryMissing 不歸零。
+            # reset 內部容錯不 raise，原例外照傳。
+            try:
+                out = runner(argv)
+            except core.BinaryMissing:
+                raise  # resolver miss——計數留給 except 分支 bump
+            except Exception:
+                core.reset_binary_miss(session_id, state_dir)
+                raise
+            core.reset_binary_miss(session_id, state_dir)
+            return out
+
         try:
             lines, commit = core.process_once(
-                address, runner, policy, state_file, now_us=now_us
+                address, _runner_resets_miss, policy, state_file, now_us=now_us
             )
         except core.HolderConflict as exc:
             lines, commit = [f"[{HOOK_TAG}] {exc}"], None
@@ -180,6 +197,19 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
             print(
                 f"[{HOOK_TAG}] fail-soft：{kind}——{exc}", file=sys.stderr
             )
+            return 0, "", None
+        except core.BinaryMissing as exc:
+            # AIR-274 M1：與 store-absent 分流——consecutive-miss 計數，
+            # 達門檻 stderr advisory（surface 可見）；未達靜默。exit 恆 0
+            # （hook 非零會擋 prompt）。
+            _release()
+            count = core.bump_binary_miss(session_id, state_dir)
+            if count >= core.MISS_ADVISORY_THRESHOLD:
+                print(
+                    f"[{HOOK_TAG}] dutymail binary missing x {count}"
+                    f"——請檢查 plugin 安裝",
+                    file=sys.stderr,
+                )
             return 0, "", None
         except Exception:
             _release()
