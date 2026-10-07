@@ -56,10 +56,10 @@ uv run python scripts/mail_waiter.py status
 ### 面 5：bridge job 收線態（雙 state-root）
 
 ```bash
-uv run python scripts/agent_liveness_sweep.py
+uv run python scripts/agent_liveness_sweep.py --max-files 200 --max-bytes 33554432
 ```
 
-- **耗時須知（跑之前讀）**：sweep 無上限參數——雙根 `jobs/*.jsonl` 全量逐檔讀（GB 級、只增不減），實測 30s+ 才一次性輸出。以 ≥300s 逾時呼叫；中途靜默屬正常，勿重跑勿中砍；逾時＝一行如實標「未收斂（逾時）」——ledger 體積失控本身就是 finding，處置歸 session。急巡（user 明說要快）可跳過本面，一行標「未掃（耗時面）」；值星起手／接手交接／懷疑卡住或收線檢查必跑完整 sweep
+- **耗時須知（跑之前讀）**：bounded 為正常 sitrep——上式（`--max-files 200 --max-bytes 33554432`，32MiB body 預算，真 corpus 實測 0.35–0.40s）秒級回報，以 ≥60s 逾時呼叫；覆蓋率見首行（`scan=N/M files`）。coverage 行 `running=r/R`——r<R 或 `read-failed>0`＝掃描不完整，**zombie=0 不可當完整**（`unscanned` 行如實列未掃候選，stat-only；coverage 不完整或 skipped 異常大時改跑無旗標全量）。無旗標全量＝接手交接／收線稽核深查用（雙根 GB 級逐檔讀、30s+，≥300s 逾時，非值星巡邏常態）——ledger 體積失控本身就是 finding，處置歸 session
 - 唯讀 reporter，預設雙根——ai-guide＋delegate-bridge 兩 workspace 的 ledger 都盤（值星實務橫跨兩 workspace，禁只看單根）
 - 一行＝running-fresh／terminal-unclaimed／zombie-suspect 計數；異常類才展開 job id＋family＋最後活動
 - 每個異常 job 帶**運行時間**（sweep 的「最後活動 X 前」欄）；**產出增長**＝對 running-fresh job 的 ledger 檔兩次取樣（間隔 30–60s，`stat -f "%z %m"`，同面 6 手法）——檔案＝`~/Github/<root 標籤>/.delegate-bridge/jobs/<job-id>.jsonl`（root 標籤＝sweep 展開行的 `@ai-guide`／`@delegate-bridge`）；size 增長＝在跑，停滯＝卡住嫌疑（事件流逐 turn 落盤，短窗無增長未必卡死——併「最後活動距今」判讀）；無 running job 時本子步驟跳過。**terminal 未收**（completed 但台帳無 collect 紀錄）與 **zombie 停滯**（>6h 無活動）兩種都要現形
@@ -102,7 +102,7 @@ sitrep @ <working repo>（HH:MM）
 2/7 STATE：<卡在哪→為何轉向→下次起手點>／無 STATE.md
 3/7 信箱：<alias> pending=N（未處理）；…
 4/7 watcher：running fresh（armed Xs 前）／stopped／stale（提示 re-arm）
-5/7 bridge：fresh=N zombie=N terminal-unclaimed=N（異常展開：job-…｜family｜最後活動 X 前｜增長中／停滯）／未掃（急巡跳過）／未收斂（逾時）
+5/7 bridge：fresh=N zombie=N terminal-unclaimed=N（異常展開：job-…｜family｜最後活動 X 前｜增長中／停滯）／coverage 不完整（running=r/R、unscanned 候選 K）／未收斂（逾時）
 6/7 sub：真活 N（增長中）／卡住嫌疑 N／靜默終態 N（completed/failed/stopped；description…｜X 分前）
 7/7 git：clean／N 檔未提交＋WT：…（逐一列名）
 ```

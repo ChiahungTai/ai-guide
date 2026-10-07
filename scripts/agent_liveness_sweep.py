@@ -16,6 +16,15 @@ v1 資料源（bridge ledger 是 per-repo 的——`--state-root` 可多根，�
 - liveness 六欄台帳：session-journal.md 的六欄表（id/carrier/ts/sink/expect/collect）；
   台帳↔bridge 對接鍵＝job id（短形 id 以 faces 前綴正典化）
 
+bounded 掃描（AIR-271）：`--max-files`／`--max-bytes` 限定 jsonl body 讀取預算——
+jobs.json 索引恆全量讀（小檔、不受 bound）；jsonl 走語義選檔序（①index-running
+最舊→最新先掃 zombie 候選 ②無 index 新→舊 ③index-terminal 新→舊——body I/O
+最後），兩 cap 並存先達先停。截斷丟的是排序尾端——tier1 較新 running 候選與
+tier2 較舊無 index 檔（兩者仍是 zombie 候選面）——防護＝覆蓋率如實聲明（首行
+scan=N/M＋coverage 行 running=r/R＋unscanned 候選行 stat-only）——zombie=0 而
+r<R 時不得當完整；read-fail 不計 scanned（read_failed>0＝coverage incomplete）。
+無 bounded flag＝既有全量行為零變。
+
 分類：collected / terminal-unclaimed / running-fresh / zombie-suspect / unledgered。
 唯讀保證：除讀檔外無任何寫入／刪除／kill；exit 0（reporter 不以 exit 碼報 finding）。
 """
@@ -25,6 +34,7 @@ import importlib.util
 import json
 import re
 import sys
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -96,6 +106,45 @@ class JobFace:
 
 
 @dataclass
+class _JobFile:
+    """jobs/*.jsonl 的 stat 面（body 未讀）——bounded 選檔序的排序單元。"""
+
+    path: Path
+    root: Path
+    job_id: str
+    size: int
+    mtime: float
+    tier: int  # 1=index-running（最舊→最新）2=無 index（新→舊）3=index-terminal（新→舊）
+
+
+@dataclass
+class ScanCoverage:
+    """單次掃描的覆蓋率聲明（AIR-271）——只報未掃，不假裝完整。"""
+
+    mode: str  # "bounded" | "full"
+    discovered_files: int = 0
+    content_scanned_files: int = 0
+    bytes_scanned: int = 0
+    running_candidates: int = 0  # tier1（index-running）＋tier2（無 index）＝潛在 running
+    running_scanned: int = 0  # 候選中實際讀了 body 的數
+    read_failed: int = 0  # body 讀取失敗（OSError）——>0 即 coverage incomplete
+    per_root: dict[str, dict[str, int]] = field(default_factory=dict)  # root → {discovered, scanned}
+    stop_reason: str | None = None  # "max-files" | "max-bytes" | None（掃完／full）
+    unscanned_candidates: int = 0  # 未掃的 zombie 候選（index-running／無 index）
+    unscanned_candidates_bytes: int = 0
+    unscanned_terminal_excluded: int = 0  # index-terminal 安全排除（index face 權威，不需 body）
+    unscanned_terminal_excluded_bytes: int = 0
+
+    @property
+    def skipped(self) -> int:
+        return self.discovered_files - self.content_scanned_files
+
+    @property
+    def unscanned_bytes(self) -> int:
+        return self.unscanned_candidates_bytes + self.unscanned_terminal_excluded_bytes
+
+
+@dataclass
 class LedgerRow:
     """session-journal 六欄台帳列（id/carrier/ts/sink/expect/collect）。"""
 
@@ -120,7 +169,14 @@ class LedgerRow:
         return self.cells[5]
 
 
-def parse_args() -> argparse.Namespace:
+def _positive_int(value: str) -> int:
+    num = int(value)
+    if not (num > 0):
+        raise argparse.ArgumentTypeError(f"須為正整數：{value}")
+    return num
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="bridge jobs liveness sweep（唯讀 reporter——只標不殺）"
     )
@@ -156,6 +212,23 @@ def parse_args() -> argparse.Namespace:
         default=WINDOW_HOURS_DEFAULT,
         help="terminal-unclaimed／unledgered 的回報回看窗（預設 168；0＝不限）",
     )
+    parser.add_argument(
+        "--max-files",
+        type=_positive_int,
+        default=None,
+        metavar="N",
+        help=(
+            "bounded 掃描（AIR-271）：最多讀 N 個 jsonl body——選檔序＝index-running"
+            " 最舊先（zombie 候選優先）；與 --max-bytes 並存＝先達先停"
+        ),
+    )
+    parser.add_argument(
+        "--max-bytes",
+        type=_positive_int,
+        default=None,
+        metavar="B",
+        help="bounded 掃描（AIR-271）：body 讀取累計 bytes 上限；先達先停",
+    )
     parser.add_argument("--json", action="store_true", help="以 JSON 輸出報告")
     parser.add_argument(
         "--enrollment-root",
@@ -165,7 +238,7 @@ def parse_args() -> argparse.Namespace:
         help="收編盤點根（AIR-152）：掃下一層 git repos，列未收編／marker 壞清單"
         "（唯讀可見面）",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def parse_micros(value: object) -> datetime | None:
@@ -248,18 +321,67 @@ def load_index(state_root: Path) -> dict[str, dict[str, object]]:
     return {str(row["id"]): row for row in rows if isinstance(row, dict) and "id" in row}
 
 
-def load_job_faces(state_roots: list[Path]) -> dict[str, JobFace]:
+def _read_job_text(path: Path) -> str:
+    """body 讀取 seam（AIR-271）——測試經 monkeypatch 記錄實際 body reads。"""
+    return path.read_text(errors="replace")
+
+
+def load_job_faces(
+    state_roots: list[Path],
+    max_files: int | None = None,
+    max_bytes: int | None = None,
+) -> tuple[dict[str, JobFace], ScanCoverage]:
+    """兩面載入：jobs.json 索引恆全量讀（小檔、不受 bound）；jsonl body 依
+    bounded 預算走選檔序（無 cap＝全量，行為不變）。回（faces, 覆蓋率聲明）。"""
     faces: dict[str, JobFace] = {}
+    coverage = ScanCoverage(
+        mode="bounded" if (max_files is not None or max_bytes is not None) else "full"
+    )
+    per_root_files: list[list[_JobFile]] = []
     for state_root in state_roots:
-        _load_root_faces(state_root, faces)
+        _load_root_index(state_root, faces)
+        files = _discover_job_files(state_root, faces)
+        per_root_files.append(files)
+        coverage.per_root[str(state_root)] = {"discovered": len(files), "scanned": 0}
+        coverage.discovered_files += len(files)
+        coverage.running_candidates += sum(1 for jf in files if jf.tier in (1, 2))
+
+    ordered = _priority_order(per_root_files)
+    for jf in ordered:
+        if max_files is not None and coverage.content_scanned_files >= max_files:
+            coverage.stop_reason = "max-files"
+            break
+        if max_bytes is not None and coverage.bytes_scanned + jf.size > max_bytes:
+            coverage.stop_reason = "max-bytes"
+            break
+        if not _scan_job_file(faces, jf):
+            # read-fail：不是 content scan——不計 scanned／bytes／running_scanned，
+            # 只計獨立 read_failed（coverage 語義隨之 incomplete）
+            coverage.read_failed += 1
+            continue
+        coverage.content_scanned_files += 1
+        coverage.bytes_scanned += jf.size
+        coverage.per_root[str(jf.root)]["scanned"] += 1
+        if jf.tier in (1, 2):
+            coverage.running_scanned += 1
+
+    # 未掃部分按 index face 分流：terminal 安全排除；running／無 index＝zombie 候選
+    for jf in ordered[coverage.content_scanned_files :]:
+        if jf.tier == 3:
+            coverage.unscanned_terminal_excluded += 1
+            coverage.unscanned_terminal_excluded_bytes += jf.size
+        else:
+            coverage.unscanned_candidates += 1
+            coverage.unscanned_candidates_bytes += jf.size
+
     # 索引時間戳兜底：無 jsonl 檔（spawn 失敗等）的 job 至少有索引終態寫入時間
     for face in faces.values():
         if face.last_activity is None and face.index_ts is not None:
             face.last_activity = face.index_ts
-    return faces
+    return faces, coverage
 
 
-def _load_root_faces(state_root: Path, faces: dict[str, JobFace]) -> None:
+def _load_root_index(state_root: Path, faces: dict[str, JobFace]) -> None:
     for raw_id, row in load_index(state_root).items():
         faces[str(raw_id)] = JobFace(
             job_id=str(raw_id),
@@ -270,28 +392,89 @@ def _load_root_faces(state_root: Path, faces: dict[str, JobFace]) -> None:
             summary=row.get("summary") if isinstance(row.get("summary"), str) else None,
         )
 
+
+def _discover_job_files(state_root: Path, faces: dict[str, JobFace]) -> list[_JobFile]:
+    """stat 面 discovery（千檔毫秒級，只 stat 不讀 body）＋依 index face 分 tier。"""
     jobs_dir = state_root / "jobs"
-    if jobs_dir.is_dir():
-        for path in sorted(jobs_dir.glob("*.jsonl")):
-            job_id = path.stem
-            face = faces.get(job_id)
-            if face is None:
-                face = JobFace(job_id=job_id, root=state_root)
-                faces[job_id] = face
-            try:
-                text = path.read_text(errors="replace")
-            except OSError as exc:
-                face.file_reason = f"read-fail: {exc}"
-                continue
-            file_face, file_ts, reason = scan_event_stream(text)
-            face.file_status = file_face
-            if not face.file_reason:
-                face.file_reason = reason
-            activity = file_ts or datetime.fromtimestamp(path.stat().st_mtime).astimezone()
-            if activity and (face.last_activity is None or activity > face.last_activity):
-                face.last_activity = activity
-            if file_face == "completed" and face.response_len == 0:
-                face.response_len = _response_len_hint(text)
+    if not jobs_dir.is_dir():
+        return []
+    files: list[_JobFile] = []
+    for path in sorted(jobs_dir.glob("*.jsonl")):
+        face = faces.get(path.stem)
+        index_status = face.index_status if face is not None else None
+        if index_status is None:
+            tier = 2  # 無 index／index 無 status——face 未知，視為潛在 running 候選
+        elif index_status == RUNNING:
+            tier = 1
+        else:
+            tier = 3
+        try:
+            stat = path.stat()
+            size, mtime = stat.st_size, stat.st_mtime
+        except OSError:
+            size, mtime = 0, 0.0  # read 時照原路徑標 read-fail
+        files.append(
+            _JobFile(
+                path=path, root=state_root, job_id=path.stem, size=size, mtime=mtime, tier=tier
+            )
+        )
+    return files
+
+
+def _priority_order(per_root_files: list[list[_JobFile]]) -> list[_JobFile]:
+    """選檔序（替換檔名序）：①index-running 最舊→最新（先抓 zombie 候選）
+    ②無 index 新→舊 ③index-terminal 新→舊（body I/O 最後）；各 tier 內雙 root
+    round-robin。截斷丟的是排序尾端——tier1 較新 running 候選與 tier2 較舊檔
+    （皆屬 zombie 候選面）——防護＝coverage 的 running=r/R＋unscanned 候選行；
+    tier 3 被截斷屬安全排除（index face 權威）。"""
+    ordered: list[_JobFile] = []
+    for tier in (1, 2, 3):
+        buckets: list[list[_JobFile]] = []
+        for files in per_root_files:
+            subset = [jf for jf in files if jf.tier == tier]
+            subset.sort(key=lambda jf: (jf.mtime, jf.path.name), reverse=(tier != 1))
+            if subset:
+                buckets.append(subset)
+        iterators: list[Iterator[_JobFile]] = [iter(bucket) for bucket in buckets]
+        while iterators:
+            exhausted: list[Iterator[_JobFile]] = []
+            for it in iterators:
+                item = next(it, None)
+                if item is None:
+                    exhausted.append(it)
+                else:
+                    ordered.append(item)
+            for it in exhausted:
+                iterators.remove(it)
+    return ordered
+
+
+def _scan_job_file(faces: dict[str, JobFace], jf: _JobFile) -> bool:
+    """讀單一 jsonl body 並合成 face（原有逐檔語義，分類不變）。
+
+    回傳 body 是否成功讀取——read-fail 不是 content scan：caller 不得把
+    失敗檔計入 coverage 的 scanned／running_scanned，否則 read-fail 會
+    偽造完整 coverage（F1，AIR-271 複核）。
+    """
+    face = faces.get(jf.job_id)
+    if face is None:
+        face = JobFace(job_id=jf.job_id, root=jf.root)
+        faces[jf.job_id] = face
+    try:
+        text = _read_job_text(jf.path)
+    except OSError as exc:
+        face.file_reason = f"read-fail: {exc}"
+        return False
+    file_face, file_ts, reason = scan_event_stream(text)
+    face.file_status = file_face
+    if not face.file_reason:
+        face.file_reason = reason
+    activity = file_ts or datetime.fromtimestamp(jf.mtime).astimezone()
+    if activity and (face.last_activity is None or activity > face.last_activity):
+        face.last_activity = activity
+    if file_face == "completed" and face.response_len == 0:
+        face.response_len = _response_len_hint(text)
+    return True
 
 
 def _response_len_hint(text: str) -> int:
@@ -540,6 +723,37 @@ def fmt_ts(value: datetime | None) -> str:
     return value.strftime("%m-%d %H:%M") if value else "—"
 
 
+def _mib(num_bytes: int) -> str:
+    return f"{num_bytes / 1048576:.1f}"
+
+
+def _render_coverage_lines(coverage: ScanCoverage) -> list[str]:
+    """coverage 行＋unscanned 行（bounded 時；全部 stat 面數字，不讀內容）。"""
+    stop_txt = coverage.stop_reason or "none"
+    per_root_txt = ", ".join(
+        f"{Path(root).parent.name} {counts['scanned']}/{counts['discovered']}"
+        for root, counts in coverage.per_root.items()
+    )
+    read_fail_txt = (
+        f" | read-failed={coverage.read_failed}" if coverage.read_failed else ""
+    )
+    lines = [
+        f"coverage: running={coverage.running_scanned}/{coverage.running_candidates}"
+        f" | roots={per_root_txt} | skipped={coverage.skipped} | stop={stop_txt}"
+        f"{read_fail_txt}"
+    ]
+    if coverage.skipped:
+        lines.append(
+            f"unscanned: {coverage.skipped} files / {_mib(coverage.unscanned_bytes)} MiB"
+            f" | 候選（running/無 index）={coverage.unscanned_candidates} files /"
+            f" {_mib(coverage.unscanned_candidates_bytes)} MiB"
+            f" | index-terminal 安全排除={coverage.unscanned_terminal_excluded} files /"
+            f" {_mib(coverage.unscanned_terminal_excluded_bytes)} MiB"
+            f" | reason=stop={stop_txt}{read_fail_txt}"
+        )
+    return lines
+
+
 def render_text(
     groups: dict[str, list[tuple[JobFace, str]]],
     counts: dict[str, int],
@@ -547,8 +761,19 @@ def render_text(
     args: argparse.Namespace,
     now: datetime,
     enrollment: dict | None = None,
+    coverage: ScanCoverage | None = None,
 ) -> str:
     lines: list[str] = []
+    if coverage is not None and coverage.mode == "bounded":
+        caps = []
+        if args.max_files is not None:
+            caps.append(f"max-files={args.max_files}")
+        if args.max_bytes is not None:
+            caps.append(f"max-bytes={args.max_bytes}")
+        lines.append(
+            f"scan={coverage.content_scanned_files}/{coverage.discovered_files}"
+            f" files (bounded: {', '.join(caps)})"
+        )
     multi = len(state_roots) > 1
     roots_txt = "＋".join(str(root) for root in state_roots)
     total = sum(counts.values())
@@ -559,6 +784,8 @@ def render_text(
         f" unledgered(≤{args.window_hours:.0f}h)={counts['unledgered']}"
         f" | stale>{args.stale_hours:.0f}h | {now.strftime('%Y-%m-%d %H:%M')}"
     )
+    if coverage is not None and coverage.mode == "bounded":
+        lines.extend(_render_coverage_lines(coverage))
     order = ["zombie-suspect", "terminal-unclaimed", "running-fresh", "unledgered", "collected"]
     for group in order:
         items = groups[group]
@@ -584,6 +811,7 @@ def render_json(
     args: argparse.Namespace,
     now: datetime,
     enrollment: dict | None = None,
+    coverage: ScanCoverage | None = None,
 ) -> str:
     payload = {
         "generated_at": now.isoformat(),
@@ -612,13 +840,31 @@ def render_json(
             for group in groups
         },
     }
+    if coverage is not None and coverage.mode == "bounded":
+        payload["coverage"] = {
+            "mode": coverage.mode,
+            "discovered_files": coverage.discovered_files,
+            "content_scanned_files": coverage.content_scanned_files,
+            "bytes": coverage.bytes_scanned,
+            "running_candidates": coverage.running_candidates,
+            "running_scanned": coverage.running_scanned,
+            "read_failed": coverage.read_failed,
+            "unscanned_by_face": {
+                "candidates": coverage.unscanned_candidates,
+                "candidates_bytes": coverage.unscanned_candidates_bytes,
+                "terminal_excluded": coverage.unscanned_terminal_excluded,
+                "terminal_excluded_bytes": coverage.unscanned_terminal_excluded_bytes,
+            },
+            "per_root": coverage.per_root,
+            "stop_reason": coverage.stop_reason,
+        }
     if enrollment is not None:
         payload["enrollment"] = enrollment
     return json.dumps(payload, ensure_ascii=False, indent=2)
 
 
-def main() -> int:
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     if args.state_root:
         state_roots = list(args.state_root)
         missing = [root for root in state_roots if not root.is_dir()]
@@ -634,7 +880,9 @@ def main() -> int:
             print("[FAIL] agent_liveness_sweep: 無可用的預設 state root", file=sys.stderr)
             return 2
 
-    faces = load_job_faces(state_roots)
+    faces, coverage = load_job_faces(
+        state_roots, max_files=args.max_files, max_bytes=args.max_bytes
+    )
     rows = load_ledger_rows(args.journal)
     for row in rows:
         row.job_ids = canonicalize_job_ids(row.job_ids, faces)
@@ -667,12 +915,17 @@ def main() -> int:
         enrollment = scan_enrollment(args.enrollment_root)
 
     if args.json:
-        print(render_json(groups, counts, state_roots, args, now, enrollment))
+        print(render_json(groups, counts, state_roots, args, now, enrollment, coverage))
     else:
-        print(render_text(groups, counts, state_roots, args, now, enrollment))
+        print(render_text(groups, counts, state_roots, args, now, enrollment, coverage))
+    scanned_note = (
+        f"（body {coverage.content_scanned_files}/{coverage.discovered_files}）"
+        if coverage.mode == "bounded"
+        else ""
+    )
     print(
         f"[OK] agent_liveness_sweep: 台帳列 {len(rows)}（提及 job id {len(mentioned)}），"
-        f"掃描 {len(faces)} jobs／{len(state_roots)} roots",
+        f"掃描 {len(faces)} jobs／{len(state_roots)} roots{scanned_note}",
         file=sys.stderr,
     )
     return 0
