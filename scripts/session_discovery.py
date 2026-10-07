@@ -1,19 +1,27 @@
 #!/usr/bin/env python
-"""session_discovery — session 發現 seam（AIR-254.1）.
+"""session_discovery — session 發現 seam（AIR-254.1；AIR-277 換源 harness-native）.
 
 一句話：session 發現的單一 choke point——「現在有哪些 AI session、在哪個
 repo」從此只經本檔查；消費端（inflight_snapshot 路 2、handoff resolve-
-target）吃正規化 rows，不再各自碰 registry。v1 來源＝scbus registry
-（過渡）——`_collect_raw` 是全 repo 唯一允許呼叫 `scbus list` 的位置，
-未來換源（dutymail registry）只改該函式一處。
+target）吃正規化 rows。來源＝harness-native scan——ZCode session store
+（`~/.zcode/cli/db/db.sqlite` 的 `session` 表）**唯讀直查**（python
+sqlite3 模組＋`file:...?mode=ro` URI——CLI 對此 DB 會無聲空輸出）；
+`_collect_raw` 是全 repo 唯一源存取位置，未來換源只改該函式一處。
+
+覆蓋邊界（如實聲明，禁靜默假裝全覆蓋）
+----
+本源只覆蓋 **zcode**——rows 的 `harness` 恆 `"zcode"`；claude／codex／
+muse session 不在本源——`find` 對非 zcode harness＝`no-match` typed，
+錯誤訊息帶覆蓋註記。`task_type='subagent_child'`（ephemeral 子 agent）
+不列——非可定址 session。
 
 label sidecar
 ----
 `~/.agents/session-discovery/labels.json`（本 seam 自有；display
 metadata 非 address 語義——AIR-248 successor 裁定）：形 `{"<session_id>":
 {"label": str, "updated_at": iso8601}}`；atomic 寫（tmp＋os.replace）、
-檔 0600／目錄 0700（owner-only）。label 絕不寫回 registry（禁 `scbus
-rename`——seam 零 registry 寫入）。路徑可經 `--labels-file` 或環境變數
+檔 0600／目錄 0700（owner-only）。label 絕不寫回源 store（store 連線
+唯讀——seam 零 store 寫入）。路徑可經 `--labels-file` 或環境變數
 `SESSION_DISCOVERY_LABELS_FILE` 注入（測試 tmp 用）。
 
 正規化 row 形狀
@@ -21,10 +29,14 @@ rename`——seam 零 registry 寫入）。路徑可經 `--labels-file` 或環�
 `{"session_id": 全碼, "harness": str|null, "workspace_root": str|null,
 "label": str|null, "liveness": observed_liveness, "status": str|null,
 "last_seen_iso": str|null, "age_min": int|null}`——label 合併 sidecar
-（scbus name 非空時 sidecar 優先、無 sidecar 用 scbus name）。`--live`
-過濾＝`liveness == "live"` 且 `session_id` 以 `sess_` 開頭——沿用
-inflight_snapshot 現行雜訊排除語義（scbus-ext-* 幽靈與 UUID 雜訊列
-排除）；status 不參與過濾。
+（store title 非空時 sidecar 優先、無 sidecar 用 title）。liveness／
+status 由 store `time_archived` 推導：未封存＝`live`／`active`，已封存
+＝`ended`／`ended`——handoff resolve_target 的 `status != "ended"` 過濾
+語義保留。`--live` 過濾＝`liveness == "live"` 且 `session_id` 以
+`sess_` 開頭——沿用 inflight_snapshot 現行雜訊排除語義；status 不參與
+過濾。**`live`＝未封存，非存活觀測**——zcode store 無存活訊號，未封存
+歷史 session 恆標 live；`--live` 過濾後集合含全部未封存歷史列，下游解
+讀須對照 `age_min`。
 
 CLI
 ----
@@ -36,14 +48,15 @@ CLI
 
 exit：0＝ok；3＝typed failure（stderr 統一 `{"schemaVersion": 1, "ok":
 false, "error": {"code", "message"}}`、stdout 空）。`find` 無法唯一確立
-（0 或 >1 候選同分）＝exit 3 禁猜；`whoami` v1 委派 `scbus whoami`
-（JSON passthrough；缺席／失敗＝exit 3）。
+（0 或 >1 候選同分）＝exit 3 禁猜；`whoami`＝harness workspace 對照
+（cwd realpath 對 store `directory` 精確匹配、取 `time_updated` 最新；
+無匹配／源缺席＝exit 3）。
 """
 
 import argparse
 import json
 import os
-import subprocess
+import sqlite3
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -54,6 +67,13 @@ LABELS_ENV = "SESSION_DISCOVERY_LABELS_FILE"
 LABEL_MAX_CHARS = 64
 LIVE_VALUE = "live"
 SESS_PREFIX = "sess_"
+SOURCE_HARNESS = "zcode"
+COVERAGE = "zcode-only"
+DEFAULT_DB = Path.home() / ".zcode" / "cli" / "db" / "db.sqlite"
+_SUBAGENT_TASK_TYPE = "subagent_child"
+_SELECT_COLS = (
+    "id, directory, title, time_created, time_updated, time_archived, task_type"
+)
 
 Runner = Callable[..., str]
 
@@ -67,67 +87,127 @@ class DiscoveryError(Exception):
         self.message = message
 
 
-def _run_cmd(cmd: list[str]) -> str:
-    proc = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    return proc.stdout
-
-
 def _now_iso() -> str:
     return datetime.now(tz=UTC).astimezone().isoformat(timespec="seconds")
 
 
 # ---------------------------------------------------------------------------
-# v1 來源（choke point）——換源只改本節
+# 來源（choke point）——換源只改本節
 # ---------------------------------------------------------------------------
 
 
-def _collect_raw(runner: Runner | None = None) -> dict[str, Any]:
-    """v1 來源＝scbus registry（過渡）——全 repo 唯一 `scbus list` 呼叫點。
+def _ms_to_us(value: Any) -> int | float | None:
+    """store 時間戳（ms epoch）→ seam 內部單位（us）；非數值＝None。"""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value * 1_000
+    return None
 
-    stdout JSON＝`{"count", "sessions": [...]}`；失敗 raise typed
-    DiscoveryError（CLI 層轉 exit 3 統一 envelope）。
+
+def _query_store(
+    db_path: Path, workspace: str | None = None
+) -> list[dict[str, Any]]:
+    """唯讀直查 ZCode session store（`session` 表；URI `mode=ro`——seam
+    零 store 寫入）。
+
+    匹配語義：`directory` 為精確字串匹配、未正規化——尾斜線等歷史變體
+    不匹配（落 typed unavailable/no-match，fail-closed）。
+
+    源缺席（檔案不存在）＝`source_unavailable`；已開檔但結構／內容損壞
+    （非 DB 檔、缺表缺欄、鎖死逾時）＝`source_malformed`——typed
+    fail-closed，CLI 層轉 exit 3 統一 envelope。`subagent_child` 不列。
     """
-    run = runner if runner is not None else _run_cmd
+    if not db_path.exists():
+        raise DiscoveryError("source_unavailable", f"session store 缺席：{db_path}")
+    sql = "SELECT " + _SELECT_COLS + " FROM session WHERE (task_type IS NULL OR task_type != ?)"
+    params: list[Any] = [_SUBAGENT_TASK_TYPE]
+    if workspace is not None:
+        sql += " AND directory = ?"
+        params.append(workspace)
+    sql += " ORDER BY time_updated DESC, rowid DESC"
     try:
-        stdout = run(["scbus", "list"])
-    except OSError as exc:
-        raise DiscoveryError("source_unavailable", f"scbus list 來源缺席：{exc}") from exc
-    except subprocess.CalledProcessError as exc:
-        detail = (exc.stderr or "").strip() or f"exit {exc.returncode}"
-        raise DiscoveryError("source_unavailable", f"scbus list 失敗：{detail}") from exc
-    try:
-        payload = json.loads(stdout)
-    except json.JSONDecodeError as exc:
-        raise DiscoveryError("source_malformed", f"scbus list 輸出非 JSON：{exc}") from exc
-    if not isinstance(payload, dict) or not isinstance(payload.get("sessions"), list):
+        con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5.0)
+        try:
+            con.row_factory = sqlite3.Row
+            rows = con.execute(sql, params).fetchall()
+        finally:
+            con.close()
+    except sqlite3.Error as exc:
         raise DiscoveryError(
-            "source_malformed",
-            'scbus list 輸出須為 {"count", "sessions": [...]} 形（缺 sessions 陣列）',
+            "source_malformed", f"session store 查詢失敗：{exc}"
+        ) from exc
+    return [dict(row) for row in rows]
+
+
+def _to_session(row: dict[str, Any]) -> dict[str, Any]:
+    """store 列 → 正規化前置形（`_normalize` 消費的欄位映射）。
+
+    liveness／status 單一推導源＝`time_archived`（未封存＝live／active、
+    已封存＝ended／ended）。**`live`＝未封存，非存活觀測**——zcode
+    store 無存活訊號，未封存歷史 session 恆標 live；`--live` 過濾後集合
+    含全部未封存歷史列，下游解讀須對照 `age_min`。"""
+    ended = row.get("time_archived") is not None
+    return {
+        "session_id": row.get("id"),
+        "harness": SOURCE_HARNESS,
+        "workspace_root": row.get("directory"),
+        "name": row.get("title"),
+        "status": "ended" if ended else "active",
+        "observed_liveness": "ended" if ended else LIVE_VALUE,
+        "created_at_us": _ms_to_us(row.get("time_created")),
+        "last_seen_us": _ms_to_us(row.get("time_updated")),
+    }
+
+
+def _collect_raw(db_path: Path | None = None) -> dict[str, Any]:
+    """唯一源存取點——harness-native scan（ZCode session store 唯讀直查）。
+
+    回 `{"count", "sessions": [...]}`（正規化前置形，欄位映射見
+    `_to_session`）；失敗 raise typed DiscoveryError（CLI 層轉 exit 3
+    統一 envelope）。"""
+    path = db_path if db_path is not None else DEFAULT_DB
+    rows = _query_store(path)
+    return {"count": len(rows), "sessions": [_to_session(r) for r in rows]}
+
+
+def _whoami_raw(
+    db_path: Path | None = None, *, cwd: str | None = None
+) -> dict[str, Any]:
+    """harness workspace 對照——cwd realpath 對 store `directory` 精確
+    匹配，取 `time_updated` 最新一列。
+
+    身份 caveat：回 workspace `time_updated` 最新列＝活躍度代理，非呼叫
+    者身份保證；同 workspace 多 session 並行時可能回他者；同分由 rowid
+    決定（與 `find` 的 ambiguous 禁猜語義不同——workspace 對照設計即取
+    最新，見卡 AIR-277②）。
+
+    無匹配／源缺席＝`whoami_unavailable`；源損壞／最新列缺 id＝
+    `whoami_malformed`（typed，CLI 轉 exit 3）。"""
+    path = db_path if db_path is not None else DEFAULT_DB
+    here = os.path.realpath(cwd) if cwd else os.path.realpath(os.getcwd())
+    try:
+        rows = _query_store(path, workspace=here)
+    except DiscoveryError as exc:
+        code = (
+            "whoami_malformed" if exc.code == "source_malformed" else "whoami_unavailable"
         )
-    return payload
-
-
-def _whoami_raw(runner: Runner | None = None) -> dict[str, Any]:
-    """v1 委派 `scbus whoami`（JSON passthrough；缺席／失敗 raise typed）。"""
-    run = runner if runner is not None else _run_cmd
-    try:
-        stdout = run(["scbus", "whoami"])
-    except OSError as exc:
-        raise DiscoveryError("whoami_unavailable", f"scbus whoami 缺席：{exc}") from exc
-    except subprocess.CalledProcessError as exc:
-        detail = (exc.stderr or "").strip() or f"exit {exc.returncode}"
-        raise DiscoveryError("whoami_unavailable", f"scbus whoami 失敗：{detail}") from exc
-    try:
-        parsed = json.loads(stdout)
-    except json.JSONDecodeError as exc:
-        raise DiscoveryError("whoami_malformed", f"scbus whoami 輸出非 JSON：{exc}") from exc
-    if not isinstance(parsed, dict):
-        raise DiscoveryError("whoami_malformed", "scbus whoami 輸出須為 JSON 物件")
-    return parsed
+        raise DiscoveryError(code, f"whoami 源不可用：{exc.message}") from exc
+    if not rows:
+        raise DiscoveryError(
+            "whoami_unavailable", f"cwd 無對應 session 工作區：{here}"
+        )
+    best = _to_session(rows[0])  # SQL 已 ORDER BY time_updated DESC
+    sid = best.get("session_id")
+    if not isinstance(sid, str) or not sid:
+        raise DiscoveryError("whoami_malformed", "whoami 最新列缺 session_id")
+    return {
+        "session_id": sid,
+        "harness": SOURCE_HARNESS,
+        "workspace_root": best.get("workspace_root"),
+    }
 
 
 # ---------------------------------------------------------------------------
-# label sidecar（seam 自有 display metadata；絕不寫 registry）
+# label sidecar（seam 自有 display metadata；絕不寫源 store）
 # ---------------------------------------------------------------------------
 
 
@@ -196,7 +276,7 @@ def _validate_label(label: str) -> str:
 
 
 def set_label(session_id: str, label: str, *, sidecar: Path | None = None) -> str:
-    """冪等覆寫 label（display metadata；絕不寫 registry）。回寫入值。"""
+    """冪等覆寫 label（display metadata；絕不寫源 store）。回寫入值。"""
     if not isinstance(session_id, str) or not session_id:
         raise DiscoveryError("invalid_session_id", "session-id 必填")
     _validate_label(label)
@@ -249,7 +329,7 @@ def _normalize(session: dict[str, Any], labels: dict[str, dict[str, str]]) -> di
     sid = session.get("session_id")
     sid = sid if isinstance(sid, str) and sid else None
     name = session.get("name")
-    scbus_name = name if isinstance(name, str) and name else None
+    store_name = name if isinstance(name, str) and name else None
     entry = labels.get(sid) if sid else None
     sidecar_label = entry.get("label") if isinstance(entry, dict) else None
     if not isinstance(sidecar_label, str):
@@ -263,7 +343,7 @@ def _normalize(session: dict[str, Any], labels: dict[str, dict[str, str]]) -> di
         "session_id": sid,
         "harness": _str("harness"),
         "workspace_root": _str("workspace_root"),
-        "label": sidecar_label or scbus_name,  # sidecar 優先、無 sidecar 用 scbus name
+        "label": sidecar_label or store_name,  # sidecar 優先、無 sidecar 用 store title
         "liveness": _str("observed_liveness"),
         "status": _str("status"),
         "last_seen_iso": _last_seen_iso(session),
@@ -276,9 +356,16 @@ def collect_rows(
     *,
     sidecar: Path | None = None,
     live_only: bool = False,
+    db_path: Path | None = None,
 ) -> dict[str, Any]:
-    """registry 正規化 rows（label 合併 sidecar）＋`--live` 雜訊排除語義。"""
-    payload = _collect_raw(runner)
+    """store 正規化 rows（label 合併 sidecar）＋`--live` 雜訊排除語義。
+
+    `runner` 參數＝v1 transport 遺留槽——harness-native 源（AIR-277）直讀
+    store、不經 runner；參數僅為既有消費端呼叫相容保留（inflight_snapshot
+    以位置參數傳入、**值被忽略**），禁新依賴。測試／工具注入面＝
+    `db_path`（tmp fake store）。
+    """
+    payload = _collect_raw(db_path)
     labels = _load_labels(sidecar)
     rows: list[dict[str, Any]] = []
     for session in payload["sessions"]:
@@ -297,6 +384,7 @@ def collect_rows(
         "rows": rows,
         "count": len(rows),
         "registry_total": payload.get("count", len(payload["sessions"])),
+        "coverage": COVERAGE,
     }
 
 
@@ -315,12 +403,15 @@ def find_session(
     harness: str,
     workspace_root: str,
     sidecar: Path | None = None,
+    db_path: Path | None = None,
 ) -> dict[str, Any]:
     """同 harness＋workspace_root 取最新註冊列（回正規化 row）。
 
     無法唯一確立（0 候選或 >1 同分）＝raise typed——禁猜（CLI 轉 exit 3）。
+    覆蓋邊界：源僅 zcode——harness != "zcode" 恆 no-match，訊息帶覆蓋註記。
+    `runner` 參數同 `collect_rows`（遺留槽，值被忽略；注入面＝`db_path`）。
     """
-    payload = _collect_raw(runner)
+    payload = _collect_raw(db_path)
     labels = _load_labels(sidecar)
     candidates = [
         s
@@ -330,8 +421,14 @@ def find_session(
         and s.get("workspace_root") == workspace_root
     ]
     if not candidates:
+        note = (
+            ""
+            if harness == SOURCE_HARNESS
+            else f"（源覆蓋={COVERAGE}——非 zcode harness 不在本源）"
+        )
         raise DiscoveryError(
-            "no-match", f"harness={harness} workspace_root={workspace_root} 無註冊列"
+            "no-match",
+            f"harness={harness} workspace_root={workspace_root} 無註冊列{note}",
         )
     stamps = [_sort_ts(s) for s in candidates]
     best = max((s for s in stamps if s is not None), default=None)
@@ -371,7 +468,11 @@ def _render_list_markdown(data: dict[str, Any], *, live_only: bool) -> str:
             f" {row['liveness'] or '-'} | {row['status'] or '-'} |"
             f" {row['age_min']} |"
         )
-    lines += ["", f"- rows {data['count']}（registry_total {data['registry_total']}）"]
+    lines += [
+        "",
+        f"- rows {data['count']}（registry_total {data['registry_total']}）"
+        f"；source=zcode session store（coverage={data['coverage']}）",
+    ]
     return "\n".join(lines) + "\n"
 
 
@@ -387,12 +488,12 @@ def _fail_envelope(exc: DiscoveryError) -> None:
 def main(
     argv: list[str] | None = None,
     *,
-    runner: Runner | None = None,
+    db_path: Path | None = None,
     sidecar: Path | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(
         description=(
-            "session 發現 seam（AIR-254.1）——v1 來源 scbus registry（過渡），"
+            "session 發現 seam（AIR-254.1）——來源 zcode session store 直讀，"
             "換源只改 _collect_raw"
         )
     )
@@ -400,7 +501,7 @@ def main(
 
     p_list = sub.add_parser("list", help="正規化 session rows（--live＝live＋sess_*）")
     p_list.add_argument("--live", action="store_true")
-    p_list.add_argument("--json", action="store_true", help="輸出 {generated_at, rows, count, registry_total}")
+    p_list.add_argument("--json", action="store_true", help="輸出 {generated_at, rows, count, registry_total, coverage}")
     p_list.add_argument("--labels-file", default=None, help="label sidecar 路徑覆寫")
 
     p_find = sub.add_parser("find", help="harness＋workspace_root → 最新一列（無法唯一確立＝exit 3）")
@@ -409,7 +510,7 @@ def main(
     p_find.add_argument("--json", action="store_true")
     p_find.add_argument("--labels-file", default=None, help="label sidecar 路徑覆寫")
 
-    p_label = sub.add_parser("label", help="seam 自有顯示標籤（display metadata；絕不寫 registry）")
+    p_label = sub.add_parser("label", help="seam 自有顯示標籤（display metadata；絕不寫源 store）")
     label_sub = p_label.add_subparsers(dest="label_cmd", required=True)
     p_set = label_sub.add_parser("set", help="挂／覆寫 label（冪等）")
     p_set.add_argument("--session-id", required=True)
@@ -419,23 +520,23 @@ def main(
     p_get.add_argument("--session-id", required=True)
     p_get.add_argument("--labels-file", default=None, help="label sidecar 路徑覆寫")
 
-    sub.add_parser("whoami", help="本側 identity（v1 委派 scbus whoami；JSON passthrough）")
+    sub.add_parser("whoami", help="本側 identity（cwd→store workspace 對照；JSON）")
 
     args = parser.parse_args(argv)
     labels_file = Path(args.labels_file) if getattr(args, "labels_file", None) else sidecar
     try:
         if args.cmd == "list":
-            data = collect_rows(runner, sidecar=labels_file, live_only=args.live)
+            data = collect_rows(sidecar=labels_file, live_only=args.live, db_path=db_path)
             if args.json:
                 print(json.dumps(data, ensure_ascii=False, indent=2))
             else:
                 print(_render_list_markdown(data, live_only=args.live), end="")
         elif args.cmd == "find":
             row = find_session(
-                runner,
                 harness=args.harness,
                 workspace_root=args.workspace_root,
                 sidecar=labels_file,
+                db_path=db_path,
             )
             if args.json:
                 print(json.dumps({"ok": True, "row": row}, ensure_ascii=False))
@@ -451,7 +552,7 @@ def main(
             else:
                 print(get_label(args.session_id, sidecar=labels_file))
         else:
-            print(json.dumps(_whoami_raw(runner), ensure_ascii=False))
+            print(json.dumps(_whoami_raw(db_path), ensure_ascii=False))
     except DiscoveryError as exc:
         _fail_envelope(exc)
         return 3

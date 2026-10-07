@@ -1,30 +1,40 @@
-"""session_discovery seam 契約測試（AIR-254.1）.
+"""session_discovery seam 契約測試（AIR-254.1；AIR-277 換源 harness-native）.
 
 驗證式（lite 寫的測試＝規格陳述，驗收證據由 full 複驗）：
-- 單一 choke point：`_collect_raw` 是唯一 `scbus list` 呼叫點（runner
-  注入 fake，不依賴真機 scbus）；失敗 raise typed DiscoveryError（CLI
-  層轉 exit 3 統一 envelope）。
+- 單一 choke point：`_collect_raw` 是唯一源存取點——harness-native scan
+  （ZCode session store `session` 表唯讀直查；fixture＝tmp_path fake
+  store，排序以 `time_updated` 欄控制）；失敗 raise typed DiscoveryError
+  （CLI 層轉 exit 3 統一 envelope）。源缺席＝`source_unavailable`、開檔
+  後結構／內容損壞＝`source_malformed`。
 - 正規化 rows 八欄形狀（session_id 全碼／harness／workspace_root／label
   ／liveness／status／last_seen_iso／age_min）；label 合併＝sidecar 優先、
-  無 sidecar 用 scbus name、皆無＝null。
+  無 sidecar 用 store title、皆無＝null。liveness／status 由 `time_archived`
+  推導（未封存＝live／active、已封存＝ended／ended——handoff
+  `status != "ended"` 過濾語義保留）。
+- 覆蓋邊界（如實聲明）：harness 恆 "zcode"、coverage="zcode-only"；
+  `task_type='subagent_child'` 不列；find 對非 zcode harness＝no-match
+  typed＋覆蓋註記。
 - `--live` 過濾＝liveness=="live" 且 `sess_` 前綴（inflight 現行雜訊
-  排除語義保留——UUID 與 scbus-ext-* 幽靈排除；status 不參與過濾）。
-- find：同 harness＋workspace_root 取 last_seen_us（缺則 created_at_us）
+  排除語義保留；status 不參與過濾）。
+- find：同 harness＋workspace_root 取 time_updated（缺則 time_created）
   最新一列；0 或 >1 候選同分＝typed failure 禁猜。
+- runner 遺留槽：collect_rows／find_session 首位置參數接受 callable 且
+  值被忽略（inflight_snapshot 呼叫相容——消費端零改動契約）。
 - label sidecar：形 `{"sid": {"label", "updated_at"}}`、atomic 寫（無
   .tmp 殘留）、檔 0600／目錄 0700；set 冪等覆寫；get 無＝fail；驗證
-  1-64 字元非純空白；絕不寫 scbus（介面無任何 registry 寫入路徑）。
-- whoami：v1 委派 passthrough；缺席／非零 exit／壞 JSON＝typed failure。
+  1-64 字元非純空白；絕不寫源 store（連線唯讀）。
+- whoami：cwd→workspace 對照（realpath 精確匹配、time_updated 最新）；
+  無匹配／源缺席＝whoami_unavailable、源損壞＝whoami_malformed。
 - CLI：失敗統一 `{"schemaVersion":1,"ok":false,"error":{code,message}}`
   到 stderr、stdout 空、exit 3。
 
 oracle＝I 級（impl 衍生——契約單一源即 scripts/session_discovery.py
-docstring；真機 scbus L4 實跑由 full 複驗）。
+docstring；真機 store L4 實跑由 full 複驗）。
 """
 
 import json
+import sqlite3
 import stat
-import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
@@ -35,75 +45,147 @@ from conftest import load_module
 _mod = load_module("scripts/session_discovery.py")
 
 WS = "/Users/ctai/Github/ai-guide"
+_MS = 1_700_000_000_000  # ms epoch（store 單位）
+_UNSET = object()  # 區分「未提供」與「明確傳 NULL」
 
 
-def _sess(sid: str = "sess_aaa-0001", **over: object) -> dict:
-    row: dict = {
-        "session_id": sid,
-        "harness": "zcode",
-        "workspace_root": WS,
-        "name": None,
-        "status": "active",
-        "observed_liveness": "live",
-        "created_at_us": 1_700_000_000_000_000,
-        "last_seen_us": 1_700_000_090_000_000,
-    }
-    row.update(over)
-    return row
+def _srow(
+    sid: str = "sess_aaa-0001",
+    *,
+    ws: str | None = WS,
+    title: str | None = None,
+    created: object = _UNSET,
+    updated: object = _UNSET,
+    archived: int | None = None,
+    task_type: str | None = "interactive",
+) -> tuple:
+    """store 列 tuple（ms 時間戳；預設 created=_MS、updated＝created＋90s；
+    明確傳 None＝NULL 值）。"""
+    return (
+        sid,
+        ws,
+        title,
+        _MS if created is _UNSET else created,
+        (_MS + 90_000) if updated is _UNSET else updated,
+        archived,
+        task_type,
+    )
 
 
-def _payload(*sessions: dict, count: int | None = None) -> dict:
-    return {
-        "count": count if count is not None else len(sessions),
-        "status": "ok",
-        "sessions": list(sessions),
-    }
-
-
-def _list_runner(payload: dict):
-    def run(cmd: list[str], **kwargs: object) -> str:
-        assert cmd == ["scbus", "list"], f"非 choke point 命令：{cmd}"
-        return json.dumps(payload)
-
-    return run
+def _store(tmp_path: Path, *rows: tuple) -> Path:
+    """tmp fake session store（最小 `session` 表——seam SELECT 具名欄）。"""
+    db = tmp_path / "store.sqlite"
+    con = sqlite3.connect(db)
+    con.execute(
+        "CREATE TABLE session ("
+        "id TEXT, directory TEXT, title TEXT, time_created INTEGER,"
+        " time_updated INTEGER, time_archived INTEGER, task_type TEXT)"
+    )
+    con.executemany("INSERT INTO session VALUES (?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    return db
 
 
 # ---------------------------------------------------------------------------
-# choke point：_collect_raw（v1 來源＝scbus registry 過渡）
+# choke point：_collect_raw（harness-native scan；typed fail-closed）
 # ---------------------------------------------------------------------------
 
 
 class TestCollectRaw:
-    def test_success_returns_parsed_payload(self) -> None:
-        out = _mod._collect_raw(_list_runner(_payload(_sess())))
-        assert out["count"] == 1
-        assert out["sessions"][0]["session_id"] == "sess_aaa-0001"
+    def test_scan_returns_payload_newest_first(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_old", updated=_MS),
+            _srow("sess_new", updated=_MS + 5_000),
+        )
+        out = _mod._collect_raw(db)
+        assert out["count"] == 2
+        assert [s["session_id"] for s in out["sessions"]] == ["sess_new", "sess_old"]
 
-    def test_missing_binary_raises_typed_unavailable(self) -> None:
-        def run(cmd: list[str], **kwargs: object) -> str:
-            raise FileNotFoundError("no scbus")
-
+    def test_missing_store_raises_typed_unavailable(self, tmp_path: Path) -> None:
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._collect_raw(run)
+            _mod._collect_raw(tmp_path / "nope.sqlite")
         assert ei.value.code == "source_unavailable"
-        assert "scbus" in ei.value.message
 
-    def test_nonzero_exit_raises_typed_unavailable_with_detail(self) -> None:
-        def run(cmd: list[str], **kwargs: object) -> str:
-            raise subprocess.CalledProcessError(1, cmd, stderr="boom\n")
-
+    def test_corrupt_file_raises_typed_malformed(self, tmp_path: Path) -> None:
+        db = tmp_path / "store.sqlite"
+        db.write_bytes(b"definitely not a sqlite database file")
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._collect_raw(run)
-        assert ei.value.code == "source_unavailable"
-        assert "boom" in ei.value.message
-
-    @pytest.mark.parametrize(
-        "stdout", ["not json", '{"count": 1}', '{"sessions": "x"}', "[]"]
-    )
-    def test_malformed_output_raises_typed(self, stdout: str) -> None:
-        with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._collect_raw(lambda cmd, **kw: stdout)
+            _mod._collect_raw(db)
         assert ei.value.code == "source_malformed"
+
+    def test_missing_table_raises_typed_malformed(self, tmp_path: Path) -> None:
+        db = tmp_path / "store.sqlite"
+        con = sqlite3.connect(db)
+        con.execute("CREATE TABLE other (x TEXT)")
+        con.close()
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._collect_raw(db)
+        assert ei.value.code == "source_malformed"
+
+    def test_runner_slot_accepted_and_ignored(self, tmp_path: Path) -> None:
+        """消費端呼叫相容（inflight_snapshot 位置參數傳 callable）——遺留槽
+        值被忽略、源照走 store 注入。"""
+        db = _store(tmp_path, _srow())
+
+        def legacy_runner(cmd: list[str], **kwargs: object) -> str:
+            raise AssertionError("harness-native 源不得經 runner 呼叫命令")
+
+        out = _mod.collect_rows(legacy_runner, sidecar=tmp_path / "l.json", db_path=db)
+        assert out["count"] == 1
+
+
+# ---------------------------------------------------------------------------
+# 源映射（harness 恆定／時間單位／archived 推導／subagent 排除）
+# ---------------------------------------------------------------------------
+
+
+class TestScanMapping:
+    def test_harness_constant_and_workspace_and_title(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow(title="my title"))
+        session = _mod._collect_raw(db)["sessions"][0]
+        assert session["harness"] == "zcode"
+        assert session["workspace_root"] == WS
+        assert session["name"] == "my title"  # title → label fallback 源
+
+    def test_ms_to_us_conversion(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow(created=_MS, updated=_MS + 90_000))
+        session = _mod._collect_raw(db)["sessions"][0]
+        assert session["created_at_us"] == _MS * 1_000
+        assert session["last_seen_us"] == (_MS + 90_000) * 1_000
+
+    def test_archived_derives_ended_liveness_and_status(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_live1"),
+            _srow("sess_dead1", archived=_MS + 9_000),
+        )
+        sessions = {s["session_id"]: s for s in _mod._collect_raw(db)["sessions"]}
+        assert sessions["sess_live1"]["observed_liveness"] == "live"
+        assert sessions["sess_live1"]["status"] == "active"
+        assert sessions["sess_dead1"]["observed_liveness"] == "ended"
+        assert sessions["sess_dead1"]["status"] == "ended"
+
+    def test_subagent_child_excluded(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_main"),
+            _srow("sess_subagent_agent_x", task_type="subagent_child"),
+            _srow("sess_forked", task_type="fork"),  # 非 subagent 照收
+        )
+        out = _mod._collect_raw(db)
+        assert out["count"] == 2
+        assert [s["session_id"] for s in out["sessions"]] == [
+            "sess_forked",
+            "sess_main",
+        ]
+
+    def test_null_timestamps_map_to_none(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow("sess_nots", created=None, updated=None))
+        session = _mod._collect_raw(db)["sessions"][0]
+        assert session["created_at_us"] is None
+        assert session["last_seen_us"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -114,11 +196,11 @@ class TestCollectRaw:
 class TestNormalizeRows:
     def test_row_shape_eight_keys_full_session_id(self, tmp_path: Path) -> None:
         out = _mod.collect_rows(
-            _list_runner(_payload(_sess(name="sc-name"))),
-            sidecar=tmp_path / "labels.json",
+            sidecar=tmp_path / "labels.json", db_path=_store(tmp_path, _srow("sess_aaa-0001", title="t"))
         )
         assert out["count"] == 1
         assert out["registry_total"] == 1
+        assert out["coverage"] == "zcode-only"
         row = out["rows"][0]
         assert set(row) == {
             "session_id",
@@ -137,80 +219,79 @@ class TestNormalizeRows:
         assert row["status"] == "active"
         assert isinstance(row["last_seen_iso"], str)
 
-    def test_label_merge_sidecar_wins_over_scbus_name(
+    def test_label_merge_sidecar_wins_over_store_title(
         self, tmp_path: Path
     ) -> None:
         sidecar = tmp_path / "labels.json"
         _mod.set_label("sess_aaa-0001", "seam-label", sidecar=sidecar)
         out = _mod.collect_rows(
-            _list_runner(_payload(_sess(name="sc-name"))), sidecar=sidecar
+            sidecar=sidecar, db_path=_store(tmp_path, _srow(title="store-title"))
         )
         assert out["rows"][0]["label"] == "seam-label"
 
-    def test_label_merge_falls_back_to_scbus_name(self, tmp_path: Path) -> None:
+    def test_label_merge_falls_back_to_store_title(self, tmp_path: Path) -> None:
         out = _mod.collect_rows(
-            _list_runner(_payload(_sess(name="sc-name"))),
             sidecar=tmp_path / "labels.json",
+            db_path=_store(tmp_path, _srow(title="store-title")),
         )
-        assert out["rows"][0]["label"] == "sc-name"
+        assert out["rows"][0]["label"] == "store-title"
 
     def test_label_null_when_neither_source(self, tmp_path: Path) -> None:
         out = _mod.collect_rows(
-            _list_runner(_payload(_sess(name=None))),
             sidecar=tmp_path / "labels.json",
+            db_path=_store(tmp_path, _srow(title=None)),
         )
         assert out["rows"][0]["label"] is None
 
-    def test_age_from_age_seconds_then_last_seen_fallback(
-        self, tmp_path: Path
-    ) -> None:
-        payload = _payload(
-            _sess(sid="sess_age-1", age=900),
-            _sess(sid="sess_age-2", last_seen_us=(time.time() - 610) * 1_000_000),
-            _sess(sid="sess_age-3", last_seen_us=None, created_at_us=None),
-        )
+    def test_age_from_last_seen_fallback(self, tmp_path: Path) -> None:
+        recent_ms = (time.time() - 610) * 1_000
         rows = {
             r["session_id"]: r
             for r in _mod.collect_rows(
-                _list_runner(payload), sidecar=tmp_path / "labels.json"
+                sidecar=tmp_path / "labels.json",
+                db_path=_store(
+                    tmp_path,
+                    _srow("sess_age-2", updated=recent_ms),
+                    _srow("sess_age-3", created=None, updated=None),
+                ),
             )["rows"]
         }
-        assert rows["sess_age-1"]["age_min"] == 15  # age 秒 → 分
         assert rows["sess_age-2"]["age_min"] == 10  # 缺 age 以 last_seen 推算
         assert rows["sess_age-3"]["age_min"] is None  # 無任何時間源
 
     def test_last_seen_iso_none_when_missing(self, tmp_path: Path) -> None:
         out = _mod.collect_rows(
-            _list_runner(_payload(_sess(last_seen_us=None))),
             sidecar=tmp_path / "labels.json",
+            db_path=_store(tmp_path, _srow(updated=None)),
         )
         assert out["rows"][0]["last_seen_iso"] is None
 
-    def test_null_coercion_non_string_fields(self, tmp_path: Path) -> None:
-        out = _mod.collect_rows(
-            _list_runner(
-                _payload(
-                    _sess(
-                        harness=None, workspace_root=None, status=None,
-                        observed_liveness=None,
-                    )
-                )
-            ),
-            sidecar=tmp_path / "labels.json",
+    def test_normalize_null_coercion_non_string_fields(self) -> None:
+        row = _mod._normalize(
+            {
+                "session_id": "sess_x",
+                "harness": 123,
+                "workspace_root": None,
+                "name": 7,
+                "observed_liveness": 4.5,
+                "status": b"raw",
+                "last_seen_us": None,
+            },
+            {},
         )
-        row = out["rows"][0]
         assert row["harness"] is None
         assert row["workspace_root"] is None
-        assert row["status"] is None
+        assert row["label"] is None
         assert row["liveness"] is None
+        assert row["status"] is None
+        assert row["last_seen_iso"] is None
 
-    def test_non_dict_and_empty_sid_rows_skipped(self, tmp_path: Path) -> None:
-        payload = _payload("noise", {"session_id": ""}, _sess(), count=4)
-        out = _mod.collect_rows(
-            _list_runner(payload), sidecar=tmp_path / "labels.json"
-        )
+    def test_empty_sid_row_skipped_but_counted(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow("sess_ok"), _srow(""))
+        out = _mod.collect_rows(sidecar=tmp_path / "labels.json", db_path=db)
         assert out["count"] == 1
-        assert out["registry_total"] == 4
+        assert out["rows"][0]["session_id"] == "sess_ok"
+        assert out["registry_total"] == 2  # 掃描總數含跳過列
 
 
 # ---------------------------------------------------------------------------
@@ -219,120 +300,129 @@ class TestNormalizeRows:
 
 
 class TestLiveFilter:
-    def test_live_filter_keeps_only_live_sess_prefix(
-        self, tmp_path: Path
-    ) -> None:
-        payload = _payload(
-            _sess(sid="sess_ok-1"),
-            _sess(sid="064b2c7b-uuid-noise"),
-            _sess(sid="scbus-ext-ghost"),
-            _sess(sid="sess_dead-1", observed_liveness="ended"),
-            _sess(sid="sess_live-2", status="ended", observed_liveness="live"),
-            count=5,
+    def test_live_filter_keeps_only_live_sess_prefix(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_ok-1"),
+            _srow("064b2c7b-uuid-noise"),
+            _srow("sess_dead-1", archived=_MS + 9_000),
+            _srow("sess_sub_x", task_type="subagent_child"),
         )
         out = _mod.collect_rows(
-            _list_runner(payload), sidecar=tmp_path / "labels.json", live_only=True
+            sidecar=tmp_path / "labels.json", live_only=True, db_path=db
         )
-        # status 不參與過濾——liveness=live 的 sess_* 照收（現行語義）
-        assert [r["session_id"] for r in out["rows"]] == [
-            "sess_ok-1",
-            "sess_live-2",
-        ]
-        assert out["registry_total"] == 5
+        assert [r["session_id"] for r in out["rows"]] == ["sess_ok-1"]
+        assert out["registry_total"] == 3  # subagent_child 源頭即不列
 
 
 # ---------------------------------------------------------------------------
-# find（harness＋workspace_root → 最新一列；禁猜）
+# find（harness＋workspace_root → 最新一列；禁猜；覆蓋邊界 typed）
 # ---------------------------------------------------------------------------
 
 
 class TestFindSession:
-    def test_unique_newest_by_last_seen_us(self, tmp_path: Path) -> None:
-        payload = _payload(
-            _sess(sid="sess_old", last_seen_us=100),
-            _sess(sid="sess_new", last_seen_us=200),
-            _sess(sid="sess_other_ws", last_seen_us=999, workspace_root="/other"),
-            _sess(sid="sess_other_h", last_seen_us=999, harness="codex"),
+    def test_unique_newest_by_time_updated(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_old", updated=_MS),
+            _srow("sess_new", updated=_MS + 200_000),
+            _srow("sess_other_ws", updated=_MS + 999_000, ws="/other"),
         )
         row = _mod.find_session(
-            _list_runner(payload),
             harness="zcode",
             workspace_root=WS,
             sidecar=tmp_path / "labels.json",
+            db_path=db,
         )
         assert row["session_id"] == "sess_new"
 
-    def test_fallback_created_at_us_when_last_seen_missing(
-        self, tmp_path: Path
-    ) -> None:
-        payload = _payload(
-            _sess(sid="sess_a", last_seen_us=None, created_at_us=100),
-            _sess(sid="sess_b", last_seen_us=None, created_at_us=200),
+    def test_fallback_time_created_when_updated_missing(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_a", created=_MS, updated=None),
+            _srow("sess_b", created=_MS + 100, updated=None),
         )
         row = _mod.find_session(
-            _list_runner(payload),
             harness="zcode",
             workspace_root=WS,
             sidecar=tmp_path / "labels.json",
+            db_path=db,
         )
         assert row["session_id"] == "sess_b"
 
     def test_no_match_raises_typed(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow())
         with pytest.raises(_mod.DiscoveryError) as ei:
             _mod.find_session(
-                _list_runner(_payload(_sess())),
                 harness="zcode",
                 workspace_root="/nope",
                 sidecar=tmp_path / "labels.json",
+                db_path=db,
             )
         assert ei.value.code == "no-match"
+        assert "zcode-only" not in ei.value.message  # zcode 查詢不帶覆蓋註記
+
+    def test_out_of_coverage_harness_no_match_with_coverage_note(
+        self, tmp_path: Path
+    ) -> None:
+        """覆蓋邊界如實聲明：非 zcode harness＝no-match typed＋覆蓋註記。"""
+        db = _store(tmp_path, _srow())
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod.find_session(
+                harness="codex",
+                workspace_root=WS,
+                sidecar=tmp_path / "labels.json",
+                db_path=db,
+            )
+        assert ei.value.code == "no-match"
+        assert "zcode-only" in ei.value.message
 
     def test_tied_candidates_raise_ambiguous(self, tmp_path: Path) -> None:
-        payload = _payload(
-            _sess(sid="sess_a", last_seen_us=300),
-            _sess(sid="sess_b", last_seen_us=300),
+        db = _store(
+            tmp_path,
+            _srow("sess_a", updated=_MS + 300),
+            _srow("sess_b", updated=_MS + 300),
         )
         with pytest.raises(_mod.DiscoveryError) as ei:
             _mod.find_session(
-                _list_runner(payload),
                 harness="zcode",
                 workspace_root=WS,
                 sidecar=tmp_path / "labels.json",
+                db_path=db,
             )
         assert ei.value.code == "ambiguous"
 
     def test_single_candidate_without_timestamps_is_unique(
         self, tmp_path: Path
     ) -> None:
-        payload = _payload(
-            _sess(sid="sess_only", last_seen_us=None, created_at_us=None)
-        )
+        db = _store(tmp_path, _srow("sess_only", created=None, updated=None))
         row = _mod.find_session(
-            _list_runner(payload),
             harness="zcode",
             workspace_root=WS,
             sidecar=tmp_path / "labels.json",
+            db_path=db,
         )
         assert row["session_id"] == "sess_only"
 
     def test_winner_label_merged_from_sidecar(self, tmp_path: Path) -> None:
         sidecar = tmp_path / "labels.json"
         _mod.set_label("sess_new", "tagged", sidecar=sidecar)
-        payload = _payload(
-            _sess(sid="sess_old", last_seen_us=100),
-            _sess(sid="sess_new", last_seen_us=200),
+        db = _store(
+            tmp_path,
+            _srow("sess_old", updated=_MS),
+            _srow("sess_new", updated=_MS + 200),
         )
         row = _mod.find_session(
-            _list_runner(payload),
             harness="zcode",
             workspace_root=WS,
             sidecar=sidecar,
+            db_path=db,
         )
         assert row["label"] == "tagged"
 
 
 # ---------------------------------------------------------------------------
-# label sidecar（seam 自有 display metadata；絕不寫 scbus）
+# label sidecar（seam 自有 display metadata；絕不寫源 store）
 # ---------------------------------------------------------------------------
 
 
@@ -415,7 +505,7 @@ class TestLabelSidecar:
         sidecar = tmp_path / "labels.json"
         sidecar.write_text("{not json", encoding="utf-8")
         data = _mod.collect_rows(
-            _list_runner(_payload(_sess())), sidecar=sidecar
+            sidecar=sidecar, db_path=_store(tmp_path, _srow())
         )
         assert data["count"] == 1
         assert data["rows"][0]["session_id"] == "sess_aaa-0001"
@@ -441,31 +531,59 @@ class TestLabelSidecar:
 
 
 # ---------------------------------------------------------------------------
-# whoami（v1 委派 scbus whoami；JSON passthrough）
+# whoami（cwd→workspace 對照；typed fail-closed）
 # ---------------------------------------------------------------------------
 
 
 class TestWhoami:
-    def test_passthrough_parsed_json(self) -> None:
-        identity = {"session_id": "sess_me", "workspace_root": WS}
+    def test_cwd_workspace_match_returns_identity(self, tmp_path: Path) -> None:
+        db = _store(
+            tmp_path,
+            _srow("sess_old", updated=_MS),
+            _srow("sess_me", updated=_MS + 500),
+        )
+        identity = _mod._whoami_raw(db, cwd=WS)
+        assert identity == {
+            "session_id": "sess_me",
+            "harness": "zcode",
+            "workspace_root": WS,
+        }
 
-        def run(cmd: list[str], **kwargs: object) -> str:
-            assert cmd == ["scbus", "whoami"]
-            return json.dumps(identity)
+    def test_symlinked_cwd_resolved_before_match(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        real = tmp_path / "real-ws"
+        real.mkdir()
+        link = tmp_path / "link-ws"
+        link.symlink_to(real)
+        db = _store(tmp_path, _srow("sess_in_real", ws=str(real)))
+        identity = _mod._whoami_raw(db, cwd=str(link))
+        assert identity["session_id"] == "sess_in_real"
 
-        assert _mod._whoami_raw(run) == identity
-
-    def test_missing_raises_typed(self) -> None:
-        def run(cmd: list[str], **kwargs: object) -> str:
-            raise FileNotFoundError("no scbus")
-
+    def test_no_match_raises_typed_unavailable(self, tmp_path: Path) -> None:
+        db = _store(tmp_path, _srow(ws="/elsewhere"))
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(run)
+            _mod._whoami_raw(db, cwd=WS)
         assert ei.value.code == "whoami_unavailable"
 
-    def test_bad_json_raises_typed(self) -> None:
+    def test_missing_store_raises_typed_unavailable(self, tmp_path: Path) -> None:
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(lambda cmd, **kw: "identity_missing: not json")
+            _mod._whoami_raw(tmp_path / "nope.sqlite", cwd=WS)
+        assert ei.value.code == "whoami_unavailable"
+
+    def test_corrupt_store_raises_typed_malformed(self, tmp_path: Path) -> None:
+        db = tmp_path / "store.sqlite"
+        db.write_bytes(b"not a db")
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._whoami_raw(db, cwd=WS)
+        assert ei.value.code == "whoami_malformed"
+
+    def test_newest_row_missing_id_raises_typed_malformed(
+        self, tmp_path: Path
+    ) -> None:
+        db = _store(tmp_path, _srow("", updated=_MS + 999))
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._whoami_raw(db, cwd=WS)
         assert ei.value.code == "whoami_malformed"
 
 
@@ -477,35 +595,40 @@ class TestWhoami:
 class TestCli:
     def test_list_live_json_shape(self, tmp_path: Path, capsys) -> None:
         rc = _mod.main(
-            [
-                "list",
-                "--live",
-                "--json",
-                "--labels-file",
-                str(tmp_path / "labels.json"),
-            ],
-            runner=_list_runner(_payload(_sess())),
+            ["list", "--live", "--json", "--labels-file", str(tmp_path / "labels.json")],
+            db_path=_store(tmp_path, _srow()),
         )
         assert rc == 0
         data = json.loads(capsys.readouterr().out)
-        assert set(data) == {"generated_at", "rows", "count", "registry_total"}
+        assert set(data) == {
+            "generated_at",
+            "rows",
+            "count",
+            "registry_total",
+            "coverage",
+        }
         assert data["count"] == 1
+        assert data["coverage"] == "zcode-only"
 
-    def test_list_markdown_table(self, tmp_path: Path, capsys) -> None:
+    def test_list_markdown_table_with_source_footer(
+        self, tmp_path: Path, capsys
+    ) -> None:
         rc = _mod.main(
             ["list", "--labels-file", str(tmp_path / "labels.json")],
-            runner=_list_runner(_payload(_sess(name="sc-name"))),
+            db_path=_store(tmp_path, _srow(title="store-title")),
         )
         assert rc == 0
         out = capsys.readouterr().out
         assert "| session_id |" in out
         assert "sess_aaa-0001" in out
-        assert "sc-name" in out
+        assert "store-title" in out
+        assert "zcode-only" in out  # 覆蓋邊界如實聲明
 
     def test_find_json_ok_true_with_row(self, tmp_path: Path, capsys) -> None:
-        payload = _payload(
-            _sess(sid="sess_old", last_seen_us=100),
-            _sess(sid="sess_new", last_seen_us=200),
+        db = _store(
+            tmp_path,
+            _srow("sess_old", updated=_MS),
+            _srow("sess_new", updated=_MS + 200),
         )
         rc = _mod.main(
             [
@@ -518,7 +641,7 @@ class TestCli:
                 "--labels-file",
                 str(tmp_path / "labels.json"),
             ],
-            runner=_list_runner(payload),
+            db_path=db,
         )
         assert rc == 0
         data = json.loads(capsys.readouterr().out)
@@ -528,6 +651,7 @@ class TestCli:
     def test_find_failure_envelope_exit3_stdout_empty(
         self, tmp_path: Path, capsys
     ) -> None:
+        db = _store(tmp_path, _srow())
         rc = _mod.main(
             [
                 "find",
@@ -539,7 +663,7 @@ class TestCli:
                 "--labels-file",
                 str(tmp_path / "labels.json"),
             ],
-            runner=_list_runner(_payload(_sess())),
+            db_path=db,
         )
         assert rc == 3
         captured = capsys.readouterr()
@@ -550,6 +674,45 @@ class TestCli:
             "ok": False,
             "error": {"code": "no-match", "message": err["error"]["message"]},
         }
+
+    def test_source_missing_exit3_envelope_stdout_empty(
+        self, tmp_path: Path, capsys
+    ) -> None:
+        """源缺席 fail-closed：exit 3 typed envelope（AIR-272 契約零變）。"""
+        rc = _mod.main(
+            ["list", "--json"], db_path=tmp_path / "nope.sqlite"
+        )
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        err = json.loads(captured.err)
+        assert err["schemaVersion"] == 1
+        assert err["ok"] is False
+        assert err["error"]["code"] == "source_unavailable"
+
+    def test_whoami_cli_workspace_match(self, tmp_path: Path, capsys, monkeypatch) -> None:
+        ws_dir = tmp_path / "ws"
+        ws_dir.mkdir()
+        db = _store(tmp_path, _srow("sess_cli_me", ws=str(ws_dir)))
+        monkeypatch.chdir(ws_dir)
+        rc = _mod.main(["whoami"], db_path=db)
+        assert rc == 0
+        identity = json.loads(capsys.readouterr().out)
+        assert identity["session_id"] == "sess_cli_me"
+        assert identity["harness"] == "zcode"
+
+    def test_whoami_cli_no_match_exit3_envelope(
+        self, tmp_path: Path, capsys, monkeypatch
+    ) -> None:
+        empty = tmp_path / "empty"
+        empty.mkdir()
+        db = _store(tmp_path, _srow(ws="/elsewhere"))
+        monkeypatch.chdir(empty)
+        rc = _mod.main(["whoami"], db_path=db)
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert json.loads(captured.err)["error"]["code"] == "whoami_unavailable"
 
     def test_label_set_get_cli_roundtrip(
         self, tmp_path: Path, capsys
@@ -612,17 +775,6 @@ class TestCli:
         captured = capsys.readouterr()
         assert captured.out == ""
         assert json.loads(captured.err)["error"]["code"] == "invalid_label"
-
-    def test_whoami_cli_passthrough(self, capsys) -> None:
-        identity = {"session_id": "sess_me", "workspace_root": WS}
-
-        def run(cmd: list[str], **kwargs: object) -> str:
-            assert cmd == ["scbus", "whoami"]
-            return json.dumps(identity)
-
-        rc = _mod.main(["whoami"], runner=run)
-        assert rc == 0
-        assert json.loads(capsys.readouterr().out) == identity
 
     def test_help_exits_zero(self, capsys) -> None:
         with pytest.raises(SystemExit) as ei:

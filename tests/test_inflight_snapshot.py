@@ -4,24 +4,56 @@
 - bridge jobs：jsonl 最後一行 parse，status 非 completed＝在飛（completed
   只計數不進表）；壞 JSONL 行標 parse-error 續跑不炸；無 jobs 目錄＝skip
   非錯。
-- scbus：只收 observed_liveness=="live" 且 session_id 以 sess_ 開頭——
-  UUID sid、scbus-ext-* 幽靈、非 live 全數排除；欄位 sid 前 13 碼／name／
-  workspace 尾段／status／age_min。
-- 三路獨立容錯：單路失敗（scbus 缺席／raise）＝該路標 unavailable、其他
-  路照常；全源失敗 exit 仍 0（exit 恆 0 契約）。
-- 輸出同構：--json 與 markdown 同五區段（bridge jobs／scbus live
-  sessions／worktrees／card branches／dirty files）＋生成時間表頭。
+- session 腿（seam `collect_scbus_sessions`——名隨 frozen script 符號）：
+  只收 liveness=="live" 且 session_id 以 sess_ 開頭——UUID sid、幽靈、
+  非 live 全數排除；欄位 sid 前 13 碼／name（＝seam label，sidecar 優先）
+  ／workspace 尾段／status／age_min。fixture＝monkeypatch seam 模組
+  `DEFAULT_DB` 指 tmp fake store（AIR-277 換源後注入面＝store 路徑非
+  runner——script 的 `run` 參數位置相容保留、被 seam 忽略）。
+- 三路獨立容錯：單路失敗（session store 缺席／git raise）＝該路標
+  unavailable、其他路照常；全源失敗 exit 仍 0（exit 恆 0 契約）。
+- 輸出同構：--json 與 markdown 同五區段（bridge jobs／live sessions／
+  worktrees／card branches／dirty files）＋生成時間表頭。
 
 oracle＝I 級（impl 衍生——抽取契約單一源即 scripts/inflight_snapshot.py
 docstring；真資料源 L4 實跑由 full 複驗）。
 """
 
 import json
+import sqlite3
+import sys
 from pathlib import Path
 
 from conftest import load_module
 
 _mod = load_module("scripts/inflight_snapshot.py")
+
+_MS = 1_700_000_000_000  # ms epoch（session store 時間單位）
+
+
+def _seam():
+    """inflight 內 `from session_discovery import collect_rows` 綁定的 seam
+    模組實例（sys.modules——非 load_module 新實例，patch 它才生效）。"""
+    return sys.modules["session_discovery"]
+
+
+def _seed_store(tmp_path: Path, *rows: tuple) -> Path:
+    """tmp fake session store（與 test_session_discovery 同最小表形）。"""
+    db = tmp_path / "store.sqlite"
+    con = sqlite3.connect(db)
+    con.execute(
+        "CREATE TABLE session ("
+        "id TEXT, directory TEXT, title TEXT, time_created INTEGER,"
+        " time_updated INTEGER, time_archived INTEGER, task_type TEXT)"
+    )
+    con.executemany("INSERT INTO session VALUES (?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    return db
+
+
+def _patch_default_db(monkeypatch, db: Path) -> None:
+    monkeypatch.setattr(_seam(), "DEFAULT_DB", db)
 
 
 def _write_job(path: Path, lines: list[dict | str]) -> None:
@@ -34,11 +66,10 @@ def _fail_run(cmd: list[str], **kwargs: object) -> str:
     raise FileNotFoundError(f"fake run fail: {cmd[0]}")
 
 
-def _fake_run_with_scbus_fail(git_outputs: dict[str, str]):
+def _fake_run_git_only(git_outputs: dict[str, str]):
+    """git 腿 fake（session 腿已不經 runner——AIR-277 後源直讀 store）。"""
     def run(cmd: list[str], **kwargs: object) -> str:
         joined = " ".join(cmd)
-        if cmd[0] == "scbus":
-            raise FileNotFoundError("scbus missing")
         for key, out in git_outputs.items():
             if key in joined:
                 return out
@@ -101,51 +132,37 @@ class TestBridgeJobs:
 
 
 class TestScbusSessions:
-    def test_filter_live_sess_prefix_only(self) -> None:
-        payload = {
-            "count": 4,
-            "status": "ok",
-            "sessions": [
-                {  # 命中：live ＋ sess_ 前綴
-                    "session_id": "sess_7716635a-ac9d-404a",
-                    "name": "bridge-fixer",
-                    "workspace_root": "/Users/ctai/Github/delegate-bridge",
-                    "status": "active",
-                    "observed_liveness": "live",
-                    "age": 900,
-                },
-                {  # 排除：UUID sid（非 sess_ 前綴）＋假活（ended）
-                    "session_id": "064b2c7b-fe00-4709",
-                    "name": None,
-                    "workspace_root": "/x/y",
-                    "status": "ended",
-                    "observed_liveness": "live",
-                    "age": 60,
-                },
-                {  # 排除：scbus-ext-* 幽靈（非 sess_ 前綴，前綴過濾自然排除）
-                    "session_id": "scbus-ext-ghost-1",
-                    "name": "ghost",
-                    "workspace_root": "/w",
-                    "status": "active",
-                    "observed_liveness": "live",
-                    "age": 1,
-                },
-                {  # 排除：非 live
-                    "session_id": "sess_dead-1",
-                    "name": "dead",
-                    "workspace_root": "/w",
-                    "status": "ended",
-                    "observed_liveness": "ended",
-                    "age": 1,
-                },
-            ],
-        }
+    def test_filter_live_sess_prefix_only(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import time
 
-        def fake_run(cmd: list[str], **kwargs: object) -> str:
-            assert cmd[0] == "scbus"
-            return json.dumps(payload)
+        db = _seed_store(
+            tmp_path,
+            (  # 命中：live ＋ sess_ 前綴
+                "sess_7716635a-ac9d-404a",
+                "/Users/ctai/Github/delegate-bridge",
+                "bridge-fixer",
+                _MS,
+                (time.time() - 900) * 1_000,
+                None,
+                "interactive",
+            ),
+            (  # 排除：UUID sid（非 sess_ 前綴）
+                "064b2c7b-fe00-4709", "/x/y", "uuid-row", _MS, _MS, None,
+                "interactive",
+            ),
+            (  # 排除：幽靈（非 sess_ 前綴，前綴過濾自然排除）
+                "ext-ghost-1", "/w", "ghost", _MS, _MS, None, "interactive",
+            ),
+            (  # 排除：非 live（已封存）
+                "sess_dead-1", "/w", "dead", _MS, _MS, _MS + 9_000,
+                "interactive",
+            ),
+        )
+        _patch_default_db(monkeypatch, db)
 
-        out = _mod.collect_scbus_sessions(run=fake_run)
+        out = _mod.collect_scbus_sessions()
         assert out["unavailable"] is False
         assert len(out["rows"]) == 1
         row = out["rows"][0]
@@ -154,53 +171,52 @@ class TestScbusSessions:
         assert row["workspace"] == "delegate-bridge"  # 尾段
         assert row["status"] == "active"
         assert row["age_min"] == 15
-        assert out["registry_total"] == 4
+        assert out["registry_total"] == 4  # 掃描總數（subagent 排除由 seam 測試釘住）
 
     def test_name_column_reflects_seam_sidecar_label(
-        self, tmp_path: Path
+        self, tmp_path: Path, monkeypatch
     ) -> None:
         """路 2 吃 session_discovery seam（AIR-254.1）——name 欄＝seam label.
 
         seam label 合併 sidecar 優先：sidecar 有值時 name 欄顯示 sidecar
-        label（非 scbus name）——證明 rows 來自 seam 正規化層非本檔直查。
+        label（非 store title）——證明 rows 來自 seam 正規化層非本檔直查。
         """
-        payload = {
-            "count": 1,
-            "sessions": [
-                {
-                    "session_id": "sess_sidecar-1",
-                    "name": "sc-name",
-                    "workspace_root": "/Users/ctai/Github/ai-guide",
-                    "status": "active",
-                    "observed_liveness": "live",
-                    "age": 60,
-                }
-            ],
-        }
-        seam = load_module("scripts/session_discovery.py")
+        seam = _seam()
+        db = _seed_store(
+            tmp_path,
+            (
+                "sess_sidecar-1",
+                "/Users/ctai/Github/ai-guide",
+                "store-name",
+                _MS,
+                _MS + 60_000,
+                None,
+                "interactive",
+            ),
+        )
+        _patch_default_db(monkeypatch, db)
         sidecar = tmp_path / "labels.json"
         seam.set_label("sess_sidecar-1", "seam-tag", sidecar=sidecar)
 
-        def fake_run(cmd: list[str], **kwargs: object) -> str:
-            assert cmd[0] == "scbus"
-            return json.dumps(payload)
-
-        out = _mod.collect_scbus_sessions(run=fake_run, sidecar=sidecar)
+        out = _mod.collect_scbus_sessions(sidecar=sidecar)
         assert out["rows"][0]["name"] == "seam-tag"
 
 
 class TestFaultTolerance:
-    def test_single_source_failure_marks_unavailable(self, tmp_path: Path) -> None:
-        run = _fake_run_with_scbus_fail(
+    def test_single_source_failure_marks_unavailable(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        run = _fake_run_git_only(
             {
                 "worktree": "worktree /repo\n\nworktree /repo-wt\nbranch refs/heads/air-168\n",
                 "branch": "  air-168\n",
                 "status": " M a.py\n?? b.txt\n",
             }
         )
+        _patch_default_db(monkeypatch, tmp_path / "missing.sqlite")  # store 缺席
         snap = _mod.build_snapshot(tmp_path, run=run)
         assert snap["scbus_sessions"]["unavailable"] is True
-        assert "scbus" in snap["scbus_sessions"]["error"]
+        assert "store" in snap["scbus_sessions"]["error"]
         # 其他路照常
         assert snap["bridge_jobs"]["skipped"] is True  # tmp 無 jobs 目錄＝skip
         assert snap["worktrees"]["rows"] == [{"path": "/repo-wt", "branch": "air-168"}]
@@ -212,7 +228,7 @@ class TestFaultTolerance:
     def test_card_branches_strip_plus_marker(self) -> None:
         # `+ `＝branch 被其他 worktree checkout（真資料 L4 揭露）——name 剝乾淨、
         # current 只認 `*`（本 WT）
-        run = _fake_run_with_scbus_fail({"branch": "+ air-168\n  air-169\n* air-170\n"})
+        run = _fake_run_git_only({"branch": "+ air-168\n  air-169\n* air-170\n"})
         out = _mod.collect_card_branches(run=run)
         assert out["branches"] == [
             {"name": "air-168", "current": False},
@@ -225,6 +241,7 @@ class TestFaultTolerance:
     ) -> None:
         monkeypatch.chdir(tmp_path)
         monkeypatch.setattr(_mod, "_run_cmd", _fail_run)
+        _patch_default_db(monkeypatch, tmp_path / "missing.sqlite")  # store 缺席
         assert _mod.main([]) == 0
         out = capsys.readouterr().out
         assert out.count("unavailable") >= 3  # 各源大聲標記，非空白
@@ -235,7 +252,7 @@ class TestOutputForms:
         self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
         monkeypatch.chdir(tmp_path)
-        run = _fake_run_with_scbus_fail(
+        run = _fake_run_git_only(
             {
                 "worktree": "worktree /repo\n\nworktree /repo-wt\nbranch refs/heads/air-168\n",
                 "branch": "  air-168\n",
@@ -243,6 +260,7 @@ class TestOutputForms:
             }
         )
         monkeypatch.setattr(_mod, "_run_cmd", run)
+        _patch_default_db(monkeypatch, tmp_path / "missing.sqlite")  # store 缺席
         assert _mod.main(["--json"]) == 0
         snap = json.loads(capsys.readouterr().out)
         assert set(snap) == {
