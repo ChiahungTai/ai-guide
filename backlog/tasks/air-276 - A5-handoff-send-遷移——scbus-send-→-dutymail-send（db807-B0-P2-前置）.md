@@ -1,10 +1,10 @@
 ---
 id: AIR-276
 title: A5 handoff send 遷移——scbus send → dutymail send（db807 B0/P2 前置）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 21:44'
-updated_date: '2026-10-07 21:50'
+updated_date: '2026-10-07 22:54'
 labels:
   - dutymail
 dependencies: []
@@ -27,3 +27,31 @@ flowchart LR
   d --> r["receipts 面同步"] --> ok["B0/P2 可啟動"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 send 面改 dutymail envelope v2 兩段式（build-body＋wrap）——✅ SKILL.md:126-135
+- [x] #2 receipt 詞形分離（acceptance vs append-only 觀察面）＋三鍵齊——✅ :95-98
+- [x] #3 consent gate/manual paste fallback 零漂移——✅ muse 軸3 PASS
+- [x] #4 helper --reply-address 必填＋新測2案 RED→GREEN——✅ 49 passed
+- [x] #5 judge A–H 八修全落＋marshal re-diff PASS——✅ 錨點親驗
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【A5 交付收口——commit 52fc5004】skills/handoff/SKILL.md＋scripts/handoff_delivery.py（--reply-address 必填旗標）＋tests/test_handoff_delivery.py（新測2案＋空值 parametrize，RED 9→GREEN 49 passed）＋.review/air-276.md ledger（check-ignore 證實非 gitignored，留 commit 內作 durable 審查證據）。judge A–H 八修全落（marshal re-diff 親驗錨點 :95/:96/:98/:130/:131/:135＋helper :341）；F 項 8192 off-by-one 經凍結 oracle dry-parse 親證（8193B 拒收字串逐字）。【judge H 項卡面文字】classify_completion() 仍為 scbus schema（command_id/message_id/stages）＝遷移債：四段機械分類暫不支援 dutymail envelope 格式，遷移歸後續卡；過渡期完成判定以人工核對 acceptance＋scoped replies 為準。【judge ⚠️ 待 user 三項】①實寄 round-trip 未跑（send→accept→replies 完整鏈）；②conventions.md 節一 scbus 詞形同步；③class machine-header 值治理（現用 handoff）。【審查鏈】bi＝muse approve-with-findings（.agent-tmp/air276-bi-muse.md）／codex REJECT 3I2S（air276-bi-codex.md）；judge＝job-muyo2xoi stall→resume job-muyo82a2 conditional approve（air276-judge-verdict-final.md，明示免重跑 bi）；receipt=.agent-tmp/post-build-receipts/air-276.json
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+A5 交付：scbus send → dutymail send 兩段式（build-body＋envelope v2 wrap）遷移完成並 merge main（rebase 後 140429d1）。judge A–H 八修全落＋helper --reply-address 必填旗標＋新測2案（RED→GREEN 49 passed；全套 3479 passed）。8192 off-by-one 經凍結 oracle 親證。遷移債（classify_completion dutymail 化）與待 user 三項（實寄 round-trip／conventions.md scbus 詞形／class 值治理）記 notes。receipt=.agent-tmp/post-build-receipts/air-276.json
+
+```mermaid
+flowchart LR
+  h["handoff Phase 5"] --> a["dutymail send 兩段式 envelope v2"] --> b["judge A–H 八修＋re-diff PASS"] --> m["merge main 140429d1 Done"]
+  m -.-> d1["遷移債：classify_completion 後續卡"]
+  m -.-> d2["待 user：實寄 round-trip／conventions.md／class 值"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
