@@ -1,10 +1,10 @@
 ---
 id: AIR-284
 title: seam datetime 逃逸修復——超範圍 timestamp 未捕獲例外（AIR-281 judge 債務）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 12:49'
-updated_date: '2026-10-08 13:52'
+updated_date: '2026-10-08 13:54'
 labels:
   - dutymail
 dependencies: []
@@ -28,13 +28,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 契約決策落卡（row-skip vs source_malformed）＋RED→GREEN 修復
-- [ ] #2 SKILL.md:116 罕見例外註記收回
+- [x] #1 契約決策落卡（row-skip vs source_malformed）＋RED→GREEN 修復
+- [x] #2 SKILL.md:116 罕見例外註記收回
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
+- [x] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -46,3 +46,14 @@ flowchart LR
 
 【author 實作 Notes（union 保留）】契約決策：(b) 嚴格——整源 source_malformed（三方收斂）。row-skip 禁——list 亦是 address resolution 上游，部分成功比明確失敗危險（codex 腿決定性理由）。實作錨點：驗證在共同來源處理路徑 _query_store 逐列呼叫 _require_representable_last_seen——list/find 查詢範圍任一列壞→整次 source_malformed；whoami 經既有 remap→whoami_malformed（採 codex 腿細分：whoami_* 代碼族語義既存、remap 基建零結構變更即接通）。例外族限縮 ValueError/OverflowError/OSError（機驗：±inf→OverflowError、NaN/year 超界→ValueError、平台 time_t 溢位→OSError）；NULL／非數值保留缺值語義；禁 plausibility window 二猜層。consumer rider（bridge 補強④）：resolve-target --discovery-unavailable 對四 typed code 皆降 fallback-manual 禁直送——枚舉補齊 handoff_delivery.py docstring/help＋SKILL.md:183 drift 同步。改判條件（⑤）：真實壞列常態化→per-row malformedRows deliberate feature 須另立契約卡重審；本卡裁決不預留該層。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  a["seam datetime 裸 traceback 逃逸"] --> b["三方收斂 (b) 整源 source_malformed"]
+  b --> c["codex 二層逃逸 repro（astimezone 本地溢位）"]
+  c --> d["judge 最小修：guard 鏡射轉換鏈＋TZ regression"] --> e["merge 4df20b1d Done"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
