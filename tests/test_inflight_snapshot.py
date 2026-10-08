@@ -201,6 +201,31 @@ class TestScbusSessions:
         out = _mod.collect_scbus_sessions(sidecar=sidecar)
         assert out["rows"][0]["name"] == "seam-tag"
 
+    def test_coverage_key_passed_through_to_snapshot_output(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """AIR-281①——seam coverage 欄（zcode-only）轉發至 snapshot 輸出.
+
+        session_discovery 換源 harness-native 後 coverage=zcode-only typed
+        宣稱已在 seam——消費端不轉發＝下游看不到覆蓋縮限（codex F3）。
+        """
+        db = _seed_store(
+            tmp_path,
+            (
+                "sess_cov-1",
+                "/Users/ctai/Github/ai-guide",
+                "cov",
+                _MS,
+                _MS + 60_000,
+                None,
+                "interactive",
+            ),
+        )
+        _patch_default_db(monkeypatch, db)
+
+        out = _mod.collect_scbus_sessions()
+        assert out["coverage"] == "zcode-only"
+
 
 class TestFaultTolerance:
     def test_single_source_failure_marks_unavailable(
@@ -275,6 +300,37 @@ class TestOutputForms:
         assert snap["scbus_sessions"]["unavailable"] is True
         assert snap["dirty_files"]["count"] == 1
 
+    def test_render_scbus_harness_native_wording_and_coverage(self) -> None:
+        """AIR-281②——表頭/footer 去 scbus 化＋live 語義 caveat＋coverage 呈現.
+
+        來源已是 harness-native（AIR-277）——markdown 字面禁再出現 scbus
+        詞彙；live 語義沿用 discovery 措辭（live＝未封存，非存活觀測），
+        禁新發明存活宣稱。
+        """
+        lines = _mod._render_scbus(
+            {
+                "unavailable": False,
+                "rows": [
+                    {
+                        "session": "sess_cov-1",
+                        "name": "cov",
+                        "workspace": "w",
+                        "status": "active",
+                        "age_min": 1,
+                    }
+                ],
+                "count": 1,
+                "registry_total": 1,
+                "coverage": "zcode-only",
+            }
+        )
+        text = "\n".join(lines)
+        assert "## live sessions" in text
+        assert "scbus" not in text.lower()  # 去 scbus 化——字面不再出現
+        assert "registry" not in text.lower()  # footer 總列去 registry 詞彙
+        assert "coverage=zcode-only" in text  # ① coverage 呈現
+        assert "未封存" in text  # live 語義 caveat（沿用 discovery 措辭）
+
     def test_main_markdown_header_and_five_sections(
         self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
@@ -285,7 +341,7 @@ class TestOutputForms:
         assert out.startswith("# 在飛總表")
         for section in (
             "## bridge jobs",
-            "## scbus live sessions",
+            "## live sessions",
             "## worktrees",
             "## card branches",
             "## dirty files",

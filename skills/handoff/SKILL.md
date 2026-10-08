@@ -102,7 +102,7 @@ packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產�
 **target 解析**（已知/未知分流——判定邏輯抽在 `scripts/handoff_delivery.py`，行為由單元測試鎖定）：
 
 ```bash
-# session 發現經 seam（AIR-254.1）——session_discovery 是 registry 唯一讀取點
+# session 發現經 seam（AIR-254.1/AIR-277）——session_discovery 是 harness-native session store 唯一讀取點（coverage=zcode-only）
 uv run python scripts/session_discovery.py list --json > .agent-tmp/session-rows.json  # 正規化 rows（label 已合併 sidecar）
 uv run python scripts/session_discovery.py whoami                                # 本側 session_id／workspace_root
 uv run python scripts/handoff_delivery.py resolve-target \
@@ -113,7 +113,7 @@ uv run python scripts/handoff_delivery.py resolve-target \
 
 - `disposition=known-direct` → 走直送第一路（先過下方 Consent gate）；`cross_ownership=true` 時 build-body 加 `--cross-ownership --consent-evidence "<AUTH 指針>"`
 - `disposition=fallback-manual`（reason：`no-match`／`ambiguous`／`target-ended`／`self`）→ 降 manual paste fallback
-- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`whoami_unavailable`——registry 來源缺席或失敗）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 dutymail 直送（target 未確立＝第一路不可達）。M7 拔源後預期進入此路徑；此前 scbus 缺席或指令失敗時亦適用（session_discovery 對 OSError/CalledProcessError 皆吐同型 code）——契約預置
+- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`source_malformed`／`whoami_unavailable`／`whoami_malformed`——session store 缺席、損壞或 whoami 無對應工作區）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 dutymail 直送（target 未確立＝第一路不可達）。契約預置：seam 全失敗路徑（含 sqlite 查詢錯誤）皆 raise typed `DiscoveryError` 轉統一 exit 3 envelope——AIR-277 換源後無 subprocess 路徑，禁嘗試 scbus 直呼
 
 **第一路：dutymail 直送**（已知 session；delivery body 結構欄對齊 conventions v2；helper 的機械把關——body ≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → 空 body 包進 envelope 照送＝fail-silent，禁用單行形）：
 

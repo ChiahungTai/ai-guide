@@ -16,12 +16,13 @@ markdown 表（`--json` 輸出同構 JSON），表頭帶生成時間。每路獨
    ISO，無則檔案 mtime。壞 JSONL 行標 `parse-error` 續跑；無 jobs 目錄＝
    `skipped`（非錯）。
 2. **session 發現（seam）**：`session_discovery.collect_rows(live_only=
-   True)`（AIR-254.1——本檔不再直呼 `scbus list`，registry 讀取單一
-   choke point 在 seam）。--live 過濾＝`observed_liveness == "live"` 且
-   `session_id` 以 `sess_` 開頭（排除 scbus-ext-* 幽靈與雜訊）。欄位：
-   session_id 前 13 碼／name（←seam label，sidecar 優先合併）／
-   workspace 尾段／status／age_min（`age` 秒 → 分；缺 `age` 時以
-   `last_seen_us` 對 now 推算）。
+   True)`（AIR-254.1／AIR-277——本檔不直查源，session store 讀取單一
+   choke point 在 seam；coverage=zcode-only 隨 rows 轉發至輸出）。--live
+   過濾＝`liveness == "live"` 且 `session_id` 以 `sess_` 開頭（非 sess_
+   前綴雜訊自然排除）。**live＝未封存，非存活觀測**（沿用 seam caveat；
+   下游解讀對照 age_min）。欄位：session_id 前 13 碼／name（←seam
+   label，sidecar 優先合併）／workspace 尾段／status／age_min
+   （`age` 秒 → 分；缺 `age` 時以 `last_seen_us` 對 now 推算）。
 3. **git 面**：`git worktree list --porcelain`（非 primary 的 WT）＋
    `git branch --list 'air-*'`＋`git status --porcelain`（dirty 檔計數）。
    三個子命令各自容錯，一個失敗只標該區段 unavailable。
@@ -183,8 +184,11 @@ def collect_scbus_sessions(
     """seam `collect_rows(live_only=True)`——live＋`sess_` 過濾在 seam 做。
 
     欄位映射語義不變：session 前 13 碼／name←seam label（sidecar 優先
-    合併）／workspace 尾段／status／age_min；runner 注入形態保留（seam
-    `_collect_raw` 收 runner）。
+    合併）／workspace 尾段／status／age_min。coverage 鍵自 seam 轉發
+    （現值 zcode-only——覆蓋縮限對下游可見，AIR-281①）。`run` 參數＝
+    遺留槽：AIR-277 換源後 seam 直讀 session store、**值被忽略**
+    （seam `collect_rows` 為既有消費端呼叫相容保留；注入面＝`db_path`），
+    禁新依賴。
     """
     data = collect_rows(
         run if run is not None else _run_cmd, sidecar=sidecar, live_only=True
@@ -206,6 +210,7 @@ def collect_scbus_sessions(
         "rows": rows,
         "count": len(rows),
         "registry_total": data["registry_total"],
+        "coverage": data.get("coverage"),
     }
 
 
@@ -310,7 +315,7 @@ def _render_bridge_jobs(data: dict[str, Any]) -> list[str]:
 
 
 def _render_scbus(data: dict[str, Any]) -> list[str]:
-    lines = ["## scbus live sessions（observed_liveness=live 且 sess_*）"]
+    lines = ["## live sessions（harness-native seam；liveness=live 且 sess_*）"]
     if data.get("unavailable"):
         return [lines[0], f"- unavailable：{data.get('error')}"]
     lines += [
@@ -325,7 +330,9 @@ def _render_scbus(data: dict[str, Any]) -> list[str]:
         )
     lines += [
         "",
-        f"- live sess_* {data['count']} 列（registry 總列 {data['registry_total']}）",
+        f"- live sess_* {data['count']} 列（總列 {data['registry_total']}）｜"
+        f"coverage={data.get('coverage') or '-'}——live＝未封存，非存活觀測"
+        "（下游解讀對照 age_min）",
     ]
     return lines
 
