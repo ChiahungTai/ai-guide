@@ -117,7 +117,8 @@ _TIMESTAMP_ERRORS = (ValueError, OverflowError, OSError)
 
 def _require_representable_last_seen(row: dict[str, Any]) -> None:
     """列值防護（AIR-284，bridge 裁決案 (b) 嚴格）：`time_updated` 存在但
-    無法以 datetime 表示（超範圍／非有限）＝`source_malformed`——typed 拒用
+    無法以 datetime 表示（超範圍／非有限，含 `.astimezone()` 本地時區轉換
+    ——本表達式須與 `_last_seen_iso` 轉換鏈同步）＝`source_malformed`——typed 拒用
     **整個來源**，禁 row-skip、禁 plausibility window 二次猜測（crash-only
     ：損壞比缺失危險；部分成功比明確失敗危險——list 亦是 address
     resolution 上游）。診斷三要素：session key＋欄位名（seam 欄位
@@ -132,7 +133,7 @@ def _require_representable_last_seen(row: dict[str, Any]) -> None:
     if us is None:
         return
     try:
-        datetime.fromtimestamp(us / 1_000_000, tz=UTC)
+        datetime.fromtimestamp(us / 1_000_000, tz=UTC).astimezone()
     except _TIMESTAMP_ERRORS as exc:
         raise DiscoveryError(
             "source_malformed",

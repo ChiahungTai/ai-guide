@@ -220,6 +220,35 @@ class TestCorruptTimestampContract:
         assert err["ok"] is False
         assert err["error"]["code"] == "source_malformed"
 
+    def test_astimezone_local_overflow_also_typed(
+        self, tmp_path: Path, capsys, monkeypatch
+    ) -> None:
+        """judge 二層逃逸 regression（job-muzl7i3x）：UTC guard 可表示、本地
+        時區轉換溢位——`time_updated=253402272000000` ms＝9999-12-31 16:00Z
+        （UTC 腿通過），TZ=Asia/Taipei（+8）下 `.astimezone()` 目標
+        year 10000 超 datetime.max→OverflowError 須同樣收進 typed envelope
+        （guard 表達式鏡射 `_last_seen_iso` 完整轉換鏈）。"""
+        monkeypatch.setenv("TZ", "Asia/Taipei")
+        import time as _time
+
+        _time.tzset()
+        try:
+            db = _store(
+                tmp_path, _srow("sess_edge", updated=253402272000000)
+            )
+            rc = _mod.main(
+                ["list", "--json", "--labels-file", str(tmp_path / "labels.json")],
+                db_path=db,
+            )
+        finally:
+            monkeypatch.delenv("TZ")
+            _time.tzset()
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        err = json.loads(captured.err)
+        assert err["error"]["code"] == "source_malformed"
+
     def test_diagnostic_names_session_field_and_value(self, tmp_path: Path) -> None:
         """驗收②：診斷載荷指名問題列——session key＋欄位名（last_seen_us）
         ＋原始值（fail-loud 價值＝可行動 cleanup）。"""
