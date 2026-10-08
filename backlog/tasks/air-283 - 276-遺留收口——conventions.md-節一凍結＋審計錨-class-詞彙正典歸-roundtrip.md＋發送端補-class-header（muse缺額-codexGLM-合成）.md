@@ -3,10 +3,10 @@ id: AIR-283
 title: >-
   276 遺留收口——conventions.md 節一凍結＋審計錨/class 詞彙正典歸 roundtrip.md＋發送端補 class
   header（muse缺額-codex+GLM 合成）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 00:09'
-updated_date: '2026-10-08 00:09'
+updated_date: '2026-10-08 01:30'
 labels:
   - dutymail
 dependencies: []
@@ -26,11 +26,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 節一 frozen banner 在場且原文零改動
-- [ ] #2 審計錨＋evidence 條款 roundtrip.md 逐字在場（新詞形）＋身位聲明
-- [ ] #3 SKILL.md conventions 節一引用全改道（rg 歸零）＋:95/:99 矛盾消除
-- [ ] #4 build-body class 鍵＋測試 RED→GREEN
-- [ ] #5 class 詞彙表六值＋分權聲明入 roundtrip.md
+- [x] #1 節一 frozen banner 在場且原文零改動
+- [x] #2 審計錨＋evidence 條款 roundtrip.md 逐字在場（新詞形）＋身位聲明
+- [x] #3 SKILL.md conventions 節一引用全改道（rg 歸零）＋:95/:99 矛盾消除
+- [x] #4 build-body class 鍵＋測試 RED→GREEN
+- [x] #5 class 詞彙表六值＋分權聲明入 roundtrip.md
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,3 +38,18 @@ flowchart LR
 - [ ] #1 驗證附機械證據（pytest＋rg 錨點）
 - [ ] #2 老規矩審查鏈（codex＋GLM-5.3 bi＋judge——muse 額度期）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【交付收口——ab59818d＋judge 兩修 c9c24625】consultation codex job-muyrqu5b＋GLM job-muyrt657 合成；bi codex job-muysks1m（REJECT 1I）／GLM job-muyskt2a（approve 七軸 PASS）分歧→judge job-muyugiy6 approve-with-findings（REJECT 不成立＝字面改寫無語義回歸；必修兩行：evidence 條款主詞映射聲明＋SKILL:135 三鍵；GLM 腿『逐字承載』陳述不實記錄）→marshal re-diff PASS→51 passed。遷移債：classify_completion scbus 詞形（歸 AIR-276 H 項後續卡）；節一物理退役綁 DB-80.7。receipt=.agent-tmp/post-build-receipts/air-283.json
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  a["節一詞形分歧＋發送端缺 class"] --> b["frozen banner＋正典歸 roundtrip.md"] --> c["judge 裁決兩行修＋re-diff PASS"] --> d["merge＋單一源閉環 Done"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
