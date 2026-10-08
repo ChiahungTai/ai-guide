@@ -3,10 +3,10 @@ id: AIR-286
 title: >-
   whoami 真身份源 hook 指針機制——PreToolUse 寫 per-cwd session pointer＋staleness（AIR-282
   探勘後續）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 12:50'
-updated_date: '2026-10-08 13:08'
+updated_date: '2026-10-08 14:02'
 labels:
   - dutymail
 dependencies: []
@@ -29,11 +29,29 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 指針機制設計落卡（staleness／權限／並行覆蓋三契約）
-- [ ] #2 whoami 先讀 pointer＋fallback 降級路徑 RED→GREEN
+- [x] #1 指針機制設計落卡（staleness／權限／並行覆蓋三契約）
+- [x] #2 whoami 先讀 pointer＋fallback 降級路徑 RED→GREEN
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
+- [x] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【收口——0531dcdd＋合議三修 a2946ca6】bi：codex job-muzl85nc（PASS-with-Suggestions：F1 測試斷言假通過／F2 植入偵測未真驗）＋GLM job-muzl863m（PASS：F1 tmp 殘留／F2 揭露未落持久面）——兩腿收斂 approve 合議免 judge，三修直套（glob 斷言／植入偵測真驗／tmp unlink）。【揭露落持久（GLM F2）】author 自報：測試/smoke 曾寫真實 home state（~/.local/state/ai-guide/identity/）——雜訊指針檔已清＋測試改 env 注入 hermetic；GLM 機驗 identity/ 已不存在。設計決策表 D1-D8＋跨 harness 素材（grok/codex/cc）詳 ledger=.review/air-286.md。未驗：live 觸發鏈（installer＋新 session 歸部署段）。receipt=.agent-tmp/post-build-receipts/air-286.json
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  a["whoami＝活躍度代理（無身份源）"] --> b["hook 指針：PreToolUse 寫 per-cwd pointer"] --> c{"讀側：新鮮＋membership？"}
+  c -->|是| d["hook-pointer 真身份"]
+  c -->|否| e["workspace-proxy 降級＋標記"]
+  d --> f["bi 收斂三修→merge Done（zcode-first）"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
