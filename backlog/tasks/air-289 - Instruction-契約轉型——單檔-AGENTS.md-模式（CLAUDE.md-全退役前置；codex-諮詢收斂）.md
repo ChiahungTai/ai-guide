@@ -1,9 +1,10 @@
 ---
 id: AIR-289
 title: Instruction 契約轉型——單檔 AGENTS.md 模式（CLAUDE.md 全退役前置；codex 諮詢收斂）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-08 22:36'
+updated_date: '2026-10-08 22:37'
 labels:
   - instruction
 dependencies: []
