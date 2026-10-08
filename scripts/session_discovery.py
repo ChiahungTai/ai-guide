@@ -36,11 +36,13 @@ status 由 store `time_archived` 推導：未封存＝`live`／`active`，已封
 `sess_` 開頭——沿用 inflight_snapshot 現行雜訊排除語義；status 不參與
 過濾。**`live`＝未封存，非存活觀測**——zcode store 無 session 級存活
 訊號，未封存歷史 session 恆標 live；`--live` 過濾後集合含全部未封存歷
-史列，下游解讀須對照 `age_min`。探勘定案（AIR-282）：`turn_usage.status`
-雖有 `running` 值但全史 0 筆（事後帳非心跳）；程序面 lsof cwd 僅
-workspace 級代理且非文檔契約（同 workspace 多程序、subagent 無獨立
-程序）；`session_entry` 高頻 checkpoint 列屬 recency 啟發式（卡面紅
-線禁提議）——`live` 語義維持「未封存」，無升級源。
+史列，下游解讀須對照 `age_min`。探勘定案（AIR-282，2026-10-08 快照）：
+`turn_usage.status` 雖有 `running` 值但探勘時點全史 0 筆（事後帳非心
+跳；未來出現 running 列亦非心跳——schema 無 heartbeat 語義）；程序面
+lsof cwd 僅 workspace 級代理且非文檔契約（同 workspace 多程序、
+subagent 無獨立程序）；`session_entry` 高頻 checkpoint 列屬 recency
+啟發式（卡面紅線禁提議）——`live` 語義維持「未封存」，已檢查介面內
+無升級源（過期重探條件＝ZCode runtime 新增 session 級訊號面）。
 
 CLI
 ----
@@ -179,11 +181,11 @@ def _whoami_raw(
     """harness workspace 對照——cwd realpath 對 store `directory` 精確
     匹配，取 `time_updated` 最新一列。
 
-    身份語義（正式定案，非過渡；探勘證據＝AIR-282）：本命令回 workspace
-    `time_updated` 最新列＝**活躍度代理，非呼叫者身份**。ZCode runtime
-    對 CLI 子程序無身份注入面——env 無 session id、`zcode` CLI 無
-    session 查詢命令、`~/.zcode/cli/` 無 current-session 指針檔；唯一
-    權威身份源＝hook stdin payload 的 `session_id`（hooks/duty_receive.py
+    身份語義（正式定案，非過渡；探勘證據＝AIR-282，2026-10-08）：本命令回 workspace
+    `time_updated` 最新列＝**活躍度代理，非呼叫者身份**。本次探勘於已檢查介面
+    （env／`zcode` CLI 命令集／`~/.zcode/cli/` 指針檔）未發現 CLI 子程序身份注入
+    面（未來版本可能新增——過期重探）；已檢查介面內唯一權威身份源＝hook stdin
+    payload 的 `session_id`（hooks/duty_receive.py
     已消費、值與 store `session.id` 同形），但僅 hook 程序內可達——接線
     須新增 hook＋指針寫入機制（staleness 語義另決），非本 seam 小改。
     同 workspace 多 session 並行時可能回他者；同分由 rowid 決定（與
