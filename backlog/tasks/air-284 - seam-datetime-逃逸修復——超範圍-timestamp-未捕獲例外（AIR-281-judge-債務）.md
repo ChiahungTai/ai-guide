@@ -4,7 +4,7 @@ title: seam datetime 逃逸修復——超範圍 timestamp 未捕獲例外（AIR
 status: In Progress
 assignee: []
 created_date: '2026-10-08 12:49'
-updated_date: '2026-10-08 13:09'
+updated_date: '2026-10-08 13:52'
 labels:
   - dutymail
 dependencies: []
@@ -41,4 +41,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【bridge 裁決融入——三方收斂】bridge 主動寄裁定（db807-air284-ruling-001＋addendum-001）：(b) 嚴格整源 source_malformed＋riders（診斷指名問題列；真實壞列常態化才設計 malformedRows deliberate feature）＋codex 補強（consumer contract source_malformed 降級驗證；except 限縮 ValueError/OverflowError/OSError）。我方雙腿諮詢（codex job-muzjh5uv＋GLM job-muzjh6b9）獨立同案——三方收斂，author 已依此實作。
+
+【收口——533a613f＋judge 二層修 3294da07】三方收斂 (b) 落地＋consumer rider（source_malformed→fallback 綁定測試）＋SKILL:116 註記收回。bi：codex job-muzkxrle REQUEST CHANGES（F1 二層逃逸——.astimezone() 本地轉換溢位 repro）／GLM job-muzkxs6b approve→judge job-muzl7i3x codex 成立（最小修 guard 鏡射轉換鏈＋TZ regression）→marshal 直套→69 passed。語義邊界備查：whoami 整源範圍＝workspace 過濾後查詢（他 workspace 壞列不觸發）——GLM suggestion 記錄。改判條件：真實壞列常態化→per-row malformedRows deliberate feature 另立卡。receipt=.agent-tmp/post-build-receipts/air-284.json
 <!-- SECTION:NOTES:END -->
