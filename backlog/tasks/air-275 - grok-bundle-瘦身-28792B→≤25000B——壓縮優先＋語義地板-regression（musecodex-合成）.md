@@ -4,7 +4,7 @@ title: 'grok bundle 瘦身 28,792B→≤25,000B——壓縮優先＋語義地板
 status: Done
 assignee: []
 created_date: '2026-10-07 14:08'
-updated_date: '2026-10-08 10:48'
+updated_date: '2026-10-08 12:49'
 labels:
   - grok
 dependencies: []
@@ -36,6 +36,7 @@ flowchart LR
 - [x] #2 AC2 語義地板錨點全數在場（三腿重構 21/21/25 全 PASS；AIR-252 E1 模式排除——sink 四處實承載）
 - [x] #3 AC3 tri 審查全 approve-with-findings、無方向衝突；judge 裁決 findings 處置
 - [x] #4 AC4 主 AC ≤25,000B 未達（結構性）——user 裁決「先90%」收 Wave 1 milestone，Wave 2 凍結面解凍另議
+- [x] #5 AC5 Wave 2 凍結面解凍（outward）雙稿裁決合併落地＋user 終局裁決 27,629B 收卡歸檔（B 案）
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -46,6 +47,8 @@ flowchart LR
 【Wave 2 開工——user 解凍裁決】AUTH=user 原話「5.3 codex 各自寫一個版本，然後codex 裁決看看怎樣截長補短，不用砍太兇，合理才砍」（前句確認解凍對象＝outward）。形態：GLM-5.3＋codex 各產一版壓縮稿（唯讀、final text 承載）→codex 裁決合併（截長補短；codex 自審自家版＝user 明示的形態，記錄在案）。範圍＝outward bundle-facing 節（①核心原則②Reversibility test③AUTH 模板④quote scope⑤授權來源⑥doc≠auth⑦Autonomous shortcut⑧Source of truth，進 bundle ~2.5KB）；Commit 專屬段（~3KB skip 段）禁碰。地板錨點（必須存活）：PENDING 回報格式／沉默≠同意／AUTH line 逐字／user-typed≠pasted 分界／undo 前可觀察判準／red-line 枚舉／Source of truth 聲明。目標：不用砍太兇——合理才砍，25KB 整數不強求。
 
 【Wave 2 收口——合併定稿落地】形態＝GLM job-muyxx5zl（首跑串流未完成作廢）＋job-muz02bmt（重派完成）＋codex job-muyxx611 雙稿→codex job-muzde3ir 裁決合併（截長補短；對自家被退回段落明說；quote scope 兩稿各丟不同案例→退原文）。定稿 5,379B（bundle-facing −223B/9.1%；地板十錨點 10/10；skip 段逐字不動）。部署投影 27,852→27,629B（dry-run 實測吻合；gate 89% 綠、WARN 26,112B 仍超）。【誠實結論】≤25,000 主 AC 在「合理才砍」約束下結構性未達——Wave 1（未凍結不足 1.2KB）＋Wave 2（解凍後合理壓縮僅 223B）兩波實證壓縮空間耗盡；剩餘選項＝(a) 授權激進壓縮（安全條款風險）或 (b) 27,629B 收卡歸檔——待 user 裁決，卡維持 In Progress。
+
+【Wave 2 終局——user 裁決 B 案】27,629B 收卡歸檔（AUTH=user 原話「275 B」）。兩波實證壓縮空間耗盡記錄在案（Wave 1 −1,012B＋Wave 2 −223B；gate 89% 綠、WARN 26,112B 超但不擋——bundle-watch 週期候選承擔）。deploy 4/4（be7fde71）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -59,5 +62,13 @@ flowchart LR
   w1 --> j["judge 五修"]
   j --> d["27,780B 90.4% milestone 收口"]
   d -. "Wave 2 凍結面解凍 另議" .-> w2["≤25,000B"]
+```
+
+```mermaid
+flowchart LR
+  a["bundle 28,792B 超警示線"] --> b["Wave 1 七檔 −1,012B（地板 21 錨點全存）"]
+  b --> c["Wave 2 outward 解凍——雙稿裁決合併 −223B"]
+  c --> d{"≤25,000 可達？"}
+  d -->|兩波實證：合理約束下結構性不可達| e["user 裁決 B——27,629B 收卡歸檔 Done"]
 ```
 <!-- SECTION:FINAL_SUMMARY:END -->
