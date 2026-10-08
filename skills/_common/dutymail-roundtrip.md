@@ -135,7 +135,7 @@ transport receipt（機器面，delivery 保證）≠ semantic reply（消費面
   （承接中間態＝`accept`；`declined`＝禁原樣重發、`needs-info`＝補件後同
   correlation 重發）。
 
-**evidence 指向條款**：ACK 與回信文字須帶 evidence 指向（path／hash／可機驗指針），
+**evidence 指向條款**（遷自 conventions 節一 SC 案例②；原主詞「ACK 與 receipt 的文字」——receipt 面在 dutymail 由 transport acceptance 三鍵機械承載〔含 envelopeSha256〕，自由文字面僅存 ACK/回信）：ACK 與回信文字須帶 evidence 指向（path／hash／可機驗指針），
 禁權威斷言——「已完成」是宣稱非證據，「result 在 `<path>` hash=`<h>`」是。訊息
 文案禁斷言權威：transport consent ≠ mutation authority，送達≠取得寫入權。
 

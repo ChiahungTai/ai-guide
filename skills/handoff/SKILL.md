@@ -132,7 +132,7 @@ uv run python -c "import json,sys,time,uuid; json.dump({'schema_version':2,'mess
   && dutymail send --envelope-file .agent-tmp/handoff-envelope.json
 ```
 
-send stdout 的 `envelopeId`／`acceptanceSeq` 即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。門牌選址照 dutymail 地址模型（`<repo>-marshal`＝長期入口、session address＝direct channel；intent=solicit＝交接求承接回應）——跨 repo 交接 `to.address`＝`<對方 repo basename>-marshal`；指定特定 session 才用對方 session address（CLI 無 address 查詢面，自協調上下文取得；缺→降 manual paste）。body machine-header `reply_address`＝本側回信門牌（正典「reply_address 慣例」——收件方回信/查回信的落點依據；send 面無 from-address，缺此鍵＝回信只剩 out-of-band 推導）。
+send stdout 的 `envelopeId`／`acceptanceSeq`＋`envelopeSha256` 三鍵即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。門牌選址照 dutymail 地址模型（`<repo>-marshal`＝長期入口、session address＝direct channel；intent=solicit＝交接求承接回應）——跨 repo 交接 `to.address`＝`<對方 repo basename>-marshal`；指定特定 session 才用對方 session address（CLI 無 address 查詢面，自協調上下文取得；缺→降 manual paste）。body machine-header `reply_address`＝本側回信門牌（正典「reply_address 慣例」——收件方回信/查回信的落點依據；send 面無 from-address，缺此鍵＝回信只剩 out-of-band 推導）。
 
 > **msg_type 註記**：conventions v2 的 msg_type 四值枚舉（cross-repo-bug／fix-ready／verify-pass／breaking-intent）不涵蓋 handoff 交接——delivery body 以消費端約定 `handoff_delivery` 標記（先例＝proto §5.9 控制信 body 約定），不冒用枚舉值；晉升共用 schema 須 conventions.md amendment，非本 skill 權限。
 
