@@ -1,7 +1,7 @@
 ---
 id: AIR-282
 title: A6 跟進②——whoami caller-identity＋store 存活訊號探勘（judge 跟進卡；M7 拔源前）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 23:10'
 updated_date: '2026-10-08 03:29'
