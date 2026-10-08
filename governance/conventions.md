@@ -5,6 +5,13 @@
 
 ## 節一：scbus 訊息 schema 草案 v2——已吸收 sc-router needs-info 五條
 
+> **本節已凍結（frozen）——AIR-283**：scbus→dutymail 遷移後本節不再更新，僅存
+> sc-router amendment 草案歷史（SC 已 ack 採用 v2 欄位，AIR-156 baseline）。
+> 活條款（審計錨兩錨閉環＋evidence 指向）已遷
+> [skills/_common/dutymail-roundtrip.md](../skills/_common/dutymail-roundtrip.md)
+> 「審計錨正典」節；本節物理退役綁 bridge DB-80.7 sc-router 退役裁決，在此之前
+> 原文一字不動（SC 引用保護——先例＝scbus-address-contract.md frozen 保留）。
+
 身位宣告：本節是給 sc-router protocol amendment 的輸入草案，非 protocol 權威（protocol.md 歸 sc-router repo 單方）。發送端行為（逐次確認 gate、sent-record 八欄、transport 四路分流）單一源＝AIR-135.5 AC#6，本節只定線上訊息格式與回覆語義。
 
 ### 訊息共用欄位（各 msg_type 皆適用）

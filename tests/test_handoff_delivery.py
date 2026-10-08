@@ -318,6 +318,19 @@ class TestBuildDeliveryBody:
         assert parsed["reply_address"] == "ai-guide-marshal"
         assert "\n" not in body
 
+    def test_minimal_body_carries_class_header(self) -> None:
+        """AIR-283：build-body 必帶 class machine-header（值 handoff）——接收端
+        triage 依 class×action 表分診，body 缺 class 鍵＝分類前提不成立落
+        unknown 桶（A5 實證：完成信 class:unknown＝發送端根本未發 class）。"""
+        body = _mod.build_delivery_body(
+            summary="s",
+            source="ai-guide/air-283",
+            reply_address="ai-guide-marshal",
+            correlation_id="c",
+            want="accept",
+        )
+        assert json.loads(body)["class"] == "handoff"
+
     def test_cross_ownership_without_consent_is_blocked(self) -> None:
         """consent gate——跨 ownership envelope 直送無 AUTH 指針＝攔。"""
         with pytest.raises(_mod.DeliveryContractError):
@@ -423,6 +436,25 @@ class TestCli:
         )
         assert r.returncode == 0, r.stderr
         assert json.loads(r.stdout)["reply_address"] == "ai-guide-marshal"
+
+    def test_build_body_cli_class_lands_in_body(self) -> None:
+        """AIR-283：CLI build-body 輸出須帶 class=handoff（machine header——
+        接收端 default-deny 分診的第一分類鍵）。"""
+        r = _run_cli(
+            "build-body",
+            "--summary",
+            "packet",
+            "--source",
+            "ai-guide/air-283",
+            "--reply-address",
+            "ai-guide-marshal",
+            "--correlation-id",
+            "c1",
+            "--want",
+            "accept",
+        )
+        assert r.returncode == 0, r.stderr
+        assert json.loads(r.stdout)["class"] == "handoff"
 
     def test_build_body_cli_missing_reply_address_exit_2(self) -> None:
         """judge 案②：缺 --reply-address＝exit 2 fail loud（非靜默送出

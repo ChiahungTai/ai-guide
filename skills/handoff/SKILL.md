@@ -96,7 +96,7 @@ packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產�
 | 3 consumed/accepted | 對方 duty receive 處置→transport ack（delivery cursor 前進）＋回 semantic ACK（`reply_type=accept`、`in_reply_to=<parent envelope_id>`，查法＝scoped `dutymail replies --envelope-id <parent> --address <自己門牌>`——跨地址禁 unscoped，回空不蘊含語義） | 對方 session 承接 |
 | 4 ownership-restored | 對方回 `reply_type=completed`＋`result_pointer`＋`evidence` | 交接閉環，可關 correlation |
 
-- **審計錨條款**：receipt（envelope_id 鍵——`receipts list --address <alias> --envelope-id <id>`）＋ACK（`in_reply_to` correlation 鍵）兩錨同時對上才算完成證據，僅其一＝未閉環禁記完成（[conventions.md](../../governance/conventions.md) 節一對照表）。`declined`＝禁原樣重發；`needs-info`＝補件後同 correlation 重發。
+- **審計錨條款**：兩錨同時對上才算完成證據，僅其一＝未閉環禁記完成——transport receipt 錨＝`dutymail send` acceptance 三鍵（`envelopeId`＋`acceptanceSeq`＋`envelopeSha256`；append-only `receipts` 軸 send 不自動落軸，**非閉環必要條件**——與上表第 2 段詞形勿混條款同源）＋semantic reply 錨＝`in_reply_to` 對 parent `envelope_id` 的 reply（完成閉環須 `reply_type=completed`＋`result_pointer`＋`evidence`）。正典＝[dutymail-roundtrip.md](../_common/dutymail-roundtrip.md)「審計錨正典」節（AIR-283——conventions 節一已凍結，條款遷該檔）。`declined`＝禁原樣重發；`needs-info`＝補件後同 correlation 重發。
 - **ack protocol 本輪不擴**：receipt 語義上限＝queued-visible（transport ack 非 human seen/done——人類 ✓ 恆 SC 面權威，dutymail 三線獨立）；correlated upper-layer reply 已是語義面承接，amendment 須多弧實證。
 
 **target 解析**（已知/未知分流——判定邏輯抽在 `scripts/handoff_delivery.py`，行為由單元測試鎖定）：
@@ -148,7 +148,7 @@ send stdout 的 `envelopeId`／`acceptanceSeq` 即 queued-visible 證據，記�
 user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session mailbox，授權面重新設計——**不為機械化拆安全閘**：
 
 - **dutymail 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權
-- **跨 ownership envelope**（target `workspace_root` ≠ 本側，即 resolve-target 的 `cross_ownership`）：delivery body 必帶 consent 欄——`"consent": {"granted_by": "user", "evidence": "<AUTH 指針>"}`（`build-body --cross-ownership` 無 `--consent-evidence` 即 fail loud）。欄位語義＝審計註記：**transport consent ≠ mutation authority**，送達≠取得對方寫入權，承接後 mutation 仍歸對方主權（[conventions.md](../../governance/conventions.md) 節一 evidence 條款）
+- **跨 ownership envelope**（target `workspace_root` ≠ 本側，即 resolve-target 的 `cross_ownership`）：delivery body 必帶 consent 欄——`"consent": {"granted_by": "user", "evidence": "<AUTH 指針>"}`（`build-body --cross-ownership` 無 `--consent-evidence` 即 fail loud）。欄位語義＝審計註記：**transport consent ≠ mutation authority**，送達≠取得對方寫入權，承接後 mutation 仍歸對方主權（[dutymail-roundtrip.md](../_common/dutymail-roundtrip.md)「審計錨正典」節 evidence 指向條款——AIR-283 起遷此）
 - **同 ownership**：gate 不豁免——直送仍是 outward，逐次 AUTH 照走；僅 body 免 consent 欄
 
 ---

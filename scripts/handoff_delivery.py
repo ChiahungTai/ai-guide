@@ -11,7 +11,8 @@
 契約錨（card AIR-156 已決策勿重辯）：
 - receipt＝queued-visible 非完成（scbus proto §5.7 兩 stage 一次寫成、§5.8
   consume 兩態、無 ack／user-read 第三態）；transport receipt ≠ semantic ACK，
-  禁互升格（governance/conventions.md 節一對照表＝審計錨）。
+  禁互升格（審計錨正典＝skills/_common/dutymail-roundtrip.md——AIR-283 起
+  conventions.md 節一已凍結，審計錨條款遷該檔）。
 - 已知 session 第一路＝scbus send；未知／歧義／self／ended／
   discovery-unavailable fail-closed 降 manual paste fallback。
 - scbus 直送＝outward action（AI 發起逐次授權，rules/outward-action-consent）；
@@ -19,6 +20,9 @@
 - 訊息結構欄對齊 governance/conventions.md 節一 v2（want/card_ref/
   correlation_id/expires_at/artifact_pointers）；msg_type 四值枚舉不涵蓋
   handoff 交接，本檔不發 msg_type 欄（晉升共用 schema 須 conventions amendment）。
+- body machine-header 恆帶 class=handoff（AIR-283——class 封閉詞彙正典＝
+  skills/_common/dutymail-roundtrip.md；接收端 triage 第一分類鍵，缺鍵＝
+  落 unknown 桶）。
 
 CLI exit 契約：0＝ok、非零＝fail loud（2＝contract 錯）。
 """
@@ -288,7 +292,9 @@ def build_delivery_body(
 ) -> str:
     """組 delivery body——單行 UTF-8 JSON，結構欄對齊 conventions.md 節一 v2。
 
-    consent gate：cross_ownership=True 時 consent_evidence 必填（AI 發起
+    body machine-header 恆帶 class=handoff（詞彙正典＝
+    skills/_common/dutymail-roundtrip.md「class 封閉詞彙」節）。consent gate：
+    cross_ownership=True 時 consent_evidence 必填（AI 發起
     逐次授權的 AUTH 指針——transport consent ≠ mutation authority，本欄是
     審計註記非對接收端的授權移轉）。超過 bus 凍結面 8192 位元組＝fail loud。
     """
@@ -308,6 +314,7 @@ def build_delivery_body(
 
     body: dict = {
         "handoff_delivery": True,  # 消費端約定標記（先例＝proto §5.9 控制信 body 約定）
+        "class": "handoff",  # machine header——class 封閉詞彙正典＝skills/_common/dutymail-roundtrip.md（AIR-283；缺鍵＝接收端分類前提不成立落 unknown 桶）
         "source": source,
         "reply_address": reply_address,  # machine header——in-band 回信門牌（send 面無 from-address）
         "correlation_id": correlation_id,

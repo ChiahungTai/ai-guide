@@ -64,6 +64,29 @@ SC-305 上線——surface 項照樣計入 ack 前處置，差別只是不注入
 flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 （terminal status 只是 fact）。**v1 不主動送信**（send/replies＝outward，逐次 AUTH）。
 
+## class 封閉詞彙（body machine-header——AIR-283）
+
+body machine-header `class` 的 ai-guide 側封閉詞彙，現行六值逐字對齊
+`governance/dutymail-processor.toml` `[[class_rule]]` 表：
+
+| class | 語義（一句） | 分診現值 |
+|---|---|---|
+| `usage-liveness` | usage／存活類例行回報 | auto（inform） |
+| `terminal-completion` | 委派工作的終態完成回報 | auto（inform） |
+| `receipt` | 運輸回執（配 `in_reply_to`／`task`/`card` 冪等鍵） | auto（receipt） |
+| `handoff` | 交接求承接（solicit 形） | surface（恆人工） |
+| `patrol` | 巡檢／催辦 | surface（恆人工） |
+| `work-order` | 工單／任務指派 | surface（恆人工） |
+
+**分權聲明**：本檔承載**詞彙與語義**；**執行底線承載在 code**——
+`scripts/duty_receive.py`（klass 判定＋ALWAYS_SURFACE 恆人工名單）與
+`governance/dutymail-processor.toml`（class×action 政策表，user 可編輯）：
+solicit 恆 surface、未列 class 恆 surface、handoff／patrol／work-order 恆人工
+不可經表放寬。發送端須輸出本表詞彙——新值未入表＝不獲 auto、落人工審
+（surface；缺 class 鍵者分類前提不成立、顯示 unknown），default-deny 使枚舉
+可安全滯後。新值流程＝toml 加 row＋本表補行。本表是 **ai-guide 側詞彙非跨
+repo 正典**——晉升共用 schema 須 conventions.md amendment（msg_type 先例同形）。
+
 ## 回信發現與收信面
 
 - **回信發現正典**：等回信/查回信恆用 scoped 形 `dutymail replies --envelope-id <parent>
@@ -89,6 +112,32 @@ flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 - **對外信慣例**：對外信（通知/歸因/更正）中的因果或機制斷言須攜證據基（查詢形/源碼行/
   實測輸出），攜不了自標「未查證推測」；更正信顯式 supersede——`in_reply_to` 指原信＋一句
   推翻證據＋新結論，禁兩信互不相認。
+
+## 審計錨正典（兩錨閉環——AIR-283 遷入；本節為 ai-guide 側正典）
+
+> **身位聲明**：審計錨條款正典＝本檔（G5 節同形）——scbus→dutymail 遷移後，
+> conventions.md 節一「對照即審計錨條款」（SC 案例③收束）與 evidence 指向條款
+> （SC 案例②）遷入本節、節一已凍結。本檔開頭「衝突時以 CLI／delivery EP 為準」
+> 適用**機制行為面**；**審計判準（完成認定）以本節為準**——CLI 文檔不承載
+> ai-guide 側完成認定，防「衝突以 CLI 為準」反噬審計錨效力。
+
+transport receipt（機器面，delivery 保證）≠ semantic reply（消費面，語義保證），
+兩面禁互升格。任何「已送達／已同意／已完成」宣稱須能**同時**指出兩錨；僅有其一
+＝未閉環，禁記完成：
+
+- **transport receipt 錨**（鍵＝`envelope_id`）＝`dutymail send` acceptance stdout
+  三鍵：`envelopeId`＋`acceptanceSeq`＋`envelopeSha256`。append-only `receipts`
+  軸（holder 逐條 append 的運輸觀察）**非閉環必要條件**——send 不自動落軸，
+  `receipts list --address <alias>` 回空≠未寄。
+- **semantic reply 錨**（correlation 鍵＝`in_reply_to` 對 parent `envelope_id`）＝
+  scoped 查得的 reply（`dutymail replies --envelope-id <parent> --address <自己門牌>`）；
+  完成閉環的 reply 須 `reply_type=completed`＋`result_pointer`＋`evidence`
+  （承接中間態＝`accept`；`declined`＝禁原樣重發、`needs-info`＝補件後同
+  correlation 重發）。
+
+**evidence 指向條款**：ACK 與回信文字須帶 evidence 指向（path／hash／可機驗指針），
+禁權威斷言——「已完成」是宣稱非證據，「result 在 `<path>` hash=`<h>`」是。訊息
+文案禁斷言權威：transport consent ≠ mutation authority，送達≠取得寫入權。
 
 ## 閒置語義
 
