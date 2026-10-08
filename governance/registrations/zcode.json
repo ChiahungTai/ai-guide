@@ -77,6 +77,18 @@
             "timeoutMs": 10000
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/identity_pointer.py"
+            ],
+            "timeoutMs": 10000
+          }
+        ]
       }
     ],
     "Stop": [

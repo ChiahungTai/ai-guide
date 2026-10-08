@@ -29,6 +29,7 @@ scripts = [
     "hooks/compact-tail-inject.py",
     "hooks/duty_mailbox_monitor.py",
     "hooks/duty_receive.py",
+    "hooks/identity_pointer.py",
     "hooks/kanban-skill-gate.py",
     "hooks/marshal_admission_guard.py",
     "hooks/memory-dirty-sensor.py",

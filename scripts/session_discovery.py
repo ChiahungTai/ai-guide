@@ -24,6 +24,20 @@ metadata 非 address 語義——AIR-248 successor 裁定）：形 `{"<session_i
 唯讀——seam 零 store 寫入）。路徑可經 `--labels-file` 或環境變數
 `SESSION_DISCOVERY_LABELS_FILE` 注入（測試 tmp 用）。
 
+identity 指針（AIR-286）
+----
+`${XDG_STATE_HOME:-~/.local/state}/ai-guide/identity/<sha256(realpath-cwd)
+>.json`（本 seam 自有 state；寫入端＝hooks/identity_pointer.py 薄前導經
+importlib 載入本檔的 `write_identity_pointer`——路徑／schema／TTL 單一源
+＝本檔）：形 `{schema_version:1, harness:"zcode", session_id,
+cwd_realpath, updated_at_us}`；atomic 寫、檔 0600／目錄 0700、
+last-writer-wins 無鎖（最近活躍者勝即語義）。`whoami` 讀面：fresh
+（≤24h）＋sid 存在於 store（membership 機驗）→`identity_source:
+"hook-pointer"`，任一條件不過→降級既有 workspace 對照＋
+`"workspace-proxy"`——兩者皆非 CLI 呼叫者保證（詳見 `_whoami_raw`
+docstring）。路徑可經環境變數 `SESSION_DISCOVERY_IDENTITY_DIR` 注入
+（測試 tmp 用）。
+
 正規化 row 形狀
 ----
 `{"session_id": 全碼, "harness": str|null, "workspace_root": str|null,
@@ -54,12 +68,12 @@ CLI
 
 exit：0＝ok；3＝typed failure（stderr 統一 `{"schemaVersion": 1, "ok":
 false, "error": {"code", "message"}}`、stdout 空）。`find` 無法唯一確立
-（0 或 >1 候選同分）＝exit 3 禁猜；`whoami`＝harness workspace 對照
-（cwd realpath 對 store `directory` 精確匹配、取 `time_updated` 最新；
-無匹配／源缺席＝exit 3）。
+（0 或 >1 候選同分）＝exit 3 禁猜；`whoami`＝identity 指針先讀＋workspace
+對照 fallback（輸出帶 `identity_source` 標記；無匹配／源缺席＝exit 3）。
 """
 
 import argparse
+import hashlib
 import json
 import os
 import sqlite3
@@ -80,6 +94,17 @@ _SUBAGENT_TASK_TYPE = "subagent_child"
 _SELECT_COLS = (
     "id, directory, title, time_created, time_updated, time_archived, task_type"
 )
+
+# identity 指針（AIR-286）——hook 寫、whoami 讀的 per-cwd 身份快取；
+# 路徑／schema／TTL 單一源＝本檔（hooks/identity_pointer.py 薄前導經
+# importlib 載入本檔呼叫 write_identity_pointer——定義改了引用不會沒跟）。
+IDENTITY_DIR_ENV = "SESSION_DISCOVERY_IDENTITY_DIR"
+POINTER_SCHEMA_VERSION = 1
+POINTER_TTL_US = 24 * 60 * 60 * 1_000_000  # 24h——TTL 只約束非工具路徑讀者
+# （in-session 讀者受「讀前自寫」保護——whoami 經 Bash 呼叫，該 Bash 自己的
+# PreToolUse 先於其執行），從寬無害；future 時間戳不信任。
+IDENTITY_SOURCE_POINTER = "hook-pointer"
+IDENTITY_SOURCE_PROXY = "workspace-proxy"
 
 Runner = Callable[..., str]
 
@@ -212,23 +237,138 @@ def _collect_raw(db_path: Path | None = None) -> dict[str, Any]:
     return {"count": len(rows), "sessions": [_to_session(r) for r in rows]}
 
 
+# ---------------------------------------------------------------------------
+# identity 指針（AIR-286）——hook 寫、whoami 讀的 seam 自有 state
+# （同 label sidecar 性質：非源 store；路徑／schema／TTL 單一源＝本節）
+# ---------------------------------------------------------------------------
+
+
+def _default_identity_dir() -> Path:
+    """指針目錄（XDG state 慣例——duty_receive holder／bridge_sweeper 同款）；
+    `IDENTITY_DIR_ENV` 可注入（CLI 測試 tmp 用）。"""
+    env = os.environ.get(IDENTITY_DIR_ENV)
+    if env:
+        return Path(env)
+    base = os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state")
+    return Path(base) / "ai-guide" / "identity"
+
+
+def _pointer_path(cwd_real: str, identity_dir: Path | None = None) -> Path:
+    """per-cwd 指針檔路徑——檔名＝sha256(realpath(cwd))（防路徑注入、
+    各 worktree 指針天然獨立）。"""
+    digest = hashlib.sha256(cwd_real.encode("utf-8")).hexdigest()
+    root = identity_dir if identity_dir is not None else _default_identity_dir()
+    return root / f"{digest}.json"
+
+
+def write_identity_pointer(
+    session_id: str,
+    cwd: str,
+    *,
+    state_dir: Path | None = None,
+    now_us: int | None = None,
+) -> bool:
+    """寫 per-cwd session 指針（hooks/identity_pointer.py 的核心；advisory）。
+
+    schema：`{schema_version:1, harness:"zcode", session_id, cwd_realpath,
+    updated_at_us}`。atomic 寫（pid 後綴 tmp＋os.replace——並行 writer
+    last-writer-wins 無鎖）、檔 0600／目錄 0700。cwd 先 realpath——symlink
+    與實路徑落同一指針。**恆不 raise**：輸入非字串／空、寫入 OSError 皆回
+    False 由呼叫端靜默（hook 恆 exit 0）——降級可觀測性歸 whoami 讀側
+    identity_source 標記，非寫側噪音。"""
+    if not isinstance(session_id, str) or not session_id:
+        return False
+    if not isinstance(cwd, str) or not cwd:
+        return False
+    stamp = now_us if now_us is not None else int(datetime.now(tz=UTC).timestamp() * 1_000_000)
+    doc = {
+        "schema_version": POINTER_SCHEMA_VERSION,
+        "harness": SOURCE_HARNESS,
+        "session_id": session_id,
+        "cwd_realpath": os.path.realpath(cwd),
+        "updated_at_us": stamp,
+    }
+    try:
+        path = _pointer_path(doc["cwd_realpath"], state_dir)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        os.chmod(path.parent, 0o700)  # mkdir mode 受 umask 影響——顯式 chmod 保證
+        tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+        tmp.write_text(
+            json.dumps(doc, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, path)
+    except OSError:
+        return False
+    return True
+
+
+def _read_identity_pointer(
+    cwd_real: str,
+    *,
+    identity_dir: Path | None = None,
+    now_us: int | None = None,
+) -> str | None:
+    """讀 per-cwd 指針→session_id（驗過）｜None（任何條件不過）。
+
+    機驗清單（任一不過＝None→whoami 降級 workspace-proxy，不修補不猜）：
+    JSON dict、schema_version、harness=="zcode"、session_id 非空字串、
+    cwd_realpath 與查詢 cwd 一致（複製植入偵測）、鮮度
+    `0 <= now - updated_at_us <= POINTER_TTL_US`（future 時間戳＝時鐘
+    回撥／植入→不信任）。**靜默**——常規缺席非錯誤，stderr 噪音歸零；
+    sid 是否存在於 store（membership，含 subagent 機械排除）由
+    `_whoami_raw` 對照查詢結果驗，本函式不查 store。"""
+    try:
+        path = _pointer_path(cwd_real, identity_dir)
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    if data.get("schema_version") != POINTER_SCHEMA_VERSION:
+        return None
+    if data.get("harness") != SOURCE_HARNESS:
+        return None
+    sid = data.get("session_id")
+    if not isinstance(sid, str) or not sid:
+        return None
+    if data.get("cwd_realpath") != cwd_real:
+        return None
+    stamp = data.get("updated_at_us")
+    if not isinstance(stamp, int) or isinstance(stamp, bool):
+        return None
+    current = now_us if now_us is not None else int(datetime.now(tz=UTC).timestamp() * 1_000_000)
+    if not 0 <= current - stamp <= POINTER_TTL_US:
+        return None
+    return sid
+
+
 def _whoami_raw(
-    db_path: Path | None = None, *, cwd: str | None = None
+    db_path: Path | None = None,
+    *,
+    cwd: str | None = None,
+    identity_dir: Path | None = None,
+    now_us: int | None = None,
 ) -> dict[str, Any]:
-    """harness workspace 對照——cwd realpath 對 store `directory` 精確
-    匹配，取 `time_updated` 最新一列。
+    """whoami——cwd 身份解析：identity 指針先讀（AIR-286），fallback 既有
+    workspace 對照（路徑零變）。
 
-    身份語義（正式定案，非過渡；探勘證據＝AIR-282，2026-10-08）：本命令回 workspace
-    `time_updated` 最新列＝**活躍度代理，非呼叫者身份**。本次探勘於已檢查介面
-    （env／`zcode` CLI 命令集／`~/.zcode/cli/` 指針檔）未發現 CLI 子程序身份注入
-    面（未來版本可能新增——過期重探）；已檢查介面內唯一權威身份源＝hook stdin
-    payload 的 `session_id`（hooks/duty_receive.py
-    已消費、值與 store `session.id` 同形），但僅 hook 程序內可達——接線
-    須新增 hook＋指針寫入機制（staleness 語義另決），非本 seam 小改。
-    同 workspace 多 session 並行時可能回他者；同分由 rowid 決定（與
-    `find` 的 ambiguous 禁猜語義不同——workspace 對照設計即取最新）。
+    身份語義（AIR-286 定案；探勘證據＝AIR-282，2026-10-08）：回**本 cwd
+    最近活躍 session 的身份（hook 心跳觀測）**——identity 指針（PreToolUse
+    每次工具呼叫由 hooks/identity_pointer.py 寫）fresh（≤24h）且
+    session_id 存在於本 workspace 的 store 查詢結果（membership 機驗，
+    `subagent_child` 已被查詢過濾機械排除——subagent 指針污染自癒回正主
+    session）→ `identity_source:"hook-pointer"`；指針缺席／逾時／future
+    時間戳／schema 壞／cwd 不一致／sid 不在 store→降級既有 workspace
+    `time_updated` 對照＋`identity_source:"workspace-proxy"`。**兩者皆非
+    CLI 呼叫者保證**（caller correlation 缺——同 cwd 並行 session 間
+    last-writer-wins 互覆屬 proxy 語義設計；in-session 主路徑受「讀前自
+    寫」保護：whoami 經 Bash 呼叫，該 Bash 自己的 PreToolUse 先於其執行）。
 
-    無匹配／源缺席＝`whoami_unavailable`；源損壞／最新列缺 id＝
+    查詢在先：store 缺席／損壞照舊 typed failure（`whoami_unavailable`／
+    `whoami_malformed`）——**指針永不單獨作答**；無匹配（含 membership
+    不過後的空集合）＝`whoami_unavailable`；最新列缺 id＝
     `whoami_malformed`（typed，CLI 轉 exit 3）。"""
     path = db_path if db_path is not None else DEFAULT_DB
     here = os.path.realpath(cwd) if cwd else os.path.realpath(os.getcwd())
@@ -243,6 +383,14 @@ def _whoami_raw(
         raise DiscoveryError(
             "whoami_unavailable", f"cwd 無對應 session 工作區：{here}"
         )
+    pointer_sid = _read_identity_pointer(here, identity_dir=identity_dir, now_us=now_us)
+    if pointer_sid is not None and any(r.get("id") == pointer_sid for r in rows):
+        return {
+            "session_id": pointer_sid,
+            "harness": SOURCE_HARNESS,
+            "workspace_root": here,
+            "identity_source": IDENTITY_SOURCE_POINTER,
+        }
     best = _to_session(rows[0])  # SQL 已 ORDER BY time_updated DESC
     sid = best.get("session_id")
     if not isinstance(sid, str) or not sid:
@@ -251,6 +399,7 @@ def _whoami_raw(
         "session_id": sid,
         "harness": SOURCE_HARNESS,
         "workspace_root": best.get("workspace_root"),
+        "identity_source": IDENTITY_SOURCE_PROXY,
     }
 
 
@@ -568,7 +717,10 @@ def main(
     p_get.add_argument("--session-id", required=True)
     p_get.add_argument("--labels-file", default=None, help="label sidecar 路徑覆寫")
 
-    sub.add_parser("whoami", help="本側 identity（cwd→store workspace 對照；JSON）")
+    sub.add_parser(
+        "whoami",
+        help="本側 identity（hook 指針先讀＋workspace 對照 fallback；帶 identity_source 標記；JSON）",
+    )
 
     args = parser.parse_args(argv)
     labels_file = Path(args.labels_file) if getattr(args, "labels_file", None) else sidecar

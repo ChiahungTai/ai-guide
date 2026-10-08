@@ -24,7 +24,10 @@
   .tmp 殘留）、檔 0600／目錄 0700；set 冪等覆寫；get 無＝fail；驗證
   1-64 字元非純空白；絕不寫源 store（連線唯讀）。
 - whoami：cwd→workspace 對照（realpath 精確匹配、time_updated 最新）；
-  無匹配／源缺席＝whoami_unavailable、源損壞＝whoami_malformed。
+  無匹配／源缺席＝whoami_unavailable、源損壞＝whoami_malformed；
+  identity 指針先讀（AIR-286）——fresh＋store membership 過＝
+  `identity_source:"hook-pointer"`、任一條件不過＝降級
+  `"workspace-proxy"`（additive 標記欄；指針永不單獨作答）。
 - CLI：失敗統一 `{"schemaVersion":1,"ok":false,"error":{code,message}}`
   到 stderr、stdout 空、exit 3。
 
@@ -674,11 +677,12 @@ class TestWhoami:
             _srow("sess_old", updated=_MS),
             _srow("sess_me", updated=_MS + 500),
         )
-        identity = _mod._whoami_raw(db, cwd=WS)
+        identity = _mod._whoami_raw(db, cwd=WS, identity_dir=tmp_path / "id")
         assert identity == {
             "session_id": "sess_me",
             "harness": "zcode",
             "workspace_root": WS,
+            "identity_source": "workspace-proxy",
         }
 
     def test_symlinked_cwd_resolved_before_match(
@@ -689,25 +693,25 @@ class TestWhoami:
         link = tmp_path / "link-ws"
         link.symlink_to(real)
         db = _store(tmp_path, _srow("sess_in_real", ws=str(real)))
-        identity = _mod._whoami_raw(db, cwd=str(link))
+        identity = _mod._whoami_raw(db, cwd=str(link), identity_dir=tmp_path / "id")
         assert identity["session_id"] == "sess_in_real"
 
     def test_no_match_raises_typed_unavailable(self, tmp_path: Path) -> None:
         db = _store(tmp_path, _srow(ws="/elsewhere"))
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(db, cwd=WS)
+            _mod._whoami_raw(db, cwd=WS, identity_dir=tmp_path / "id")
         assert ei.value.code == "whoami_unavailable"
 
     def test_missing_store_raises_typed_unavailable(self, tmp_path: Path) -> None:
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(tmp_path / "nope.sqlite", cwd=WS)
+            _mod._whoami_raw(tmp_path / "nope.sqlite", cwd=WS, identity_dir=tmp_path / "id")
         assert ei.value.code == "whoami_unavailable"
 
     def test_corrupt_store_raises_typed_malformed(self, tmp_path: Path) -> None:
         db = tmp_path / "store.sqlite"
         db.write_bytes(b"not a db")
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(db, cwd=WS)
+            _mod._whoami_raw(db, cwd=WS, identity_dir=tmp_path / "id")
         assert ei.value.code == "whoami_malformed"
 
     def test_newest_row_missing_id_raises_typed_malformed(
@@ -715,8 +719,200 @@ class TestWhoami:
     ) -> None:
         db = _store(tmp_path, _srow("", updated=_MS + 999))
         with pytest.raises(_mod.DiscoveryError) as ei:
-            _mod._whoami_raw(db, cwd=WS)
+            _mod._whoami_raw(db, cwd=WS, identity_dir=tmp_path / "id")
         assert ei.value.code == "whoami_malformed"
+
+
+# ---------------------------------------------------------------------------
+# whoami identity 指針（AIR-286：先讀 pointer，fresh＋membership 過＝權威；
+# 任一條件不過＝降級 workspace-proxy。指針永不單獨作答）
+# ---------------------------------------------------------------------------
+
+_HOUR_US = 3_600_000_000
+_NOW_US = 1_800_000_000_000_000  # 固定「現在」（us epoch）
+
+
+def _seed_pointer(
+    identity_dir: Path,
+    sid: str,
+    *,
+    cwd: str = WS,
+    written_at_us: int | None = _NOW_US,
+) -> None:
+    """以 seam 自有 writer 種指針檔（寫讀同源——schema 由 seam 定義）。
+    written_at_us=None＝真實現在（CLI 面讀側 now 固定為真實——fixture 須
+    以真實時間寫入，否則 future 時間戳被讀側正確地不信任）。"""
+    ok = _mod.write_identity_pointer(
+        sid, cwd, state_dir=identity_dir, now_us=written_at_us
+    )
+    assert ok is True
+
+
+class TestWhoamiPointer:
+    def test_fresh_pointer_with_store_membership_wins_over_recency(
+        self, tmp_path: Path
+    ) -> None:
+        """① fresh pointer＋sid 在 store→回 pointer 身份帶標記——即使
+        store 另有 time_updated 較新列（hook 心跳比 store recency 準）。"""
+        identity_dir = tmp_path / "id"
+        db = _store(
+            tmp_path,
+            _srow("sess_pointer", updated=_MS),  # store 較舊
+            _srow("sess_other", updated=_MS + 500_000),  # store 最新
+        )
+        _seed_pointer(identity_dir, "sess_pointer")
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity == {
+            "session_id": "sess_pointer",
+            "harness": "zcode",
+            "workspace_root": WS,
+            "identity_source": "hook-pointer",
+        }
+
+    def test_missing_pointer_degrades_to_proxy(self, tmp_path: Path) -> None:
+        """② 缺指針→既有 workspace 對照＋proxy 標記。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_me", updated=_MS))
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_me"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_stale_pointer_beyond_ttl_degrades_to_proxy(self, tmp_path: Path) -> None:
+        """② 逾時（>TTL 24h）→proxy。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_other", updated=_MS))
+        _seed_pointer(
+            identity_dir, "sess_stale", written_at_us=_NOW_US - _mod.POINTER_TTL_US - 1
+        )
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_other"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_pointer_at_ttl_boundary_is_fresh(self, tmp_path: Path) -> None:
+        """邊界：恰好 TTL 仍新鮮（≤ TTL）。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_pointer", updated=_MS))
+        _seed_pointer(identity_dir, "sess_pointer", written_at_us=_NOW_US - _mod.POINTER_TTL_US)
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_pointer"
+        assert identity["identity_source"] == "hook-pointer"
+
+    def test_future_timestamp_pointer_distrusted(self, tmp_path: Path) -> None:
+        """② future 時間戳（時鐘回撥／植入）→不信任→proxy。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_other", updated=_MS))
+        _seed_pointer(identity_dir, "sess_future", written_at_us=_NOW_US + _HOUR_US)
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_other"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_pointer_sid_absent_from_store_degrades_to_proxy(
+        self, tmp_path: Path
+    ) -> None:
+        """③ sid 不在 store（ghost）→proxy。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_other", updated=_MS))
+        _seed_pointer(identity_dir, "sess_ghost")
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_other"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_subagent_pointer_pollution_self_heals_via_proxy(
+        self, tmp_path: Path
+    ) -> None:
+        """③ subagent 以自身 sid 覆寫指針——`_query_store` 已濾
+        `subagent_child`→membership 不過→proxy→按 recency 回正主 session。"""
+        identity_dir = tmp_path / "id"
+        db = _store(
+            tmp_path,
+            _srow("sess_main", updated=_MS),
+            _srow("sess_sub", updated=_MS + 100, task_type="subagent_child"),
+        )
+        _seed_pointer(identity_dir, "sess_sub")
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_main"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_pointer_from_other_workspace_ignored(self, tmp_path: Path) -> None:
+        """cwd_realpath 與查詢 cwd 不一致（複製植入）→不信任→proxy。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_other", updated=_MS))
+        _seed_pointer(identity_dir, "sess_elsewhere", cwd="/somewhere/else")
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_other"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_malformed_pointer_degrades_to_proxy(self, tmp_path: Path) -> None:
+        """schema 壞（壞 JSON／非 dict／缺欄／harness 錯）→proxy 不響。"""
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow("sess_other", updated=_MS))
+        real = _mod._pointer_path(WS, identity_dir)
+        real.parent.mkdir(parents=True, exist_ok=True)
+        real.write_text("{not json", encoding="utf-8")
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["identity_source"] == "workspace-proxy"
+        real.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "harness": "grok",
+                    "session_id": "sess_other",
+                    "cwd_realpath": WS,
+                    "updated_at_us": _NOW_US,
+                }
+            ),
+            encoding="utf-8",
+        )
+        identity = _mod._whoami_raw(
+            db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
+        )
+        assert identity["session_id"] == "sess_other"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_corrupt_store_typed_failure_even_with_fresh_pointer(
+        self, tmp_path: Path
+    ) -> None:
+        """指針永不單獨作答：store 損壞＋fresh pointer→仍 typed failure。"""
+        identity_dir = tmp_path / "id"
+        db = tmp_path / "store.sqlite"
+        db.write_bytes(b"not a db")
+        _seed_pointer(identity_dir, "sess_pointer")
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._whoami_raw(db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US)
+        assert ei.value.code == "whoami_malformed"
+
+    def test_empty_store_rows_unavailable_even_with_fresh_pointer(
+        self, tmp_path: Path
+    ) -> None:
+        identity_dir = tmp_path / "id"
+        db = _store(tmp_path, _srow(ws="/elsewhere"))
+        _seed_pointer(identity_dir, "sess_pointer")
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._whoami_raw(db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US)
+        assert ei.value.code == "whoami_unavailable"
+
+    def test_identity_dir_env_overrides_default(self, tmp_path: Path, monkeypatch) -> None:
+        env_dir = tmp_path / "env-id"
+        monkeypatch.setenv(_mod.IDENTITY_DIR_ENV, str(env_dir))
+        assert _mod._default_identity_dir() == env_dir
 
 
 # ---------------------------------------------------------------------------
@@ -827,11 +1023,31 @@ class TestCli:
         ws_dir.mkdir()
         db = _store(tmp_path, _srow("sess_cli_me", ws=str(ws_dir)))
         monkeypatch.chdir(ws_dir)
+        monkeypatch.setenv(_mod.IDENTITY_DIR_ENV, str(tmp_path / "id"))
         rc = _mod.main(["whoami"], db_path=db)
         assert rc == 0
         identity = json.loads(capsys.readouterr().out)
         assert identity["session_id"] == "sess_cli_me"
         assert identity["harness"] == "zcode"
+        assert identity["identity_source"] == "workspace-proxy"
+
+    def test_whoami_cli_pointer_marker_via_env_dir(
+        self, tmp_path: Path, capsys, monkeypatch
+    ) -> None:
+        """CLI 面：env 注入 identity dir——fresh pointer＋membership 過→
+        hook-pointer 標記進 stdout JSON。"""
+        ws_dir = tmp_path / "ws"
+        ws_dir.mkdir()
+        db = _store(tmp_path, _srow("sess_cli_ptr", ws=str(ws_dir)))
+        identity_dir = tmp_path / "id"
+        _seed_pointer(identity_dir, "sess_cli_ptr", cwd=str(ws_dir), written_at_us=None)
+        monkeypatch.chdir(ws_dir)
+        monkeypatch.setenv(_mod.IDENTITY_DIR_ENV, str(identity_dir))
+        rc = _mod.main(["whoami"], db_path=db)
+        assert rc == 0
+        identity = json.loads(capsys.readouterr().out)
+        assert identity["session_id"] == "sess_cli_ptr"
+        assert identity["identity_source"] == "hook-pointer"
 
     def test_whoami_cli_no_match_exit3_envelope(
         self, tmp_path: Path, capsys, monkeypatch
@@ -840,6 +1056,7 @@ class TestCli:
         empty.mkdir()
         db = _store(tmp_path, _srow(ws="/elsewhere"))
         monkeypatch.chdir(empty)
+        monkeypatch.setenv(_mod.IDENTITY_DIR_ENV, str(tmp_path / "id"))
         rc = _mod.main(["whoami"], db_path=db)
         assert rc == 3
         captured = capsys.readouterr()
