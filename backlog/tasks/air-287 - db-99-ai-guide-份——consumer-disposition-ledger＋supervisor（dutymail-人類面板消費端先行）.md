@@ -4,7 +4,7 @@ title: db-99 ai-guide 份——consumer disposition ledger＋supervisor（dutyma
 status: In Progress
 assignee: []
 created_date: '2026-10-08 13:31'
-updated_date: '2026-10-08 13:31'
+updated_date: '2026-10-08 13:35'
 labels:
   - dutymail
 dependencies: []
@@ -36,3 +36,9 @@ flowchart LR
 <!-- DOD:BEGIN -->
 - [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【bridge 裁定信融入——db99-ruling-aig-001】架構定案：正常信留 LLM 地址全消費；needs-human→exception mail（自帶原文＋來源連結）進專用 exception 地址；consumer disposition ledger；supervisor 消費者側；人類待辦＝unresolved exceptions 計數；dutymail 零變更。scope 增量＝exception 地址的接收＋exception forwarding（duty_receive/marshal 處理慣例加 triage disposition）——FENCING_CODES 同族第二分類面。與 C0/P6 正交。SC 側已 80% 就位（SC-257／isMachineClosed／inbox(N)=WORK PILING UP）；📮 待認領節點 scbus snapshot 源經 SC-325 退役永不 materialize。投影語義裁定：inbox transport 計數＝consumer-backlog 警示非未讀數。
+<!-- SECTION:NOTES:END -->
