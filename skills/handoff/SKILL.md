@@ -113,7 +113,7 @@ uv run python scripts/handoff_delivery.py resolve-target \
 
 - `disposition=known-direct` → 走直送第一路（先過下方 Consent gate）；`cross_ownership=true` 時 build-body 加 `--cross-ownership --consent-evidence "<AUTH 指針>"`
 - `disposition=fallback-manual`（reason：`no-match`／`ambiguous`／`target-ended`／`self`）→ 降 manual paste fallback
-- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`source_malformed`／`whoami_unavailable`／`whoami_malformed`——session store 缺席、損壞或 whoami 無對應工作區）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 dutymail 直送（target 未確立＝第一路不可達）。契約預置：seam 全失敗路徑（含 sqlite 查詢錯誤）皆 raise typed `DiscoveryError` 轉統一 exit 3 envelope——AIR-277 換源後無 subprocess 路徑，禁嘗試 scbus 直呼
+- **consumer contract——discovery 源缺席降級**：`session_discovery.py` 以 exit 3 typed envelope 終止（`source_unavailable`／`source_malformed`／`whoami_unavailable`／`whoami_malformed`——session store 缺席、損壞或 whoami 無對應工作區）時，target 解析無從進行 → 跳過本段 discovery 依賴步驟，直接走 manual paste fallback（reason=`discovery-unavailable`；機械面＝`resolve-target --discovery-unavailable`，行為由單元測試鎖定），禁嘗試 dutymail 直送（target 未確立＝第一路不可達）。契約預置：seam 已處理失敗路徑（store 缺席／結構損壞、sqlite 查詢錯誤、whoami 無對應——即上列四 typed code）皆轉統一 exit 3 envelope；罕見未捕獲例外（如 store 列含超範圍 timestamp 拋 ValueError/OverflowError）不在 typed 涵蓋——非零 exit 一律同 discovery 缺席處置，走 manual paste fallback。AIR-277 換源後無 subprocess 路徑，禁嘗試 scbus 直呼
 
 **第一路：dutymail 直送**（已知 session；delivery body 結構欄對齊 conventions v2；helper 的機械把關——body ≤8192 凍結面、consent gate——**只在兩段式下生效**：單行 `$( )` 內嵌會吃掉 helper exit 2，gate 攔下時 stdout 空 → 空 body 包進 envelope 照送＝fail-silent，禁用單行形）：
 
