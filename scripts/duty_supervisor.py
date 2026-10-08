@@ -15,9 +15,11 @@ content＋mtime 不變）。狀態推進永遠屬於消費端 session／人類�
 ledger 的寫入者），supervisor 只觀測與舉報。
 
 兩個具名常數（可 CLI 覆寫——調參不必改碼）：
-- DEFAULT_STALE_THRESHOLD_US＝24h：received／processing 距
-  updated_at_us 超過此值＝stale（嚴格大於——恰在閾值上＝未停滯，
-  邊界算「還在動」）。
+- DEFAULT_STALE_THRESHOLD_US＝24h：received／processing／needs-human
+  距 updated_at_us 超過此值＝stale（嚴格大於——恰在閾值上＝未停滯，
+  邊界算「還在動」）。needs-human 在監視面（AIR-287 bi 修復——GLM
+  F1）：人類介入迴圈（forward→人類結案）停滯＝電子蹤跡——session
+  死於 forward 前不得恆靜默；handled／failed 是已分流非停滯。
 - DEFAULT_ESCALATION_AFTER_US＝48h（2× stale）：同一停滯項首次 alert
   （first_alert_at_us）距今超過此值＝alert 持續→escalation（人類
   intervention item）。第二次觀測即持續性證據（單次觀測不 escalate
@@ -30,7 +32,10 @@ escalation state：`<root>/_meta/supervisor-escalations.json`
 項目不再 stale（消費端推進了狀態）＝resolved——自 state 移除＋清單
 重生成（觀測面不保留歷史；處置歷史在 ledger 本體）。state 檔壞形＝
 SupervisorStateCorrupt typed 錯誤（觀測權威檔 fail-closed——靜默重置
-會把已 escalated 項目的持續性證據洗掉）。
+會把已 escalated 項目的持續性證據洗掉）；**逐 entry 全驗**（恰七鍵
+ESC_ITEM_KEYS、型別、時間戳正 int、items key 與 entry 的
+address/envelope_id 一致）——`items.get(key) or {...}` 靜默重置＝
+同罪（AIR-287 bi 修復，codex F3）。
 
 intervention 清單：`<root>/_meta/intervention-items.md`——每次掃描
 從 escalation state 全量重生成（冪等；人類可讀；escalated 項目逐行
@@ -62,10 +67,18 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 TAG = "duty-supervisor"
 DEFAULT_STALE_THRESHOLD_US = 24 * 60 * 60 * 1_000_000  # 24h
 DEFAULT_ESCALATION_AFTER_US = 2 * DEFAULT_STALE_THRESHOLD_US  # 48h
-STALE_STATES = frozenset({"received", "processing"})
+# needs-human 在監視面（AIR-287 bi 修復——GLM F1）：人類介入迴圈
+# （forward→人類結案）停滯＝電子蹤跡——session 死於 forward 前不得
+# 恆靜默；handled／failed 是已分流非停滯。
+STALE_STATES = frozenset({"received", "processing", "needs-human"})
 ESC_SCHEMA_VERSION = 1
 ESC_STATE_NAME = "supervisor-escalations.json"
 INTERVENTION_NAME = "intervention-items.md"
+# escalation entry 凍結七鍵（AIR-287 bi 修復——codex F3：entry 全驗）
+ESC_ITEM_KEYS = frozenset({
+    "address", "envelope_id", "state", "first_alert_at_us",
+    "last_alert_at_us", "alert_runs", "escalated_at_us",
+})
 
 
 class SupervisorStateCorrupt(RuntimeError):
@@ -96,10 +109,10 @@ def scan_ledger(base_dir, now_us, stale_threshold_us=DEFAULT_STALE_THRESHOLD_US)
     （address, envelope_id）排序——確定性輸出）。
 
     item：{address, envelope_id, state, updated_at_us, age_us}。
-    stale 判準：state∈STALE_STATES 且 (now - updated_at_us) >
-    stale_threshold_us（嚴格大於——恰在閾值上＝未停滯）。壞檔＝
-    LedgerCorrupt 傳出（fail-closed，見 docstring）；_meta 與非目錄項
-    不入掃描。
+    stale 判準：state∈STALE_STATES（received／processing／needs-human
+    ）且 (now - updated_at_us) > stale_threshold_us（嚴格大於——恰在
+    閾值上＝未停滯）。壞檔＝LedgerCorrupt 傳出（fail-closed，見
+    docstring）；_meta 與非目錄項不入掃描。
     """
     root = base_dir if base_dir is not None else dd._default_base_dir()
     items = []
@@ -159,11 +172,64 @@ def _load_esc_state(root):
         ) from exc
     if (
         not isinstance(doc, dict)
-        or doc.get("schema_version") != ESC_SCHEMA_VERSION
-        or not isinstance(doc.get("items"), dict)
+        or doc.keys() != {"schema_version", "items"}
+        or doc["schema_version"] != ESC_SCHEMA_VERSION
+        or not isinstance(doc["items"], dict)
     ):
         raise SupervisorStateCorrupt(f"supervisor state 壞形：{path}")
+    for key, entry in doc["items"].items():
+        _validate_esc_item(key, entry, path)
     return doc
+
+
+def _validate_esc_item(key, entry, path):
+    """entry 全驗（AIR-287 bi 修復——codex F3）：恰七鍵、型別、時間戳
+    正 int、key 一致性（"<address>/<envelope_id>"）。任何壞形＝
+    SupervisorStateCorrupt——`items.get(key) or {...}` 靜默重置會把
+    已 escalated 項目的持續性證據洗掉（crash-only 禁）。"""
+    where = f"{path}（{key}）"
+    if not isinstance(entry, dict) or entry.keys() != ESC_ITEM_KEYS:
+        raise SupervisorStateCorrupt(
+            f"supervisor state entry 鍵集不符：{where}"
+            f"（得 {sorted(entry) if isinstance(entry, dict) else type(entry)}"
+            f"，應 {sorted(ESC_ITEM_KEYS)}）"
+        )
+    if not isinstance(entry["address"], str) or not entry["address"]:
+        raise SupervisorStateCorrupt(
+            f"supervisor state address 壞形：{where}"
+        )
+    if (
+        not isinstance(entry["envelope_id"], str)
+        or not entry["envelope_id"]
+    ):
+        raise SupervisorStateCorrupt(
+            f"supervisor state envelope_id 壞形：{where}"
+        )
+    if key != f"{entry['address']}/{entry['envelope_id']}":
+        raise SupervisorStateCorrupt(
+            f"supervisor state key 與 entry 不一致：{where}"
+        )
+    if entry["state"] not in dd.STATES:
+        raise SupervisorStateCorrupt(
+            f"supervisor state state 非法：{where}（{entry['state']!r}）"
+        )
+    for field in ("first_alert_at_us", "last_alert_at_us"):
+        if not dd._positive_int(entry[field]):
+            raise SupervisorStateCorrupt(
+                f"supervisor state {field} 非正整數：{where}"
+                f"（{entry[field]!r}）"
+            )
+    if not dd._positive_int(entry["alert_runs"]):
+        raise SupervisorStateCorrupt(
+            f"supervisor state alert_runs 非正整數：{where}"
+            f"（{entry['alert_runs']!r}）"
+        )
+    esc_at = entry["escalated_at_us"]
+    if esc_at is not None and not dd._positive_int(esc_at):
+        raise SupervisorStateCorrupt(
+            f"supervisor state escalated_at_us 壞形：{where}"
+            f"（{esc_at!r}）"
+        )
 
 
 def _render_intervention_md(items_doc):
@@ -270,8 +336,8 @@ def _render_report(stale_items, escalated, now_us, stale_threshold_us,
     lines = []
     if not stale_items:
         lines.append(
-            f"[{TAG}] ledger clean：無停滯項（received/processing 皆在"
-            f" stale 閾值 {_hours(stale_threshold_us)}h 內）"
+            f"[{TAG}] ledger clean：無停滯項（received/processing/"
+            f"needs-human 皆在 stale 閾值 {_hours(stale_threshold_us)}h 內）"
         )
         return lines
     lines.append(

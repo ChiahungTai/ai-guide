@@ -193,15 +193,28 @@ def send_envelope(runner, envelope, tmp_dir=None):
     acceptance 三鍵（envelopeId／acceptanceSeq／envelopeSha256）＝
     queued-visible 證據（handoff skill 審計錨條款同源）；缺一＝
     shape-drift DutymailFaceError。測試注入 runner 零真 store 往返。
+
+    暫存檔契約（AIR-287 bi 修復——codex F2/GLM F2）：mkstemp 唯一
+    暫存（pid＋random 後綴——兩程序同刻 send 不互蓋、acceptance 不
+    會配到他人內容）＋0600（mkstemp 保證——原文不落群組可讀路徑）；
+    成功失敗皆 finally 清理（送畢零殘留——AIR-286 tmp 殘留教訓）。
     """
     parent = tmp_dir if tmp_dir is not None else tempfile.gettempdir()
     os.makedirs(parent, exist_ok=True)
-    path = os.path.join(parent, "exception-envelope.json")
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(envelope, fh, ensure_ascii=False, sort_keys=True)
-    result = duty_receive._call(
-        runner, ["send", "--envelope-file", path],
+    fd, path = tempfile.mkstemp(
+        prefix="exception-envelope-", suffix=".json", dir=parent,
     )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(envelope, fh, ensure_ascii=False, sort_keys=True)
+        result = duty_receive._call(
+            runner, ["send", "--envelope-file", path],
+        )
+    finally:
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
     missing = [
         k for k in ("envelopeId", "acceptanceSeq", "envelopeSha256")
         if k not in result

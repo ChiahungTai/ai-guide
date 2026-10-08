@@ -25,6 +25,11 @@ author 執行一次，輸出記錄入 ledger meta）。
 """
 
 import json
+import os
+import stat
+import textwrap
+import threading
+import time
 import uuid
 
 import pytest
@@ -160,13 +165,21 @@ def test_compose_rejects_non_string_body():
 
 
 # ── send face（typed contract 單一源＝duty_receive._call）────────────
+#
+# 暫存檔契約（AIR-287 bi 修復——codex F2/GLM F2）：mkstemp 唯一暫存
+# （兩程序同刻 send 不互蓋）＋0600（原文不落共用可讀路徑）＋成功失敗
+# 皆清理（送畢零殘留——AIR-286 tmp 殘留教訓）。
 
 
 def test_send_envelope_via_fake_runner(tmp_path):
-    calls = []
+    seen = {}
 
     def runner(argv):
-        calls.append(list(argv))
+        path = argv[argv.index("--envelope-file") + 1]
+        seen["path"] = path
+        seen["mode"] = stat.S_IMODE(os.stat(path).st_mode)
+        with open(path, "r", encoding="utf-8") as fh:
+            seen["sent"] = json.load(fh)
         return _ok({
             "envelopeId": "exc-1", "acceptanceSeq": 3,
             "envelopeSha256": "deadbeef",
@@ -181,11 +194,142 @@ def test_send_envelope_via_fake_runner(tmp_path):
         "envelopeId": "exc-1", "acceptanceSeq": 3,
         "envelopeSha256": "deadbeef",
     }
-    assert calls[0][0:2] == ["send", "--envelope-file"]
-    sent = json.loads(
-        (tmp_path / "exception-envelope.json").read_text(encoding="utf-8")
+    assert seen["sent"] == env
+    # 唯一暫存＋0600：非固定共用名、原文不落群組可讀檔
+    assert seen["path"] != str(tmp_path / "exception-envelope.json")
+    assert seen["path"].startswith(str(tmp_path))
+    assert seen["mode"] == 0o600
+    # 成功後清理：暫存檔零殘留
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_send_envelope_cleans_up_on_send_failure(tmp_path):
+    def runner(argv):
+        raise mod.duty_receive.DutymailFaceError(
+            code="storage", error_class="storage", message="store down",
+            retryable=True, exit_code=4,
+        )
+
+    env = mod.compose_exception_envelope(
+        SOURCE_ADDR, _canonical(), session_id="s", now_us=1,
+        uuid4=lambda: "u1",
     )
-    assert sent == env
+    with pytest.raises(mod.duty_receive.DutymailFaceError):
+        mod.send_envelope(runner, env, tmp_dir=str(tmp_path))
+    assert list(tmp_path.iterdir()) == []  # 失敗亦清理
+
+
+def test_send_envelope_concurrent_no_clobber(tmp_path):
+    """兩執行緒同刻 send（barrier 對齊＋runner 讀檔前停注）——各腿
+    acceptance 必對應自己內容（唯一暫存＝不互蓋）、送畢零殘留。"""
+    marker_body = {m: json.dumps({"marker": m}) for m in ("m1", "m2")}
+    results = {}
+    barrier = threading.Barrier(2)
+
+    def leg(marker):
+        def runner(argv):
+            path = argv[argv.index("--envelope-file") + 1]
+            barrier.wait()  # 兩腿同刻抵達 send 窗口
+            time.sleep(0.05)  # 拉長重叠窗口——固定路徑必被對方覆蓋
+            with open(path, "r", encoding="utf-8") as fh:
+                doc = json.load(fh)
+            return _ok({
+                "envelopeId": doc["envelope_id"], "acceptanceSeq": 1,
+                "envelopeSha256": doc["body"],
+            })
+
+        env = mod.compose_exception_envelope(
+            SOURCE_ADDR,
+            _canonical(eid=marker, body=marker_body[marker]),
+            session_id=marker, now_us=1, uuid4=lambda: "u-" + marker,
+        )
+        results[marker] = mod.send_envelope(
+            runner, env, tmp_dir=str(tmp_path)
+        )
+
+    threads = [threading.Thread(target=leg, args=(m,)) for m in ("m1", "m2")]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    for m in ("m1", "m2"):
+        # 各腿讀到的暫存檔＝自己內容（無跨腿互蓋）——acceptance sha 欄
+        # 帶回 runner 讀到的 body；原文 marker 在組合 body 的內層。
+        doc = json.loads(results[m]["envelopeSha256"])
+        assert json.loads(doc["original_body"])["marker"] == m
+        assert results[m]["envelopeId"] == "u-" + m
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_send_envelope_two_processes_no_clobber(tmp_path):
+    """兩程序同刻 forward 不互蓋（subprocess 驅動——mkstemp 唯一性是
+    process-safe 性質，不止執行緒面）；父層斷言各程序 acceptance 全數
+    對應自己 marker＋共享目錄送畢零殘留。"""
+    import subprocess
+    import sys
+
+    driver = tmp_path / "_fwd_driver.py"
+    driver.write_text(
+        textwrap.dedent(
+            """
+            import importlib.util, json, sys, time
+            from pathlib import Path
+            spec = importlib.util.spec_from_file_location(
+                "_fwd_driver",
+                str(Path(sys.argv[1]) / "scripts"
+                    / "duty_exception_forward.py"),
+            )
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            marker, shared = sys.argv[2], sys.argv[3]
+            body = json.dumps({"marker": marker})
+            env = {
+                "schema_version": 2, "message_id": marker,
+                "envelope_id": marker,
+                "from": {"session_id": marker, "name": None,
+                         "harness": None},
+                "to": {"address": "ai-guide-exceptions"},
+                "delivery": {"mode": "queue", "fallback": None,
+                             "intent": "solicit", "wake": "none",
+                             "fallback_used": False},
+                "created_at_us": 1, "body": body,
+            }
+            seen = []
+
+            def runner(argv):
+                time.sleep(0.05)
+                with open(argv[argv.index("--envelope-file") + 1],
+                          encoding="utf-8") as fh:
+                    seen.append(json.load(fh))
+                return json.dumps({
+                    "schemaVersion": 1, "ok": True,
+                    "result": {"envelopeId": marker, "acceptanceSeq": 1,
+                               "envelopeSha256": seen[-1]["body"]},
+                })
+
+            for _ in range(4):
+                mod.send_envelope(runner, env, tmp_dir=shared)
+            print(json.dumps({"marker": marker, "read_markers": [
+                json.loads(s["body"])["marker"] for s in seen]}))
+            """
+        ),
+        encoding="utf-8",
+    )
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    procs = [
+        subprocess.Popen(
+            [sys.executable, str(driver), str(REPO_ROOT), m, str(shared)],
+            stdout=subprocess.PIPE, text=True,
+        )
+        for m in ("pa", "pb")
+    ]
+    outs = [p.communicate()[0] for p in procs]
+    assert all(p.returncode == 0 for p in procs)
+    for line in outs:
+        doc = json.loads(line)
+        assert doc["read_markers"] == [doc["marker"]] * 4  # 全讀到自己
+    assert list(shared.iterdir()) == []  # 兩程序送畢零殘留
 
 
 def test_send_acceptance_shape_drift_typed(tmp_path):

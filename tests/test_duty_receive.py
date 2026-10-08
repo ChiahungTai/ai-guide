@@ -37,12 +37,14 @@ import json
 import os
 import stat
 import sys
+from types import SimpleNamespace
 
 import pytest
 from conftest import REPO_ROOT, load_module
 
 mod = load_module("scripts/duty_receive.py")
 hook = load_module("hooks/duty_receive.py")
+ddmod = load_module("scripts/duty_disposition.py")
 
 ADDR = "ai-guide-marshal"
 REPO = "/fake/ai-guide/repo"
@@ -1750,6 +1752,123 @@ class TestDispositionSinkWiring:
         assert not any(c[0:2] == ["receive", "ack"] for c in runner.calls)
 
 
+class TestResolutionSinkWiring:
+    """AIR-287 bi 修復必修 1（codex F1）：auto 信恆停 received——
+    digest 呈現完成邊界（commit 起點）推進 auto→handled／
+    surface→needs-human。推進點＝commit 起點：呼叫端契約＝輸出成功
+    寫出後才 commit（advance-after-emit），該點是「digest 呈現完成」
+    唯一可證邊界；ack 是 transport cursor（bridge 語義 ack≠done），
+    不作推進前提。sink raise＝commit raise、ack 不達（寧重不漏——
+    推進失敗仍 ack＝「已消費但帳面恆停 received」假陽性 stale）。"""
+
+    def test_resolution_not_called_before_commit(self, state_file):
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+        ])
+        calls = []
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            disposition_sink=lambda *a: None,
+            resolution_sink=lambda *a: calls.append(a),
+        )
+        assert calls == []  # digest 呈現前不推進
+        commit()
+        assert len(calls) == 1
+        addr, disps, now = calls[0]
+        assert addr == ADDR and now == NOW_US
+        assert [d.envelope_id for d in disps] == ["e-1"]
+
+    def test_auto_handled_surface_needs_human_after_commit(
+        self, state_file, tmp_path,
+    ):
+        """端到端：真 ledger sink——commit 前 received、commit 後
+        auto→handled、surface→needs-human（假陽性 stale 根治）。"""
+        _seed_state(state_file)
+        ledger = str(tmp_path / "ledger")
+        envs = [
+            _env_item("e-auto", klass="usage-liveness"),
+            _env_item("e-surf", klass="never-seen-class",
+                      intent="solicit"),
+        ]
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc(envs), _ack_doc(),
+        ])
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            disposition_sink=ddmod.make_received_sink(
+                "sess-1", base_dir=ledger
+            ),
+            resolution_sink=ddmod.make_resolution_sink(
+                "sess-1", base_dir=ledger
+            ),
+        )
+        assert ddmod.get(ADDR, "e-auto", base_dir=ledger)[
+            "state"
+        ] == "received"
+        assert ddmod.get(ADDR, "e-surf", base_dir=ledger)[
+            "state"
+        ] == "received"
+        commit()
+        assert ddmod.get(ADDR, "e-auto", base_dir=ledger)[
+            "state"
+        ] == "handled"
+        assert ddmod.get(ADDR, "e-surf", base_dir=ledger)[
+            "state"
+        ] == "needs-human"
+
+    def test_raising_resolution_sink_blocks_ack(self, state_file):
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+        ])
+
+        def boom(address, disps, now_us):
+            raise RuntimeError("resolve boom")
+
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            disposition_sink=lambda *a: None, resolution_sink=boom,
+        )
+        with pytest.raises(RuntimeError, match="resolve boom"):
+            commit()
+        assert not any(c[0:2] == ["receive", "ack"] for c in runner.calls)
+
+    def test_resolution_sink_absent_no_behavior_change(self, state_file):
+        """既有呼叫面（僅 disposition_sink）不變——零 resolution 呼叫、
+        commit 照常 ack。"""
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+        ])
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            disposition_sink=lambda *a: None,
+        )
+        commit()  # 不 raise——resolution 面不存在
+        assert any(c[0:2] == ["receive", "ack"] for c in runner.calls)
+
+    def test_load_disposition_sinks_pair_writes_ledger(
+        self, tmp_path, monkeypatch,
+    ):
+        """CLI 接線：_load_disposition_sinks 回 (received, resolution)
+        對——逐面呼叫即記帳＋推進（XDG 注入零真 state 往返）。"""
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        recv, resolve = mod._load_disposition_sinks("sess-1")
+        assert callable(recv) and callable(resolve)
+        d = SimpleNamespace(
+            action="auto", envelope_id="e-ld-1", canonical="{}",
+        )
+        recv(ADDR, [d], NOW_US)
+        resolve(ADDR, [d], NOW_US)
+        rec = ddmod.get(
+            ADDR, "e-ld-1",
+            base_dir=str(tmp_path / "ai-guide" / "duty-disposition"),
+        )
+        assert rec["state"] == "handled"
+        assert rec["session_id"] == "sess-1"
+
+
 class TestHookSinkFactory:
     def test_factory_threaded_to_process_once(self):
         """hook run()：disposition_sink_factory(session_id) → sink 進
@@ -1790,6 +1909,66 @@ class TestHookSinkFactory:
         )
         assert code == 0 and out  # 收信照常
         assert "duty-disposition" in capsys.readouterr().err
+
+    def test_resolution_factory_threaded_to_commit(self):
+        """resolution factory（AIR-287 bi 必修 1）：session_id 抽取後
+        建構、注入 commit 邊界——commit 前零呼叫、commit 推進。"""
+        seen = []
+
+        def factory(session_id):
+            def sink(address, disps, now_us):
+                seen.append(("received", len(disps)))
+
+            return sink
+
+        def res_factory(session_id):
+            def sink(address, disps, now_us):
+                seen.append(("resolved", [d.action for d in disps]))
+
+            return sink
+
+        code, out, commit = hook.run(
+            UPS_STDIN, ADDR, runner=_hook_full_runner(),
+            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
+            disposition_sink_factory=factory,
+            resolution_sink_factory=res_factory,
+        )
+        assert code == 0 and out
+        assert seen == [("received", 1)]  # stdout 寫出前僅記帳
+        commit()
+        assert seen == [("received", 1), ("resolved", ["auto"])]
+
+    def test_resolution_factory_raise_fail_soft(self, capsys):
+        """resolution factory 建構失敗＝stderr 一行＋照跑（推進面故障
+        不擋收信；commit 不 raise）。"""
+        def res_factory(session_id):
+            raise OSError("no ledger dir")
+
+        code, out, commit = hook.run(
+            UPS_STDIN, ADDR, runner=_hook_full_runner(),
+            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
+            resolution_sink_factory=res_factory,
+        )
+        assert code == 0 and out
+        assert "duty-disposition" in capsys.readouterr().err
+        commit()  # resolution None——零推進、不 raise
+
+    def test_default_resolution_factory_advances_ledger(
+        self, tmp_path, monkeypatch,
+    ):
+        """生產面預設 factory＝safe resolution sink（session 綁定）——
+        auto 推進 handled、故障只 stderr（XDG 注入零真 state 往返）。"""
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
+        ledger = str(tmp_path / "ai-guide" / "duty-disposition")
+        ddmod.set(ADDR, "e-res-1", "received", session_id="sess-x",
+                  now_us=1, base_dir=ledger)
+        sink = hook._default_resolution_factory("sess-x")
+        sink(ADDR, [SimpleNamespace(
+            action="auto", envelope_id="e-res-1", canonical="{}",
+        )], NOW_US)
+        rec = ddmod.get(ADDR, "e-res-1", base_dir=ledger)
+        assert rec["state"] == "handled"
+        assert rec["session_id"] == "sess-x"
 
 
 def _hook_full_runner():

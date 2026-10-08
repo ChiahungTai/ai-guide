@@ -79,6 +79,15 @@ def _default_sink_factory(session_id):
     return dd.make_received_sink(session_id)
 
 
+def _default_resolution_factory(session_id):
+    """生產面 resolution sink 工廠（AIR-287 bi 修復必修 1——codex
+    F1）：session 綁定 safe resolution sink——digest 呈現完成邊界推進
+    （auto→handled／surface→needs-human；單一源＝duty_disposition.
+    record_resolution，推進點裁定＝該模組 docstring）。factory 本身
+    raise＝run() 內 fail-soft 吸收（sink=None 照跑）。"""
+    return dd.make_resolution_sink(session_id)
+
+
 # ── monitor eligibility gate（AIR-233 模式：cwd/workspace 鎖）────────
 
 
@@ -106,20 +115,28 @@ def _default_config_path():
 
 
 def run(raw, address, runner=None, state_dir=None, config_path=None,
-        now_us=None, lock_factory=None, disposition_sink_factory=None):
+        now_us=None, lock_factory=None, disposition_sink_factory=None,
+        resolution_sink_factory=None):
     """stdin 原文 → (exit_code, stdout, commit | None)。
 
     永不 raise、exit 恆 0（唯二例外：config 壞形＝3 fail-loud；args
     誤用由 argparse exit 2）。runner／state_dir／config_path／now_us／
-    lock_factory／disposition_sink_factory 可注入（測試 fake face＋
-    fake state＋fake lock＋fake sink，不碰真 store）。commit＝ack
-    closure——呼叫端在 stdout 寫出成功後才執行（advance-after-emit）。
+    lock_factory／disposition_sink_factory／resolution_sink_factory 可
+    注入（測試 fake face＋fake state＋fake lock＋fake sink，不碰真
+    store）。commit＝resolution 推進＋ack closure——呼叫端在 stdout
+    寫出成功後才執行（advance-after-emit）。
 
     disposition_sink_factory（AIR-287 接線；可選）：session_id 抽取後
     呼叫一次得 sink（生產面＝_default_sink_factory——disposition
     ledger received 記帳），注入 process_once；建構失敗＝stderr 一行
     ＋sink=None 照跑（記帳面故障不擋收信）。None（預設）＝零記帳，
     既有行為不變。
+
+    resolution_sink_factory（AIR-287 bi 修復必修 1；可選）：session_id
+    抽取後呼叫一次得 resolution sink（生產面＝
+    _default_resolution_factory——digest 呈現完成邊界推進 auto→
+    handled／surface→needs-human），注入 process_once commit；建構
+    失敗＝stderr 一行＋None 照跑。None（預設）＝不推進。
 
     併發鎖（AIR-255 B）：process_once 前取 per-session advisory lock，
     critical section 涵蓋 load→decide→save＋ack commit 全序列（取鎖後
@@ -163,6 +180,16 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
             except Exception as exc:
                 print(
                     f"[{dd.TAG}] disposition sink 建構失敗——本批不記帳"
+                    f"（{exc!r}）",
+                    file=sys.stderr,
+                )
+        resolution_sink = None
+        if resolution_sink_factory is not None:
+            try:
+                resolution_sink = resolution_sink_factory(session_id)
+            except Exception as exc:
+                print(
+                    f"[{dd.TAG}] resolution sink 建構失敗——本批不推進"
                     f"（{exc!r}）",
                     file=sys.stderr,
                 )
@@ -219,6 +246,7 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
             lines, commit = core.process_once(
                 address, _runner_resets_miss, policy, state_file,
                 now_us=now_us, disposition_sink=sink,
+                resolution_sink=resolution_sink,
             )
         except core.HolderConflict as exc:
             lines, commit = [f"[{HOOK_TAG}] {exc}"], None
@@ -232,7 +260,7 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
                 f"[{HOOK_TAG}] fail-soft：{kind}——{exc}", file=sys.stderr
             )
             return 0, "", None
-        except core.BinaryMissing as exc:
+        except core.BinaryMissing:
             # AIR-274 M1：與 store-absent 分流——consecutive-miss 計數，
             # 達門檻 stderr advisory（surface 可見）；未達靜默。exit 恆 0
             # （hook 非零會擋 prompt）。
@@ -306,6 +334,7 @@ def main(argv=None, runner=None) -> int:
         runner=runner, state_dir=args.state_dir,
         config_path=args.config,
         disposition_sink_factory=_default_sink_factory,  # AIR-287 記帳
+        resolution_sink_factory=_default_resolution_factory,  # AIR-287 bi 處理推進
     )
     if out:
         sys.stdout.write(out)

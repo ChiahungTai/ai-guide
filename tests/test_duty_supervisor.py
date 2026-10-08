@@ -2,10 +2,12 @@
 條件→人類 intervention item）。
 
 涵蓋：
-- 停滯偵測：received／processing 且 updated_at_us 距 now 超
-  DEFAULT_STALE_THRESHOLD_US（24h 具名常數）→ alert 行（address、
-  envelope_id、state、年齡人類可讀）；fresh／handled／needs-human／
-  failed → 不 alert（needs-human／failed 是已分流狀態非停滯）。
+- 停滯偵測：received／processing／needs-human 且 updated_at_us 距 now
+  超 DEFAULT_STALE_THRESHOLD_US（24h 具名常數）→ alert 行（address、
+  envelope_id、state、年齡人類可讀）；fresh／handled／failed → 不
+  alert。needs-human 在監視面（AIR-287 bi 修復——GLM F1：人類介入
+  迴圈〔forward→人類結案〕停滯＝電子蹤跡；session 死於 forward 前
+  不得恆靜默）；handled／failed 是已分流非停滯。
 - escalation：alert 持續（同一停滯項 first_alert_at_us 距 now ≥
   DEFAULT_ESCALATION_AFTER_US＝48h）→ escalation state 記錄＋
   intervention-items.md 落檔清單（人類可讀）；未達門檻→只 alert 不
@@ -98,12 +100,40 @@ def test_exactly_threshold_not_stale(tmp_path):
     assert result.stale_items == []  # 超過才 stale（>，非 ≥）
 
 
-def test_handled_and_needs_human_not_stale(tmp_path):
+def test_handled_and_failed_not_stale(tmp_path):
+    """handled＝終態、failed＝待消費端重試分流——非人類介入迴圈停滯
+    （needs-human 已改入監視面——見 test_old_needs_human_alerts）。"""
     _seed(ADDR, "old-handled", "handled", NOW - 100 * HOUR_US, tmp_path)
-    _seed(ADDR, "old-nh", "needs-human", NOW - 100 * HOUR_US, tmp_path)
     _seed(ADDR, "old-failed", "failed", NOW - 100 * HOUR_US, tmp_path)
     result = mod.supervise(str(tmp_path), now_us=NOW)
     assert result.stale_items == []
+
+
+def test_old_needs_human_alerts(tmp_path):
+    """needs-human 納入監視面（AIR-287 bi 修復——GLM F1）：人類介入
+    迴圈（forward→人類結案）停滯＝電子蹤跡必須在場——session 死於
+    forward 前不得恆靜默。"""
+    _seed(ADDR, "old-nh", "needs-human", NOW - 100 * HOUR_US, tmp_path)
+    result = mod.supervise(str(tmp_path), now_us=NOW)
+    assert [(i["address"], i["envelope_id"], i["state"])
+            for i in result.stale_items] == [(ADDR, "old-nh", "needs-human")]
+    joined = "\n".join(result.report_lines)
+    assert "needs-human" in joined and "100" in joined
+
+
+def test_needs_human_persistent_escalates_to_intervention(tmp_path):
+    """needs-human alert 持續 > 48h→escalation→intervention-items.md
+    落檔（GLM F1 驗證式：seed 舊 needs-human→supervise 不得 0 alert
+    ——最貴的靜默失敗有機械防線）。"""
+    _seed(ADDR, "stuck-nh", "needs-human", NOW - 100 * HOUR_US, tmp_path)
+    mod.supervise(str(tmp_path), now_us=NOW)
+    result = mod.supervise(str(tmp_path), now_us=NOW + 49 * HOUR_US)
+    assert len(result.escalated) == 1
+    assert result.escalated[0]["state"] == "needs-human"
+    md = (tmp_path / "_meta" / "intervention-items.md").read_text(
+        encoding="utf-8",
+    )
+    assert "stuck-nh" in md and "needs-human" in md
 
 
 def test_processing_old_alerts(tmp_path):
@@ -199,6 +229,123 @@ def test_corrupt_supervisor_state_fails_closed(tmp_path):
     meta.mkdir()
     (meta / "supervisor-escalations.json").write_text(
         "not-json", encoding="utf-8",
+    )
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+# ── escalation state entry 全驗（AIR-287 bi 修復——codex F3）──────────
+#
+# 契約：items 每筆 entry 驗完整 schema（恰七鍵）、型別、時間戳（正
+# int）、key 一致性（"<address>/<envelope_id>"）；任何壞形＝
+# SupervisorStateCorrupt——items.get(key) or {...} 靜默重置＝已
+# escalated 項目的持續性證據被洗掉（crash-only 禁）。
+
+
+def _write_esc_state(tmp_path, items):
+    meta = tmp_path / "_meta"
+    meta.mkdir(exist_ok=True)
+    (meta / "supervisor-escalations.json").write_text(
+        json.dumps({"schema_version": 1, "items": items},
+                   ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+
+def _valid_entry(**overrides):
+    entry = {
+        "address": ADDR, "envelope_id": EID, "state": "received",
+        "first_alert_at_us": NOW - 25 * HOUR_US,
+        "last_alert_at_us": NOW - 1 * HOUR_US, "alert_runs": 2,
+        "escalated_at_us": None,
+    }
+    entry.update(overrides)
+    return entry
+
+
+def _key(entry):
+    return f"{entry['address']}/{entry['envelope_id']}"
+
+
+def test_esc_state_valid_entries_still_load(tmp_path):
+    """合法 entry（supervise 自身寫出形）照常載入——驗證不誤傷。"""
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    _write_esc_state(tmp_path, {_key(_valid_entry()): _valid_entry()})
+    result = mod.supervise(str(tmp_path), now_us=NOW)
+    assert len(result.stale_items) == 1
+    state = json.loads(
+        (tmp_path / "_meta" / "supervisor-escalations.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    assert state["items"][f"{ADDR}/{EID}"]["alert_runs"] == 3
+
+
+def test_esc_state_null_item_fails_closed(tmp_path):
+    """items[key]=null 舊碼被 `or {...}` 靜默重置——現須 typed 拒用。"""
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    _write_esc_state(tmp_path, {f"{ADDR}/{EID}": None})
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+def test_esc_state_entry_missing_field_fails_closed(tmp_path):
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    entry = _valid_entry()
+    del entry["first_alert_at_us"]
+    _write_esc_state(tmp_path, {f"{ADDR}/{EID}": entry})
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+def test_esc_state_entry_extra_field_fails_closed(tmp_path):
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    entry = _valid_entry(note="junk")
+    _write_esc_state(tmp_path, {f"{ADDR}/{EID}": entry})
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("first_alert_at_us", "not-a-number"),
+        ("last_alert_at_us", 0),
+        ("alert_runs", 0),
+        ("alert_runs", True),
+        ("escalated_at_us", -5),
+        ("state", "bogus-state"),
+        ("address", ""),
+        ("envelope_id", None),
+    ],
+)
+def test_esc_state_entry_bad_value_fails_closed(
+    tmp_path, field, value,
+):
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    entry = _valid_entry(**{field: value})
+    _write_esc_state(tmp_path, {f"{ADDR}/{EID}": entry})
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+def test_esc_state_key_mismatch_fails_closed(tmp_path):
+    """items key 與 entry（address, envelope_id）不一致＝錯置記錄。"""
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    entry = _valid_entry(envelope_id="other-eid")
+    _write_esc_state(tmp_path, {f"{ADDR}/{EID}": entry})
+    with pytest.raises(mod.SupervisorStateCorrupt):
+        mod.supervise(str(tmp_path), now_us=NOW)
+
+
+def test_esc_state_top_level_extra_key_fails_closed(tmp_path):
+    _seed(ADDR, EID, "received", NOW - 25 * HOUR_US, tmp_path)
+    meta = tmp_path / "_meta"
+    meta.mkdir()
+    (meta / "supervisor-escalations.json").write_text(
+        json.dumps({"schema_version": 1, "items": {}, "junk": 1},
+                   ensure_ascii=False),
+        encoding="utf-8",
     )
     with pytest.raises(mod.SupervisorStateCorrupt):
         mod.supervise(str(tmp_path), now_us=NOW)

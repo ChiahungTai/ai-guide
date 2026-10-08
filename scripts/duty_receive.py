@@ -17,7 +17,10 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   intent 機械驗證全過；三條代碼層底線 config 無法放寪——solicit 恆
   surface、未列 class 恆 surface、恆人工名單 class（handoff／patrol／
   work-order）恆 surface。auto 處理＝digest 吸收（計數行），
-  輸出語義「例行已處理」，絕不宣稱 work accepted。
+  輸出語義「例行已處理」，絕不宣稱 work accepted；AIR-287 bi 修復：
+  digest 呈現完成（commit 起點）＝disposition ledger 推進邊界——
+  auto→handled／surface→needs-human（單一源＝duty_disposition 模組
+  docstring「處理推進」裁定；ack 是 transport cursor，不作推進前提）。
 - holder 權威經 `holder bind` consent CAS 取得，絕不繞過；live holder
   在場＝不搶（換代正當路徑＝lease 到期後 rebind）；rebind CAS 失敗＝
   HolderConflict（surface 衝突訊息、單次嘗試、不重試轟炸）。
@@ -1017,16 +1020,16 @@ def _prepare_with_recovery(address, runner, st, state_file, max_count,
 
 def process_once(address, runner, policy, state_file,
                  max_count=DEFAULT_MAX_COUNT, now_us=None,
-                 disposition_sink=None):
+                 disposition_sink=None, resolution_sink=None):
     """完整收信週期 → (lines, commit | None)。
 
     流程：ensure_holder → 遺留批次收斂 → prepare（bounded）→ state
     記 batch_token（undisposed——crash window 防線）→ 逐封 triage（
     全純計算；任一 raise＝ack 不被呼叫——絕不 flush-ack）→ render。
-    commit＝ack＋state 收斂，由呼叫端在輸出寫出成功後執行（
-    advance-after-emit：先呈報後 ack）。空批次（正典形＝envelopes==[]
-    且 batchToken==None）＝([], None) 零輸出；其他非正典形 shape-drift
-    raise（fail-loud，交上層 fail-soft）。
+    commit＝resolution 推進＋ack＋state 收斂，由呼叫端在輸出寫出成功
+    後執行（advance-after-emit：先呈報後 commit）。空批次（正典形＝
+    envelopes==[] 且 batchToken==None）＝([], None) 零輸出；其他非正
+    典形 shape-drift raise（fail-loud，交上層 fail-soft）。
 
     disposition_sink（AIR-287 最小接線；可選）：triage 後以
     `sink(address, dispositions, now_us)` 記 received 帳（consumer
@@ -1035,6 +1038,16 @@ def process_once(address, runner, policy, state_file,
     make_received_sink／make_safe_sink）——本函式不吞 sink 例外：
     sink raise＝本函式 raise、ack 不達（寧重不漏，信件下輪重 prepare
     ——禁半記帳半前進）。None（預設）＝零記帳，既有行為不變。
+
+    resolution_sink（AIR-287 bi 修復必修 1——codex F1；可選）：
+    digest 呈現完成邊界（commit 起點、ack 前）以
+    `resolution_sink(address, dispositions, now_us)` 推進處理狀態
+    （auto→handled／surface→needs-human；單一源＝duty_disposition.
+    record_resolution——推進點裁定見該模組 docstring）。ack 是
+    transport cursor（bridge 語義 ack≠done），不作推進前提。sink
+    raise＝commit raise、ack 不達（寧重不漏——推進失敗仍 ack＝
+    「已消費但帳面恆停 received」假陽性 stale）。None（預設）＝不
+    推進，既有行為不變。
     """
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
@@ -1072,6 +1085,12 @@ def process_once(address, runner, policy, state_file,
     token = st["token"]
 
     def commit():
+        if resolution_sink is not None:
+            # digest 呈現完成邊界（呼叫端契約：輸出成功寫出後才
+            # commit）——auto→handled／surface→needs-human；ack 前
+            # （ack＝transport cursor，非工作完成前提——AIR-287 bi
+            # 必修 1 推進點裁定＝duty_disposition 模組 docstring）。
+            resolution_sink(address, dispositions, now)
         st2 = load_state(state_file) or dict(st)
         st2["batch_token"] = batch_token
         st2["batch_disposed"] = True  # 輸出已寫出——處置完成紀錄
@@ -1102,12 +1121,15 @@ DEFAULT_CONFIG_PATH = os.path.join(
 )
 
 
-def _load_disposition_sink(session_id, base_dir=None):
+def _load_disposition_sinks(session_id, base_dir=None):
     """AIR-287 接線：以檔案路徑載入 sibling duty_disposition（與 hook
     前導同模式——scripts/ 非 package，CLI 直跑時 sys.path[0]＝scripts/
-    但 load_module 測試形態不在，一律顯式路徑載入零歧義）→ safe
-    received sink。載入失敗＝stderr 一行＋None（記帳面故障不擋收信
-    ——缺口大聲，信件損失 > ledger 缺口）。"""
+    但 load_module 測試形態不在，一律顯式路徑載入零歧義）→
+    (received sink, resolution sink) 兩 safe callable——received＝
+    收信記帳、resolution＝digest 呈現完成邊界推進（auto→handled／
+    surface→needs-human；AIR-287 bi 修復必修 1）。載入失敗＝
+    (None, None)＋stderr 一行（記帳面故障不擋收信——缺口大聲，信件
+    損失 > ledger 缺口）。"""
     try:
         import importlib.util
 
@@ -1118,14 +1140,17 @@ def _load_disposition_sink(session_id, base_dir=None):
         )
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return mod.make_received_sink(session_id, base_dir=base_dir)
+        return (
+            mod.make_received_sink(session_id, base_dir=base_dir),
+            mod.make_resolution_sink(session_id, base_dir=base_dir),
+        )
     except Exception as exc:
         print(
             f"[{HOOK_TAG}] disposition ledger 載入失敗——本批不記帳"
             f"（{exc!r}）",
             file=sys.stderr,
         )
-        return None
+        return None, None
 
 
 def parse_args(argv=None):
@@ -1179,16 +1204,17 @@ def main(argv=None) -> int:
         print(f"[{HOOK_TAG}] config fail-loud：{exc}", file=sys.stderr)
         return 3
     sfile = state_path(args.session_id, args.state_dir)
-    sink = (
-        None if args.no_disposition_ledger
-        else _load_disposition_sink(
+    recv_sink, res_sink = (
+        (None, None) if args.no_disposition_ledger
+        else _load_disposition_sinks(
             args.session_id, base_dir=args.disposition_dir
         )
     )
     try:
         lines, commit = process_once(
             args.address, _default_runner, policy, sfile,
-            max_count=args.max_count, disposition_sink=sink,
+            max_count=args.max_count, disposition_sink=recv_sink,
+            resolution_sink=res_sink,
         )
     except HolderConflict as exc:
         print(f"[{HOOK_TAG}] {exc}")  # surface 衝突（同 hook 語義）

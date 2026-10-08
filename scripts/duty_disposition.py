@@ -11,8 +11,12 @@ receipts 軸、非 delivery cursor 軸——三軸獨立，本帳不代理任何
 
 落點：`$XDG_STATE_HOME`（預設 `~/.local/state`）`/ai-guide/
 duty-disposition/<address_alias>/<envelope_id>.json`；每信一檔、
-atomic 寫（pid 後綴 tmp＋os.replace）＋0600。`<root>/_meta/` 放非
-envelope 記錄（例外地址建立記錄等），**不入**任何 address 掃描。
+atomic 寫（pid 後綴 tmp＋os.replace）＋0600。寫入序列化＝
+per-envelope lockfile（`<eid>.json.lock`——非 .json 不入任何掃描／
+integrity gate，空檔留存＝鎖槽位復用）上 fcntl flock：set() 讀改寫
+跨進程互斥，競寫不得繞流轉表（AIR-287 bi 修復——GLM F3）。
+`<root>/_meta/` 放非 envelope 記錄（例外地址建立記錄等），**不入**
+任何 address 掃描。
 
 記錄 schema（凍結六鍵、恰此六鍵——嚴格驗證，多鍵少鍵＝LedgerCorrupt）：
     {"schema_version": 1, "envelope_id": str, "correlation_id": str|None,
@@ -47,6 +51,23 @@ base_dir)` 回傳 **safe** callable（address, dispositions, now_us）——
 `[duty-disposition]` 一行註記、絕不 raise（信件損失 > ledger 缺口；
 缺口要大聲）。生產面注入 duty_receive.process_once 時必經此 wrapper。
 
+處理推進（AIR-287 bi 修復必修 1——codex F1「auto 信恆停 received」
+；第二 sink 消費面）：`make_resolution_sink(session_id, base_dir)` 回
+safe callable，在 **digest 呈現完成邊界**（duty_receive.process_once
+的 commit 起點——呼叫端契約＝輸出成功寫出後才 commit，
+advance-after-emit）推進：triage action=="auto"（digest 吸收＝例行信
+的「處理」本身）→ handled；action=="surface"（摘要已呈報給人，判讀
+責任移交人類迴圈）→ needs-human。**推進點選擇裁定（記錄）**：auto
+信的工作＝digest 吸收，digest 呈現完成即工作完成——故推進不以
+delivery ack 成功為前提（ack 是 transport cursor，bridge 語義
+ack≠done；ack 失敗只影響 cursor 重試，digest 已呈現的事實不變）；
+也不在 record_received 當下推進（當下 digest 尚未呈現，session 中斷
+＝帳面謊報已處理）。surface→needs-human 使人類介入迴圈進入
+supervisor 監視面（needs-human 停滯＝session 死於 forward 前的電子
+蹤跡）。重呈報（batch-dead ack 後重 prepare）已推進的信：
+record_received 逐封吸收 IllegalTransition（stderr 一行、帳面維持已
+處理真態、同批其餘信件記帳不中斷）。
+
 CLI（模組＋CLI 三 face；exit 0 成功／1 LedgerError typed 錯誤／
 2 args 誤用）：
     set   --address ALIAS --envelope-id ID --state STATE
@@ -58,6 +79,7 @@ CLI（模組＋CLI 三 face；exit 0 成功／1 LedgerError typed 錯誤／
 """
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -195,6 +217,33 @@ def _positive_int(value):
 # ── 三 face（模組 API）───────────────────────────────────────────────
 
 
+def _envelope_lock(path):
+    """per-envelope 寫鎖（AIR-287 bi 修復——GLM F3）：lockfile＝
+    `<record>.lock`（非 .json——不入任何掃描／integrity gate；空檔
+    留存＝鎖槽位復用，非記錄殘留）上 fcntl flock LOCK_EX，set() 的
+    讀改寫臨界區全程持有——兩消費端同 envelope_id 競寫序列化，禁繞
+    流轉表。回傳 fd；呼叫端 finally flock UN＋close。開檔／flock 失
+    敗＝LedgerError fail-loud（禁無鎖續寫）。"""
+    lock_path = path + ".lock"
+    parent = os.path.dirname(lock_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    try:
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    except OSError as exc:
+        raise LedgerError(
+            f"lockfile 開啟失敗：{lock_path}（{exc!r}）"
+        ) from exc
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+    except OSError as exc:
+        os.close(fd)
+        raise LedgerError(
+            f"lockfile flock 失敗：{lock_path}（{exc!r}）"
+        ) from exc
+    return fd
+
+
 def set(
     address, envelope_id, state, session_id, correlation_id=None,
     now_us=None, base_dir=None,
@@ -203,6 +252,8 @@ def set(
 
     correlation_id 傳 None 且記錄已存在＝保留原值（後續態轉移不必重
     帶關聯鍵）；首次建立 correlation_id=None 即 None。
+    讀改寫於 per-envelope lockfile flock 下進行（GLM F3——跨進程
+    序列化；lockfile 契約見 _envelope_lock）。
     """
     _validate_identifier(address, "address alias")
     _validate_identifier(envelope_id, "envelope_id")
@@ -213,45 +264,60 @@ def set(
     if not isinstance(session_id, str) or not session_id:
         raise LedgerError("session_id 須非空字串")
     path = record_path(address, envelope_id, base_dir)
-    existing = _load_valid(path)
-    if existing is None:
-        if state != INITIAL_STATE:
-            raise IllegalTransition(
-                f"初始建立僅 {INITIAL_STATE}（得 {state!r}）——消費端補帳"
-                "走 received 起手，禁發明中間歷史"
-            )
-        corr = correlation_id
-    else:
-        if state != existing["state"] and state not in TRANSITIONS[
-            existing["state"]
-        ]:
-            raise IllegalTransition(
-                f"{address}/{envelope_id}：{existing['state']}→{state}"
-                " 不在流轉表"
-            )
-        corr = (
-            correlation_id
-            if correlation_id is not None
-            else existing["correlation_id"]
-        )
-    doc = {
-        "schema_version": SCHEMA_VERSION,
-        "envelope_id": envelope_id,
-        "correlation_id": corr,
-        "state": state,
-        "updated_at_us": now_us,
-        "session_id": session_id,
-    }
-    _atomic_write(path, doc)
+    lock_fd = _envelope_lock(path)
+    try:
+        try:
+            existing = _load_valid(path)
+            if existing is None:
+                if state != INITIAL_STATE:
+                    raise IllegalTransition(
+                        f"初始建立僅 {INITIAL_STATE}（得 {state!r}）——"
+                        "消費端補帳走 received 起手，禁發明中間歷史"
+                    )
+                corr = correlation_id
+            else:
+                if (
+                    state != existing["state"]
+                    and state not in TRANSITIONS[existing["state"]]
+                ):
+                    raise IllegalTransition(
+                        f"{address}/{envelope_id}："
+                        f"{existing['state']}→{state} 不在流轉表"
+                    )
+                corr = (
+                    correlation_id
+                    if correlation_id is not None
+                    else existing["correlation_id"]
+                )
+            doc = {
+                "schema_version": SCHEMA_VERSION,
+                "envelope_id": envelope_id,
+                "correlation_id": corr,
+                "state": state,
+                "updated_at_us": now_us,
+                "session_id": session_id,
+            }
+            _atomic_write(path, doc)
+        finally:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+    finally:
+        os.close(lock_fd)
     return doc
 
 
 def get(address, envelope_id, base_dir=None):
-    """讀單記錄 → dict；缺檔＝UnknownRecord；壞檔＝LedgerCorrupt。"""
-    doc = _load_valid(record_path(address, envelope_id, base_dir))
-    if doc is None:
-        raise UnknownRecord(f"{address}/{envelope_id}：無記錄")
-    return doc
+    """讀單記錄 → dict；缺檔＝UnknownRecord；同 address 任一檔壞＝
+    LedgerCorrupt（整批拒用與 list 統一——AIR-287 bi 修復 codex F4：
+    實作經同一 address 掃描面，模組 docstring「get 與 list 皆整批拒
+    用」裁定自此為真；284 前例＝整源拒用，本帳範圍最小化到單
+    address）。以記錄內 envelope_id 配對（非檔名）——錯置檔名不冒
+    配。"""
+    _validate_identifier(address, "address alias")
+    _validate_identifier(envelope_id, "envelope_id")
+    for doc in list_records(address, base_dir=base_dir):
+        if doc["envelope_id"] == envelope_id:
+            return doc
+    raise UnknownRecord(f"{address}/{envelope_id}：無記錄")
 
 
 def list_records(address, base_dir=None):
@@ -342,14 +408,50 @@ def record_received(
     address, dispositions, session_id, now_us, base_dir=None,
 ):
     """triage dispositions → 逐封 set received（本 face 允許 raise
-    ——failure containment 在 make_safe_sink）。"""
+    ——failure containment 在 make_safe_sink）。
+
+    已推進信（handled／needs-human／processing——重呈報案例）逐封
+    吸收 IllegalTransition：stderr 一行（大聲非靜默）、帳面維持已處
+    理真態、同批其餘信件記帳不中斷（received→已處理態不在流轉表，
+    蓋寫才是 silent-corruption）。"""
     for d in dispositions:
         if not getattr(d, "envelope_id", None):
             continue  # triage 已標 unknown id——無記帳鍵，跳過（raw
             # bad-envelope 案例的 envelope_id=None；ledger 不發明 id）
+        try:
+            set(
+                address, d.envelope_id, INITIAL_STATE, session_id,
+                correlation_id=_correlation_from_canonical(d.canonical),
+                now_us=now_us, base_dir=base_dir,
+            )
+        except IllegalTransition as exc:
+            print(
+                f"[{TAG}] {exc}（重呈報已處理信——維持現態）",
+                file=sys.stderr,
+            )
+
+
+def record_resolution(
+    address, dispositions, session_id, now_us, base_dir=None,
+):
+    """digest 呈現完成邊界的處理推進（本 face 允許 raise——failure
+    containment 在 make_safe_sink）：action=="auto"→ handled（digest
+    吸收＝工作完成——推進點裁定見模組 docstring）；action==
+    "surface"→ needs-human（判讀責任移交人類迴圈）。未知 action 不
+    發明狀態（保守跳過——router 面 fail-loud 是 forward 模組職責）；
+    correlation_id 恆保留原值。"""
+    for d in dispositions:
+        if not getattr(d, "envelope_id", None):
+            continue
+        action = getattr(d, "action", None)
+        if action == "auto":
+            target = "handled"
+        elif action == "surface":
+            target = "needs-human"
+        else:
+            continue
         set(
-            address, d.envelope_id, INITIAL_STATE, session_id,
-            correlation_id=_correlation_from_canonical(d.canonical),
+            address, d.envelope_id, target, session_id,
             now_us=now_us, base_dir=base_dir,
         )
 
@@ -373,6 +475,17 @@ def make_received_sink(session_id, base_dir=None):
     """生產面 sink 工廠：session 綁定＋safe wrapper 一體。"""
     return make_safe_sink(
         lambda address, dispositions, now_us: record_received(
+            address, dispositions, session_id, now_us, base_dir,
+        )
+    )
+
+
+def make_resolution_sink(session_id, base_dir=None):
+    """生產面 resolution sink 工廠（AIR-287 bi 必修 1）：session 綁定
+    ＋safe wrapper 一體——digest 呈現完成邊界推進（auto→handled／
+    surface→needs-human；推進點裁定見模組 docstring）。"""
+    return make_safe_sink(
+        lambda address, dispositions, now_us: record_resolution(
             address, dispositions, session_id, now_us, base_dir,
         )
     )
