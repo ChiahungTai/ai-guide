@@ -58,8 +58,25 @@ _core_spec = importlib.util.spec_from_file_location(
 core = importlib.util.module_from_spec(_core_spec)
 _core_spec.loader.exec_module(core)
 
+# disposition ledger 核心（AIR-287 消費端份——received 記帳面單一源；
+# 同 importlib 檔案路徑載入模式，零 sys.path 依賴）。
+_dd_spec = importlib.util.spec_from_file_location(
+    "_duty_disposition_core",
+    os.path.join(_REPO, "scripts", "duty_disposition.py"),
+)
+dd = importlib.util.module_from_spec(_dd_spec)
+_dd_spec.loader.exec_module(dd)
+
 HOOK_TAG = core.HOOK_TAG
 SUPPORTED_EVENTS = ("SessionStart", "UserPromptSubmit")
+
+
+def _default_sink_factory(session_id):
+    """生產面 sink 工廠（AIR-287 接線）：session 綁定 safe received
+    sink——duty_disposition.make_received_sink 內建 failure containment
+    （記帳失敗只 stderr，絕不擋收信）。factory 本身 raise＝run() 內
+    fail-soft 吸收（sink=None 照跑）。"""
+    return dd.make_received_sink(session_id)
 
 
 # ── monitor eligibility gate（AIR-233 模式：cwd/workspace 鎖）────────
@@ -89,14 +106,20 @@ def _default_config_path():
 
 
 def run(raw, address, runner=None, state_dir=None, config_path=None,
-        now_us=None, lock_factory=None):
+        now_us=None, lock_factory=None, disposition_sink_factory=None):
     """stdin 原文 → (exit_code, stdout, commit | None)。
 
     永不 raise、exit 恆 0（唯二例外：config 壞形＝3 fail-loud；args
     誤用由 argparse exit 2）。runner／state_dir／config_path／now_us／
-    lock_factory 可注入（測試 fake face＋fake state＋fake lock，不碰真
-    store）。commit＝ack closure——呼叫端在 stdout 寫出成功後才執行
-    （advance-after-emit）。
+    lock_factory／disposition_sink_factory 可注入（測試 fake face＋
+    fake state＋fake lock＋fake sink，不碰真 store）。commit＝ack
+    closure——呼叫端在 stdout 寫出成功後才執行（advance-after-emit）。
+
+    disposition_sink_factory（AIR-287 接線；可選）：session_id 抽取後
+    呼叫一次得 sink（生產面＝_default_sink_factory——disposition
+    ledger received 記帳），注入 process_once；建構失敗＝stderr 一行
+    ＋sink=None 照跑（記帳面故障不擋收信）。None（預設）＝零記帳，
+    既有行為不變。
 
     併發鎖（AIR-255 B）：process_once 前取 per-session advisory lock，
     critical section 涵蓋 load→decide→save＋ack commit 全序列（取鎖後
@@ -133,6 +156,16 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
             )
             return 3, "", None
         state_file = core.state_path(session_id, state_dir)
+        sink = None
+        if disposition_sink_factory is not None:
+            try:
+                sink = disposition_sink_factory(session_id)
+            except Exception as exc:
+                print(
+                    f"[{dd.TAG}] disposition sink 建構失敗——本批不記帳"
+                    f"（{exc!r}）",
+                    file=sys.stderr,
+                )
         lock = lock_acquire(session_id, state_dir)
         released = False
 
@@ -184,7 +217,8 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
 
         try:
             lines, commit = core.process_once(
-                address, _runner_resets_miss, policy, state_file, now_us=now_us
+                address, _runner_resets_miss, policy, state_file,
+                now_us=now_us, disposition_sink=sink,
             )
         except core.HolderConflict as exc:
             lines, commit = [f"[{HOOK_TAG}] {exc}"], None
@@ -271,6 +305,7 @@ def main(argv=None, runner=None) -> int:
         sys.stdin.read(), args.address,
         runner=runner, state_dir=args.state_dir,
         config_path=args.config,
+        disposition_sink_factory=_default_sink_factory,  # AIR-287 記帳
     )
     if out:
         sys.stdout.write(out)

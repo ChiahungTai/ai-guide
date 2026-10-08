@@ -1016,7 +1016,8 @@ def _prepare_with_recovery(address, runner, st, state_file, max_count,
 
 
 def process_once(address, runner, policy, state_file,
-                 max_count=DEFAULT_MAX_COUNT, now_us=None):
+                 max_count=DEFAULT_MAX_COUNT, now_us=None,
+                 disposition_sink=None):
     """完整收信週期 → (lines, commit | None)。
 
     流程：ensure_holder → 遺留批次收斂 → prepare（bounded）→ state
@@ -1026,6 +1027,14 @@ def process_once(address, runner, policy, state_file,
     advance-after-emit：先呈報後 ack）。空批次（正典形＝envelopes==[]
     且 batchToken==None）＝([], None) 零輸出；其他非正典形 shape-drift
     raise（fail-loud，交上層 fail-soft）。
+
+    disposition_sink（AIR-287 最小接線；可選）：triage 後以
+    `sink(address, dispositions, now_us)` 記 received 帳（consumer
+    disposition ledger，單一源＝scripts/duty_disposition.py）。sink
+    生產面必須自帶 failure containment（duty_disposition.
+    make_received_sink／make_safe_sink）——本函式不吞 sink 例外：
+    sink raise＝本函式 raise、ack 不達（寧重不漏，信件下輪重 prepare
+    ——禁半記帳半前進）。None（預設）＝零記帳，既有行為不變。
     """
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
@@ -1057,6 +1066,8 @@ def process_once(address, runner, policy, state_file,
     st["batch_disposed"] = False
     save_state(state_file, st)
     dispositions = [triage(item, policy) for item in envelopes]
+    if disposition_sink is not None:
+        disposition_sink(address, dispositions, now)  # AIR-287：記帳接線
     lines = render(address, dispositions, now)
     token = st["token"]
 
@@ -1091,6 +1102,32 @@ DEFAULT_CONFIG_PATH = os.path.join(
 )
 
 
+def _load_disposition_sink(session_id, base_dir=None):
+    """AIR-287 接線：以檔案路徑載入 sibling duty_disposition（與 hook
+    前導同模式——scripts/ 非 package，CLI 直跑時 sys.path[0]＝scripts/
+    但 load_module 測試形態不在，一律顯式路徑載入零歧義）→ safe
+    received sink。載入失敗＝stderr 一行＋None（記帳面故障不擋收信
+    ——缺口大聲，信件損失 > ledger 缺口）。"""
+    try:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "_duty_disposition_core",
+            os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "duty_disposition.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.make_received_sink(session_id, base_dir=base_dir)
+    except Exception as exc:
+        print(
+            f"[{HOOK_TAG}] disposition ledger 載入失敗——本批不記帳"
+            f"（{exc!r}）",
+            file=sys.stderr,
+        )
+        return None
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
@@ -1120,6 +1157,14 @@ def parse_args(argv=None):
         help="state 目錄覆寫（預設 XDG state／~/.local/state）",
     )
     proc.add_argument(
+        "--disposition-dir", default=None, metavar="DIR",
+        help="disposition ledger 根覆寫（AIR-287；預設 XDG state）",
+    )
+    proc.add_argument(
+        "--no-disposition-ledger", action="store_true",
+        help="本批不記 disposition 帳（預設記——AIR-287 接線）",
+    )
+    proc.add_argument(
         "--max-count", type=int, default=DEFAULT_MAX_COUNT, metavar="N",
         help=f"單批上限（預設 {DEFAULT_MAX_COUNT}，bounded）",
     )
@@ -1134,10 +1179,16 @@ def main(argv=None) -> int:
         print(f"[{HOOK_TAG}] config fail-loud：{exc}", file=sys.stderr)
         return 3
     sfile = state_path(args.session_id, args.state_dir)
+    sink = (
+        None if args.no_disposition_ledger
+        else _load_disposition_sink(
+            args.session_id, base_dir=args.disposition_dir
+        )
+    )
     try:
         lines, commit = process_once(
             args.address, _default_runner, policy, sfile,
-            max_count=args.max_count,
+            max_count=args.max_count, disposition_sink=sink,
         )
     except HolderConflict as exc:
         print(f"[{HOOK_TAG}] {exc}")  # surface 衝突（同 hook 語義）

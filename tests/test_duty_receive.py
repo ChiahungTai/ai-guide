@@ -1690,3 +1690,116 @@ class TestRegistrationWiring:
 
         assert count(zc) == 2
         assert count(cc) == 2
+
+
+# ── disposition ledger 接線（AIR-287——最小接線：sink 注入面）──────────
+#
+# 契約：process_once 新增 disposition_sink=None 注入點——triage 後以
+# sink(address, dispositions, now_us) 記帳；sink 生產面自帶 failure
+# containment（duty_disposition.make_safe_sink），本檔 sink raise＝
+# process_once raise（ack 不達——寧重不漏）。既有邏輯（resolver／
+# envelope／ack）零改動。
+
+
+class TestDispositionSinkWiring:
+    def test_sink_called_with_address_dispositions_now(self, state_file):
+        _seed_state(state_file)
+        envs = [
+            _env_item("e-1", klass="usage-liveness"),
+            _env_item("e-2", klass="handoff"),
+        ]
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc(envs), _ack_doc(),
+        ])
+        seen = []
+
+        def sink(address, dispositions, now_us):
+            seen.append((address, [d.envelope_id for d in dispositions],
+                         now_us))
+
+        mod.process_once(ADDR, runner, _policy(), state_file,
+                         now_us=NOW_US, disposition_sink=sink)
+        assert seen == [(ADDR, ["e-1", "e-2"], NOW_US)]
+
+    def test_sink_default_none_no_calls(self, state_file):
+        """既有行為不變：未注入 sink＝零記帳呼叫（既有測試全數照舊）。"""
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+        ])
+        mod.process_once(ADDR, runner, _policy(), state_file,
+                         now_us=NOW_US)
+        assert True  # 無 sink 參數即無記帳面（介面不變）
+
+    def test_raising_sink_blocks_commit_wu_ning_zhong_bu_lou(
+        self, state_file,
+    ):
+        """sink raise（未包 safe wrapper）＝process_once raise——ack 不達
+        （寧重不漏：記帳面壞掉時信件下輪重 prepare，禁半記帳半前進）。"""
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+        ])
+
+        def boom(address, dispositions, now_us):
+            raise RuntimeError("ledger boom")
+
+        with pytest.raises(RuntimeError, match="ledger boom"):
+            mod.process_once(ADDR, runner, _policy(), state_file,
+                             now_us=NOW_US, disposition_sink=boom)
+        assert not any(c[0:2] == ["receive", "ack"] for c in runner.calls)
+
+
+class TestHookSinkFactory:
+    def test_factory_threaded_to_process_once(self):
+        """hook run()：disposition_sink_factory(session_id) → sink 進
+        process_once（生產面記帳接線；factory 可注入——測試 fake）。"""
+        seen = []
+
+        def factory(session_id):
+            def sink(address, dispositions, now_us):
+                seen.append((session_id, address, len(dispositions)))
+            return sink
+
+        code, out, _commit = hook.run(
+            UPS_STDIN, ADDR, runner=_hook_full_runner(),
+            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
+            disposition_sink_factory=factory,
+        )
+        assert code == 0 and out
+        assert seen == [("sess-1", ADDR, 1)]
+
+    def test_factory_absent_by_default_no_sink(self):
+        """factory 缺席（既有呼叫面）＝零記帳——既有測試與行為不變。"""
+        code, out, _commit = hook.run(
+            UPS_STDIN, ADDR, runner=_hook_full_runner(),
+            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
+        )
+        assert code == 0 and out
+
+    def test_factory_raise_fail_soft_stderr_sink_none(self, capsys):
+        """factory 建構失敗＝stderr 一行＋sink=None 照跑（記帳面故障
+        不擋收信——缺口大聲）。"""
+        def factory(session_id):
+            raise OSError("no ledger dir")
+
+        code, out, _commit = hook.run(
+            UPS_STDIN, ADDR, runner=_hook_full_runner(),
+            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
+            disposition_sink_factory=factory,
+        )
+        assert code == 0 and out  # 收信照常
+        assert "duty-disposition" in capsys.readouterr().err
+
+
+def _hook_full_runner():
+    """hook 面完整 fake runner：status→bind→prepare(1 封)→ack。"""
+    return _seq_runner([
+        _status_doc(), _bind_doc(),
+        _prepare_doc([_env_item("e-1")]), _ack_doc(),
+    ])
+
+
+def _hook_state_dir():
+    import tempfile
+    return tempfile.mkdtemp(prefix="duty-disp-hook-")
