@@ -12,28 +12,25 @@ for what ChatGPT can do on its own and what needs review.
 For most work, start with **Ask for approval**. It lets ChatGPT work within the
 current workspace and pauses before reaching beyond that boundary.
 
-Select different modes below to understand how each one works.
+## Choose a mode
 
-<PermissionModeSelectorDemo client:load />
-
-## Enable modes
-
-When you're using the ChatGPT desktop app for the first time, you need to enable modes in application settings.
-
-**Ask for approval** is always available. To add **Approve for me** (called
-**Auto&#45;review** in settings) or **Full access** to the permissions menu, open
-**Settings > General** in the ChatGPT desktop app, then turn on the mode under
-**Permissions**. Enabling a mode makes it available in the menu; it doesn't
-select the mode or change an existing chat.
+Open the permissions control below the composer and select **Approve for me**
+to send eligible approval requests to automatic review. Check the selected
+mode for the current chat; having a mode available doesn't mean it's selected.
 
 
 
-> Illustration: Permission visibility controls showing Default permissions, automatic review, and Full access.
+> Illustration: Interactive permission mode example, initially showing Approve for me selected and Full access enabled.
 
 
 
-The available modes can depend on your local configuration and your
-  organization's requirements. A mode that isn't allowed appears disabled.
+Available modes depend on your app version, execution environment, local
+  configuration, and your organization's requirements. A mode can be disabled or
+  omitted when it isn't available. Managed requirements can also restrict **Ask
+  for approval**.
+
+If **Approve for me** is missing or disabled, see
+[permission troubleshooting](https://learn.chatgpt.com/docs/reference/troubleshooting#approve-for-me-is-missing-or-disabled).
 
 ## How permissions work
 

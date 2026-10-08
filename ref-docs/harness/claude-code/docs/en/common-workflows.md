@@ -102,7 +102,7 @@ Suppose you need to locate code related to a specific feature or functionality.
 
   * Be specific about what you're looking for
   * Use domain language from the project
-  * Install a [code intelligence plugin](/docs/en/discover-plugins#code-intelligence) for your language to give Claude precise "go to definition" and "find references" navigation
+  * Install a [code intelligence plugin](/docs/en/plugins/code-intelligence) for your language to give Claude precise "go to definition" and "find references" navigation
 </Tip>
 
 ***
@@ -215,7 +215,7 @@ Suppose you need to add tests for uncovered code.
 
 Claude can generate tests that follow your project's existing patterns and conventions. When asking for tests, be specific about what behavior you want to verify. Claude examines your existing test files to match the style, frameworks, and assertion patterns already in use.
 
-For comprehensive coverage, ask Claude to identify edge cases you might have missed. Claude can analyze your code paths and suggest tests for error conditions, boundary values, and unexpected inputs that are easy to overlook.
+To improve coverage, ask Claude to identify edge cases you might have missed. Claude can analyze your code paths and suggest tests for error conditions, boundary values, and unexpected inputs that are often overlooked.
 
 ***
 
@@ -367,7 +367,7 @@ Use @ to quickly include files or directories without waiting for Claude to read
     Explain the logic in @src/utils/auth.js
     ```
 
-    This includes the full content of the file in the conversation.
+    This includes the content of the file in the conversation when it fits the [Read tool](/docs/en/tools-reference#read-tool-behavior)'s token limit, 25,000 tokens by default. A text file larger than 256KB isn't included.
   </Step>
 
   <Step title="Reference a directory">
@@ -403,12 +403,12 @@ Suppose you want Claude to handle a task automatically on a recurring basis, lik
 
 Pick a scheduling option based on where you want the task to run:
 
-| Option                                                 | Where it runs                       | Best for                                                                                                                                                                                                 |
-| :----------------------------------------------------- | :---------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Routines](/docs/en/routines)                               | Cloud, Anthropic-managed by default | Tasks that should run even when your computer is off. Can also trigger on API calls or GitHub events in addition to a schedule. Configure at [claude.ai/code/routines](https://claude.ai/code/routines). |
-| [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks) | Your machine, via the desktop app   | Tasks that need direct access to local files, tools, or uncommitted changes.                                                                                                                             |
-| [GitHub Actions](/docs/en/github-actions)                   | Your CI pipeline                    | Tasks tied to repo events like opened PRs, or cron schedules that should live alongside your workflow config.                                                                                            |
-| [`/loop`](/docs/en/scheduled-tasks)                         | The current CLI session             | Quick polling while a session is open. `--resume` and `--continue` restore unexpired fixed-interval loops.                                                                                               |
+| Option | Where it runs | Best for |
+| :- | :- | :- |
+| [Routines](/docs/en/routines) | Cloud, Anthropic-managed by default | Tasks that should run even when your computer is off. Can also trigger on API calls or GitHub events in addition to a schedule. Configure at [claude.ai/code/routines](https://claude.ai/code/routines). |
+| [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks) | Your machine, via the desktop app | Tasks that need direct access to local files, tools, or uncommitted changes. |
+| [GitHub Actions](/docs/en/github-actions) | Your CI pipeline | Tasks tied to repo events like opened PRs, or cron schedules that should live alongside your workflow config. |
+| [`/loop`](/docs/en/scheduled-tasks) | The current CLI session | Quick polling while a session is open. `--resume` and `--continue` restore unexpired fixed-interval loops. |
 
 <Tip>
   When writing prompts for scheduled tasks, be explicit about what success looks like and what to do with results. The task runs autonomously, so it can't ask clarifying questions. For example: "Review open PRs labeled `needs-review`, leave inline comments on any issues, and post a summary in the `#eng-reviews` Slack channel."
@@ -418,7 +418,7 @@ Pick a scheduling option based on where you want the task to run:
 
 ### Ask Claude about its capabilities
 
-Claude has built-in access to its documentation and can answer questions about its own features and limitations.
+Claude can answer questions about its own features and limitations. It looks up the answers in the current Claude Code documentation, so they aren't limited to the version you're running.
 
 #### Example questions
 
@@ -453,7 +453,6 @@ what are the limitations of Claude Code?
 <Tip>
   Tips:
 
-  * Claude always has access to the latest Claude Code documentation, regardless of the version you're using
   * Ask specific questions to get detailed answers
   * Claude can explain complex features like MCP integration, enterprise configurations, and advanced workflows
 </Tip>

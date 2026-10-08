@@ -1,19 +1,4 @@
-Introduction to agentic coding | Claude by Anthropic
-Explore here
-Introduction to agentic coding
-Move from fragmented AI code snippets to deploying integrated features with agentic coding that understands your entire codebase.
-Category
-Claude Code
-Product
-Claude Code
-Date
-October 30, 2025
-Reading time
-5
-min
-Share
-Copy link
-https://claude.com/blog/introduction-to-agentic-coding
+Skip to main content
 AI-assisted coding has evolved rapidly over the last few years. Tools that once suggested the next line now predict entire functions by analyzing patterns in your code.
 The latest evolution takes this further: instead of predicting what you'll type next, these systems autonomously execute multi-step development tasks by reading files across your codebase, running tests, and iterating until your goal is complete.
 What is agentic coding?
@@ -40,8 +25,10 @@ Agentic coding with Claude Code
 Claude Code brings agentic capabilities to your terminal environment. Unlike browser-based tools requiring constant code copying or IDE extensions analyzing only visible files, Claude Code operates directly within your project directory with full access to your codebase.
 Installation and launch
 Install Claude Code in your terminal:
+Copy
 npm install -g @anthropic-ai/claude-code
 Then launch it in your project directory to start coding:
+Copy
 claude
 How Claude Code works
 Claude Code reads your entire project context upon request. When you ask about architecture or request changes, it analyzes file structures, understands dependencies declared in package.json or requirements.txt, traces how modules interact, and identifies existing patterns established across your codebase.
@@ -55,7 +42,7 @@ You can extend these capabilities further by connecting Model Context Protocol (
 Real-world applications
 Rakuten's seven-hour autonomous implementation
 Rakuten's engineering team challenged Claude Code's agentic capabilities with implementing a specific activation vector extraction method in vLLM, an open-source library containing 12.5 million lines of code across Python, C++, and CUDA. Claude Code completed the entire implementation in seven hours of sustained autonomous work.
-"I didn't write any code during those seven hours, I just provided occasional guidance"
+“"I didn't write any code during those seven hours, I just provided occasional guidance"”
 - Kenta Naruse, Machine Learning Engineer at Rakuten
 The final implementation achieved 99.9% numerical accuracy compared to the reference method, demonstrating the system's ability to understand complex, multi-language codebases, plan implementation approaches for sophisticated algorithms, and deliver production-quality results.
 Rakuten's transformation metrics:
@@ -66,15 +53,19 @@ Rakuten's transformation metrics:
 As Yusuke Kaji, General Manager of AI for Business at Rakuten, explained: "You can have five tasks running in parallel by delegating four to Claude Code while focusing on the remaining one."
 Getting started with Claude Code
 After installing Claude Code with npm, navigate to a project directory and start a session:
+Copy
 claude
 Experiment with a few different tasks to see how Claude Code understands your codebase.
 Understand project architecture
+Copy
 Explain the structure of this codebase and how the main components interact
 Claude Code reads your files and provides an architectural overview, helping you or new team members understand project organization.
 Analyze code quality
+Copy
 Review the authentication module for potential security issues
 Claude Code examines the relevant code, identifies concerns like exposed credentials or insufficient validation, and suggests specific improvements.
 Debug and fix errors
+Copy
 Find all N+1 query problems in our GraphQL resolvers and implement DataLoader batching
 Claude Code analyzes your entire codebase, identifies specific ORM patterns causing N+1 problems, and implements a fix.
 Start slow, then expand
@@ -84,11 +75,6 @@ Documentation generation for your legacy systems
 Routine refactoring of your technical debt
 Feature implementation for well-understood requirements
 Each interaction provides an opportunity to learn how Claude Code approaches problems within your specific codebase. Get started with Claude Code or visit our docs to learn more.
-No items found.
-PrevPrev
-0/5
-NextNext
-eBook
 FAQ
 What's the difference between agentic coding and traditional AI coding assistants?
 Traditional AI coding tools suggest individual functions or code snippets based on immediate context. You handle integration, testing, and ensuring the code follows your project conventions.
@@ -104,36 +90,27 @@ Your TypeScript/JavaScript, Python, Go, and Rust projects see immediate benefits
 ‍
 How does agentic coding handle project-specific requirements?
 Claude Code uses CLAUDE.md configuration files that document your coding standards, architectural decisions, and project-specific requirements. These files persist across your sessions, ensuring consistent implementations that follow your established practices.
-Related posts
-Explore more product news and best practices for teams building with Claude.
-Sep 23, 2026
-How to prepare for AI-driven code modernization projects
-Enterprise AI
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
-Sep 22, 2026
-What a task costs on Opus 5.5
+ArticleOct 7, 2026
+Automating eval design and hillclimbing with Claude
+Principles for designing evals and hillclimbing against them without fooling yourself, and how the claude-api skill's build-eval and hillclimb commands put them to work.
+Claude Platform
+(opens in new tab)
+ArticleOct 6, 2026
+Claude Code in the cloud: a field guide to cloud sessions
+What changes when Claude Code runs on its own machine, the workflows where that pays off, and how to connect GitHub on the first try.
 Claude Code
-What a task costs on Opus 5.5What a task costs on Opus 5.5
-What a task costs on Opus 5.5What a task costs on Opus 5.5
-Sep 17, 2026
-Projects redesigned: from folder to conversation
-Product announcements
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
-Sep 14, 2026
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
+(opens in new tab)
+ArticleOct 5, 2026
+How Cresta turned CX expertise into an agent builder on the Claude Agent SDK
+See how Cresta built Conductor, an agent that builds other agents, on the Claude Agent SDK, and how the team evaluates it with every new Claude model.
+Claude Platform
+ArticleOct 1, 2026
+Getting started with Claude Code mods
 Claude Code
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at AnthropicAgentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at AnthropicAgentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
+(opens in new tab)
 Transform how your organization operates with Claude
-See pricing
-See pricingSee pricing
-Contact sales
-Contact salesContact sales
+See pricingContact sales
 Get the developer newsletter
 Product updates, how-tos, community spotlights, and more. Delivered monthly to your inbox.
-Thank you! You’re subscribed.
-Sorry, there was a problem with your submission, please try again later.
-Claude Code
-Coding
+Please provide your email address if you'd like to receive our monthly developer newsletter. You can unsubscribe at any time.
+Introduction to agentic coding | Claude by Anthropic

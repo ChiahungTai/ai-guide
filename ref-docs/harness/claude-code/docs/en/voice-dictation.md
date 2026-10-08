@@ -8,7 +8,7 @@
 
 Speak your prompts instead of typing them in the Claude Code CLI. Your speech is transcribed live into the prompt input, so you can mix voice and typing in the same message. Enable dictation with `/voice`, then either hold a key while you speak or tap once to start and again to send.
 
-Dictation also works in [agent view](/docs/en/agent-view#peek-and-reply). Hold or tap your push-to-talk key while the dispatch input or a peek-panel reply is focused to dictate to a background session.
+In [hold mode](#hold-to-record), dictation also works in [agent view](/docs/en/agent-view#peek-and-reply). Hold your push-to-talk key while the dispatch input or a peek-panel reply is focused to dictate to a background session.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ The Claude Code [VS Code extension](/docs/en/vs-code) also supports voice dictat
 
 ## Enable voice dictation
 
-Run `/voice` to enable dictation. The first time you enable it, Claude Code runs a microphone check. On macOS, this triggers the system microphone permission prompt for your terminal if it has never been granted.
+Run `/voice` to enable dictation. When you enable it, Claude Code runs a microphone check. On macOS, this triggers the system microphone permission prompt for your terminal if it has never been granted.
 
 ```
 /voice
@@ -35,12 +35,12 @@ Voice mode enabled (hold). Hold space to record. Dictation language: en (/config
 
 `/voice` accepts an optional mode argument:
 
-| Command       | Effect                                        |
-| :------------ | :-------------------------------------------- |
-| `/voice`      | Toggle on or off, keep the current mode       |
-| `/voice hold` | Enable in [hold mode](#hold-to-record)        |
-| `/voice tap`  | Enable in [tap mode](#tap-to-record-and-send) |
-| `/voice off`  | Disable                                       |
+| Command | Effect |
+| :- | :- |
+| `/voice` | Toggle on or off, keep the current mode |
+| `/voice hold` | Enable in [hold mode](#hold-to-record) |
+| `/voice tap` | Enable in [tap mode](#tap-to-record-and-send) |
+| `/voice off` | Disable |
 
 Voice dictation persists across sessions. Set it directly in your [user settings file](/docs/en/settings) instead of running `/voice`:
 
@@ -106,28 +106,28 @@ Neither key does anything else in the press that cancels: `Esc` doesn't interrup
 Voice dictation uses the same [`language` setting](/docs/en/settings-reference#language) that controls Claude's response language. If that setting is empty, dictation defaults to English. In the VS Code extension, if `language` is empty, dictation uses VS Code's `accessibility.voice.speechLanguage` setting before defaulting to English.
 
 <Accordion title="Supported dictation languages">
-  | Language   | Code |
-  | :--------- | :--- |
-  | Czech      | `cs` |
-  | Danish     | `da` |
-  | Dutch      | `nl` |
-  | English    | `en` |
-  | French     | `fr` |
-  | German     | `de` |
-  | Greek      | `el` |
-  | Hindi      | `hi` |
+  | Language | Code |
+  | :- | :- |
+  | Czech | `cs` |
+  | Danish | `da` |
+  | Dutch | `nl` |
+  | English | `en` |
+  | French | `fr` |
+  | German | `de` |
+  | Greek | `el` |
+  | Hindi | `hi` |
   | Indonesian | `id` |
-  | Italian    | `it` |
-  | Japanese   | `ja` |
-  | Korean     | `ko` |
-  | Norwegian  | `no` |
-  | Polish     | `pl` |
+  | Italian | `it` |
+  | Japanese | `ja` |
+  | Korean | `ko` |
+  | Norwegian | `no` |
+  | Polish | `pl` |
   | Portuguese | `pt` |
-  | Russian    | `ru` |
-  | Spanish    | `es` |
-  | Swedish    | `sv` |
-  | Turkish    | `tr` |
-  | Ukrainian  | `uk` |
+  | Russian | `ru` |
+  | Spanish | `es` |
+  | Swedish | `sv` |
+  | Turkish | `tr` |
+  | Ukrainian | `uk` |
 </Accordion>
 
 Set the language in `/config` or directly in settings. You can use either the [BCP 47 language code](https://en.wikipedia.org/wiki/IETF_language_tag) or the language name:
@@ -168,13 +168,14 @@ Some keys are not delivered to terminal applications and can't be bound at all. 
 
 Common issues when voice dictation does not activate or record:
 
-* **`Voice mode requires a Claude.ai account`**: you are authenticated with an API key or a third-party provider. Run `/login` to sign in with a claude.ai account.
+* **`Unknown command: /voice`**: `/voice` is available only while a claude.ai account is your active sign-in. If you aren't signed in with one, run `/login`. If `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, an `apiKeyHelper` setting, or a [third-party provider](#requirements) is in use, it takes precedence over a claude.ai sign-in, so remove it and restart Claude Code.
+* **`Voice mode requires a Claude.ai account`**: Claude Code couldn't find a usable claude.ai sign-in when you ran `/voice` or started recording. Run `/login` to sign in again.
 * **`Voice mode is disabled by your organization's policy`**: an administrator policy for your organization turns off voice dictation. Contact your organization administrator to confirm whether voice dictation is available for your organization.
 * **`Microphone access is denied`**: grant microphone permission to your terminal in system settings. On macOS, go to System Settings → Privacy & Security → Microphone and enable your terminal app, then run `/voice` again. On Windows, go to Settings → Privacy & security → Microphone and turn on microphone access for desktop apps, then run `/voice` again. If your terminal isn't listed in the macOS settings, see [Terminal not listed in macOS Microphone settings](#terminal-not-listed-in-macos-microphone-settings).
 * **`Voice mode requires SoX for audio recording` on Linux**: the native audio module could not load and no fallback is installed. Install SoX with the command shown in the error message, for example `sudo apt-get install sox`.
 * **`Voice mode requires a microphone, but SoX could not open an audio capture device`**: SoX is installed, but the host has no audio capture device, for example a headless server or a container. Run Claude Code on a machine with a microphone. As of v2.1.195, Claude Code on Linux reports this message in that situation; earlier versions asked you to install SoX even when it was already installed.
 * **`Voice mode could not find a working audio recorder in WSL`**: WSLg routes audio through PulseAudio rather than an ALSA device, so SoX needs its PulseAudio backend installed explicitly. Run `sudo apt install sox libsox-fmt-pulse`. Installing `sox` alone pulls in the ALSA backend, which cannot record on WSL because there is no `/dev/snd` device.
-* **`Voice input is failing repeatedly and has been paused`**: voice dictation hit three capture failures within 10 seconds. Claude Code pauses dictation until 10 seconds have passed since the first of those failures. A failure counts whether the microphone fails to start or the recorder starts and then stops without producing any audio. This usually means the microphone or audio stack on this host can't capture audio, for example a headless server, a remote shell with no audio passthrough, or a denied microphone permission. Confirm a working input device, fix the underlying cause from the entries above, then trigger voice again. Before v2.1.202, only start-up failures counted toward the pause.
+* **`Voice input is failing repeatedly and has been paused`**: voice dictation hit three failures within 10 seconds. Claude Code pauses dictation until 10 seconds have passed since the first of those failures. This usually means the microphone or audio stack on this host can't capture audio, for example a headless server, a remote shell with no audio passthrough, or a denied microphone permission. Confirm a working input device, fix the underlying cause from the entries above, then trigger voice again. Before v2.1.202, only start-up failures counted toward the pause.
 * **Nothing happens when holding `Space` in hold mode**: watch the prompt input while you hold. If spaces keep accumulating, voice dictation is likely off; run `/voice hold` to enable it. If only one or two spaces appear and then nothing, voice dictation is on but hold detection is not triggering. Hold detection requires your terminal to send key-repeat events, so it can't detect a held key if key-repeat is disabled at the OS level. Switch to tap mode with `/voice tap` to avoid the key-repeat requirement.
 * **Tapping `Space` types a space instead of recording in tap mode**: the first tap only starts recording when the prompt input is empty. Clear the input first, or check that you are in tap mode by running `/voice tap`.
 * **`No audio detected from microphone`**: recording started but captured silence. Confirm the correct input device is set as the system default and that its input level is not muted or near zero. On Windows, open Settings → System → Sound → Input and select your microphone. On macOS, open System Settings → Sound → Input.

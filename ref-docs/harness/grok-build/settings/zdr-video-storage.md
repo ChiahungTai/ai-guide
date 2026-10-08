@@ -31,6 +31,6 @@ secret_access_key = ""
 | `read_write` | yes | Credentials used to presign the upload URL. |
 | `read_only` | no | Optional credentials used to presign a playback/download URL; omit to manage retrieval yourself. |
 
-Only the presigned URLs leave the machine — the credentials themselves are never sent to xAI. Restart Grok Build after changing the config for it to take effect.
+Only the presigned URLs leave the machine — the credentials themselves are never sent to SpaceXAI. Restart Grok Build after changing the config for it to take effect.
 
 Note: Video tools will be enabled if the privacy setting is off (`/privacy`).

@@ -1,19 +1,4 @@
-Using CLAUDE.MD files: Customizing Claude Code for your codebase | Claude by Anthropic
-Explore here
-Using CLAUDE.md files: Customizing Claude Code for your codebase
-A practical guide for using CLAUDE.md files to optimize your use of Claude Code.
-Category
-Claude Code
-Product
-Claude Code
-Date
-November 25, 2025
-Reading time
-5
-min
-Share
-Copy link
-https://claude.com/blog/using-claude-md-files
+Skip to main content
 If you use AI coding agents, you face the same challenge: how do you give them enough context to understand your architecture, conventions, and workflows without repeating yourself?
 The problem compounds as your codebase grows. Complex module relationships, domain-specific patterns, and team conventions don't surface easily. You end up explaining the same architectural decisions, testing requirements, and code style preferences at the start of every conversation.
 CLAUDE.md files solve this by giving Claude persistent context about your project. Think of it as a configuration file that Claude automatically incorporates into every conversation, ensuring it always knows your project structure, coding standards, and preferred workflows.
@@ -21,6 +6,7 @@ In this article, we walk through how to structure your CLAUDE.md, share best pra
 What is a CLAUDE.md file?
 CLAUDE.md is a special configuration file that lives in your repository and provides Claude with project-specific context. You can place it in your repository root to share with your team, in parent directories for monorepo setups, or in your home folder for universal application across all projects.
 Here’s an example CLAUDE.md that you might have in your repository:
+Copy
 # Project Context
 When working with this codebase, prioritize readability over cleverness. Ask clarifying questions before making architectural changes.
 ## About This Project
@@ -47,6 +33,7 @@ Getting started with /init
 Creating a CLAUDE.md from scratch can feel daunting, especially in an unfamiliar codebase.
 The /init command automates this process by analyzing your project and generating a starter configuration.
 Run /init in any Claude Code session:
+Copy
 cd your-project
 claude
 /init
@@ -65,6 +52,7 @@ Give Claude a map
 Explaining your project architecture, key libraries, and coding styles becomes tedious when you do it for every new task. You need Claude to maintain consistent context about your codebase structure without manual reinforcement.
 Add a project summary and high-level directory structure to your CLAUDE.md. This gives Claude immediate orientation when navigating your codebase.
 A simple tree output showing key directories helps Claude understand where different components live:
+Copy
 main.py
 ├── logs
 │   ├── application.log
@@ -79,6 +67,7 @@ Claude inherits your complete environment but needs guidance on which custom too
 Document your custom tools in CLAUDE.md with usage examples. Include tool names, basic usage patterns, and when to invoke them. If your tool provides help documentation through a --help flag, mention that so Claude knows to check it. For complex tools, add examples of common invocations your team uses regularly.
 Claude functions as an MCP (Model Context Protocol) client, connecting to MCP servers that extend its capabilities. Configure these through project settings, global configuration, or checked-in .mcp.json files. The --mcp-debug flag helps troubleshoot connection issues when tools don't appear as expected.
 For example, if you have a Slack MCP server configured for your organization and you need Claude to understand how to use it, include something like this in CLAUDE.md:
+Copy
 ### Slack MCP
 - Posts to #dev-notifications channel only
 - Use for deployment notifications and build failures
@@ -95,6 +84,7 @@ What additional information is missing?
 How will effectiveness be tested?
 Specific workflows might include explore-plan-code-commit for features, test-driven development for algorithmic work, or visual iteration for UI changes. Document your testing requirements, commit message format, and any approval steps. When Claude knows your workflow upfront, it structures work to match your team's actual process rather than guessing.
 An example workflow instruction might be:
+Copy
 1) Before modifying code in the following locations: X, Y, Z
 - Consider how it might affect A, B, C
 - Construct an implementation plan
@@ -113,6 +103,7 @@ Create custom commands
 Repetitive prompts waste time. You find yourself typing "review this code for security issues" or "analyze this for performance problems" over and over. Each time you need to remember the exact phrasing that gets good results.
 Custom slash commands store these as markdown files in your .claude/commands/ directory. Create a file named performance-optimization.mm with your preferred performance optimization prompt, and it becomes available as /performance-optimization in any conversation. Commands support arguments through $ARGUMENTS or numbered placeholders like $1 and $2, letting you pass specific files or parameters.
 For example, performance-optimization.md might look like this:
+Copy
 # Performance Optimization
 Analyze the provided code for performance bottlenecks and optimization opportunities. Conduct a thorough review covering:
 ## Areas to Analyze
@@ -177,6 +168,7 @@ If code is well-optimized:
 $ARGUMENTS
 ```
 You don't need to write custom command files manually. Ask Claude to create them for you:
+Copy
 Create a custom slash command called /performance-optimization that analyzes code for database query issues, algorithm efficiency, memory management, and caching opportunities.
 Claude will write the markdown file to .claude/commands/performance-optimization.md, and the command will be available immediately.
 Start simple, expand deliberately
@@ -188,42 +180,27 @@ CLAUDE.md files turn Claude Code from a general-purpose assistant into a tool co
 The most effective CLAUDE.md files solve real problems: they document the commands you type repeatedly, capture the architectural context that takes ten minutes to explain, and establish workflows that prevent rework. Your file should reflect how your team actually develops software—not theoretical best practices that sound good but don't match reality.
 Treat customization as an ongoing practice rather than a one-time setup task. Projects change, teams learn better patterns, and new tools enter your workflow. A well-maintained CLAUDE.md evolves with your codebase, continuously reducing the friction of working with AI assistance on complex software.
 Get started with Claude Code today.
-No items found.
-PrevPrev
-0/5
-NextNext
-eBook
-FAQ
-No items found.
-Related posts
-Explore more product news and best practices for teams building with Claude.
-Sep 23, 2026
-How to prepare for AI-driven code modernization projects
-Enterprise AI
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
-Sep 22, 2026
-What a task costs on Opus 5.5
+ArticleOct 7, 2026
+Automating eval design and hillclimbing with Claude
+Principles for designing evals and hillclimbing against them without fooling yourself, and how the claude-api skill's build-eval and hillclimb commands put them to work.
+Claude Platform
+(opens in new tab)
+ArticleOct 6, 2026
+Claude Code in the cloud: a field guide to cloud sessions
+What changes when Claude Code runs on its own machine, the workflows where that pays off, and how to connect GitHub on the first try.
 Claude Code
-What a task costs on Opus 5.5What a task costs on Opus 5.5
-What a task costs on Opus 5.5What a task costs on Opus 5.5
-Sep 17, 2026
-Projects redesigned: from folder to conversation
-Product announcements
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
-Sep 14, 2026
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
+(opens in new tab)
+ArticleOct 5, 2026
+How Cresta turned CX expertise into an agent builder on the Claude Agent SDK
+See how Cresta built Conductor, an agent that builds other agents, on the Claude Agent SDK, and how the team evaluates it with every new Claude model.
+Claude Platform
+ArticleOct 1, 2026
+Getting started with Claude Code mods
 Claude Code
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at AnthropicAgentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
-Agentic coding is straining CI. Here’s how we scaled test impact analysis at AnthropicAgentic coding is straining CI. Here’s how we scaled test impact analysis at Anthropic
+(opens in new tab)
 Transform how your organization operates with Claude
-See pricing
-See pricingSee pricing
-Contact sales
-Contact salesContact sales
+See pricingContact sales
 Get the developer newsletter
 Product updates, how-tos, community spotlights, and more. Delivered monthly to your inbox.
-Thank you! You’re subscribed.
-Sorry, there was a problem with your submission, please try again later.
-Claude Code
+Please provide your email address if you'd like to receive our monthly developer newsletter. You can unsubscribe at any time.
+Using CLAUDE.MD files: Customizing Claude Code for your codebase | Claude by Anthropic

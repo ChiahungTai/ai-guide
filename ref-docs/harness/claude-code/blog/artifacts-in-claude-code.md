@@ -1,21 +1,6 @@
-Claude Code now supports artifacts | Claude by Anthropic
-Explore here
-Claude Code now supports artifacts
-Preview your in-progress work as a live, interactive web page—built from your full session context and shareable with your team.
-Category
-Product announcements
-Product
-Claude Code
-Date
-June 18, 2026
-Reading time
-5
-min
-Share
-Copy link
-https://claude.com/blog/artifacts-in-claude-code
+Skip to main content
 Starting today, Claude Code can capture work progress as an artifact, which turn Claude Code's work into live, shareable visual pages— including PR walkthroughs, system explainers, dashboards, and release checklists—that update themselves as your session works.
-A Claude Code session can range from investigating an incident to refactoring a service to analyzing months of data. Artifacts translate the work into a web page anyone can open and explore, like a pull request walkthrough, a dashboard you can filter and sort, or even a release checklist that fills itself out as work gets done.  Artifacts make it easier to collaborate on shared work, so teams can spend more time building and less time communicating status updates.
+A Claude Code session can range from investigating an incident to refactoring a service to analyzing months of data. Artifacts translate the work into a web page anyone can open and explore, like a pull request walkthrough, a dashboard you can filter and sort, or even a release checklist that fills itself out as work gets done. Artifacts make it easier to collaborate on shared work, so teams can spend more time building and less time communicating status updates.
 Built on the context from your session
 Claude Code builds an artifact using the full context of your session, including your codebase, your connectors, and the conversation itself. A single incident page can bring together the failing test and the function behind it from your code, the error spike from a connected monitoring tool, and the root-cause reasoning from the session you just ran. With artifacts, you don't need to wire up data sources or stand up infrastructure. You ask for a page, and Claude Code builds it from what already exists.
 Live pages that update in place
@@ -38,46 +23,24 @@ Claude Code builds the page and gives you a link. Open it in your browser or the
 Availability
 Artifacts is available in beta to Claude Team and Enterprise orgs, from the Claude Code CLI and desktop app, with pages viewable in any browser.
 Get started today with Claude Code.
-No items found.
-PrevPrev
-0/5
-NextNext
-eBook
-FAQ
-No items found.
-Related posts
-Explore more product news and best practices for teams building with Claude.
-Oct 20, 2025
-Claude Code on the web
-Product announcements
-Claude Code on the webClaude Code on the web
-Claude Code on the webClaude Code on the web
-Sep 16, 2026
-Claude Cowork and chat are now one Claude
-Product announcements
-Claude Cowork and chat are now one ClaudeClaude Cowork and chat are now one Claude
-Claude Cowork and chat are now one ClaudeClaude Cowork and chat are now one Claude
-Sep 23, 2026
-Claude Marketplace: one place to discover plugins, agents, and services from our partners
-Product announcements
-Claude Marketplace: one place to discover plugins, agents, and services from our partnersClaude Marketplace: one place to discover plugins, agents, and services from our partners
-Claude Marketplace: one place to discover plugins, agents, and services from our partnersClaude Marketplace: one place to discover plugins, agents, and services from our partners
-Sep 17, 2026
-Projects redesigned: from folder to conversation
-Product announcements
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
-Projects redesigned: from folder to conversationProjects redesigned: from folder to conversation
+ArticleOct 8, 2026
+Build live dashboards and animate explainers with Claude
+Claude Dashboards and Claude Motion are now in beta. Docs, Slides, and Design are out of beta and on every Claude plan, including Free.
+Claude appsClaude Design
+2 more: Claude Cowork and Claude CodeClaude CoworkClaude Code
+ArticleOct 7, 2026
+Claude Haiku 5.5
+Introducing Claude Haiku 5.5: the cheapest, fastest, and most capable small model we’ve ever released.
+(opens in new tab)
+ArticleOct 6, 2026
+Claude now works with Google Docs, Sheets, and Slides
+Teams that run on Google Workspace can now bring Claude into their files or work on their files directly from Claude, with our new add-on and Google Docs, Sheets, and Slides connectors (in beta).
+Claude Enterprise
+ArticleOct 6, 2026
+We’re expanding the Claude Startups program to help founders build
 Transform how your organization operates with Claude
-See pricing
-See pricingSee pricing
-Contact sales
-Contact salesContact sales
+See pricingContact sales
 Get the developer newsletter
 Product updates, how-tos, community spotlights, and more. Delivered monthly to your inbox.
-Thank you! You’re subscribed.
-Sorry, there was a problem with your submission, please try again later.
-Claude Code
-Productivity
-Design
-Content Creation
-Work
+Please provide your email address if you'd like to receive our monthly developer newsletter. You can unsubscribe at any time.
+Claude Code now supports artifacts | Claude by Anthropic

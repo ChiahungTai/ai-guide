@@ -10,6 +10,8 @@ The Claude Agent SDK provides detailed token usage information for each interact
 
 For complete API documentation, see the [TypeScript SDK reference](/docs/en/agent-sdk/typescript) and [Python SDK reference](/docs/en/agent-sdk/python).
 
+<span id="estimates-not-billing" />
+
 <Warning>
   The `total_cost_usd` and `costUSD` fields are client-side estimates, not authoritative billing data. The SDK computes them locally from a price table bundled at build time, unless a [`modelPricing`](/docs/en/settings-reference#modelpricing) table is in effect. They can drift from what you are actually billed when:
 
@@ -89,11 +91,11 @@ In streaming input mode, read call totals as described in [Track costs in stream
 
 The three result-level fields differ in what they count when the agent spawns [subagents](/docs/en/agent-sdk/subagents). Use `modelUsage`, or `model_usage` in Python, for whole-tree token accounting; the `usage` field undercounts as soon as nesting occurs.
 
-| Field                        | Subagent activity                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------- |
-| `usage`                      | Excluded. Counts only the top-level agent loop, so tokens consumed inside subagents are not added |
-| `total_cost_usd`             | Included. Counts subagent requests alongside the top-level loop                                   |
-| `modelUsage` / `model_usage` | Included. Counts subagent requests alongside the top-level loop, broken down by model             |
+| Field | Subagent activity |
+| - | - |
+| `usage` | Excluded. Counts only the top-level agent loop, so tokens consumed inside subagents are not added |
+| `total_cost_usd` | Included. Counts subagent requests alongside the top-level loop |
+| `modelUsage` / `model_usage` | Included. Counts subagent requests alongside the top-level loop, broken down by model |
 
 In [single message input mode](/docs/en/agent-sdk/streaming-vs-single-mode#single-message-input), when background subagents are still running at the end of the final turn, Claude Code waits for them, up to the cap described in [background tasks at exit](/docs/en/headless#background-tasks-at-exit), before emitting the result. The result's `total_cost_usd`, `duration_api_ms`, and `modelUsage`, or `model_usage` in Python, include the work done during that wait.
 
@@ -227,6 +229,8 @@ Each `query()` call returns `total_cost_usd` on its results. How you combine the
 
 * **Independent calls, with no `resume` or `continue` option**: each result covers only its own call, so add the totals yourself, as the examples below do.
 * **Calls that resume the same session**: Claude Code saves the session's totals to its [transcript](/docs/en/sessions#where-transcripts-are-stored) when the process exits normally and restores them when a later call resumes or forks the session. Each result already includes the session's earlier spend. Read the latest result for the session total; summing results double-counts the restored spend. Before v2.1.277, a session that you resumed through the SDK or `claude -p` started its totals at zero, so each call's results covered only that call.
+
+Either way, the combined figure is still a [client-side estimate](#estimates-not-billing).
 
 In streaming input mode, read each call's total as described in [Track costs in streaming input mode](#track-costs-in-streaming-input-mode). For a call that ended in a crash, see [Recover totals after a session crash](#recover-totals-after-a-session-crash).
 

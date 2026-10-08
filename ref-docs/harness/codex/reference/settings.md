@@ -9,8 +9,10 @@ Open [**Settings**](codex://settings) from the app menu or press
 
 ## General
 
-Require <kbd>Cmd</kbd>+<kbd>Enter</kbd> for multiline prompts, or turn on
-**Prevent sleep while running** so local chats can continue while you step away.
+Choose whether **Enter** sends prompts, or require <kbd>Cmd</kbd>+<kbd>Enter</kbd>
+on macOS or <kbd>Ctrl</kbd>+<kbd>Enter</kbd> on Windows and Linux for multiline
+prompts or every prompt. On macOS and Linux, turn on **Prevent sleep while
+running** so local chats can continue while you step away.
 Under **Follow-up behavior**, choose whether a message sent while ChatGPT works
 should steer the current run or wait for the next run.
 
@@ -80,9 +82,12 @@ code fonts. You can also share your custom theme with friends.
 ## Browser
 
 Use these settings to install or enable the bundled Browser plugin, set up the
-[browser extension](https://learn.chatgpt.com/docs/chrome-extension), and manage allowed and blocked
-websites. ChatGPT asks before using a website unless you've allowed it. Removing
-a blocked site lets ChatGPT ask again before using it in the browser.
+[browser extension](https://learn.chatgpt.com/docs/chrome-extension), and manage browser permissions.
+Under **Agent permissions**, choose default permissions and add exceptions for
+specific websites. Controls include **Browse**, **Download**, and **Upload**,
+with options such as **Requires approval**, **Always allow**, and **Block**.
+Removing a site's custom permissions resets them to the defaults. Your
+organization can restrict these controls.
 
 See [Built-in browser](https://learn.chatgpt.com/docs/browser?surface=app) for browser preview, comment, and
 Computer Use workflows.
@@ -95,11 +100,8 @@ Recording or Accessibility permissions in macOS Privacy & Security settings.
 
 ## Personalization
 
-Choose **Friendly**, **Pragmatic**, or **None** as your default personality. Use
-**None** to disable personality instructions. You can update this at any time.
-
-You can also add your own custom instructions. Editing custom instructions updates your
-[personal instructions in `AGENTS.md`](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+Edit your [personal instructions in `AGENTS.md`](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+for the selected machine. Repository instructions can also apply to your chats.
 
 ## Suggested prompts
 
@@ -108,8 +110,8 @@ start or return to ChatGPT.
 
 ## Memories
 
-Enable Memories, where available, to let ChatGPT carry useful context from past
-chats into future work. See [Memories](https://learn.chatgpt.com/docs/customization/memories)
+In **Personalization**, turn on **Enable Codex memories**, where available, to
+carry useful context from past chats into future work. See [Memories](https://learn.chatgpt.com/docs/customization/memories)
 for setup, storage, and controls for individual chats.
 
 <a id="archived-tasks"></a>

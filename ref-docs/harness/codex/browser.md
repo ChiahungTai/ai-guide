@@ -47,9 +47,9 @@ Use the [browser extension](https://learn.chatgpt.com/docs/chrome-extension) ins
 to work in an existing Chrome, Edge, Brave, Opera, or Vivaldi tab or use your
 regular browser profile.
 
-Open the built-in browser from the toolbar, by clicking a URL, by navigating
-manually, or by pressing <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
-(<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on Windows).
+Select **New tab**, then enter a URL to open the built-in browser. You can also
+open a URL from the chat or press <kbd>Cmd</kbd>+<kbd>T</kbd>
+(<kbd>Ctrl</kbd>+<kbd>T</kbd> on Windows and Linux) to open a browser tab.
 
 
   
@@ -58,6 +58,13 @@ manually, or by pressing <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
 
 
 
+
+## Arrange tabs and chat
+
+Select **Enter full view** to expand the current tab, or **Enter split view**
+to show the chat and tab side by side. Use <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
+(<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on Windows and Linux) to return from
+full view to split view, or to show or hide tabs beside the chat.
 
 ## Search from the address bar
 
@@ -100,8 +107,10 @@ Use the browser to open http://localhost:3000/settings, reproduce the layout
 bug, and fix only the overflowing controls.
 ```
 
-ChatGPT asks before it uses a website unless you have already allowed that
-site. Manage allowed and blocked sites in **Settings > Browser**. ChatGPT also
+In **Settings > Browser > Agent permissions**, choose default permissions for
+browsing, downloads, and uploads, and add exceptions for specific websites.
+Removing a site's custom permissions restores its defaults. Your organization
+can restrict these controls. ChatGPT also
 asks for confirmation before sensitive actions such as submitting information,
 making a purchase, changing permissions, or deleting data. ChatGPT can't
 automate file uploads in the built-in browser.
@@ -131,7 +140,13 @@ layout issues and keep the card structure unchanged.
 When a bug is visible only in the rendered page, use browser comments to give
 ChatGPT precise feedback.
 
-1. Turn on **Annotation mode**.
+
+
+> Illustration: ChatGPT's built-in browser toolbar with the Annotate button highlighted
+
+
+
+1. Select **Annotate** in the browser toolbar to enter **Annotation mode**.
 2. Click an element, or drag to select an area.
 3. Write and save your comment.
 4. Send a message in the chat asking ChatGPT to address the comments.

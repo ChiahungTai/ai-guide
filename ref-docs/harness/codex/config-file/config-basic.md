@@ -18,6 +18,15 @@ The CLI and IDE extension share the same configuration layers. You can use them 
 
 ## Configuration precedence
 
+Requirements constrain behavior; configuration values provide defaults. Local computer access with Work Cloud follows these requirements:
+
+- **Across policies:** A higher-priority policy wins over a lower-priority policy, even when the lower-priority policy is more specific.
+- **Within one policy:** OS-specific environment overrides take priority over all-OS environment overrides, followed by Global.
+- **For local execution:** MDM and legacy managed-device requirements rank above Agent Security. The device's system requirements file ranks below Agent Security.
+- **For Work Cloud:** Work cloud containers retain existing Work Cloud policies. For Work with local access and dots, supported Global policy governs the shared cloud orchestrator when managed policy is enabled; applicable local execution requirements govern the connected computer.
+
+Some requirements have field-specific merge rules. See [Managed configuration](https://learn.chatgpt.com/docs/enterprise/managed-configuration) for policy scope and runtime limits, and the [Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference) for Work compatibility.
+
 Codex resolves values in this order (highest precedence first):
 
 1. CLI flags and `--config` overrides
@@ -53,7 +62,7 @@ Here are a few options people change most often:
 Choose the model Codex uses by default in the CLI and IDE.
 
 ```toml
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 ```
 
 
@@ -86,17 +95,21 @@ matching `default_permissions` value. See [Permissions](https://learn.chatgpt.co
 
 #### Windows sandbox mode
 
-When running Codex natively on Windows, set the native sandbox mode to `elevated` in the `windows` table. Use `unelevated` only if you don't have administrator permissions or if elevated setup fails.
+On Windows, prefer MXC when the device and policy support it. Set a legacy implementation for fallback:
 
 ```toml
 [windows]
-sandbox = "elevated"   # Recommended
-# sandbox = "unelevated" # Fallback if admin permissions/setup are unavailable
+sandbox = "elevated" # Legacy fallback
+
+[features]
+prefer_mxc = true
 ```
+
+Use `unelevated` only when elevated setup is unavailable and your organization's policy permits it. See the [Windows sandbox guide](https://learn.chatgpt.com/docs/windows/windows-sandbox#prefer-mxc-with-legacy-fallback) for compatibility limits and rollout controls.
 
 #### Web search mode
 
-Codex enables web search by default for local chats and serves results from a web search cache. The cache is an OpenAI-maintained index of web results, so cached mode returns pre-indexed results instead of fetching live pages. This reduces exposure to prompt injection from arbitrary live content, but you should still treat web results as untrusted. If you are using `--yolo` or another [full access sandbox setting](https://learn.chatgpt.com/docs/agent-approvals-security#common-sandbox-and-approval-combinations), web search defaults to live results. Choose a mode with `web_search`:
+Codex enables web search by default for local chats and serves results from a web search cache. The cache is an OpenAI-maintained index of web results, so cached mode returns pre-indexed results instead of fetching live pages. This reduces exposure to prompt injection from arbitrary live content. Treat web results as untrusted. If you are using `--yolo` or another [full access sandbox setting](https://learn.chatgpt.com/docs/agent-approvals-security#common-sandbox-and-approval-combinations), web search defaults to live results. Choose a mode with `web_search`:
 
 - `"cached"` (default) serves results from the web search cache.
 - `"indexed"` permits external web access only when the search index gates the request.

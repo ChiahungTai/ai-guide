@@ -44,8 +44,7 @@
 | --- | --- | --- |
 | `GROK_THEME` | built-in | Color theme. |
 | `GROK_SHOW_THINKING_BLOCKS` | `1` | Show thinking/reasoning blocks in the TUI (`1`/`0`). |
-| `GROK_GROUP_TOOL_VERBS` | `1` | Fold consecutive read/search/list tool rows (`1`/`0`). |
-| `GROK_COLLAPSED_EDIT_BLOCKS` | `0` | Collapse edits to one-line `+N/-M` summaries (`1`/`0`). |
+| `GROK_TOOL_CALL_DENSITY` | `compact-all-grouped` | Tool-call density: `detailed`, `compact-shells`, `compact-ungrouped`, `compact-grouped` or `compact-all-grouped`. |
 | `GROK_PROMPT_SUGGESTIONS` | `1` | Next-prompt ghost text after each turn (`1`/`0`). |
 | `GROK_SCROLL_SPEED` | `50` | Mouse/trackpad scroll speed (`1`–`100`). |
 | `GROK_SCROLL_MODE` | `auto` | Scroll input: `auto`, `wheel`, or `trackpad`. |
@@ -161,13 +160,12 @@ String fields such as `url`, `command`, `args`, `env`, and `headers` support `${
 | Setting | Section | Values / default | Description |
 | --- | --- | --- | --- |
 | `respect_gitignore` | `[tools]` | `true` / `false` (default `false`) | When `true`, search and read tools skip gitignored files. |
-| `disable_zdr_incompatible_tools` | `[tools]` | `true` / `false` (default `false`) | Restrict tools needing xAI-hosted output (video) under ZDR; without a configured output bucket they return setup guidance instead of generating. |
+| `disable_zdr_incompatible_tools` | `[tools]` | `true` / `false` (default `false`) | Restrict tools needing SpaceXAI-hosted output (video) under ZDR; without a configured output bucket they return setup guidance instead of generating. |
 | `zdr_video_output_s3` | `[tools.zdr_video_output_s3]` | table | User-supplied S3 bucket for ZDR video output — see [Video Output Storage under ZDR](/build/settings/zdr-video-storage). |
 | `file_toolset` | `[toolset]` | `standard` (default) | `hashline` | File edit tool scheme. |
 | `timeout_secs` | `[toolset.bash]` | seconds (default `120`) | Foreground bash command timeout. |
 | `output_byte_limit` | `[toolset.bash]` | bytes (default `20000`) | Max captured bash output. |
 | `max_timeout_secs` | `[toolset.bash]` | seconds (default `36000`) | Cap on model-requested foreground timeouts. |
-| `auto_background_on_timeout` | `[toolset.bash]` | `true` / `false` (default `true`) | Auto-background the command on timeout. |
 | `proxy_endpoint` | `[toolset.web_fetch]` | URL | Egress proxy for `web_fetch`. |
 | `allowed_domains` | `[toolset.web_fetch]` | string array | Domain allowlist override for `web_fetch`. |
 
@@ -220,7 +218,8 @@ A non-empty `deny` list is enforced at the kernel level when the sandbox can be 
 | --- | --- | --- | --- |
 | `compact_mode` | `[ui]` | `true` / `false` (default `false`) | Denser message padding. Also `/compact-mode`. |
 | `screen_mode` | `[ui]` | `fullscreen` (default when unset) | `minimal` | Default render mode for plain `grok`. Restart required. |
-| `show_timestamps` | `[ui]` | `true` / `false` (default `true`) | Clock time next to messages. Also `/timestamps`. |
+| `timestamps` | `[ui]` | `off` | `minimal` | `on` (default `on`) | Clock time on messages. `minimal` shows it only on prompts and `Worked for` lines. Also `/timestamps`. |
+| `show_timestamps` | `[ui]` | `true` / `false` | Legacy on/off form of `timestamps` (`true` is `on`, `false` is `off`). Use `timestamps`. |
 | `show_timeline` | `[ui]` | `true` / `false` (default `false`) | Per-turn tick rail instead of the scrollbar. |
 | `page_flip_on_send` | `[ui]` | `true` / `false` (default `true`) | Snap the sent prompt to the top of the viewport. |
 | `max_thoughts_width` | `[ui]` | `40`–`500` (default `120`) | Column width for the thoughts panel. |
@@ -235,8 +234,7 @@ A non-empty `deny` list is enforced at the kernel level when the sandbox can be 
 | `keep_text_selection` | `[ui]` | `flash` (default) | `hold` | `word_select` | In-app selection: brief flash, hold, or double-click word / triple-click paragraph select. |
 | `cursor_blink` | `[ui]` | `true` / `false` (unset inherits terminal) | Force blinking (`true`) or steady (`false`) block cursor. |
 | `show_thinking_blocks` | `[ui]` | `true` / `false` (default `true`) | Show thinking/reasoning blocks while streaming. |
-| `group_tool_verbs` | `[ui]` | `true` / `false` (default `true`) | Fold consecutive read/search/list tool rows into one summary. |
-| `collapsed_edit_blocks` | `[ui]` | `true` / `false` (default `false`) | Show edits as one-line `+N/-M` summaries. |
+| `tool_call_density` | `[ui]` | `detailed` | `compact-shells` | `compact-ungrouped` | `compact-grouped` | `compact-all-grouped` (default) | How much of each tool call shows, from full edit diffs and shell output to folded summary rows. Also `/density`. |
 | `render_mermaid` | `[ui]` | `auto` (default) | `on` | `off` | Mermaid diagrams: clickable open row (`auto`/`on`) or raw source (`off`). |
 | `scroll_speed` | `[ui]` | `1`–`100` (default `50`) | Mouse/trackpad scroll speed multiplier. |
 | `scroll_mode` | `[ui]` | `auto` (default) | `wheel` | `trackpad` | Force wheel vs trackpad when auto-detection is wrong. |

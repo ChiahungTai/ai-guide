@@ -211,9 +211,12 @@ Before configuring Claude Code, you need:
 
 ### 1. Configure AWS credentials
 
-Claude Code supports two authentication methods for Claude Platform on AWS. Choose the method that fits how your team manages access.
+Claude Code supports two authentication methods for Claude Platform on AWS. Choose the method that fits how your team manages access:
 
-**Option A: AWS credentials with SigV4**
+* [AWS credentials with SigV4](#use-aws-credentials-with-sigv4): authenticate as an IAM principal, with credentials from the standard AWS credential chain
+* [Workspace API key](#use-a-workspace-api-key): authenticate with a long-lived key you generate in the AWS Console
+
+#### Use AWS credentials with SigV4
 
 Claude Code signs requests with SigV4 using the standard AWS credential chain: environment variables, shared credentials in `~/.aws/credentials`, IAM roles, AWS SSO sessions, and any other sources the AWS SDK supports.
 
@@ -226,7 +229,7 @@ export AWS_PROFILE=my-profile
 
 For CI and automation, give the runner an IAM role with permission to invoke the Anthropic service and set `AWS_REGION`. The credential chain picks the role up automatically.
 
-If your SSO credentials expire mid-session, configure [`awsAuthRefresh`](/docs/en/amazon-bedrock#advanced-credential-configuration) so Claude Code re-runs your login command and retries instead of failing. Automatic refresh on Claude Platform on AWS requires Claude Code v2.1.198 or later; earlier versions stop with a prompt to run `/login`, which can't refresh AWS credentials. Add the command to your [settings file](/docs/en/settings), such as `~/.claude/settings.json`:
+If your SSO credentials expire mid-session, configure [`awsAuthRefresh`](/docs/en/amazon-bedrock#advanced-credential-configuration) so Claude Code re-runs your login command and retries instead of failing. Add the command to your [settings file](/docs/en/settings), such as `~/.claude/settings.json`:
 
 ```json theme={null}
 {
@@ -236,9 +239,9 @@ If your SSO credentials expire mid-session, configure [`awsAuthRefresh`](/docs/e
 
 Claude Code also runs this command at startup when it can't validate your existing AWS credentials, and shows the command's output in an `Authentication` panel until the login completes.
 
-With `awsAuthRefresh` configured, run `/login`, select **3rd-party platform**, then select **Claude Platform on AWS · refresh credentials** under **Using 3rd-party platforms**. Claude Code runs the configured command and re-reads your AWS credentials without a restart. This option requires Claude Code v2.1.186 or later.
+With `awsAuthRefresh` configured, run `/login`, select **3rd-party platform**, then select **Claude Platform on AWS · refresh credentials** under **Using 3rd-party platforms**. Claude Code runs the configured command and re-reads your AWS credentials without a restart.
 
-**Option B: Workspace API key**
+#### Use a workspace API key
 
 A workspace API key is a long-lived secret, useful when you don't want to manage federated AWS credentials. Generate one in the AWS Console under **Claude Platform on AWS → API keys** and set it as `ANTHROPIC_AWS_API_KEY`:
 

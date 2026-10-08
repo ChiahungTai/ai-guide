@@ -1,20 +1,4 @@
-Projects redesigned: from folder to conversation | Claude by Anthropic
-Explore here
-Projects redesigned: from folder to conversation
-A new experience for Claude projects, now available in beta in Claude Code
-Category
-Product announcements
-Claude Code
-Product
-Claude Code
-Date
-September 17, 2026
-Reading time
-5
-min
-Share
-Copy link
-https://claude.com/blog/projects-redesigned
+Skip to main content
 Managing multiple sessions across a build used to require you to divide the work, juggle handoffs, and stitch the results back together. Now in a Claude Code project, you describe what needs to get done and Claude manages the work.
 Claude scopes the request, delegates the work, coordinates parallel threads, reviews the outputs, and assembles the finished result. You can steer progress throughout, even from your phone, and it keeps working after you step away from your computer.
 For example, configure a project and set a goal to reduce your app's checkout p75 latency. Then ask Claude to profile each endpoint, test optimizations, and open PRs in parallel threads. Or connect your API, web, and mobile repos and set a goal to retire a deprecated v1 endpoint. Claude creates a thread per repo to migrate the callers, run the tests, open PRs, and then tells you which ones need to merge first.
@@ -39,43 +23,24 @@ What's next
 Projects can run several threads at once, and each one is a full Claude Code session. Because of this, projects can reach usage limits faster. You can check project specific usage and select the model and effort levels used by the coordinator chat as well as the worker threads.
 Threads run in the cloud today; running on your machine alongside your local tools and code and behind your network is coming very soon.
 Start using projects.
-No items found.
-PrevPrev
-0/5
-NextNext
-eBook
-FAQ
-No items found.
-Related posts
-Explore more product news and best practices for teams building with Claude.
-Oct 20, 2025
-Claude Code on the web
-Product announcements
-Claude Code on the webClaude Code on the web
-Claude Code on the webClaude Code on the web
-Sep 16, 2026
-Claude Cowork and chat are now one Claude
-Product announcements
-Claude Cowork and chat are now one ClaudeClaude Cowork and chat are now one Claude
-Claude Cowork and chat are now one ClaudeClaude Cowork and chat are now one Claude
-Sep 23, 2026
-Claude Marketplace: one place to discover plugins, agents, and services from our partners
-Product announcements
-Claude Marketplace: one place to discover plugins, agents, and services from our partnersClaude Marketplace: one place to discover plugins, agents, and services from our partners
-Claude Marketplace: one place to discover plugins, agents, and services from our partnersClaude Marketplace: one place to discover plugins, agents, and services from our partners
-Sep 23, 2026
-How to prepare for AI-driven code modernization projects
-Enterprise AI
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
-How to prepare for AI-driven code modernization projects How to prepare for AI-driven code modernization projects
+ArticleOct 8, 2026
+Build live dashboards and animate explainers with Claude
+Claude Dashboards and Claude Motion are now in beta. Docs, Slides, and Design are out of beta and on every Claude plan, including Free.
+Claude appsClaude Design
+2 more: Claude Cowork and Claude CodeClaude CoworkClaude Code
+ArticleOct 7, 2026
+Claude Haiku 5.5
+Introducing Claude Haiku 5.5: the cheapest, fastest, and most capable small model we’ve ever released.
+(opens in new tab)
+ArticleOct 6, 2026
+Claude now works with Google Docs, Sheets, and Slides
+Teams that run on Google Workspace can now bring Claude into their files or work on their files directly from Claude, with our new add-on and Google Docs, Sheets, and Slides connectors (in beta).
+Claude Enterprise
+ArticleOct 6, 2026
+We’re expanding the Claude Startups program to help founders build
 Transform how your organization operates with Claude
-See pricing
-See pricingSee pricing
-Contact sales
-Contact salesContact sales
+See pricingContact sales
 Get the developer newsletter
 Product updates, how-tos, community spotlights, and more. Delivered monthly to your inbox.
-Thank you! You’re subscribed.
-Sorry, there was a problem with your submission, please try again later.
-Claude Code
-Coding
+Please provide your email address if you'd like to receive our monthly developer newsletter. You can unsubscribe at any time.
+Projects redesigned: from folder to conversation | Claude by Anthropic

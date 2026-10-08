@@ -65,7 +65,8 @@ Use `/context` to check current context usage.
 | `/compact-mode` | Toggle denser UI layout |
 | `/multiline` (alias `/ml`) | Toggle multiline input |
 | `/vim-mode` | Toggle vim-style scrollback keybindings |
-| `/timestamps` | Toggle message timestamps |
+| `/timestamps <mode>` | Set which messages show the clock time: `off`, `minimal`, or `on` |
+| `/density <level>` | Set how much of each tool call the transcript shows: `Detailed`, `Diff focus`, `Balanced`, `Grouped`, or `Compact` |
 | `/terminal-setup` | Check terminal and clipboard setup |
 | `/config-agents` (alias `/agents`) | Manage agent definitions |
 | `/personas` | Manage personas |

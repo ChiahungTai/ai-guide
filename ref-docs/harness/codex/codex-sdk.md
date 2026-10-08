@@ -88,37 +88,35 @@ in to newer prerelease builds.
 
 ### Usage
 
-Start Codex, create a thread, and run a prompt:
+Start Codex, create a thread, and run a prompt. The examples use GPT-6.1 Sol,
+which must be available to your signed-in account. Otherwise, omit `model` to
+use your configured default. See [GPT-6.1 Sol availability by plan](https://learn.chatgpt.com/docs/models#gpt-6.1-sol).
 
 ```python
 from openai_codex import Codex, Sandbox
-
 with Codex() as codex:
     thread = codex.thread_start(
-        model="gpt-6-sol",
+        model="gpt-6.1-sol",
         sandbox=Sandbox.workspace_write,
     )
     result = thread.run("Make a plan to diagnose and fix the CI failures")
     print(result.final_response)
 ```
 
+
 Use `AsyncCodex` when your application is already asynchronous:
 
 ```python
 import asyncio
-
 from openai_codex import AsyncCodex
-
-
 async def main() -> None:
     async with AsyncCodex() as codex:
-        thread = await codex.thread_start(model="gpt-6-sol")
+        thread = await codex.thread_start(model="gpt-6.1-sol")
         result = await thread.run("Implement the plan")
         print(result.final_response)
-
-
 asyncio.run(main())
 ```
+
 
 ### Sandbox presets
 

@@ -74,6 +74,34 @@ You can also switch inside the TUI with `/model <name>`.
 
 [`grok-4.7`](/developers/models/grok-4.7), SpaceXAI's latest model, is available directly on the xAI API. Drop it into your own agent loop, IDE integration, or coding tool.
 
+```javascript customLanguage="javascriptAISDK"
+import { xai } from '@ai-sdk/xai';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: xai.responses('grok-4.7'),
+  prompt: 'Fix this function and explain the bug: function median(a){a.sort();return a[a.length/2]}',
+});
+
+console.log(text);
+```
+
+```python customLanguage="pythonOpenAISDK"
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="<YOUR_XAI_API_KEY_HERE>",
+    base_url="https://api.x.ai/v1",
+)
+
+response = client.responses.create(
+    model="grok-4.7",
+    input="Fix this function and explain the bug: function median(a){a.sort();return a[a.length/2]}",
+)
+
+print(response.output_text)
+```
+
 ```bash customLanguage="bash"
 curl https://api.x.ai/v1/responses \
   -H "Authorization: Bearer $XAI_API_KEY" \
@@ -95,34 +123,6 @@ chat = client.chat.create(model="grok-4.7")
 chat.append(user("Fix this function and explain the bug: function median(a){a.sort();return a[a.length/2]}"))
 
 print(chat.sample().content)
-```
-
-```python customLanguage="pythonOpenAISDK"
-from openai import OpenAI
-
-client = OpenAI(
-    api_key="<YOUR_XAI_API_KEY_HERE>",
-    base_url="https://api.x.ai/v1",
-)
-
-response = client.responses.create(
-    model="grok-4.7",
-    input="Fix this function and explain the bug: function median(a){a.sort();return a[a.length/2]}",
-)
-
-print(response.output_text)
-```
-
-```javascript customLanguage="javascriptAISDK"
-import { xai } from '@ai-sdk/xai';
-import { generateText } from 'ai';
-
-const { text } = await generateText({
-  model: xai.responses('grok-4.7'),
-  prompt: 'Fix this function and explain the bug: function median(a){a.sort();return a[a.length/2]}',
-});
-
-console.log(text);
 ```
 
 ## Features
