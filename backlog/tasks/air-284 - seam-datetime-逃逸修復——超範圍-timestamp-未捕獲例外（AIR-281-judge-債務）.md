@@ -1,9 +1,10 @@
 ---
 id: AIR-284
 title: seam datetime 逃逸修復——超範圍 timestamp 未捕獲例外（AIR-281 judge 債務）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-08 12:49'
+updated_date: '2026-10-08 13:09'
 labels:
   - dutymail
 dependencies: []
@@ -35,3 +36,9 @@ flowchart LR
 <!-- DOD:BEGIN -->
 - [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【bridge 裁決融入——三方收斂】bridge 主動寄裁定（db807-air284-ruling-001＋addendum-001）：(b) 嚴格整源 source_malformed＋riders（診斷指名問題列；真實壞列常態化才設計 malformedRows deliberate feature）＋codex 補強（consumer contract source_malformed 降級驗證；except 限縮 ValueError/OverflowError/OSError）。我方雙腿諮詢（codex job-muzjh5uv＋GLM job-muzjh6b9）獨立同案——三方收斂，author 已依此實作。
+<!-- SECTION:NOTES:END -->

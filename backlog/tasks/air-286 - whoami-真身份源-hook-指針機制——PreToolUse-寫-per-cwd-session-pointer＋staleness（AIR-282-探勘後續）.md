@@ -3,9 +3,10 @@ id: AIR-286
 title: >-
   whoami 真身份源 hook 指針機制——PreToolUse 寫 per-cwd session pointer＋staleness（AIR-282
   探勘後續）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-08 12:50'
+updated_date: '2026-10-08 13:08'
 labels:
   - dutymail
 dependencies: []
