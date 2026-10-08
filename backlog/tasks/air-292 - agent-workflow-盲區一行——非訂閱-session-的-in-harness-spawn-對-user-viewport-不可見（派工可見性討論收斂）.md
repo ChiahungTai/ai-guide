@@ -3,10 +3,10 @@ id: AIR-292
 title: >-
   agent-workflow 盲區一行——非訂閱 session 的 in-harness spawn 對 user viewport
   不可見（派工可見性討論收斂）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 23:37'
-updated_date: '2026-10-08 23:42'
+updated_date: '2026-10-08 23:44'
 labels:
   - instruction
 dependencies: []
