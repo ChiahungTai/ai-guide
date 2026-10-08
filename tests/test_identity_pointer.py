@@ -111,21 +111,21 @@ class TestHookSilentFailOpen:
     def test_bad_json_silent_no_write(self, tmp_path: Path, capsys) -> None:
         state_dir = tmp_path / "state"
         assert _hook.run("{not json", writer=_hook.make_writer(state_dir)) == (0, "")
-        assert not (state_dir / "identity").exists()
+        assert list(state_dir.glob("*.json")) == []
         assert capsys.readouterr() == ("", "")
 
     def test_empty_stdin_silent_no_write(self, tmp_path: Path) -> None:
         state_dir = tmp_path / "state"
         assert _hook.run("", writer=_hook.make_writer(state_dir)) == (0, "")
         assert _hook.run("   \n", writer=_hook.make_writer(state_dir)) == (0, "")
-        assert not (state_dir / "identity").exists()
+        assert list(state_dir.glob("*.json")) == []
 
     def test_non_dict_payload_silent_no_write(self, tmp_path: Path) -> None:
         state_dir = tmp_path / "state"
         write = _hook.make_writer(state_dir)
         assert _hook.run("[1,2,3]", writer=write) == (0, "")
         assert _hook.run('"str"', writer=write) == (0, "")
-        assert not (state_dir / "identity").exists()
+        assert list(state_dir.glob("*.json")) == []
 
     def test_missing_or_non_string_fields_silent_no_write(self, tmp_path: Path) -> None:
         state_dir = tmp_path / "state"
@@ -138,7 +138,7 @@ class TestHookSilentFailOpen:
             json.dumps({"session_id": SID, "cwd": ""}),  # 空 cwd
         ):
             assert _hook.run(payload, writer=write) == (0, ""), payload
-        assert not (state_dir / "identity").exists()
+        assert list(state_dir.glob("*.json")) == []
 
     def test_writer_crash_swallowed_silent_exit0(self, tmp_path: Path) -> None:
         """核心寫入失敗（OSError 等）——advisory 護甲：恆 (0, "")。"""

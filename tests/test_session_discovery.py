@@ -848,10 +848,25 @@ class TestWhoamiPointer:
         assert identity["identity_source"] == "workspace-proxy"
 
     def test_pointer_from_other_workspace_ignored(self, tmp_path: Path) -> None:
-        """cwd_realpath 與查詢 cwd 不一致（複製植入）→不信任→proxy。"""
+        """cwd_realpath 與查詢 cwd 不一致（複製植入）→不信任→proxy。
+        codex F2 修：指針種在「目前 workspace 的 hash 路徑」但內嵌
+        cwd_realpath 為他處——真正驗到讀側的複製植入偵測，非路徑碰巧缺席。"""
         identity_dir = tmp_path / "id"
         db = _store(tmp_path, _srow("sess_other", updated=_MS))
-        _seed_pointer(identity_dir, "sess_elsewhere", cwd="/somewhere/else")
+        real = _mod._pointer_path(WS, identity_dir)
+        real.parent.mkdir(parents=True, exist_ok=True)
+        real.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "harness": "zcode",
+                    "session_id": "sess_other",
+                    "cwd_realpath": "/somewhere/else",
+                    "updated_at_us": _NOW_US,
+                }
+            ),
+            encoding="utf-8",
+        )
         identity = _mod._whoami_raw(
             db, cwd=WS, identity_dir=identity_dir, now_us=_NOW_US
         )

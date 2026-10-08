@@ -293,12 +293,16 @@ def write_identity_pointer(
         path.parent.mkdir(parents=True, exist_ok=True)
         os.chmod(path.parent, 0o700)  # mkdir mode 受 umask 影響——顯式 chmod 保證
         tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
-        tmp.write_text(
-            json.dumps(doc, ensure_ascii=False, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, path)
+        try:
+            tmp.write_text(
+                json.dumps(doc, ensure_ascii=False, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, path)
+        except OSError:
+            tmp.unlink(missing_ok=True)  # GLM F1：中途失敗不留 .tmp 殘留
+            raise
     except OSError:
         return False
     return True
