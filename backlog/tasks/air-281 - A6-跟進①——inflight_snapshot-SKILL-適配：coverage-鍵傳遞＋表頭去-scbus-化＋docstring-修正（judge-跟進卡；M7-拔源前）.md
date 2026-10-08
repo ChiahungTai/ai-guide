@@ -3,7 +3,7 @@ id: AIR-281
 title: >-
   A6 跟進①——inflight_snapshot/SKILL 適配：coverage 鍵傳遞＋表頭去 scbus 化＋docstring 修正（judge
   跟進卡；M7 拔源前）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-07 23:10'
 updated_date: '2026-10-08 12:39'
