@@ -189,6 +189,109 @@ class TestScanMapping:
 
 
 # ---------------------------------------------------------------------------
+# 列值損壞契約（AIR-284，bridge 裁決 (b) 嚴格——整源 source_malformed）
+# ---------------------------------------------------------------------------
+
+
+class TestCorruptTimestampContract:
+    """store 列含超範圍 timestamp（`time_updated` 無法以 datetime 表示）＝
+    typed 拒用**整個來源**——禁 row-skip、禁 plausibility window 二次猜測
+    （crash-only：損壞比缺失危險）。驗證在共同來源路徑（`_query_store`）
+    ——list/find/whoami 三路同受防護，`_whoami_raw` 不得繞過。"""
+
+    _BAD = 10**18  # ms 欄位值；×1000 → us → /1e6 = 1e12 秒＝year 33658 超範圍
+
+    def test_list_valid_and_corrupt_rows_exit3_envelope_stdout_empty(
+        self, tmp_path: Path, capsys
+    ) -> None:
+        """驗收③：有效列與損壞列並存→整體 exit 3、stdout 空、stderr typed
+        envelope code=source_malformed（部分成功比明確失敗危險——list 也是
+        address resolution 上游，禁 row-skip 式靜默縮水）。"""
+        db = _store(tmp_path, _srow("sess_ok"), _srow("sess_bad", updated=self._BAD))
+        rc = _mod.main(
+            ["list", "--json", "--labels-file", str(tmp_path / "labels.json")],
+            db_path=db,
+        )
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        err = json.loads(captured.err)
+        assert err["schemaVersion"] == 1
+        assert err["ok"] is False
+        assert err["error"]["code"] == "source_malformed"
+
+    def test_diagnostic_names_session_field_and_value(self, tmp_path: Path) -> None:
+        """驗收②：診斷載荷指名問題列——session key＋欄位名（last_seen_us）
+        ＋原始值（fail-loud 價值＝可行動 cleanup）。"""
+        db = _store(tmp_path, _srow("sess_bad", updated=self._BAD))
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod.collect_rows(db_path=db)
+        assert ei.value.code == "source_malformed"
+        assert "sess_bad" in ei.value.message
+        assert "last_seen_us" in ei.value.message
+        assert str(self._BAD) in ei.value.message
+
+    def test_find_rejects_whole_source_even_when_corrupt_row_not_candidate(
+        self, tmp_path: Path
+    ) -> None:
+        """整源語義決斷例：損壞列非 find 候選（不同 workspace）仍拒用——
+        查詢範圍內任一列壞即整次 source_malformed。"""
+        db = _store(
+            tmp_path,
+            _srow("sess_ok", updated=_MS),
+            _srow("sess_bad", ws="/other", updated=self._BAD),
+        )
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod.find_session(
+                harness="zcode",
+                workspace_root=WS,
+                sidecar=tmp_path / "labels.json",
+                db_path=db,
+            )
+        assert ei.value.code == "source_malformed"
+
+    def test_whoami_corrupt_row_maps_whoami_malformed(self, tmp_path: Path) -> None:
+        """whoami 路徑同類來源損壞映射 whoami_malformed（既有 remap 面）——
+        共同路徑驗證不得被 `_whoami_raw` 繞過。"""
+        db = _store(tmp_path, _srow("sess_bad", updated=self._BAD))
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod._whoami_raw(db, cwd=WS)
+        assert ei.value.code == "whoami_malformed"
+
+    def test_whoami_cli_corrupt_row_exit3_envelope(
+        self, tmp_path: Path, capsys, monkeypatch
+    ) -> None:
+        ws_dir = tmp_path / "ws"
+        ws_dir.mkdir()
+        db = _store(tmp_path, _srow("sess_bad", ws=str(ws_dir), updated=self._BAD))
+        monkeypatch.chdir(ws_dir)
+        rc = _mod.main(["whoami"], db_path=db)
+        assert rc == 3
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert json.loads(captured.err)["error"]["code"] == "whoami_malformed"
+
+    @pytest.mark.parametrize("bad_ts", [float("inf"), float("-inf"), 10**18, -(10**18)])
+    def test_extreme_values_raise_typed_never_bare_exception(
+        self, bad_ts: object, tmp_path: Path
+    ) -> None:
+        """驗收①：極端時間戳（±inf／±超範圍）→ typed DiscoveryError——
+        ValueError/OverflowError/OSError 不得逃出 DiscoveryError 邊界。"""
+        db = _store(tmp_path, _srow("sess_bad", updated=bad_ts))
+        with pytest.raises(_mod.DiscoveryError) as ei:
+            _mod.collect_rows(db_path=db)
+        assert ei.value.code == "source_malformed"
+
+    def test_null_timestamp_keeps_missing_value_semantics(self, tmp_path: Path) -> None:
+        """NULL 保留既有合法缺值語義（codex 腿契約第 3 條）——防護只針對
+        「存在且無法表示」的值，非數值/缺值路徑零變。"""
+        db = _store(tmp_path, _srow("sess_nots", created=None, updated=None))
+        out = _mod.collect_rows(db_path=db)
+        assert out["rows"][0]["last_seen_iso"] is None
+        assert out["rows"][0]["age_min"] is None
+
+
+# ---------------------------------------------------------------------------
 # 正規化 rows＋label 合併
 # ---------------------------------------------------------------------------
 

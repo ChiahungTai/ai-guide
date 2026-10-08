@@ -7,8 +7,9 @@
 - target 解析：已知 session 第一路＝scbus send；未知／歧義／self／ended／
   discovery-unavailable fail-closed 降 manual paste fallback；rows 形狀＝
   session_discovery seam 正規化 rows（`label` 鍵——AIR-254.1）。
-- consumer contract（AIR-273）：discovery exit 3（source_unavailable／
-  whoami_unavailable）＝源缺席 → FALLBACK_MANUAL（reason=
+- consumer contract（AIR-273；AIR-284 rider 納入列值損壞）：discovery exit 3
+  （source_unavailable／source_malformed／whoami_unavailable／
+  whoami_malformed）＝源缺席或損壞 → FALLBACK_MANUAL（reason=
   discovery-unavailable）、直送第一路不可達——即使 rows 內容形式上
   match 也不得走 known-direct。
 - consent gate：跨 ownership envelope 直送必帶 consent.evidence（AI 發起
@@ -17,6 +18,7 @@
 """
 
 import json
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -285,6 +287,42 @@ class TestResolveTarget:
             discovery_unavailable=True,
         )
         assert r.disposition == _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.reason == "discovery-unavailable"
+
+    def test_source_malformed_envelope_maps_to_same_manual_fallback(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """consumer contract（AIR-284 rider）：seam 列值損壞（超範圍
+        timestamp）以 `source_malformed` typed envelope 終止——同一 exit 3
+        語義映射 `--discovery-unavailable` → FALLBACK_MANUAL、禁
+        KNOWN_DIRECT。不能只修 producer 假設 consumer 自動降級——降級
+        面由本測試以真實 producer 輸出綁定。"""
+        seam = load_module("scripts/session_discovery.py")
+        db = tmp_path / "store.sqlite"
+        con = sqlite3.connect(db)
+        con.execute(
+            "CREATE TABLE session ("
+            "id TEXT, directory TEXT, title TEXT, time_created INTEGER,"
+            " time_updated INTEGER, time_archived INTEGER, task_type TEXT)"
+        )
+        con.execute(
+            "INSERT INTO session VALUES (?,?,?,?,?,?,?)",
+            ("sess-a", "/w", None, None, 10**18, None, "interactive"),
+        )
+        con.commit()
+        con.close()
+        assert seam.main(["list", "--json"], db_path=db) == 3
+        envelope = json.loads(capsys.readouterr().err)
+        assert envelope["error"]["code"] == "source_malformed"
+        r = _mod.resolve_target(
+            "sess-a",
+            [],  # rows 不可得——typed 拒用整源
+            own_session_id="sess-me",
+            own_workspace_root="/w",
+            discovery_unavailable=True,
+        )
+        assert r.disposition is _mod.TargetDisposition.FALLBACK_MANUAL
+        assert r.disposition is not _mod.TargetDisposition.KNOWN_DIRECT
         assert r.reason == "discovery-unavailable"
 
     def test_empty_rows_without_flag_still_no_match(self) -> None:

@@ -202,10 +202,12 @@ def resolve_target(
     fail-closed（與 scbus send 對撞 id fail-closed 同姿）；own ownership
     無法確立時 cross_ownership 恆 True（consent gate fail-closed）。
 
-    discovery_unavailable=True（AIR-273 consumer contract）＝session_discovery
-    以 exit 3 typed envelope 終止（source_unavailable／whoami_unavailable）
-    ——discovery 源缺席，rows 不可得也不可信：跳過匹配逕降 fallback-manual
-    （reason=discovery-unavailable），直送第一路不可達（禁 direct send）。
+    discovery_unavailable=True（AIR-273 consumer contract；AIR-284 rider 納入
+    列值損壞）＝session_discovery 以 exit 3 typed envelope 終止
+    （source_unavailable／source_malformed／whoami_unavailable／
+    whoami_malformed）——discovery 源缺席或損壞，rows 不可得也不可信：
+    跳過匹配逕降 fallback-manual（reason=discovery-unavailable），直送
+    第一路不可達（禁 direct send）。
     """
     if not isinstance(target, str) or not target:
         raise DeliveryContractError("target 不得為空——交接目標須可指認")
@@ -374,7 +376,8 @@ def _cli(argv: list[str]) -> int:
         "--discovery-unavailable",
         action="store_true",
         help=(
-            "session_discovery exit 3（source_unavailable／whoami_unavailable）"
+            "session_discovery exit 3（source_unavailable／source_malformed"
+            "／whoami_unavailable／whoami_malformed——源缺席或損壞）"
             "——跳過 rows 解析，逕降 fallback-manual（reason=discovery-unavailable）"
         ),
     )

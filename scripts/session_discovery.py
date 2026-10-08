@@ -109,6 +109,39 @@ def _ms_to_us(value: Any) -> int | float | None:
     return None
 
 
+# datetime.fromtimestamp 對超範圍／非有限輸入的完整例外族（AIR-284 機驗：
+# ±inf→OverflowError、NaN／year 超界→ValueError、平台 time_t 溢位→OSError
+# 皆在族內）——禁擴大（不得掩蓋自身缺陷）。
+_TIMESTAMP_ERRORS = (ValueError, OverflowError, OSError)
+
+
+def _require_representable_last_seen(row: dict[str, Any]) -> None:
+    """列值防護（AIR-284，bridge 裁決案 (b) 嚴格）：`time_updated` 存在但
+    無法以 datetime 表示（超範圍／非有限）＝`source_malformed`——typed 拒用
+    **整個來源**，禁 row-skip、禁 plausibility window 二次猜測（crash-only
+    ：損壞比缺失危險；部分成功比明確失敗危險——list 亦是 address
+    resolution 上游）。診斷三要素：session key＋欄位名（seam 欄位
+    `last_seen_us`）＋原始 store 值（fail-loud＝可行動 cleanup）。
+
+    驗證位置＝共同來源處理路徑（`_query_store`，本函式由其逐列呼叫）——
+    list/find/whoami 三路同受防護，`_whoami_raw` 不得繞過（不可只包
+    `_last_seen_iso`）。NULL／非數值不在此列——保留既有合法缺值語義
+    （`last_seen_iso`/`age_min` 落 None）。"""
+    raw = row.get("time_updated")
+    us = _ms_to_us(raw)
+    if us is None:
+        return
+    try:
+        datetime.fromtimestamp(us / 1_000_000, tz=UTC)
+    except _TIMESTAMP_ERRORS as exc:
+        raise DiscoveryError(
+            "source_malformed",
+            f"session store 列含超範圍 timestamp：session {row.get('id')}"
+            f" 欄位 last_seen_us（store time_updated）={raw!r}"
+            f" 無法以 datetime 表示（{exc}）——整源拒用",
+        ) from exc
+
+
 def _query_store(
     db_path: Path, workspace: str | None = None
 ) -> list[dict[str, Any]]:
@@ -119,8 +152,9 @@ def _query_store(
     不匹配（落 typed unavailable/no-match，fail-closed）。
 
     源缺席（檔案不存在）＝`source_unavailable`；已開檔但結構／內容損壞
-    （非 DB 檔、缺表缺欄、鎖死逾時）＝`source_malformed`——typed
-    fail-closed，CLI 層轉 exit 3 統一 envelope。`subagent_child` 不列。
+    （非 DB 檔、缺表缺欄、鎖死逾時、**列值超範圍 timestamp**——AIR-284
+    契約 (b) 整源拒用）＝`source_malformed`——typed fail-closed，CLI 層
+    轉 exit 3 統一 envelope。`subagent_child` 不列。
     """
     if not db_path.exists():
         raise DiscoveryError("source_unavailable", f"session store 缺席：{db_path}")
@@ -134,14 +168,16 @@ def _query_store(
         con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5.0)
         try:
             con.row_factory = sqlite3.Row
-            rows = con.execute(sql, params).fetchall()
+            rows = [dict(row) for row in con.execute(sql, params).fetchall()]
         finally:
             con.close()
     except sqlite3.Error as exc:
         raise DiscoveryError(
             "source_malformed", f"session store 查詢失敗：{exc}"
         ) from exc
-    return [dict(row) for row in rows]
+    for row in rows:
+        _require_representable_last_seen(row)
+    return rows
 
 
 def _to_session(row: dict[str, Any]) -> dict[str, Any]:
