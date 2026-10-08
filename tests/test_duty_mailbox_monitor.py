@@ -2,13 +2,14 @@
 
 語義裁定（marshal judge 採納）：bounded monitor reports **holderless
 pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判讀，非
-異常窗口）。資料面只留兩個唯讀 face——`holder status`（live 偵測）＋
-`receive status`（pendingCount）；events face
+異常窗口）。資料面只留兩個唯讀 face——`holder status`（binding active
+偵測；AIR-288：3.8.0 欄位 bound、3.7.0 live——get-or-fallback 雙版同
+判定）＋`receive status`（pendingCount）；events face
 消費全面退役（collect_events／頁上限／events_cursor 游標語義不再存在）。
 
 涵蓋（工單覆蓋面）：
-- 決策表（per address）：①live=True（本 session hold 或他方 live——處理面
-  由 holder 承擔）→ 靜默＋last_pending baseline 歸零；②live=False
+- 決策表（per address）：①active=True（本 session hold 或他方 holding——
+  處理面由 holder 承擔）→ 靜默＋last_pending baseline 歸零；②active=False
   （holderless）→ receive status pendingCount：>0 且 ≠ baseline → 一行
   advisory（holderless pending N 封）＋baseline=N；>0 且 == baseline →
   靜默（防每 prompt 轟炸）；==0 → 靜默＋baseline 歸零。
@@ -79,9 +80,18 @@ def _ok(result):
 
 
 def _status_doc(epoch=4, live=False):
+    """3.7.0 status 形（live＋leaseExpiresAtUs）——fallback 相容面覆蓋用。"""
     return _ok({
         "addressId": "a1", "alias": ADDRESS, "bindingEpoch": epoch,
         "leaseExpiresAtUs": 0, "live": live,
+    })
+
+
+def _status_doc_v4(epoch=4, bound=False):
+    """3.8.0 status 形（AIR-288：live→bound 改名；leaseExpiresAtUs 移除）。"""
+    return _ok({
+        "addressId": "a1", "alias": ADDRESS, "bindingEpoch": epoch,
+        "bound": bound,
     })
 
 
@@ -133,12 +143,12 @@ def _last_pending(state_file, address=ADDRESS):
     return _read_state(state_file)["addresses"][address]["last_pending"]
 
 
-# ── 決策表：live=True（holding／他方 live）靜默＋baseline 歸零 ─────────
+# ── 決策表：active=True（holding／他方 holding）靜默＋baseline 歸零 ────
 
 
 class TestHoldSilent:
     def test_live_holder_silent_baseline_reset(self, state_file):
-        """live=True（本 session hold——duty-receive 同邊界已 bind/renew）
+        """3.7.0 live=True（本 session hold——duty-receive 同邊界已 bind）
         → 靜默＋baseline 歸零（處理面由 holder 承擔，提醒面安靜）。"""
         _seed_baseline(state_file, 3)
         runner = _seq_runner([_status_doc(epoch=4, live=True)])
@@ -149,6 +159,18 @@ class TestHoldSilent:
         assert runner.calls == [
             ["holder", "status", "--address", ADDRESS]
         ]
+        commit()
+        assert _last_pending(state_file) == 0
+
+    def test_bound_holder_silent_3_8_field(self, state_file):
+        """3.8.0 投影（AIR-288）：active 欄改名 bound——bound=True 同樣
+        靜默＋baseline 歸零（get-or-fallback 雙版同判定）。"""
+        _seed_baseline(state_file, 3)
+        runner = _seq_runner([_status_doc_v4(epoch=4, bound=True)])
+        code, out, commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert (code, out) == (0, "")
         commit()
         assert _last_pending(state_file) == 0
 
@@ -180,8 +202,8 @@ class TestHoldSilent:
 
 class TestHolderlessPending:
     def test_advisory_exact_wording_and_baseline(self, state_file):
-        """live=False＋pendingCount=2 且 ≠ baseline → 一行 advisory（裁定
-        措辭逐字）＋baseline=2（advance-after-emit）。"""
+        """3.7.0 live=False＋pendingCount=2 且 ≠ baseline → 一行 advisory
+        （裁定措辭逐字）＋baseline=2（advance-after-emit）。"""
         runner = _seq_runner([
             _status_doc(live=False), _recv_doc(pending=2),
         ])
@@ -202,6 +224,19 @@ class TestHolderlessPending:
             ["receive", "status", "--address", ADDRESS],
         ]
         assert commit is not None
+        commit()
+        assert _last_pending(state_file) == 2
+
+    def test_holderless_3_8_bound_false_advisory(self, state_file):
+        """3.8.0 投影：bound=False（無 live／無 leaseExpiresAtUs）＝
+        holderless 常態——同一決策表出 advisory。"""
+        runner = _seq_runner([
+            _status_doc_v4(bound=False), _recv_doc(pending=2),
+        ])
+        _code, out, commit = mod.run(
+            UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        )
+        assert "holderless pending 2 封" in out
         commit()
         assert _last_pending(state_file) == 2
 

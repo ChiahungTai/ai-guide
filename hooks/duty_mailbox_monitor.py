@@ -11,10 +11,12 @@ SessionStart（session 回場）兩個 interaction boundary，單一 script 服�
 **語義裁定（marshal judge 採納）**：bounded monitor reports **holderless
 pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判讀；B′ 前
 為 duty-active 異常窗口語義）。資料面只留兩個唯讀 face——
-`holder status`（live 偵測）＋`receive status`（pendingCount 現值）；
-events face 消費（accepted 事件史計數）全面退役——事件史不因 ack 消失，
-對他方 holding 的門牌會誤報、且與 duty_receive 衝突行（「處理面照舊由
-現 holder 承擔」）同邊界並存時自相矛盾。
+`holder status`（binding active 偵測；AIR-288：3.8.0 欄位 bound、
+3.7.0 live——core.holder_active get-or-fallback 雙版同判定）＋
+`receive status`（pendingCount 現值）；events face 消費（accepted 事件
+史計數）全面退役——事件史不因 ack 消失，對他方 holding 的門牌會誤報、
+且與 duty_receive 衝突行（「處理面照舊由現 holder 承擔」）同邊界並存時
+自相矛盾。
 
 **monitor ≠ holder（三軸不互代理——EP invariant）**：本 hook 只消費唯讀
 face，禁 bind/prepare/ack（holder 家命令一律不觸達——收信處理面單一源＝
@@ -23,10 +25,11 @@ local baseline），絕不宣稱 global 狀態、不觸碰 human seen/done。cou
 only——pendingCount 整數以外絕不進輸出。
 
 決策表（per address；每次觸發過 eligibility gate 後逐門牌）：
-1. `holder status` live=True（本 session hold——duty-receive state
-   epoch==status.epoch，或他方 live）→ 靜默（covered：處理面由 holder
-   承擔）＋`last_pending` baseline 歸零。
-2. live=False（**holderless**——B′ 常態：pending 在 INBOX 等人判讀）→
+1. `holder status` binding active=True（3.8.0 bound／3.7.0 live——本
+   session hold——duty-receive state epoch==status.epoch，或他方
+   holding）→ 靜默（covered：處理面由 holder 承擔）＋`last_pending`
+   baseline 歸零。
+2. active=False（**holderless**——B′ 常態：pending 在 INBOX 等人判讀）→
    `receive status` pendingCount：
    - >0 且 ≠ baseline → 一行 advisory `[duty-monitor] <alias>：
      holderless pending N 封（pending 在 INBOX 等人判讀——B′：workspace
@@ -53,7 +56,7 @@ args 誤用）：
 | 情境 | stdout | exit |
 |---|---|---|
 | holderless pending N 封且值變化（每門牌一行） | hookSpecificOutput | 0 |
-| live=True（holding／他方 live）／pending==0／同值／無 --address／缺 session_id | 空（靜默） | 0 |
+| active=True（holding／他方 holding）／pending==0／同值／無 --address／缺 session_id | 空（靜默） | 0 |
 | 單門牌 face 失敗（storage class／其他／形漂移） | 該門牌空＋stderr 註記（其他門牌照跑） | 0 |
 | eligibility gate 不過（cwd 在 repo 外） | 空（零查詢零輸出零推進） | 0 |
 | monitor state 損壞（讀壞／形漂移） | 視同冷啟動（stderr 註記、靜默重建） | 0 |
@@ -236,10 +239,11 @@ def monitor_once(addresses, runner, session_id, state_file=None):
     """逐門牌監看（決策表見 module docstring）→ (advisory 行 list,
     baseline updates)。
 
-    live=True → 靜默＋baseline 歸零（僅在現值非 0 時寫入）；holderless →
-    pendingCount 值變化才出 advisory＋推進 baseline（同值防轟炸）；==0 歸零
-    。單門牌 face 失敗＝stderr 註記續跑其他（per-address 容錯）。updates
-    交呼叫端在 stdout 寫出成功後 commit（advance-after-emit）。"""
+    binding active=True（3.8.0 bound／3.7.0 live）→ 靜默＋baseline 歸零
+    （僅在現值非 0 時寫入）；holderless → pendingCount 值變化才出
+    advisory＋推進 baseline（同值防轟炸）；==0 歸零。單門牌 face 失敗＝
+    stderr 註記續跑其他（per-address 容錯）。updates 交呼叫端在 stdout
+    寫出成功後 commit（advance-after-emit）。"""
     path = state_file if state_file is not None else monitor_state_path(
         session_id
     )
@@ -250,9 +254,9 @@ def monitor_once(addresses, runner, session_id, state_file=None):
         try:
             last = _stored_last_pending(doc, address)
             status = core.holder_status(runner, address)
-            if status.get("live") is True:
+            if core.holder_active(status):
                 # 本 session hold（duty-receive state epoch==status.epoch）
-                # 或他方 live——處理面由 holder 承擔：靜默＋baseline 歸零。
+                # 或他方 holding——處理面由 holder 承擔：靜默＋baseline 歸零。
                 if last is not None and last != 0:
                     updates[address] = {"last_pending": 0}
                 continue

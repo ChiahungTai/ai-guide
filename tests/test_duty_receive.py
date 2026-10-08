@@ -1,9 +1,13 @@
 """duty receive adapter 測試（AIR-254.3 S1+S2）。
 
 涵蓋（工單 AC1 全項）：
-- ensure_holder 三分流：fresh bind（status→bind CAS）/ renew / rebind-on-fencing
-  （renew class-5 → status→rebind）；rebind CAS 失敗（epoch-conflict）→
+- ensure_holder 二分流（AIR-288：3.8.0 renew 面拔除——authority 無時鐘）：
+  fresh bind（status→bind CAS）/ 有 token 直用（fencing 交 prepare 既有
+  rebind 路由——`_is_fencing` 按 class 5 路由，3.7.0 退役碼 lease-expired
+  同樣接入）；rebind CAS 失敗（epoch-conflict）→
   HolderConflict（surface、單次嘗試不轟炸）。
+- holder status 投影雙版相容（AIR-288）：3.8.0 欄位＝bound（
+  leaseExpiresAtUs 移除）、3.7.0＝live——get-or-fallback 同判定。
 - triage default-deny：未知 class／solicit intent／壞 body（非 JSON、非
   object、缺 class 鍵）→ surface；auto 需 class+intent+機械驗證全過；
   receipt 需 in_reply_to 或 body idempotency 鍵（task/card）。
@@ -107,23 +111,25 @@ def _seq_runner(steps):
 
 
 def _status_doc(epoch=4, live=False):
+    """3.7.0 status 形（live＋leaseExpiresAtUs）——fallback 相容面覆蓋用。"""
     return _ok({
         "addressId": "a1", "alias": ADDR, "bindingEpoch": epoch,
         "leaseExpiresAtUs": 0, "live": live,
     })
 
 
-def _bind_doc(epoch=5, token="tok-fresh"):
+def _status_doc_v4(epoch=4, bound=False):
+    """3.8.0 status 形（AIR-288：live→bound 改名；leaseExpiresAtUs 移除）。"""
     return _ok({
         "addressId": "a1", "alias": ADDR, "bindingEpoch": epoch,
-        "holderToken": token, "leaseExpiresAtUs": 99,
+        "bound": bound,
     })
 
 
-def _renew_doc(epoch=5):
+def _bind_doc(epoch=5, token="tok-fresh"):
     return _ok({
         "addressId": "a1", "alias": ADDR, "bindingEpoch": epoch,
-        "leaseExpiresAtUs": 199,
+        "holderToken": token,
     })
 
 
@@ -513,7 +519,7 @@ class TestTriage:
         assert d.action == "surface"
 
 
-# ── ensure_holder：fresh bind／renew／rebind-on-fencing─────────────────
+# ── ensure_holder：fresh bind／有 token 直用（renew 面拔除，AIR-288）──
 
 
 class TestEnsureHolder:
@@ -551,10 +557,18 @@ class TestEnsureHolder:
             ["holder", "bind", "--address", ADDR, "--expected-epoch", "0"],
         ]
 
+    def test_fresh_bind_3_8_bound_field(self, state_file):
+        """3.8.0 投影：status 只帶 bound=False（無 live／無
+        leaseExpiresAtUs）——get-or-fallback 取新欄位，bind 照走。"""
+        runner = _seq_runner([_status_doc_v4(epoch=4), _bind_doc(epoch=5)])
+        st = mod.ensure_holder(ADDR, runner, state_file)
+        assert st["token"] == "tok-fresh" and st["epoch"] == 5
+        assert runner.calls[0] == ["holder", "status", "--address", ADDR]
+
     def test_live_holder_not_preempted_zero_bind(self, state_file):
-        """holder 搶奪防護（S3 finding #2）：live holder 在場（另一
+        """holder 搶奪防護（S3 finding #2）：active holder 在場（另一
         session 持有消費權威）→ 零 bind 呼叫、HolderConflict surface
-        （不搶、待 lease 到期）、單次嘗試。"""
+        （不搶、待對方釋放換代）、單次嘗試。3.7.0 live 欄 fallback 面。"""
         runner = _seq_runner([_ok({
             "addressId": "a1", "alias": ADDR, "bindingEpoch": 1,
             "leaseExpiresAtUs": NOW_US + 300_000_000, "live": True,
@@ -567,9 +581,27 @@ class TestEnsureHolder:
         assert "現 holder 承擔" in msg
         assert len(runner.calls) == 1  # 只 status——零 bind 零重試
 
+    def test_bound_holder_not_preempted_3_8_field(self, state_file):
+        """3.8.0 投影：bound=True（無 live 欄）＝他方 holding——同樣不搶
+        （雙版同判定）。"""
+        runner = _seq_runner([_status_doc_v4(epoch=6, bound=True)])
+        with pytest.raises(mod.HolderConflict, match="另一 session holding"):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1  # 只 status——零 bind
+
+    def test_active_absent_both_fields_treated_holderless(self, state_file):
+        """bound／live 皆缺席（形漂移容忍面）＝False——與既有 `live` 缺席
+        同 fallback，bind CAS 為最後防線。"""
+        runner = _seq_runner([
+            _ok({"addressId": "a1", "alias": ADDR, "bindingEpoch": 0}),
+            _bind_doc(epoch=1),
+        ])
+        st = mod.ensure_holder(ADDR, runner, state_file)
+        assert st["epoch"] == 1
+
     def test_lease_expired_epoch_one_takeover(self, state_file):
-        """lease 到期換代（live=False）＝正當 rebind：bind 以 observed
-        epoch 為 consent 觀察值（epoch=1 → --expected-epoch 1）。"""
+        """換代（3.7.0 live=False＝lease 已到期）＝正當 rebind：bind 以
+        observed epoch 為 consent 觀察值（epoch=1 → --expected-epoch 1）。"""
         runner = _seq_runner([
             _ok({
                 "addressId": "a1", "alias": ADDR, "bindingEpoch": 1,
@@ -583,36 +615,23 @@ class TestEnsureHolder:
             "holder", "bind", "--address", ADDR, "--expected-epoch", "1",
         ]
 
-    def test_renew_fencing_with_live_foreign_holder_also_no_preempt(
-        self, state_file,
-    ):
-        """renew 撞 fencing 後觀察到他方 live holder——同樣不搶（統一
-        live 閘，非僅 fresh 路徑）。"""
-        _seed_state(state_file)
-        runner = _seq_runner([
-            _err("stale-epoch", "fencing", exit_code=5),
-            _ok({
-                "addressId": "a1", "alias": ADDR, "bindingEpoch": 5,
-                "leaseExpiresAtUs": NOW_US + 300_000_000, "live": True,
-            }),
-        ])
-        with pytest.raises(mod.HolderConflict, match="另一 session holding"):
-            mod.ensure_holder(ADDR, runner, state_file)
-        assert len(runner.calls) == 2  # renew＋status——零 bind
-
     def test_holder_status_zero_face_passthrough(self, state_file):
-        """status face 的零值／空值合法面（epoch 0／lease null／live
-        False）原樣通過 holder_status 包裝——除 observed epoch（非負
-        整數）外零欄位被驗證拒絕。"""
-        doc = _ok({
+        """status face 的零值／空值合法面（3.7.0：epoch 0／lease null／
+        live False；3.8.0：epoch 0／bound False）原樣通過 holder_status
+        包裝——除 observed epoch（非負整數）外零欄位被驗證拒絕。"""
+        doc_v3 = _ok({
             "addressId": "a1", "alias": ADDR, "bindingEpoch": 0,
             "leaseExpiresAtUs": None, "live": False,
         })
-        runner = _seq_runner([doc])
+        runner = _seq_runner([doc_v3])
         got = mod.holder_status(runner, ADDR)
         assert got["bindingEpoch"] == 0
         assert got["live"] is False
         assert got["leaseExpiresAtUs"] is None
+        doc_v4 = _status_doc_v4(epoch=0)
+        runner = _seq_runner([doc_v4])
+        got = mod.holder_status(runner, ADDR)
+        assert got["bound"] is False
 
     def test_state_file_0600_atomic(self, state_file):
         runner = _seq_runner([_status_doc(), _bind_doc()])
@@ -623,33 +642,39 @@ class TestEnsureHolder:
                      if f.endswith(".tmp")]
         assert leftovers == []  # atomic 寫不留 tmp 殘屍
 
-    def test_renew_when_token_present(self, state_file):
+    def test_valid_token_no_holder_face_call(self, state_file):
+        """有 token → 直用（AIR-288：3.8.0 renew 面拔除——authority 無
+        時鐘，token 有效至被 fence；零 holder face 呼叫＝heartbeat 退役）。"""
         _seed_state(state_file)
-        runner = _seq_runner([_renew_doc(epoch=4)])
+        runner = _seq_runner([])
         st = mod.ensure_holder(ADDR, runner, state_file)
         assert st["token"] == "tok-old"
-        assert runner.calls == [
-            ["holder", "renew", "--address", ADDR, "--token", "tok-old"],
-        ]
+        assert runner.calls == []
 
-    def test_rebind_on_fencing_renew_failure(self, state_file):
-        """renew class-5（lease-expired）→ status → rebind → 存新 token。"""
-        _seed_state(state_file)
-        runner = _seq_runner([
-            _err("lease-expired", "fencing", exit_code=5),
-            _status_doc(epoch=4),
-            _bind_doc(epoch=5, token="tok-gen2"),
-        ])
-        st = mod.ensure_holder(ADDR, runner, state_file)
-        assert st["token"] == "tok-gen2"
-        assert st["epoch"] == 5
-        assert _read_state(state_file)["token"] == "tok-gen2"
-        assert runner.calls[2] == [
-            "holder", "bind", "--address", ADDR, "--expected-epoch", "4",
-        ]
+    def test_fencing_codes_shrunk_retired_lease_expired(self):
+        """3.8.0（db-98 B 案）`lease-expired` 退役——呼叫端集合只剩
+        stale-epoch／holder-token-mismatch；凍結詞彙留
+        RETIRED_FENCING_CODES 供混版對照（不參與 code 路由——rebind
+        路由面＝`_is_fencing` 按 class 5）。"""
+        assert mod.FENCING_CODES == frozenset(
+            {"stale-epoch", "holder-token-mismatch"}
+        )
+        assert mod.RETIRED_FENCING_CODES == frozenset({"lease-expired"})
 
-    def test_rebind_cas_conflict_single_attempt(self, state_file, capsys):
-        """rebind CAS 失敗（epoch-conflict）＝回衝突、不重試轟炸（單次）。"""
+    def test_holder_active_dual_version(self):
+        """投影 helper：3.8.0 bound 優先、3.7.0 live fallback、雙缺席
+        False、非 True 值（None）不誤判。"""
+        assert mod.holder_active({"bound": True}) is True
+        assert mod.holder_active({"bound": False}) is False
+        assert mod.holder_active({"bound": False, "live": True}) is False
+        assert mod.holder_active({"live": True}) is True
+        assert mod.holder_active({"live": False}) is False
+        assert mod.holder_active({}) is False
+        assert mod.holder_active({"bound": None, "live": None}) is False
+
+    def test_rebind_cas_conflict_single_attempt(self, state_file):
+        """rebind CAS 失敗（epoch-conflict）＝回衝突、不重試轟炸（單次）
+        ——renew 拔除後 fencing 交 prepare 既有 rebind 路由接收。"""
         _seed_state(state_file)
         runner = _seq_runner([
             _err("stale-epoch", "fencing", exit_code=5),
@@ -657,7 +682,9 @@ class TestEnsureHolder:
             _err("epoch-conflict", "fencing", exit_code=5),
         ])
         with pytest.raises(mod.HolderConflict):
-            mod.ensure_holder(ADDR, runner, state_file)
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
         assert len(runner.calls) == 3  # 無第四發
 
     def test_storage_error_propagates(self, state_file):
@@ -666,7 +693,9 @@ class TestEnsureHolder:
             _err("store-incompatible", "storage", exit_code=4),
         ])
         with pytest.raises(mod.DutymailFaceError):
-            mod.ensure_holder(ADDR, runner, state_file)
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
 
 
 # ── process_batch：flush-ack 防護＋ack-only-after-disposition＋invalidate
@@ -809,7 +838,7 @@ class TestProcessBatch:
         _seed_state(state_file, batch_token="bt-stale", disposed=False)
         envs = [_env_item("e-1", klass="handoff")]
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc(envs, batch_token="bt-2"), _ack_doc(),
+            _prepare_doc(envs, batch_token="bt-2"), _ack_doc(),
         ])
         _lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,
@@ -829,7 +858,6 @@ class TestProcessBatch:
         _seed_state(state_file, batch_token="bt-stale", disposed=True)
         envs = [_env_item("e-1", klass="handoff")]
         runner = _seq_runner([
-            _renew_doc(),
             _ack_doc(replayed=True),  # 遺留 ack——replayed 分支
             _prepare_doc(envs, batch_token="bt-2"),
             _ack_doc(),
@@ -837,7 +865,7 @@ class TestProcessBatch:
         _lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,
         )
-        assert runner.calls[1] == [
+        assert runner.calls[0] == [
             "receive", "ack", "--address", ADDR,
             "--token", "tok-old", "--batch", "bt-stale",
         ]
@@ -849,7 +877,6 @@ class TestProcessBatch:
         _seed_state(state_file, batch_token="bt-stale", disposed=True)
         envs = [_env_item("e-1", klass="handoff")]
         runner = _seq_runner([
-            _renew_doc(),
             _err("batch-expired", "admission", exit_code=3),
             _prepare_doc(envs, batch_token="bt-2"),
             _ack_doc(),
@@ -857,7 +884,47 @@ class TestProcessBatch:
         _lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,
         )
-        assert runner.calls[2][0:2] == ["receive", "prepare"]
+        assert runner.calls[1][0:2] == ["receive", "prepare"]
+        commit()
+
+    def test_prepare_lease_expired_rebinds_3_7_compat(self, state_file):
+        """3.7.0 相容（AIR-288）：不 renew 只會 lease 自然過期——退役碼
+        `lease-expired`（class 5 fencing）由既有 rebind 路由接收（按
+        class 路由，非 code 集合）——status→rebind→以新 token 重試。"""
+        _seed_state(state_file)
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner([
+            _err("lease-expired", "fencing", exit_code=5),
+            _status_doc(epoch=4),
+            _bind_doc(epoch=5, token="tok-gen2"),
+            _prepare_doc(envs, batch_token="bt-2"),
+            _ack_doc(),
+        ])
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+        )
+        assert _read_state(state_file)["token"] == "tok-gen2"
+        commit()
+        ack = next(c for c in runner.calls if c[0:2] == ["receive", "ack"])
+        assert ack[ack.index("--token") + 1] == "tok-gen2"
+
+    def test_prepare_unknown_fencing_code_rebinds_by_class(self, state_file):
+        """rebind 路由＝class 5（error_class=="fencing"）非 code 列舉——
+        集合外 fencing 碼（含未來碼漂移）同樣進 rebind 路徑；呼叫端
+        code 集合只留 3.8.0 現役面。"""
+        _seed_state(state_file)
+        envs = [_env_item("e-1", klass="handoff")]
+        runner = _seq_runner([
+            _err("binding-inactive", "fencing", exit_code=5),
+            _status_doc(epoch=4),
+            _bind_doc(epoch=5, token="tok-gen2"),
+            _prepare_doc(envs, batch_token="bt-2"),
+            _ack_doc(),
+        ])
+        _lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+        )
+        assert _read_state(state_file)["token"] == "tok-gen2"
         commit()
 
     def test_prepare_batch_conflict_retry_invalidate(self, state_file):
@@ -1711,7 +1778,7 @@ class TestDispositionSinkWiring:
             _env_item("e-2", klass="handoff"),
         ]
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc(envs), _ack_doc(),
+            _prepare_doc(envs), _ack_doc(),
         ])
         seen = []
 
@@ -1727,7 +1794,7 @@ class TestDispositionSinkWiring:
         """既有行為不變：未注入 sink＝零記帳呼叫（既有測試全數照舊）。"""
         _seed_state(state_file)
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+            _prepare_doc([_env_item("e-1")]), _ack_doc(),
         ])
         mod.process_once(ADDR, runner, _policy(), state_file,
                          now_us=NOW_US)
@@ -1740,7 +1807,7 @@ class TestDispositionSinkWiring:
         （寧重不漏：記帳面壞掉時信件下輪重 prepare，禁半記帳半前進）。"""
         _seed_state(state_file)
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+            _prepare_doc([_env_item("e-1")]), _ack_doc(),
         ])
 
         def boom(address, dispositions, now_us):
@@ -1764,7 +1831,7 @@ class TestResolutionSinkWiring:
     def test_resolution_not_called_before_commit(self, state_file):
         _seed_state(state_file)
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+            _prepare_doc([_env_item("e-1")]), _ack_doc(),
         ])
         calls = []
         _lines, commit = mod.process_once(
@@ -1792,7 +1859,7 @@ class TestResolutionSinkWiring:
                       intent="solicit"),
         ]
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc(envs), _ack_doc(),
+            _prepare_doc(envs), _ack_doc(),
         ])
         _lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,
@@ -1820,7 +1887,7 @@ class TestResolutionSinkWiring:
     def test_raising_resolution_sink_blocks_ack(self, state_file):
         _seed_state(state_file)
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+            _prepare_doc([_env_item("e-1")]), _ack_doc(),
         ])
 
         def boom(address, disps, now_us):
@@ -1839,7 +1906,7 @@ class TestResolutionSinkWiring:
         commit 照常 ack。"""
         _seed_state(state_file)
         runner = _seq_runner([
-            _renew_doc(), _prepare_doc([_env_item("e-1")]), _ack_doc(),
+            _prepare_doc([_env_item("e-1")]), _ack_doc(),
         ])
         _lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,

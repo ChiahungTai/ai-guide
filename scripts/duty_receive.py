@@ -21,9 +21,11 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   digest 呈現完成（commit 起點）＝disposition ledger 推進邊界——
   auto→handled／surface→needs-human（單一源＝duty_disposition 模組
   docstring「處理推進」裁定；ack 是 transport cursor，不作推進前提）。
-- holder 權威經 `holder bind` consent CAS 取得，絕不繞過；live holder
-  在場＝不搶（換代正當路徑＝lease 到期後 rebind）；rebind CAS 失敗＝
-  HolderConflict（surface 衝突訊息、單次嘗試、不重試轟炸）。
+- holder 權威經 `holder bind` consent CAS 取得，絕不繞過；binding
+  active（3.8.0 bound／3.7.0 live）在場＝不搶（換代正當路徑＝對方釋
+  放後 rebind）；rebind CAS 失敗＝HolderConflict（surface 衝突訊息、
+  單次嘗試、不重試轟炸）。AIR-288：3.8.0 renew 面拔除（authority 無
+  時鐘）——token 有效至被 fence，fencing 交 prepare 既有 rebind 路徑。
 - holder state（bearer token）存 per-session 檔 0600、atomic 寫、
   路徑可注入（測試 fake state，不碰真 store）。
 - v1 絕不主動送信：本檔不觸達 send／replies 面（回信＝outward，須
@@ -77,10 +79,14 @@ PLUGIN_BIN_PATTERN = os.path.join(
     "*", "bin", "aarch64-apple-darwin", "dutymail"
 )
 
-# renew/prepare 撞上的 fencing 家族（class 5）——觸發 status→rebind
-FENCING_CODES = frozenset(
-    {"stale-epoch", "holder-token-mismatch", "lease-expired"}
-)
+# prepare/ack 撞上的 fencing 碼（class 5，3.8.0 現役面）——呼叫端集合。
+# AIR-288（db-98 B 案 holder timer 拔除）：`lease-expired` 退役——3.8.0
+# 原生不再發生（authority＝address＋epoch＋token＋binding active，無時
+# 鐘），自呼叫端集合移除、凍結詞彙留 RETIRED_FENCING_CODES 供混版對照。
+# 3.7.0 相容：lease 過期仍＝class 5 fencing，由 `_is_fencing`（按 class
+# 路由）接入既有 rebind 路徑——不 renew 只會 lease 自然過期。
+FENCING_CODES = frozenset({"stale-epoch", "holder-token-mismatch"})
+RETIRED_FENCING_CODES = frozenset({"lease-expired"})
 # bind CAS 失敗碼（class 5，frozen）
 CAS_CONFLICT_CODE = "epoch-conflict"
 # 批次已死碼（cursor 未前進；信仍 pending）——清記錄落 fresh prepare
@@ -130,11 +136,23 @@ class DutymailFaceError(RuntimeError):
         return self.error_class == "storage"
 
 
+def _is_fencing(exc):
+    """class 5 fencing 判定（AIR-288 雙版路由面）：按 CLI 凍結五類的
+    `error_class` 路由、非 code 列舉——3.7.0 退役碼 `lease-expired`
+    （混版窗口 binary 可能是 3.7.0，不 renew 只會 lease 自然過期）與
+    3.8.0 現役碼（stale-epoch／holder-token-mismatch）同樣接入既有
+    rebind 路徑。消費面限 prepare/ack 錯誤：`epoch-conflict`（同屬
+    class 5）只在 bind CAS 面出現，由 `_bind_fresh` 攔下轉
+    HolderConflict，不到這裡。"""
+    return exc.error_class == "fencing"
+
+
 class HolderConflict(RuntimeError):
     """holder 衝突——surface 訊息、單次嘗試、不重試轟炸（唯一
-    consuming authority 裁決）。兩觸發：live holder 在場（另一 session
-    持有消費權威——不搶，待 lease 到期）；rebind consent CAS 失敗
-    （status 與 bind 之間 race window 内他方先 bind——epoch 已前進）。"""
+    consuming authority 裁決）。兩觸發：binding active 在場（另一
+    session 持有消費權威——不搶，待對方釋放換代）；rebind consent CAS
+    失敗（status 與 bind 之間 race window 内他方先 bind——epoch 已
+    前進）。"""
 
 
 class BinaryMissing(RuntimeError):
@@ -263,17 +281,20 @@ def holder_status(runner, address):
     return _call(runner, ["holder", "status", "--address", address])
 
 
+def holder_active(status):
+    """holder status「binding active」布林（AIR-288 雙版投影）：3.8.0
+    欄位＝`bound`（db-98 B 案：live 改名＋leaseExpiresAtUs 移除）、
+    3.7.0＝`live`——get-or-fallback 先取新欄位、缺席退舊欄位（混版
+    窗口 binary 是哪版都同判定）。雙缺席＝False（同既有 `live` 缺席
+    容忍面——bind CAS 為最後防線）；值非 `True`（None 等）不誤判。"""
+    return status.get("bound", status.get("live")) is True
+
+
 def holder_bind(runner, address, expected_epoch):
     return _call(
         runner,
         ["holder", "bind", "--address", address,
          "--expected-epoch", str(expected_epoch)],
-    )
-
-
-def holder_renew(runner, address, token):
-    return _call(
-        runner, ["holder", "renew", "--address", address, "--token", token]
     )
 
 
@@ -849,29 +870,25 @@ def render(address, dispositions, now_us):
     return lines
 
 
-# ── ensure_holder：fresh bind／renew／rebind-on-fencing 三分流────────
+# ── ensure_holder：fresh bind／有 token 直用（AIR-288：renew 面拔除）──
 
 
 def ensure_holder(address, runner, state_file):
-    """取得／續約 holder 權威 → 有效 state dict。
+    """取得 holder 權威 → 有效 state dict（3.8.0 db-98 B 案：renew 面
+    拔除——authority＝address＋epoch＋token＋binding active，無時鐘）。
 
-    無 token → status（觀察 epoch＋live）→ live holder 在場＝不搶
-    （HolderConflict surface）；live=False 才 bind（consent CAS）。
-    有 token → renew（heartbeat）；renew 撞 fencing 家族（stale-epoch
-    ／token mismatch／lease-expired）→ status→rebind（同樣過 live 閘——
-    他方 live＝不搶）。rebind CAS 失敗（epoch-conflict，race window
-    内他方先 bind）＝HolderConflict。storage 錯誤原樣傳出（上層
+    無 token → status（觀察 epoch＋binding active）→ active holder 在場
+    ＝不搶（HolderConflict surface）；active=False 才 bind（consent CAS）。
+    有 token → 直用（零 holder face 呼叫——heartbeat 退役；3.8.0 無時鐘
+    權威下 token 有效至被 fence；3.7.0 混版窗口 lease 自然過期＝class 5
+    fencing，由 `_prepare_with_recovery` 既有 rebind 路徑接收——status→
+    rebind、同樣過 active 閘）。rebind CAS 失敗（epoch-conflict，race
+    window 内他方先 bind）＝HolderConflict。storage 錯誤原樣傳出（上層
     fail-soft pre-migration）。
     """
     st = load_state(state_file)
     if _valid_holder_state(st, address):
-        try:
-            holder_renew(runner, address, st["token"])
-            return st
-        except DutymailFaceError as exc:
-            if exc.is_storage or exc.code not in FENCING_CODES:
-                raise
-            # fencing 家族 → rebind（落到 _bind_fresh）
+        return st
     return _bind_fresh(address, runner, state_file)
 
 
@@ -880,8 +897,9 @@ def _bind_fresh(address, runner, state_file):
     epoch = observed.get("bindingEpoch")
     # observed epoch 驗證＝非負整數：fresh address（從未 bind）的合法值
     # 就是 0（unbound e=0）——首次 bind 的 consent CAS 觀察值正是
-    # `--expected-epoch 0`（S3 真實 store 實測：bindingEpoch=0＋live=
-    # False＋leaseExpiresAtUs=None）。bind 後的 epoch 恆 ≥1（下方
+    # `--expected-epoch 0`（S3 真實 store 實測 3.7.0 形：bindingEpoch=0
+    # ＋live=False＋leaseExpiresAtUs=None；3.8.0 同 epoch 面，live 改名
+    # bound、leaseExpiresAtUs 移除）。bind 後的 epoch 恆 ≥1（下方
     # result 面維持正整數驗證）。
     if not _non_negative_int(epoch):
         raise DutymailFaceError(
@@ -889,17 +907,18 @@ def _bind_fresh(address, runner, state_file):
             f"holder status bindingEpoch 非非負整數：{observed!r}",
             False, 0,
         )
-    # holder 搶奪防護（S3 finding #2）：live holder 在場＝另一 session
-    # 正持有消費權威——**不 bind 不搶**（並行 session／卡 WT spawned
-    # agents 的 ping-pong 防護）；值星換代正當路徑＝lease 到期
-    # （live=False）後 rebind。CAS（epoch-conflict）保留為 status 與
-    # bind 之間 race window 的最後防線。「live=True 且 epoch==我 state
-    # epoch」（我方 token 失效邊角）經此同一規則落衝突不搶——租約到期
-    # 自癒，信不丟（prepare 不消耗）。
-    if observed.get("live") is True:
+    # holder 搶奪防護（S3 finding #2）：binding active 在場（3.8.0
+    # bound／3.7.0 live）＝另一 session 正持有消費權威——**不 bind 不搶**
+    # （並行 session／卡 WT spawned agents 的 ping-pong 防護）；值星換代
+    # 正當路徑＝對方釋放（3.8.0：binding 變更；3.7.0：lease 到期）後
+    # rebind。CAS（epoch-conflict）保留為 status 與 bind 之間 race
+    # window 的最後防線。「active=True 且 epoch==我 state epoch」（我方
+    # token 失效邊角）經此同一規則落衝突不搶——對方釋放後自癒，信不丟
+    # （prepare 不消耗）。
+    if holder_active(observed):
         raise HolderConflict(
             f"{address}：另一 session holding（epoch {epoch}）——本"
-            " session 不搶，待 lease 到期；處理面照舊由現 holder 承擔"
+            " session 不搶，待對方釋放換代；處理面照舊由現 holder 承擔"
         )
     try:
         result = holder_bind(runner, address, epoch)
@@ -968,7 +987,7 @@ def _resolve_legacy_batch(address, runner, st, state_file):
         try:
             receive_ack(runner, address, st["token"], batch_token)
         except DutymailFaceError as exc:
-            if exc.code in BATCH_DEAD_CODES or exc.code in FENCING_CODES:
+            if exc.code in BATCH_DEAD_CODES or _is_fencing(exc):
                 pass  # 批次已死——清記錄，fresh prepare 重取同批信
             else:
                 return st, False  # store 缺席等——保留紀錄先試 ack 下輪
@@ -985,8 +1004,9 @@ def _prepare_with_recovery(address, runner, st, state_file, max_count,
     """prepare（單次重試上限，不轟炸）→ (result, effective_st)。
 
     batch-conflict（crash-before-state-write 孤兒批）→ --invalidate
-    重試一次；fencing 家族（epoch/token 中途失效）→ status→rebind→
-    以新 token 重試一次（舊批隨 rebind 自動 fenced）。"""
+    重試一次；fencing 家族（class 5——3.8.0 現役 stale-epoch/token
+    mismatch＋3.7.0 混版 lease-expired，`_is_fencing` 按 class 接收）
+    → status→rebind→以新 token 重試一次（舊批隨 rebind 自動 fenced）。"""
     try:
         return (
             receive_prepare(
@@ -1006,7 +1026,7 @@ def _prepare_with_recovery(address, runner, st, state_file, max_count,
                 ),
                 st,
             )
-        if exc.code in FENCING_CODES:
+        if _is_fencing(exc):
             st2 = _bind_fresh(address, runner, state_file)
             return (
                 receive_prepare(
