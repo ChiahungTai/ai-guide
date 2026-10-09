@@ -164,11 +164,11 @@
 | 檢查項目 | 說明 | 判斷方式 |
 |---------|------|----------|
 | `@` 濫用 | 用 `@` 引用長文件或偶爾需要的內容 | 檢查 `@` 引用的檔案行數和內容性質 |
-| markdown link 漏用 | 該用 `@` 的核心約束卻用了 `[text](path)` | 檢查每次對話都需要的引用是否用了 `@` |
+| markdown link 漏用 | 該用 `@` 的核心約束卻用了 `[text](path)`（**對 AGENTS.md 不適用**——AGENTS.md 禁 `@`，見下方修正建議） | 檢查每次對話都需要的引用是否用了 `@` |
 | Skill/Command 誤用 `@` | Skill 不支援 `@` transclusion | 檢查 command/skill 檔案中是否有 `@` |
 
 **修正建議**：
-- 每次對話都需要 + 內容精簡 → 改用 `@path`
+- **AGENTS.md 禁 `@`**（跨 harness 不展開，CC 專屬機制）：每次對話需要的核心約束直接寫入本檔；`@path` 僅限 legacy CLAUDE.md；跨檔引用一律 markdown link
 - 偶爾才需要 / 檔案偏長 → 改用 `[描述](path)`
 - Skill / Command 中的引用 → 必須用 `[描述](path)`
 
