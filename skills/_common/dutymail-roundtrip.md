@@ -24,7 +24,10 @@ send（intent＋reply_address＋envelope_id）
 
 - **per-repo mailbox**：`<repo>-marshal`（本 repo＝`ai-guide-marshal`）＝repo 的長期責任入口
   （durable alias）。**holder**＝目前哪個 session 值星（epoch-fenced、可換代不搬信）——
-  責任 identity 與執行者 identity 分開。
+  責任 identity 與執行者 identity 分開。章位分離（AIR-298）：消費章（prepare/ack）
+  ＝值星 session 短持、durable INBOX 送達＋viewport 顯示無章可持（holderless
+  常態）；ext 長持只及 escalation／人類 viewport 地址——正典＝
+  `governance/scbus-address-ownership.md`「章位分離」。
 - **門牌建立**：新 repo 加入 dutymail 時由該 repo 值星建 `<repo>-marshal` 門牌
   （`address create` 一次性；跨 repo 對址慣例）。
 - **reply_address 慣例**：從 repo mailbox 發出者，body machine-header `reply_address` 一律

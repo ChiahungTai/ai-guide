@@ -76,7 +76,14 @@
 ### Repo address cardinality（一 repo 一門牌）
 
 - 每個 repo 預設**恰一個** well-known durable inbound address，命名 `<repo>-marshal`
-  （ai-guide 即 `ai-guide-marshal`，由 workspace ext per-workspace 決定論身分長持）。
+  （ai-guide 即 `ai-guide-marshal`）。
+- **章位分離（AIR-298）**：消費章（prepare/ack 的 epoch-fenced holder binding）歸
+  **當時的值星 session**——ext 決定論身分長持只及 escalation／人類 viewport 地址，
+  AI 消費者地址不適用；INBOX 章（送達＋viewport 顯示）無章可持——durable INBOX
+  holderless 常態（B′），顯示面不依賴任何 binding。值星 session 死後＝
+  death-evidence 接管：判死依內容面心跳證據（exec 目錄/artifacts 停止前進，
+  AIR-296 驗活判準）非 lease／時鐘到期等待；換代條款單一源＝
+  `scripts/duty_receive.py` module docstring。
 - 第二位址例外 predicate：必須證明**獨立 consumer UC**才可建立；「系統信／工作信」
   「值星／marshal」等訊息分類或命名差異不構成 UC——訊息種類用 envelope
   `mode`（steer/queue/notify）＋`intent`（inform/solicit/receipt）表達，不以多位址分類。
@@ -158,19 +165,22 @@
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
 - ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
-  （holder-operation gap）。lease 已過期時，同 trust boundary 的 operator 走
+  （holder-operation gap；dutymail 時代 ack 由 epoch-fenced holder 執行——
+  下述 ext operator path 為 scbus 時代實證，已隨換代退役）。lease 已過期時，
+  同 trust boundary 的 operator 走
   **ext operator path**（以 ext holder 複合鍵執行 CLI——2026-10-01 migration
   三封 ack 實證形態）plain `acquire`（expired binding，generation+1）恢復 lease
   後即可 ack——非 transfer、非 force-reclaim，pin 仍屬原 holder 身分；
   **禁 session 面冒身 acquire**（identity 非 authN、trust boundary 內可 spoof
   是事實描述非授權，見紅線節——規範禁令不因技術可行而撤）。
 - 閉環驅動路徑：monitor 發現 marshal 新到收件紀錄（receipt timeline；fallback
-  ＝pending 快照 >0）後，正常＝**holder ext 自收**
-  （workspace 重開窗即同身分 renew＋recv，generation 不變）；operator 代 ack
-  僅限 holder 委託或緊急（漏接事故級），走前述 ext operator path。release
-  命令形（AIR-225 primary release 實證）：`scbus release --harness zcode
-  --session-id <holder> --address ai-guide-primary --generation <n>`
-  （`--session-id`／`--generation` optional——後者為 fencing CAS）。
+  ＝pending 快照 >0）後，正常消費＝**值星 session 持章自收**（duty_receive
+  處理器 bind→prepare→ack；前任 session 死後 death-evidence 接管——章位分離
+  見上，AIR-298）。scbus 時代「holder ext 自收／ext operator path 代 ack」
+  已隨換代退役，留歷史實證；release 命令形（AIR-225 primary release 實證）：
+  `scbus release --harness zcode --session-id <holder> --address
+  ai-guide-primary --generation <n>`（`--session-id`／`--generation`
+  optional——後者為 fencing CAS）。
 
 ### Retirement 程序
 
