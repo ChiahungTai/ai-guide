@@ -185,15 +185,27 @@ def _version_key(candidate):
     return tuple(pieces)
 
 
+STABLE_FACE = os.path.join(
+    os.path.expanduser("~"), ".local", "lib", "delegate-bridge",
+    "runtime", "current", "dutymail",
+)
+
+
 def _resolve_binary():
     env_bin = os.environ.get(RUNNER_ENV)
     if env_bin:
         return env_bin
+    # stable face（M3 cutover——bridge db-96 durable home；路徑恆定
+    # 不隨 plugin cache 版本剪除浮動；atomic flip 機制保證 binary 完整性）。
+    stable = STABLE_FACE
+    if os.path.isfile(stable) and os.access(stable, os.X_OK):
+        return stable
     on_path = shutil.which("dutymail")
     if on_path:
         return on_path
     # cache rungs 依序（zcode 先、claude 後——既有優先序零變，AIR-273
     # 第四 rung 只在 candidates 追加）；每 rung 內取版本最新。
+    # stable face 缺席時的 fallback——保留作防禦縱深。
     for base in (PLUGIN_CACHE_BASE, CLAUDE_PLUGIN_CACHE_BASE):
         candidates = glob.glob(
             os.path.join(os.path.expanduser(base), PLUGIN_BIN_PATTERN)
@@ -202,7 +214,7 @@ def _resolve_binary():
             return max(candidates, key=_version_key)
     raise BinaryMissing(
         "dutymail binary not found（" + RUNNER_ENV
-        + " / PATH / zcode・claude plugin cache 皆缺席）"
+        + " / stable face / PATH / zcode・claude plugin cache 皆缺席）"
     )
 
 

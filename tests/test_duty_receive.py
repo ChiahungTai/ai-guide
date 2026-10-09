@@ -224,16 +224,41 @@ def state_file(tmp_path):
 
 
 class TestBinaryResolution:
+    @pytest.fixture(autouse=True)
+    def _no_stable_face(self, monkeypatch):
+        """預設遮蔽 stable face（M3 rung）——各 rung 測試隔離。"""
+        monkeypatch.setattr(
+            mod, "STABLE_FACE", "/nonexistent/stable/face/dutymail"
+        )
+
     def test_env_var_wins(self, monkeypatch):
         monkeypatch.setenv("DUTYMAIL_BIN", "/opt/dutymail")
         assert mod._resolve_binary() == "/opt/dutymail"
 
-    def test_path_lookup_second(self, monkeypatch):
+    def test_stable_face_after_env(self, monkeypatch):
+        """M3 cutover：stable face rung 在 env 後、PATH 前。"""
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(
+            mod, "STABLE_FACE",
+            "/Users/ctai/.local/lib/delegate-bridge/runtime/current/dutymail",
+        )
+        monkeypatch.setattr(mod.os.path, "isfile", lambda p: True)
+        monkeypatch.setattr(mod.os, "access", lambda p, m: True)
+        monkeypatch.setattr(
+            mod.shutil, "which", lambda name: "/usr/bin/dutymail"
+        )
+        got = mod._resolve_binary()
+        assert "runtime/current" in got
+
+    def test_stable_face_absent_falls_through(self, monkeypatch):
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(
+            mod, "STABLE_FACE", "/nonexistent/stable/face/dutymail"
+        )
         monkeypatch.setattr(mod.shutil, "which", lambda name: "/usr/bin/dutymail")
         assert mod._resolve_binary() == "/usr/bin/dutymail"
 
-    def test_plugin_cache_picks_newest_version(self, monkeypatch):
+    def test_path_lookup_second(self, monkeypatch):
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
         monkeypatch.setattr(mod.shutil, "which", lambda name: None)
         base = "/fake/plugins/delegate-market/delegate"
@@ -1913,6 +1938,9 @@ class TestBinaryMissingSink:
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
         monkeypatch.setattr(mod.shutil, "which", lambda name: None)
         monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
+        monkeypatch.setattr(
+            mod, "STABLE_FACE", "/nonexistent/stable/face/dutymail"
+        )
         rc = mod.main([
             "process", "--address", ADDR, "--session-id", "sess-cli",
             "--config", REAL_CONFIG, "--state-dir", str(tmp_path),
