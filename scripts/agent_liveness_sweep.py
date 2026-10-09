@@ -830,10 +830,15 @@ def render_spawn_zombies(zcode: dict, counts: dict, now: datetime) -> list[str]:
     lines = [f"## spawn-zombies ({len(zcode['events'])})"]
     for event in zcode["events"]:
         ev = event.evidence
+        newest_txt = (
+            f"{ev['newestArtifactAgeMin']}min 前"
+            if ev.get("newestArtifactAgeMin") is not None
+            else "無心跳檔"
+        )
         lines.append(
             f"- {event.agent_id} | {event.alert_type} | dedup={event.dedup_key}"
             f" | age={ev.get('ageMin')}min | artifacts={ev.get('artifactsFiles')}"
-            f" | 最新活動 {ev.get('newestArtifactAgeMin')}min 前"
+            f" | 最新活動 {newest_txt}"
             f" | output={ev.get('outputPath') or '—'}"
             f" | {event.parent_session_id} | {event.cwd or '—'}"
             f" | {(event.description or '')[:60]}"
