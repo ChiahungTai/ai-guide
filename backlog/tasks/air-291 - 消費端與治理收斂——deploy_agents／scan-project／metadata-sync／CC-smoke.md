@@ -1,7 +1,7 @@
 ---
 id: AIR-291
 title: 消費端與治理收斂——deploy_agents／scan-project／metadata-sync／CC smoke
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 22:36'
 updated_date: '2026-10-09 08:20'
