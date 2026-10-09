@@ -40,6 +40,10 @@ flowchart LR
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
+- 10-09 作者完成 0c98870f（前 spawn bb05e377 中斷死亡重派 agent_923346cc——exec log 凍結 20:50 實證）：三檔 +23/-10，全套 3791 passed
+- bridge db100 對齊信收訖（三開放點：①預設 Consume ②INBOX prepare 不推 cursor＋role gate ③death-evidence=session_discovery seam＋24h 常數）——bridge 將開卡 role gate＋S1 amendment，兩卡互引
+- 本卡慣例文 delta（判死＝內容面心跳非時鐘等待；code 面 HOLDER_STALE_SECONDS 收緊歸 bridge/duty 弧）待本卡 merge 後回信 bridge 交代，讓其 S1 amendment 反映終態慣例
+- 審查鏈跑中（codex＋5.3 雙腿）
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
