@@ -27,6 +27,18 @@ r<R 時不得當完整；read-fail 不計 scanned（read_failed>0＝coverage inc
 
 分類：collected / terminal-unclaimed / running-fresh / zombie-suspect / unledgered。
 唯讀保證：除讀檔外無任何寫入／刪除／kill；exit 0（reporter 不以 exit 碼報 finding）。
+
+spawn 僵屍掃描（AIR-296 第二層；`--zcode-scan`）
+--------------------------------------------------------
+ZCode 原生 subagent 域：掃 `<zcode-root>/agents/sess_*/agent_*/metadata.json`
+全庫，套 GLM 90 樣本校準三簽章（型 A stillbirth＝running∧artifacts 缺/空
+∧age>60min；中斷氣＝artifacts 最新檔凍結>180min；型 B silent-completion＝
+running∧output.txt 存在即報）＋UNKNOWN（JSON 損壞 fail-loud 列報，禁自動
+結案）。判定單一源＝scripts/zombie_core.py（本檔不重刻簽章）；輸出結構化
+事件台帳（attempt_id+alert_type 去重鍵隨事件，sweeper 唯讀——去重由消費端
+執行）。HARD_DEATH 不由本掃描產生（無 registry join——缺席非證據）；
+session-local 的 waiter T5 為其唯一 producer。掛載＝夜 cron
+（deploy/zombie-sweep.plist）＋/sitrep 按需。
 """
 
 import argparse
@@ -38,6 +50,12 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent)
+)  # scripts/ 非 package——同目錄 seam import（AIR-254.1 先例）
+
+import zombie_core  # AIR-296：spawn 僵屍判定核心（三簽章／五級單一源）
 
 DEFAULT_STATE_ROOTS = (
     Path("/Users/ctai/Github/ai-guide/.delegate-bridge"),
@@ -237,6 +255,43 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         metavar="DIR",
         help="收編盤點根（AIR-152）：掃下一層 git repos，列未收編／marker 壞清單"
         "（唯讀可見面）",
+    )
+    parser.add_argument(
+        "--zcode-scan",
+        action="store_true",
+        help=(
+            "spawn 僵屍掃描（AIR-296 第二層）：掃 ZCode 原生 subagent metadata"
+            "全庫，套 GLM 90 樣本校準三簽章（型 A stillbirth／中斷氣／型 B "
+            "silent-completion）＋UNKNOWN fail-loud——唯讀、事件台帳帶 "
+            "attempt_id+alert_type 去重鍵；判定單一源＝scripts/zombie_core.py"
+        ),
+    )
+    parser.add_argument(
+        "--zcode-root",
+        type=Path,
+        default=Path.home() / ".zcode" / "cli",
+        metavar="DIR",
+        help="--zcode-scan 的 ZCode CLI 根（內含 agents/ 與 artifacts/；測試注入用）",
+    )
+    parser.add_argument(
+        "--stillbirth-min",
+        type=float,
+        default=zombie_core.STILLBIRTH_AGE_MIN_DEFAULT,
+        metavar="MIN",
+        help=(
+            "型 A 閾值：running∧artifacts 缺/空∧age 超此分鐘→START_MISSING"
+            "（預設 60＝GLM 校準＞首檔 max 48min）"
+        ),
+    )
+    parser.add_argument(
+        "--interrupted-min",
+        type=float,
+        default=zombie_core.INTERRUPTED_FROZEN_MIN_DEFAULT,
+        metavar="MIN",
+        help=(
+            "中斷氣閾值：artifacts 最新檔凍結超此分鐘→SILENCE"
+            "（預設 180＝≈1.7×間距 max 106min）"
+        ),
     )
     return parser.parse_args(argv)
 
@@ -754,6 +809,50 @@ def _render_coverage_lines(coverage: ScanCoverage) -> list[str]:
     return lines
 
 
+def spawn_zombie_counts(zcode: dict) -> dict:
+    """事件層級計數（五級——sweeper 掃描面產生四種；HARD_DEATH 歸 waiter T5）."""
+    counts = {
+        zombie_core.ALERT_START_MISSING: 0,
+        zombie_core.ALERT_SILENCE: 0,
+        zombie_core.ALERT_COMPLETION_SUSPECTED: 0,
+        zombie_core.ALERT_HARD_DEATH: 0,
+        zombie_core.ALERT_UNKNOWN: 0,
+    }
+    for event in zcode["events"]:
+        counts[event.alert_type] = counts.get(event.alert_type, 0) + 1
+    return counts
+
+
+def render_spawn_zombies(zcode: dict, counts: dict, now: datetime) -> list[str]:
+    """spawn-zombies 節（唯讀事件台帳——去重鍵隨事件，消費端去重；禁自動結案：
+    UNKNOWN＝fail-loud 列報，處置恆人裁 AIR-135.7）."""
+    cov = zcode["coverage"]
+    lines = [f"## spawn-zombies ({len(zcode['events'])})"]
+    for event in zcode["events"]:
+        ev = event.evidence
+        lines.append(
+            f"- {event.agent_id} | {event.alert_type} | dedup={event.dedup_key}"
+            f" | age={ev.get('ageMin')}min | artifacts={ev.get('artifactsFiles')}"
+            f" | 最新活動 {ev.get('newestArtifactAgeMin')}min 前"
+            f" | output={ev.get('outputPath') or '—'}"
+            f" | {event.parent_session_id} | {event.cwd or '—'}"
+            f" | {(event.description or '')[:60]}"
+        )
+    lines.append(
+        f"coverage: discovered={cov['discovered']} running={cov['running']}"
+        f" terminal={cov['terminal']} terminal-other={cov['terminal_other']}"
+        f" running-fresh={cov['running_fresh']} clock-anomaly={cov['clock_anomaly']}"
+        f" | 閾值 START_MISSING>{zcode['thresholds']['stillbirth_min']:.0f}min"
+        f" SILENCE>{zcode['thresholds']['interrupted_min']:.0f}min"
+        f" | 掃描 {now.strftime('%Y-%m-%d %H:%M')}"
+    )
+    lines.append(
+        "[ACTION] spawn 僵屍：只報不殺——處置（TaskStop/重派/寫 completed）恆人裁"
+        "（AIR-135.7）；存量清掃以本節為輸入清單"
+    )
+    return lines
+
+
 def render_text(
     groups: dict[str, list[tuple[JobFace, str]]],
     counts: dict[str, int],
@@ -762,6 +861,7 @@ def render_text(
     now: datetime,
     enrollment: dict | None = None,
     coverage: ScanCoverage | None = None,
+    zcode: dict | None = None,
 ) -> str:
     lines: list[str] = []
     if coverage is not None and coverage.mode == "bounded":
@@ -777,13 +877,26 @@ def render_text(
     multi = len(state_roots) > 1
     roots_txt = "＋".join(str(root) for root in state_roots)
     total = sum(counts.values())
+    zc_txt = ""
+    if zcode is not None:
+        zc = spawn_zombie_counts(zcode)
+        zc_txt = (
+            f" | spawn-zombies={len(zcode['events'])}"
+            f"({zombie_core.ALERT_START_MISSING}={zc[zombie_core.ALERT_START_MISSING]}"
+            f" {zombie_core.ALERT_SILENCE}={zc[zombie_core.ALERT_SILENCE]}"
+            f" {zombie_core.ALERT_COMPLETION_SUSPECTED}={zc[zombie_core.ALERT_COMPLETION_SUSPECTED]}"
+            f" {zombie_core.ALERT_UNKNOWN}={zc[zombie_core.ALERT_UNKNOWN]})"
+        )
     lines.append(
         f"liveness sweep（唯讀 reporter——只標不殺）@ {roots_txt} | reported={total}"
         f" | collected={counts['collected']} terminal-unclaimed={counts['terminal-unclaimed']}"
         f" running-fresh={counts['running-fresh']} zombie-suspect={counts['zombie-suspect']}"
         f" unledgered(≤{args.window_hours:.0f}h)={counts['unledgered']}"
+        f"{zc_txt}"
         f" | stale>{args.stale_hours:.0f}h | {now.strftime('%Y-%m-%d %H:%M')}"
     )
+    if zcode is not None:
+        lines.extend(render_spawn_zombies(zcode, spawn_zombie_counts(zcode), now))
     if coverage is not None and coverage.mode == "bounded":
         lines.extend(_render_coverage_lines(coverage))
     order = ["zombie-suspect", "terminal-unclaimed", "running-fresh", "unledgered", "collected"]
@@ -812,6 +925,7 @@ def render_json(
     now: datetime,
     enrollment: dict | None = None,
     coverage: ScanCoverage | None = None,
+    zcode: dict | None = None,
 ) -> str:
     payload = {
         "generated_at": now.isoformat(),
@@ -840,6 +954,15 @@ def render_json(
             for group in groups
         },
     }
+    if zcode is not None:
+        payload["spawn_zombies"] = {
+            "zcode_root": str(args.zcode_root),
+            "counts": spawn_zombie_counts(zcode),
+            "events": [event.to_dict() for event in zcode["events"]],
+            "coverage": zcode["coverage"],
+            "thresholds": zcode["thresholds"],
+            "read_only": True,
+        }
     if coverage is not None and coverage.mode == "bounded":
         payload["coverage"] = {
             "mode": coverage.mode,
@@ -914,10 +1037,32 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         enrollment = scan_enrollment(args.enrollment_root)
 
+    zcode = None
+    if args.zcode_scan:
+        # AIR-296 第二層：ZCode 原生 subagent 全庫掃描（唯讀；判定單一源
+        # ＝zombie_core）。fail-loud 與 state-root 同款——根不存在 exit 2
+        if not args.zcode_root.is_dir():
+            print(
+                f"[FAIL] agent_liveness_sweep: zcode root 不存在：{args.zcode_root}",
+                file=sys.stderr,
+            )
+            return 2
+        zcode = zombie_core.scan_zcode_agents(
+            args.zcode_root / "agents",
+            args.zcode_root / "artifacts",
+            now,
+            stillbirth_age_min=args.stillbirth_min,
+            interrupted_frozen_min=args.interrupted_min,
+        )
+        zcode["thresholds"] = {
+            "stillbirth_min": args.stillbirth_min,
+            "interrupted_min": args.interrupted_min,
+        }
+
     if args.json:
-        print(render_json(groups, counts, state_roots, args, now, enrollment, coverage))
+        print(render_json(groups, counts, state_roots, args, now, enrollment, coverage, zcode))
     else:
-        print(render_text(groups, counts, state_roots, args, now, enrollment, coverage))
+        print(render_text(groups, counts, state_roots, args, now, enrollment, coverage, zcode))
     scanned_note = (
         f"（body {coverage.content_scanned_files}/{coverage.discovered_files}）"
         if coverage.mode == "bounded"
