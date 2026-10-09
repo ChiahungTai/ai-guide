@@ -4,6 +4,7 @@ title: ai-guide CLAUDE.md 退役——root 內容 triage 後刪兩 wrapper
 status: To Do
 assignee: []
 created_date: '2026-10-08 22:36'
+updated_date: '2026-10-09 01:22'
 labels:
   - instruction
 dependencies: []
@@ -32,3 +33,9 @@ flowchart LR
 <!-- DOD:BEGIN -->
 - [ ] #1 CC consumer smoke（新 session root/nested 載入實證——獨立於 pytest）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【前置 triage 完成（.agent-tmp/air290-triage.md）】root CLAUDE.md 25 行三桶：刪除（重複投影）4 處——memory-audit 載體統一定義表＋instruction-writing 覆蓋；刪除（過時 AIR-215）5 處——~/.claude/* 全實證不存在；wrapper 本體 3 處。**必遷 0 行**（L13 跨載體例句唯一非重複殘餘——YAGNI 建議刪，選配 1 句遷 instruction-writing）。skills/CLAUDE.md 純 wrapper 直接刪。爭議 1 處已裁。注意：triage 讀的是 main 版 instruction-writing——AIR-289 已重寫雙檔節，290 執行時以 289 後狀態為準（連帶修訂 #1 可能已由 289 覆蓋）。輕量單 session。
+<!-- SECTION:NOTES:END -->
