@@ -49,6 +49,7 @@ flowchart LR
 - **Receipt（四欄）**：classification=boundary（authority/gate 面——章位分離＋接管正當面）／review=bi（codex job-mv11bryj-1wz4e7＋glm job-mv11bry3-usv2hk）＋judge glm-5.3（job-mv11jesv-v0ctha）＋marshal re-diff 機驗（錨點＋probe）／session-freshness=fresh（修復 session 裁決後 spawn、現檔重讀、工單宣稱動筆前機驗）／deployment-surfaces=healthy（`~/.agents/skills`→canonical；operator-invoked 經 live chain 可達 probe 實證）
 - 卡保 **In Progress**：AC#2 待 delta 回信寄出＋bridge 回執閉環（F2 advisory 護欄）
 - 觀察標記（未擴 scope）：governance「CLI 慣例（惰性 recipe）」節 scbus 命令形殘留——ledger 已記，供後續弧裁量
+- **AC#2 回執補記（10-10 凌晨）**：bridge 回信 `db105-ep-landed-receipt-001-1791601500`（in_reply_to 我方 seq-62 message_id f2761da0，明示「你方 AIR-298 AC#2 可閉環」）——章位分離→db-105 EP S1/S2（role-scoped epoch＋inbox_binding_state 新表＋Consume-only gate 進 SQLite 權威路徑＋零寫入 receive peek）；兩面分述→EP S12 照單採納（與我方慣例文終態一致）；operator takeover→EP S3 保留＋epoch-102 孤兒綁定實證納 TC 素材。EP＝bridge main a38f178（203 行，GLM-5.3 規劃腿 job-mv13ann1），下一步 ep-review→實作弧 P1/P2/P3；S1 amendment 正式凍結點＝EP 審查通過。bridge 誠實揭露：該信延遲 ~8h 處理＝前代 session 持章（epoch 37）正確 fencing 擋下三次——EP 動機第三活體，已入其證據鏈。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
