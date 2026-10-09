@@ -81,9 +81,14 @@
   **當時的值星 session**——ext 決定論身分長持只及 escalation／人類 viewport 地址，
   AI 消費者地址不適用；INBOX 章（送達＋viewport 顯示）無章可持——durable INBOX
   holderless 常態（B′），顯示面不依賴任何 binding。值星 session 死後＝
-  death-evidence 接管：判死依內容面心跳證據（exec 目錄/artifacts 停止前進，
-  AIR-296 驗活判準）非 lease／時鐘到期等待；換代條款單一源＝
-  `scripts/duty_receive.py` module docstring。
+  death-evidence 接管——判死證據分兩面勿混：**現行機械面**＝duty_receive
+  自動接管判準＝per-session state 檔 mtime 陳舊 ≥24h（`HOLDER_STALE_SECONDS`
+  具名常數，保守誤殺防線）——非即時；**內容面心跳**（exec 目錄/artifacts
+  停止前進）＝消費端自律判準／目標態——AIR-296 驗活判準（內容面偵測為唯一
+  可靠訊號）可自律套用，但其機械 sweep（`agent_liveness_sweep --zcode-scan`）
+  只掃 spawn subagent 域、不涵蓋 in-harness session，勿推得基礎設施已備；
+  機制收緊歸 bridge/duty 弧（bridge db100 已排卡＋S1 amendment 互引）。
+  換代條款單一源＝`scripts/duty_receive.py` module docstring。
 - 第二位址例外 predicate：必須證明**獨立 consumer UC**才可建立；「系統信／工作信」
   「值星／marshal」等訊息分類或命名差異不構成 UC——訊息種類用 envelope
   `mode`（steer/queue/notify）＋`intent`（inform/solicit/receipt）表達，不以多位址分類。
@@ -164,23 +169,29 @@
   （`dutymail receive status`）保留為 point-in-time fallback。
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
-- ack 綁 live lease＋holder 複合鍵：跨身分 session 面 ack 他人位址必被拒
-  （holder-operation gap；dutymail 時代 ack 由 epoch-fenced holder 執行——
-  下述 ext operator path 為 scbus 時代實證，已隨換代退役）。lease 已過期時，
-  同 trust boundary 的 operator 走
-  **ext operator path**（以 ext holder 複合鍵執行 CLI——2026-10-01 migration
-  三封 ack 實證形態）plain `acquire`（expired binding，generation+1）恢復 lease
-  後即可 ack——非 transfer、非 force-reclaim，pin 仍屬原 holder 身分；
-  **禁 session 面冒身 acquire**（identity 非 authN、trust boundary 內可 spoof
-  是事實描述非授權，見紅線節——規範禁令不因技術可行而撤）。
+- ack 綁 live holder＋epoch fencing：跨身分 session 面 ack 他人位址必被拒
+  （holder-operation gap；dutymail 時代 ack 由 epoch-fenced holder 執行）。
+  歷史實證〔scbus 時代，已隨換代退役——AIR-288 拔鐘後 lease 過期態不可達〕：
+  2026-10-01 migration 時 lease 已過期的位址曾由同 trust boundary 的 operator
+  走 **ext operator path**（以 ext holder 複合鍵執行當時的 scbus CLI）
+  plain `acquire` 恢復 lease 後代 ack 三封——非 transfer、非 force-reclaim，
+  pin 仍屬原 holder 身分；此恢復程序 dutymail 時代不存在，不可照做。
+  **規範禁令不隨換代退役**：session 面冒身 acquire 禁（identity 非 authN、
+  trust boundary 內可 spoof 是事實描述非授權，見紅線節——規範禁令不因技術
+  可行而撤）。
 - 閉環驅動路徑：monitor 發現 marshal 新到收件紀錄（receipt timeline；fallback
   ＝pending 快照 >0）後，正常消費＝**值星 session 持章自收**（duty_receive
   處理器 bind→prepare→ack；前任 session 死後 death-evidence 接管——章位分離
-  見上，AIR-298）。scbus 時代「holder ext 自收／ext operator path 代 ack」
-  已隨換代退役，留歷史實證；release 命令形（AIR-225 primary release 實證）：
-  `scbus release --harness zcode --session-id <holder> --address
-  ai-guide-primary --generation <n>`（`--session-id`／`--generation`
-  optional——後者為 fencing CAS）。
+  見上，AIR-298）。程式面無從舉證時（外點 bind 無 per-session state 檔、
+  token 遺失——2026-10-09 epoch-102 孤兒綁定實證），24h 窗口內持有實質
+  death evidence 的正當接管面＝operator-invoked
+  `dutymail holder takeover --address <ALIAS> --expected-epoch <N>`
+  （CLI 形態以 `dutymail holder takeover --help` 為準；接管規則消費端自律
+  ——dutymail 不 impose policy，明文 operator-invoked 是正當面）。
+  scbus 時代實證〔已退役〕：AIR-225 曾以 holder ext 自收／ext operator path
+  代 ack，並以當時的 scbus release 命令釋放 primary 章位（含 generation
+  fencing CAS 參數）——CLI 與命令形已隨換代退役，留 audit-trail 歷史價值、
+  不可照做；dutymail 時代釋出面＝`release_holder`（SessionEnd hook 接線）。
 
 ### Retirement 程序
 
