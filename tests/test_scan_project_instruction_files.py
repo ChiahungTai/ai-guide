@@ -69,3 +69,22 @@ def test_lookalike_only_dir_not_legacy_fallback(tmp_path):
     d.mkdir()
     (d / "OLD_CLAUDE.md").write_text("# stale\n", encoding="utf-8")
     assert sp._find_instruction_files(tmp_path) == []
+
+
+def test_x_cap_path_finding_field_is_source_file(tmp_path):
+    """併補（judge）：X-cap-path finding 輸出欄位＝source_file（2a 改名後
+    的輸出契約 guard；schema 文檔例示已同步同一鍵）。"""
+    caps = [
+        {
+            "module": "pkg",
+            "capability": "樣例能力",
+            "entry_point": "`missing/module.py:run()`",
+            "status": "✅",
+            "source_file": "pkg/AGENTS.md",
+        }
+    ]
+    findings = sp.run_cross_validation({}, caps, [], [], tmp_path)
+    cap_path = [f for f in findings if f["check_id"] == "X-cap-path"]
+    assert len(cap_path) == 1
+    assert cap_path[0]["source_file"] == "pkg/AGENTS.md"
+    assert "source_claude_md" not in cap_path[0]
