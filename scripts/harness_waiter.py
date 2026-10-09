@@ -153,8 +153,9 @@ exit 契約（frozen——watcher 主迴圈）
 - 0＝正常收場（含空 registry、全 terminal〔stdout 尾附 CollectionReceipt〕）
 - 2＝hard-death wake（generation mismatch／metadata 消失／registry entry 異動）
 - 3＝advisory wake（timebox wake——stdout 尾附 harvest receipt JSON＋pending
-  intervention；或 stale-advisory——heartbeat 斷訊提前醒〔AIR-160〕，不收割不
-  記帳；兩者皆 advisory——不 stop 不重派）
+  intervention；stale-advisory——heartbeat 斷訊提前醒〔AIR-160〕；spawn 僵屍
+  advisory——completion-suspected／start-missing〔AIR-296，偏差 17〕；諸源
+  皆 advisory——不 stop 不重派、不收割不記帳）
 - 其他非零＝內部錯／fail-loud（診斷至 stderr＋stdout 尾行狀態 JSON；本檔
   用 1）
 - verification 模式延伸面（`--verify`——frozen 表為主迴圈 wake 語義，verify
