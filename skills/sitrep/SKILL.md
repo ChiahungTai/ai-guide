@@ -65,16 +65,26 @@ uv run python scripts/agent_liveness_sweep.py --max-files 200 --max-bytes 335544
 - 每個異常 job 帶**運行時間**（sweep 的「最後活動 X 前」欄）；**產出增長**＝對 running-fresh job 的 ledger 檔兩次取樣（間隔 30–60s，`stat -f "%z %m"`，同面 6 手法）——檔案＝`~/Github/<root 標籤>/.delegate-bridge/jobs/<job-id>.jsonl`（root 標籤＝sweep 展開行的 `@ai-guide`／`@delegate-bridge`）；size 增長＝在跑，停滯＝卡住嫌疑（事件流逐 turn 落盤，短窗無增長未必卡死——併「最後活動距今」判讀）；無 running job 時本子步驟跳過。**terminal 未收**（completed 但台帳無 collect 紀錄）與 **zombie 停滯**（>6h 無活動）兩種都要現形
 - 台帳對接鍵＝job id（session-journal.md 六欄表）；補台帳／collect／殺 job 都歸 session
 
-### 面 6：spawn subagent 進度（活性三訊號）
+### 面 6：spawn subagent 進度（活性三訊號＋僵屍分類）
 
 目錄布局（ZCode 端，已實證）：`~/.zcode/cli/agents/sess_<id>/agent_<id>/`——`metadata.json`（status 四態實證：running／completed／failed／stopped；description／cwd／createdAt／completedAt〔缺席退 `updatedAt`〕）＋`output.txt`（產出流，轉錄活性錨點）＋`task.output`（任務輸出檔；本面活性判定只消費前兩檔）。
 
 ```bash
+# 僵屍分類（AIR-296 機械判定——與面 5 同一 sweep、--zcode-scan 加掃 ZCode 域）
+uv run python scripts/agent_liveness_sweep.py --zcode-scan --max-files 200 --max-bytes 33554432
+
 # 活性掃描：mtime 距今＋size
 ls -lt ~/.zcode/cli/agents/*/agent_*/output.txt 2>/dev/null | head -8
 # running 標記清單
 rg -l '"status":\s*"running"' ~/.zcode/cli/agents/*/agent_*/metadata.json 2>/dev/null
 ```
+
+僵屍分類判讀（機械面——判定單一源＝scripts/zombie_core.py，GLM 90 樣本校準）：
+
+- 一行＝`spawn-zombies=N(START_MISSING=a SILENCE=b COMPLETION_SUSPECTED=c UNKNOWN=d)`；零事件也要報 coverage（discovered／running／running-fresh）
+- COMPLETION_SUSPECTED＝做完沒回報嫌疑（output.txt 在場而 metadata 仍 running）——與下方「靜默終態」訊號互補，兩面都報；處置（回收/重派/寫 completed）恆 session 人裁，sitrep 只標
+- UNKNOWN（JSON 損壞）＝fail-loud 列報——禁自動結案，展開 metadataPath 交人查
+- 去重鍵＝事件行 `dedup=` 欄（attempt_id+alert_type）；同 key 跨日重複＝未處置的存量，不是新事件
 
 判讀三訊號（面 6 必帶運行時間＋產出活性）：
 
@@ -103,7 +113,7 @@ sitrep @ <working repo>（HH:MM）
 3/7 信箱：<alias> pending=N（未處理）；…
 4/7 watcher：running fresh（armed Xs 前）／stopped／stale（提示 re-arm）
 5/7 bridge：fresh=N zombie=N terminal-unclaimed=N（異常展開：job-…｜family｜最後活動 X 前｜增長中／停滯）／coverage 不完整（running=r/R、unscanned 候選 K）／未收斂（逾時）
-6/7 sub：真活 N（增長中）／卡住嫌疑 N／靜默終態 N（completed/failed/stopped；description…｜X 分前）
+6/7 sub：spawn-zombies=N(START_MISSING=a SILENCE=b COMPLETION_SUSPECTED=c UNKNOWN=d)／真活 N（增長中）／卡住嫌疑 N／靜默終態 N（completed/failed/stopped；description…｜X 分前）
 7/7 git：clean／N 檔未提交＋WT：…（逐一列名）
 ```
 

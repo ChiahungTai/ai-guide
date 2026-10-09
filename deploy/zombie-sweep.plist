@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.org/DTDs/PropertyList-1.0.dtd">
+<!-- spawn 僵屍夜頻 sweep（AIR-296 第二層掛載；形態照 dispatch-ledger-sweep 先例）。
+     行為主體＝scripts/agent_liveness_sweep.py --zcode-scan（唯讀 reporter——
+     只標不殺；判定單一源＝scripts/zombie_core.py；GLM 90 樣本校準三簽章；
+     事件台帳帶 attempt_id+alert_type 去重鍵；UNKNOWN fail-loud 禁自動結案）。
+     時段：03:05 夜間（避開 05/08/21 點既有面）。bridge 域（面 5）與本域
+     （--zcode-scan）同一腳本一次跑兩面——夜頻跑全量（無 bounded cap）。
+     路徑參數化：{{REPO}} 與 {{HOME}} 佔位，裝載前須 render（governance/install.py
+     render 同款）。安裝形態（清單列出、user 手動裝載同 AIR-110 決策）：
+       1. render：{{REPO}}→repo 絕對路徑、{{HOME}}→家目錄
+       2. cp <rendered> ~/Library/LaunchAgents/com.ai-guide.zombie-sweep.plist
+       3. launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.ai-guide.zombie-sweep.plist
+     注意：本註解禁 ASCII 雙連字號（XML comment 語法限制）。 -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ai-guide.zombie-sweep</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-lc</string>
+        <string>cd {{REPO}} &amp;&amp; uv run python scripts/agent_liveness_sweep.py --zcode-scan</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>5</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-zombie-sweep.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{HOME}}/.mosaic/logs/ops/launchagent-ai-guide-zombie-sweep-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>{{HOME}}</string>
+        <key>PATH</key>
+        <string>{{HOME}}/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>600</integer>
+</dict>
+</plist>
