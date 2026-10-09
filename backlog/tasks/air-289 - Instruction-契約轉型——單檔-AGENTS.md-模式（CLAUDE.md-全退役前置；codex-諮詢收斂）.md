@@ -1,10 +1,10 @@
 ---
 id: AIR-289
 title: Instruction 契約轉型——單檔 AGENTS.md 模式（CLAUDE.md 全退役前置；codex 諮詢收斂）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-08 22:36'
-updated_date: '2026-10-08 22:37'
+updated_date: '2026-10-09 01:33'
 labels:
   - instruction
 dependencies: []
@@ -24,12 +24,28 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 instruction-writing 雙檔規範廢除＋CC discovery 重寫
-- [ ] #2 instruction-init 停止生成 wrapper＋legacy 唯讀辨識
-- [ ] #3 clean/sync/rules/_common 同步
+- [x] #1 instruction-writing 雙檔規範廢除＋CC discovery 重寫
+- [x] #2 instruction-init 停止生成 wrapper＋legacy 唯讀辨識
+- [x] #3 clean/sync/rules/_common 同步
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
+- [x] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【收口——7+5 commits】五面契約轉型＋judge 三必修（sync-check-angles @ 禁令／transfer-check-only 貫徹／init 共存擴語）＋收尾捆綁（錨點精度＋模板計數）＋ledger 勘誤＋291 卡補七項收編。bi：codex job-mv099iea REQUEST CHANGES（4I）／GLM job-mv099iy7 pass——judge job-mv09ojdi 裁 codex 方向成立（sync 工具鏈＝本卡自面）。全套 3661×7 綠。marshal re-diff PASS。範圍外歸 290/291（含 291 新補七項）。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  a["雙檔模式契約"] --> b["單檔 AGENTS.md 轉型——五面＋drift triage"] --> c["judge：codex 方向成立三必修"] --> d["re-diff PASS→merge Done"]
+  d -.-> e["291 收編七項＋290 退役銜接"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
