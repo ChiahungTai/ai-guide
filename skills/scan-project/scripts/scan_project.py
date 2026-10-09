@@ -7,7 +7,9 @@ Produces three things (no full registries — LLM reads files directly):
 2. findings — mechanical cross-validation issues (X-cap-path, X-ep-ready, etc.)
 3. fingerprint — lightweight change detection (counts + hashes)
 
-Internal parsing of instruction files (AGENTS.md preferred, CLAUDE.md legacy) and backlog/tasks/ is kept for computing findings,
+Internal parsing of instruction files (single-file AGENTS.md; legacy
+CLAUDE.md fallback only — dual-file mode retired, AIR-289) and
+backlog/tasks/ is kept for computing findings,
 but registries are NOT included in output.
 
 Designed for the /scan-project skill (on-demand mechanical inventory + findings).
@@ -229,45 +231,64 @@ def _count_py_files(path: Path) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Instruction-file parsing (AGENTS.md preferred, CLAUDE.md legacy)
+# Instruction-file parsing (single-file AGENTS.md; legacy CLAUDE.md fallback)
 # ---------------------------------------------------------------------------
 
 
 def _find_instruction_files(project_root: Path) -> list[Path]:
-    """Find each directory's instruction-content file (dual-file aware).
+    """Find each directory's instruction-content file.
 
-    Per instruction-writing.md dual-file mode: content lives in AGENTS.md
-    (CLAUDE.md is a thin @AGENTS.md wrapper for Claude). Prefer AGENTS.md;
-    fall back to CLAUDE.md for legacy single-file repos. Returns one file
-    per directory. Uses pruned walk (_iter_files) — never descends into
-    build artifacts.
+    Single-file mode (dual-file retired, AIR-289): the instruction file is
+    AGENTS.md. CLAUDE.md is a legacy fallback for not-yet-migrated repos —
+    used only when the directory has no AGENTS.md; when both coexist the
+    CLAUDE.md content is shadowed and surfaces as an X-legacy-dual-file
+    finding (run_cross_validation). Returns one file per directory. Uses
+    pruned walk (_iter_files) — never descends into build artifacts.
     """
     by_dir: dict[Path, Path] = {}
-    for path in _iter_files(project_root, "CLAUDE.md"):
-        by_dir[path.parent] = path
     for path in _iter_files(project_root, "AGENTS.md"):
-        by_dir[path.parent] = path  # AGENTS.md preferred (overwrites CLAUDE.md)
+        by_dir[path.parent] = path
+    for path in _iter_files(project_root, "CLAUDE.md"):
+        if path.parent not in by_dir:  # legacy fallback only — AGENTS.md wins
+            by_dir[path.parent] = path
     return sorted(by_dir.values())
 
 
-def parse_claude_md_registry(
+def _find_dual_instruction_dirs(project_root: Path) -> list[Path]:
+    """Directories carrying both AGENTS.md and CLAUDE.md.
+
+    Dual-file coexistence is a retired-mode leftover (AIR-289) — the
+    scanner reads AGENTS.md only, so the CLAUDE.md half is silently
+    shadowed; callers surface each coexisting dir as a finding.
+    """
+    agents_dirs = {p.parent for p in _iter_files(project_root, "AGENTS.md")}
+    return sorted(
+        p.parent
+        for p in _iter_files(project_root, "CLAUDE.md")
+        if p.parent in agents_dirs
+    )
+
+
+def parse_instruction_files(
     project_root: Path,
 ) -> tuple[list[dict], list[dict]]:
-    """Parse all CLAUDE.md files.
+    """Parse all instruction files (AGENTS.md; legacy CLAUDE.md fallback).
 
-    Returns (claude_md_registry, capabilities_registry).
+    Returns (instruction_registry, capabilities_registry).
     """
-    claude_md_registry = []
+    instruction_registry = []
     capabilities_registry = []
     for md_file in _find_instruction_files(project_root):
-        md_entry, caps_entries = _parse_single_claude_md(md_file, project_root)
-        claude_md_registry.append(md_entry)
+        md_entry, caps_entries = _parse_single_instruction_file(
+            md_file, project_root
+        )
+        instruction_registry.append(md_entry)
         capabilities_registry.extend(caps_entries)
-    return claude_md_registry, capabilities_registry
+    return instruction_registry, capabilities_registry
 
 
 def _parse_capabilities_table(
-    content: str, source_claude_md: str, module: str
+    content: str, source_file: str, module: str
 ) -> list[dict]:
     """Parse Capabilities table from instruction-file content.
 
@@ -331,17 +352,17 @@ def _parse_capabilities_table(
                 "capability": col1,
                 "entry_point": entry_point,
                 "status": status,
-                "source_claude_md": source_claude_md,
+                "source_file": source_file,
             }
         )
 
     return entries
 
 
-def _parse_single_claude_md(
+def _parse_single_instruction_file(
     md_file: Path, project_root: Path
 ) -> tuple[dict, list[dict]]:
-    """Parse a single CLAUDE.md file.
+    """Parse a single instruction file (AGENTS.md / legacy CLAUDE.md).
 
     Returns (metadata_dict, capabilities_entries).
     """
@@ -448,19 +469,19 @@ def run_cross_validation(
     modules: dict,
     capabilities_registry: list[dict],
     kanban_registry: list[dict],
-    claude_md_registry: list[dict],
+    instruction_registry: list[dict],
     project_root: Path,
 ) -> list[dict]:
     """Run mechanical cross-validation checks."""
     findings = []
 
-    claude_md_modules = {e["module"] for e in claude_md_registry}
+    instruction_modules = {e["module"] for e in instruction_registry}
 
     # --- Capabilities checks ---
 
     # X-cap-path: Capabilities entry_point path does not exist
     # Entry paths may be relative to: project root, package root, or
-    # the CLAUDE.md's own directory.  Check all three before reporting.
+    # the instruction file's own directory.  Check all three before reporting.
     pkg_root = _find_package_root(project_root)
     for e in capabilities_registry:
         entry = e.get("entry_point", "")
@@ -478,13 +499,13 @@ def run_cross_validation(
             ]
             if pkg_root:
                 candidates.append(pkg_root / rel_path)  # under package root
-            # Relative to the CLAUDE.md's own directory
-            claude_md_dir = (
-                project_root / e["source_claude_md"].rsplit("/", 1)[0]
-                if "/" in e["source_claude_md"]
+            # Relative to the instruction file's own directory
+            instruction_dir = (
+                project_root / e["source_file"].rsplit("/", 1)[0]
+                if "/" in e["source_file"]
                 else project_root
             )
-            candidates.append(claude_md_dir / rel_path)
+            candidates.append(instruction_dir / rel_path)
             if not any(p.exists() for p in candidates):
                 findings.append(
                     {
@@ -492,18 +513,19 @@ def run_cross_validation(
                         "severity": "important",
                         "detail": (
                             f"Capabilities entry path '{rel_path}' "
-                            f"does not exist (in {e['source_claude_md']})"
+                            f"does not exist (in {e['source_file']})"
                         ),
                         "capability": e["capability"],
-                        "source_claude_md": e["source_claude_md"],
+                        "source_file": e["source_file"],
                     }
                 )
 
-    # X6: Module in dep-graph but no instruction file (AGENTS.md/CLAUDE.md)
+    # X6: Module in dep-graph but no instruction file (AGENTS.md; legacy
+    # CLAUDE.md counts for not-yet-migrated repos)
     # Module dirs may live at project root OR under the package root
     # (python/<pkg>/<mod> layouts) — check both before reporting.
     for mod_name, mod_data in modules.items():
-        if mod_name in claude_md_modules or mod_name == "(root)":
+        if mod_name in instruction_modules or mod_name == "(root)":
             continue
         file_count = mod_data.get("file_count", 0)
         if file_count < 3:
@@ -531,6 +553,24 @@ def run_cross_validation(
                     f"Module '{mod_name}' has {file_count} files but no instruction file (AGENTS.md/CLAUDE.md)"
                 ),
                 "module": mod_name,
+            }
+        )
+
+    # X-legacy-dual-file: AGENTS.md＋CLAUDE.md 同目錄共存（雙檔模式已廢
+    # AIR-289；AIR-291 收口）——scanner 只讀 AGENTS.md，CLAUDE.md 內容被
+    # 靜默遮蔽；共存＝退役殘留，逐目錄列出讓 migration 可見（原行為漏報）
+    for d in _find_dual_instruction_dirs(project_root):
+        rel_dir = str(d.relative_to(project_root)) or "."
+        findings.append(
+            {
+                "check_id": "X-legacy-dual-file",
+                "severity": "important",
+                "detail": (
+                    f"'{rel_dir}' has both AGENTS.md and CLAUDE.md — "
+                    "dual-file mode retired (AIR-289); scanner reads "
+                    "AGENTS.md only, CLAUDE.md content is silently shadowed"
+                ),
+                "directory": rel_dir,
             }
         )
 
@@ -820,12 +860,13 @@ def _dir_inventory(project_root: Path, max_depth: int = 4, cap: int = 800) -> di
 def _compute_fingerprint(
     capabilities_registry: list[dict],
     kanban_registry: list[dict],
-    claude_md_registry: list[dict],
+    instruction_registry: list[dict],
 ) -> dict:
     """Compute lightweight fingerprint for change detection.
 
-    LLM reads CLAUDE.md and backlog/tasks/ directly when it needs details.
-    The fingerprint only answers: "did something change since last scan?"
+    LLM reads instruction files and backlog/tasks/ directly when it needs
+    details. The fingerprint only answers: "did something change since
+    last scan?"
     """
 
     # Capabilities hash: sorted capability + module + status
@@ -849,7 +890,7 @@ def _compute_fingerprint(
         "kanban_total": len(kanban_registry),
         "kanban_by_lane": dict(kanban_by_lane),
         "kanban_hash": kanban_hash,
-        "instruction_file_total": len(claude_md_registry),
+        "instruction_file_total": len(instruction_registry),
     }
 
 
@@ -862,8 +903,8 @@ def scan_project(project_root: Path) -> dict:
     3. fingerprint — lightweight change detection (counts + hashes)
 
     Internal parsing (registries) is kept for computing findings,
-    but NOT included in output. LLM reads CLAUDE.md and backlog/tasks/
-    directly when it needs details.
+    but NOT included in output. LLM reads instruction files and
+    backlog/tasks/ directly when it needs details.
     """
     project_root = project_root.resolve()
 
@@ -885,8 +926,10 @@ def scan_project(project_root: Path) -> dict:
     rust_workspace = _scan_rust_workspace(project_root)
     dir_inventory = _dir_inventory(project_root)
 
-    # Phase 2: Parse CLAUDE.md files (internal — not in output)
-    claude_md_registry, capabilities_registry = parse_claude_md_registry(project_root)
+    # Phase 2: Parse instruction files (internal — not in output)
+    instruction_registry, capabilities_registry = parse_instruction_files(
+        project_root
+    )
 
     # Phase 3: Parse backlog/tasks/ cards (internal — not in output)
     kanban_registry = parse_kanban_registry(project_root)
@@ -896,13 +939,13 @@ def scan_project(project_root: Path) -> dict:
         modules,
         capabilities_registry,
         kanban_registry,
-        claude_md_registry,
+        instruction_registry,
         project_root,
     )
 
     # Phase 5: Compute fingerprint for change detection
     fingerprint = _compute_fingerprint(
-        capabilities_registry, kanban_registry, claude_md_registry
+        capabilities_registry, kanban_registry, instruction_registry
     )
 
     return {
@@ -924,7 +967,7 @@ def scan_project(project_root: Path) -> dict:
                 "has_module_boundaries": e["has_module_boundaries"],
                 "has_capabilities_table": e["has_capabilities_table"],
             }
-            for e in claude_md_registry
+            for e in instruction_registry
         ],
         "findings": findings,
         "fingerprint": fingerprint,

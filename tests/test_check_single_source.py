@@ -1338,3 +1338,48 @@ def test_grok_parity_hooks_not_dict_important(tmp_path, monkeypatch):
     findings = css.check_grok_live_parity(_grok_parity_inv())
     assert len(findings) == 1
     assert findings[0][1] == "important"
+
+
+# ---------------------------------------------------------------------------
+# audience_self_declare（classification）：AIR-291 錨點修——source 由退役的
+# CLAUDE.md wrapper 改專案 AGENTS.md，且 registry 鍵（consumers）與
+# check_classification 實讀鍵對齊（舊碼讀 commands＝永遠空轉 no-op）
+# ---------------------------------------------------------------------------
+
+
+def _audience_inv():
+    return next(i for i in css.INVARIANTS if i["id"] == "audience_self_declare")
+
+
+def test_audience_anchor_is_agents_md():
+    """錨點源＝AGENTS.md（wrapper 已退役；防 drift 回 CLAUDE.md）。"""
+    assert _audience_inv()["source"] == "AGENTS.md"
+
+
+def test_audience_registry_key_matches_check(tmp_path, monkeypatch):
+    """consumers 命中檔存在且自標受眾→零 finding（鍵對齊＝檢查真正跑）。"""
+    consumer = tmp_path / "cmd.md"
+    consumer.write_text("本命令屬 layer 3 人類 viewport\n", encoding="utf-8")
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    inv = {**_audience_inv(), "consumers": ["cmd.md"]}
+    assert css.check_classification(inv) == []
+
+
+def test_audience_undeclared_consumer_flagged(tmp_path, monkeypatch):
+    """分類檔存在但未自標受眾→important（檢查不再空轉）。"""
+    consumer = tmp_path / "cmd.md"
+    consumer.write_text("這個命令沒有自我宣告的服務對象\n", encoding="utf-8")
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    inv = {**_audience_inv(), "consumers": ["cmd.md"]}
+    findings = css.check_classification(inv)
+    assert len(findings) == 1
+    assert findings[0][1] == "important"
+
+
+def test_audience_missing_consumer_file_flagged(tmp_path, monkeypatch):
+    """分類的命令檔不存在→important（registry 指向幻影＝drift）。"""
+    monkeypatch.setattr(css, "REPO_ROOT", tmp_path)
+    inv = {**_audience_inv(), "consumers": ["ghost.md"]}
+    findings = css.check_classification(inv)
+    assert len(findings) == 1
+    assert findings[0][1] == "important"

@@ -57,14 +57,14 @@ INVARIANTS = [
     {
         "id": "audience_self_declare",
         "type": "classification",
-        "source": "CLAUDE.md",  # 受眾模型（外部分類源）
+        "source": "AGENTS.md",  # 受眾模型（外部分類源＝專案 AGENTS.md「命令的受眾視角」節；wrapper 時代舊值 CLAUDE.md 已退役 AIR-215/AIR-289）
         "consumers": [
             "skills/illustrate/SKILL.md",
             "skills/debrief/SKILL.md",
             "skills/smell-detector/SKILL.md",
         ],  # layer 3 人類 viewport
         "must_contain_any": ["layer 3", "人類 viewport", "B 軸", "受眾"],
-        "note": "CLAUDE.md 分類為 layer 3 的命令本體必須自標受眾 —— 與 /code-review axis 3 "
+        "note": "AGENTS.md 受眾視角表分類為 layer 3 的命令本體必須自標受眾 —— 與 /code-review axis 3 "
         "共用 arch-thinking skill 的消歧對稱（外部分類 + 命令不自知 = drift 溫床）",
     },
     # skill_allowlist_coverage 已退役（AIR-215 決策④）：CC 權限模型的 live 面
@@ -390,12 +390,12 @@ def check_enforced_by(inv: dict) -> list[tuple[str, str, str]]:
 
 
 def check_classification(inv: dict) -> list[tuple[str, str, str]]:
-    """source（如 CLAUDE.md）分類的 commands，本體必須自標受眾。"""
+    """source（AGENTS.md 受眾視角表）分類的 consumers，本體必須自標受眾。"""
     if inv.get("type") != "classification":
         return []
     must = inv["must_contain_any"]
     out = []
-    for cmd in inv.get("commands", []):
+    for cmd in inv.get("consumers", []):
         p = REPO_ROOT / cmd
         if not p.exists():
             out.append((inv["id"], "important", f"分類命令不存在: {cmd}"))

@@ -3,7 +3,7 @@ name: scan-project
 description: >
   Unified project knowledge scanner (on-demand). Scans Python imports (built-in AST), Rust Cargo
   workspaces (members + internal crate deps + PyO3 binding marker), mechanical directory inventory,
-  instruction files (AGENTS.md preferred, CLAUDE.md legacy), and backlog/ cards. Produces dep_graph +
+  instruction files (single-file AGENTS.md; legacy CLAUDE.md fallback), and backlog/ cards. Produces dep_graph +
   rust_workspace + dir_inventory + instruction_files + findings + fingerprint. Nightly maintain no
   longer generates snapshots (structural graph freshness is code-reality's domain); run on demand
   for mechanical inventory / cross-validation findings.
@@ -17,7 +17,7 @@ allowed-tools: Bash(uv run python *)
 
 # /scan-project — 統一專案知識掃描器
 
-掃描 Python import 依賴（內建 AST）、Rust Cargo workspace、機械目錄盤點、模組 instruction 檔（AGENTS.md 為主，CLAUDE.md legacy）Capabilities 表格、backlog 卡（`backlog/tasks/` frontmatter），產出 **dep_graph + rust_workspace + dir_inventory + instruction_files + findings + fingerprint**。
+掃描 Python import 依賴（內建 AST）、Rust Cargo workspace、機械目錄盤點、模組 instruction 檔（單檔 AGENTS.md；legacy CLAUDE.md fallback，雙檔共存報 X-legacy-dual-file）Capabilities 表格、backlog 卡（`backlog/tasks/` frontmatter），產出 **dep_graph + rust_workspace + dir_inventory + instruction_files + findings + fingerprint**。
 
 Schema 定義：[unified-snapshot-schema.md](reference/unified-snapshot-schema.md)
 
@@ -35,7 +35,7 @@ Schema 定義：[unified-snapshot-schema.md](reference/unified-snapshot-schema.m
 5. **findings** — 機械性交叉驗證問題（路徑、tag、重複等）
 6. **fingerprint** — 輕量變化偵測（counts + hashes）
 
-內部解析（instruction 檔（AGENTS.md 為主、CLAUDE.md legacy）、backlog 卡）僅用於計算 findings，**不在輸出中包含 registry**。
+內部解析（instruction 檔（單檔 AGENTS.md；legacy CLAUDE.md fallback）、backlog 卡）僅用於計算 findings，**不在輸出中包含 registry**。
 
 **LSP 與 dep_graph 的分工（正交，非競爭）**：
 
@@ -54,10 +54,10 @@ Schema 定義：[unified-snapshot-schema.md](reference/unified-snapshot-schema.m
 
 ```bash
 # 掃描當前專案
-uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root . --output .project-snapshot.json
+uv run python "${SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root . --output .project-snapshot.json
 
 # 輸出到 stdout（pipe 用）
-uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root /path/to/project
+uv run python "${SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/scan_project.py" --project-root /path/to/project
 ```
 
 ## Graceful Degradation
@@ -79,11 +79,11 @@ uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/sc
 | `dep_graph.hotspots` | 內建掃描 | 高 fan-out imports |
 | `rust_workspace` | Cargo.toml 解析 | workspace 成員 + crate 內部依賴 + `has_python_bindings` |
 | `dir_inventory` | 檔案系統盤點 | 深度 ≤4 目錄清單（subdirs、檔名/副檔統計）——列舉 ground truth |
-| `instruction_files` | instruction 檔掃描 | 各目錄 AGENTS.md/CLAUDE.md 位置 + 邊界/能力表有無 |
-| `findings` | 機械性交叉檢查 | X-cap-path / X-ep-ready / X6 |
+| `instruction_files` | instruction 檔掃描 | 各目錄 AGENTS.md（legacy CLAUDE.md fallback）位置 + 邊界/能力表有無 |
+| `findings` | 機械性交叉檢查 | X-cap-path / X-ep-ready / X6 / X-legacy-dual-file |
 | `fingerprint` | 計數 + 雜湊 | capabilities_total, kanban_total, kanban_by_lane, hashes |
 
-**不在輸出中的**：capabilities_registry、kanban_registry、claude_md_registry、cross_validation（v3 舊格式）。
+**不在輸出中的**：capabilities_registry、kanban_registry、instruction_registry、cross_validation（v3 舊格式）。
 
 ## 與其他命令整合
 
@@ -93,14 +93,15 @@ uv run python "${CLAUDE_SKILL_DIR:-$HOME/.agents/skills/scan-project}/scripts/sc
 |------|-----------------|
 | `/instruction-sync` | 可選：載入 dep_graph 用於 import 驗證 |
 | `/instruction-init` | 可選：執行本 skill，用 findings 報告缺口 |
-| `/doc-health` | 步驟 1 消費 findings，LLM 直接讀 instruction 檔（AGENTS.md/CLAUDE.md）+ backlog 卡（`backlog/`）做品質檢查 |
+| `/doc-health` | 步驟 1 消費 findings，LLM 直接讀 instruction 檔（AGENTS.md）+ backlog 卡（`backlog/`）做品質檢查 |
 
 ## 交叉驗證（機械性）
 
 | Check | 說明 | 嚴重度 |
 |-------|------|--------|
-| X-cap-path | Capabilities 入口路徑不存在（檢查 project root / package root / instruction 檔目錄（AGENTS.md/CLAUDE.md）） | important |
+| X-cap-path | Capabilities 入口路徑不存在（檢查 project root / package root / instruction 檔目錄） | important |
 | X-ep-ready | To Do/In Progress 卡片引用的 EP 檔案不存在 | important |
-| X6 | dep-graph 有模組（≥3 files）但無 instruction 檔（AGENTS.md/CLAUDE.md） | important |
+| X6 | dep-graph 有模組（≥3 files）但無 instruction 檔（AGENTS.md；legacy CLAUDE.md 亦計） | important |
+| X-legacy-dual-file | 同目錄 AGENTS.md＋CLAUDE.md 共存（雙檔模式已廢 AIR-289——scanner 只讀 AGENTS.md，CLAUDE.md 被靜默遮蔽＝migration 訊號） | important |
 
 語義性驗證（X1 dep-graph 矛盾、X8 幽靈 Capabilities 引用）由 `/instruction-sync` 和 `/doc-health` 的 LLM 判斷完成。
