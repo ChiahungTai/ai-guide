@@ -1,9 +1,10 @@
 ---
 id: AIR-291
 title: 消費端與治理收斂——deploy_agents／scan-project／metadata-sync／CC smoke
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-08 22:36'
+updated_date: '2026-10-09 08:20'
 labels:
   - instruction
 dependencies: []
@@ -25,12 +26,29 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 deploy_agents stale 文字＋purity guard＋測試同步
-- [ ] #2 scan-project/check_single_source 錨點修
-- [ ] #3 CC smoke root/nested 實證通過
+- [x] #1 deploy_agents stale 文字＋purity guard＋測試同步
+- [x] #2 scan-project/check_single_source 錨點修
+- [x] #3 CC smoke root/nested 實證通過
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 老規矩審查鏈（codex＋5.3＋judge）
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+【收口——judge 三修＋兩併補（c0d1ed7c/4e29645a/7eb873d5/b1a7e390）re-diff PASS 合併】3705 passed。CC smoke（AC#3）維持 user 端 runtime gate。ledger=.review/air-291.md。
+
+【收口——judge 三修＋兩併補 re-diff PASS 合併 582b3572（11 commits rebase）。rebase 衝突＝deploy_agents L14/L877 與 retire-followup 修同區——取 main 版（較新含 2.1.277 native 細節）。dry-run 四 target OK。CC smoke 維持 user gate。ledger=.review/air-291.md。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+```mermaid
+flowchart LR
+  a["CLAUDE.md 退役——消費端治理殘留"] --> b["deploy_agents 過時文本歸零＋purity guard 反轉"] --> c["scan-project 去 CLAUDE 中心化＋check_single_source 錨點修＋鍵位錯置擴修"] --> d["metadata-sync 五處歸零＋judge 補收編核實"] --> e["merge 582b3572 Done——CC smoke 歸 user"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
