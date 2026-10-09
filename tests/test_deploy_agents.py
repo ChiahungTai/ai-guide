@@ -176,13 +176,19 @@ def test_purity_abs_user_path(tmp_path):
 
 
 def test_purity_claude_wrapper_annotation(tmp_path):
-    _rule(tmp_path, "ok.md", "neutral", "CLAUDE.md wrapper（Claude 端才有）\n")
+    # 豁免詞與 rules/AGENTS.md 機械檢查清單同一組（legacy|已退役|唯讀|歷史）
+    # ——AIR-291 起 wrapper 提及僅限 legacy／歷史語境，「Claude 端」不再豁免
+    _rule(tmp_path, "ok.md", "neutral", "CLAUDE.md wrapper（已退役 AIR-215）\n")
+    _rule(tmp_path, "legacy.md", "neutral", "legacy CLAUDE.md wrapper 語境\n")
+    _rule(tmp_path, "stale.md", "neutral", "CLAUDE.md wrapper（Claude 端才有）\n")
     _rule(tmp_path, "bad.md", "neutral", "記得 CLAUDE.md wrapper 同步\n")
     hits = da.check_neutral_purity(tmp_path)
-    assert any(
-        label == "claude-wrapper-unannotated" and name == "bad.md"
+    flagged = {
+        name
         for name, label, _ in hits
-    )
+        if label == "claude-wrapper-unannotated"
+    }
+    assert flagged == {"stale.md", "bad.md"}
 
 
 def test_purity_guide_not_scanned(tmp_path, monkeypatch):

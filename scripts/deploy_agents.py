@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Deploy bundled AGENTS.md to non-Claude harnesses.
+Deploy the bundled AGENTS.md to the four harness lanes
+(ZCode / Codex / Muse / grok) -- the only live deployment surface.
 
 Bundles ai-development-guide.md (guide) + rules with matching harness-scope
 frontmatter -> writes to ~/.zcode/AGENTS.md, ~/.codex/AGENTS.md,
@@ -23,8 +24,9 @@ Scopes: neutral | claude-specific | meta
 Bundle projection axis (AIR-85): neutral rules may opt into pointer projection
 with `bundle-projection: pointer` + `pointer-target: <skill-id slug>` +
 `bootstrap-pointer: "<trigger sentence>"`; parse-time schema violations fail
-closed (read_rule_meta). deploy never parses `paths:` -- that is the Claude
-runtime axis, structurally isolated from bundle projection.
+closed (read_rule_meta). deploy never parses `paths:` -- legacy CC-runtime
+frontmatter (the CC face is retired, AIR-215; no live consumer),
+structurally isolated from bundle projection.
 
 Pointer rules project to an annotation header + the verbatim bootstrap line
 (project_rule_for_bundle); a global preflight (check_pointer_preflight: repo
@@ -34,20 +36,22 @@ failure aborts with exit 1 and zero targets written.
 
 Default bundles 'neutral'. New rules without an explicit harness-scope
 default to 'neutral' (generic knowledge defaults to cross-harness). Rules
-that are Claude-specific must declare `harness-scope: claude-specific`
-explicitly to be excluded from the bundle.
+that must stay out of every bundle declare `harness-scope: claude-specific`
+explicitly to be excluded (scope value kept from the pre-AIR-215 CC era --
+now it simply means "not for cross-harness bundles"; sources still carrying
+`~/.claude/rules` claims are legacy, not live wiring).
 
 Broken-ref guard: scans every neutral rule's markdown links; if a neutral
 rule links to a claude-specific rule, the deploy aborts with an error
 listing each broken ref. This forces fixing the ref (or re-scoping the
-target) before the bundle ships -- non-Claude readers would otherwise hit
+target) before the bundle ships -- bundle readers would otherwise hit
 a dead link. Parenthetical Claude notes `(Claude: ...)` are exempt, since
-those are Claude-side pointers that non-Claude readers can ignore.
+those are Claude-side pointers that bundle readers can ignore.
 
 Bundle slimming: rule bodies may mark sections to drop from the bundle with
     <!-- bundle: skip-start --> ... <!-- bundle: skip-end -->
-Claude reads the full file via ~/.claude/rules/ symlink; non-Claude bundles
-get the slimmed version. No-op for rules without markers.
+The repo source keeps the full file (on-demand readers follow the pointer
+to it); bundles get the slimmed version. No-op for rules without markers.
 
 Size gate: ZCode truncates each instruction file at 102,400 bytes;
 Muse truncates each instruction file at ~32,000 bytes (measured
@@ -344,7 +348,7 @@ def discover_rules(
 
 # Match `(Claude: ...)` parenthetical notes, supporting both ASCII `()`
 # and full-width `（）` parens (CJK convention). Refs inside these are
-# Claude-side pointers non-Claude readers can ignore, so they're stripped
+# Claude-side pointers bundle readers can ignore, so they're stripped
 # before scanning. Allows a single level of nested ASCII parens.
 _OPEN = r"[\(（]"
 _CLOSE = r"[\)）]"
@@ -398,7 +402,7 @@ def check_broken_refs(
     The scan scope is a global invariant -- it always checks neutral sources
     against claude-specific targets, regardless of what deploy is bundling.
     The guide is scanned since build_bundle ships it verbatim (a guide-side
-    ref to a claude-specific file is just as dead for non-Claude readers).
+    ref to a claude-specific file is just as dead for bundle readers).
     """
     claude_stems = {p.stem for p in discover_rules(rules_dir, {"claude-specific"})}
 
@@ -425,8 +429,9 @@ def check_broken_refs(
 # （首個 marker＝outward-action-consent 的 Commit 專屬段，0924——現況該段
 # 無 pattern 命中；新增 skip 段時重訪此差異）。(2) bare-slash
 # pattern 與 checklist 的 rg 原文逐字等價（僅攔 backtick 形態）。(3)
-# claude-wrapper 的豁免詞「Claude 端」為列舉制——寫「Claude Code」等其他
-# 措辭會誤抓，屬可接受的 heuristic。
+# claude-wrapper 的豁免詞與 rules/AGENTS.md 機械檢查清單的 rg -v 同一組
+# （legacy|已退役|唯讀|歷史——AIR-215 退役＋AIR-289 雙檔已廢後，wrapper
+# 提及僅限 legacy／歷史語境）；列舉制，其他措辭會誤抓，屬可接受的 heuristic。
 PURITY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("bare-slash-command", re.compile(r"`/[a-z][a-z-]+[ `]")),
     ("at-transclusion", re.compile(r"@~/|@\.\./|@/[a-z]")),
@@ -434,6 +439,9 @@ PURITY_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("abs-user-path", re.compile(r"~/Github/ai-guide/")),
 ]
 CLAUDE_WRAPPER_PATTERN = re.compile(r"CLAUDE\.md wrapper")
+# 豁免詞單一源＝rules/AGENTS.md 機械檢查清單（rg -v 'legacy|已退役|唯讀|歷史'）；
+# 改清單時兩處同步。
+CLAUDE_WRAPPER_EXEMPT_WORDS = ("legacy", "已退役", "唯讀", "歷史")
 
 
 def check_neutral_purity(rules_dir: pathlib.Path) -> list[tuple[str, str, str]]:
@@ -448,7 +456,9 @@ def check_neutral_purity(rules_dir: pathlib.Path) -> list[tuple[str, str, str]]:
             for match in pattern.finditer(cleaned):
                 violations.append((rule_name, label, match.group(0)))
         for line in cleaned.splitlines():
-            if CLAUDE_WRAPPER_PATTERN.search(line) and "Claude 端" not in line:
+            if CLAUDE_WRAPPER_PATTERN.search(line) and not any(
+                w in line for w in CLAUDE_WRAPPER_EXEMPT_WORDS
+            ):
                 violations.append(
                     (rule_name, "claude-wrapper-unannotated", line.strip()[:80])
                 )
@@ -686,7 +696,7 @@ def deploy_all(targets: list[pathlib.Path], bundle: str) -> list[pathlib.Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="Deploy bundled AGENTS.md to non-Claude harnesses."
+        description="Deploy the bundled AGENTS.md to the four harness lanes.",
     )
     ap.add_argument(
         "--scope",
@@ -857,10 +867,10 @@ def _deploy(args: argparse.Namespace) -> int:
         if deploy_all([target.path], bundle) == [target.path]:
             deployed += 1
     if deployed == len(ready) and not failed:
-        print(f"[OK] deployed to {deployed}/{len(targets)} non-Claude harnesses")
+        print(f"[OK] deployed to {deployed}/{len(targets)} harness lanes")
     else:
         print(
-            f"[FAIL] deployed to {deployed}/{len(targets)} non-Claude harnesses",
+            f"[FAIL] deployed to {deployed}/{len(targets)} harness lanes",
             file=sys.stderr,
         )
     print(
