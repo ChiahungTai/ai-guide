@@ -46,12 +46,15 @@ only——pendingCount 整數以外絕不進輸出。
    → 一行 `[duty-monitor] <alias>：pending 停留已逾 6 小時（…升 human
    判讀）`＋`stall_reported` flag 落帳（每 episode 一報——防轟炸）。
    年齡源＝monitor 自持帳（`receive status` 無時間戳欄；runner 呼叫面
-   凍結兩唯讀 face 零新增——年齡由帳面推導非新查詢）；事件史消費仍
-   退役（上段裁定不變）。併發姿態：跨 session 並寫＝atomic replace
-   last-writer-wins，後果方向安全（年齡低估＝晚報、flag 遺失＝重複
-   一報——寧重不漏）。已知殘餘邊界：延遲寫入可於清帳後復活舊 flag
-   （單 episode 漏報一次；advisory 面、窗窄）——接受，fencing 不引
-   入（後續卡）。
+   凍結兩唯讀 face 零新增——年齡由帳面推導非新查詢；episode token
+   ＝holder status 回應在場的 `bindingEpoch`，零新 face）；事件史消費
+   仍退役（上段裁定不變）。併發姿態：跨 session 並寫＝atomic replace
+   last-writer-wins＋**episode fencing（AIR-297）**——帳條目帶
+   `episode_id`（＝`holder status` 的 `bindingEpoch`；bind/rebind 即
+   新 episode），讀側 epoch 不匹配（舊 episode 延遲寫入殘留／
+   pre-fencing 舊 schema 條目）→ 視為 stale 清帳重建——延遲寫入不得
+   復活已清帳 episode 的 `stall_reported` flag（最長影響＝年齡重
+   seed 的晚報，寧晚不誤）。
 
 **session-local baseline**：state＝`${XDG_STATE_HOME:-~/.local/state}/
 ai-guide/duty-monitor/<safe_session_id>.json`（形 `{"addresses":
@@ -62,10 +65,11 @@ ai-guide/duty-monitor/<safe_session_id>.json`（形 `{"addresses":
 
 **pending 停留帳（AIR-294 c——跨 session 共享）**：同目錄
 `pending-age.json`（形 `{"addresses": {"<alias>":
-{"first_pending_at_us": int, "stall_reported": bool}}}`；0600 atomic
-寫）。baseline 是「本 session 提醒到哪」（session-local 語義不變）；
-年齡帳是 mailbox 事實（跨 session 共享——新 session 接手即知停留年齡
-，不重計時）。兩帳同一 commit 面推進、各自 fail-soft。
+{"first_pending_at_us": int, "stall_reported": bool,
+"episode_id": int＝bindingEpoch episode fencing（AIR-297）}}}`；
+0600 atomic 寫）。baseline 是「本 session 提醒到哪」（session-local
+語義不變）；年齡帳是 mailbox 事實（跨 session 共享——新 session 接手
+即知停留年齡，不重計時）。兩帳同一 commit 面推進、各自 fail-soft。
 
 **閒置完全安靜（AIR-233 降級裁定）**：註冊面即邊界——無 session 觸發＝
 零查詢；程式碼無背景迴圈／watcher／wait 呼叫（badge 數字源是 SC 側投影
@@ -249,14 +253,44 @@ def _age_entry_raw(doc, address):
     return entry if isinstance(entry, dict) else None
 
 
-def _stored_age_entry(doc, address):
-    """取該門牌年齡條目（驗形）→ dict | None。
+def _episode_of(status):
+    """holder status 回應的 `bindingEpoch` → episode token（AIR-297
+    fencing——bind/rebind 即新 episode，epoch 單調遞增）。非負整數驗證
+    （0 合法——fresh address unbound e=0，S3 實測）；形漂移 raise
+    shape-drift（同 core bindingEpoch 驗證先例，交 per-address
+    fail-soft——禁靜默當 0）。零新增 dutymail face：epoch 源＝既有
+    holder status 回應在場欄位。"""
+    epoch = status.get("bindingEpoch")
+    if not core._non_negative_int(epoch):
+        raise core.DutymailFaceError(
+            "shape-drift", "unknown",
+            f"holder status bindingEpoch 非非負整數：{status!r}",
+            False, 0,
+        )
+    return epoch
 
-    first_pending_at_us 非正整數＝形漂移：stderr 註記後視同 None（冷啟
-    動重 seed——年齡不可信即不呈報，寧晚報不誤報）；stall_reported 非
-    True 一律視 False（丟 flag＝可能重複一報，寧重不漏方向）。"""
+
+def _stored_age_entry(doc, address, episode):
+    """取該門牌年齡條目（驗形＋episode fencing）→ dict | None。
+
+    episode fencing（AIR-297）：條目 `episode_id` ≠ 現 episode（舊
+    episode 延遲寫入殘留，含復活的 `stall_reported` flag；pre-fencing
+    舊 schema 條目無此欄同理）→ stderr 註記後視同 None（stale 清帳
+    重建——延遲寫入不得復活已清帳 episode 的 flag；年齡重 seed＝晚報
+    方向）。first_pending_at_us 非正整數＝形漂移：stderr 註記後視同
+    None（冷啟動重 seed——年齡不可信即不呈報，寧晚報不誤報）；
+    stall_reported 非 True 一律視 False（丟 flag＝可能重複一報，寧重
+    不漏方向）。"""
     entry = _age_entry_raw(doc, address)
     if entry is None:
+        return None
+    if entry.get("episode_id") != episode:
+        print(
+            f"[{HOOK_TAG}] pending-age 陳期條目（{address} episode "
+            f"{entry.get('episode_id')!r} ≠ 現 {episode}）——視為 stale"
+            " 清帳重建",
+            file=sys.stderr,
+        )
         return None
     first = entry.get("first_pending_at_us")
     if (
@@ -271,7 +305,8 @@ def _stored_age_entry(doc, address):
         )
         return None
     return {"first_pending_at_us": first,
-            "stall_reported": entry.get("stall_reported") is True}
+            "stall_reported": entry.get("stall_reported") is True,
+            "episode_id": episode}
 
 
 # ── holderless pending 查詢（唯讀 receive status；runner 注入）────────
@@ -332,7 +367,11 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
     baseline（同值防轟炸）；==0 歸零＋年齡帳清（episode 終）。AIR-294
     stall：holderless pending>0 首見＝seed 年齡帳（年齡未知不呈報）；
     停留逾 PENDING_STALL_REPORT_HOURS 且本 episode 未呈報過＝一行
-    stall 呈報＋flag 落帳（每 episode 一報）。單門牌 face 失敗＝stderr
+    stall 呈報＋flag 落帳（每 episode 一報）。AIR-297 episode
+    fencing：年齡帳條目帶 `episode_id`（＝holder status bindingEpoch
+    ，於 holderless 分支內驗證取用——形漂移交 per-address fail-soft）
+    ，讀側不匹配＝stale 清帳重建（延遲寫入不得復活舊 episode flag）。
+    單門牌 face 失敗＝stderr
     註記續跑其他（per-address 容錯）。updates／age_updates 交呼叫端在
     stdout 寫出成功後 commit（advance-after-emit）；age updates 值為
     None＝清該門牌條目。"""
@@ -359,6 +398,7 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
                 if _age_entry_raw(age_doc, address) is not None:
                     age_updates[address] = None
                 continue
+            episode = _episode_of(status)  # AIR-297 fencing episode token
             pending = _pending_count(runner, address)
         except core.DutymailFaceError as exc:
             kind = (
@@ -385,11 +425,13 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
         if pending != last:
             lines.append(advisory_line(address, pending))
             updates[address] = {"last_pending": pending}
-        entry = _stored_age_entry(age_doc, address)
+        entry = _stored_age_entry(age_doc, address, episode)
         if entry is None:
-            # 首見＝seed 年齡帳（年齡未知，本輪不呈報）
+            # 首見／stale 清帳重建（AIR-297 fencing）＝seed 年齡帳
+            # （年齡未知，本輪不呈報）——條目綁現 episode
             age_updates[address] = {
                 "first_pending_at_us": now_us, "stall_reported": False,
+                "episode_id": episode,
             }
         elif (
             now_us - entry["first_pending_at_us"]
@@ -400,6 +442,7 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
             age_updates[address] = {
                 "first_pending_at_us": entry["first_pending_at_us"],
                 "stall_reported": True,  # 每 episode 一報
+                "episode_id": episode,  # AIR-297 fencing——條目綁 episode
             }
     return lines, updates, age_updates
 

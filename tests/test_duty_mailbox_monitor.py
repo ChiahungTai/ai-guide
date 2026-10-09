@@ -36,6 +36,11 @@ pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判�
   stall 呈報＋每 episode 一報（stall_reported flag——防轟炸）；pending==0
   或 holder active＝清帳（stall 語義限 holderless——B′ 同邊界）；年齡
   欄形漂移＝stderr 註記後視同冷啟動重 seed；0600 atomic 寫。
+- pending-age episode fencing（AIR-297）：條目帶 `episode_id`（＝
+  holder status bindingEpoch，零新增 face）；epoch 不匹配（舊 episode
+  延遲寫入殘留／pre-fencing 舊 schema 無欄）＝stale 清帳重建——復活
+  flag 不壓制呈報（單 episode 漏報邊界封閉）；bindingEpoch 形漂移＝
+  shape-drift fail-soft；epoch 0 合法。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
 （tmp_path）——不碰真 store（真 store 往返＝工單真實資料五步）。
@@ -1597,18 +1602,23 @@ HOUR_US = 3_600_000_000
 
 
 def _seed_age(state_file, first_pending_at_us, stall_reported=False,
-              address=ADDRESS):
-    """seed pending-age.json（與 session baseline 同目錄）。"""
+              address=ADDRESS, episode=4):
+    """seed pending-age.json（與 session baseline 同目錄）。episode=None
+    ＝pre-fencing 舊 schema 條目（無 episode_id 欄——AIR-297 相容面）；
+    預設 4 對齊 _status_doc 預設 epoch（現 episode 條目）。"""
     os.makedirs(os.path.dirname(state_file), exist_ok=True)
     path = os.path.join(os.path.dirname(state_file), "pending-age.json")
     doc = {"addresses": {}}
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as fh:
             doc = json.load(fh)
-    doc["addresses"][address] = {
+    entry = {
         "first_pending_at_us": first_pending_at_us,
         "stall_reported": stall_reported,
     }
+    if episode is not None:
+        entry["episode_id"] = episode
+    doc["addresses"][address] = entry
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(doc, fh)
     return path
@@ -1640,7 +1650,7 @@ class TestPendingStallReport:
         commit()
         age = _read_age(state_file)[ADDRESS]
         assert age == {"first_pending_at_us": NOW_US,
-                       "stall_reported": False}
+                       "stall_reported": False, "episode_id": 4}
 
     def test_age_below_threshold_silent(self, state_file):
         """停留未逾門檻（6h 內）→ 靜默（baseline 同值）——年齡帳不動。"""
@@ -1738,6 +1748,7 @@ class TestPendingStallReport:
         commit()
         assert _read_age(state_file)[ADDRESS] == {
             "first_pending_at_us": NOW_US, "stall_reported": False,
+            "episode_id": 4,
         }
 
     def test_age_file_missing_is_cold(self, state_file):
@@ -1785,3 +1796,121 @@ class TestPendingStallReport:
             ["holder", "status", "--address", ADDRESS],
             ["receive", "status", "--address", ADDRESS],
         ]
+
+
+# ── pending-age 帳 episode fencing（AIR-297——AIR-294 judge F3 邊界封閉）
+
+
+class TestPendingAgeEpisodeFencing:
+    """pending-age 條目綁 `episode_id`（＝`holder status` 的
+    bindingEpoch；bind/rebind 即新 episode）：讀側 epoch 不匹配（舊
+    episode 延遲寫入殘留／pre-fencing 舊 schema 條目）→ 視為 stale
+    清帳重建——延遲寫入不得復活已清帳 episode 的 `stall_reported`
+    flag（單 episode 漏報邊界封閉）。零新增 dutymail face——epoch 源
+    ＝既有 holder status 回應在場欄位。"""
+
+    def test_stale_episode_flag_not_revived(self, state_file, capsys):
+        """核心復活情境：舊 episode（epoch 3）的 stall_reported=True 延遲
+        寫入復活於現 episode（epoch 4）→ 條目視為 stale 丟棄（stderr
+        註記），本輪重 seed（年齡未知不呈報）；下一輪逾檻＝照報——復活
+        flag 不再壓制呈報（漏報封閉）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, stall_reported=True,
+                  episode=3)
+        runner = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert code == 0
+        assert "停留" not in out  # stale 條目丟棄——重 seed 後年齡未知
+        assert "stale" in capsys.readouterr().err
+        commit()
+        assert _read_age(state_file)[ADDRESS] == {
+            "first_pending_at_us": NOW_US, "stall_reported": False,
+            "episode_id": 4,
+        }
+        # 下一輪（同 episode 年齡逾檻）＝照報——舊 flag 復活無效
+        runner2 = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out2, _c2 = _run_at(
+            state_file, runner2, now_us=NOW_US + 7 * HOUR_US
+        )
+        assert "停留已逾" in out2
+
+    def test_current_episode_report_then_rebind_reseeds(self, state_file):
+        """現 episode（epoch 4）正常呈報＋flag 落帳（episode_id 保持 4）
+        → rebind 新 episode（epoch 5）→ 舊 flag 視 stale 重建（新
+        episode 自有呈報窗，舊 flag 不跨 episode 壓制）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, episode=4)
+        runner = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out, commit = _run_at(state_file, runner)
+        assert "停留已逾" in out
+        commit()
+        assert _read_age(state_file)[ADDRESS] == {
+            "first_pending_at_us": NOW_US - 7 * HOUR_US,
+            "stall_reported": True, "episode_id": 4,
+        }
+        runner2 = _seq_runner([
+            _status_doc(epoch=5, live=False), _recv_doc(pending=2),
+        ])
+        _code, out2, commit2 = _run_at(state_file, runner2)
+        assert "停留" not in out2  # stale 重建——年齡未知不呈報
+        commit2()
+        assert _read_age(state_file)[ADDRESS] == {
+            "first_pending_at_us": NOW_US, "stall_reported": False,
+            "episode_id": 5,
+        }
+
+    def test_legacy_entry_without_episode_id_reseeded(self, state_file,
+                                                      capsys):
+        """AC#2 舊 schema 相容：pre-fencing 條目（無 episode_id 欄）不打
+        爆——視為 stale 清帳重建（re-seed 帶現 episode），行為同陳期
+        條目（年齡重 seed＝晚報方向）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, stall_reported=True,
+                  episode=None)
+        runner = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert code == 0  # 不打爆
+        assert "停留" not in out
+        assert "stale" in capsys.readouterr().err
+        commit()
+        assert _read_age(state_file)[ADDRESS] == {
+            "first_pending_at_us": NOW_US, "stall_reported": False,
+            "episode_id": 4,
+        }
+
+    def test_binding_epoch_shape_drift_fail_soft(self, state_file, capsys):
+        """holder status bindingEpoch 形漂移 → shape-drift fail-soft
+        （stderr 註記、零 stdout、零 commit——同 core bindingEpoch 驗證
+        先例，禁靜默當 0）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, episode=4)
+        runner = _seq_runner([
+            _ok({"addressId": "a1", "alias": ADDRESS,
+                 "bindingEpoch": "many", "live": False}),
+            AssertionError("must not reach receive status"),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out, commit) == (0, "", None)
+        assert "shape-drift" in capsys.readouterr().err
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is False
+
+    def test_zero_epoch_is_valid_episode(self, state_file):
+        """bindingEpoch=0（fresh address 合法值——S3 實測 unbound e=0）
+        是合法 episode token，不誤判形漂移。"""
+        _seed_baseline(state_file, 2)
+        runner = _seq_runner([
+            _ok({"addressId": "a1", "alias": ADDRESS,
+                 "bindingEpoch": 0, "live": False}),
+            _recv_doc(pending=2),
+        ])
+        _code, _out, commit = _run_at(state_file, runner)
+        commit()
+        assert _read_age(state_file)[ADDRESS]["episode_id"] == 0
