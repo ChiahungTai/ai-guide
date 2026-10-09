@@ -51,3 +51,21 @@ def test_no_dual_no_finding(tmp_path):
     _make(tmp_path, "legacy", agents=False, claude=True)
     findings = sp.run_cross_validation({}, [], [], [], tmp_path)
     assert [f for f in findings if f["check_id"] == "X-legacy-dual-file"] == []
+
+
+def test_lookalike_suffix_is_not_dual_file(tmp_path):
+    """反例（judge 必修2）：OLD_CLAUDE.md endswith CLAUDE.md 假陽性——
+    同目錄 AGENTS.md＋OLD_CLAUDE.md（無真 CLAUDE.md）不得報 X-legacy-dual-file。"""
+    _make(tmp_path, "pkg", agents=True, claude=False)
+    (tmp_path / "pkg" / "OLD_CLAUDE.md").write_text("# stale\n", encoding="utf-8")
+    findings = sp.run_cross_validation({}, [], [], [], tmp_path)
+    assert [f for f in findings if f["check_id"] == "X-legacy-dual-file"] == []
+
+
+def test_lookalike_only_dir_not_legacy_fallback(tmp_path):
+    """反例（judge 必修2）：僅 OLD_CLAUDE.md 的目錄不是 legacy instruction 檔——
+    不落入 CLAUDE.md fallback 解析。"""
+    d = tmp_path / "stale"
+    d.mkdir()
+    (d / "OLD_CLAUDE.md").write_text("# stale\n", encoding="utf-8")
+    assert sp._find_instruction_files(tmp_path) == []

@@ -149,6 +149,16 @@ def _iter_files(root: Path, suffix: str) -> Iterator[Path]:
                 yield Path(dirpath) / name
 
 
+def _iter_files_named(root: Path, name: str) -> Iterator[Path]:
+    """Yield files whose name equals `name` exactly (pruned walk, deterministic).
+
+    Suffix matching is too loose for instruction files — e.g.
+    "OLD_CLAUDE.md".endswith("CLAUDE.md") is a false positive; instruction
+    lookups require exact filename equality.
+    """
+    return (p for p in _iter_files(root, name) if p.name == name)
+
+
 def _sorted_package_candidates(project_root: Path) -> list[Path]:
     """Deterministic list of package-top candidates.
 
@@ -246,9 +256,9 @@ def _find_instruction_files(project_root: Path) -> list[Path]:
     pruned walk (_iter_files) — never descends into build artifacts.
     """
     by_dir: dict[Path, Path] = {}
-    for path in _iter_files(project_root, "AGENTS.md"):
+    for path in _iter_files_named(project_root, "AGENTS.md"):
         by_dir[path.parent] = path
-    for path in _iter_files(project_root, "CLAUDE.md"):
+    for path in _iter_files_named(project_root, "CLAUDE.md"):
         if path.parent not in by_dir:  # legacy fallback only — AGENTS.md wins
             by_dir[path.parent] = path
     return sorted(by_dir.values())
@@ -261,10 +271,10 @@ def _find_dual_instruction_dirs(project_root: Path) -> list[Path]:
     scanner reads AGENTS.md only, so the CLAUDE.md half is silently
     shadowed; callers surface each coexisting dir as a finding.
     """
-    agents_dirs = {p.parent for p in _iter_files(project_root, "AGENTS.md")}
+    agents_dirs = {p.parent for p in _iter_files_named(project_root, "AGENTS.md")}
     return sorted(
         p.parent
-        for p in _iter_files(project_root, "CLAUDE.md")
+        for p in _iter_files_named(project_root, "CLAUDE.md")
         if p.parent in agents_dirs
     )
 
