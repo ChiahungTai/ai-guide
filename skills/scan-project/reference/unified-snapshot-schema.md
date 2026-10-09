@@ -101,7 +101,7 @@
       "check_id": "X-cap-path",
       "severity": "important",
       "detail": "Capabilities entry path 'runner.py' does not exist (in my_package/data/AGENTS.md)",
-      "source_claude_md": "my_package/data/AGENTS.md"
+      "source_file": "my_package/data/AGENTS.md"
     },
     {
       "check_id": "X-ep-ready",
