@@ -89,7 +89,7 @@
 - 最小可用：不引入非必要工具
 - 事實軸（cross-verify investigator）cr 軸工單必填 `repo_root` 與 CLI 命令字串（禁只給 MCP 工具名——該 role 去 MCP 化，見 agents/AGENTS.md roles 表；AIR-207 同源）
 - 三禁令：
-  - 禁 code-reality 寫入面（`build`／`snapshot`／`delta_tour`／`project`）；查詢面可用可不用
+  - 禁 code-reality 寫入面（`build`／`snapshot`／`delta_tour`／`project`）；查詢面非結構查證可選，結構查證依上方 CR-first route 契約
   - 禁把任何工具輸出寫到 repo 外（含 `/tmp`）
   - 禁自行妥協路徑（遇缺口停下舉證，不繞路）
 

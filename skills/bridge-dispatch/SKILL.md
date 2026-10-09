@@ -27,7 +27,7 @@ brief 含結構事實查證（callers／refs／closure／impact radius／符號�
 
 - **live-cr**——worker 當次 surface 有可用 CR query face（MCP 在場，或唯讀 CLI `code-reality` 經 Bash 可達）：結構事實須由 CR 取得；Read 僅可在結構範圍縮小後查行為／語義（分工語義＝cr-query「LSP vs code-reality — the division」），**禁以逐檔／逐行 Read 重建 callers／impact 等結構事實**（違＝brief 缺陷，禁派——要素 1＋2 之實例化）。
 - **preprovided-cr**——dispatcher 已先跑 CR、evidence artifact（含 provenance receipt）附於 read-set：worker 不必重查，收線核 read-set 所列 artifact。
-- **degraded**——無可用 CR query face（例：glm isolated home MCP 不隨行，bridge L1 未落地前 glm 腿默認此態）：依 symbol-query-routing／`skills/_common/work-order.md` §7 既有 fallback 宣告實際降級面（rg／Grep；LSP 僅在可用時列入，禁預設），**受影響的結構 finding／claim 逐條標 `unverified-by-graph`（未經結構圖驗證）**；報告頂層 `[WARN] structural context degraded` 只作匯總，不取代逐條標記。**workspace CR 面在場（`.code-reality/graph.db`／`.code-reality.toml` 任一）的 glm isolated 腿，dispatch 必帶 `mcpSupply=[code-reality]`**（bridge 預設供給 db-101 落地則降為記載面；AIR-295）——有 face 可供即升 live-cr，不默認 degraded。
+- **degraded**——無可用 CR query face（例：glm isolated home MCP 不隨行，bridge L1 未落地前 glm 腿默認此態）：依 symbol-query-routing／`skills/_common/work-order.md` §7 既有 fallback 宣告實際降級面（rg／Grep；LSP 僅在可用時列入，禁預設），**受影響的結構 finding／claim 逐條標 `unverified-by-graph`（未經結構圖驗證）**；報告頂層 `[WARN] structural context degraded` 只作匯總，不取代逐條標記。**workspace CR 面在場（`.code-reality/graph.db`／`.code-reality.toml`／`.code-reality/scip/` 任一——三形態對齊 db-101 AC#1）的 glm isolated 腿，dispatch 必帶 `mcpSupply=[code-reality]`**（bridge 預設供給 db-101 落地則降為記載面；AIR-295）——有 face 可供即升 live-cr，不默認 degraded。
 
 工具路由階梯與 freshness 語義以 symbol-query-routing／cr-query 為單一源，本節不重刻。**降級不可靜默**——選到無 CR query face 的 carrier 時，unverified-by-graph 標記是強制義務（carrier 選擇與 capability 篩選歸 model-routing，本節不設家族偏好）。
 
