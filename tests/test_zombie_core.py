@@ -152,6 +152,25 @@ def test_running_without_created_at_is_corrupt(tmp_path):
     assert "createdAt" in err.detail
 
 
+def test_read_metadata_agent_id_mismatch_is_meta_error(tmp_path):
+    # judge F3：agentId 與所在目錄名錯配＝身分不可信——路徑＝唯一可機驗身份，
+    # 裸信 agentId 會產生外人身分事件（與 :363 UNKNOWN 分支同哲學）
+    d = tmp_path / "agents" / PARENT / "agent_dirname"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "metadata.json").write_text(
+        json.dumps(
+            {
+                "agentId": "agent_elsewhere",
+                "status": "running",
+                "createdAt": iso(T0 - timedelta(hours=2)),
+            }
+        )
+    )
+    err = _core.read_metadata(d / "metadata.json")
+    assert isinstance(err, _core.MetaError)
+    assert err.reason == "identity-mismatch"
+
+
 # --- face_snapshot：唯讀 stat 面 ---
 
 
@@ -331,6 +350,10 @@ def test_completion_suspected_requires_quiesce(tmp_path):
     out = tmp_path / "agents" / PARENT / AGENT / "output.txt"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(b"report")
+    # mtime 釘 T0-10min（真實牆鐘 mtime 會使 quiesce 隨執行時刻漂移——
+    # T0 釘死日 11:55 後跑套件即恆敗的 time-bomb；2026-10-09 11:57 實爆）
+    stamp = ns(T0 - timedelta(minutes=10))
+    os.utime(out, ns=(stamp, stamp))
     p = write_meta(tmp_path, created=iso(T0 - timedelta(hours=1)), output_file=str(out))
     make_face(tmp_path, files=2, newest=T0 - timedelta(minutes=10))
     face = _core.face_snapshot(
@@ -443,3 +466,28 @@ def test_scan_zombie_event_fields(tmp_path):
     assert d["alertType"] == "START_MISSING"
     assert d["dedupKey"] == "agent_a+START_MISSING"
     assert "detectedAt" in d and "ageMin" in d
+
+
+def test_scan_zcode_agents_id_mismatch_yields_unknown_path_identity(tmp_path):
+    # judge F3 掃描面：錯置 metadata（agentId 指向他具）→ UNKNOWN 事件，
+    # attempt_id＝metadata 路徑（唯一可機驗身份）、agent_id＝目錄名——
+    # 禁以裸信 agentId 產生外人身分事件（同時閉合 codex F4 身分半部）
+    d = tmp_path / "agents" / PARENT / "agent_dirname"
+    d.mkdir(parents=True)
+    (d / "metadata.json").write_text(
+        json.dumps(
+            {
+                "agentId": "agent_elsewhere",
+                "status": "running",
+                "createdAt": iso(T0 - timedelta(hours=2)),
+            }
+        )
+    )
+    result = _core.scan_zcode_agents(
+        tmp_path / "agents", tmp_path / "artifacts", T0
+    )
+    (e,) = result["events"]
+    assert e.alert_type == _core.ALERT_UNKNOWN
+    assert e.attempt_id == str(d / "metadata.json")
+    assert e.agent_id == "agent_dirname"
+    assert e.evidence["reason"] == "identity-mismatch"

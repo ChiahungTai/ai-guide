@@ -93,11 +93,14 @@ def _parse_iso(value: str) -> datetime | None:
 
 
 def read_metadata(path: Path) -> dict | MetaError:
-    """讀單具 metadata——JSON 損壞／必要欄位缺／createdAt 不可解析＝MetaError.
+    """讀單具 metadata——JSON 損壞／必要欄位缺／身分錯配／createdAt 不可解析＝MetaError.
 
     createdAt 為 **running 條件的判定軸**（age 計算）——僅對 status=running
     必要；terminal 條件無 createdAt 合法（舊 schema 實證 2026-10-09：74 具
     stopped＋completedAt 無 createdAt——非損壞，terminal face 跳過分類）。
+    agentId 與所在目錄名（path.parent.name）錯配＝identity-mismatch——
+    路徑＝唯一可機驗身份（與 UNKNOWN 分支同哲學），裸信 agentId 會產生
+    外人身分事件。
     """
     try:
         raw = path.read_text()
@@ -113,6 +116,11 @@ def read_metadata(path: Path) -> dict | MetaError:
         value = meta.get(key)
         if not isinstance(value, str) or not value:
             return MetaError("metadata-corrupt", f"缺必要欄位：{key}")
+    if meta["agentId"] != path.parent.name:
+        return MetaError(
+            "identity-mismatch",
+            f"agentId 與目錄名錯配：{meta['agentId']} != {path.parent.name}",
+        )
     created = meta.get("createdAt")
     if not isinstance(created, str) or not created:
         if meta["status"] == "running":
