@@ -41,6 +41,7 @@ import json
 import os
 import stat
 import sys
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -702,6 +703,141 @@ class TestEnsureHolder:
             mod.process_once(
                 ADDR, runner, _policy(), state_file, now_us=NOW_US,
             )
+
+
+# ── MF1(ii)：ZCode death-evidence takeover（judge 修復必修）──────────
+#
+# ZCode 無 SessionEnd 事件（harness 限制，governance/README.md）——清潔
+# 關閉 release 只掛 codex/grok SessionEnd 面；ZCode 面死亡復原＝冷啟
+# active 閘前的 death-evidence 接管：active holder（status bound=True
+# epoch N）的兄弟 session state 中 epoch 吻合者全陳舊（mtime 落後
+# ≥HOLDER_STALE_SECONDS）⇒ 前任 prompt 心跳停擺、可證已死 ⇒
+# `bind --expected-epoch N` 接管；任一新鮮在場或無吻合證據 ⇒
+# HolderConflict 照舊。bind CAS 保留為 race 兜底。
+
+
+class TestDeathEvidenceTakeover:
+    def _sibling(self, state_dir, sid, epoch, address=ADDR, age_s=None,
+                 raw=None):
+        """兄弟 session state 檔（mtime 年齡可注入——death evidence；
+        raw 直供壞 JSON 案例）。"""
+        path = mod.state_path(sid, state_dir)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if raw is not None:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(raw)
+        else:
+            doc = {
+                "address": address, "epoch": epoch,
+                "token": "tok-" + sid,
+                "bound_at_iso": "2026-10-08T00:00:00+00:00",
+            }
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(doc, fh)
+        if age_s is not None:
+            old = time.time() - age_s
+            os.utime(path, (old, old))
+        return path
+
+    def test_stale_threshold_named_constant(self):
+        """陳舊門檻具名常數（judge 建議 24h）——調參單點。"""
+        assert mod.HOLDER_STALE_SECONDS == 24 * 3600
+
+    def test_all_stale_epoch_match_takeover(self, state_file):
+        """dead-holder fixture（item 6(c) takeover analog）：兄弟 state
+        （epoch 7 吻合）全陳舊（25h）⇒ 前任可證已死 ⇒
+        `bind --expected-epoch 7` 接管成功、新 state 落盤。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(state_dir, "dead-sess", epoch=7, age_s=25 * 3600)
+        runner = _seq_runner([
+            _status_doc_v4(epoch=7, bound=True),
+            _bind_doc(epoch=8, token="tok-takeover"),
+        ])
+        st = mod.ensure_holder(ADDR, runner, state_file)
+        assert st["token"] == "tok-takeover" and st["epoch"] == 8
+        assert runner.calls[1] == [
+            "holder", "bind", "--address", ADDR, "--expected-epoch", "7",
+        ]
+        assert _read_state(state_file)["token"] == "tok-takeover"
+
+    def test_fresh_epoch_match_holder_conflict(self, state_file):
+        """live-holder fixture：新鮮在場（1h——prompt 心跳前進中）⇒
+        HolderConflict 照舊（不搶）、零 bind。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(state_dir, "live-sess", epoch=7, age_s=3600)
+        runner = _seq_runner([_status_doc_v4(epoch=7, bound=True)])
+        with pytest.raises(mod.HolderConflict, match="另一 session holding"):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1
+
+    def test_epoch_mismatch_stale_not_credited(self, state_file):
+        """陳舊但 epoch 不吻合（證據指向舊 binding，非現任 holder）⇒
+        非死亡證據 ⇒ HolderConflict 照舊。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(state_dir, "old-sess", epoch=6, age_s=48 * 3600)
+        runner = _seq_runner([_status_doc_v4(epoch=7, bound=True)])
+        with pytest.raises(mod.HolderConflict):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1
+
+    def test_no_sibling_evidence_conflict(self, state_file):
+        """無任何吻合 state（外點消費者／手動 bind——無從舉證）⇒ 保守
+        不接管、HolderConflict 照舊。"""
+        runner = _seq_runner([_status_doc_v4(epoch=7, bound=True)])
+        with pytest.raises(mod.HolderConflict):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1
+
+    def test_one_stale_one_fresh_conflict(self, state_file):
+        """兩兄弟同 epoch：一陳舊一新鮮 ⇒ 非「全陳舊」⇒ HolderConflict
+        （任一新鮮在場即否決接管）。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(state_dir, "dead-sess", epoch=7, age_s=48 * 3600)
+        self._sibling(state_dir, "live-sess", epoch=7, age_s=60)
+        runner = _seq_runner([_status_doc_v4(epoch=7, bound=True)])
+        with pytest.raises(mod.HolderConflict):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1
+
+    def test_corrupted_sibling_not_evidence(self, state_file):
+        """損壞 state 檔（壞 JSON）既非新鮮也非死亡證據——略過（無吻合
+        可解析證據 ⇒ 保守衝突）。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(
+            state_dir, "corrupt-sess", epoch=7, age_s=48 * 3600,
+            raw="{not-json",
+        )
+        runner = _seq_runner([_status_doc_v4(epoch=7, bound=True)])
+        with pytest.raises(mod.HolderConflict):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 1
+
+    def test_takeover_cas_race_conflict(self, state_file):
+        """race 兜底：掃描判定可接管，但 bind 當下 epoch 已被推進
+        （epoch-conflict）⇒ HolderConflict（單次、不轟炸）。"""
+        state_dir = os.path.dirname(state_file)
+        self._sibling(state_dir, "dead-sess", epoch=7, age_s=48 * 3600)
+        runner = _seq_runner([
+            _status_doc_v4(epoch=7, bound=True),
+            _err("epoch-conflict", "fencing", exit_code=5),
+        ])
+        with pytest.raises(mod.HolderConflict):
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert len(runner.calls) == 2
+
+    def test_own_state_heartbeat_refresh(self, state_file):
+        """心跳：valid state ⇒ state 檔重寫（mtime 前進＋heartbeat_iso
+        落盤）——prompt 心跳＝death-evidence 新鮮度源；零 face 呼叫。"""
+        _seed_state(state_file)
+        old = time.time() - 10 * 3600
+        os.utime(state_file, (old, old))
+        before = os.stat(state_file).st_mtime_ns
+        runner = _seq_runner([])
+        st = mod.ensure_holder(ADDR, runner, state_file)
+        assert st["token"] == "tok-old"
+        assert runner.calls == []
+        assert os.stat(state_file).st_mtime_ns > before
+        assert "heartbeat_iso" in _read_state(state_file)
 
 
 # ── process_batch：flush-ack 防護＋ack-only-after-disposition＋invalidate

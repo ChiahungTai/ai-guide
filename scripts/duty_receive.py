@@ -22,10 +22,13 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   auto→handled／surface→needs-human（單一源＝duty_disposition 模組
   docstring「處理推進」裁定；ack 是 transport cursor，不作推進前提）。
 - holder 權威經 `holder bind` consent CAS 取得，絕不繞過；binding
-  active（3.8.0 bound／3.7.0 live）在場＝不搶（換代正當路徑＝對方釋
-  放後 rebind）；rebind CAS 失敗＝HolderConflict（surface 衝突訊息、
-  單次嘗試、不重試轟炸）。AIR-288：3.8.0 renew 面拔除（authority 無
-  時鐘）——token 有效至被 fence，fencing 交 prepare 既有 rebind 路徑。
+  active（3.8.0 bound／3.7.0 live）在場＝不搶（換代正當路徑＝對方
+  SessionEnd 釋放後 rebind；ZCode 無 SessionEnd 面——holder 可證已死
+  ＝death-evidence takeover，`_holder_death_evidence`）；rebind CAS
+  失敗＝HolderConflict（surface 衝突訊息、單次嘗試、不重試轟炸）。
+  AIR-288：3.8.0 renew 面拔除（authority 無時鐘）——token 有效至被
+  fence，fencing 交 prepare 既有 rebind 路徑；清潔關閉釋出面＝
+  `release_holder`（codex/grok SessionEnd hook 接線）。
 - holder state（bearer token）存 per-session 檔 0600、atomic 寫、
   路徑可注入（測試 fake state，不碰真 store）。
 - v1 絕不主動送信：本檔不觸達 send／replies 面（回信＝outward，須
@@ -382,6 +385,77 @@ def save_state(path, doc):
         json.dump(doc, fh, ensure_ascii=False, sort_keys=True)
     os.chmod(tmp, 0o600)
     os.replace(tmp, path)
+
+
+# death-evidence 接管陳舊門檻（AIR-288 judge MF1）：holding session 的
+# state 檔 mtime 落後現值超過此數＝prompt 心跳停擺、前任 holder 可證
+# 已死（24h——跨週末長閒置 session 不誤殺；誤判無數據風險：舊 token
+# prepare 收 fencing → 既有 rebind 路徑過 active 閘，CAS 恆為兜底）。
+HOLDER_STALE_SECONDS = 24 * 3600
+
+
+def _touch_heartbeat(state_file, st):
+    """prompt 心跳（AIR-288 MF1）：值星 session 每 valid-state 邊界重寫
+    state 檔（mtime 前進＋`heartbeat_iso` 落盤）——death-evidence 接管
+    的新鮮度證據源：mtime 停止前進＝session 心跳停擺。生產呼叫面在
+    per-session advisory lock 內（hook run() critical section）。心跳是
+    證據非正確性——寫失敗只失去舉證能力，不擋收信（CAS 恆為最後防線）。"""
+    try:
+        doc = dict(st)
+        doc["heartbeat_iso"] = datetime.now(UTC).isoformat(
+            timespec="seconds"
+        )
+        save_state(state_file, doc)
+    except OSError:
+        pass
+
+
+def _sibling_states(state_dir):
+    """state dir 兄弟 session state 清單（(path, doc) 對；`*.json`）。
+    缺目錄＝空；壞 JSON／非 dict 略過——損壞檔既非新鮮也非死亡證據
+    （crash-only：不可解析的東西不構成舉證）。"""
+    if not state_dir or not os.path.isdir(state_dir):
+        return []
+    out = []
+    for path in glob.glob(os.path.join(state_dir, "*.json")):
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                doc = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        if isinstance(doc, dict):
+            out.append((path, doc))
+    return out
+
+
+def _holder_death_evidence(state_dir, address, epoch, now_s=None,
+                           stale_seconds=HOLDER_STALE_SECONDS):
+    """death-evidence 判定（AIR-288 judge MF1(ii)——ZCode 無 SessionEnd
+    面）：active holder（status binding active＋epoch N）的兄弟 session
+    state 中 **epoch 吻合者全陳舊**（mtime 落後 ≥ stale_seconds）⇒
+    True——前任 holder prompt 心跳停擺、可證已死，`bind --expected-epoch
+    N` 接管（S6 正當化條件「prior owner provably cannot be alive」機械
+    化；對齊 `holder takeover` help 的 authoritative death evidence 條款
+    ——dutymail 不 impose policy，接管規則是消費端自律）。任一吻合
+    state 新鮮在場、或無任何吻合 state（外點消費者／手動 bind——無從
+    舉證）⇒ False，HolderConflict 照舊。stat 失敗（掃描與判定之間檔案
+    消失）＝保守 False。誤判無數據風險：見 HOLDER_STALE_SECONDS 註。"""
+    now = time.time() if now_s is None else now_s
+    matching = [
+        path
+        for path, doc in _sibling_states(state_dir)
+        if doc.get("address") == address and doc.get("epoch") == epoch
+    ]
+    if not matching:
+        return False
+    for path in matching:
+        try:
+            age = now - os.stat(path).st_mtime
+        except OSError:
+            return False
+        if age < stale_seconds:
+            return False
+    return True
 
 
 def _valid_holder_state(st, address):
@@ -894,12 +968,14 @@ def ensure_holder(address, runner, state_file):
     有 token → 直用（零 holder face 呼叫——heartbeat 退役；3.8.0 無時鐘
     權威下 token 有效至被 fence；3.7.0 混版窗口 lease 自然過期＝class 5
     fencing，由 `_prepare_with_recovery` 既有 rebind 路徑接收——status→
-    rebind、同樣過 active 閘）。rebind CAS 失敗（epoch-conflict，race
-    window 内他方先 bind）＝HolderConflict。storage 錯誤原樣傳出（上層
-    fail-soft pre-migration）。
+    rebind、同樣過 active 閘）。valid-state 邊界重寫 state 檔＝prompt
+    心跳（`_touch_heartbeat`——death-evidence 新鮮度源）。rebind CAS
+    失敗（epoch-conflict，race window 内他方先 bind）＝HolderConflict。
+    storage 錯誤原樣傳出（上層 fail-soft pre-migration）。
     """
     st = load_state(state_file)
     if _valid_holder_state(st, address):
+        _touch_heartbeat(state_file, st)
         return st
     return _bind_fresh(address, runner, state_file)
 
@@ -922,16 +998,25 @@ def _bind_fresh(address, runner, state_file):
     # holder 搶奪防護（S3 finding #2）：binding active 在場（3.8.0
     # bound／3.7.0 live）＝另一 session 正持有消費權威——**不 bind 不搶**
     # （並行 session／卡 WT spawned agents 的 ping-pong 防護）；值星換代
-    # 正當路徑＝對方釋放（3.8.0：binding 變更；3.7.0：lease 到期）後
-    # rebind。CAS（epoch-conflict）保留為 status 與 bind 之間 race
-    # window 的最後防線。「active=True 且 epoch==我 state epoch」（我方
-    # token 失效邊角）經此同一規則落衝突不搶——對方釋放後自癒，信不丟
+    # 正當路徑＝對方釋放（SessionEnd release——codex/grok 面）或死亡
+    # （ZCode 無 SessionEnd——下方 death-evidence 接管）後 rebind。
+    # CAS（epoch-conflict）保留為 status 與 bind 之間 race window 的
+    # 最後防線。「active=True 且 epoch==我 state epoch」（我方 token
+    # 失效邊角）經此同一規則落衝突不搶——對方釋放後自癒，信不丟
     # （prepare 不消耗）。
     if holder_active(observed):
-        raise HolderConflict(
-            f"{address}：另一 session holding（epoch {epoch}）——本"
-            " session 不搶，待對方釋放換代；處理面照舊由現 holder 承擔"
-        )
+        if not _holder_death_evidence(
+            os.path.dirname(state_file) or None, address, epoch
+        ):
+            raise HolderConflict(
+                f"{address}：另一 session holding（epoch {epoch}）——本"
+                " session 不搶，待對方釋放換代；處理面照舊由現 holder 承擔"
+            )
+        # AIR-288 judge MF1(ii) death-evidence takeover：前任 holder 的
+        # 兄弟 state（epoch 吻合）全陳舊＝prompt 心跳停擺、可證已死
+        # （S6「prior owner provably cannot be alive」機械化）——落下方
+        # CAS bind 接管；bind 當下 epoch 已被推進＝epoch-conflict →
+        # HolderConflict（race 兜底）。
     try:
         result = holder_bind(runner, address, epoch)
     except DutymailFaceError as exc:
