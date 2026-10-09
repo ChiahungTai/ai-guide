@@ -20,6 +20,15 @@ AIR-294 bi 分歧 Arbiter 裁決 codex F3（Important/Evidence-based）後續卡
 flowchart LR
   a["跨 session 讀改寫交錯"] --> b["A 舊寫延遲反超 B 清帳"] --> c["復活 stall_reported flag"] --> d["episode fencing（token 或 CAS）封閉"]
 ```
+
+
+```mermaid
+flowchart LR
+  a["holder 章長持——下班 session 綁死收信"] --> b["ai-guide：慣例修正 ext 語義＋death-evidence 接管"]
+  a --> c["bridge：INBOX 章 vs 消費章分離提案"]
+  b --> d["雙 repo 寄信討論→各自落地"]
+  c --> d
+```
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
