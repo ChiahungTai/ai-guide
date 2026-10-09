@@ -1052,6 +1052,19 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 2
+        # 資料源完整性（judge F2）：缺 agents/／artifacts/ 任一源不得靜默——
+        # 缺 agents/＝glob 空集合 discovered=0 exit 0（假陰性）；缺
+        # artifacts/＝face_snapshot 全空使 running 母體集體誤判
+        # START_MISSING（誤報）。與根同款 exit 2：缺失必須可見，掃描擋在分類前
+        for sub in ("agents", "artifacts"):
+            sub_dir = args.zcode_root / sub
+            if not sub_dir.is_dir():
+                print(
+                    f"[FAIL] agent_liveness_sweep: zcode root 缺 {sub}/："
+                    f"{sub_dir}",
+                    file=sys.stderr,
+                )
+                return 2
         zcode = zombie_core.scan_zcode_agents(
             args.zcode_root / "agents",
             args.zcode_root / "artifacts",

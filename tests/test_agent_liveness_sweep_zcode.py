@@ -150,6 +150,40 @@ def test_zcode_root_missing_fail_loud(tmp_path, capsys):
     assert "FAIL" in capsys.readouterr().err
 
 
+def _run_with_partial_root(tmp_path: Path, capsys, *, keep: str) -> int:
+    """合成只含 agents/ 或 artifacts/ 其一的 zcode root（judge F2 釘測試佈局）."""
+    cli = tmp_path / "zcode-cli"
+    sub = "artifacts" if keep == "artifacts" else "agents"
+    (cli / sub).mkdir(parents=True)
+    (tmp_path / "state-root").mkdir()
+    journal = tmp_path / "no-journal.md"
+    journal.touch()
+    return _mod.main([
+        "--state-root", str(tmp_path / "state-root"),
+        "--journal", str(journal),
+        "--zcode-scan", "--zcode-root", str(cli),
+    ])
+
+
+def test_zcode_root_missing_agents_dir_not_silent(tmp_path, capsys):
+    # judge F2：缺 agents/ 不得靜默 discovered=0 exit 0（假陰性）——缺失必須可見
+    code = _run_with_partial_root(tmp_path, capsys, keep="artifacts")
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "FAIL" in err and "agents" in err
+
+
+def test_zcode_root_missing_artifacts_dir_not_silent(tmp_path, capsys):
+    # judge F2：缺 artifacts/ 時 face_snapshot 全空→running 母體集體誤判
+    # START_MISSING（誤報）——掃描須擋在分類前，缺失必須可見
+    code = _run_with_partial_root(tmp_path, capsys, keep="agents")
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "FAIL" in err and "artifacts" in err
+    # 非靜默：stdout 不得出現 spawn-zombies 節（零事件假 OK 面）
+    assert "spawn-zombies" not in capsys.readouterr().out
+
+
 def test_threshold_flags_override(tmp_path, capsys):
     cli = make_cli_root(tmp_path)
     (cli / "state-root").mkdir()
