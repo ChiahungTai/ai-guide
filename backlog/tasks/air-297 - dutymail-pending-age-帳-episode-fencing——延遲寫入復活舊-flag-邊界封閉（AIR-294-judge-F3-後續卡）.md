@@ -1,10 +1,12 @@
 ---
 id: AIR-297
-title: dutymail pending-age 帳 episode fencing——延遲寫入復活舊 flag 邊界封閉（AIR-294 judge F3 後續卡）
-status: To Do
+title: >-
+  dutymail pending-age 帳 episode fencing——延遲寫入復活舊 flag 邊界封閉（AIR-294 judge F3
+  後續卡）
+status: In Progress
 assignee: []
 created_date: '2026-10-09 16:42'
-updated_date: '2026-10-09 16:42'
+updated_date: '2026-10-09 13:00'
 labels:
   - dutymail
 dependencies: []
