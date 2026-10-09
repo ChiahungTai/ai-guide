@@ -49,7 +49,9 @@ only——pendingCount 整數以外絕不進輸出。
    凍結兩唯讀 face 零新增——年齡由帳面推導非新查詢）；事件史消費仍
    退役（上段裁定不變）。併發姿態：跨 session 並寫＝atomic replace
    last-writer-wins，後果方向安全（年齡低估＝晚報、flag 遺失＝重複
-   一報——寧重不漏）。
+   一報——寧重不漏）。已知殘餘邊界：延遲寫入可於清帳後復活舊 flag
+   （單 episode 漏報一次；advisory 面、窗窄）——接受，fencing 不引
+   入（後續卡）。
 
 **session-local baseline**：state＝`${XDG_STATE_HOME:-~/.local/state}/
 ai-guide/duty-monitor/<safe_session_id>.json`（形 `{"addresses":
