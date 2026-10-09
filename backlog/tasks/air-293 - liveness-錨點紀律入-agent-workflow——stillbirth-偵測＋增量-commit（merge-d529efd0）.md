@@ -1,7 +1,7 @@
 ---
 id: AIR-293
 title: liveness 錨點紀律入 agent-workflow——stillbirth 偵測＋增量 commit（merge d529efd0）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 00:46'
 updated_date: '2026-10-09 00:47'
@@ -32,4 +32,9 @@ flowchart LR
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 skill 面已 live（merge d529efd0）——stillbirth 偵測＋liveness 錨點＋增量 commit 紀律入 agent-workflow；本卡為記錄收口。
+
+```mermaid
+flowchart LR
+  a["spawn 接受≠執行開始——雙死胎實證"] --> b["驗活只認內容面（exec/WT/commit）"] --> c["liveness 錨點紀律入 skill——d529efd0 live"]
+```
 <!-- SECTION:FINAL_SUMMARY:END -->
