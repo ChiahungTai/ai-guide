@@ -2,14 +2,14 @@
 name: instruction-sync
 
 description: "檢查 Markdown 文檔與程式碼同步性及內部品質"
-when_to_use: "Check instruction files (根 AGENTS.md source + CLAUDE.md wrapper/模組 nav) synchronization with code: navigation validity, code consistency, signal/noise ratio. Supports --recursive, --changed-since, --quality. 雙檔模式見 instruction-writing.md。"
+when_to_use: "Check instruction files (AGENTS.md 為正式同步對象；legacy CLAUDE.md 僅轉移檢查) synchronization with code: navigation validity, code consistency, signal/noise ratio. Supports --recursive, --changed-since, --quality. 單檔模式見 instruction-writing.md。"
 argument-hint: "/instruction-sync [目錄路徑] [--recursive] — 預設檢查當前目錄，可指定目錄或 .md 檔案"
 allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 ---
 
 # /instruction-sync — 程式碼同步與品質檢查
 
-> **instruction file 雙檔模式**：同步對象含根 `AGENTS.md`（source）+ `CLAUDE.md`（wrapper + 模組導航）——遞迴發現時兩者皆納入。見 [instruction-writing.md](../../rules/instruction-writing.md)。
+> **instruction file 單檔模式**：`AGENTS.md` 為**正式同步對象**（root＋模組層）；遞迴發現遇 legacy `CLAUDE.md`（舊雙檔遺留）**僅轉移檢查**——標記遷移候選、確認內容未指向已不存在的結構，不對其要求雙檔結構、不據此誤報缺同步。見 [instruction-writing.md](../../rules/instruction-writing.md)。
 
 驗證文檔與實際程式碼的一致性、涵蓋性，以及文檔內部品質。
 
@@ -17,7 +17,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 
 ## 適用文檔
 
-- **instruction 檔**（AGENTS.md source + CLAUDE.md wrapper / 模組導航）：AI 協作指南，必須與程式碼同步
+- **instruction 檔**（AGENTS.md 正式同步對象；legacy CLAUDE.md 轉移檢查）：AI 協作指南，必須與程式碼同步
 - **說明文檔**：描述現有系統運作的技術文檔，必須與實際程式碼一致
 - **不適用**：設計文檔（描述概念、提案、未來計畫）— 沒有對應的現有程式碼可驗證
 
@@ -83,7 +83,7 @@ instruction 檔的價值層級：**導航**（LLM 找到程式碼）→ **理解
 | 步驟 | 名稱 | 觸發 |
 |------|------|------|
 | 0.5 | Snapshot 載入 | `.project-snapshot.json` 存在時 |
-| 1 | 遞歸發現 instruction files（根 AGENTS.md + CLAUDE.md） | 預設 |
+| 1 | 遞歸發現 instruction files（AGENTS.md 為主；legacy CLAUDE.md 轉移檢查） | 預設 |
 | 1.5 | 依賴鏈擴展 | 有 git diff 變更 / --changed-since |
 | 1.6 | Sub-doc 擴展 | instruction 檔引用了 .md 子文件 |
 | 2 | 掃描程式碼結構 | 預設 |

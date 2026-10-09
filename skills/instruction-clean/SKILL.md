@@ -2,14 +2,14 @@
 name: instruction-clean
 
 description: "清理 Markdown 文檔中不必要的元資訊（版本號、日期、統計、Changelog）；--distill mode 蒸餾低 signal 內容（保守防護欄：換形為主，僅 clean 範圍元資訊直刪）"
-when_to_use: "Remove unnecessary metadata (version numbers, dates, statistics, changelogs) from instruction files (根 AGENTS.md source + CLAUDE.md wrapper/模組 nav); add --distill to also compress derivable low-signal content into one-line summaries + source references. 雙檔模式見 instruction-writing.md。"
+when_to_use: "Remove unnecessary metadata (version numbers, dates, statistics, changelogs) from instruction files (AGENTS.md 單檔；legacy CLAUDE.md 亦適用); add --distill to also compress derivable low-signal content into one-line summaries + source references. 單檔模式見 instruction-writing.md。"
 argument-hint: "/instruction-clean [目錄路徑|--recursive|--dry-run|--force] [--distill [--conservative|--moderate|--aggressive]]"
 allowed-tools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"]
 ---
 
 # Instruction File Clean — 元資訊清理 + 蒸餾（雙 mode）
 
-> **instruction file 雙檔模式**：操作範圍含根 `AGENTS.md`（source）+ `CLAUDE.md`（wrapper + 模組導航）——遞迴發現時兩者皆納入。見 [instruction-writing.md](../../rules/instruction-writing.md)。
+> **instruction file 單檔模式**：操作對象＝`AGENTS.md`（唯一 source，root＋模組層）；遞迴發現遇 legacy `CLAUDE.md`（舊雙檔遺留）仍可清元資訊，但不對其要求雙檔結構、不重造 wrapper。見 [instruction-writing.md](../../rules/instruction-writing.md)。
 
 兩個 mode，安全度遞減：
 
@@ -54,7 +54,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 
 | 情境 | 正確語法 | 錯誤語法 |
 |------|---------|---------|
-| 每次對話都需要 + 內容精簡 | `@path`（自動展開，僅 CLAUDE.md） | `[text](path)` |
+| 每次對話都需要 + 內容精簡 | `@path`（自動展開，限 legacy CLAUDE.md／CC 單家；AGENTS.md 禁依賴） | `[text](path)` |
 | 偶爾才需要 / 檔案偏長 | `[描述](path)`（按需讀取） | `@path`（浪費 context） |
 | Skill 中的引用 | `[描述](path)` | `@path`（Skill 不支援 `@`） |
 
@@ -112,7 +112,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 
 ## 共用：執行流程
 
-1. **遞迴發現**：[recursive-discovery.md](../_common/recursive-discovery.md)（根 AGENTS.md + CLAUDE.md + 模組層）
+1. **遞迴發現**：[recursive-discovery.md](../_common/recursive-discovery.md)（AGENTS.md 為主＋legacy CLAUDE.md，模組層同）
 2. **讀取並識別**：clean mode 掃元資訊 pattern；distill mode 另做三類分類
 3. **報告先行**：列出發現（位置 + 原因）+ 清理/蒸餾預覽，詢問後執行（`--dry-run` 只報告；`--force` 跳過確認）
 4. **執行**：Edit 移除 / 改寫；distill 先 `.backup`
