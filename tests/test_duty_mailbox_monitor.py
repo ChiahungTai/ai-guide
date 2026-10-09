@@ -30,6 +30,12 @@ pending**（AIR-258 B′ 解凍改常態語義——pending 在 INBOX 等人判�
 - governance 接線（U3）：zcode 模板 monitor group 單一 marshal 條目（
   ai-guide-primary 死門牌條目退役）；cc dormant 同形；install merge 面
   新 group append、既有條目零動、冪等、uninstall 只拆本套件 group。
+- pending 停留呈報（AIR-294 c——holderless stall）：holderless pending>0
+  首見＝seed `pending-age.json`（跨 session 共享 mailbox 帳，與 session
+  baseline 同目錄）；停留逾 `PENDING_STALL_REPORT_HOURS`（6h）＝一行
+  stall 呈報＋每 episode 一報（stall_reported flag——防轟炸）；pending==0
+  或 holder active＝清帳（stall 語義限 holderless——B′ 同邊界）；年齡
+  欄形漂移＝stderr 註記後視同冷啟動重 seed；0600 atomic 寫。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
 （tmp_path）——不碰真 store（真 store 往返＝工單真實資料五步）。
@@ -241,8 +247,10 @@ class TestHolderlessPending:
         assert _last_pending(state_file) == 2
 
     def test_same_pending_count_silent_anti_spam(self, state_file):
-        """pendingCount>0 且 == baseline（未變化）→ 靜默——防每 prompt
-        轟炸；baseline 保留（N 不被歸零）。"""
+        """pendingCount>0 且 == baseline（未變化）→ advisory 靜默——防每
+        prompt 轟炸；baseline 保留（N 不被歸零）。AIR-294：首見仍 seed
+        pending-age 帳（年齡帳獨立於 baseline——否則同值 pending 永遠
+        學不到年齡），commit 非 None 但零 advisory。"""
         _seed_baseline(state_file, 2)
         runner = _seq_runner([
             _status_doc(live=False), _recv_doc(pending=2),
@@ -250,8 +258,11 @@ class TestHolderlessPending:
         code, out, commit = mod.run(
             UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
         )
-        assert (code, out, commit) == (0, "", None)
+        assert (code, out) == (0, "")  # advisory 靜默（anti-spam 不變）
+        assert commit is not None  # 年齡帳 seed
+        commit()
         assert _last_pending(state_file) == 2
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is False
 
     def test_pending_zero_silent_baseline_reset(self, state_file):
         """live=False＋pendingCount==0 → 靜默＋baseline 歸零。"""
@@ -1577,3 +1588,200 @@ class TestBackupRetention:
         baks = list(tmp_path.glob("cfg.json.bak-*-gov"))
         assert len(baks) == gov.BAK_KEEP
         assert not oldest.exists()  # mtime 最舊者被 prune
+
+
+# ── pending 停留呈報（AIR-294 c：holderless stall >N 小時）────────────
+
+NOW_US = 10_000_000_000_000_000  # 固定注入 now（測試年齡全由此推）
+HOUR_US = 3_600_000_000
+
+
+def _seed_age(state_file, first_pending_at_us, stall_reported=False,
+              address=ADDRESS):
+    """seed pending-age.json（與 session baseline 同目錄）。"""
+    os.makedirs(os.path.dirname(state_file), exist_ok=True)
+    path = os.path.join(os.path.dirname(state_file), "pending-age.json")
+    doc = {"addresses": {}}
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+    doc["addresses"][address] = {
+        "first_pending_at_us": first_pending_at_us,
+        "stall_reported": stall_reported,
+    }
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh)
+    return path
+
+
+def _read_age(state_file):
+    path = os.path.join(os.path.dirname(state_file), "pending-age.json")
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)["addresses"]
+
+
+def _run_at(state_file, runner, now_us=NOW_US, raw=None):
+    return mod.run(
+        raw or UPS_STDIN, [ADDRESS], runner=runner, state_file=state_file,
+        now_us=now_us,
+    )
+
+
+class TestPendingStallReport:
+    def test_first_sight_seeds_age_no_stall(self, state_file):
+        """holderless pending>0 首見＝seed 年齡帳（first=now、未呈報）——
+        年齡未知不呈報；變化 advisory 照常。"""
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        _code, out, commit = _run_at(state_file, runner)
+        assert "holderless pending 2 封" in out
+        assert "停留" not in out
+        commit()
+        age = _read_age(state_file)[ADDRESS]
+        assert age == {"first_pending_at_us": NOW_US,
+                       "stall_reported": False}
+
+    def test_age_below_threshold_silent(self, state_file):
+        """停留未逾門檻（6h 內）→ 靜默（baseline 同值）——年齡帳不動。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 5 * HOUR_US)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out, commit) == (0, "", None)
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is False
+
+    def test_age_over_threshold_stall_line_once(self, state_file):
+        """停留逾 6h＋未呈報過 → 一行 stall 呈報（升 human）＋baseline
+        同值零 baseline 推進；commit 落 stall_reported=True（每 episode
+        一報）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert code == 0
+        ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+        assert ctx == (
+            "[duty-monitor] " + ADDRESS + "：pending 停留已逾 "
+            f"{mod.PENDING_STALL_REPORT_HOURS} 小時（holderless pending"
+            " 2 封持續未 drain——dutymail receive status 可查；升 human"
+            " 判讀）"
+        )
+        commit()
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is True
+        assert _last_pending(state_file) == 2  # baseline 不動
+
+    def test_after_reported_silent_no_refire(self, state_file):
+        """已呈報過（flag 在場）→ 後續 prompt 靜默、零推進（防轟炸）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, stall_reported=True)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out, commit) == (0, "", None)
+
+    def test_stall_plus_pending_change_two_lines(self, state_file):
+        """停留逾檻且計數變化 → 兩行（變化 advisory＋stall 呈報並陳）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=3),
+        ])
+        _code, out, commit = _run_at(state_file, runner)
+        ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
+        assert ctx.count("\n") == 1
+        assert "holderless pending 3 封" in ctx
+        assert "停留已逾" in ctx
+        commit()
+        assert _last_pending(state_file) == 3
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is True
+
+    def test_pending_zero_clears_age(self, state_file):
+        """pending==0（drain 發生）→ 年齡帳清（episode 終）＋baseline 歸零。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, stall_reported=True)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=0),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out) == (0, "")
+        commit()
+        assert _read_age(state_file) == {}  # 條目已清
+        assert _last_pending(state_file) == 0
+
+    def test_holder_active_clears_age(self, state_file):
+        """holder active（涵蓋——處理面由 holder 承擔）→ 年齡帳清＋靜默
+        （stall 語義限 holderless——B′ 同邊界）。"""
+        _seed_age(state_file, NOW_US - 7 * HOUR_US)
+        runner = _seq_runner([_status_doc(live=True)])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out) == (0, "")
+        commit()
+        assert _read_age(state_file) == {}
+
+    def test_age_shape_drift_reseed_with_stderr(self, state_file, capsys):
+        """年齡欄形漂移（非正整數）→ stderr 註記、視同冷啟動重 seed。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, "long ago")
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert code == 0
+        assert "停留" not in out  # 年齡不可信——不呈報
+        assert "pending-age" in capsys.readouterr().err
+        commit()
+        assert _read_age(state_file)[ADDRESS] == {
+            "first_pending_at_us": NOW_US, "stall_reported": False,
+        }
+
+    def test_age_file_missing_is_cold(self, state_file):
+        """年齡檔缺席（首次）＝冷啟動——seed 不誤判年齡。"""
+        _seed_baseline(state_file, 2)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        code, out, commit = _run_at(state_file, runner)
+        assert (code, out) == (0, "")
+        commit()
+        assert _read_age(state_file)[ADDRESS]["first_pending_at_us"] == NOW_US
+
+    def test_age_file_0600(self, state_file):
+        """pending-age.json 0600＋advance-after-emit（commit 前不落盤）。"""
+        import stat
+
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=1),
+        ])
+        _code, _out, commit = _run_at(state_file, runner)
+        age_path = os.path.join(
+            os.path.dirname(state_file), "pending-age.json"
+        )
+        assert not os.path.exists(age_path)  # commit 前零寫入
+        commit()
+        mode = stat.S_IMODE(os.stat(age_path).st_mode)
+        assert mode == 0o600
+
+    def test_threshold_constant_is_named_six_hours(self):
+        """門檻＝具名常數 6（卡面建議值 pin——調整改常數非散落魔數）。"""
+        assert mod.PENDING_STALL_REPORT_HOURS == 6
+
+    def test_faceloader_zero_new_dutymail_calls(self, state_file):
+        """stall 路由零新增 dutymail face——呼叫面仍凍結 holder status→
+        receive status 兩唯讀（pending 停留＝monitor 自持帳推導，非新
+        查詢）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US)
+        runner = _seq_runner([
+            _status_doc(live=False), _recv_doc(pending=2),
+        ])
+        _run_at(state_file, runner)
+        assert runner.calls == [
+            ["holder", "status", "--address", ADDRESS],
+            ["receive", "status", "--address", ADDRESS],
+        ]
