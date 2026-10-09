@@ -10,11 +10,11 @@
 - **描述檔案內容**：讓 AI 判斷何時該跟隨 link 讀取，而非無條件載入
 - **輸出格式模板**：是工作流 skill 的核心交付物規格，不算一般程式碼範例，可接受 >5 行
 - **實作程式碼**：避免嵌入完整 bash/python 實作 — 描述「做什麼、為什麼」，讓 AI 自己決定「怎麼做」
-- **禁止元資訊**：版本號、更新日期、統計資訊（同 CLAUDE.md 規範）
+- **禁止元資訊**：版本號、更新日期、統計資訊（規範單一源＝[instruction-writing](instruction-writing/SKILL.md)）
 
 ## 架構
 
-- `~/.claude/skills`、`~/.agents/skills` 兩根符號連結指向本目錄，實現 Git 版本控制、跨專案共享和即時更新（ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，單留 `~/.agents/skills` 即足；**禁補建 `~/.zcode/skills`**——雙根並存＝清單重複注入）。驗證：`readlink ~/.agents/skills ~/.claude/skills`（兩根同指本目錄即 PASS）
+- `~/.agents/skills` 符號連結指向本目錄，實現 Git 版本控制、跨專案共享和即時更新（ZCode 預設同掃 `.zcode` 與 `.agents` 兩根，單留 `~/.agents/skills` 即足；**禁補建 `~/.zcode/skills`**——雙根並存＝清單重複注入）。驗證：`readlink ~/.agents/skills`（同指本目錄即 PASS）
 - `skills/_common/` — 跨 skill 共用子範本（非 skill、無 SKILL.md）；skill 間以 `../_common/<file>` 相對路徑引用
 - 工作流 skill 間互相引用以相對路徑 link（`../<name>/SKILL.md`）；散文中 `/name` slash 語意兩端皆有效（Claude slash 直調、ZCode Skill tool 調用）
 

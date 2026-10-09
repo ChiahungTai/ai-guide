@@ -90,7 +90,7 @@ frontmatter `harness-scope:` 是**單一真相源**（每條 rule 自帶）。`d
 | 裸 slash command `/implement` `/commit` `/execution-plan` | 流程名 `build` / `commit` / `execution-plan`（無 slash）；Claude 端原文放 `(Claude: /implement)` 括號註 |
 | `@~/...` 或 `@/path` transclusion | 一般 markdown link；`@` 僅在描述 Claude 機制時用，並標明「Claude 端」 |
 | `../skills/xxx/SKILL.md` 跨域 ref | 描述該 skill 名稱（slash `/xxx` 語意跨 harness 有效）；或泛化為「跨 harness 機制，路徑從略」 |
-| 未標註的 `CLAUDE.md wrapper` | 「Claude 端 CLAUDE.md wrapper」或「instruction 檔（AGENTS.md source；Claude 端 CLAUDE.md wrapper）」 |
+| 未標註的 `CLAUDE.md wrapper` | 「instruction 檔（AGENTS.md source）」；wrapper 提及僅限 legacy／歷史語境（標「已退役 AIR-215／雙檔已廢 AIR-289」） |
 | `~/Github/ai-guide/rules/xxx.md` user-specific 絕對路徑 | repo-relative markdown link `[xxx.md](xxx.md)`（同目錄）或 `xxx.md`（純名 + 「source 在 ai-guide repo」） |
 | 「Claude 端 `~/.claude/rules/` symlink auto-load」作為主要描述（該面已退役，AIR-215） | 標準載入機制註記（見下方）|
 
@@ -149,7 +149,7 @@ rg '@~/|@\.\./|@/[a-z]' rules/*.md
 rg '\.\./(commands|skills)/' rules/*.md
 
 # 未標註的 CLAUDE.md wrapper
-rg 'CLAUDE.md wrapper' rules/*.md | rg -v 'Claude 端'
+rg 'CLAUDE.md wrapper' rules/*.md | rg -v 'legacy|已退役|唯讀|歷史'
 
 # user-specific 絕對路徑
 rg '~/Github/ai-guide/' rules/*.md

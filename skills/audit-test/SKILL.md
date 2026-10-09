@@ -113,7 +113,7 @@ allowed-tools: ["Read", "Bash", "Agent", "Edit", "Write"]
 **調查 / 修改前的強制義務**：
 
 1. **確認 fixture 回傳型別**：用 LSP `hover` / `goToDefinition` 跳到 fixture 定義，確認回傳 `MagicMock` 還是 `RealClass()`。**禁止憑 fixture 名稱猜測**（`<client_fixture>` 可能回傳真實 `<ServiceClient>`，不是 mock）
-2. **必讀專案踩雷指南**：修改 PropertyMock 前，讀專案 `tests/CLAUDE.md` 的 mock 規範段落（每個專案可能有不同的 PropertyMock 例外規則）
+2. **必讀專案踩雷指南**：修改 PropertyMock 前，讀專案 `tests/AGENTS.md`（legacy `tests/CLAUDE.md`）的 mock 規範段落（每個專案可能有不同的 PropertyMock 例外規則）
 
 **反例（真實案例）**：audit 稱某 `type(obj).attr = PropertyMock(...)` 多餘可刪，認為 fixture 回傳 mock；實作查證推翻 — fixture 回傳**真實 class**，該行是唯一讓某狀態（如某個 boolean 連線旗標）成立的機制，不能刪。調查前未確認 fixture 型別。
 
