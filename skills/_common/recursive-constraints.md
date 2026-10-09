@@ -12,7 +12,7 @@
 
 | 分類 | 說明 | 範例路徑 |
 |------|------|---------|
-| **Critical** | 專案根目錄 | `AGENTS.md`（source）、`CLAUDE.md`（wrapper） |
-| **High** | 主要模組 | `src/AGENTS.md`, `core/CLAUDE.md` |
-| **Medium** | 子模組 | `src/core/utils/CLAUDE.md` |
-| **Low** | 測試、範例、文檔 | `tests/CLAUDE.md`, `examples/CLAUDE.md` |
+| **Critical** | 專案根目錄 | `AGENTS.md`（legacy 專案另可能有 `CLAUDE.md`） |
+| **High** | 主要模組 | `src/AGENTS.md`, `core/AGENTS.md` |
+| **Medium** | 子模組 | `src/core/utils/AGENTS.md` |
+| **Low** | 測試、範例、文檔 | `tests/AGENTS.md`, `examples/AGENTS.md` |

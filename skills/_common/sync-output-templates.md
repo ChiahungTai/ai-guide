@@ -9,7 +9,7 @@
 ```
 ## instruction 檔同步檢查報告
 
-檔案: /path/to/AGENTS.md 或 /path/to/CLAUDE.md（範例）
+檔案: /path/to/AGENTS.md（legacy CLAUDE.md 僅轉移檢查，範例）
 
 ### 程式碼一致性檢查
 
@@ -228,7 +228,7 @@ actions:
 ## 遞歸同步檢查報告
 
 目錄: /path/to/project
-發現 instruction 檔: 5 個（AGENTS.md + CLAUDE.md）
+發現 instruction 檔: 4 個（AGENTS.md 為主；legacy CLAUDE.md 轉移檢查）
 
 ### Critical（專案根目錄）
 **檔案**: AGENTS.md（source）
@@ -238,12 +238,12 @@ actions:
 - 元資訊: ❌ 需要清理（版本號、日期）
 - 蒸餾評估: ⚠️ 3 個冗餘、2 個灰色地帶
 
-**檔案**: CLAUDE.md（wrapper）
-- 程式碼一致性: ✅ 90%
+**檔案**: CLAUDE.md（legacy，轉移檢查）
+- 遷移候選標記: ✅ 已列入報告
 - 元資訊: ✅ 乾淨
 
 ### High（主要模組）
-**檔案**: src/CLAUDE.md
+**檔案**: src/AGENTS.md
 - 程式碼一致性: ✅ 95%
 - 涵蓋性: ✅ 90%
 - 內部品質: ✅ 95/100
@@ -257,7 +257,7 @@ actions:
 **Sub-doc**: src/<design_doc>.md（設計文檔）
 - ⏭️ 跳過（設計文檔，不檢查程式碼一致性）
 
-**檔案**: src/core/CLAUDE.md
+**檔案**: src/core/AGENTS.md
 - 程式碼一致性: ⚠️ 80%（2 個 API 簽名變更）
 - 涵蓋性: ✅ 85%
 - 內部品質: ✅ 90/100
@@ -265,14 +265,14 @@ actions:
 - 蒸餾評估: ⚠️ 1 個過時範例
 
 ### Medium（子模組）
-**檔案**: src/core/utils/CLAUDE.md
+**檔案**: src/core/utils/AGENTS.md
 - 程式碼一致性: ✅ 100%
 - 涵蓋性: ⚠️ 70%（遺漏 helper 函數）
 - 內部品質: ⚠️ 80/100（術語不一致）
 - 元資訊: ✅ 乾淨
 
 ### Low（測試）
-**檔案**: tests/CLAUDE.md
+**檔案**: tests/AGENTS.md
 - 程式碼一致性: ✅ 95%
 - 涵蓋性: ✅ 90%
 - 內部品質: ✅ 100/100
@@ -298,7 +298,7 @@ actions:
 ```
 ## instruction 檔同步檢查 + 清理完成
 
-檔案: /path/to/AGENTS.md 或 /path/to/CLAUDE.md（範例）
+檔案: /path/to/AGENTS.md（legacy CLAUDE.md 僅轉移檢查，範例）
 
 ### ✅ 檢查完成
 - 一致性: X%（已報告問題）
@@ -323,7 +323,7 @@ actions:
 ```
 ## instruction 檔完整處理（檢查 + 清理 + 蒸餾）
 
-檔案: /path/to/AGENTS.md 或 /path/to/CLAUDE.md（範例）
+檔案: /path/to/AGENTS.md（legacy CLAUDE.md 僅轉移檢查，範例）
 
 ### 步驟 1: 同步檢查
 - 一致性問題: N 項

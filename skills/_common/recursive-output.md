@@ -4,25 +4,25 @@
 ## 遞歸{操作}報告
 
 目錄: /path/to/project
-發現 instruction 檔: N 個（AGENTS.md + CLAUDE.md，範例）
+發現 instruction 檔: N 個（AGENTS.md 為主；legacy CLAUDE.md 標記轉移檢查，範例）
 
 ### 🔴 Critical（專案根目錄）
-**檔案**: AGENTS.md（source）、CLAUDE.md（wrapper）
+**檔案**: AGENTS.md
 - {狀態描述}
 
 ### 🟠 High（主要模組）
-**檔案**: src/CLAUDE.md
+**檔案**: src/AGENTS.md
 - {狀態描述}
 
-**檔案**: src/core/CLAUDE.md
+**檔案**: src/core/AGENTS.md
 - {狀態描述}
 
 ### 🟡 Medium（子模組）
-**檔案**: src/core/utils/CLAUDE.md
+**檔案**: src/core/utils/AGENTS.md
 - {狀態描述}
 
 ### 🟢 Low（測試）
-**檔案**: tests/CLAUDE.md
+**檔案**: tests/AGENTS.md
 - {狀態描述}
 
 ### 📊 整體統計
@@ -40,11 +40,11 @@
    ✓ X 行 → Y 行 (-Z%)
    ✓ 備份: AGENTS.md.backup
 
-[2/N] 🔴 CLAUDE.md（根目錄 wrapper）
+[2/N] 🔴 CLAUDE.md（legacy，轉移檢查標記）
    ✓ X 行 → Y 行 (-Z%)
    ✓ 備份: CLAUDE.md.backup
 
-[3/N] 🟠 src/CLAUDE.md（主要模組）
+[3/N] 🟠 src/AGENTS.md（主要模組）
    ✓ X 行 → Y 行 (-Z%)
-   ✓ 備份: src/CLAUDE.md.backup
+   ✓ 備份: src/AGENTS.md.backup
 ```

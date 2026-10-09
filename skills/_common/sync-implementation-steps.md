@@ -98,7 +98,7 @@ Phase B: instruction 檔本身被直接修改
 1. 從 instruction 檔提取所有 markdown link 引用的 .md 檔案
    - 格式: [描述](path/to/doc.md) 或 [描述](doc.md)
    - 排除外部 URL（http/https）
-   - 排除 @ transclusion（已強制載入，不需額外檢查；僅 CLAUDE.md 展開 @，AGENTS.md 不展開）
+   - 排除 @ transclusion（跨 harness 的 AGENTS.md 禁用 `@`——CC 專屬機制；僅 legacy CLAUDE.md 展開）
 2. 驗證引用的 .md 檔案是否存在
 3. 分類為「說明文檔」或「設計文檔」：
    - 說明文檔：描述 API、資料結構、流程、call stack → 加入檢查清單
@@ -304,7 +304,7 @@ fi
 ```markdown
 ### Cross-Validation (vs Snapshot)
 
-- [X1] data/CLAUDE.md 宣告 "Does NOT depend on strategies" 但 dep_graph.edges 有 data→strategies
-- [X6] Module 'services' (12 files) 缺少 instruction 檔（AGENTS.md/CLAUDE.md）
-- [X-cap-path] Capabilities entry path 'runner.py' does not exist (in <package>/data/CLAUDE.md)
+- [X1] data/AGENTS.md 宣告 "Does NOT depend on strategies" 但 dep_graph.edges 有 data→strategies
+- [X6] Module 'services' (12 files) 缺少 instruction 檔（AGENTS.md）
+- [X-cap-path] Capabilities entry path 'runner.py' does not exist (in <package>/data/AGENTS.md)
 ```
