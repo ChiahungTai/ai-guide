@@ -20,6 +20,10 @@
 - received sink（duty hook 接線消費面）：safe wrapper 吸收失敗只
   stderr 註記；correlation_id 抽取（in_reply_to 優先、body task/card
   次之、皆缺 None）。
+- record-outbound face（AIR-294 b——outbound 台帳行）：`_meta/
+  outbound-log.jsonl` append-only JSONL——凍結八鍵、cursor 探測缺席＝
+  None（誠實未知）、append 不截斷、`_meta` 不入 address 掃描、0600、
+  CLI 面（exit 0／typed 1／args 2）。
 """
 
 import fcntl
@@ -601,4 +605,153 @@ def test_cli_unknown_state_exit_2_argparse():
 def test_cli_missing_required_arg_exit_2():
     with pytest.raises(SystemExit) as exc:
         mod.main(["set"])
+    assert exc.value.code == 2
+
+
+# ── record-outbound face（AIR-294 b：outbound 台帳行——append-only）────
+
+
+TARGET = "mosaic-marshal"
+
+OUTBOUND_KEYS = {
+    "schema_version", "kind", "envelope_id", "target_address",
+    "delivery_seq", "target_cursor_at_send", "sent_at_us", "session_id",
+}
+
+
+def _read_outbound_log(tmp_path):
+    log = tmp_path / "_meta" / "outbound-log.jsonl"
+    return [
+        json.loads(line)
+        for line in log.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+
+
+def test_record_outbound_appends_frozen_schema_line(tmp_path):
+    """單行台帳：凍結八鍵恰鍵、值逐欄對應、落 `_meta/outbound-log.jsonl`。"""
+    doc = mod.record_outbound(
+        TARGET, EID, 42, session_id="s1", now_us=1_000,
+        target_cursor_at_send=24, base_dir=str(tmp_path),
+    )
+    assert set(doc) == OUTBOUND_KEYS
+    assert doc == {
+        "schema_version": 1, "kind": "outbound", "envelope_id": EID,
+        "target_address": TARGET, "delivery_seq": 42,
+        "target_cursor_at_send": 24, "sent_at_us": 1_000,
+        "session_id": "s1",
+    }
+    rows = _read_outbound_log(tmp_path)
+    assert rows == [doc]
+
+
+def test_record_outbound_append_only_never_truncates(tmp_path):
+    """append-only：兩筆寄出＝兩行並存，前筆不被截斷／覆寫。"""
+    mod.record_outbound(TARGET, EID, 7, session_id="s1", now_us=1,
+                        target_cursor_at_send=3, base_dir=str(tmp_path))
+    second = mod.record_outbound(TARGET, "018f-2nd-id", 8, session_id="s2",
+                                 now_us=2, target_cursor_at_send=None,
+                                 base_dir=str(tmp_path))
+    rows = _read_outbound_log(tmp_path)
+    assert len(rows) == 2
+    assert rows[1] == second
+    assert rows[0]["delivery_seq"] == 7
+
+
+def test_record_outbound_unknown_cursor_none_honest(tmp_path):
+    """cursor 探測缺席＝None 記帳（誠實未知——禁發明數字）。"""
+    doc = mod.record_outbound(TARGET, EID, 9, session_id="s", now_us=1,
+                              base_dir=str(tmp_path))
+    assert doc["target_cursor_at_send"] is None
+
+
+def test_record_outbound_meta_log_not_in_address_scan(tmp_path):
+    """`_meta/outbound-log.jsonl` 不入任何 address 掃描／integrity gate
+    （list/get 對目標地址照樣冷啟動——_meta 排除 pin）。"""
+    mod.record_outbound(TARGET, EID, 9, session_id="s", now_us=1,
+                        target_cursor_at_send=2, base_dir=str(tmp_path))
+    assert mod.list_records(TARGET, base_dir=str(tmp_path)) == []
+    with pytest.raises(mod.UnknownRecord):
+        mod.get(TARGET, EID, base_dir=str(tmp_path))
+
+
+def test_record_outbound_file_mode_0600(tmp_path):
+    mod.record_outbound(TARGET, EID, 9, session_id="s", now_us=1,
+                        base_dir=str(tmp_path))
+    log = tmp_path / "_meta" / "outbound-log.jsonl"
+    assert stat.S_IMODE(log.stat().st_mode) == 0o600
+
+
+@pytest.mark.parametrize(("kwargs", "exc"), [
+    ({"envelope_id": "../escape"}, mod.InvalidIdentifier),
+    ({"envelope_id": ""}, mod.InvalidIdentifier),
+    ({"delivery_seq": 0}, mod.LedgerError),
+    ({"delivery_seq": -1}, mod.LedgerError),
+    ({"delivery_seq": True}, mod.LedgerError),
+    ({"delivery_seq": "9"}, mod.LedgerError),
+    ({"target_cursor_at_send": -1}, mod.LedgerError),
+    ({"target_cursor_at_send": True}, mod.LedgerError),
+    ({"target_cursor_at_send": "24"}, mod.LedgerError),
+    ({"now_us": 0}, mod.LedgerError),
+    ({"now_us": None}, mod.LedgerError),
+    ({"session_id": ""}, mod.LedgerError),
+])
+def test_record_outbound_validation_typed_errors(tmp_path, kwargs, exc):
+    """crash-only：識別碼／整數欄位壞形＝typed 錯誤、零寫入。"""
+    call = {
+        "target_address": TARGET, "envelope_id": EID, "delivery_seq": 5,
+        "session_id": "s", "now_us": 1, "base_dir": str(tmp_path),
+    }
+    call.update(kwargs)
+    with pytest.raises(exc):
+        mod.record_outbound(**call)
+    assert not (tmp_path / "_meta" / "outbound-log.jsonl").exists()
+
+
+def test_record_outbound_bad_target_address_identifier(tmp_path):
+    with pytest.raises(mod.InvalidIdentifier):
+        mod.record_outbound("bad alias!", EID, 5, session_id="s", now_us=1,
+                            base_dir=str(tmp_path))
+    assert not (tmp_path / "_meta").exists()
+
+
+# ── record-outbound CLI 面 ───────────────────────────────────────────
+
+
+def test_cli_record_outbound_happy_exit0(tmp_path, capsys):
+    base = str(tmp_path)
+    assert mod.main([
+        "record-outbound", "--target-address", TARGET,
+        "--envelope-id", EID, "--delivery-seq", "42",
+        "--target-cursor", "24", "--session-id", "s1",
+        "--base-dir", base,
+    ]) == 0
+    out = capsys.readouterr().out.strip()
+    assert json.loads(out)["delivery_seq"] == 42
+    assert _read_outbound_log(tmp_path)[0]["target_cursor_at_send"] == 24
+
+
+def test_cli_record_outbound_cursor_none_keyword(tmp_path):
+    """`--target-cursor none`＝探測缺席誠實記 None（與缺席 flag 同義）。"""
+    assert mod.main([
+        "record-outbound", "--target-address", TARGET,
+        "--envelope-id", EID, "--delivery-seq", "42",
+        "--target-cursor", "none", "--session-id", "s1",
+        "--base-dir", str(tmp_path),
+    ]) == 0
+    assert _read_outbound_log(tmp_path)[0]["target_cursor_at_send"] is None
+
+
+def test_cli_record_outbound_typed_error_exit1(tmp_path):
+    """delivery_seq 非正整數過 argparse、落 typed exit 1。"""
+    assert mod.main([
+        "record-outbound", "--target-address", TARGET,
+        "--envelope-id", EID, "--delivery-seq", "0",
+        "--session-id", "s1", "--base-dir", str(tmp_path),
+    ]) == 1
+
+
+def test_cli_record_outbound_missing_required_exit2():
+    with pytest.raises(SystemExit) as exc:
+        mod.main(["record-outbound", "--target-address", TARGET])
     assert exc.value.code == 2

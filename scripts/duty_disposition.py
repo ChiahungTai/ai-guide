@@ -51,6 +51,28 @@ base_dir)` 回傳 **safe** callable（address, dispositions, now_us）——
 `[duty-disposition]` 一行註記、絕不 raise（信件損失 > ledger 缺口；
 缺口要大聲）。生產面注入 duty_receive.process_once 時必經此 wrapper。
 
+outbound 台帳（AIR-294 b——db99-kickoff 寄件紀律；寄信方消費面）：
+`record-outbound` face 在寄出後記一行（envelope_id／目標地址／
+deliverySeq／寄出時對方 cursor）到 `<root>/_meta/outbound-log.jsonl`
+（**append-only JSONL**；單行 os.write O_APPEND——不截斷不覆寫；
+0600）。**落點裁定（記錄理由）**：選 duty_disposition `_meta/` 而非
+獨立小 face——(1) `_meta/` 已是本帳非 envelope 記錄區（例外地址建立
+記錄先例），不入任何 address 掃描／integrity gate，outbound 行同性質
+（非五態流轉狀態）；(2) 單一 state root——custody 事故審計讀同一棵樹
+（disposition＋outbound 同在 duty-disposition/），不新增第二狀態根與
+第二組路徑慣例；(3) append-only 行與 per-envelope 六鍵嚴格 schema 不
+同形，獨立檔不污染 record 驗證；(4) 零 dutymail transport 變更、零
+daemon——寄信方 session 一行 CLI 記帳（消費端自持，AIR-287 同原則）。
+行 schema（凍結八鍵、恰此八鍵——嚴格驗證）：
+    {"schema_version": 1, "kind": "outbound", "envelope_id": str,
+     "target_address": str, "delivery_seq": 正 int,
+     "target_cursor_at_send": 非負 int|None, "sent_at_us": 正 int,
+     "session_id": str}
+target_cursor_at_send＝寄出時唯讀 `receive status --address <對方>`
+探測得的對方 primaryCursor；探測缺席＝None（誠實未知，禁發明數字）
+——事故偵測面（handoff Phase 5 bounded wait 逾時後的 cursor 比對）
+以此行為基準點。
+
 處理推進（AIR-287 bi 修復必修 1——codex F1「auto 信恆停 received」
 ；第二 sink 消費面）：`make_resolution_sink(session_id, base_dir)` 回
 safe callable，在 **digest 呈現完成邊界**（duty_receive.process_once
@@ -68,12 +90,15 @@ supervisor 監視面（needs-human 停滯＝session 死於 forward 前的電子
 record_received 逐封吸收 IllegalTransition（stderr 一行、帳面維持已
 處理真態、同批其餘信件記帳不中斷）。
 
-CLI（模組＋CLI 三 face；exit 0 成功／1 LedgerError typed 錯誤／
+CLI（模組＋CLI 四 face；exit 0 成功／1 LedgerError typed 錯誤／
 2 args 誤用）：
     set   --address ALIAS --envelope-id ID --state STATE
           --session-id ID [--correlation-id C] [--base-dir DIR]
     get   --address ALIAS --envelope-id ID [--base-dir DIR]
     list  --address ALIAS [--base-dir DIR]   # JSON lines（stdout）
+    record-outbound --target-address ALIAS --envelope-id ID
+                    --delivery-seq N [--target-cursor N|none]
+                    --session-id ID [--base-dir DIR]
 
 測試形態：base_dir／now_us 全參數可注入——零真實 state 目錄往返。
 """
@@ -99,6 +124,14 @@ TRANSITIONS = {
 RECORD_KEYS = frozenset(
     {"schema_version", "envelope_id", "correlation_id", "state",
      "updated_at_us", "session_id"}
+)
+# outbound 台帳行（AIR-294 b——append-only JSONL；schema 見模組 docstring）
+OUTBOUND_SCHEMA_VERSION = 1
+OUTBOUND_KIND = "outbound"
+OUTBOUND_LOG_BASENAME = "outbound-log.jsonl"
+OUTBOUND_RECORD_KEYS = frozenset(
+    {"schema_version", "kind", "envelope_id", "target_address",
+     "delivery_seq", "target_cursor_at_send", "sent_at_us", "session_id"}
 )
 # 識別碼（alias／envelope_id）＝檔名面：strict 白名單——path traversal
 # （..／／）與任意字元 crash-only 拒絕。
@@ -211,6 +244,12 @@ def _load_valid(path):
 def _positive_int(value):
     return (
         isinstance(value, int) and not isinstance(value, bool) and value > 0
+    )
+
+
+def _non_negative_int(value):
+    return (
+        isinstance(value, int) and not isinstance(value, bool) and value >= 0
     )
 
 
@@ -374,6 +413,67 @@ def write_exception_address_record(
     return doc
 
 
+def outbound_log_path(base_dir_override=None):
+    """outbound 台帳路徑（`<root>/_meta/outbound-log.jsonl`——append-only；
+    `_meta` 不入 address 掃描，落點裁定見模組 docstring）。"""
+    root = (
+        base_dir_override
+        if base_dir_override is not None
+        else _default_base_dir()
+    )
+    return os.path.join(root, "_meta", OUTBOUND_LOG_BASENAME)
+
+
+def record_outbound(
+    target_address, envelope_id, delivery_seq, session_id, now_us,
+    target_cursor_at_send=None, base_dir=None,
+):
+    """寄出後記一行 outbound 台帳（AIR-294 b）→ 落盤行 dict。
+
+    target_cursor_at_send＝寄出時唯讀 `receive status --address <對方>`
+    探測得的對方 primaryCursor；探測缺席傳 None（誠實未知——禁發明
+    數字）。append-only：既有檔不讀不改不截斷，單行一次 os.write
+    （O_APPEND 原子附加）；新檔 0600。欄位驗證 crash-only（typed 錯誤
+    、零寫入）——驗證先於開檔，壞欄位不留下空檔。
+    """
+    _validate_identifier(target_address, "target address alias")
+    _validate_identifier(envelope_id, "envelope_id")
+    if not _positive_int(delivery_seq):
+        raise LedgerError(f"delivery_seq 須正整數，得 {delivery_seq!r}")
+    if target_cursor_at_send is not None and not _non_negative_int(
+        target_cursor_at_send
+    ):
+        raise LedgerError(
+            "target_cursor_at_send 須非負整數或 None，得 "
+            f"{target_cursor_at_send!r}"
+        )
+    if not _positive_int(now_us):
+        raise LedgerError(f"now_us 須正整數，得 {now_us!r}")
+    if not isinstance(session_id, str) or not session_id:
+        raise LedgerError("session_id 須非空字串")
+    doc = {
+        "schema_version": OUTBOUND_SCHEMA_VERSION,
+        "kind": OUTBOUND_KIND,
+        "envelope_id": envelope_id,
+        "target_address": target_address,
+        "delivery_seq": delivery_seq,
+        "target_cursor_at_send": target_cursor_at_send,
+        "sent_at_us": now_us,
+        "session_id": session_id,
+    }
+    line = (json.dumps(doc, ensure_ascii=False, sort_keys=True) + "\n")
+    path = outbound_log_path(base_dir)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    try:
+        os.write(fd, line.encode("utf-8"))
+    finally:
+        os.close(fd)
+    return doc
+
+
 # ── received sink（duty hook 接線消費面；safe by construction）───────
 
 
@@ -497,8 +597,8 @@ def make_resolution_sink(session_id, base_dir=None):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
-            "consumer disposition ledger（AIR-287；set/get/list 三 face"
-            "——dutymail 零改動，消費端自持狀態帳）"
+            "consumer disposition ledger（AIR-287；set/get/list＋AIR-294"
+            " record-outbound 四 face——dutymail 零改動，消費端自持狀態帳）"
         )
     )
     sub = parser.add_subparsers(dest="command", required=True)
@@ -525,7 +625,39 @@ def parse_args(argv=None):
     p_list = sub.add_parser("list", help="列 address 全記錄（JSON lines）")
     p_list.add_argument("--address", required=True, metavar="ALIAS")
     _common(p_list)
+
+    p_out = sub.add_parser(
+        "record-outbound",
+        help="寄出後記 outbound 台帳行（_meta/outbound-log.jsonl append-only）",
+    )
+    p_out.add_argument("--target-address", required=True, metavar="ALIAS")
+    p_out.add_argument("--envelope-id", required=True, metavar="ID")
+    p_out.add_argument("--delivery-seq", required=True, metavar="N")
+    p_out.add_argument(
+        "--target-cursor", default=None, metavar="N|none",
+        help="寄出時對方 primaryCursor（receive status 唯讀探測；"
+             "none＝探測缺席記 null——禁發明數字）",
+    )
+    p_out.add_argument("--session-id", required=True, metavar="ID")
+    _common(p_out)
     return parser.parse_args(argv)
+
+
+def _parse_int_arg(raw, label):
+    """CLI 整數欄解析——非整數＝LedgerError（main 統一 typed exit 1，
+    非 traceback）。"""
+    try:
+        return int(raw)
+    except (TypeError, ValueError) as exc:
+        raise LedgerError(f"{label} 須整數，得 {raw!r}") from exc
+
+
+def _parse_cursor_arg(raw):
+    """--target-cursor 解析：none／缺席＝None；其餘整數交 record_outbound
+    驗非負。"""
+    if raw is None or raw == "none":
+        return None
+    return _parse_int_arg(raw, "--target-cursor")
 
 
 def main(argv=None) -> int:
@@ -540,6 +672,15 @@ def main(argv=None) -> int:
             print(json.dumps(doc, ensure_ascii=False, sort_keys=True))
         elif args.command == "get":
             doc = get(args.address, args.envelope_id, base_dir=args.base_dir)
+            print(json.dumps(doc, ensure_ascii=False, sort_keys=True))
+        elif args.command == "record-outbound":
+            doc = record_outbound(
+                args.target_address, args.envelope_id,
+                _parse_int_arg(args.delivery_seq, "--delivery-seq"),
+                args.session_id, now_us=_now_us(),
+                target_cursor_at_send=_parse_cursor_arg(args.target_cursor),
+                base_dir=args.base_dir,
+            )
             print(json.dumps(doc, ensure_ascii=False, sort_keys=True))
         else:
             for doc in list_records(args.address, base_dir=args.base_dir):
