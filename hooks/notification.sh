@@ -3,7 +3,7 @@
 # 觸發：Notification event（Claude 需要使用者輸入，如權限確認）
 # 職責分工：本 hook 只做系統召回固定句池（不含稱謂）；
 #           任務完成通知的隨機稱謂歸 voice-notification skill（single-source）。
-# 對應 rule：載體選擇見 ai-guide/CLAUDE.md（Hook = 確定性保證）
+# 對應 rule：載體選擇單一源＝root AGENTS.md「寫作治理」（Hook = 確定性保證）
 
 # bounded say：語音系統掛死時 30s 自清，不留孤兒
 # （2026-09-14 實例：孤兒 say 佔住 speech 系統，使下一支前景 say 永久阻塞）

@@ -5,7 +5,7 @@ description: "當你要操作 backlog board 或查它的機制時，backlog boar
 
 # kanban-board — backlog board（Backlog.md）機制單一源
 
-> **繼承**: `@../CLAUDE.md`。UC-Driven 方法論見全局 guide。本 skill 是 **backlog board 的機制單一源**（命令合約、ref 規則、結案流程、UI 入口）——execution-plan／implement／metadata-sync 等消費端引用此處，不自帶定義。
+> **繼承**: [AGENTS.md](../AGENTS.md)。UC-Driven 方法論見全局 guide。本 skill 是 **backlog board 的機制單一源**（命令合約、ref 規則、結案流程、UI 入口）——execution-plan／implement／metadata-sync 等消費端引用此處，不自帶定義。
 
 ## 定位
 

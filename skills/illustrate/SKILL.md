@@ -9,7 +9,7 @@ when_to_use: "Illustrate technical concepts, architecture, or processes. Also st
 
 > **受眾：layer 3 人類 viewport / B 軸**。產出**供人判讀的結構 artifact**（city map / 心智模型 / 重用枚舉 / 流程圖）—— 人用大原則判讀「結構撐得起嗎、在重造嗎、方向對嗎」。**不產機器 finding**（嚴重度 / file:line，那是 `/code-review` axis 3 的職責）。與 `/code-review` axis 3 共用 [arch-thinking](../arch-thinking/SKILL.md) skill 但**受眾不同**（人 viewport vs 機器 finding）—— skill 刻意中性，受眾由本命令（人）vs code-review（機器）決定。
 >
-> 受眾模型見 [AGENTS.md](../../AGENTS.md)「命令的受眾視角」（root CLAUDE.md wrapper 經 @AGENTS.md 同載入）；理論（A/B 軸、證據階層）見 [acceptance-evidence](../../rules/acceptance-evidence.md)。
+> 受眾模型見 [AGENTS.md](../../AGENTS.md)「命令的受眾視角」；理論（A/B 軸、證據階層）見 [acceptance-evidence](../../rules/acceptance-evidence.md)。
 
 ## 輸出模式
 

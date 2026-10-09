@@ -283,7 +283,7 @@ contract 直行中發現新 **architecture** 決策（新 module 責任／依賴
 **觸發**：段落觸及以下任一 invariant-bearing 模組（bug silent-corrupt 全下游者），觸發時本段必填，否則寫「無」：
 
 - **會計總量 / 風控 sizing / 跨 context 共用 domain service** —— 與上方「流程規模分級 → 結構性修復非 simple」重疊（scope 決策與本元素在此共用條件，非本元素獨有）
-- **silent-corruption path** —— bug 不 crash 但污染下游資料的路徑（如單位邊界 張↔股、除權息調整、時區）；不屬會計/風控但同樣 invariant-bearing。**各專案 CLAUDE.md 應標記此類 path**（標記 convention 由各專案自訂）
+- **silent-corruption path** —— bug 不 crash 但污染下游資料的路徑（如單位邊界 張↔股、除權息調整、時區）；不屬會計/風控但同樣 invariant-bearing。**各專案 AGENTS.md 應標記此類 path**（標記 convention 由各專案自訂）
 
 > **為何（補 producer 端，別與既有重複）**：重疊的三類（會計/風控/domain service）已由上方 scope 決策（standard/full）+ [arch-thinking](../arch-thinking/SKILL.md) 補償邏輯盤點覆蓋；但 reviewer 仍缺一份「動到哪些 **domain invariant**」的結構化聲明——段落 0「風險假設識別」是技術未知、補償邏輯是 double-count、依賴錨點是 caller，三者都不等於「cash 守恆 / position single-writer / risk limit 是否被改動」。**silent-corruption path 更可能只觸發本元素、不觸發 scope 升級**（如單檔單位轉換 fix，scope 判 simple 但仍 invariant-bearing）→ 本元素是其唯一**完整**結構化防線（簡單路徑另有輕量 invariant 聲明——見流程規模分級防濫用段；「唯一」指完整形態，非指唯一存在）。reviewer 直接驗證（不必 state reconstruction——審查主要成本是重建影響範圍，非 attention）。
 
