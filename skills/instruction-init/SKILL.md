@@ -71,7 +71,7 @@ Phase 1.5 完成後檢查 code-reality graph 就緒（消費端＝後續 review 
 **既有 instruction 檔處理**：
 - Phase 1.5 有 snapshot → LLM 直接掃描目錄結構確認哪些目錄已有 AGENTS.md，跳過
 - 無 Phase 1.5 → 目錄已有 AGENTS.md 時預設跳過。使用者可明確確認覆蓋
-- legacy 單檔模組（只有 CLAUDE.md，無 AGENTS.md）：**唯讀辨識**——該目錄視為已有 instruction 檔（跳過生成、禁誤判缺 AGENTS）；報告標記為**遷移候選**（中立內容併回 AGENTS.md 後刪 CLAUDE.md，遷移由 user 拍板另弧執行），**不代遷移、不改寫該檔、不重造 wrapper**
+- legacy 模組（僅 CLAUDE.md；或 AGENTS.md／CLAUDE.md 同目錄共存）：**唯讀辨識**——該目錄視為已有 instruction 檔（跳過生成、禁誤判缺 AGENTS）；報告標記為**遷移候選**（中立內容併回 AGENTS.md 後刪 CLAUDE.md，遷移由 user 拍板另弧執行），**不代遷移、不改寫該檔、不重造 wrapper**。共存形態：AGENTS.md 照常跳過生成，CLAUDE.md 另標遷移候選
 
 **Fork repo 的 root 檔**：root `AGENTS.md` 可能是**上游維護檔**（fork 帶下來的專案自有檔）——一律不覆蓋、不修改（每個 byte 都會與 upstream 永久衝突）。此時：
 
