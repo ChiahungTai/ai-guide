@@ -47,6 +47,11 @@
             "type": "command",
             "command": "{{REPO}}/hooks/stop-notification.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/duty_holder_release.py --address ai-guide-marshal",
+            "timeout": 10
           }
         ]
       }

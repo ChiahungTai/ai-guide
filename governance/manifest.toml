@@ -27,6 +27,7 @@ scripts = [
     "hooks/codex_memory_path_deny.py",
     "hooks/compact-restore-inject.py",
     "hooks/compact-tail-inject.py",
+    "hooks/duty_holder_release.py",
     "hooks/duty_mailbox_monitor.py",
     "hooks/duty_receive.py",
     "hooks/identity_pointer.py",

@@ -336,6 +336,16 @@ def receive_status(runner, address):
     return _call(runner, ["receive", "status", "--address", address])
 
 
+def holder_release(runner, address, token):
+    """`holder release` face（AIR-288 MF1——db-98 S4）：token 驗證、
+    未 ack 批次 fencing、mail/cursor/epoch 保留。清潔關閉＝release，
+    非走人。"""
+    return _call(
+        runner,
+        ["holder", "release", "--address", address, "--token", token],
+    )
+
+
 # ── per-session holder state（bearer capability；0600；atomic 寫）─────
 
 
@@ -980,6 +990,27 @@ def ensure_holder(address, runner, state_file):
     return _bind_fresh(address, runner, state_file)
 
 
+def release_holder(runner, state_file):
+    """清潔關閉釋出（AIR-288 judge MF1(i)——bridge item 6(a)）：以
+    state 的 live token 呼 `holder release`（token 驗證、未 ack 批次
+    fencing、mail/cursor/epoch 保留——「Clean shutdown is release —
+    not walking away」）→ 成功後**移除 state 檔**（session 終局：
+    token 已作廢、批次已 fence，下一 session 冷啟 rebind、寧重不漏
+    吸收 fenced 批）。無 state／無有效 token＝無可釋出 → False（零
+    face 呼叫）。release face 失敗 → DutymailFaceError 原樣傳出（hook
+    端 fail-soft 包裝——release 失敗不擋 session 收尾；殘局由 ZCode
+    death-evidence 接管兜底）。"""
+    st = load_state(state_file)
+    if st is None or not _valid_holder_state(st, st.get("address")):
+        return False
+    holder_release(runner, st["address"], st["token"])
+    try:
+        os.remove(state_file)
+    except OSError:
+        pass  # 殘檔無害——token 已作廢（下一次 _valid 後 prepare fencing 自癒）
+    return True
+
+
 def _bind_fresh(address, runner, state_file):
     observed = holder_status(runner, address)
     epoch = observed.get("bindingEpoch")
@@ -999,24 +1030,22 @@ def _bind_fresh(address, runner, state_file):
     # bound／3.7.0 live）＝另一 session 正持有消費權威——**不 bind 不搶**
     # （並行 session／卡 WT spawned agents 的 ping-pong 防護）；值星換代
     # 正當路徑＝對方釋放（SessionEnd release——codex/grok 面）或死亡
-    # （ZCode 無 SessionEnd——下方 death-evidence 接管）後 rebind。
-    # CAS（epoch-conflict）保留為 status 與 bind 之間 race window 的
-    # 最後防線。「active=True 且 epoch==我 state epoch」（我方 token
-    # 失效邊角）經此同一規則落衝突不搶——對方釋放後自癒，信不丟
-    # （prepare 不消耗）。
-    if holder_active(observed):
-        if not _holder_death_evidence(
-            os.path.dirname(state_file) or None, address, epoch
-        ):
-            raise HolderConflict(
-                f"{address}：另一 session holding（epoch {epoch}）——本"
-                " session 不搶，待對方釋放換代；處理面照舊由現 holder 承擔"
-            )
-        # AIR-288 judge MF1(ii) death-evidence takeover：前任 holder 的
-        # 兄弟 state（epoch 吻合）全陳舊＝prompt 心跳停擺、可證已死
-        # （S6「prior owner provably cannot be alive」機械化）——落下方
-        # CAS bind 接管；bind 當下 epoch 已被推進＝epoch-conflict →
-        # HolderConflict（race 兜底）。
+    # （ZCode 無 SessionEnd——death-evidence 接管）後 rebind。CAS
+    # （epoch-conflict）保留為 status 與 bind 之間 race window 的最後
+    # 防線。「active=True 且 epoch==我 state epoch」（我方 token 失效
+    # 邊角）經此同一規則落衝突不搶——對方釋放後自癒，信不丟（prepare
+    # 不消耗）。 death-evidence 接管（AIR-288 judge MF1(ii)）：前任
+    # holder 的兄弟 state（epoch 吻合）全陳舊＝prompt 心跳停擺、可證
+    # 已死（S6「prior owner provably cannot be alive」機械化）——不
+    # raise、落下方 CAS bind 接管；bind 當下 epoch 已被推進＝
+    # epoch-conflict → HolderConflict（race 兜底）。
+    if holder_active(observed) and not _holder_death_evidence(
+        os.path.dirname(state_file) or None, address, epoch
+    ):
+        raise HolderConflict(
+            f"{address}：另一 session holding（epoch {epoch}）——本"
+            " session 不搶，待對方釋放換代；處理面照舊由現 holder 承擔"
+        )
     try:
         result = holder_bind(runner, address, epoch)
     except DutymailFaceError as exc:

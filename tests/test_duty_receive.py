@@ -840,6 +840,93 @@ class TestDeathEvidenceTakeover:
         assert "heartbeat_iso" in _read_state(state_file)
 
 
+# ── MF1(i)：清潔關閉 release（bridge item 6(a)——codex/grok SessionEnd
+#    面；core 面＝release_holder，hook 前導＝hooks/duty_holder_release.py）
+
+
+def _release_doc(epoch=5, fenced=()):
+    return _ok({
+        "addressId": "a1", "alias": ADDR, "bindingEpoch": epoch,
+        "fencedBatches": list(fenced), "releasedAtUs": NOW_US,
+    })
+
+
+class TestReleaseHolder:
+    def test_release_calls_face_with_live_token_removes_state(
+        self, state_file,
+    ):
+        """清潔關閉（item 6(a) demonstrated 面）：以 state 的 live token
+        呼 `holder release --address --token`（fencing 未 ack 批次、
+        交回權威）→ 成功後移除 state 檔（session 終局：token 已作廢）。"""
+        _seed_state(state_file)
+        runner = _seq_runner([_release_doc(epoch=4, fenced=("bt-9",))])
+        assert mod.release_holder(runner, state_file) is True
+        assert runner.calls == [
+            ["holder", "release", "--address", ADDR,
+             "--token", "tok-old"],
+        ]
+        assert not os.path.exists(state_file)
+
+    def test_release_without_state_noop(self, state_file):
+        """無 state（從未值星／冷啟即終局）＝無可釋出 → False、零 face
+        呼叫。"""
+        runner = _seq_runner([])
+        assert mod.release_holder(runner, state_file) is False
+        assert runner.calls == []
+
+    def test_release_without_token_noop(self, state_file):
+        """state 無有效 token（壞形）＝無可釋出 → False、零呼叫。"""
+        _seed_state(state_file, token="")
+        runner = _seq_runner([])
+        assert mod.release_holder(runner, state_file) is False
+        assert runner.calls == []
+
+    def test_release_face_failure_propagates_state_kept(self, state_file):
+        """release face 失敗 → DutymailFaceError 原樣傳出（hook 端
+        fail-soft 包裝——release 失敗不擋 session 收尾）、state 保留
+        （transient 失敗可重試；永久殘局由 death-evidence 接管兜底）。"""
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _err("stale-epoch", "fencing", exit_code=5),
+        ])
+        with pytest.raises(mod.DutymailFaceError):
+            mod.release_holder(runner, state_file)
+        assert os.path.exists(state_file)
+
+    def test_lifecycle_bind_consume_release_rebind(self, state_file):
+        """item 6(c) lifecycle（consumer 面 analog）：bind → consume
+        （prepare→呈報→ack）→ clean-shutdown release（fencedBatches
+        回傳、state 移除）→ 新 session 冷啟 bind 成功（epoch 前進）。"""
+        envs = [_env_item("e-1"), _env_item("e-2")]
+        runner = _seq_runner([
+            _status_doc_v4(epoch=0),               # session A 冷啟 status
+            _bind_doc(epoch=1, token="tok-a"),     # bind
+            _prepare_doc(envs),                    # prepare
+            _ack_doc(),                            # commit → ack
+            _release_doc(epoch=1),                 # 清潔關閉 release
+            _status_doc_v4(epoch=1),               # session B 冷啟 status
+            _bind_doc(epoch=2, token="tok-b"),     # 新 session bind 成功
+        ])
+        lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+        )
+        assert lines
+        commit()  # consume 完成（ack）
+        assert mod.release_holder(runner, state_file) is True
+        assert not os.path.exists(state_file)
+        state_b = os.path.join(
+            os.path.dirname(state_file), "sess-b.json"
+        )
+        st_b = mod.ensure_holder(ADDR, runner, state_b)
+        assert st_b["token"] == "tok-b" and st_b["epoch"] == 2
+        releases = [
+            c for c in runner.calls if c[0:2] == ["holder", "release"]
+        ]
+        assert releases == [
+            ["holder", "release", "--address", ADDR, "--token", "tok-a"],
+        ]
+
+
 # ── process_batch：flush-ack 防護＋ack-only-after-disposition＋invalidate
 
 
