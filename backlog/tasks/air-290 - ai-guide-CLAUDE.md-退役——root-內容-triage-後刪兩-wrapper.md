@@ -1,10 +1,10 @@
 ---
 id: AIR-290
 title: ai-guide CLAUDE.md 退役——root 內容 triage 後刪兩 wrapper
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-08 22:36'
-updated_date: '2026-10-09 01:22'
+updated_date: '2026-10-09 02:21'
 labels:
   - instruction
 dependencies: []

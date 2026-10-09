@@ -1,10 +1,10 @@
 ---
 id: AIR-296
 title: spawn 僵屍偵測工程——zombie sweeper＋liveness 台帳（兩型事故＋90 屍體實證；codex/GLM 合成）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-09 02:04'
-updated_date: '2026-10-09 02:17'
+updated_date: '2026-10-09 02:21'
 labels:
   - dutymail
 dependencies: []
