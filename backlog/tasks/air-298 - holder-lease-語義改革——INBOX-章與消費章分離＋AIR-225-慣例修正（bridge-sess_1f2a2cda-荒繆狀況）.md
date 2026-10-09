@@ -44,6 +44,11 @@ flowchart LR
 - bridge db100 對齊信收訖（三開放點：①預設 Consume ②INBOX prepare 不推 cursor＋role gate ③death-evidence=session_discovery seam＋24h 常數）——bridge 將開卡 role gate＋S1 amendment，兩卡互引
 - 本卡慣例文 delta（判死＝內容面心跳非時鐘等待；code 面 HOLDER_STALE_SECONDS 收緊歸 bridge/duty 弧）待本卡 merge 後回信 bridge 交代，讓其 S1 amendment 反映終態慣例
 - 審查鏈跑中（codex＋5.3 雙腿）
+- 雙腿回 needs-attention×2→judge（GLM-5.3 job-mv11jesv-v0ctha）裁決：F1 fix-now（death-evidence 現行機械面三句揭露：24h state-file mtime 自動閘非即時＋operator-invoked holder takeover 正當面教學〔epoch-102 孤兒實證〕＋AIR-296 判準/工具分際）、G1 fix-now（scbus 命令式改歷史敘述）、F2 advisory（merge→回信→bridge 回執閉環才翻 Done）、F3/G2 rejected（reflog 釘死兩點幻影）
+- 修復 7e2ec31b→rebase→merge ee0dc5f8（三檔 +40/-16 累計；全套 3791 passed 2 skipped 兩次 pre-commit）
+- **Receipt（四欄）**：classification=boundary（authority/gate 面——章位分離＋接管正當面）／review=bi（codex job-mv11bryj-1wz4e7＋glm job-mv11bry3-usv2hk）＋judge glm-5.3（job-mv11jesv-v0ctha）＋marshal re-diff 機驗（錨點＋probe）／session-freshness=fresh（修復 session 裁決後 spawn、現檔重讀、工單宣稱動筆前機驗）／deployment-surfaces=healthy（`~/.agents/skills`→canonical；operator-invoked 經 live chain 可達 probe 實證）
+- 卡保 **In Progress**：AC#2 待 delta 回信寄出＋bridge 回執閉環（F2 advisory 護欄）
+- 觀察標記（未擴 scope）：governance「CLI 慣例（惰性 recipe）」節 scbus 命令形殘留——ledger 已記，供後續弧裁量
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
