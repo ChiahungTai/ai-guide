@@ -39,6 +39,8 @@ dispatch⇄collection 完整模式（自動 arm 規約與場景分工、family �
 
 ## Canonical dispatch runbook——session label（步驟 6；步驟 1–5 registry pin／provision／派發／watcher 配對／resume 已隨 plugin skill）
 
+**長跑腿禁 MCP face——CLI 背景派（2026-10-09 實證；plugin skill「MCP bridge_wait suits short waits only」條款的 dispatch 面延伸）**：MCP `bridge_review`／`bridge_task` 等非即時面在 harness client tool-call cap（實測 ~30s）內可能**零 dispatch**（ledger 零 jobs——呼叫被殺在 job 建立前；`bridge_wait` 同 cap 只適短等待）。審查腿／judge／任何分鐘級面開場即 CLI 背景派：cwd＝owning WT＋`review --family <f> --base main --caller-harness zcode`（glm 加 `--home-mode inherit`；task 用 `--prompt-file`），回收走 `show --json` 輪詢（MCP `bridge_wait` 同死）。上游修正歸 bridge repo（plugin skill 版本凍結）。
+
 **session label（AIR-248 掛名退役→AIR-254.2 seam label）**：job spawn 回執取得 native session id（回執無 id 時 seam `find` 對照 workspace／harness 最新註冊）後 `uv run --project /Users/ctai/Github/ai-guide python /Users/ctai/Github/ai-guide/scripts/session_discovery.py label set --session-id <id> --label <session-label 欄值>`——欄定義與自 id 發現法單一源＝[work-order.md](../_common/work-order.md) §3；id 無法確立（carrier 未註冊 seam）＝跳過不阻塞、禁捏造 id
 
 ## grok family authority profile——consumer 判讀面（AIR-226；producer facts 歸 bridge）
