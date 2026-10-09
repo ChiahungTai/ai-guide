@@ -12,7 +12,8 @@ AGE_DAYS=30
 PATROL_DIR="$HOME/.agents/cross-repo-patrol"
 # repo 卡 branch 前綴表（補審 F2：原版只掃 air-*/ephemeral/*＝六 repo 涵蓋 1/6；
 # code-reality 無卡面＝空字串不掃 branch）
-REPOS=(ai-guide mosaic_alpha southchariot delegate-bridge code-reality sc-router)
+# 1005-2 修：sc-router 已隨 delegate-bridge db-80.7 cutover 離場（目錄不存在）——除名免每日假警報（AIR-250 弧 Suggestion-1 載體）
+REPOS=(ai-guide mosaic_alpha southchariot delegate-bridge code-reality)
 PREFIXES=("air-" "mos-" "sc-" "db-" "scr-" "")
 GH="$HOME/Github"
 
