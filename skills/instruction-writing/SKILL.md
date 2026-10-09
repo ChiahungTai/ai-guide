@@ -68,7 +68,7 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 
 | dir 層（root↔cwd 間） | 行為 | 官方錨點（`ref-docs/harness/` 相對路徑） |
 |---|---|---|
-| CC | 2.1.277+ native 讀 `AGENTS.md`（無 CLAUDE.md／CLAUDE.local.md 時；預設 Project instructions=`claude-md-or-agents-md`，可調）——session start 載 cwd 鏈全部；子目錄層首次 Read 該 subtree 檔案時才帶入（開場即須的規則不可只放子目錄層） | `claude-code/docs/en/changelog.md:314`（2.1.277）、`claude-code/docs/en/changelog.md:13`（2.1.281）、`claude-code/docs/en/memory.md:335-346,358-359,373` |
+| CC | 2.1.277+ native 讀 `AGENTS.md`（無 CLAUDE.md／CLAUDE.local.md 時；預設 Project instructions=`claude-md-or-agents-md`，可調）——session start 載 cwd 鏈全部；子目錄層首次 Read 該 subtree 檔案時才帶入（開場即須的規則不可只放子目錄層） | `claude-code/docs/en/changelog.md:314`（2.1.277）、`claude-code/docs/en/memory.md:400`（2.1.281 門檻——Bedrock/telemetry 等 session 之前僅讀 CLAUDE.md）、`claude-code/docs/en/memory.md:335-346,358-359,373` |
 | Codex | root→cwd path-only——自 project root 走至 cwd 逐層串接，每目錄至多一檔；鏈合計 32KiB 停加（root 過肥先吃預算） | `codex/agent-configuration/agents-md.md:12,15` |
 | Muse | 向上-only——workspace root 向上走至 `.git` 邊界，同層四檔首命中、深勝淺替換；root 之下子目錄不可達；project 層另有 trust 閘 | `meta/muse-code/configuration.md:41,43-44,46` |
 | ZCode | 斷——只讀全域＋workspace 兩檔，不掃子目錄（官方明文） | `zcode/cn/docs/agents.md:78` |
@@ -91,7 +91,7 @@ instruction 條文的**語義變更**（改變 agent 的 decision／authority／
 
 | 維度 | 語義 | 各家行為 |
 |---|---|---|
-| concatenate-merge（跨層檔案如何共存） | 串接 | CC cwd→上層目錄全鏈串接（`claude-code/docs/en/memory.md:130`；AGENTS.md 同鏈載入——`memory.md:358`）；Codex root-down 串接，衝突時較深層／較 specific 指令實質優先度較高（內容仍為串接，`codex/agent-configuration/agents-md.md:13`）；ZCode 全域→workspace 兩檔串接（`zcode/cn/docs/agents.md:71`） |
+| concatenate-merge（跨層檔案如何共存） | 串接 | CC cwd→上層目錄全鏈串接（`claude-code/docs/en/memory.md:132`；AGENTS.md 同鏈載入——`memory.md:358`）；Codex root-down 串接，衝突時較深層／較 specific 指令實質優先度較高（內容仍為串接，`codex/agent-configuration/agents-md.md:13`）；ZCode 全域→workspace 兩檔串接（`zcode/cn/docs/agents.md:71`） |
 | first-wins（同層多候選誰勝） | 首命中 | Codex 同層 `AGENTS.override.md`＞`AGENTS.md`＞fallback 首個非空、每目錄至多一檔（`codex/agent-configuration/agents-md.md:11-12`）；Muse 同層四檔首命中＋跨層替換非合併（`meta/muse-code/configuration.md:41,43-44`） |
 | trust-gate（project 層載入門檻） | 信任閘 | Muse project 層需 trust（`meta/muse-code/configuration.md:46`）；Codex `.codex/` layer 需信任、AGENTS.md 本身無閘（`codex/config-file/config-basic.md:37`）；ZCode 專案層 hooks 直接忽略、團隊共享走 plugin（`zcode/cn/docs/hooks.md:58`） |
 

@@ -228,7 +228,7 @@ actions:
 ## 遞歸同步檢查報告
 
 目錄: /path/to/project
-發現 instruction 檔: 4 個（AGENTS.md 為主；legacy CLAUDE.md 轉移檢查）
+發現 instruction 檔: 6 個（AGENTS.md 為主；legacy CLAUDE.md 轉移檢查）
 
 ### Critical（專案根目錄）
 **檔案**: AGENTS.md（source）
@@ -279,7 +279,7 @@ actions:
 - 元資訊: ✅ 乾淨
 
 ### 整體統計
-- instruction 檔數量: 5 個
+- instruction 檔數量: 6 個
 - 平均程式碼一致性: 90%
 - 平均涵蓋性: 82%
 - 平均內部品質: 90/100
