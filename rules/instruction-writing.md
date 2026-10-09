@@ -4,7 +4,7 @@ paths:
   - "**/*.md"
 bundle-projection: pointer
 pointer-target: instruction-writing
-bootstrap-pointer: "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md 等 instruction 檔前，先載入 `instruction-writing` skill；frontmatter、載體選擇、引用、Signal/Noise 與自洽檢查以該 skill 為準。條文語義變更（decision／authority／gate／authorization／acceptance 面）落地前依 review-engine 風險 profile 分類並完成所需審查腿；static-only 豁免（機械 predicate）與 deferred 回執以該 skill「落地前審查閘」節為定義源。"
+bootstrap-pointer: "新增或修改 AGENTS.md、rules 或 SKILL.md 等 instruction 檔前（legacy CLAUDE.md 亦然），先載入 `instruction-writing` skill；frontmatter、載體選擇、引用、Signal/Noise 與自洽檢查以該 skill 為準。條文語義變更（decision／authority／gate／authorization／acceptance 面）落地前依 review-engine 風險 profile 分類並完成所需審查腿；static-only 豁免（機械 predicate）與 deferred 回執以該 skill「落地前審查閘」節為定義源。"
 ---
 
 # Instruction File 撰寫規範
@@ -13,7 +13,7 @@ bootstrap-pointer: "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md �
 
 ## Always-on 核心
 
-- 雙檔：每層 `AGENTS.md` 是 harness-neutral source，body 禁 Claude 專屬散文；`CLAUDE.md` 是 `@AGENTS.md` thin wrapper。全域 guide 獨立於專案 root；`@` 僅 Claude 展開，AGENTS.md 禁 transclude。
+- 單檔：每層 `AGENTS.md` 是唯一 instruction source（harness-neutral；CC 2.1.277+ native 讀），body 禁單一 harness 專屬散文。legacy `CLAUDE.md`（舊雙檔遺留）唯讀辨識＝遷移候選，禁重造 wrapper。全域 guide 獨立於專案 root；AGENTS.md 禁依賴 `@` transclusion（CC 專屬機制，跨 harness 不可達）。
 - Signal/Noise：保留設計理由、約束/邊界、失敗教訓、型別區別、Pipeline/慣例映射、共用基建、負空間、行為校準；易被合理化動搖的規則保留「補充論證／第一性原理」。
 - 可推導簽名/參數/欄位、Class→檔案表、重複導航、>5 行完整範例屬噪音；泛用 rule 用 placeholder，真實失敗案例可保留專案實例但須標「真實案例」。
 - **禁統計（行數/字數）、版本號、更新日期、Changelog**。
