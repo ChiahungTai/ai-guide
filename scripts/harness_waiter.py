@@ -135,6 +135,18 @@ wake 對「第一個到期」收割即 exit——其餘 entry 中止監視，主
    提前喚醒）——「advisory 不 stop 不重派」語義不變；stale-advisory 不收割
    不記帳，與 T4 的分流以 stdout 尾 `state` 欄機判（先例＝偏差 4/10）；
    registry schema 增 `expectedHeartbeat?`＋`heartbeatFile?` 成對欄位。
+17.〔AIR-296〕spawn 僵屍 advisory content face（T1-T9 frozen 主體零變；偏差
+   16 先例——exit 3 觸發源再增二）：① `completion-suspected`（output.txt
+   在場＋活動靜止 ≥15m＋running——型 B silent-completion 候選，只提醒
+   collection owner 禁自動宣告完成）② `start-missing`（無開工證據＋複查窗
+   仍缺——型 A 驗活；預設閾值 60min＝GLM 90 樣本校準〔＞首檔 max 48min〕，
+   codex 五級表的 spawn+5m 提前版以參數 opt-in——5m 對慢啟動活體誤旗約半
+   數〔首檔 p50=12min〕故不作預設）。判定單一源＝scripts/zombie_core.py；
+   兩 advisory 皆 advisoryOnly——不收割、不記 retry budget、不 stop、不重
+   派（AIR-135.7 偵測/處置分離）；registry schema 零變（agentId/
+   registered_at＝taskId/createdAt、expected_sink＝sink 既有欄位即台帳）。
+   優先序：hard-death＞unknown＞timebox-frozen（T4）＞completion-suspected
+   ＞start-missing＞stale——正向產物證據優先於缺席證據，heartbeat 斷訊殿後。
 
 exit 契約（frozen——watcher 主迴圈）
 -------------------------------------
@@ -351,6 +363,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent)
+)  # scripts/ 非 package——同目錄 seam import（AIR-254.1 先例）
+
+import zombie_core  # AIR-296：spawn 僵屍判定核心（三簽章單一源——advisory face 消費）
 
 WATCHER_NAME = "harness_waiter"
 WAKE_RECEIPT_SCHEMA = "liveness-wake-receipt/1"
@@ -1525,6 +1543,127 @@ def _heartbeat_verdict(
 
 
 # ---------------------------------------------------------------------------
+# AIR-296 advisory content face（外掛——AIR-160 heartbeat 先例；T1-T9 frozen
+# 主體零變、exit code 零變；判定單一源＝zombie_core）
+# ---------------------------------------------------------------------------
+
+
+def _spawn_zombie_advisory(
+    entries: list[RegistryEntry],
+    results: list[tuple[RegistryEntry, PollResult]],
+    src: "ZCodeLivenessSource",
+    layout: ZCodeLayout,
+    now: datetime,
+    *,
+    start_missing_since: dict[str, datetime],
+    start_missing_min: float,
+    start_missing_recheck_min: float,
+    completion_quiesce_min: float,
+    out: _Writable,
+) -> dict | None:
+    """spawn 僵屍 advisory 判讀——回 wake dict（exit 3）或 None（靜默續輪詢）.
+
+    只對 PollFresh（timebox 未到）entry 判讀；非 fresh／terminal entry 清除
+    START_MISSING candidate。metadata 錨點缺失／不可解析＝靜默（T5/T6 權威
+    路徑處理——advisory 不與 frozen 語義競爭，supervision fence：弱訊號只
+    wake 強訊號歸權威面）。優先序：COMPLETION_SUSPECTED（正向產物證據）＞
+    START_MISSING（缺席證據）。
+
+    - COMPLETION_SUSPECTED：output.txt 在場＋活動靜止 ≥quiesce＋running
+      （codex 三條件；判定＝zombie_core.completion_suspected）——只提醒
+      collection owner，禁自動宣告完成，不收割不記帳。
+    - START_MISSING 驗活：spawn（registry createdAt＝registered_at 軸）＋
+      start_missing_min 無開工證據→記 candidate；持續
+      start_missing_recheck_min 仍未現→wake（codex：5m 首查＋2m 複查）。
+      開工證據＝artifacts 或 exec 任一面有檔（目錄存在≠證據——type A
+      雙胞胎 exec 零檔實證）；artifacts 心跳在場（首檔 p50=12min）＝證據。
+
+    兩 advisory 皆 advisoryOnly wake——不收割、不記 retry budget、不 stop、
+    不重派（處置恆人裁，AIR-135.7 偵測/處置分離）。advisory 二讀 metadata
+    的 TOCTOU：二讀 terminal＝靜默（交 T2 權威面），二讀缺失＝靜默（交 T5）。
+    """
+    for entry, verdict in results:
+        if not isinstance(verdict, PollFresh):
+            start_missing_since.pop(entry.task_id, None)
+            continue
+        agent_id = agent_id_from_task(entry.task_id)
+        if agent_id is None:
+            continue
+        meta_path = src.resolve_metadata(agent_id)
+        if isinstance(meta_path, UnknownFace):
+            continue  # T5 hard-death／T6 fail-loud 權威路徑——advisory 靜默
+        meta = src.read_metadata(meta_path)
+        if isinstance(meta, UnknownFace):
+            continue  # 同上——禁 advisory 誤報
+        if meta["status"] in TERMINAL_STATES:
+            start_missing_since.pop(entry.task_id, None)
+            continue  # T2 權威面
+        output_raw = meta.get("outputFile")
+        output_file = (
+            Path(output_raw)
+            if isinstance(output_raw, str) and output_raw
+            else zombie_core.output_file_for(meta_path.parent)
+        )
+        face = zombie_core.face_snapshot(
+            zombie_core.artifacts_dir_for(layout.artifact_root, agent_id),
+            output_file,
+        )
+        suspected, evidence = zombie_core.completion_suspected(
+            meta, face, now, quiesce_min=completion_quiesce_min
+        )
+        if suspected:
+            return {
+                "state": "completion-suspected",
+                "schema": WAKE_RECEIPT_SCHEMA,
+                "taskId": entry.task_id,
+                "attemptId": entry.attempt_id,
+                "interventionPolicy": entry.intervention_policy,
+                "advisoryOnly": True,
+                "reason": "output-txt-present-quiescent",
+                "evidence": evidence,
+                "survivingHandles": list(entry.surviving_handles),
+            }
+        reg_created = _parse_iso(entry.created_at)
+        age_min = (now - reg_created).total_seconds() / 60.0 if reg_created else -1.0
+        exec_files = _files_in_dir(
+            layout.exec_dir(_SUBAGENT_PREFIX + agent_id)
+        )
+        has_evidence = zombie_core.start_evidence_present(
+            face, exec_file_count=len(exec_files)
+        )
+        if age_min < start_missing_min or has_evidence:
+            start_missing_since.pop(entry.task_id, None)
+            continue
+        first = start_missing_since.setdefault(entry.task_id, now)
+        waited_min = (now - first).total_seconds() / 60.0
+        if waited_min < start_missing_recheck_min:
+            _emit(
+                out,
+                f"[{WATCHER_NAME}] task={entry.task_id} "
+                f"verdict=start-missing-candidate age={age_min:.0f}min——"
+                f"複查窗 {start_missing_recheck_min:.0f}min（telemetry，非 wake）",
+            )
+            continue
+        return {
+            "state": "start-missing",
+            "schema": WAKE_RECEIPT_SCHEMA,
+            "taskId": entry.task_id,
+            "attemptId": entry.attempt_id,
+            "interventionPolicy": entry.intervention_policy,
+            "advisoryOnly": True,
+            "reason": "no-start-evidence-after-recheck",
+            "evidence": {
+                "ageMin": round(age_min, 1),
+                "artifactsFiles": face.artifacts_files,
+                "execFiles": len(exec_files),
+                "candidateAgeMin": round(waited_min, 1),
+            },
+            "survivingHandles": list(entry.surviving_handles),
+        }
+    return None
+
+
+# ---------------------------------------------------------------------------
 # 主迴圈（T1-T6；狀態機實作對應 module docstring frozen spec）
 # ---------------------------------------------------------------------------
 
@@ -1542,7 +1681,18 @@ def run_watcher(
     source: ZCodeLivenessSource | None = None,
     stdout: _Writable | None = None,
     stderr: _Writable | None = None,
+    start_missing_min: float = zombie_core.STILLBIRTH_AGE_MIN_DEFAULT,
+    start_missing_recheck_min: float = zombie_core.START_MISSING_RECHECK_MIN_DEFAULT,
+    completion_quiesce_min: float = zombie_core.COMPLETION_QUIESCE_MIN_DEFAULT,
 ) -> int:
+    """watcher 主迴圈——AIR-296 advisory face 閾值（GLM 90 樣本校準為預設）：
+
+    - start_missing_min 預設 60min（校準型 A：＞首檔 max 48min）——標準 20m
+      timebox 條目先由 T4 收割承接（五級表的 SILENCE 既有收割），START_MISSING
+      只對 silenceBudget＞60min 的長弧條件提前於 timebox 前分類；codex 五級
+      表的 spawn+5m 提前驗活以顯式參數 opt-in（GLM 實證 5m 對慢啟動活體誤旗
+      約半數——首檔 p50=12min——故不作預設）。
+    """
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
     now = now_fn or _system_now
@@ -1570,6 +1720,8 @@ def run_watcher(
     # F-4：基線＝task→attempt；純增項吸納續 watch，減項／attempt 變更才 hard-death
     baseline: dict[str, str] = {e.task_id: e.attempt_id for e in entries}
     states: dict[str, WatchState] = {e.task_id: WatchState() for e in entries}
+    # AIR-296：START_MISSING candidate（task→首次無開工證據時刻；wake 後清空）
+    start_missing_since: dict[str, datetime] = {}
     cycle = 0
     while True:
         cycle += 1
@@ -1758,6 +1910,31 @@ def run_watcher(
             }
             _emit(out, _dumps(receipt))
             return EXIT_OK
+
+        # AIR-296 advisory content face（外掛；frozen 主體零變）：completion-
+        # suspected ＞ start-missing——兩者皆 advisory exit 3（不收割不記帳
+        # 不 stop 不重派），先於 heartbeat stale face（正向產物／缺席驗活
+        # 證據優先於心跳斷訊）
+        advisory = _spawn_zombie_advisory(
+            current,
+            results,
+            src,
+            layout,
+            cycle_now,
+            start_missing_since=start_missing_since,
+            start_missing_min=start_missing_min,
+            start_missing_recheck_min=start_missing_recheck_min,
+            completion_quiesce_min=completion_quiesce_min,
+            out=out,
+        )
+        if advisory is not None:
+            _emit(out, _dumps(advisory))
+            _emit(
+                err,
+                f"[{WATCHER_NAME}] {advisory['state']}: {advisory['taskId']}"
+                "——advisory wake（不收割不記帳不 stop 不重派；處置恆人裁）",
+            )
+            return EXIT_FREEZE
 
         # AIR-160 heartbeat face：expectedHeartbeat=true 且 timebox 未到
         # （PollFresh）的 entry join 讀 sidecar——fresh/missing＝telemetry 續
@@ -2578,6 +2755,31 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         default=None,
         help="輪詢上限（測試／看門狗用；預設無限）",
     )
+    parser.add_argument(
+        "--start-missing-min",
+        type=float,
+        default=zombie_core.STILLBIRTH_AGE_MIN_DEFAULT,
+        metavar="MIN",
+        help=(
+            "AIR-296 START_MISSING 驗活閾值（預設 60＝GLM 90 樣本校準型 A——"
+            "＞首檔 max 48min；codex 五級表 spawn+5m 提前版顯式給 5——5m 對"
+            "慢啟動活體誤旗約半數，不作預設）"
+        ),
+    )
+    parser.add_argument(
+        "--start-missing-recheck-min",
+        type=float,
+        default=zombie_core.START_MISSING_RECHECK_MIN_DEFAULT,
+        metavar="MIN",
+        help="AIR-296 START_MISSING 複查窗分鐘（預設 2——首查後持續缺證據才 wake）",
+    )
+    parser.add_argument(
+        "--completion-quiesce-min",
+        type=float,
+        default=zombie_core.COMPLETION_QUIESCE_MIN_DEFAULT,
+        metavar="MIN",
+        help="AIR-296 COMPLETION_SUSPECTED 活動靜止門檻分鐘（預設 15）",
+    )
     args = parser.parse_args(argv)
 
     layout = layout or ZCodeLayout.default()
@@ -2615,6 +2817,9 @@ def main(argv: list[str] | None = None, *, layout: ZCodeLayout | None = None) ->
         threshold_min=args.timebox_min,
         poll_interval_s=args.poll_interval,
         max_cycles=args.max_cycles,
+        start_missing_min=args.start_missing_min,
+        start_missing_recheck_min=args.start_missing_recheck_min,
+        completion_quiesce_min=args.completion_quiesce_min,
     )
 
 

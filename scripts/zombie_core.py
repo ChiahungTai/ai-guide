@@ -240,11 +240,15 @@ def classify_running_agent(
 
 
 def start_evidence_present(face: FaceSnapshot, *, exec_file_count: int = 0) -> bool:
-    """開工證據（waiter START_MISSING 驗活面）：artifacts 或 exec 任一面有檔.
+    """開工證據（waiter START_MISSING 驗活面）：artifacts 或 exec 任一面有檔，
+    或 output.txt 在場（產物在場＝工作已發生——completion face 擁有其判讀，
+    START_MISSING 不得重複旗標）.
 
     exec 目錄存在≠證據（type A 雙胞胎 exec 目錄在場零檔）——只認檔數。
     """
-    return face.artifacts_files > 0 or exec_file_count > 0
+    return (
+        face.artifacts_files > 0 or exec_file_count > 0 or face.output_path is not None
+    )
 
 
 def completion_suspected(

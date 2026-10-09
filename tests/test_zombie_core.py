@@ -337,6 +337,17 @@ def test_start_evidence_present_via_artifacts_or_exec(tmp_path):
     assert _core.start_evidence_present(empty_face, exec_file_count=2) is True
 
 
+def test_start_evidence_present_via_output_txt(tmp_path):
+    # output.txt 在場＝工作已發生（completion face 擁有判讀——START_MISSING 禁重複旗標）
+    out = tmp_path / "agents" / PARENT / AGENT / "output.txt"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(b"done")
+    empty_face = _core.face_snapshot(
+        tmp_path / "artifacts" / "nope", out
+    )
+    assert _core.start_evidence_present(empty_face, exec_file_count=0) is True
+
+
 # --- scan_zcode_agents：全庫掃描合成（sweeper 消費面） ---
 
 
