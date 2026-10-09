@@ -10,8 +10,9 @@ wins on conflict), and ~/.grok/AGENTS.md (grok global rules path —
 AIR-218; grok loads each rules file in full with no size cap, so the
 gate there is a governance budget, not a runtime truncation line).
 
-Claude (~/.claude/CLAUDE.md) is NOT touched -- it stays symlink to the
-slim guide; Claude gets rules via ~/.claude/rules/ auto-load.
+Claude is NOT a deploy target (AIR-215 retired the CC deploy face;
+Claude Code reads repo AGENTS.md natively since v2.1.277 -- no
+~/.claude/CLAUDE.md guide symlink, no ~/.claude/rules/ auto-load).
 
 Rule classification is auto-discovered from per-rule frontmatter:
     ---
@@ -863,7 +864,7 @@ def _deploy(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
     print(
-        "     Claude (~/.claude/CLAUDE.md) untouched -- rules via ~/.claude/rules/ auto-load"
+        "     Claude is not a deploy target (AIR-215); CC reads repo AGENTS.md natively (v2.1.277+)"
     )
     return 0 if deployed == len(targets) and not failed else 1
 

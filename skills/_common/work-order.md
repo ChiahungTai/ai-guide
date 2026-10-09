@@ -72,6 +72,7 @@
 
 - 讀查：`bash`（`cat`／`rg`／`ls`）、`Read`；字串搜尋一律 `rg`
 - **CR-first 工具分工（bridge 委派腿標配——AIR-295）**：結構事實（refs／callers／closure／impact radius）恆走 code-reality（MCP supply 或唯讀 CLI），Read/Grep 僅在結構範圍縮小後做語義判讀——禁逐檔 Read 重建結構事實（AIR-216 禁止形態；實證：glm 腿 brief 給了 anchors 但缺工具分工，3144 Read＋0 CR 查詢）；分工語義單一源＝[cr-query](../cr-query/SKILL.md)
+- **review ledger 身份錨（author 帳本格式——AIR-224.1）**：弧帳本（.review/<卡>.md）header 必帶 `reviewed=<revision 錨>` 行（per-leg receipt schema 的 identity 錨）——缺行者 lint gate（review_ledger.py）會 FAIL loud 拒收；寫帳本前先看同目錄合格範例或 [workflow-review-pattern](workflow-review-pattern.md) schema
 - external runtime 接線（available-face 階梯，以 runtime 實際能力為準——禁從 role/template 宣告推定 runtime 實際具有 MCP）：① runtime/role 實際暴露 CR MCP query tools → 優先 MCP；② 否則 runtime 可執行 code-reality CLI → 唯讀 query face；③ 兩者皆不可用 → `rg` degraded，交付報告標 `[WARN] structural context degraded`；降級 fallback 階梯與標記語義單一源＝symbol-query-routing——受影響的結構 finding／claim 另須逐條 `unverified-by-graph`（報告級 WARN 只作匯總）
 - carrier 分流 guard（0926 CR 使用率調查；同日探測更新，AIR-206）：carrier 的 CR 指令形態以**當次 surface 探測**為準、禁以歷史結論推定——codex 0922-26 調查窗口曾實測 MCP 名錯配，0926 探測（bridge 2.3.0）實測 **both**（`mcp__code_reality__*` server＋CLI binary 都在）；muse/glm 依實際 surface 發 MCP 名。CR 契約值指路不重抄（owner＝[review-engine](../review-engine/SKILL.md)「CR 接線查證段」）
 - fallback 可見化：CR query transient failure → 同 face 重試一次；capability 缺場／binary missing／auth 明確拒絕 → 記 reason 往下降階（禁盲重試、禁靜默漂移到純文字查證）；external runtime spawn auth failure 屬 dispatch 層處置，不與 CR query fallback 混同
