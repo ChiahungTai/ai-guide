@@ -75,7 +75,7 @@
 
 ### 工作流 skills — instruction file 維護
 
-- `/instruction-init` — 為任意專案自動產生 instruction file 體系（root + 模組都雙檔：AGENTS.md source + CLAUDE.md @AGENTS.md wrapper，bottom-up；root 模板含記憶池路由行條件段——encoded 探測＋B/A/degraded 三形態）
+- `/instruction-init` — 為任意專案自動產生 instruction file 體系（root + 模組只生成 AGENTS.md——單檔模式，legacy CLAUDE.md 唯讀辨識不重造 wrapper，bottom-up；root 模板含記憶池路由行條件段——encoded 探測＋B/A/degraded 三形態）
 - `/instruction-clean` — 清理 Markdown 元資訊；`--distill` 蒸餾低 signal 內容（保守防護欄：預設 conservative、NEVER 清單禁觸失敗教訓/設計理由/約束、換形為主僅元資訊直刪、縮減 >30% 逐條列出）
 - `/instruction-sync` — 檢查文檔與程式碼同步性
 - `instruction-writing` — instruction file 撰寫完整規範（reference skill：rule 留 always-on 核心，此處承載完整規範＋元資訊禁止行為表與論證＋文檔自洽五維檢查；rule+skill 分層控制 bundle 尺寸）

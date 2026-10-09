@@ -49,7 +49,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 ### 6. Signal/Noise Ratio（依 encoder-philosophy.md）
 - **High Signal 是否充分**：設計理由、架構約束、非顯而易見的選擇、模組邊界、失敗教訓
 - **Low Noise 是否存在**：API 簽名、參數表、欄位列表、完整範例 >5 行、元資訊（版本號/日期/統計）、通用知識（LLM 訓練資料已有的）
-- **引用語法是否正確**：CLAUDE.md/rules 用 `@`，Skill/Command 用 `[描述](path)`，長文件用 `[描述](path)` 而非 `@`
+- **引用語法是否正確**：`@` 是 CC 專屬 transclusion（限 legacy CLAUDE.md；跨 harness 的 AGENTS.md 禁依賴），Skill/Command 用 `[描述](path)`，長文件用 `[描述](path)` 而非 `@`
 
 ---
 
@@ -163,7 +163,7 @@ Signal/noise framework: [encoder-philosophy.md](../_common/encoder-philosophy.md
 /consistency
 
 # 檢查指定文檔
-/consistency CLAUDE.md
+/consistency AGENTS.md
 
 # 檢查指定路徑的文檔
 /consistency docs/api-design.md

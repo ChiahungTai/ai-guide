@@ -22,7 +22,7 @@ da = load_module("scripts/deploy_agents.py")
 
 
 POINTER = (
-    "新增或修改 AGENTS.md、CLAUDE.md、rules 或 SKILL.md 等 instruction 檔前，"
+    "新增或修改 AGENTS.md、rules 或 SKILL.md 等 instruction 檔前（legacy CLAUDE.md 亦然），"
     "先載入 `instruction-writing` skill；frontmatter、載體選擇、引用、"
     "Signal/Noise 與自洽檢查以該 skill 為準。"
 )

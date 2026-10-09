@@ -133,7 +133,7 @@ Implementer → Reviewer → Judge → lite 機械收尾 → commit gate（在 u
 
 - **① Detect（機械——先跑，便宜）**：`git diff --diff-filter=A --name-only` 頂層聚合 → 新增頂層目錄與新增可執行 entry 清單（弧模式＝baseline..HEAD 同源；零 `.md` 的 code 弧與純 `.md` 弧皆跑——instruction 真空不以語言別豁免）。
 - **② Extract（LLM 萃取——candidate 非空才做）**：逐 candidate 對 MUST predicate 判「該目錄該不該有 AGENTS face」＋現有 face 是否已涵蓋新入口；全不命中或已涵蓋 → 空跳記證據。
-- **③ Delegate（命中即委派既有機制——不重寫生成邏輯）**：缺 AGENTS.md → create-or-sync 照 [instruction-init](../instruction-init/SKILL.md) 骨架與建檔閾值補檔（雙檔模式含 CLAUDE.md wrapper）；已有 AGENTS.md 但未涵蓋新入口 → 併入本鏈第 1 點 consistency 重驗範圍。**零 gap（全 candidate 已有 face 或已補）＝ settlement pass 證據；未補齊 → 列收尾報告未決項，不靜默**。
+- **③ Delegate（命中即委派既有機制——不重寫生成邏輯）**：缺 AGENTS.md → create-or-sync 照 [instruction-init](../instruction-init/SKILL.md) 骨架與建檔閾值補檔（單檔模式——只生成 AGENTS.md，不重造 CLAUDE.md wrapper；legacy CLAUDE.md 唯讀辨識）；已有 AGENTS.md 但未涵蓋新入口 → 併入本鏈第 1 點 consistency 重驗範圍。**零 gap（全 candidate 已有 face 或已補）＝ settlement pass 證據；未補齊 → 列收尾報告未決項，不靜默**。
 
 ### correction mining checkpoint（AIR-135.8）
 
