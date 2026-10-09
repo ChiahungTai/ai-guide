@@ -121,6 +121,37 @@ def test_read_metadata_unparseable_created_at(tmp_path):
     assert err.reason == "metadata-corrupt"
 
 
+def test_terminal_without_created_at_is_valid_legacy_schema(tmp_path):
+    # 舊 schema 實證（2026-10-09 真機 74 具）：stopped＋completedAt 無 createdAt
+    # ＝合法 terminal face（非損壞）——createdAt 僅 running 判定軸必要
+    d = tmp_path / "agents" / PARENT / AGENT
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "metadata.json").write_text(
+        json.dumps(
+            {
+                "agentId": AGENT,
+                "status": "stopped",
+                "completedAt": "2026-09-01T01:58:35.733Z",
+            }
+        )
+    )
+    meta = _core.read_metadata(d / "metadata.json")
+    assert isinstance(meta, dict)
+    assert meta["status"] == "stopped"
+
+
+def test_running_without_created_at_is_corrupt(tmp_path):
+    # running 缺判定軸（createdAt）＝禁判——UNKNOWN fail-loud
+    d = tmp_path / "agents" / PARENT / AGENT
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "metadata.json").write_text(
+        json.dumps({"agentId": AGENT, "status": "running"})
+    )
+    err = _core.read_metadata(d / "metadata.json")
+    assert isinstance(err, _core.MetaError)
+    assert "createdAt" in err.detail
+
+
 # --- face_snapshot：唯讀 stat 面 ---
 
 
