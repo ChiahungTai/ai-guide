@@ -16,7 +16,7 @@ instruction file 是給 AI 的協作指南，應專注於**核心原則**和**�
 
 ## 落地前審查閘（控制面條文——AIR-105）
 
-instruction 條文的**語義變更**（改變 agent 的 decision／authority／gate／authorization／acceptance 可觀察行為）——「落地」＝merge canonical（Claude 端 live symlink 即生效）**或** deploy bundle（非 Claude 四端）任一先到——落地前必須：
+instruction 條文的**語義變更**（改變 agent 的 decision／authority／gate／authorization／acceptance 可觀察行為）——「落地」＝merge canonical（live symlink 即生效——Claude 端 `~/.claude/rules/` 面已退役 AIR-215，現行 live 面＝`~/.agents/skills` 母鏈）**或** deploy bundle（非 Claude 四端）任一先到——落地前必須：
 
 1. **風險分類**：依 [review-engine](../review-engine/SKILL.md) 風險 profile 判定表分類（控制面 authority／gate 面＝boundary）。分類記錄進卡／工單——**無分類記錄＝fail-closed：條件不明逕依 review-engine 既有分支視為 boundary（fresh＋intent 分離＋全部已命中機械 extras），receipt 補齊前不得落地**。
 2. **配審查腿**：boundary baseline＝fresh＋intent 分離；instruction 條文**另加**跨家族 external second-opinion 腿（boundary baseline 上的 instruction 專屬加腿，非重定義 boundary——此為 model-routing 軟提醒條款之上的加嚴例外）——額度允許時派，不足時依 model-routing 顯式記錄降級、in-harness full 雙 context 承接；**外審零容量→依 review-engine 執行預設記 no-candidate pending 入既有帳本（帳本＝authoritative pending record）——記帳形態＝deferred 回執（見第 5 款；receipt 值僅為帳本 projection，帶 pending-ref），禁降分類、禁靜默落地**。預設 panel：常規控制面 `bi`、風控／會計級 `tri`；ordinary＝至少一條獨立 context 腿。
