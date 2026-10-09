@@ -4,7 +4,7 @@ harness-scope: claude-specific
 
 # Bash 硬限制（Claude）
 
-> **載入機制**: 本檔 source 在 ai-guide repo `rules/`；Claude 端經 `~/.claude/rules/` symlink auto-load（claude-specific——不進非 Claude bundle）
+> **載入機制**: 本檔 source 在 ai-guide repo `rules/`；claude-specific——不進跨 harness bundle。**Claude auto-load 面已退役（AIR-215，`~/.claude/rules/` 已拆）**——本檔現為 dormant 歷史資產（CC 偶用或回滾時的 repo 內 source，無 live 部署面）
 
 > Claude Code 專屬的 Bash 權限偵測限制。通用工具紀律（uv run / pipe-exit / 禁 sed / pytest 背景跑 / agent prompt 指定工具）見 [tool-discipline.md](tool-discipline.md)（neutral）。
 
