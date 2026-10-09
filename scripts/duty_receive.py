@@ -285,9 +285,21 @@ def holder_active(status):
     """holder status「binding active」布林（AIR-288 雙版投影）：3.8.0
     欄位＝`bound`（db-98 B 案：live 改名＋leaseExpiresAtUs 移除）、
     3.7.0＝`live`——get-or-fallback 先取新欄位、缺席退舊欄位（混版
-    窗口 binary 是哪版都同判定）。雙缺席＝False（同既有 `live` 缺席
-    容忍面——bind CAS 為最後防線）；值非 `True`（None 等）不誤判。"""
-    return status.get("bound", status.get("live")) is True
+    窗口 binary 是哪版都同判定）。**雙欄位皆缺席＝shape-drift
+    fail-loud**（AIR-288 judge MF2）：bridge bind 是純 epoch CAS、不查
+    active（holder.rs bind 只比 expected_epoch）——把缺席誤判成 False
+    會讓本閘放行、靜默搶走 live holder，正是 no-steal 閘要防的事；同
+    `bindingEpoch` 驗證先例 raise。欄位在場但值非 `True`（None 等）
+    不誤判。"""
+    if "bound" in status:
+        return status["bound"] is True
+    if "live" in status:
+        return status["live"] is True
+    raise DutymailFaceError(
+        "shape-drift", "unknown",
+        f"holder status 投影欄位雙缺席（bound/live）：{sorted(status)}",
+        False, 0,
+    )
 
 
 def holder_bind(runner, address, expected_epoch):

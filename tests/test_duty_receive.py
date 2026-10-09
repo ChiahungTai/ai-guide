@@ -589,15 +589,20 @@ class TestEnsureHolder:
             mod.ensure_holder(ADDR, runner, state_file)
         assert len(runner.calls) == 1  # 只 status——零 bind
 
-    def test_active_absent_both_fields_treated_holderless(self, state_file):
-        """bound／live 皆缺席（形漂移容忍面）＝False——與既有 `live` 缺席
-        同 fallback，bind CAS 為最後防線。"""
+    def test_active_absent_both_fields_shape_drift_fail_loud(
+        self, state_file,
+    ):
+        """bound／live 皆缺席（形漂移）＝shape-drift fail-loud（MF2 反轉：
+        舊釘法把「雙缺席→False→照 bind」钉成預期——bridge bind 是純
+        epoch CAS 不查 active，誤判 False＝靜默搶走 live holder，正是
+        no-steal 閘要防的事；同 `bindingEpoch` 驗證先例 fail-loud）。"""
         runner = _seq_runner([
             _ok({"addressId": "a1", "alias": ADDR, "bindingEpoch": 0}),
-            _bind_doc(epoch=1),
         ])
-        st = mod.ensure_holder(ADDR, runner, state_file)
-        assert st["epoch"] == 1
+        with pytest.raises(mod.DutymailFaceError) as exc:
+            mod.ensure_holder(ADDR, runner, state_file)
+        assert exc.value.code == "shape-drift"
+        assert len(runner.calls) == 1  # 只 status——零 bind
 
     def test_lease_expired_epoch_one_takeover(self, state_file):
         """換代（3.7.0 live=False＝lease 已到期）＝正當 rebind：bind 以
@@ -663,14 +668,15 @@ class TestEnsureHolder:
 
     def test_holder_active_dual_version(self):
         """投影 helper：3.8.0 bound 優先、3.7.0 live fallback、雙缺席
-        False、非 True 值（None）不誤判。"""
+        shape-drift fail-loud（MF2）、非 True 值（None）不誤判。"""
         assert mod.holder_active({"bound": True}) is True
         assert mod.holder_active({"bound": False}) is False
         assert mod.holder_active({"bound": False, "live": True}) is False
         assert mod.holder_active({"live": True}) is True
         assert mod.holder_active({"live": False}) is False
-        assert mod.holder_active({}) is False
         assert mod.holder_active({"bound": None, "live": None}) is False
+        with pytest.raises(mod.DutymailFaceError, match="shape-drift"):
+            mod.holder_active({})
 
     def test_rebind_cas_conflict_single_attempt(self, state_file):
         """rebind CAS 失敗（epoch-conflict）＝回衝突、不重試轟炸（單次）
