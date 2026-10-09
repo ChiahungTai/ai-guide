@@ -134,6 +134,13 @@ uv run python -c "import json,sys,time,uuid; json.dump({'schema_version':2,'mess
 
 send stdout 的 `envelopeId`／`acceptanceSeq`＋`envelopeSha256` 三鍵即 queued-visible 證據，記進交接卡 notes；大材料落 repo 檔案或卡 notes、訊息只派路徑。門牌選址照 dutymail 地址模型（`<repo>-marshal`＝長期入口、session address＝direct channel；intent=solicit＝交接求承接回應）——跨 repo 交接 `to.address`＝`<對方 repo basename>-marshal`；指定特定 session 才用對方 session address（CLI 無 address 查詢面，自協調上下文取得；缺→降 manual paste）。body machine-header `reply_address`＝本側回信門牌（正典「reply_address 慣例」——收件方回信/查回信的落點依據；send 面無 from-address，缺此鍵＝回信只剩 out-of-band 推導）。
 
+**solicit 回應追蹤——寄出後 bounded wait（AIR-294；bridge db99-kickoff 義務）**：`intent=solicit` 信＝雙向契約——「寄出」只完成上表第 2 段 queued-visible；transport 責任止於 accept、drain 歸對方 holder（第二起 custody 事故——SC seq25-30 drain 停擺六信無人知覺——正是這個 silent gap），故 sender 寄出後掛 bounded wait 等語義回信，禁寄後不追蹤：
+
+1. **記 outbound 台帳行**：`uv run python scripts/duty_disposition.py record-outbound --target-address <對方門牌> --envelope-id <ID> --delivery-seq <N> --target-cursor <對方 primaryCursor|none> --session-id <本側 sid>`——deliverySeq 自 send receipt、對方 cursor 自寄出時唯讀 `dutymail receive status --address <對方門牌>` 探測；探測缺席記 `none`（誠實未知，禁發明數字）。
+2. **挂哨 bounded wait**：`dutymail events --address <己方門牌>` 取 `nextCursor` → `dutymail wait --address <己方門牌> --cursor <TOKEN> --deadline-ms <N>`（語法以 `dutymail wait --help` 自查為準：deadline 必填、凍結上限 600000ms——超過用 loop bounded waits；成功＝非空 events 頁、逾時＝class-6 wait-timeout typed 錯誤；wake 是提示、requery 才是 correctness——推進鏈正典＝[dutymail-roundtrip.md](../_common/dutymail-roundtrip.md)「回信發現與收信面」；長期挂哨改 mail-waiter，見 [mail-watch](../mail-watch/SKILL.md)）。醒後以 scoped `replies` 判語義（上表第 3 段查法）——wait 只證明自己地址有新事件，不證明回信語義。
+3. **逾時→唯讀探測對方 drain**：`dutymail receive status --address <對方門牌>`——`primaryCursor` 未過我方 `acceptanceSeq`（cursor < 我方 seq）＝對方滯留（已收未 drain）。
+4. **仍滯→升 human、禁代收**：呈報 user 三數（對方門牌＋我方 seq＋對方 cursor）；對方地址的 bind/prepare/ack 是對方 holder 主權（跨 repo 主權）——AI 禁代推對方 cursor、禁以代收製造已處理假象；唯讀 status/events 探測不在此限。
+
 > **msg_type 註記**：conventions v2 的 msg_type 四值枚舉（cross-repo-bug／fix-ready／verify-pass／breaking-intent）不涵蓋 handoff 交接——delivery body 以消費端約定 `handoff_delivery` 標記（先例＝proto §5.9 控制信 body 約定），不冒用枚舉值；晉升共用 schema 須 conventions.md amendment，非本 skill 權限。
 
 **fallback：manual paste**（直送 unavailable 時的降級路徑，非預設）：
