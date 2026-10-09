@@ -1,10 +1,10 @@
 ---
 id: AIR-298
 title: holder/lease 語義改革——INBOX 章與消費章分離＋AIR-225 慣例修正（bridge sess_1f2a2cda 荒繆狀況）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 12:44'
-updated_date: '2026-10-09 12:47'
+updated_date: '2026-10-09 23:05'
 labels:
   - dutymail
 dependencies: []
@@ -33,8 +33,8 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ai-guide 慣例修正落地（ext 長持語義＋death-evidence 接管）
-- [ ] #2 bridge 側章分級提案回執（相互討論閉環）
+- [x] #1 ai-guide 慣例修正落地（ext 長持語義＋death-evidence 接管）
+- [x] #2 bridge 側章分級提案回執（相互討論閉環）
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -54,6 +54,16 @@ flowchart LR
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
+holder/lease 語義改革 ai-guide 份額全落地：章位分離進 governance 單一源（消費章＝當時值星 session epoch-fenced binding、ext 長持只及 escalation／人類 viewport、INBOX holderless 常態）、handoff 換手語義對齊 AIR-288 無時鐘現實、judge 必修三句揭露（24h 機械閘現值＋operator takeover 正當面＋AIR-296 分際）＋scbus 命令式改歷史敘述。審查鏈：codex＋GLM-5.3 雙腿 needs-attention→judge 裁 F1/G1 fix-now→修復→merge ee0dc5f8→probe healthy。epoch-102 孤兒綁定 operator takeover 實證隨信交付 bridge 作 TC 素材；S1 amendment 請採兩面分述。AC#2 依 user 拍板以「信已寄＋台帳在案＋waiter 承接回執」結案。
+
+```mermaid
+flowchart LR
+  a["荒繆狀況：下班 session 綁死收信章"] --> b["ai-guide 慣例修正（本卡）"]
+  a --> c["bridge 章分級 role gate（db100 排卡）"]
+  b --> d["judge 三句揭露＋歷史敘述 ee0dc5f8"]
+  d --> e["delta 回信 seq 62→bridge S1 amendment"]
+  c --> e
+```
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
