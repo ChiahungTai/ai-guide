@@ -31,7 +31,7 @@ flowchart LR
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 CC consumer smoke（新 session root/nested 載入實證——獨立於 pytest）
+- [x] #1 CC consumer smoke（新 session root/nested 載入實證——獨立於 pytest）
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -42,6 +42,8 @@ flowchart LR
 【審查圈收口——judge 四修 2fa6d8bf 合併】F1-F3 消解（rules 中性化表反轉＋拓樸單根＋audit-test legacy 並列）＋軸②複跑三類違規＝0。F4 歸 291。**卡留 In Progress：DoD 的 CC smoke（新 CC session root/nested AGENTS.md native 載入實證）待 user runtime 驗收**——smoke 過即翻 Done。ledger=.review/air-290.md（ephemeral）。
 
 【CC smoke PASS（2026-10-09）】claude 2.1.292 headless 單發實證：root AGENTS.md 原生載入（repo 無 CLAUDE.md→CC 讀 AGENTS.md——changelog 2.1.277 契約兌現）；子目錄未載＝lazy 語義（首次讀 subtree 檔案才帶入，鏡像 memory.md 預期行為）。觀察窗對照：root 載入訊息含 memory/MEMORY.md 常駐。翻 Done。
+
+【Interactive config 佐證（2026-10-09 user paste）】user 於互動 CC session /config 實照：`Project instructions · cc-plugin-agents-md · claude-md-or-agents-md`——原生模式在場且選中 claude-md-or-agents-md（有 CLAUDE.md 讀 CLAUDE.md、無則 AGENTS.md）；本 repo CLAUDE.md 歸零→機制落 AGENTS.md。與 headless smoke 互補：headless 證實載入行為、config 證實機制開關在正確檔位。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
