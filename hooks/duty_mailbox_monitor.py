@@ -36,25 +36,34 @@ only——pendingCount 整數以外絕不進輸出。
      信終點＝durable INBOX；dutymail receive status 可查）`＋baseline=N；
    - >0 且 == baseline（未變化）→ 靜默（防每 prompt 轟炸）；
    - ==0 → 靜默＋baseline 歸零＋pending-age 帳清（drain 發生——
-     episode 終）。
+     帳窗結束；episode token 不變，邊界定義單一源＝下 fencing 段）。
 3. face 失敗（store 缺席／unknown-address／pendingCount 形漂移）→ 該門牌
    stderr 註記＋零 stdout，續跑其他門牌（fail-soft；per-address 容錯）。
 4. **pending 停留呈報（AIR-294 c——holderless stall）**：holderless
    pending>0 時核對跨 session 共享年齡帳 `pending-age.json`——首見＝
    seed `first_pending_at_us`（年齡未知不呈報）；停留逾
-   `PENDING_STALL_REPORT_HOURS`（6h——具名常數）且本 episode 未呈報過
+   `PENDING_STALL_REPORT_HOURS`（6h——具名常數）且本帳窗未呈報過
    → 一行 `[duty-monitor] <alias>：pending 停留已逾 6 小時（…升 human
-   判讀）`＋`stall_reported` flag 落帳（每 episode 一報——防轟炸）。
+   判讀）`＋`stall_reported` flag 落帳（每帳窗一報——防轟炸；帳窗＝
+   seed→drain／清帳，drain 後重積＝新帳窗可再報——寧重複不漏）。
    年齡源＝monitor 自持帳（`receive status` 無時間戳欄；runner 呼叫面
    凍結兩唯讀 face 零新增——年齡由帳面推導非新查詢；episode token
    ＝holder status 回應在場的 `bindingEpoch`，零新 face）；事件史消費
    仍退役（上段裁定不變）。併發姿態：跨 session 並寫＝atomic replace
-   last-writer-wins＋**episode fencing（AIR-297）**——帳條目帶
-   `episode_id`（＝`holder status` 的 `bindingEpoch`；bind/rebind 即
-   新 episode），讀側 epoch 不匹配（舊 episode 延遲寫入殘留／
-   pre-fencing 舊 schema 條目）→ 視為 stale 清帳重建——延遲寫入不得
-   復活已清帳 episode 的 `stall_reported` flag（最長影響＝年齡重
-   seed 的晚報，寧晚不誤）。
+   last-writer-wins＋**episode fencing（AIR-297——本段＝episode 邊界
+   定義單一源）**。episode token＝`holder status` 的 `bindingEpoch`
+   （bind/rebind 即新 episode；drain 清帳不改 token——同 binding 內
+   drain→重積＝同 episode 新帳窗，故寫側另需下述 CAS）。兩層防線：
+   (1) 讀側帳條目帶 `episode_id`，token 不匹配（跨 binding 延遲寫入
+   殘留／pre-fencing 舊 schema 條目）→ 視為 stale 清帳重建；(2) 寫側
+   **doc-rev CAS**——帳文件帶單調 `rev` 欄（每次成功存檔 +1；無欄
+   舊檔＝rev 0 冷啟動相容），monitor 讀時 snapshot、commit 時重讀
+   比對，不符＝決策快照過期（他方 drain／seed 已推進帳）→ 本輪帳
+   寫入整批丟棄＋stderr 註記——同 epoch write-after-clear 的
+   `stall_reported` 復活與陳期 seed 蓋新 seed（年齡虛胖早報）同類
+   stale-read overwrite 封閉；丟棄方向＝至多重複一報、不漏報。殘餘
+   窗口＝commit 內 CAS 比對與存檔之間的微秒窗（atomic replace
+   last-writer-wins 仍在），方向同前。
 
 **session-local baseline**：state＝`${XDG_STATE_HOME:-~/.local/state}/
 ai-guide/duty-monitor/<safe_session_id>.json`（形 `{"addresses":
@@ -64,12 +73,13 @@ ai-guide/duty-monitor/<safe_session_id>.json`（形 `{"addresses":
 （AIR-225.1 面）隨本重寫停用——不刪不改零讀取**（留歷史對帳）。
 
 **pending 停留帳（AIR-294 c——跨 session 共享）**：同目錄
-`pending-age.json`（形 `{"addresses": {"<alias>":
-{"first_pending_at_us": int, "stall_reported": bool,
-"episode_id": int＝bindingEpoch episode fencing（AIR-297）}}}`；
-0600 atomic 寫）。baseline 是「本 session 提醒到哪」（session-local
-語義不變）；年齡帳是 mailbox 事實（跨 session 共享——新 session 接手
-即知停留年齡，不重計時）。兩帳同一 commit 面推進、各自 fail-soft。
+`pending-age.json`（形 `{"rev": int 單調遞增（doc-rev CAS——AIR-297）,
+"addresses": {"<alias>": {"first_pending_at_us": int,
+"stall_reported": bool, "episode_id": int＝bindingEpoch episode
+fencing（AIR-297）}}}`；0600 atomic 寫）。baseline 是「本 session
+提醒到哪」（session-local 語義不變）；年齡帳是 mailbox 事實（跨
+session 共享——新 session 接手即知停留年齡，不重計時）。兩帳同一
+commit 面推進、各自 fail-soft。
 
 **閒置完全安靜（AIR-233 降級裁定）**：註冊面即邊界——無 session 觸發＝
 零查詢；程式碼無背景迴圈／watcher／wait 呼叫（badge 數字源是 SC 側投影
@@ -189,8 +199,8 @@ def pending_age_state_path(state_file=None, base_dir=None):
     """pending 停留帳路徑（AIR-294 c——duty-monitor/pending-age.json）。
 
     跨 session 共享的 mailbox 事實（對比 session-local baseline 的「本
-    session 提醒到哪」語義）：holderless pending 首見時刻＋每 episode
-    一報 flag。state_file 注入時取其同目錄（測試隔離同源）；否則落
+    session 提醒到哪」語義）：holderless pending 首見時刻＋每帳窗一報
+    flag。state_file 注入時取其同目錄（測試隔離同源）；否則落
     duty-monitor state 根。"""
     if state_file is not None:
         return os.path.join(os.path.dirname(state_file), AGE_STATE_BASENAME)
@@ -247,6 +257,28 @@ def _stored_last_pending(doc, address):
 # ── pending 停留帳（AIR-294 c——holderless stall 年齡）─────────────────
 
 
+def _doc_rev(doc, path=None):
+    """帳文件單調 revision（AIR-297 doc-rev CAS fencing）→ int。
+
+    讀側 snapshot、commit 端重讀比對：中間被任何他方推進（rev 不同）
+    ＝決策快照過期——本輪帳寫入整批丟棄（stale-read overwrite 防線
+    ：同 epoch write-after-clear 的 stall flag 復活、陳期 seed 蓋新
+    seed 同類封閉；寧重複不漏報）。缺 `rev` 欄舊檔＝rev 0（冷啟動
+    相容，不打爆）；在場但非非負整數＝形漂移，stderr 註記後視 0
+    （保守——與健全 rev 比對大機率不等即丟棄，不靜默覆寫）。"""
+    rev = doc.get("rev")
+    if rev is None:
+        return 0  # pre-CAS 舊檔無欄——rev 0 冷啟動
+    if isinstance(rev, int) and not isinstance(rev, bool) and rev >= 0:
+        return rev
+    print(
+        f"[{HOOK_TAG}] pending-age 帳 rev 欄形漂移——視 0 處理"
+        f"（路徑 {path}）",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def _age_entry_raw(doc, address):
     """取該門牌年齡條目 raw → dict | None（無條目＝None）。"""
     entry = doc.get("addresses", {}).get(address)
@@ -273,10 +305,10 @@ def _episode_of(status):
 def _stored_age_entry(doc, address, episode):
     """取該門牌年齡條目（驗形＋episode fencing）→ dict | None。
 
-    episode fencing（AIR-297）：條目 `episode_id` ≠ 現 episode（舊
-    episode 延遲寫入殘留，含復活的 `stall_reported` flag；pre-fencing
-    舊 schema 條目無此欄同理）→ stderr 註記後視同 None（stale 清帳
-    重建——延遲寫入不得復活已清帳 episode 的 flag；年齡重 seed＝晚報
+    episode fencing（AIR-297）：條目 `episode_id` ≠ 現 episode token
+    （跨 binding 延遲寫入殘留，含復活的 `stall_reported` flag；
+    pre-fencing 舊 schema 條目無此欄同理）→ stderr 註記後視同 None
+    （stale 清帳重建——跨 episode flag 不跨界壓制；年齡重 seed＝晚報
     方向）。first_pending_at_us 非正整數＝形漂移：stderr 註記後視同
     None（冷啟動重 seed——年齡不可信即不呈報，寧晚報不誤報）；
     stall_reported 非 True 一律視 False（丟 flag＝可能重複一報，寧重
@@ -359,19 +391,22 @@ def stall_line(address, count):
 
 def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
     """逐門牌監看（決策表見 module docstring）→ (advisory 行 list,
-    baseline updates, age updates)。
+    baseline updates, age updates, age_rev)。
 
     binding active=True（3.8.0 bound／3.7.0 live）→ 靜默＋baseline 歸零
     （僅在現值非 0 時寫入）＋年齡帳清（holder 涵蓋——stall 語義限
     holderless）；holderless → pendingCount 值變化才出 advisory＋推進
-    baseline（同值防轟炸）；==0 歸零＋年齡帳清（episode 終）。AIR-294
-    stall：holderless pending>0 首見＝seed 年齡帳（年齡未知不呈報）；
-    停留逾 PENDING_STALL_REPORT_HOURS 且本 episode 未呈報過＝一行
-    stall 呈報＋flag 落帳（每 episode 一報）。AIR-297 episode
-    fencing：年齡帳條目帶 `episode_id`（＝holder status bindingEpoch
-    ，於 holderless 分支內驗證取用——形漂移交 per-address fail-soft）
-    ，讀側不匹配＝stale 清帳重建（延遲寫入不得復活舊 episode flag）。
-    單門牌 face 失敗＝stderr
+    baseline（同值防轟炸）；==0 歸零＋年齡帳清（drain——帳窗結束，
+    episode token 不變）。AIR-294 stall：holderless pending>0 首見＝
+    seed 年齡帳（年齡未知，本輪不呈報）；停留逾 PENDING_STALL_REPORT_
+    HOURS 且本帳窗未呈報過＝一行 stall 呈報＋flag 落帳（每帳窗一報）
+    。AIR-297 episode fencing＋doc-rev CAS（episode 邊界定義單一源＝
+    module docstring fencing 段）：年齡帳條目帶 `episode_id`（＝
+    holder status bindingEpoch，於 holderless 分支內驗證取用——形漂
+    移交 per-address fail-soft），讀側不匹配＝stale 清帳重建；帳文件
+    `rev` 讀時 snapshot 為第四回傳值 `age_rev`，commit 端比對不符＝
+    丟棄本輪帳寫入（同 epoch write-after-clear 復活／陳期 seed 蓋新
+    seed 封閉）。單門牌 face 失敗＝stderr
     註記續跑其他（per-address 容錯）。updates／age_updates 交呼叫端在
     stdout 寫出成功後 commit（advance-after-emit）；age updates 值為
     None＝清該門牌條目。"""
@@ -381,7 +416,9 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
         session_id
     )
     doc = load_doc(path)
-    age_doc = load_doc(pending_age_state_path(state_file))
+    age_path = pending_age_state_path(state_file)
+    age_doc = load_doc(age_path)
+    age_rev = _doc_rev(age_doc, age_path)  # CAS snapshot（AIR-297）
     lines = []
     updates = {}
     age_updates = {}
@@ -420,7 +457,8 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
             if last is not None and last != 0:
                 updates[address] = {"last_pending": 0}
             if _age_entry_raw(age_doc, address) is not None:
-                age_updates[address] = None  # drain 發生——episode 終
+                age_updates[address] = None  # drain——帳窗結束（episode
+                #  token 不變；寫側復活面由 doc-rev CAS 封閉，見 fencing 段）
             continue
         if pending != last:
             lines.append(advisory_line(address, pending))
@@ -441,10 +479,10 @@ def monitor_once(addresses, runner, session_id, state_file=None, now_us=None):
             lines.append(stall_line(address, pending))
             age_updates[address] = {
                 "first_pending_at_us": entry["first_pending_at_us"],
-                "stall_reported": True,  # 每 episode 一報
+                "stall_reported": True,  # 每帳窗一報
                 "episode_id": episode,  # AIR-297 fencing——條目綁 episode
             }
-    return lines, updates, age_updates
+    return lines, updates, age_updates, age_rev
 
 
 def run(raw, addresses, runner=None, state_file=None, now_us=None):
@@ -455,9 +493,10 @@ def run(raw, addresses, runner=None, state_file=None, now_us=None):
     且零查詢）。commit＝baseline＋pending-age 兩帳推進 closure（無推進
     需求時 None）——呼叫端在 stdout 寫出成功後才執行（advance-after-emit
     ；寫失敗寧可下次重複提醒；兩帳各自 try/except——一帳失敗不擋另一
-    帳）。事件名／session_id 經 hook_payload_compat 正規化（grok snake
-    值同款處理；本 hook 僅註冊 zcode 面，正規化為防禦性相容）。
-    now_us 可注入（AIR-294 stall 年齡計算——測試面）。"""
+    帳；pending-age 帳另過 doc-rev CAS——決策快照 rev 過期＝該帳寫入
+    丟棄，AIR-297）。事件名／session_id 經 hook_payload_compat 正規
+    化（grok snake 值同款處理；本 hook 僅註冊 zcode 面，正規化為
+    防禦性相容）。now_us 可注入（AIR-294 stall 年齡計算——測試面）。"""
     try:
         payload = json.loads(raw) if raw.strip() else {}
         if not isinstance(payload, dict):
@@ -471,7 +510,7 @@ def run(raw, addresses, runner=None, state_file=None, now_us=None):
         if not session_id:
             return 0, "", None
         run_fn = runner if runner is not None else core._default_runner
-        lines, updates, age_updates = monitor_once(
+        lines, updates, age_updates, age_rev = monitor_once(
             addresses, run_fn, session_id, state_file=state_file,
             now_us=now_us,
         )
@@ -507,13 +546,27 @@ def run(raw, addresses, runner=None, state_file=None, now_us=None):
                     try:
                         age_path = pending_age_state_path(state_file)
                         age_doc = load_doc(age_path)
-                        merged = age_doc.setdefault("addresses", {})
-                        for addr, entry in age_updates.items():
-                            if entry is None:
-                                merged.pop(addr, None)
-                            else:
-                                merged[addr] = entry
-                        core.save_state(age_path, age_doc)
+                        current_rev = _doc_rev(age_doc, age_path)
+                        if current_rev != age_rev:
+                            # AIR-297 doc-rev CAS：決策快照過期（他方
+                            # drain／seed 已推進帳）——丟棄不覆寫
+                            # （stale-read overwrite 防線）。
+                            print(
+                                f"[{HOOK_TAG}] pending-age 帳已被他方"
+                                f"推進（rev {age_rev} → {current_rev}）"
+                                "——丟棄本輪帳寫入（doc-rev CAS 防線；"
+                                "寧重複不漏報）",
+                                file=sys.stderr,
+                            )
+                        else:
+                            age_doc["rev"] = current_rev + 1
+                            merged = age_doc.setdefault("addresses", {})
+                            for addr, entry in age_updates.items():
+                                if entry is None:
+                                    merged.pop(addr, None)
+                                else:
+                                    merged[addr] = entry
+                            core.save_state(age_path, age_doc)
                     except Exception as exc:
                         print(
                             f"[{HOOK_TAG}] pending-age 寫入失敗——stall"

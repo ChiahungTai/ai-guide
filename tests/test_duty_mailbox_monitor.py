@@ -1803,11 +1803,13 @@ class TestPendingStallReport:
 
 class TestPendingAgeEpisodeFencing:
     """pending-age 條目綁 `episode_id`（＝`holder status` 的
-    bindingEpoch；bind/rebind 即新 episode）：讀側 epoch 不匹配（舊
-    episode 延遲寫入殘留／pre-fencing 舊 schema 條目）→ 視為 stale
-    清帳重建——延遲寫入不得復活已清帳 episode 的 `stall_reported`
-    flag（單 episode 漏報邊界封閉）。零新增 dutymail face——epoch 源
-    ＝既有 holder status 回應在場欄位。"""
+    bindingEpoch；bind/rebind 即新 episode）：讀側 epoch 不匹配（跨
+    binding 延遲寫入殘留／pre-fencing 舊 schema 條目）→ 視為 stale
+    清帳重建——跨 episode 的 `stall_reported` flag 不跨界壓制（單
+    episode 漏報邊界封閉）。episode 邊界定義單一源＝module docstring
+    fencing 段；同 epoch write-after-clear 面＝doc-rev CAS 寫側防線
+    （TestPendingAgeDocRevCas）——兩層疊加。零新增 dutymail face——
+    epoch 源＝既有 holder status 回應在場欄位。"""
 
     def test_stale_episode_flag_not_revived(self, state_file, capsys):
         """核心復活情境：舊 episode（epoch 3）的 stall_reported=True 延遲
@@ -1914,3 +1916,113 @@ class TestPendingAgeEpisodeFencing:
         _code, _out, commit = _run_at(state_file, runner)
         commit()
         assert _read_age(state_file)[ADDRESS]["episode_id"] == 0
+
+
+# ── pending-age 帳 doc-rev CAS（AIR-297 judge 必修——同 epoch
+#    write-after-clear 復活封閉；讀側 episode fencing 之上疊加的寫側
+#    防線）
+
+
+class TestPendingAgeDocRevCas:
+    """doc-level revision CAS：帳文件帶單調 `rev`，monitor 讀時
+    snapshot、commit 時重讀比對——不符＝決策快照過期（他方 drain／
+    seed 已推進帳）→ 本輪帳寫入整批丟棄＋stderr 註記。封閉同 epoch
+    write-after-clear 的 stall flag 復活與陳期 seed 蓋新 seed（年齡
+    虛胖早報）同類 stale-read overwrite；丟棄方向＝至多重複一報、
+    不漏報。與 episode_id 讀側 fencing 疊加不互斥（跨 binding 殘留
+    偵測仍有值）。無 `rev` 欄舊檔＝rev 0 冷啟動相容。"""
+
+    def test_same_epoch_write_after_clear_flag_not_revived(
+        self, state_file, capsys
+    ):
+        """真交錯（同 epoch 原形）：A 讀帳（rev N；pending 逾檻未報）
+        → B drain 清帳 commit（rev N+1）→ A 延遲 commit（攜 rev N 決策
+        的 stall_reported=True）→ CAS 丟棄——flag 不復活（條目不存
+        在）；下輪 pending 重積 fresh seed、再下輪照報（至多重複一報
+        、不漏報）。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, episode=4)
+        # A：讀帳出 stall 決策（延遲寫入窗——先不 commit）
+        runner_a = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out_a, commit_a = _run_at(state_file, runner_a)
+        assert "停留已逾" in out_a
+        # B：drain（pending==0）清帳＋commit——帳被推進（rev N→N+1）
+        runner_b = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=0),
+        ])
+        _code, _out, commit_b = _run_at(state_file, runner_b)
+        commit_b()
+        assert ADDRESS not in _read_age(state_file)  # B 清帳生效
+        # A 延遲 commit——攜 stall_reported=True 的過期快照寫入
+        commit_a()
+        assert ADDRESS not in _read_age(state_file)  # flag 未復活
+        assert "doc-rev CAS" in capsys.readouterr().err  # 丟棄註記
+        # 下輪 pending 重積（同 epoch 無 rebind）——fresh seed、不呈報
+        runner_c = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out_c, commit_c = _run_at(
+            state_file, runner_c, now_us=NOW_US + 7 * HOUR_US
+        )
+        assert "停留" not in out_c  # fresh seed——年齡未知不呈報
+        commit_c()
+        # 再下輪年齡逾檻＝照報——呈報能力未被過期寫入吞掉（寧重複不漏）
+        runner_d = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out_d, _c = _run_at(
+            state_file, runner_d, now_us=NOW_US + 14 * HOUR_US
+        )
+        assert "停留已逾" in out_d
+
+    def test_stale_seed_cannot_overwrite_fresh_seed(
+        self, state_file, capsys
+    ):
+        """同類封閉——陳期 seed 蓋新 seed（年齡虛胖早報）：A 於帳空檔
+        讀（seed 決策 first=T0）→ B seed fresh（first=T1>T0、rev N+1）
+        → A 延遲 commit 攜更舊 seed → CAS 丟棄——fresh seed 存活（年
+        齡不被虛胖、不早報）。"""
+        # A：帳空檔讀（seed first=NOW_US）——先不 commit
+        runner_a = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, _out, commit_a = _run_at(state_file, runner_a, now_us=NOW_US)
+        # B：fresh seed（first=NOW_US+1h）
+        runner_b = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, _out, commit_b = _run_at(
+            state_file, runner_b, now_us=NOW_US + HOUR_US
+        )
+        commit_b()
+        assert (
+            _read_age(state_file)[ADDRESS]["first_pending_at_us"]
+            == NOW_US + HOUR_US
+        )
+        # A 延遲 commit——陳期 seed 不得蓋掉 fresh seed
+        commit_a()
+        assert "doc-rev CAS" in capsys.readouterr().err
+        assert (
+            _read_age(state_file)[ADDRESS]["first_pending_at_us"]
+            == NOW_US + HOUR_US
+        )
+
+    def test_legacy_account_without_rev_cold_compat(self, state_file):
+        """rev 加欄守舊檔相容：pre-CAS 帳（無 `rev` 欄）＝rev 0——讀
+        （stall 判定照走）寫（不打爆）正常，首次寫入起 `rev` 在場且
+        單調。"""
+        _seed_baseline(state_file, 2)
+        _seed_age(state_file, NOW_US - 7 * HOUR_US, episode=4)
+        runner = _seq_runner([
+            _status_doc(epoch=4, live=False), _recv_doc(pending=2),
+        ])
+        _code, out, commit = _run_at(state_file, runner)
+        assert "停留已逾" in out  # 舊檔讀取判定不受 rev 缺欄影響
+        commit()
+        path = os.path.join(os.path.dirname(state_file), "pending-age.json")
+        with open(path, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        assert doc["rev"] == 1  # 首寫起 rev 在場
+        assert _read_age(state_file)[ADDRESS]["stall_reported"] is True
