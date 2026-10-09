@@ -1059,9 +1059,10 @@ def render_map(
 
 _LINT_SCAN_ROOT_FILES: tuple[str, ...] = (
     "AGENTS.md",
-    "CLAUDE.md",
     "ai-development-guide.md",
 )
+# 舊成員 CLAUDE.md 已隨 wrapper 退役移除（AIR-289 刪 wrapper／AIR-291 對帳）；
+# _lint_scan_files 本就 skip 缺席檔，移除僅止於詞表如實。
 
 # 組1 model token：candidate 家族 pattern（抓齊 glm-<數字>／gpt-<數字>／
 # claude-<alias 組合>／muse-spark／chatgpt-web/ 與 harness alias 詞），命中後
