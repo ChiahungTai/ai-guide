@@ -41,6 +41,13 @@
 
 遞歸發現邏輯: [recursive-discovery.md](./recursive-discovery.md)
 
+**legacy CLAUDE.md 處理（transfer-check-only）**：遞迴發現（含 Phase A/B、依賴鏈擴展）遇 legacy `CLAUDE.md`（舊雙檔遺留）時標記 **transfer-check-only**，僅執行：
+
+1. **遷移候選標記**：列入報告（輸出形態對齊 [sync-output-templates.md](./sync-output-templates.md) 模板 4 legacy 條目——「CLAUDE.md（legacy，轉移檢查）」）
+2. **引用目標存在性驗證**：解析 `@path` 與 markdown link 的目標是否存在（不展開內容、不對內容做同步檢查）——`@` 指向不存在路徑須產生 finding
+
+**跳過**：完整 12 角度檢查、步驟 7 清理、步驟 8 蒸餾、低風險自動修正。
+
 ---
 
 ## 步驟 1.5: 依賴鏈擴展
@@ -72,11 +79,13 @@ Phase A: Code 變更 → 對應目錄的 instruction 檔
   1. git log --since="$SINCE" --name-only --pretty=format: -- "*.py"
   2. 對每個變更 .py，映射到所屬模組目錄（取 library root 下一層目錄）
   3. 檢查該目錄是否有 instruction 檔 → 加入檢查清單
+     （legacy CLAUDE.md 標記 transfer-check-only，見步驟 1）
   範例：src/data/parsing.py 變更 → 檢查 src/data/AGENTS.md 或 src/data/CLAUDE.md
 
 Phase B: instruction 檔本身被直接修改
   1. git log --since="$SINCE" --name-only --pretty=format: -- "**/AGENTS.md" "**/CLAUDE.md"
   2. 這些 instruction 檔直接加入檢查清單
+     （legacy CLAUDE.md 標記 transfer-check-only，見步驟 1）
 
 合併：
   1. Phase A + Phase B 去重
@@ -99,6 +108,7 @@ Phase B: instruction 檔本身被直接修改
    - 格式: [描述](path/to/doc.md) 或 [描述](doc.md)
    - 排除外部 URL（http/https）
    - 排除 @ transclusion（跨 harness 的 AGENTS.md 禁用 `@`——CC 專屬機制；僅 legacy CLAUDE.md 展開）
+   - 排除的 `@path` 仍驗證目標存在性（解析路徑、不展開內容）——legacy wrapper 本體常是 `@` 檔，`@` 指向不存在路徑須產生 finding
 2. 驗證引用的 .md 檔案是否存在
 3. 分類為「說明文檔」或「設計文檔」：
    - 說明文檔：描述 API、資料結構、流程、call stack → 加入檢查清單
@@ -218,6 +228,8 @@ fi
 # 移除版本號、日期、統計等元資訊
 ```
 
+> **legacy 除外**：transfer-check-only 的 legacy CLAUDE.md 跳過本步驟（見步驟 1）。
+
 ---
 
 ## 步驟 8: 蒸餾（--all 選項）
@@ -226,6 +238,8 @@ fi
 # 呼叫 /instruction-clean --distill 功能
 # 蒸餾精簡 instruction 檔
 ```
+
+> **legacy 除外**：transfer-check-only 的 legacy CLAUDE.md 跳過本步驟（見步驟 1）。
 
 ---
 
