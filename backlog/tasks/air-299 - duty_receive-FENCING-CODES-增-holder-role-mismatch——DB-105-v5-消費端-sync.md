@@ -26,7 +26,7 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 `holder-role-mismatch` 收錄 FENCING_CODES＋恢復路徑豁免（`_is_fencing` 不路由——禁重綁/重試，wiring error fail-loud 交 per-address fail-soft）；RED→GREEN 測試釘死「不觸發 rebind」＋既有詞彙釘測同步
+- [x] #1 `holder-role-mismatch` 收錄 FENCING_CODES＋恢復路徑豁免（`_is_fencing` 不路由——禁重綁/重試，wiring error fail-loud 交 per-address fail-soft）；RED→GREEN 測試釘死「不觸發 rebind」＋既有詞彙釘測同步
 - [ ] #2 bridge acceptance receipt 兩項：①diff landed 回信（本卡 merge 後寄）②對 v5 binary 錄一次 role-less consume cycle（**blocked：待 bridge 遷移 window 信**）
 <!-- AC:END -->
 
@@ -45,4 +45,5 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 【來源】db105-shipped-sync-001-1791648900（class sync；bridge main a9b653b＝P1 58b71a0/P2 123e874/P3 6449f6a；EP＝00-tasks/2026-10/10-09-holder-tiering/ep.md R1 rollout dispatcher-owned 項）。
+【審查鏈收口】codex needs-attention（F1 legacy ack 落 transient 桶＋多發一次 prepare）＋GLM approve（F1' 釘測 vacuous assertion——tuple vs list 恆真）→judge（GLM-5.3 job-mv1sjfg0）：F1 advisory（現行已滿足 AC——零 rebind、同 cycle 大聲終結；~3 行對齊修建議併入）、F2 fix-now（AC 證據名實不符，commit 前必修）。收口 52a44613：F2 斷言 list 化＋釘精確呼叫形狀＋F1 併入（`_resolve_legacy_batch` wiring error 原樣傳播＋legacy ack 迴歸測試補零覆蓋情境）。全套 3803 passed；merge 52a44613、probe 綠。AC#1 完鎖；AC#2②待 bridge 遷移 window。
 <!-- SECTION:NOTES:END -->
