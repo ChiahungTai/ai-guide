@@ -1199,9 +1199,36 @@ class TestProcessBatch:
             )
         assert exc_info.value.code == "holder-role-mismatch"
         kinds = [c[0:2] for c in runner.calls]
-        assert ("holder", "bind") not in kinds
-        assert ("holder", "status") not in kinds
+        assert ["holder", "bind"] not in kinds
+        assert ["holder", "status"] not in kinds
+        assert runner.calls[0][0:2] == ["receive", "prepare"]
         assert _read_state(state_file)["token"] == "tok-old"
+
+    def test_legacy_ack_holder_role_mismatch_propagates(self, state_file):
+        """judge F1 對齊修（AIR-299）：disposed 遺留批的 ack 撞
+        holder-role-mismatch——原錯誤立即傳播（不留 transient 保留桶、
+        不續跑 prepare），零 status/bind/prepare 呼叫，state 紀錄不變。"""
+        _seed_state(
+            state_file, token="tok-old", batch_token="bt-old",
+        )
+        st = _read_state(state_file)
+        st["batch_disposed"] = True
+        with open(state_file, "w", encoding="utf-8") as fh:
+            json.dump(st, fh)
+        runner = _seq_runner([
+            _err("holder-role-mismatch", "fencing", exit_code=5),
+        ])
+        with pytest.raises(mod.DutymailFaceError) as exc_info:
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert exc_info.value.code == "holder-role-mismatch"
+        assert [c[0:2] for c in runner.calls] == [
+            ["receive", "ack"],
+        ]
+        after = _read_state(state_file)
+        assert after["token"] == "tok-old"
+        assert after["batch_token"] == "bt-old"
 
     def test_prepare_batch_conflict_retry_invalidate(self, state_file):
         """prepare 撞 live batch（crash-before-state-write 孤兒）→ --invalidate 重試一次。"""

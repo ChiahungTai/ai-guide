@@ -1127,10 +1127,12 @@ def _resolve_legacy_batch(address, runner, st, state_file):
     """上一邊界遺留未 ack 批次（state 記錄）處置 → (st, invalidate_next)。
 
     已處置（batch_disposed）→ 先試 ack（冪等重試——同 epoch replayed
-    回原 receipt）；批次已死（expired/fenced/invalidated）或 token 已
-    fenced → 清記錄落 fresh prepare；storage 等其他失敗 → 保留紀錄
-    （prepare 稍後自然失敗，交上層 fail-soft）。未處置 → 不代 ack，
-    回 invalidate_next=True（寧重不漏：prepare --invalidate 重 prepare）。
+    回原 receipt）；wiring error（AIR-299 holder-role-mismatch）原樣
+    傳播（配置錯非 transient，不留保留桶）；批次已死（expired/fenced/
+    invalidated）或 token 已 fenced → 清記錄落 fresh prepare；storage
+    等其他失敗 → 保留紀錄（prepare 稍後自然失敗，交上層 fail-soft）。
+    未處置 → 不代 ack，回 invalidate_next=True（寧重不漏：prepare
+    --invalidate 重 prepare）。
     """
     batch_token = st.get("batch_token")
     if not isinstance(batch_token, str) or not batch_token:
@@ -1139,6 +1141,8 @@ def _resolve_legacy_batch(address, runner, st, state_file):
         try:
             receive_ack(runner, address, st["token"], batch_token)
         except DutymailFaceError as exc:
+            if exc.code in WIRING_ERROR_CODES:
+                raise  # 接線錯誤（AIR-299）——原樣傳播，不留 transient 桶
             if exc.code in BATCH_DEAD_CODES or _is_fencing(exc):
                 pass  # 批次已死——清記錄，fresh prepare 重取同批信
             else:
