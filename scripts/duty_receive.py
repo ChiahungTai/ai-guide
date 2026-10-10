@@ -88,8 +88,16 @@ PLUGIN_BIN_PATTERN = os.path.join(
 # 鐘），自呼叫端集合移除、凍結詞彙留 RETIRED_FENCING_CODES 供混版對照。
 # 3.7.0 相容：lease 過期仍＝class 5 fencing，由 `_is_fencing`（按 class
 # 路由）接入既有 rebind 路徑——不 renew 只會 lease 自然過期。
-FENCING_CODES = frozenset({"stale-epoch", "holder-token-mismatch"})
+# DB-105 v5（AIR-299）：`holder-role-mismatch` 收錄（role tiering class
+# 5）——語義＝章別接線錯誤（wiring error），**不是 recovery 觸發條件**：
+# 見 WIRING_ERROR_CODES／`_is_fencing` 豁免（禁重綁/重試，fail-loud）。
+FENCING_CODES = frozenset(
+    {"stale-epoch", "holder-token-mismatch", "holder-role-mismatch"}
+)
 RETIRED_FENCING_CODES = frozenset({"lease-expired"})
+# class 5 內的接線錯誤碼（DB-105 v5）——章別配置錯，恢復（rebind/重試）
+# 無意義：`_is_fencing` 豁免、exception 原樣傳播交 per-address fail-soft。
+WIRING_ERROR_CODES = frozenset({"holder-role-mismatch"})
 # bind CAS 失敗碼（class 5，frozen）
 CAS_CONFLICT_CODE = "epoch-conflict"
 # 批次已死碼（cursor 未前進；信仍 pending）——清記錄落 fresh prepare
@@ -144,10 +152,16 @@ def _is_fencing(exc):
     `error_class` 路由、非 code 列舉——3.7.0 退役碼 `lease-expired`
     （混版窗口 binary 可能是 3.7.0，不 renew 只會 lease 自然過期）與
     3.8.0 現役碼（stale-epoch／holder-token-mismatch）同樣接入既有
-    rebind 路徑。消費面限 prepare/ack 錯誤：`epoch-conflict`（同屬
+    rebind 路徑。DB-105 v5 豁免（AIR-299）：`holder-role-mismatch`
+    （wiring error——章別接線錯誤）雖屬 class 5 卻**不觸發 recovery**
+    （rebind/重試對配置錯誤無意義），exception 原樣傳播交 per-address
+    fail-soft。消費面限 prepare/ack 錯誤：`epoch-conflict`（同屬
     class 5）只在 bind CAS 面出現，由 `_bind_fresh` 攔下轉
     HolderConflict，不到這裡。"""
-    return exc.error_class == "fencing"
+    return (
+        exc.error_class == "fencing"
+        and exc.code not in WIRING_ERROR_CODES
+    )
 
 
 class HolderConflict(RuntimeError):
@@ -1144,7 +1158,9 @@ def _prepare_with_recovery(address, runner, st, state_file, max_count,
     batch-conflict（crash-before-state-write 孤兒批）→ --invalidate
     重試一次；fencing 家族（class 5——3.8.0 現役 stale-epoch/token
     mismatch＋3.7.0 混版 lease-expired，`_is_fencing` 按 class 接收）
-    → status→rebind→以新 token 重試一次（舊批隨 rebind 自動 fenced）。"""
+    → status→rebind→以新 token 重試一次（舊批隨 rebind 自動 fenced）。
+    豁免（AIR-299）：holder-role-mismatch（wiring error）不進恢復——
+    原樣傳播。"""
     try:
         return (
             receive_prepare(

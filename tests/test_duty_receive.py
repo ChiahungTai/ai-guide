@@ -683,12 +683,13 @@ class TestEnsureHolder:
         assert runner.calls == []
 
     def test_fencing_codes_shrunk_retired_lease_expired(self):
-        """3.8.0（db-98 B 案）`lease-expired` 退役——呼叫端集合只剩
-        stale-epoch／holder-token-mismatch；凍結詞彙留
+        """3.8.0（db-98 B 案）`lease-expired` 退役；DB-105 v5 sync
+        （AIR-299）增 `holder-role-mismatch`（class 5 詞彙收錄——但
+        wiring error 不入 rebind 路由，見恢復豁免測試）；凍結詞彙留
         RETIRED_FENCING_CODES 供混版對照（不參與 code 路由——rebind
-        路由面＝`_is_fencing` 按 class 5）。"""
+        路由面＝`_is_fencing` 按 class 5＋wiring 豁免）。"""
         assert mod.FENCING_CODES == frozenset(
-            {"stale-epoch", "holder-token-mismatch"}
+            {"stale-epoch", "holder-token-mismatch", "holder-role-mismatch"}
         )
         assert mod.RETIRED_FENCING_CODES == frozenset({"lease-expired"})
 
@@ -1180,6 +1181,27 @@ class TestProcessBatch:
         )
         assert _read_state(state_file)["token"] == "tok-gen2"
         commit()
+
+    def test_prepare_holder_role_mismatch_wiring_error_no_rebind(
+        self, state_file,
+    ):
+        """DB-105 v5 sync（AIR-299）：`holder-role-mismatch`（class 5
+        wiring error——章別接線錯誤）恢復路徑豁免——不 rebind、不重試
+        （接線錯誤＝配置面問題，恢復無意義），exception 原樣傳播交
+        per-address fail-soft；state token 不變、零 status/bind 呼叫。"""
+        _seed_state(state_file)
+        runner = _seq_runner([
+            _err("holder-role-mismatch", "fencing", exit_code=5),
+        ])
+        with pytest.raises(mod.DutymailFaceError) as exc_info:
+            mod.process_once(
+                ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert exc_info.value.code == "holder-role-mismatch"
+        kinds = [c[0:2] for c in runner.calls]
+        assert ("holder", "bind") not in kinds
+        assert ("holder", "status") not in kinds
+        assert _read_state(state_file)["token"] == "tok-old"
 
     def test_prepare_batch_conflict_retry_invalidate(self, state_file):
         """prepare 撞 live batch（crash-before-state-write 孤兒）→ --invalidate 重試一次。"""
