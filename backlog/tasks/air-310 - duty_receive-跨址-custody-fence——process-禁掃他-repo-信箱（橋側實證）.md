@@ -1,7 +1,7 @@
 ---
 id: AIR-310
 title: duty_receive 跨址 custody fence——process 禁掃他 repo 信箱（橋側實證）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 11:40'
 updated_date: '2026-10-11 12:25'
