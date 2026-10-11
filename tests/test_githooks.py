@@ -14,6 +14,7 @@ import pytest
 GUARD = Path(__file__).resolve().parent.parent / ".githooks" / "control-plane-guard.sh"
 PRE_COMMIT = Path(__file__).resolve().parent.parent / ".githooks" / "pre-commit"
 CARD_DIAGRAM_GUARD = Path(__file__).resolve().parent.parent / ".githooks" / "card-diagram-guard.py"
+CARD_VALIDATE = Path(__file__).resolve().parent.parent / "scripts" / "card_validate.py"
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
@@ -50,7 +51,19 @@ def _stage(repo: Path, rel: str) -> None:
     f.parent.mkdir(parents=True, exist_ok=True)
     if rel.startswith("backlog/tasks/"):
         # card-diagram guard v2：backlog 卡須合法 SECTION markers＋mermaid 圖（135.5 協議①）
+        # ＋card_validate：frontmatter 須過四層（AIR-309——九必填欄合規形）
         f.write_text(
+            "---\n"
+            "id: AIR-9\n"
+            "title: sandbox 卡\n"
+            "status: To Do\n"
+            "assignee: []\n"
+            "created_date: '2026-10-11 09:00'\n"
+            "updated_date: '2026-10-11 09:00'\n"
+            "labels: []\n"
+            "dependencies: []\n"
+            "ordinal: 900\n"
+            "---\n"
             "## Description\n"
             "<!-- SECTION:DESCRIPTION:BEGIN -->\n"
             "desc\n\n"
@@ -190,6 +203,9 @@ def _hook_sandbox(tmp_path: Path) -> Path:
     (hooks_dir / "control-plane-guard.sh").write_text(GUARD.read_text())
     (hooks_dir / "pre-commit").write_text(PRE_COMMIT.read_text())
     (hooks_dir / "card-diagram-guard.py").write_text(CARD_DIAGRAM_GUARD.read_text())
+    # frontmatter 驗證閘（AIR-309）：pre-commit 鏈新腿——沙箱須備妥 validator 本體
+    (repo / "scripts").mkdir()
+    (repo / "scripts" / "card_validate.py").write_text(CARD_VALIDATE.read_text())
     hooks_dir.chmod(0o755)
     (hooks_dir / "control-plane-guard.sh").chmod(0o755)
     (hooks_dir / "pre-commit").chmod(0o755)

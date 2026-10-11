@@ -36,8 +36,11 @@ backlog task create "<標題>" -l <labels> -p <母卡id> --ordinal <n> --dep <�
 #   --dep 前置卡（依賴方向＝「我的前置」；清板 precheck 消費）；edit --dep＝整組替換——改單一 dep 前必帶回完整集合，--clear-deps 清空
 #   --ordinal 家族連號（板面排序；edit 可改）；-m 分期（edit 另有 --clear-milestone 清除；語義 user 定）
 backlog task edit <id> --plan "<工單 spec：baseline／已決策勿重辯／範圍>"   # desc 留人話、spec 住 Plan（詳「欄位分工」；`task create --plan` 限 active status，To Do 建卡後以 edit 補）
+# frontmatter 驗證閘（AIR-309）：create/edit 落盤後立即驗，FAIL 即自修迴圈——逐條修到 exit 0 才可進下一步（commit／後續 edit 都不例外）
+uv run python scripts/card_validate.py "backlog/tasks/<卡檔名>.md"   # 逐檔驗；`--all` 全板掃描（結案 L4 總驗卡可併跑）；`--staged` 為 pre-commit hook 模式
 git add backlog/ && git commit -m "chore(backlog): <卡id> <標題>"   # 建卡即 commit（批次建卡併一顆）——跨 WT id 防撞靠卡及時進 branch ref；user 裁定此形態免逐次確認（例外條款見 [outward-action-consent](../../rules/outward-action-consent.md)「Commit 專屬段」）；建卡前確認當前 branch＝owning 線（非進行中卡 branch）——建卡 commit 落錯 branch 會污染他卡邊界（真實案例：AIR-46 狗糧——AIR-50 建卡落 air-46 上）
 ```
+**frontmatter 驗證閘與 card-diagram guard 的分工（AIR-309——兩閘並存不重疊）**：validator（`scripts/card_validate.py`）只驗 **frontmatter 機械面**——delimiter／YAML strict（日期不自動轉型）／top-level mapping／必填欄位型別，判準＝「卡檔是機器可解析的卡」（DB-109 事故：malformed YAML 靜默進 Unparsed）；**結案結構**——AC 殘留／status 軌跡／五段 marker／desc 圖／黑話／終態圖——歸 card-diagram guard（pre-commit 攔），判準＝「內容結構符合流程契約」。驗證時點雙補位：skill 內 create/edit 後立即驗（寫入當下），pre-commit `--staged` 再攔（捕捉繞過 skill 的直寫）。
 **共享 WT 活躍 branch 落點分流**（多 session 共享 primary WT、checkout 停在活躍弧卡 branch 時的外卡 commit 處置；commit 前必查 `git branch --show-current`——非預期 branch 是**換策略信號非停手信號**，branch 可能在本 session 中途被平行 session 切走，開場快照不算數）：
 - **建卡 commit → 暫時 worktree 直進 main**：main 未被任何 worktree checkout 時（活躍弧佔 primary WT 是常態），`git worktree add <tmp> main` → `git -C <tmp> add <具名卡檔> && git -C <tmp> commit` → `git worktree remove <tmp>`——全程 `git -C`，絕不 cd 進暫時 worktree（cwd 懸死殺 Bash 面——前任 CC 事故）；代價＝board working copy 可見性延遲（弧 rebase/ff 後卡檔才現），接受——建卡到開工靠 handoff block 傳遞、不依賴 board 即時性；已隨弧 ff 進 main 的歷史建卡 commit 不搬
 - **其他外卡小修 → 獨立顆粒 commit 落當前 branch**：message 標源卡 id（`fix(<源卡id>):` 形態）＋「跨 session 併入，隨 ff-merge 進 main」理由行；具名 add 只帶指名檔——檔案在 WT 有即時 board 可見性
