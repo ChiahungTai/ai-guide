@@ -1,10 +1,10 @@
 ---
 id: AIR-310
 title: duty_receive 跨址 custody fence——process 禁掃他 repo 信箱（橋側實證）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 11:40'
-updated_date: '2026-10-11 12:02'
+updated_date: '2026-10-11 12:25'
 labels: []
 dependencies: []
 ordinal: 295000
@@ -33,9 +33,9 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 duty_receive.py 跨址 fence 落地＋單元測試（他址 skip 實證）
-- [ ] #2 docstring 指針同步（duty_receive＋handoff_delivery——AIR-308 deferred 清償）
-- [ ] #3 回信 bridge 修復交付＋觀察案結案（thread 歸卡執續）
+- [x] #1 duty_receive.py 跨址 fence 落地＋單元測試（他址 skip 實證）
+- [x] #2 docstring 指針同步（duty_receive＋handoff_delivery——AIR-308 deferred 清償）
+- [x] #3 回信 bridge 修復交付＋觀察案結案（thread 歸卡執續——本項隨本卡結案回信完成）
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -46,4 +46,19 @@ flowchart LR
 設計審查兩腿到站（2026-10-11）——意見全檔：.agent-tmp/improve-20261011/opinion-310-{codex,glm}.md。**機制修正（glm，裁決前提）**：duty_receive.py --address 是 required 單址參數（:1347）、模組內無多址掃描——越界＝AI session 餵他址當參數，非程式掃 store；fence 判準＝requested address ∈ 本 repo 消費授權集。**codex 主審**：顯式 consume-address allowlist（方案 b）＋核心執行邊界強制檢查（bind 前拒絕越權）——反對前綴判定、反對僅列舉層過濾。實作按此合成：授權集來源與 skip/fail-loud 語義細節讀兩檔意見後裁決。另：bridge 3.10.3 show --json finalText 已移頂層（schema 變更——AIR-307 錨點複查同族觀察）。
 
 marshal 綜合裁決（兩腿合成）：①consume-address allowlist 住 governance/dutymail-processor.toml（consume_addresses=[ai-guide-marshal, ai-guide-exceptions]，與 class×action 表同檔同治理——user 可編編制）②fence 雙層：CLI arg 驗證層＋bind 前核心執行邊界 ③fail-loud（單址 required 參數餵他址＝呼叫端錯誤——glm 證無掃描迴圈，skip 語義無場）。實作 WO＝.agent-tmp/improve-20261011/wo-310-impl.md
+
+receipt：worker job-mv3rx44v 交付 fence（allowlist toml 單一源＋雙層強制＋deny-all）＋79 行測試＋docstring 同步（AIR-308 deferred 清償）；main @ 00b06918 全量 gate 3828 綠。回信橋側 fence 交付＋觀察案結案（seq 71 待確認）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+跨址 custody fence 落地：process 只准消費 consume_addresses 授權集（toml 單一源）、雙層強制（CLI exit 2＋bind 前 fail-closed）、唯讀診斷豁免。終態圖：
+
+```mermaid
+flowchart LR
+  A["duty_receive process"] --> B{"address 在 consume_addresses?"}
+  B -->|"否"| C["exit 2＋禁 holder 全序列"]
+  B -->|"是"| D["正常消費"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
