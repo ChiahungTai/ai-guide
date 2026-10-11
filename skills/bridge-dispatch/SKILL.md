@@ -1,6 +1,6 @@
 ---
 name: bridge-dispatch
-description: "跨 repo 呼叫 delegate-bridge 的 bootstrap gate 面才載——bridge 派工首個有後果決策前（rule 錨帶入），或結構證據收線核對／waiter watcher 治理／grok authority profile／session label 面載入。操作知識（caller surface 入口對照、MCP face 接線、dispatch⇄collection 完整模式、webgpt 雙軸預算、Brief capability 契約五要素、glm provision/resume）已隨 bridge release 出貨為 delegate:bridge-dispatch plugin skill（版本凍結、隨版控）；本檔只留 plugin pointer＋consumer governance 留守面（AIR-216 route 值域與收線核對、bridge_waiter 治理、grok contained writer、seam label、Brief 動詞紀律）。觸發詞：delegate-bridge、bridge 派工、結構證據收線核對、structural-evidence route、unverified-by-graph、bridge_waiter、CollectionReceipt、stalled-advisory、liveness、grok contained writer、session label。"
+description: "跨 repo 呼叫 delegate-bridge 的 bootstrap gate 面才載——bridge 派工首個有後果決策前（rule 錨帶入），或結構證據收線核對／waiter watcher 治理／grok authority profile／session label 面載入。操作知識（caller surface 入口對照、MCP face 接線、dispatch⇄collection 完整模式、webgpt 雙軸預算、Brief capability 契約五要素、glm provision/resume）已隨 bridge release 出貨為 delegate:bridge-dispatch plugin skill（版本凍結、隨版控）；本檔只留 plugin pointer＋consumer governance 留守面（AIR-216 route 值域與收線核對、bridge_waiter 治理、grok contained writer、seam label、Brief 動詞紀律）。觸發詞：delegate-bridge、bridge 派工、結構證據收線核對、structural-evidence route、unverified-by-graph、bridge_waiter、CollectionReceipt、stalled-advisory、progress wake、三層監督、harness 完成通知對照表、liveness、grok contained writer、session label。"
 when_to_use: "Fires only at the bridge bootstrap gate face — the first consequential delegate-bridge dispatch decision (anchored by rules/bridge-dispatch.md), or the retained consumer-governance faces: AIR-216 structural-evidence collection check, bridge_waiter governance, grok authority profile, session label. Operational dispatch how-to lives in the delegate:bridge-dispatch plugin skill."
 ---
 
@@ -37,6 +37,17 @@ dispatch⇄collection 完整模式（自動 arm 規約與場景分工、family �
 
 - **waiter 腳本解析路徑（AIR-305）**：waiter 腳本＝ai-guide repo `scripts/bridge_waiter.py`（bare shell 呼叫：`uv run python <ai-guide checkout>/scripts/bridge_waiter.py <jobId...>`，須帶 `DELEGATE_BRIDGE_BIN=<registry pin 解析>`——路徑由 installed_plugins.json 取 installPath，禁手拼版本化 cache 路徑，解析面＝plugin skill「Legal entry points」節）。
 - **arm waiter cwd×ledger 條款（AIR-305）**：arm waiter 時 cwd＝job 所屬 workspace ledger（ledger per-workspace——runs/show/wait 全以呼叫端 cwd git toplevel 解析 workspace）；**跨 WT 多腿各一 waiter**，各在自己 workspace arm。錯位已機械化：waiter 啟動 self-check（`runs --json` 核 fan-in 集在場＋`wtPath` stamp 歸屬比對），不符＝fail-loud exit 2 帶修法與正確 cwd 提示（frozen spec amendment 單一源＝`scripts/bridge_waiter.py` module docstring AIR-305 節）。
+- **harness 完成通知對照表（AIR-301）**：派工前先判讀該 harness 有沒有「完成 → 喚醒 session」路徑——沒有的 harness 上，waiter exit／bridge 收線**不會**把 session 叫回來。
+
+| harness | 原生完成通知 | waiter 喚醒能力 | 長腿補位 |
+|---------|------------|----------------|---------|
+| ZCode | 有——背景任務 exit 即 notification 回喚 session | 有——waiter 以背景任務 arm，exit 即喚醒 | 長靜默期可加 `--progress-wake-min` 進度中繼（AIR-301 amendment） |
+| codex | 僅原生 subagent 有（`<subagent_notification>`）；bridge job／背景程序 exit 無 | 無——waiter 是背景程序，exit 不注入 thread | 派多腿長工**必**同時建 thread-level heartbeat automation（帶 liveness gate，模板單一源＝[deep-work](../deep-work/SKILL.md)）或排程喚醒 |
+| Muse | 〔未驗證〕 | 〔未驗證〕 | 未實證前照「無喚醒路徑」配置（fail-closed） |
+| grok | 〔未驗證〕 | 〔未驗證〕 | 同上 |
+
+  真實案例（AIR-301 素材——codex 大架構弧 session report）：三腿修正工作派出時有掛 waiter，但 waiter exit 在 codex 端不會注入 thread 訊息——腿停止後無人回收，主控自述「上一段只有背景 Flash 在跑，我沒有及時接續回收與複審」。對照表維護紀律：有通知／無通知的實證觀察逐格更新；未驗證格禁假設有路徑。
+- **長弧派工三層監督標配（AIR-301）**：多腿、分鐘級以上的背景派工，監督面三層並存，缺一即有單點死法（某 harness 無原生通知／heartbeat 殭屍化／watcher 自身死亡）——①原生完成通知（能接則接，上表）②thread-level heartbeat automation（**強制 liveness gate 三要素：連續 N 次零工具呼叫自停／loud 失敗落盤／wake 前查 quota**——模板與真實案例單一源＝[deep-work](../deep-work/SKILL.md)「長弧監督標配」節）③watcher 有變化才通知（waiter stalled-advisory＋`--progress-wake-min` 階段性進度 wake——長腿靜默期把 sitrep 從被動回答變主動推送，frozen spec amendment 單一源＝`scripts/bridge_waiter.py` module docstring AIR-301 節）。
 
 **prompt 邊界 backstop（AIR-267）**：`hooks/bridge_ledger_sweeper.py`（核心＝`scripts/bridge_sweeper.py`；SessionStart 全掃／UserPromptSubmit 90s 節流＋anomaly signature 去重、cwd eligibility、fail-soft 恆安靜）在 prompt 邊界掃 `bridge runs ⋈ .agent-tmp/liveness.jsonl`——running 行無活 waiter（armed−collected 配對＋heartbeat 30m 新鮮度窗，不掃進程）→一行「恢復 playbook：arm waiter」；terminal completed 有 armed 痕跡且無 collected 逾 30 分鐘→一行「可能未收——收線：bridge_show」（R2 前提＝liveness 有 armed 痕跡——真孤兒類；無痕跡〔pre-liveness／手動收線〕不可判安靜）（措辭恆機械層「可能未收」，session 層驗收是另一層零宣稱；terminal 非 completed＝failed-\* 不提醒——v1 收窄，失敗態處置是 dispatch 語義）。提醒面非處置面——arm/show/收線處置恆歸 session LLM；liveness 台帳 waiter 自有、sweeper 只讀。收線三腿家族分工：**waiter＝時間軸（背景盯場）／sweeper＝prompt 邊界（收線 backstop 提醒）／watcher_pairing_nag＝Stop 配對（離場攔）**；WT 證據（`.delegate-bridge/jobs/`＋liveness.jsonl）隨 wt-close drain 歸檔至 `~/.agents/bridge-ledger-archive/<wt>-<ts>/`（0600；v1 無 TTL）。
 

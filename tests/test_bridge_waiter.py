@@ -314,7 +314,8 @@ def test_ac2_worker_axis_cross_floor_also_advisory() -> None:
 
 
 def test_ac2_refresh_round_runtime_cross_floor_exits_3() -> None:
-    times = iter([NOW, NOW + timedelta(minutes=3)])
+    # AIR-301 progress-wake 路徑（預設 off）仍多讀一次 now()——迭代器補 spare ticks
+    times = iter([NOW, NOW + timedelta(minutes=3), NOW, NOW])
     fake = FakeBridge(
         waits=[{"exit": 124}],
         shows={

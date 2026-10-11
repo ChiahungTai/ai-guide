@@ -4,7 +4,9 @@
 一句話：AI 派工後去睡；本 watcher 接手盯場——全 terminal 才叫醒收結果，
 疑似卡住只通知不處置，`wait` exit 124 恆內部消化 re-arm，永不外洩。
 UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；完成才醒，
-明確 stall 才醒，124 永遠不醒。
+明確 stall 才醒，124 永遠不醒。（AIR-301 修訂：`--progress-wake-min` 顯式
+開啟時，長腿靜默期的階段性進度 wake 是額外喚醒類——預設 off，本北極星
+預設行為不變。）
 
 契約源
 ------
@@ -56,6 +58,25 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   不傳 workspace_root＝停用（liveness 腿同款）。狀態機 T1-T9 零變——本腿
   只新增 arm 前的 error 面出口；DELEGATE_BRIDGE_BIN 缺場仍走既有
   FileNotFoundError fail-loud（self-check 探測同受 main() 該 handler 涵蓋）。
+- AIR-146 frozen spec amendment——長弧監督腿（AIR-301）：①階段性進度 wake
+  （progress wake）——長腿靜默期把 sitrep 從被動回答變主動推送（2026-10-11
+  長弧實證：waiter 只在收線時通知，user 兩條 session 七次人肉輪詢
+  「進度？」）。`--progress-wake-min N`（分鐘；預設 0＝off，frozen spec
+  預設行為不變）：開啟時 arm timeout 以 N 封頂（wait 每 ≤N 分鐘返回，
+  124 照樣內部消化），任一 running 腿自 arm 起連續 ≥N 分鐘未收線 → 於該輪
+  re-arm 邊界發一行進度 wake 後 exit 3 喚醒 caller（stdout 尾行
+  `{"state":"progress",...}`——帶活體訊號 lastEventAt／雙軸 silence／自
+  arm 起運行時長；活體訊號只取公開 CLI 快照欄位，零私有 ledger 接觸；
+  events delta 以 lastEventAt 前進為準，由 caller 對讀前次 sitrep）。
+  advisory 家族——僅通知不處置，caller 記進度後 re-arm；liveness 台帳記
+  advisory 行（kind=progress，消費端腳本只認 event 欄——零消費端變更）
+  ＝有目的退出。②stall 判別證據源增補——stalled-advisory 的雙軸 silence
+  讀數只是第一訊號，硬判死需 carrier-side 權威活體端點佐證（AIR-135.4
+  supervision fence 同源——例：daemon healthz 的 active turns；端點面隨
+  carrier 異，單一源歸 bridge producer，watcher v1 不實作 probe，advisory
+  恆帶雙訊號對讀欄）；誤殺防線＝「產物停滯＋心跳凍結」雙訊號，禁單一 CPU
+  訊號（model-bound 低 CPU 是常態——SC ticker 誤報教訓）；codex web 長
+  生成期 heartbeat 滯後誤報×3 的容忍語義不變。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
 --------------------------------------------------------------------------------
@@ -97,8 +118,10 @@ exit 契約（adjudication Q4）
 - 0＝全 terminal completed（含 delivery 機驗過；manual-anchor 視同過、receipt 標記）
 - 1＝任一 terminal 非 completed（含 completed 但 sink 三步驗收不過的
   terminal-sink-missing 面——AIR-135.7 AC#2 判定句）
-- 3＝stalled-advisory（compact progress log；僅通知不處置；native wake 轉譯
-  或 legacy 自算——見 T8 amendment）
+- 3＝advisory 家族喚醒（stdout 尾行 state 欄機械可判；僅通知不處置）：
+  stalled-advisory（compact progress log；native wake 轉譯或 legacy 自算——
+  見 T8 amendment）｜progress（階段性進度 wake——AIR-301 amendment，僅
+  --progress-wake-min>0 時發生；caller 記進度後 re-arm）
 - 124 恆內部消化不外洩
 - 2＝fail-loud 面，三種面貌分流（F1/F2 修）：①wait stderr 帶
   「disappeared mid-wait」或「Job not found」（rust 正典字串）→
@@ -124,7 +147,12 @@ watcher 止步線（digest §1.8）。
     uv run python scripts/bridge_waiter.py <jobId...>
         [--kind discussion|implementation|research]
         [--sink jobId:PATH]... [--anchor jobId:TOKEN]...
-        [--bridge-bin PATH]
+        [--bridge-bin PATH] [--progress-wake-min MINUTES]
+        [--liveness-path PATH]
+
+--progress-wake-min（AIR-301）：0＝off（預設）；>0 時 running 腿連續 ≥N
+分鐘未收線即發一行進度 sitrep（exit 3）喚醒 caller——長弧派工配
+thread-level heartbeat 之外的進度主動中繼面。
 
 動態 T（digest §1.4）：T0=clamp(P50_prior/3, 5m, 15m)，prior 表＝
 family×work-kind 內嵌常數（adjudication Q2：單消費者 YAGNI，不進 config）；
@@ -795,18 +823,22 @@ def _liveness_event_batch(
     ts_key: str,
     job_ids: list[str],
     err: TextIO,
+    kind: str | None = None,
 ) -> None:
-    """per-job 批次 append 同輪事件（heartbeat／advisory）；同輪共享一時間戳。"""
+    """per-job 批次 append 同輪事件（heartbeat／advisory）；同輪共享一時間戳。
+
+    kind 為 advisory 家族的 exit 分態附加欄（AIR-301：stall｜progress）——
+    消費端腳本只認 event 欄，附加欄零消費端變更。
+    """
     if liveness_path is None or not job_ids:
         return
     ts = _system_now().isoformat()
     pid = os.getpid()
     for job_id in job_ids:
-        _liveness_append(
-            liveness_path,
-            {"event": event, "jobId": job_id, ts_key: ts, "pid": pid},
-            err,
-        )
+        payload: dict = {"event": event, "jobId": job_id, ts_key: ts, "pid": pid}
+        if kind is not None:
+            payload["kind"] = kind
+        _liveness_append(liveness_path, payload, err)
 
 
 def _liveness_heartbeat(
@@ -822,12 +854,18 @@ def _liveness_heartbeat(
 
 
 def _liveness_advisory(
-    liveness_path: Path | None, job_ids: list[str], err: TextIO
+    liveness_path: Path | None,
+    job_ids: list[str],
+    err: TextIO,
+    kind: str = "stall",
 ) -> None:
-    """分態腿（AIR-158）：stall advisory exit 時記 advisory 行——watcher 是
-    有目的退出（wake 已交辦 caller）非無聲死亡；rearm 掃描與 nag 死亡檔以此
-    排除，防 job stall 被誤發成 watcher death。"""
-    _liveness_event_batch(liveness_path, "advisory", "advisedAt", job_ids, err)
+    """分態腿（AIR-158；AIR-301 擴 kind=progress）：advisory 家族 exit 時記
+    advisory 行——watcher 是有目的退出（wake 已交辦 caller）非無聲死亡；
+    rearm 掃描與 nag 死亡檔以此排除，防 job stall 被誤發成 watcher death。
+    kind 記 exit 分態（stall｜progress）供 caller 對讀。"""
+    _liveness_event_batch(
+        liveness_path, "advisory", "advisedAt", job_ids, err, kind=kind
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -980,6 +1018,58 @@ def _emit_native_advisory(out: TextIO, err: TextIO, wait_stdout: str) -> int:
     return 3
 
 
+def _emit_progress_wake(
+    out: TextIO,
+    err: TextIO,
+    snapshots: dict[str, JobSnapshot],
+    running_ids: list[str],
+    armed_at: datetime,
+    now: datetime,
+) -> int:
+    """階段性進度 wake（AIR-301 amendment）：長腿靜默期的主動 sitrep 中繼。
+
+    advisory 家族——僅通知不處置（不 stop 不重派）；caller 記進度後 re-arm。
+    活體訊號只取公開 CLI 快照欄位（lastEventAt／雙軸 silence）＋自 arm 起
+    運行時長；events delta 由 caller 對讀前次 sitrep 的 lastEventAt。
+    """
+    detail: dict[str, dict] = {}
+    elapsed = (now - armed_at).total_seconds() / 60.0
+    for job_id in running_ids:
+        snap = snapshots[job_id]
+        worker = worker_silence_minutes(snap, now)
+        runtime = runtime_silence_minutes(snap, now)
+        detail[job_id] = {
+            "lastEventAt": snap.last_event_at,
+            "workerSilenceMin": None if worker is None else round(worker, 1),
+            "runtimeSilenceMin": None if runtime is None else round(runtime, 1),
+        }
+        worker_txt = "n/a" if worker is None else f"{round(worker, 1)}m"
+        runtime_txt = "n/a" if runtime is None else f"{round(runtime, 1)}m"
+        _emit(
+            out,
+            f"[watcher] progress: {job_id} lastEvent={snap.last_event_at or 'n/a'} "
+            f"worker={worker_txt} runtime={runtime_txt} "
+            f"elapsed={round(elapsed, 1)}m",
+        )
+    _emit(
+        out,
+        _dumps(
+            {
+                "state": "progress",
+                "armedAt": armed_at.isoformat(),
+                "elapsedMinutes": round(elapsed, 1),
+                "jobs": detail,
+            }
+        ),
+    )
+    _emit(
+        err,
+        "[watcher] progress wake——階段性進度中繼（僅通知不處置；"
+        "caller 記進度後 re-arm）",
+    )
+    return 3
+
+
 def _reconcile_or_error(out: TextIO, err: TextIO, job_id: str, exc: BridgeError) -> int:
     if exc.kind == "not-found":
         return _emit_state(
@@ -1057,6 +1147,7 @@ def run_watcher(
     stderr: TextIO | None = None,
     liveness_path: Path | None = None,
     workspace_root: Path | None = None,
+    progress_wake_min: float = 0.0,
 ) -> int:
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
@@ -1122,6 +1213,10 @@ def run_watcher(
     _liveness_heartbeat(liveness_path, job_ids, err)
 
     running_ids = [j for j in job_ids if snapshots[j].status == RUNNING]
+    # 長弧監督腿（AIR-301）：progress wake 的計時起點＝本 watcher arm——
+    # 惰性取時（僅 --progress-wake-min>0 時消费 now tick；off 時零行為位移，
+    # frozen spec 北極星「正常長跑期間不醒」的既有 tick 契約不變）
+    armed_at = now_fn() if progress_wake_min > 0 else None
     if running_ids:
         # T4 arm 前檢查（legacy 自算；native 交 bridge --wake-on-stuck——
         # 已 stuck 時首個 poll 即 exit 3，無偵測空窗）
@@ -1137,17 +1232,21 @@ def run_watcher(
     arms = 0
     while running_ids:
         # T2/T3/T4 的 arm 面；批次 wait 等全 terminal 才返（rust cmd_wait_batch）
+        # AIR-301：--progress-wake-min>0 時 arm timeout 以進度 wake 間距封頂
+        arm_timeout_min = (
+            min(t_min, progress_wake_min) if progress_wake_min > 0 else t_min
+        )
         arms += 1
         stuck_ms = int(runtime_floor_minutes(kind) * 60_000)
         _emit(
             out,
-            f"[watcher] arm round={arms} T={t_min:.1f}m "
+            f"[watcher] arm round={arms} T={arm_timeout_min:.1f}m "
             f"running={len(running_ids)}/{len(job_ids)} kind={kind}",
         )
         try:
             code, wait_out, wait_err = client.wait(
                 running_ids,
-                timeout_ms=int(t_min * 60_000),
+                timeout_ms=int(arm_timeout_min * 60_000),
                 stuck_after_ms=stuck_ms,
                 wake_on_stuck=native_wake,
                 wake_axis="runtime",
@@ -1279,6 +1378,17 @@ def run_watcher(
 
         # 機器登記腿（AIR-158）：每次輪詢後對仍在監督集 append 一輪 heartbeat
         _liveness_heartbeat(liveness_path, running_ids, err)
+
+        # 長弧監督腿（AIR-301）：--progress-wake-min>0 時，任一 running 腿
+        # 自 arm 起連續 ≥N 分鐘未收線 → 階段性進度 wake（exit 3；advisory
+        # 家族——僅通知不處置，caller 記進度後 re-arm）
+        if progress_wake_min > 0:
+            elapsed = (now_round - armed_at).total_seconds() / 60.0
+            if running_ids and elapsed >= progress_wake_min:
+                _liveness_advisory(liveness_path, running_ids, err, kind="progress")
+                return _emit_progress_wake(
+                    out, err, snapshots, running_ids, armed_at, now_round
+                )
 
         # T2/T3：動態 T
         floors = [
@@ -1424,6 +1534,14 @@ def main(argv: list[str] | None = None) -> int:
         help="liveness 登記腿台帳路徑（AIR-152；預設 <cwd repo>/.agent-tmp/"
         "liveness.jsonl）",
     )
+    parser.add_argument(
+        "--progress-wake-min",
+        type=float,
+        default=0.0,
+        metavar="MINUTES",
+        help="階段性進度 wake 間距（AIR-301；0＝off，預設）——running 腿連續 "
+        "≥N 分鐘未收線時發一行進度 sitrep（exit 3）喚醒 caller",
+    )
     args = parser.parse_args(argv)
 
     sinks: dict[str, str] = {}
@@ -1452,6 +1570,7 @@ def main(argv: list[str] | None = None) -> int:
             anchors=anchors,
             liveness_path=liveness_path,
             workspace_root=_default_workspace_root(),
+            progress_wake_min=args.progress_wake_min,
         )
     except UsageError as exc:
         print(f"bridge_waiter: usage 錯誤：{exc}", file=sys.stderr)

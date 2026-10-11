@@ -1,8 +1,8 @@
 ---
 name: deep-work
 
-description: "深度工作模式 - 自主開發流程引擎：一整套開發流程直接跑（execution-plan → implement → post-build），AI 全力發揮、慢慢思考、完整交付"
-when_to_use: "Autonomous full development pipeline (CC-workflow concept). Three trigger scenarios: 睡前下 UC 級任務 / 外出離開 / 任務不難但想整套開發流程自主跑。Chain runs unattended: plan→build→post-build→report, ending at commit consent."
+description: "深度工作模式 - 自主開發流程引擎：一整套開發流程直接跑（execution-plan → implement → post-build），AI 全力發揮、慢慢思考、完整交付；長弧背景派工配三層監督標配＋heartbeat liveness gate"
+when_to_use: "Autonomous full development pipeline (CC-workflow concept). Three trigger scenarios: 睡前下 UC 級任務 / 外出離開 / 任務不難但想整套開發流程自主跑。Chain runs unattended: plan→build→post-build→report, ending at commit consent. 觸發詞：長弧監督、三層監督、heartbeat liveness gate、殭屍 heartbeat。"
 argument-hint: "任務描述 | Execution Plan 檔案路徑"
 allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
 ---
@@ -67,6 +67,22 @@ dispatch（從 committed ref；agent 依賴 uncommitted → 先 commit〔該預�
 ### 誠實處理
 
 permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途切換**。若當前非 auto-mode → 印出警告「非 auto-mode，無人值守會卡在權限提示；請以 `claude agents`（dir defaultMode=auto）或 `--permission-mode auto` 重啟」並停下，**不靜默降級成互動模式硬跑**。
+
+## 長弧監督標配（三層監督＋heartbeat liveness gate）
+
+長弧背景派工（bridge 腿、背景 agent、跨 session loop）的監督機制自己會死——監督面必配**三層**，單層各有死法（某 harness 無原生通知／heartbeat 殭屍化／watcher 自身死亡），不是可選項：
+
+1. **原生完成通知**：harness 原生通知面能接的腿優先接（逐 harness 有無喚醒路徑的對照表單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)「harness 完成通知對照表」——ZCode 背景任務 exit 即通知；codex 僅原生 subagent 有、bridge job 無）。
+2. **thread-level heartbeat automation**：定時喚醒盯進度（如每 5 分鐘）——**強制帶 liveness gate**（見下），否則殭屍化。
+3. **有變化才通知**：watcher stalled-advisory＋階段性進度 wake（`scripts/bridge_waiter.py --progress-wake-min`——長腿靜默期主動推送一行活體訊號 sitrep；frozen spec amendment 單一源＝該檔 module docstring AIR-301 節）。
+
+### heartbeat liveness gate 三要素（任何 heartbeat／automation 模板強制）
+
+1. **wake 即留痕、零活動自停**：每次喚醒必須至少一次工具呼叫＋一行進度落盤（checkpoint append）；連續 N 次（預設 3）零工具呼叫或空回應 → 判定 zombie，**自行停止 automation**。
+2. **loud 失敗落盤**：自停時留可被發現的失敗紀錄（checkpoint／失敗檔），禁靜默消失。
+3. **wake 前查 quota**：每次喚醒先查額度面（codex 端可查 usage），額度歸零即自停落盤、不再派工。
+
+> **真實案例**（AIR-301 素材——codex 大架構弧 session report）：heartbeat 指令自身寫了「整個修復及獨立驗收完成後停止本 heartbeat」，但主 loop 額度歸零後「無法繼續」這個終態沒被偵測——每 5 分鐘喚醒共 96 次全空回應（每次約 131 output tokens、零工具呼叫、零通知、零失敗紀錄），殭屍 8 小時；同期 user 在兩條 session 共七次問「進度？」，靜默期沒有任何主動進度推送。三要素即為此防線。**但 liveness gate 靠 LLM 自停，額度歸零時 LLM 連自停都停不了——條文模板是第一道非唯一道**：進程外獨立 watchdog 是第二道（最小 driver 形態＝[watchdog POC 報告](../../ai-analysis/reports/2026-10-11-air301-watchdog-poc.md)），誤殺防線與判定安全＝[autonomous-execution](../autonomous-execution/SKILL.md)「長弧監督面」節。
 
 ---
 

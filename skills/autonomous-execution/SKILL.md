@@ -1,6 +1,6 @@
 ---
 name: autonomous-execution
-description: "Guides autonomous execution — decision-making, error recovery, completion reporting, workspace safety, session-level recovery. Use when implementing without user interaction, such as EP-based build or deep-work mode. Triggers on: autonomous execution, self-healing, session recovery, false-done 偵測, workspace safety, path invariants, deferred questions, completion report, don't-self-decide boundaries."
+description: "Guides autonomous execution — decision-making, error recovery, completion reporting, workspace safety, session-level recovery. Use when implementing without user interaction, such as EP-based build or deep-work mode. Triggers on: autonomous execution, self-healing, session recovery, false-done 偵測, workspace safety, path invariants, deferred questions, completion report, don't-self-decide boundaries, heartbeat zombie, liveness gate, 長弧監督."
 when_to_use: "Fires during unattended execution when a decision, error, or completion claim must be handled without the user——歧義自決＋記錄理由、紅線／黃線分級（commit、force push、DB DROP 等不自主執行）、error recovery、false-done 偵測、completion report 彙整、workspace safety。觸發詞：autonomous execution、無人介入、自主執行、deferred questions。啟動整套開發流程（plan→build→post-build 編排）屬 deep-work；流程已跑起來後的無人決策與安全邊界歸本 skill（deep-work 內同樣適用）。"
 ---
 
@@ -127,6 +127,14 @@ Error Self-Healing（上）是 per-error（單一錯誤重試 ceiling）。**缺
 三者作用域不同（段落級 completeness / 單 session context fatigue / 跨 session intent direction），觸發點不重疊。
 
 > **substrate vs review 邊界**：本段 reconciliation = 機械真相 re-derivation（**事實層**：git vs EP scope → 差異報告）；session-boundary intent-drift review = **判讀層**（差異報告 → intent 是否漂移）。本段是 intent-drift review 的 **substrate + 觸發器，不是 review 本身**——避免寫成完整 intent-drift review（scope creep）或只 dump git log（過窄）。本段部分回應 deferred card `session-boundary-intent-drift-review.md`（resume 機械觸發 + re-derive）。
+
+## 長弧監督面（heartbeat zombie 防線）
+
+長弧無人值守的監督機制（thread-level heartbeat automation、背景 watcher）自己會死——監督者活體是無人值守的安全前提。監督**配置**（三層監督標配）單一源＝[deep-work](../deep-work/SKILL.md)「長弧監督標配」節；本節載判定與安全邊界：
+
+- **liveness gate（任何 heartbeat／automation 模板強制）**：每次 wake 至少一次工具呼叫＋一行進度落盤；連續 N 次（預設 3）零工具呼叫或空回應 → 判定 zombie，自停 automation 並 **loud 失敗落盤**（禁靜默消失）；wake 前先查 quota，額度歸零即自停落盤、不再派工。**條文模板是第一道非唯一道**——額度歸零時 LLM 連自停都停不了（真實案例 AIR-301 素材：codex 大架構弧 heartbeat 指令寫了停止條件，但「無法繼續」終態沒被偵測——96 次空回應殭屍 8 小時，零通知零失敗紀錄），進程外獨立 watchdog 是第二道（最小 driver 形態＝[watchdog POC 報告](../../ai-analysis/reports/2026-10-11-air301-watchdog-poc.md)）。
+- **誤殺防線（判定雙訊號）**：判「worker／監督迴路已死」須**產物停滯＋心跳凍結**兩訊號同時成立，**禁單一 CPU 訊號**（model-bound 低 CPU 是常態——真實案例：SC ticker 以 CPU 軸誤報）。內容面訊號為唯一可靠訊號的判定原則承襲 AIR-296（spawn 僵屍偵測——metadata 凍結對執行中 agent 是常態，禁當判準）；spawn artifacts surface（subagent 進程層）歸其 zombie sweeper 轄，本節是 thread-level automation surface——引用判定概念，不重做實作。
+- **wake 處置分離**：watcher 的 stalled-advisory／progress wake 只通知不處置（不 stop 不重派）——處置權恆在 caller session（偵測與處置分離，同 AIR-135.7）；watcher 自身的死亡判準消費 liveness 台帳 heartbeat 軸，與 job stall 判準互斥可判（frozen spec 單一源＝`scripts/bridge_waiter.py` module docstring AIR-158／AIR-301 節）。
 
 ## Permission Minimization
 
