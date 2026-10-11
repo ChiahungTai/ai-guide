@@ -34,7 +34,11 @@
 # 閘，fail-closed）。**新信箱開設時同步本清單**；鍵缺席＝載入即
 # ConfigError（deny-all——配置錯誤要大聲）。語義＝「duty 消費面
 # 授權」，非「本 repo 擁有的位址」——兩者不必重合。
-consume_addresses = ["ai-guide-marshal", "ai-guide-exceptions"]
+consume_addresses = [
+    "ai-guide-marshal",
+    "ai-guide-exceptions",
+    "code-reality-marshal",
+]
 
 [[class_rule]]
 class = "usage-liveness"
