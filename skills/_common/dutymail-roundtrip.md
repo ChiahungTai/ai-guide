@@ -112,6 +112,11 @@ repo 正典**——晉升共用 schema 須 conventions.md amendment（msg_type �
 - **查證一行**：查詢回空只授權「此查詢形下未見」；對外做根因陳述前須源碼或實測（真相源：
   delegate-bridge repo `dutymail/crates/` 源碼與 `00-tasks/2026-10/10-04-dutymail/` 契約
   文檔＋CLI `--help`——實證：2026-10-06 unscoped 回空被誤歸因「只索引已 ack」，源碼證偽）。
+- **形態一行**：replies／prepare／peek 的 item 的 `canonicalEnvelope` 是**字串**（envelope
+  JSON 雙層編碼、verbatim——`null`＝已 export）；envelope 的 `body` 仍是字串（v2 凍結
+  grammar），`reply_type`／`result_pointer` 住 body JSON 內、**不在 item 層**。首次消費先
+  檢視最小必要欄位的 raw item 樣本確認型別再寫 parse，禁 object 形狀假設（形態真相源＝
+  bridge 源碼與 contract tests，本行防呆不重刻 schema；as-of 2026-10-11）。
 - **對外信慣例**：對外信（通知/歸因/更正）中的因果或機制斷言須攜證據基（查詢形/源碼行/
   實測輸出），攜不了自標「未查證推測」；更正信顯式 supersede——`in_reply_to` 指原信＋一句
   推翻證據＋新結論，禁兩信互不相認。
