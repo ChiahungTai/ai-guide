@@ -8,9 +8,15 @@ when_to_use: "任何要畫圖的時刻——/illustrate 選輸出模式、EP/殼
 
 > **職責邊界**：本 skill 管「**用什麼載體畫**」（選型判準＋跨載體共性慣例）。「畫什麼 artifact」（boundary/sequence/call-graph 等 SA/SD 語義）歸 illustrate [artifact menu](../_common/illustrate-artifact-menu.md)；「怎麼嵌進殼」歸 [illustrate-html-mode](../_common/illustrate-html-mode.md)；各載體實作配方在各自 skill/role（見文末指針）。
 
+## 選型優先序（先語義後載體）
+
+1. **artifact type 判斷先於 output carrier**——先辨識關係語義（繼承／時序／資料流／層次…）定 SA/SD artifact，再選輸出載體（console／md／svg／html）；順序反了，載體習慣會吞掉語義。
+2. **標準圖語義優先進候選**——user 請求的結構有 SA/SD 標準圖形（classDiagram／sequenceDiagram／erDiagram…）時，標準圖直接進候選；因載體限制降級須**顯式回報 user**，禁默默吞掉標準圖換自創投影。
+   真實案例：user 請求 illustrate 圖解 study area 類別結構，AI 第一輪只出 console ASCII、未提 UML classDiagram，被指正才補——條文對 classDiagram 全面負面＋降級不回報，標準圖就被默默吞掉。
+
 ## 判準四問（順序回答）
 
-1. **邊有沒有結構化通道？** 時間軸（sequence）、線性管線（flowchart LR）、狀態轉移（stateDiagram）、層次/泳道柵格（HTML 塊 grid/layer）是天然通道——邊沿通道走零交錯。有通道 → mermaid 一次可成（層次柵格通道由 HTML 塊承載）。
+1. **邊有沒有結構化通道？** 時間軸（sequence）、線性管線（flowchart LR）、狀態轉移（stateDiagram）、樹形繼承（classDiagram——單 parent 繼承鏈沿 parent 邊走）、層次/泳道柵格（HTML 塊 grid/layer）是天然通道——邊沿通道走零交錯。有通道 → mermaid 一次可成（層次柵格通道由 HTML 塊承載）。
 2. **交錯度多高？** 自由 node-link（邊要自己找路、交錯不可避免）是 auto-layout 死穴——user 判決錨：「如果圖的物件線條要交錯太複雜，不好用」。決策流程的**分支匯流是臨界**（分支少 mermaid 勉強、再多換載體）。
 3. **是不是圖論問題？** 層次對照、前後比較、分類學——內容本質沒有 edge routing 需求 → **HTML 塊（div/flex/grid）或表格**，不是圖的東西別硬畫圖。
 4. **成本軸**：mermaid 宣告式 1 輪；HTML 塊零渲染管線；domain 資料圖機械渲染秒級。小圖的資訊密度撐不起額外渲染管線成本。
@@ -24,18 +30,23 @@ when_to_use: "任何要畫圖的時刻——/illustrate 選輸出模式、EP/殼
 | mermaid `erDiagram` | 實體關係 | 實體 ≤6、關係邊為鍵語義時清楚；1 輪 |
 | mermaid `flowchart LR` | 管線/單向流程 | 單向無分支零交叉，資訊密度與布局成本最低；1 輪 |
 | mermaid `flowchart TB` 自由 | 小型組件圖 | ≤8 節點勉強（永遠殘留小 crossing）；畫前先問能否換形態；~3 輪 |
+| mermaid `classDiagram` | 樹形／森林繼承 | **正答形態**——單 parent、約 10 class 內，繼承鏈沿 parent 邊走零交錯；多向交錯（多 parent／realization 網）無通道可救＝負面實證域，降表格＋刪邊；1 輪 |
 | **HTML 塊圖**（殼內 div/flex/grid） | 層次架構/多分支決策/前後對照 | 零渲染管線、殼原生一體；「不是圖論問題」的結構首選；色彩語義可承載（如 rose=痛點/green=改善） |
-| **表格** | 分類學/型別對照 | class 圖第一層答案：型別｜職責｜依賴比繼承圖好讀好維護 |
+| **表格** | 分類學/型別對照/多向交錯 class 結構 | 型別｜職責｜依賴比交錯繼承圖好讀好維護 |
 | **domain 渲染器**（如 mosaic kchart） | 真實資料綁定圖（K 棒/行情） | 機械渲染（秒級、確定性、與 token 脫鉤）＋LLM 只在判讀端——複用單位是「圖形契約」lib＋領域薄殼，不是成品圖 |
 | **刪邊/降文字記載** | 交錯度超標的取捨 | 第三選項（不是只有換工具/硬畫二選一）——取捨顯式記錄在圖備註/卡，事實不丟 |
 
-**class 圖兩層判準**：先問是不是圖論問題（型別對照→表格）；真是繼承網也優先表格＋刪邊記載（mermaid classDiagram 實證難用——多向交錯無通道可救）。
+**class 圖三層判準**（依序問，上層命中即停）：
+
+1. **型別對照**（誰是什麼、職責為何，無繼承軸）→ **表格**
+2. **樹形／森林繼承**（單 parent、約 10 class 內）→ **mermaid classDiagram 是正答**——繼承鏈天然有通道，不降級
+3. **多向交錯**（多 parent／realization 網交錯）→ **表格＋刪邊記載**——classDiagram 負面實證有效域收窄至此域（多向交錯無通道可救；樹形域不適用負面條）
 
 ## 換形態設計招（比換工具有效）
 
 1. **組件圖 → sequence**：多數「組件關係」真實問題是「執行時誰呼叫誰」＝時序，畫成 sequence 立刻有通道
 2. **自由 flowchart → 分層**：節點按依賴方向分 layer/subgraph（HTML 塊 grid）——分層架構圖的本質
-3. **class 圖 → 表格**：繼承/組合列欄位
+3. **class 圖多向交錯 → 表格＋刪邊記載**：繼承/組合列欄位；樹形繼承域不降級（classDiagram 直出，見三層判準）
 4. **低價值邊先砍**：backward/交叉邊移除、語義沉到 sublabel 或 cards，比硬繞 via 便宜
 
 ## 跨載體共性慣例池（多弧同構：圖表渲染線/kchart 線/事件分析線各自獨立收斂）

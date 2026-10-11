@@ -23,6 +23,10 @@ when_to_use: "Illustrate technical concepts, architecture, or processes. Also st
 
 **執行鐵律**：Console 禁止 Mermaid 語法。MD 禁止 ASCII 圖表。HTML 是**寫檔模式**——僅明示 `html` 或增益判斷時觸發；Console 語境明示 html = 切換輸出模式（檔案交付＋路徑回報），永不 inline 渲染；渲染工具缺場 → 降級 MD Mermaid 並回報（細節見 illustrate-html-mode.md）。違反 = 指令執行失敗。
 
+**載體順序**：artifact type 判斷先於 output carrier——先辨識關係語義選 SA/SD artifact，再選輸出載體（console／md／svg／html）。user 請求的結構有 SA/SD 標準圖形時，標準圖優先進候選；輸出載體容不下而降級（如 Console 出不了 classDiagram）須**顯式回報 user**——禁默默吞掉標準圖。判準單一源見 [diagram-selection](../diagram-selection/SKILL.md)。
+
+**class artifact 投影**：Console＝**縮排樹**（縮排表 parent→child，非 mermaid 原始碼——上條 Console 禁 mermaid 不變）；md＝classDiagram 檔＋回報路徑（落點見下方「MD 檔案自動儲存」）；svg 預渲染＝opt-in 增益。
+
 ## 核心：4 mode（從使用者 use case 歸納，非內部能力）
 
 > /illustrate 從**使用者日常開發 use case** 歸納 4 個高層 mode（意圖）。**mode = 意圖，能力 = 手段（跨 mode 共用）** — 能力（city map / 假設驗證 / diff / SA/SD artifact）服務 mode，不是 mode 本身（同一能力可服務多 mode）。
@@ -72,6 +76,7 @@ use cases + 情境矩陣分析（服務 mode A/C 的**步驟**）見 [illustrate
 - **自定義**：`--output <路徑>`
 - **檔名規則**：單檔案 → `{name}-檔案分析.md`；目錄 → `{dir}-架構分析.md`；主題 → `{topic}-圖解說明.md`
 - **備份**：目標檔案存在時加時間戳
+- **classDiagram 檔落點**：durable＝`ai-analysis/reports/`（隨主題報告沉澱）；ephemeral＝`.agent-tmp/illustrate/`（一次性判讀）——落檔後回報完整路徑
 
 ---
 
