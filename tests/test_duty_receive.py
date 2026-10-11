@@ -30,6 +30,9 @@
 - policy 載入 governance/dutymail-processor.toml（default-deny 表；未知
   鍵／壞形 fail-loud）；代碼層底線：solicit 恆 surface、未列 class 恆
   surface（config 無法放寪）。
+- 跨址 custody fence（AIR-310）：本址放行（holder 全序列照常）／他址
+  禁消費（runner 零呼叫、CLI exit 2）／consume_addresses 缺席
+  fail-closed（deny-all——含直構 Policy 空集）。
 - governance 接線：zcode/cc 註冊雙事件各一條＋manifest scripts 登記。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
@@ -451,6 +454,82 @@ class TestPolicy:
             "usage-liveness": ("auto", frozenset({"inform", "solicit"})),
         })
         assert policy.allows("usage-liveness", "solicit") is False
+
+
+# ── 跨址 custody fence（AIR-310）：授權集放行／他址禁消費／缺席 fail-closed ──
+
+
+class TestCustodyFence:
+    """跨址 custody fence 雙層：CLI 入口 arg 驗證（exit 2）＋
+    process_once bind 前核心閘（CustodyFenceError）。oracle：他址輸入
+    runner 呼叫數＝0——holder status/bind/prepare/ack 全序列不得開始、
+    state 不動。"""
+
+    FOREIGN = "delegate-bridge-marshal"  # 事故實址——他 repo 信箱
+
+    def test_own_address_passes_full_cycle(self, state_file):
+        """本址（授權集內）放行——holder 全序列照常（空批＝([], None)）。"""
+        runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
+        lines, commit = mod.process_once(
+            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+        )
+        assert lines == [] and commit is None
+        assert len(runner.calls) == 3  # status＋bind＋prepare——fence 未擋
+
+    def test_foreign_address_fenced_zero_face_calls(self, state_file):
+        """他址＝他 repo custody——bind 前核心閘拒絕：runner 零呼叫、
+        state 不動（禁 status/bind/prepare/ack 全序列）。"""
+        runner = _seq_runner([])  # 越閘即 AssertionError——序列不得開始
+        with pytest.raises(mod.CustodyFenceError, match="他 repo custody"):
+            mod.process_once(
+                self.FOREIGN, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert runner.calls == []
+        assert not os.path.exists(state_file)
+
+    def test_cli_foreign_address_exit2(self, tmp_path, capsys):
+        """CLI 入口 arg 驗證：他址 exit 2＋「禁消費」訊息（閘在
+        state/sink 建構前——零副作用退出）。"""
+        rc = mod.main([
+            "process", "--address", self.FOREIGN,
+            "--session-id", "sess-cli", "--config", REAL_CONFIG,
+            "--state-dir", str(tmp_path),
+        ])
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "address 屬他 repo custody——禁消費" in err
+        assert self.FOREIGN in err
+
+    def test_missing_allowlist_fail_closed(self, tmp_path):
+        """consume_addresses 鍵缺席＝ConfigError（deny-all fail-closed
+        ——禁推導遞補；配置錯誤要大聲）。"""
+        p = tmp_path / "c.toml"
+        p.write_text(
+            '[[class_rule]]\nclass = "usage-liveness"\n'
+            'auto_intent = ["inform"]\naction = "auto"\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(mod.ConfigError, match="consume_addresses"):
+            mod.load_policy(str(p))
+
+    def test_rogue_policy_default_deny_all(self, state_file):
+        """直構 Policy（繞過 load_policy）＝空授權集＝deny-all——
+        fail-closed 不因繞過載入而失守。"""
+        rogue = mod.Policy(
+            {"usage-liveness": ("auto", frozenset({"inform"}))}
+        )
+        runner = _seq_runner([])
+        with pytest.raises(mod.CustodyFenceError):
+            mod.process_once(ADDR, runner, rogue, state_file, now_us=NOW_US)
+        assert runner.calls == []
+
+    def test_real_config_allowlist_in_place(self):
+        """真實 config 授權集在場（鍵＋事故對址他址排除）——鎖單一源。"""
+        policy = _policy()
+        assert policy.consume_addresses == frozenset(
+            {"ai-guide-marshal", "ai-guide-exceptions"}
+        )
+        assert self.FOREIGN not in policy.consume_addresses
 
 
 # ── triage：default-deny 判定＋機械驗證────────────────────────────────

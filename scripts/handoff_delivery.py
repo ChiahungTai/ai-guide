@@ -15,7 +15,10 @@
   conventions.md 節一已凍結，審計錨條款遷該檔）。
 - 已知 session 第一路＝scbus send；未知／歧義／self／ended／
   discovery-unavailable fail-closed 降 manual paste fallback。
-- scbus 直送＝outward action（AI 發起逐次授權，rules/outward-action-consent）；
+- scbus 直送＝outward action（AI 發起逐次授權，rules/outward-action-consent；
+  豁免面＝同 rule「卡級討論授權」節——僅限 grant 條件成立的討論信
+  （class 非 handoff／work-order／patrol），handoff 直送不在豁免內、
+  維持逐次授權——AIR-310 指針同步）；
   跨 ownership envelope 的 delivery body 必帶 consent.evidence（AUTH 指針）。
 - 訊息結構欄對齊 governance/conventions.md 節一 v2（want/card_ref/
   correlation_id/expires_at/artifact_pointers）；msg_type 四值枚舉不涵蓋

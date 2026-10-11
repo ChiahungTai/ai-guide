@@ -31,8 +31,18 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   `release_holder`（codex/grok SessionEnd hook 接線）。
 - holder state（bearer token）存 per-session 檔 0600、atomic 寫、
   路徑可注入（測試 fake state，不碰真 store）。
+- 跨址 custody fence（AIR-310）：process 只准消費 consume_addresses
+  授權集（單一源＝governance/dutymail-processor.toml；exact match）
+  所列 address——requested address 不在清單＝address 屬他 repo
+  custody，holder 全序列（status/bind/prepare/ack）不得開始：
+  CLI 入口 arg 驗證 exit 2＋process_once bind 前核心閘
+  （CustodyFenceError fail-closed——gate 不下沉 face wrapper，唯讀
+  跨址診斷不受此閘）；授權集鍵缺席＝ConfigError deny-all。新信箱
+  開設時同步該清單。
 - v1 絕不主動送信：本檔不觸達 send／replies 面（回信＝outward，須
-  逐次 AUTH，非本處理器範圍）。
+  逐次 AUTH，非本處理器範圍；授權面豁免與條件＝rules/
+  outward-action-consent.md「卡級討論授權」節——AIR-308 deferred
+  指針同步）。
 
 dutymail typed contract（3.1.0 凍結）：每命令恰一個 JSON；成功＝
 stdout `{"schemaVersion":1,"ok":true,"result":{...}}`；typed failure＝
@@ -124,6 +134,14 @@ MINUTES_US = 60_000_000
 class ConfigError(RuntimeError):
     """分診表（governance/dutymail-processor.toml）缺席或壞形——
     fail-loud exit 3（不靜默全 surface：配置錯誤要大聲）。"""
+
+
+class CustodyFenceError(RuntimeError):
+    """跨址 custody fence（AIR-310）——requested address 不在
+    consume_addresses 授權集（單一源＝governance/dutymail-processor.
+    toml）＝address 屬他 repo custody：holder 全序列（status/bind/
+    prepare/ack）不得開始，禁消費（fail-closed）。CLI 入口 arg 驗證
+    exit 2；process_once 起手（ensure_holder 前）是核心閘。"""
 
 
 class DutymailFaceError(RuntimeError):
@@ -722,10 +740,16 @@ def reset_binary_miss(session_id, base_dir=None):
 class Policy:
     """default-deny 判定。三條代碼層底線（表無法放寪）：solicit 恆
     deny、未列 class 恒 deny、恆人工名單 class（ALWAYS_SURFACE_CLASSES）
-    恒 deny；列為 auto 需 intent 在該 class 的 auto_intent 內。"""
+    恒 deny；列為 auto 需 intent 在該 class 的 auto_intent 內。
 
-    def __init__(self, rules):
+    consume_addresses＝跨址 custody fence 授權集（AIR-310；exact
+    match）——duty_receive process 只准消費清單所列 address。直構
+    Policy 未給＝空集＝deny-all（fail-closed：繞過 load_policy 的
+    caller 消費不到任何 address）。"""
+
+    def __init__(self, rules, consume_addresses=frozenset()):
         self._rules = rules  # class -> (action, frozenset(auto_intent))
+        self.consume_addresses = frozenset(consume_addresses)
 
     def allows(self, klass, intent):
         if intent == "solicit":
@@ -741,7 +765,9 @@ class Policy:
 
 def load_policy(path):
     """載入分診表 → Policy。缺席／TOML 壞形／未知鍵／壞值一律
-    ConfigError（呼叫端 fail-loud exit 3——不靜默全 surface）。"""
+    ConfigError（呼叫端 fail-loud exit 3——不靜默全 surface）。
+    consume_addresses（跨址 custody fence 授權集）為必填鍵：缺席＝
+    ConfigError deny-all（fail-closed，不推導不遞補）。"""
     try:
         with open(path, "rb") as fh:
             doc = tomllib.load(fh)
@@ -749,10 +775,24 @@ def load_policy(path):
         raise ConfigError(f"分診表缺席：{path}") from exc
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ConfigError(f"分診表解析失敗（{path}）：{exc}") from exc
-    extra = set(doc) - {"class_rule"}
+    extra = set(doc) - {"class_rule", "consume_addresses"}
     if extra:
         raise ConfigError(
-            f"分診表未知頂層鍵：{sorted(extra)}（僅允許 class_rule）"
+            f"分診表未知頂層鍵：{sorted(extra)}"
+            f"（僅允許 class_rule、consume_addresses）"
+        )
+    if "consume_addresses" not in doc:
+        raise ConfigError(
+            "consume_addresses 缺席——跨址 custody fence 授權集必填"
+            "（缺席＝deny-all；新信箱開設時同步本清單）"
+        )
+    addrs = doc["consume_addresses"]
+    if (
+        not isinstance(addrs, list)
+        or not all(isinstance(x, str) and x for x in addrs)
+    ):
+        raise ConfigError(
+            "consume_addresses 應為非空字串陣列（address exact match）"
         )
     rows = doc.get("class_rule", [])
     if not isinstance(rows, list):
@@ -802,7 +842,7 @@ def load_policy(path):
         if klass in rules:
             raise ConfigError(f"class {klass} 重複定義")
         rules[klass] = (action, frozenset(intents))
-    return Policy(rules)
+    return Policy(rules, addrs)
 
 
 # ── triage：default-deny 分診（純函式）──────────────────────────────
@@ -1226,7 +1266,20 @@ def process_once(address, runner, policy, state_file,
     raise＝commit raise、ack 不達（寧重不漏——推進失敗仍 ack＝
     「已消費但帳面恆停 received」假陽性 stale）。None（預設）＝不
     推進，既有行為不變。
+
+    跨址 custody fence（AIR-310）：起手即驗 address ∈ policy.
+    consume_addresses（holder bind 前核心閘——任何 holder status/
+    bind/prepare/ack 之前）；不在授權集＝CustodyFenceError fail-
+    closed，runner 零呼叫。閘只圈 process_once（custody 邊界），不
+    下沉 _call／face wrapper——唯讀跨址（status/events/wait 診斷）
+    是合法行為，禁誤傷。
     """
+    if address not in policy.consume_addresses:
+        raise CustodyFenceError(
+            f"address 屬他 repo custody——禁消費：{address}"
+            f"（不在 consume_addresses 授權集；單一源＝governance/"
+            f"dutymail-processor.toml）"
+        )
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
     st, invalidate_next = _resolve_legacy_batch(
@@ -1381,6 +1434,17 @@ def main(argv=None) -> int:
     except ConfigError as exc:
         print(f"[{HOOK_TAG}] config fail-loud：{exc}", file=sys.stderr)
         return 3
+    # 跨址 custody fence 第一層（AIR-310）：入口 arg 驗證——requested
+    # address 不在授權集＝他 repo custody，禁消費（第二層＝
+    # process_once bind 前核心閘；此處先擋，零副作用退出）。
+    if args.address not in policy.consume_addresses:
+        print(
+            f"[{HOOK_TAG}] address 屬他 repo custody——禁消費："
+            f"{args.address}（不在 consume_addresses 授權集——"
+            f"{args.config}；新信箱開設時同步該清單）",
+            file=sys.stderr,
+        )
+        return 2
     sfile = state_path(args.session_id, args.state_dir)
     recv_sink, res_sink = (
         (None, None) if args.no_disposition_ledger
@@ -1407,6 +1471,10 @@ def main(argv=None) -> int:
             return 0
         print(f"[{HOOK_TAG}] dutymail face 失敗：{exc}", file=sys.stderr)
         return 1
+    except CustodyFenceError as exc:
+        # 深防線（常態不可達——入口已擋）：閘語義恆 exit 2。
+        print(f"[{HOOK_TAG}] {exc}", file=sys.stderr)
+        return 2
     except BinaryMissing as exc:
         # AIR-274 M1：環境壞 typed 訊息＋exit 1（不再 generic traceback）。
         print(f"[{HOOK_TAG}] binary missing：{exc}", file=sys.stderr)

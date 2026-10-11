@@ -26,6 +26,16 @@
 #                 行列空 list）
 #   action      = "auto" | "surface"
 
+# ── 跨址 custody fence 授權集（AIR-310）──────────────────────────────
+#
+# duty_receive process 只准消費本清單所列 address（exact match）——
+# requested address 不在清單＝address 屬他 repo custody，禁 status/
+# bind/prepare/ack 全序列（CLI 入口 exit 2＋process_once bind 前核心
+# 閘，fail-closed）。**新信箱開設時同步本清單**；鍵缺席＝載入即
+# ConfigError（deny-all——配置錯誤要大聲）。語義＝「duty 消費面
+# 授權」，非「本 repo 擁有的位址」——兩者不必重合。
+consume_addresses = ["ai-guide-marshal", "ai-guide-exceptions"]
+
 [[class_rule]]
 class = "usage-liveness"
 auto_intent = ["inform"]
