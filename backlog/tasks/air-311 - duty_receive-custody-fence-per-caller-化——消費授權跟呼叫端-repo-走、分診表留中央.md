@@ -1,12 +1,14 @@
 ---
 id: AIR-311
 title: duty_receive custody fence per-caller 化——消費授權跟呼叫端 repo 走、分診表留中央
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 14:33'
 updated_date: '2026-10-11 14:34'
 labels: []
 dependencies: []
+references:
+  - scripts/duty_receive.py
 ordinal: 296000
 ---
 
