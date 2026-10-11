@@ -65,7 +65,7 @@ auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest �
 ——class 計數＋envelope_id 前 3、無 body，全文判讀面＝SC INBOX〔B′ 解凍 2026-10-06，
 SC-305 上線——surface 項照樣計入 ack 前處置，差別只是不注入全文〕）→ ack（**絕不
 flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
-（terminal status 只是 fact）。**v1 不主動送信**（send/replies＝outward，逐次 AUTH）。
+（terminal status 只是 fact）。處理器不自發信（處理面與送信分離）；**送信＝outward、首發逐次 AUTH**——卡級討論授權豁免＝[outward rule](../../rules/outward-action-consent.md)「卡級討論授權」節（grant 載體＝卡、前提與上限見該條）。
 
 ## class 封閉詞彙（body machine-header——AIR-283）
 

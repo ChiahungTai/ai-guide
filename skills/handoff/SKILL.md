@@ -154,7 +154,7 @@ send stdout 七鍵 receipt 中 `envelopeId`／`acceptanceSeq`＋`envelopeSha256`
 
 user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session mailbox，授權面重新設計——**不為機械化拆安全閘**：
 
-- **dutymail 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權
+- **dutymail 直送＝outward action**（另一 session 在 undo 前可觀察到）：AI 發起、**逐次授權**——每次 send 前須 user 明確授權並附 `AUTH: user said "<their exact words>"`。定義源＝[rules/outward-action-consent](../../rules/outward-action-consent.md)（本節是消費引指非第二定義源）；skill 條文、交接任務本身、對方在 registry 可見，都不構成授權。**卡級討論授權**（同卡討論信執續免逐次）例外＝outward rule「卡級討論授權」節——本 skill 直送標的屬 handoff class＝**排除面**，恆逐次
 - **跨 ownership envelope**（target `workspace_root` ≠ 本側，即 resolve-target 的 `cross_ownership`）：delivery body 必帶 consent 欄——`"consent": {"granted_by": "user", "evidence": "<AUTH 指針>"}`（`build-body --cross-ownership` 無 `--consent-evidence` 即 fail loud）。欄位語義＝審計註記：**transport consent ≠ mutation authority**，送達≠取得對方寫入權，承接後 mutation 仍歸對方主權（[dutymail-roundtrip.md](../_common/dutymail-roundtrip.md)「審計錨正典」節 evidence 指向條款——AIR-283 起遷此）
 - **同 ownership**：gate 不豁免——直送仍是 outward，逐次 AUTH 照走；僅 body 免 consent 欄
 
@@ -176,7 +176,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - **已決策（為何選 X 不選 Y）必含**（決策脈絡是最常漏的）
 - 嵌 code 必須讀回 commit 版本（drift 防護）
 - 跨 provider 必須跑機密檢查
-- 直送必過 consent gate：每次 `dutymail send` 逐次 AUTH（Phase 5；跨 ownership 另帶 consent 欄）
+- 直送必過 consent gate：每次 `dutymail send` 逐次 AUTH（Phase 5；跨 ownership 另帶 consent 欄；handoff class＝卡級討論授權**排除面**，討論信執續豁免定義源＝outward rule 同名節）
 - 直送後照 completion 四段記錄送達狀態（receipt／ACK 證據進交接卡 notes）
 
 ### 禁止
@@ -185,7 +185,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - ❌ 把用戶沒交代的決策硬擠進去
 - ❌ 跨 provider 未跑機密檢查就產出
 - ❌ 處理 usage resume（那是 `/at`）
-- ❌ 無 user 逐次授權的 `dutymail send`（outward action；skill 條文≠授權）
+- ❌ 無 user 逐次授權的 `dutymail send`（outward action；skill 條文≠授權；handoff 直送域恆逐次——卡級討論授權的討論信不走本 skill，正典＝outward rule 同名節）
 - ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
 - ❌ discovery exit 3（`source_unavailable`／`source_malformed`／`whoami_unavailable`／`whoami_malformed`）仍嘗試 dutymail 直送——降 manual paste fallback（reason=`discovery-unavailable`，Phase 5 consumer contract）
 - ❌ 交接對象為排程／autonomous session 時，把 holder bind／`duty_receive` 處置面列入交接指示（真實案例：cron session 搶章吃掉催辦信——holder 態觀察〔status 盤點〕可帶，bind／收信處置指示禁入）
