@@ -1,7 +1,7 @@
 ---
 id: AIR-307
 title: dutymail 唯讀 face 形態陷阱防呆——faces 表形態一行
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 03:06'
 updated_date: '2026-10-11 03:10'
@@ -35,10 +35,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 faces 表形態一行落地（rg 命中 canonicalEnvelope 形態錨）
-- [ ] #2 五維檢查通過（術語照 bridge 輸出原樣 canonicalEnvelope/reply_type；無元資訊——as-of 屬 state 快照例外）
-- [ ] #3 drift 掃描通過（rg canonicalEnvelope|reply_type 掃 skills/ rules/ 引用面——handoff 語義引用無衝突）
-- [ ] #4 bridge 面 upstream work-order 已寄（envelope ca058d9d…）——回信對帳由收信鏈承接，非本卡阻塞
+- [x] #1 faces 表形態一行落地（rg 命中 canonicalEnvelope 形態錨）
+- [x] #2 五維檢查通過（術語照 bridge 輸出原樣 canonicalEnvelope/reply_type；無元資訊——as-of 屬 state 快照例外）
+- [x] #3 drift 掃描通過（rg canonicalEnvelope|reply_type 掃 skills/ rules/ 引用面——handoff 語義引用無衝突）
+- [x] #4 bridge 面 upstream work-order 已寄（envelope ca058d9d…）——回信對帳由收信鏈承接，非本卡阻塞
 <!-- AC:END -->
 
 ## Implementation Notes
