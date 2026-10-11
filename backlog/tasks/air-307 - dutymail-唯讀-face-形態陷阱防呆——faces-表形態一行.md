@@ -4,7 +4,7 @@ title: dutymail 唯讀 face 形態陷阱防呆——faces 表形態一行
 status: Done
 assignee: []
 created_date: '2026-10-11 03:06'
-updated_date: '2026-10-11 03:10'
+updated_date: '2026-10-11 04:11'
 labels: []
 dependencies: []
 ordinal: 292000
@@ -45,6 +45,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 落地 receipt（審查閘四欄）：classification=ordinary（消費方法防呆，非 decision/authority/gate/authorization/acceptance 語義變更）／review=獨立 context×2（glm-5.3 job-mv38jdo8＋codex chatgpt-web/high job-mv38jdra，條文草案 Q4 逐字審——意見落檔 .agent-tmp/improve-20261011/opinion-shape-*.md；超越 ordinary 最低線）／session-freshness=fresh（instruction-writing 本 session 載入後編輯）／deployment-surfaces=healthy（skills 母鏈 symlink live 即生效；bundle 四端不含 _common＝N/A）。bridge 面對帳 deferred：work-order envelope ca058d9d…（seq 67）待 delegate-bridge-marshal 回信——由收信鏈承接，非本卡阻塞。
+
+bridge 回信（db109-completed-reply-001，3.10.3 release）：①replyType surface＋②face schema docs 已落地——本卡「形態一行」錨點描述 3.10.2 現況仍準確（registry pin 未升）；plugin 升 3.10.3 時須複查錨點（reply_type 將移 item 層、docs 面新增）——升級日動作掛 maintaine 巡檢。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
