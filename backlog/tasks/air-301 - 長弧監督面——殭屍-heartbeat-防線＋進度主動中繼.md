@@ -1,10 +1,10 @@
 ---
 id: AIR-301
 title: 長弧監督面——殭屍 heartbeat 防線＋進度主動中繼
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:26'
 labels: []
 dependencies: []
 ordinal: 30

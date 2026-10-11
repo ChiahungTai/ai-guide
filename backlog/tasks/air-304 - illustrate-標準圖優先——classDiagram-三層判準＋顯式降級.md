@@ -1,10 +1,10 @@
 ---
 id: AIR-304
 title: illustrate 標準圖優先——classDiagram 三層判準＋顯式降級
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:26'
 labels: []
 dependencies: []
 ordinal: 40

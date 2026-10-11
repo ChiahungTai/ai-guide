@@ -1,10 +1,10 @@
 ---
 id: AIR-306
 title: 派工腿衛生——reviewer 隔離 preflight＋guard 恢復指引＋scope diff 宣告
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:20'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:26'
 labels: []
 dependencies: []
 ordinal: 60
