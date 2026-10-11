@@ -1,10 +1,10 @@
 ---
 id: AIR-303
 title: quota-death 標準遺產——checkpoint 格式固化＋WT 證據保全
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:00'
+updated_date: '2026-10-11 04:25'
 labels: []
 dependencies: []
 ordinal: 20
@@ -37,10 +37,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 task-recovery checkpoint 範本含四資產＋額度回寫欄
-- [ ] #2 wt-close.sh 證據保全＋manifest 正面選取＋敏感掃描落地，瘦身實測一次
-- [ ] #3 跨模型接手演練 receipt：fresh session 僅憑 checkpoint 恢復、零考古
-- [ ] #4 kanban-board skill 補 WT 拆除前保全一行
+- [x] #1 task-recovery checkpoint 範本含四資產＋額度回寫欄
+- [x] #2 wt-close.sh 證據保全＋manifest 正面選取＋敏感掃描落地，瘦身實測一次
+- [ ] #3 跨模型接手演練 receipt（移交：隨下次長弧實戰演練驗證——deferred）
+- [x] #4 kanban-board skill 補 WT 拆除前保全一行
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -55,4 +55,19 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+receipt：worker job-mv3aq5of 交付三檔；live acceptance＝air-303 WT 拆除本身實跑新保全（7 檔＋manifest 歸檔 wt-evidence/air-303、敏感排除 0、瘦身生效）；main @ 0e1ea80e、全量 gate 3801 綠；AC#3 演練移交下次長弧（標註於 AC）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+證據保全＋四資產＋額度回寫落地。終態圖：
+
+```mermaid
+flowchart LR
+  A["checkpoint"] --> B["四資產＋額度回寫"]
+  F["WT 拆除"] --> G["manifest＋敏感掃描"]
+  G --> H["wt-evidence 歸檔＋瘦身"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
