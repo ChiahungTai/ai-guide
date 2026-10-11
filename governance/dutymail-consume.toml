@@ -1,0 +1,12 @@
+# ai-guide 的 duty 消費授權面（AIR-311 per-caller custody fence）。
+#
+# duty_receive 以呼叫端 repo root（cwd `git rev-parse --show-toplevel`
+# realpath）解析本檔——本檔須住 repo root 的 governance/ 下，各 repo
+# 主權自持。consume_addresses＝本 repo 值星准予消費的 address 清單
+# （exact match）；檔缺席／鍵缺席／壞形＝ConfigError deny-all
+# fail-loud（不消費——寧擋不放，禁 fallback 中央清單）。語義＝「duty
+# 消費面授權」，非「本 repo 擁有的位址」——兩者不必重合。
+consume_addresses = [
+    "ai-guide-marshal",
+    "ai-guide-exceptions",
+]

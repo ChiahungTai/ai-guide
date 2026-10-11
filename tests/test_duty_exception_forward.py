@@ -60,7 +60,9 @@ def _canonical(eid="018f-aaa", klass="handoff", intent="solicit",
 
 
 def _policy():
-    return duty_receive.load_policy(REAL_CONFIG)
+    return duty_receive.load_policy(
+        REAL_CONFIG, caller_root=str(REPO_ROOT)
+    )
 
 
 def _ok(result):

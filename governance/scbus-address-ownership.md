@@ -72,6 +72,9 @@
 > session 開場讀本節，STATE.md 1001 起載指針。
 > 通用 template：所有 repo 一體適用；他 repo 命名（各 `<repo>-marshal`）已符合，
 > convention 采納隨各自觸點跟進——不發動跨 repo 搬遷，採納細節由各 repo 自主。
+> duty 消費 custody 授權（AIR-311）＝per-caller：duty_receive 只消費呼叫端 repo
+> 自持 `governance/dutymail-consume.toml` 所列 address（cwd git toplevel 解析；
+> ai-guide 份在本 repo）——class×action 分診表仍中央（dutymail-processor.toml）。
 
 ### Repo address cardinality（一 repo 一門牌）
 

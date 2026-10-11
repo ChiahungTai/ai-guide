@@ -338,7 +338,8 @@ def main(argv=None, runner=None, policy_path=None) -> int:
     try:
         if args.command == "decision":
             policy = duty_receive.load_policy(
-                policy_path if policy_path is not None else args.config
+                policy_path if policy_path is not None else args.config,
+                caller_root=duty_receive._repo_root(),
             )
             item = {
                 "envelopeId": None,
@@ -351,7 +352,8 @@ def main(argv=None, runner=None, policy_path=None) -> int:
             print(json.dumps({"forward": decision}, ensure_ascii=False))
         elif args.command == "forward":
             policy = duty_receive.load_policy(
-                policy_path if policy_path is not None else args.config
+                policy_path if policy_path is not None else args.config,
+                caller_root=duty_receive._repo_root(),
             )
             decision, acceptance = forward(
                 args.source_address, _read_canonical(args.canonical_file),

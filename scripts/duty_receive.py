@@ -31,14 +31,17 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   `release_holder`（codex/grok SessionEnd hook 接線）。
 - holder state（bearer token）存 per-session 檔 0600、atomic 寫、
   路徑可注入（測試 fake state，不碰真 store）。
-- 跨址 custody fence（AIR-310）：process 只准消費 consume_addresses
-  授權集（單一源＝governance/dutymail-processor.toml；exact match）
-  所列 address——requested address 不在清單＝address 屬他 repo
-  custody，holder 全序列（status/bind/prepare/ack）不得開始：
-  CLI 入口 arg 驗證 exit 2＋process_once bind 前核心閘
-  （CustodyFenceError fail-closed——gate 不下沉 face wrapper，唯讀
-  跨址診斷不受此閘）；授權集鍵缺席＝ConfigError deny-all。新信箱
-  開設時同步該清單。
+- 跨址 custody fence（AIR-310；AIR-311 per-caller 化）：process 只准
+  消費呼叫端 repo 授權的 address——custody 授權集 consume_addresses
+  per-caller 解析＝呼叫端 repo root（cwd `git rev-parse --show-toplevel`
+  realpath）自持的 governance/dutymail-consume.toml；非 git cwd／檔
+  缺席／鍵缺席＝ConfigError deny-all fail-loud（無法判定授權面＝不
+  消費）。class×action 分診表留中央（script root 的
+  dutymail-processor.toml，triage-only）。requested address 不在呼叫
+  端清單＝address 屬他 repo custody，holder 全序列（status/bind/
+  prepare/ack）不得開始：CLI 入口 arg 驗證 exit 2＋process_once bind
+  前核心閘（CustodyFenceError fail-closed——gate 不下沉 face wrapper，
+  唯讀跨址診斷不受此閘）。新信箱開設時同步該 repo 的 consume 檔。
 - v1 絕不主動送信：本檔不觸達 send／replies 面（回信＝outward，須
   逐次 AUTH，非本處理器範圍；授權面豁免與條件＝rules/
   outward-action-consent.md「卡級討論授權」節——AIR-308 deferred
@@ -137,11 +140,12 @@ class ConfigError(RuntimeError):
 
 
 class CustodyFenceError(RuntimeError):
-    """跨址 custody fence（AIR-310）——requested address 不在
-    consume_addresses 授權集（單一源＝governance/dutymail-processor.
-    toml）＝address 屬他 repo custody：holder 全序列（status/bind/
-    prepare/ack）不得開始，禁消費（fail-closed）。CLI 入口 arg 驗證
-    exit 2；process_once 起手（ensure_holder 前）是核心閘。"""
+    """跨址 custody fence（AIR-310；AIR-311 per-caller 化）——requested
+    address 不在呼叫端 consume_addresses 授權集（per-caller 單一源＝
+    <呼叫端 repo>/governance/dutymail-consume.toml）＝address 屬他
+    repo custody：holder 全序列（status/bind/prepare/ack）不得開始，
+    禁消費（fail-closed）。CLI 入口 arg 驗證 exit 2；process_once
+    起手（ensure_holder 前）是核心閘。"""
 
 
 class DutymailFaceError(RuntimeError):
@@ -742,10 +746,11 @@ class Policy:
     deny、未列 class 恒 deny、恆人工名單 class（ALWAYS_SURFACE_CLASSES）
     恒 deny；列為 auto 需 intent 在該 class 的 auto_intent 內。
 
-    consume_addresses＝跨址 custody fence 授權集（AIR-310；exact
-    match）——duty_receive process 只准消費清單所列 address。直構
-    Policy 未給＝空集＝deny-all（fail-closed：繞過 load_policy 的
-    caller 消費不到任何 address）。"""
+    consume_addresses＝跨址 custody fence 授權集（AIR-311 per-caller；
+    exact match）——duty_receive process 只准消費呼叫端 repo 清單所列
+    address（單一源＝<呼叫端 repo>/governance/dutymail-consume.toml，
+    經 load_policy 兩源化載入）。直構 Policy 未給＝空集＝deny-all
+    （fail-closed：繞過 load_policy 的 caller 消費不到任何 address）。"""
 
     def __init__(self, rules, consume_addresses=frozenset()):
         self._rules = rules  # class -> (action, frozenset(auto_intent))
@@ -763,28 +768,71 @@ class Policy:
         return action == "auto" and intent in auto_intents
 
 
-def load_policy(path):
-    """載入分診表 → Policy。缺席／TOML 壞形／未知鍵／壞值一律
-    ConfigError（呼叫端 fail-loud exit 3——不靜默全 surface）。
-    consume_addresses（跨址 custody fence 授權集）為必填鍵：缺席＝
-    ConfigError deny-all（fail-closed，不推導不遞補）。"""
+# ── policy 兩源化（AIR-311）：分診表讀 script root、custody 讀 caller root ──
+
+# custody 授權檔相對呼叫端 repo root 的路徑（per-caller 單一源）
+CONSUME_RELPATH = os.path.join("governance", "dutymail-consume.toml")
+# caller root 解析逾時（git rev-parse 正常毫秒級；上限防掛死熱路徑
+# ——收斂在 hook timeoutMs 預算內，病態 git 掛死不佔滿 hook 額度）
+CALLER_ROOT_TIMEOUT_SECONDS = 3
+
+
+def _caller_root(cwd=None):
+    """呼叫端 repo root（AIR-311 per-caller custody 解析）：以 cwd 跑
+    `git rev-parse --show-toplevel` 取 toplevel（realpath 規範化——
+    macOS /tmp 符號連結面）。失敗／非 git 目錄＝None → custody
+    deny-all fail-loud（無法判定呼叫端 repo＝不消費——寧擋不放）。
+    cwd 可注入（測試）；預設＝process cwd（CLI 面＝呼叫 shell、hook
+    面＝harness project dir）。"""
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=cwd if cwd is not None else os.getcwd(),
+            timeout=CALLER_ROOT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    root = proc.stdout.strip()
+    return os.path.realpath(root) if root else None
+
+
+def _load_consume_addresses(caller_root):
+    """custody 授權集載入（per-caller）：讀
+    <caller_root>/governance/dutymail-consume.toml 的 consume_addresses。
+    caller_root 判定不能（非 git cwd／git rev-parse 失敗）、檔缺席、
+    鍵缺席、壞形＝ConfigError deny-all fail-loud（語義平移 AIR-310
+    鍵缺席裁定——配置錯誤要大聲，不靜默放行、禁 fallback 中央清單）。"""
+    if not caller_root:
+        raise ConfigError(
+            "無法判定呼叫端 repo（非 git cwd／git rev-parse 失敗）＝不消費"
+            "（custody deny-all fail-loud）"
+        )
+    path = os.path.join(caller_root, CONSUME_RELPATH)
     try:
         with open(path, "rb") as fh:
             doc = tomllib.load(fh)
     except FileNotFoundError as exc:
-        raise ConfigError(f"分診表缺席：{path}") from exc
+        raise ConfigError(
+            f"custody 授權檔缺席（per-caller deny-all）：{path}——本 repo"
+            "未設 duty 消費授權面＝不消費（provision 先行）"
+        ) from exc
     except (OSError, tomllib.TOMLDecodeError) as exc:
-        raise ConfigError(f"分診表解析失敗（{path}）：{exc}") from exc
-    extra = set(doc) - {"class_rule", "consume_addresses"}
+        raise ConfigError(f"custody 授權檔解析失敗（{path}）：{exc}") from exc
+    extra = set(doc) - {"consume_addresses"}
     if extra:
         raise ConfigError(
-            f"分診表未知頂層鍵：{sorted(extra)}"
-            f"（僅允許 class_rule、consume_addresses）"
+            f"custody 授權檔未知頂層鍵：{sorted(extra)}"
+            f"（僅允許 consume_addresses）"
         )
     if "consume_addresses" not in doc:
         raise ConfigError(
-            "consume_addresses 缺席——跨址 custody fence 授權集必填"
-            "（缺席＝deny-all；新信箱開設時同步本清單）"
+            "consume_addresses 缺席——custody 授權集必填（缺席＝deny-all；"
+            "新信箱開設時同步本清單）"
         )
     addrs = doc["consume_addresses"]
     if (
@@ -793,6 +841,34 @@ def load_policy(path):
     ):
         raise ConfigError(
             "consume_addresses 應為非空字串陣列（address exact match）"
+        )
+    return frozenset(addrs)
+
+
+def load_policy(path, caller_root=None):
+    """載入分診表＋custody 授權 → Policy（AIR-311 兩源化）。
+
+    兩源：class×action 分診表讀 `path`（script root 的 processor.toml
+    ——中央基線不 fork）；custody 授權集 consume_addresses 讀呼叫端
+    repo root 自持的 governance/dutymail-consume.toml（per-caller——
+    `caller_root` 缺席＝以 cwd git toplevel 即時解析；可注入測試）。
+    任一源缺席／TOML 壞形／未知鍵／壞值一律 ConfigError（呼叫端
+    fail-loud exit 3——不靜默全 surface、不靜默放行）。processor 表已
+    triage-only：consume_addresses 鍵入本表＝未知頂層鍵（custody 授權
+    已隨各 repo 的 consume 檔走）。"""
+    try:
+        with open(path, "rb") as fh:
+            doc = tomllib.load(fh)
+    except FileNotFoundError as exc:
+        raise ConfigError(f"分診表缺席：{path}") from exc
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ConfigError(f"分診表解析失敗（{path}）：{exc}") from exc
+    extra = set(doc) - {"class_rule"}
+    if extra:
+        raise ConfigError(
+            f"分診表未知頂層鍵：{sorted(extra)}"
+            f"（triage-only 僅允許 class_rule——custody 授權集已 "
+            f"per-caller 化＝呼叫端 repo 的 {CONSUME_RELPATH}）"
         )
     rows = doc.get("class_rule", [])
     if not isinstance(rows, list):
@@ -842,7 +918,10 @@ def load_policy(path):
         if klass in rules:
             raise ConfigError(f"class {klass} 重複定義")
         rules[klass] = (action, frozenset(intents))
-    return Policy(rules, addrs)
+    consume = _load_consume_addresses(
+        _caller_root() if caller_root is None else caller_root
+    )
+    return Policy(rules, consume)
 
 
 # ── triage：default-deny 分診（純函式）──────────────────────────────
@@ -1267,18 +1346,19 @@ def process_once(address, runner, policy, state_file,
     「已消費但帳面恆停 received」假陽性 stale）。None（預設）＝不
     推進，既有行為不變。
 
-    跨址 custody fence（AIR-310）：起手即驗 address ∈ policy.
-    consume_addresses（holder bind 前核心閘——任何 holder status/
-    bind/prepare/ack 之前）；不在授權集＝CustodyFenceError fail-
-    closed，runner 零呼叫。閘只圈 process_once（custody 邊界），不
-    下沉 _call／face wrapper——唯讀跨址（status/events/wait 診斷）
-    是合法行為，禁誤傷。
+    跨址 custody fence（AIR-310；AIR-311 per-caller 授權面）：起手即驗
+    address ∈ policy.consume_addresses（holder bind 前核心閘——任何
+    holder status/bind/prepare/ack 之前；consume_addresses 載自呼叫端
+    repo 的 governance/dutymail-consume.toml，見 load_policy）；不在
+    授權集＝CustodyFenceError fail-closed，runner 零呼叫。閘只圈
+    process_once（custody 邊界），不下沉 _call／face wrapper——唯讀
+    跨址（status/events/wait 診斷）是合法行為，禁誤傷。
     """
     if address not in policy.consume_addresses:
         raise CustodyFenceError(
             f"address 屬他 repo custody——禁消費：{address}"
-            f"（不在 consume_addresses 授權集；單一源＝governance/"
-            f"dutymail-processor.toml）"
+            f"（不在呼叫端 consume_addresses 授權集；per-caller 單一源＝"
+            f"<呼叫端 repo>/{CONSUME_RELPATH}）"
         )
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
@@ -1434,14 +1514,18 @@ def main(argv=None) -> int:
     except ConfigError as exc:
         print(f"[{HOOK_TAG}] config fail-loud：{exc}", file=sys.stderr)
         return 3
-    # 跨址 custody fence 第一層（AIR-310）：入口 arg 驗證——requested
-    # address 不在授權集＝他 repo custody，禁消費（第二層＝
-    # process_once bind 前核心閘；此處先擋，零副作用退出）。
+    # 跨址 custody fence 第一層（AIR-310→AIR-311 per-caller）：入口 arg
+    # 驗證——requested address 不在呼叫端授權集＝他 repo custody，禁
+    # 消費（第二層＝process_once bind 前核心閘；此處先擋，零副作用
+    # 退出。授權集載自呼叫端 repo 的 dutymail-consume.toml——見
+    # load_policy；非 git cwd／caller 檔缺席已在 load_policy 面以
+    # ConfigError exit 3 deny-all）。
     if args.address not in policy.consume_addresses:
         print(
             f"[{HOOK_TAG}] address 屬他 repo custody——禁消費："
-            f"{args.address}（不在 consume_addresses 授權集——"
-            f"{args.config}；新信箱開設時同步該清單）",
+            f"{args.address}（不在呼叫端 consume_addresses 授權集——"
+            f"<呼叫端 repo>/{CONSUME_RELPATH}；新信箱開設時同步該 repo"
+            f"清單）",
             file=sys.stderr,
         )
         return 2

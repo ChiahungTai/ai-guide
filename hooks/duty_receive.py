@@ -165,7 +165,8 @@ def run(raw, address, runner=None, state_dir=None, config_path=None,
         try:
             policy = core.load_policy(
                 config_path if config_path is not None
-                else _default_config_path()
+                else _default_config_path(),
+                caller_root=payload.get("cwd"),
             )
         except core.ConfigError as exc:
             print(

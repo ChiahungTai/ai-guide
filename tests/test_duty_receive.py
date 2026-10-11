@@ -27,12 +27,18 @@
   exit 恆 0）、binary 在場呼叫歸零（resolve 已過——含 face 失敗；唯
   BinaryMissing 不歸零）、store-absent 不入計數、CLI typed
   exit 1。
-- policy 載入 governance/dutymail-processor.toml（default-deny 表；未知
-  鍵／壞形 fail-loud）；代碼層底線：solicit 恆 surface、未列 class 恆
-  surface（config 無法放寪）。
-- 跨址 custody fence（AIR-310）：本址放行（holder 全序列照常）／他址
-  禁消費（runner 零呼叫、CLI exit 2）／consume_addresses 缺席
-  fail-closed（deny-all——含直構 Policy 空集）。
+- policy 載入兩源（AIR-311 per-caller 化）：class×action 分診表讀
+  governance/dutymail-processor.toml（script root 中央基線；triage-only
+  ——未知鍵／壞形 fail-loud，出現 consume_addresses 鍵即未知鍵）；
+  custody 授權集讀呼叫端 repo root 自持的 governance/
+  dutymail-consume.toml（cwd git toplevel 解析、可注入；非 git cwd／
+  檔缺席／鍵缺席 fail-loud deny-all）。代碼層底線：solicit 恆 surface、
+  未列 class 恆 surface（config 無法放寪）。
+- 跨址 custody fence（AIR-310→AIR-311 per-caller）：本址放行（holder
+  全序列照常）／他址禁消費（runner 零呼叫、CLI exit 2）／founding
+  case 重鎖（ai-guide caller root 不含 delegate-bridge-marshal——請求
+  即拒，AIR-310 掃平後不設防、本卡鎖回）／非 git cwd・caller 檔缺席・
+  鍵缺席 deny-all（含直構 Policy 空集）。
 - governance 接線：zcode/cc 註冊雙事件各一條＋manifest scripts 登記。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
@@ -43,8 +49,10 @@ import io
 import json
 import os
 import stat
+import subprocess
 import sys
 import time
+import tomllib
 from types import SimpleNamespace
 
 import pytest
@@ -55,7 +63,7 @@ hook = load_module("hooks/duty_receive.py")
 ddmod = load_module("scripts/duty_disposition.py")
 
 ADDR = "ai-guide-marshal"
-REPO = "/fake/ai-guide/repo"
+REPO = str(REPO_ROOT)
 REAL_CONFIG = str(REPO_ROOT / "governance" / "dutymail-processor.toml")
 
 
@@ -208,7 +216,9 @@ def _read_state(path):
 
 
 def _policy():
-    return mod.load_policy(REAL_CONFIG)
+    # caller root 顯式注入 ai-guide repo root——與 pytest cwd 解耦；
+    # custody 源＝真實 governance/dutymail-consume.toml（兩 ai-guide 址）。
+    return mod.load_policy(REAL_CONFIG, caller_root=str(REPO_ROOT))
 
 
 def _hook_run(raw, runner, state_dir, config_path=REAL_CONFIG, **kw):
@@ -456,21 +466,39 @@ class TestPolicy:
         assert policy.allows("usage-liveness", "solicit") is False
 
 
-# ── 跨址 custody fence（AIR-310）：授權集放行／他址禁消費／缺席 fail-closed ──
+# ── 跨址 custody fence（AIR-310→AIR-311 per-caller）：授權面跟呼叫端
+#    repo 走——放行／他址禁消費／founding case 重鎖／解析不能 deny-all ──
+
+
+def _git_caller_repo(tmp_path, name="caller-repo", consume=None):
+    """tmp git repo（caller root 測試載體）：`git init`＋可選寫入
+    governance/dutymail-consume.toml（consume=None＝檔缺席案例）。"""
+    repo = tmp_path / name
+    (repo / "governance").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    if consume is not None:
+        (repo / "governance" / "dutymail-consume.toml").write_text(
+            consume, encoding="utf-8",
+        )
+    return repo
 
 
 class TestCustodyFence:
-    """跨址 custody fence 雙層：CLI 入口 arg 驗證（exit 2）＋
-    process_once bind 前核心閘（CustodyFenceError）。oracle：他址輸入
-    runner 呼叫數＝0——holder status/bind/prepare/ack 全序列不得開始、
-    state 不動。"""
+    """跨址 custody fence 雙層（AIR-311 per-caller 化）：CLI 入口 arg
+    驗證（exit 2）＋process_once bind 前核心閘（CustodyFenceError）。
+    oracle：他址輸入 runner 呼叫數＝0——holder status/bind/prepare/ack
+    全序列不得開始、state 不動。custody 授權面 per-caller＝呼叫端 repo
+    自持的 governance/dutymail-consume.toml（caller root＝cwd git
+    toplevel）。"""
 
-    FOREIGN = "foreign-repo-marshal"  # 未授權樣本址——掃平後事故實址
-    # （delegate-bridge-marshal）已入清單；本常數只證「未列即擋」
-    # deny-by-default，不再指涉特定事故地址。
+    FOREIGN = "foreign-repo-marshal"  # 未授權樣本址——「未列即擋」
+    # deny-by-default 樣本，不指涉特定事故地址。
+    FOUNDED = "delegate-bridge-marshal"  # founding case（AIR-310 原始
+    # 事故址）：ai-guide caller root 清單不含它——AIR-310 掃平後中央
+    # 清單含它、此案不設防；本卡 per-caller 化把它鎖回 fence。
 
     def test_own_address_passes_full_cycle(self, state_file):
-        """本址（授權集內）放行——holder 全序列照常（空批＝([], None)）。"""
+        """本址（呼叫端清單內）放行——holder 全序列照常（空批＝([], None)）。"""
         runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
         lines, commit = mod.process_once(
             ADDR, runner, _policy(), state_file, now_us=NOW_US,
@@ -489,9 +517,62 @@ class TestCustodyFence:
         assert runner.calls == []
         assert not os.path.exists(state_file)
 
-    def test_cli_foreign_address_exit2(self, tmp_path, capsys):
+    def test_founding_case_delegate_bridge_fenced_zero_calls(self, state_file):
+        """founding case 重鎖（AIR-311）：ai-guide caller root 清單不含
+        delegate-bridge-marshal——請求該址＝CustodyFenceError、runner
+        零呼叫（掃平後此案不設防，本卡鎖回）。"""
+        runner = _seq_runner([])
+        with pytest.raises(mod.CustodyFenceError, match="他 repo custody"):
+            mod.process_once(
+                self.FOUNDED, runner, _policy(), state_file, now_us=NOW_US,
+            )
+        assert runner.calls == []
+        assert not os.path.exists(state_file)
+
+    def test_caller_root_resolves_git_toplevel(self, tmp_path):
+        """_caller_root：tmp git init 目錄＋顯式 cwd 注入 → realpath
+        toplevel（符號連結規範化）。"""
+        repo = _git_caller_repo(tmp_path)
+        assert mod._caller_root(cwd=str(repo)) == os.path.realpath(
+            str(repo)
+        )
+
+    def test_caller_root_non_git_cwd_none(self, tmp_path):
+        """非 git cwd → None（deny-all 前置——解析不能即不消費）。"""
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        assert mod._caller_root(cwd=str(plain)) is None
+
+    def test_per_caller_consume_file_central_triage(self, tmp_path):
+        """兩源釘死：custody 讀 caller root 自持 consume 檔（caller 自訂
+        清單生效）；分診表仍讀中央 REAL_CONFIG（usage-liveness auto 規則
+        在場——script root 基線不隨 caller fork）。"""
+        repo = _git_caller_repo(
+            tmp_path, consume='consume_addresses = ["caller-only-marshal"]\n'
+        )
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+        assert policy.consume_addresses == frozenset(
+            {"caller-only-marshal"}
+        )
+        assert policy.allows("usage-liveness", "inform")  # triage 中央
+        assert self.FOREIGN not in policy.consume_addresses
+
+    def test_non_git_cwd_deny_all_fail_loud(self, tmp_path, monkeypatch):
+        """非 git cwd（caller root 判定不能）＝ConfigError deny-all
+        fail-loud——訊息寫清「無法判定呼叫端 repo＝不消費」。"""
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        monkeypatch.chdir(plain)
+        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
+            mod.load_policy(REAL_CONFIG)
+
+    def test_cli_foreign_address_exit2(self, tmp_path, capsys, monkeypatch):
         """CLI 入口 arg 驗證：他址 exit 2＋「禁消費」訊息（閘在
-        state/sink 建構前——零副作用退出）。"""
+        state/sink 建構前——零副作用退出；caller root 注入 ai-guide
+        repo——與 pytest cwd 解耦）。"""
+        monkeypatch.setattr(
+            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
+        )
         rc = mod.main([
             "process", "--address", self.FOREIGN,
             "--session-id", "sess-cli", "--config", REAL_CONFIG,
@@ -502,17 +583,75 @@ class TestCustodyFence:
         assert "address 屬他 repo custody——禁消費" in err
         assert self.FOREIGN in err
 
-    def test_missing_allowlist_fail_closed(self, tmp_path):
-        """consume_addresses 鍵缺席＝ConfigError（deny-all fail-closed
-        ——禁推導遞補；配置錯誤要大聲）。"""
+    def test_cli_founding_case_delegate_bridge_exit2(
+        self, tmp_path, capsys, monkeypatch,
+    ):
+        """founding case CLI 面：ai-guide caller root 請求
+        delegate-bridge-marshal → exit 2（真實兩源組合下此案恆被擋——
+        AIR-310 掃平後不設防、本卡鎖回）。"""
+        monkeypatch.setattr(
+            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
+        )
+        rc = mod.main([
+            "process", "--address", self.FOUNDED,
+            "--session-id", "sess-cli", "--config", REAL_CONFIG,
+            "--state-dir", str(tmp_path),
+        ])
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "address 屬他 repo custody——禁消費" in err
+        assert self.FOUNDED in err
+
+    def test_caller_consume_file_missing_deny_all(self, tmp_path):
+        """caller consume 檔缺席＝ConfigError deny-all（provision 先行
+        ——禁 fallback 中央清單的雙源窗口，AIR-311 決策⑤）。"""
+        repo = _git_caller_repo(tmp_path)
+        with pytest.raises(mod.ConfigError, match="custody 授權檔缺席"):
+            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+
+    def test_caller_consume_key_missing_deny_all(self, tmp_path):
+        """caller consume 檔在場但鍵缺席＝ConfigError deny-all（語義
+        平移 AIR-310 鍵缺席裁定——配置錯誤要大聲）。"""
+        repo = _git_caller_repo(tmp_path, consume="other_key = 1\n")
+        with pytest.raises(mod.ConfigError, match="consume_addresses"):
+            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+
+    def test_caller_consume_unknown_key_deny_all(self, tmp_path):
+        """caller consume 檔未知頂層鍵＝ConfigError deny-all（鏡像
+        processor 表「未知鍵要大聲」裁定——授權檔靜默忽略更危險）。"""
+        repo = _git_caller_repo(
+            tmp_path,
+            consume=(
+                'consume_addresses = ["ai-guide-marshal"]\n'
+                'extra_key = ["x"]\n'
+            ),
+        )
+        with pytest.raises(mod.ConfigError, match="未知頂層鍵"):
+            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+
+    def test_caller_consume_bad_entry_deny_all(self, tmp_path):
+        """caller consume 檔 entry 非字串／空字串＝ConfigError deny-all
+        （exact match 契約的壞形拒絕）。"""
+        repo = _git_caller_repo(
+            tmp_path,
+            consume='consume_addresses = ["ai-guide-marshal", 42]\n',
+        )
+        with pytest.raises(mod.ConfigError, match="非空字串陣列"):
+            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+
+    def test_processor_consume_key_now_unknown_fail_loud(self, tmp_path):
+        """processor.toml triage-only enforcement：出現 consume_addresses
+        鍵＝未知頂層鍵 ConfigError（本卡後 re-add 中央清單即大聲失敗，
+        不靜默忽略）。"""
         p = tmp_path / "c.toml"
         p.write_text(
+            'consume_addresses = ["ai-guide-marshal"]\n'
             '[[class_rule]]\nclass = "usage-liveness"\n'
             'auto_intent = ["inform"]\naction = "auto"\n',
             encoding="utf-8",
         )
-        with pytest.raises(mod.ConfigError, match="consume_addresses"):
-            mod.load_policy(str(p))
+        with pytest.raises(mod.ConfigError, match="未知頂層鍵"):
+            mod.load_policy(str(p), caller_root=str(REPO_ROOT))
 
     def test_rogue_policy_default_deny_all(self, state_file):
         """直構 Policy（繞過 load_policy）＝空授權集＝deny-all——
@@ -526,21 +665,17 @@ class TestCustodyFence:
         assert runner.calls == []
 
     def test_real_config_allowlist_in_place(self):
-        """真實 config 授權集在場（鍵＋未授權樣本址排除）——鎖單一源。"""
-        policy = _policy()
+        """真實兩源在場（AIR-311）：ai-guide consume 檔＝恰兩址；
+        processor 檔已無 consume_addresses 鍵（triage-only）。"""
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(REPO_ROOT))
         assert policy.consume_addresses == frozenset(
-            {
-                "ai-guide-marshal",
-                "ai-guide-exceptions",
-                "code-reality-marshal",
-                "mosaic-alpha-marshal",
-                "mosaic_alpha-marshal",
-                "delegate-bridge-marshal",
-                "southchariot-marshal",
-                "southchariot-escalation",
-            }
+            {"ai-guide-marshal", "ai-guide-exceptions"}
         )
-        assert self.FOREIGN not in policy.consume_addresses
+        raw = tomllib.loads(
+            (REPO_ROOT / "governance" / "dutymail-processor.toml")
+            .read_text(encoding="utf-8")
+        )
+        assert "consume_addresses" not in raw
 
 
 # ── triage：default-deny 判定＋機械驗證────────────────────────────────
@@ -1517,6 +1652,10 @@ class TestDigestRendering:
 @pytest.fixture(autouse=True)
 def _gate(monkeypatch):
     monkeypatch.setattr(hook, "script_repo_root", lambda: REPO)
+    # AIR-311 per-caller custody：hook 面的 caller root 由 payload cwd
+    # 承載（F2 修正後語義＝呼叫端 session 所在 repo）——測試 payload 的
+    # cwd＝本 repo 真實 root（REPO），讀真實 dutymail-consume.toml 兩
+    # ai-guide 址；pytest cwd 解耦由 REPO＝REPO_ROOT 錨定保證。
 
 
 class TestHookRun:
@@ -2074,6 +2213,9 @@ class TestBinaryMissingSink:
                                             capsys):
         """CLI 面：main 接 BinaryMissing → stderr typed 訊息＋exit 1
         （不再 traceback；其他 Exception 維持現狀）。"""
+        monkeypatch.setattr(
+            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
+        )
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
         monkeypatch.setattr(mod.shutil, "which", lambda name: None)
         monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
