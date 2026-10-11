@@ -1,10 +1,10 @@
 ---
 id: AIR-305
 title: bridge 派工傳輸面預檢——載體 canary＋waiter cwd self-check
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:00'
+updated_date: '2026-10-11 04:22'
 labels: []
 dependencies: []
 ordinal: 10
@@ -38,9 +38,9 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 bridge_waiter.py cwd self-check 落地＋單元測試（不符 exit 2 帶修法）
-- [ ] #2 留守 skill 一行＋memory reference 一條（canary 條款 redirect 指針）
-- [ ] #3 bridge repo plugin skill 源 canary 條款——落地或明確 deferred 掛 bridge 維護弧
+- [x] #1 bridge_waiter.py cwd self-check 落地＋單元測試（不符 exit 2 帶修法）
+- [x] #2 留守 skill 一行＋memory reference 一條（canary 條款 redirect 指針）
+- [x] #3 bridge repo plugin skill 源 canary 條款——落地或明確 deferred 掛 bridge 維護弧
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -55,4 +55,20 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+receipt：worker job-mv3aq4sk 交付 self-check＋161 行測試＋skill 兩行；rebase main 後 ff 收線（a05745cb，全量 gate 3809 綠）；canary memory 草稿在 worker finalText 待 consolidation；AC#2 實測 wake receipt 隨下次真實長跑（deferred）
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+cwd×ledger self-check 落地（exit 2 帶修法）＋留守 skill 兩行。終態圖：
+
+```mermaid
+flowchart LR
+  A["arm waiter"] --> B{"cwd==ledger workspace?"}
+  B -->|"否"| H["exit 2 帶修法"]
+  B -->|"是"| I["正常盯場"]
+  J["版本變更"] --> K["canary 先行條款"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
