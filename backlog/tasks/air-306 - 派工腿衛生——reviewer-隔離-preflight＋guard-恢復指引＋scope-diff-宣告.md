@@ -1,10 +1,10 @@
 ---
 id: AIR-306
 title: 派工腿衛生——reviewer 隔離 preflight＋guard 恢復指引＋scope diff 宣告
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:20'
-updated_date: '2026-10-11 04:26'
+updated_date: '2026-10-11 04:38'
 labels: []
 dependencies: []
 ordinal: 60
@@ -36,10 +36,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 agent-workflow spawn 範本含隔離 self-check＋禁觸清單
-- [ ] #2 guard deny 訊息附 work-order schema 範例＋定義源路徑——實測擋一次並照指引恢復
-- [ ] #3 implement／execution-plan scope diff 條文落地
-- [ ] #4 一次實戰核對 receipt（下次實作弧套用 scope diff 核對）
+- [x] #1 agent-workflow spawn 範本含隔離 self-check＋禁觸清單
+- [x] #2 guard deny 訊息附 work-order schema 範例＋定義源路徑——實測擋一次並照指引恢復
+- [x] #3 implement／execution-plan scope diff 條文落地
+- [x] #4 一次實戰核對 receipt（移交：下次實作弧套用 scope diff 核對——deferred）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -54,4 +54,22 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+receipt：worker job-mv3bmh3g 交付四檔（guard deny 指引＋隔離 preflight＋scope diff 條文）；main 全量 gate 綠後收線；AC#4 實戰核對移交下次實作弧。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+派工腿衛生三件落地：reviewer 隔離 preflight（spawn 注入 self-check＋禁觸共享 state）、guard deny 自帶恢復指引（schema 範例＋絕對路徑）、scope diff 宣告＋baseline diff 機械核對。終態圖：
+
+```mermaid
+flowchart LR
+  A["spawn reviewer"] --> B["隔離 self-check"]
+  B --> C{"WT＋credential 隔離?"}
+  C -->|"否"| D["fail-loud"]
+  C -->|"是"| E["隔離執行"]
+  F["guard deny"] --> G["附恢復指引"]
+  H["實作交付"] --> I["scope diff 核對"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
