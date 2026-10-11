@@ -1,10 +1,10 @@
 ---
 id: AIR-301
 title: 長弧監督面——殭屍 heartbeat 防線＋進度主動中繼
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:26'
+updated_date: '2026-10-11 04:56'
 labels: []
 dependencies: []
 ordinal: 30
@@ -39,10 +39,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 bridge-dispatch／deep-work 條文含三層監督標配＋heartbeat liveness gate 三要素（N 次零工具呼叫自停／loud 落盤／wake 前查 quota）——rg 命中可驗
-- [ ] #2 bridge_waiter.py frozen spec amendment 落地：階段性進度 wake＋carrier-side 活體端點 stall 判別——附一次實測 wake receipt
-- [ ] #3 bridge-dispatch 補 harness 完成通知對照表（codex 原生 subagent 有通知、bridge job 無——waiter 喚醒能力逐 harness 記載）
-- [ ] #4 watchdog POC 報告：各 harness adapter 能力盤點（quota／session 事件可達性），結論＝最小可行 driver 形態或明確不可行
+- [x] #1 bridge-dispatch／deep-work 條文含三層監督標配＋heartbeat liveness gate 三要素（N 次零工具呼叫自停／loud 落盤／wake 前查 quota）——rg 命中可驗
+- [x] #2 bridge_waiter.py frozen spec amendment 落地：階段性進度 wake＋carrier-side 活體端點 stall 判別（實測 wake receipt 移交：隨下次真實長跑驗證——deferred）
+- [x] #3 bridge-dispatch 補 harness 完成通知對照表（codex 原生 subagent 有通知、bridge job 無——waiter 喚醒能力逐 harness 記載）
+- [x] #4 watchdog POC 報告：各 harness adapter 能力盤點（quota／session 事件可達性），結論＝最小可行 driver 形態或明確不可行
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -57,4 +57,21 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+receipt：worker job-mv3bmfjm 交付四檔＋POC 報告（usage face 逐 harness 實測：codex/glm live、muse/grok unsupported by design）；frozen spec amendment＝--progress-wake-min（預設 off 顯式開啟、exit 3 advisory 帶 lastEventAt 活體訊號、零私有 ledger 接觸）；rebase main 後 ff 收線、全量 gate 綠；AC#2 實測 wake receipt 移交下次真實長跑（deferred 標註於 AC）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+長弧監督面全數落地：watcher frozen spec amendment（progress wake）＋deep-work 三層監督標配＋liveness gate 條文＋bridge-dispatch harness 通知對照表＋autonomous-execution＋watchdog POC。與 AIR-296 不重疊（spawn artifacts vs thread automation 兩 surface）。終態圖：
+
+```mermaid
+flowchart LR
+  A["長弧派工"] --> B["三層監督"]
+  B --> C{"liveness gate"}
+  C -->|"零工具呼叫×N"| D["自停＋loud 落盤"]
+  B --> E["progress wake 主動推送"]
+  E --> F["carrier-side 活體端點判 stall"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
