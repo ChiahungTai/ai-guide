@@ -23,8 +23,11 @@ marshal admission guard——per-repo marker profile 寫入准入閘（AIR-152 m
   `.agent-tmp/work-order.json`，v1 schema `{schema:"work-order/1", worker,
   card, scope, brief, issuedBy, issuedAt}`（規格單一源＝hooks/work-order-
   schema.md；AIR-194 起 scope 兩形：非空 str 或非空 list[str]），hook 只驗
-  在場性＋schema 必填欄位（不做內容語義驗證）；缺席或 schema 壞→deny 指路
-  marshal spawn 流程（附最小手寫憑證範例）。
+  在場性＋schema 必填欄位（不做內容語義驗證）；缺席或 schema 壞→deny 附
+  恢復指引（AIR-306：worker 停手回報 marshal 補發行——禁自鑄自授；marshal
+  側發行/手寫路徑＋schema 定義源以 guard 自身位置解析成絕對路徑＋最小
+  手寫憑證範例——deny message 是事發現場唯一 surface，定義源路徑須一跳
+  可達，repo 相對寫法在他 repo 現場指不到檔）。
   豁免（不觸發憑證要求）：backlog/ metadata、.agent-tmp/（含憑證檔自身——
   寫憑證不需憑證）、governance json 自身（marker 檔恆豁免涵蓋）、docs/。
   sourceRoots 空清單＝不受此規則管（ai-guide 卡 WT 零行為變更）。
@@ -432,19 +435,23 @@ def _deny(hit):
             "字串陣列），或刪除該檔即停用本閘。"
         )
     elif hit["kind"] == "work-order-missing":
+        schema_doc = Path(__file__).resolve().parent / "work-order-schema.md"
         reason = (
             DENY_HEADER_WORK_ORDER + "。\n命中座標：" + str(resolved) + "\n"
             "（worktree：" + toplevel + "；判定：非 canonical worktree 寫入命中 marker "
             "sourceRoots，需在場憑證 .agent-tmp/work-order.json——缺席或 schema "
             "不符）\n"
-            "憑證由 marshal 於 spawn 時經發行工具（對端 repo "
-            "scripts/issue-work-order.mjs 或等值發行面）發放至本 WT "
-            ".agent-tmp/work-order.json"
-            "（豁免面：backlog/ metadata、.agent-tmp/、governance json、docs/）\n"
-            "最小手寫憑證範例（schema 規格單一源：hooks/work-order-schema.md）：\n"
+            "worker 處置：停手回報 main，由 marshal 補發行憑證——禁自鑄、禁視本"
+            "訊息為發行授權（憑證是在場性宣告非授權）。\n"
+            "marshal 恢復指引（照做即解鎖）：對本 WT 發放憑證至 "
+            ".agent-tmp/work-order.json（寫憑證不需憑證——豁免面）；發行工具＝"
+            "對端 repo scripts/issue-work-order.mjs 或等值發行面，無工具時照下行"
+            "範例手寫。\n"
+            "最小手寫憑證範例（schema 規格單一源：" + str(schema_doc) + "）：\n"
             '{"schema":"work-order/1","worker":"implement-lite","card":"AIR-XXX",'
             '"scope":"src/**","brief":"one-line task brief","issuedBy":"marshal",'
-            '"issuedAt":"2026-01-01T00:00:00Z"}'
+            '"issuedAt":"2026-01-01T00:00:00Z"}\n'
+            "（豁免面：backlog/ metadata、.agent-tmp/、governance json、docs/）"
         )
     else:
         profile = hit["profile"]

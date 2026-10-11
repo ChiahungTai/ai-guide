@@ -75,6 +75,15 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 考古／稽核／掃描／分類調查→開 N 個 flash 平行拆樣（**一次三個為上限**，user 裁定）＋**主 session 統合複查**（主 session 的義務，不外包給 agent）。
 
+### 隔離 preflight（review／probe 類腿——spawn prompt 必注入）
+
+唯讀任務不等於無寫副作用：reviewer/probe 跑測試、fixture、build 腳本時會寫檔，寫到哪由工作區決定、不由任務性質決定。spawn prompt 注入兩條 self-check，worker 開工第一動先驗，不過即 fail-loud 回報不跑：
+
+1. **WT 隔離核對**：`pwd`＋`git rev-parse --show-toplevel` 必須等於本腿自己的 owning WT；落在他人的工作區（canonical 主樹或其他卡 WT）＝停。
+2. **禁觸共享 state 路徑**：`.delegate-bridge/` ledger、delegate-bridge 各 family provision dir（GLM provision 憑證等跨 WT 共享憑證）一律不讀寫；測試／fixture 會碰這些路徑→改隔離副本，不可則跳過該案例並揭露。
+
+（真實案例：唯讀 review 腿的早期 Node run 在主工作區留下六個 mock jobs、fixture 把 GLM provision 憑證覆寫成測試值，主控事後經 sanctioned provision 入口修復——「只在卡 owning WT 操作」當時只靠 prompt 紀律，本 self-check 把隔離判斷前移成 worker 開工第一動的機械步。）
+
 ### Spawn 預設背景
 
 派發預設須讓主對話保持可回應，使用 carrier 實際提供的非阻塞機制；派發與回收是一組義務。ZCode Agent tool 的前台阻塞與中斷風險由背景 gate 承接，不推定其他 carrier 有相同生命週期。因此：
@@ -298,6 +307,7 @@ Rules 檔在 session 啟動時載入，但**更新不會傳播到已 spawn 的 a
 - [ ] spawn 使用 carrier 非阻塞機制（schema 有 `run_in_background` 才傳 `true`；原生 async 保留 handle 並建立 collection owner）；前台僅限 <30s 短 probe **且 prompt 帶 `[fg]`**——見上「Spawn 預設背景」
 - [ ] Prompt 包含足夠 context + 相對路徑 + rules-reminder 規則摘要（Agent 看不到 auto-loaded rules，必須在 prompt 開頭明確寫入：多行 `python -c` 禁 `#` 註解、`rg`/`fd` 取代 `grep`/`find`、`uv run` 前綴 Python、禁止 `sed` 修改 `.py/.md`、Claude Bash 才禁 `$VAR`／`$(cmd)` shell 展開（其他 carrier 的 zsh arrays 依 tool-discipline）、輸出繁體中文、獨立工具呼叫同 block 批次發、改檔前先 Read）
 - [ ] **寫檔類 agent** prompt 必注入三條：①禁 /tmp，產出留當前 repo/worktree；②寫不進指定路徑就回報「環境限制：我寫不進 X」，不可退 /tmp；③暫存集中 `.agent-tmp/`（post-build 清；夜掃兜底 `.agent-tmp/` 7d——**排除 `.agent-tmp/at-tickets/`**：/at 未到期票禁掃，清理走 at_ticket classify 機械判準（AIR-157）；`.review/` 30d）
+- [ ] **review／probe 類腿** prompt 必注入隔離 preflight self-check：開工第一動 `pwd`＋`git rev-parse --show-toplevel` 核對＝owning WT；禁觸共享 state 路徑（`.delegate-bridge/` ledger、delegate-bridge 各 family provision dir）；隔離不成立＝fail-loud 回報不跑（內容見上「隔離 preflight」）
 - [ ] **🚫 spawned agent 禁寫記憶池面**（`.agents/memory*`——含 pool／inbox／memory-auto staging）——發現類內容以最終回報交回主 session，由主 session 走 consolidation（AIR-100 S-D）
 - [ ] **若任務涉及 mock / PropertyMock / fixture**：prompt 主動注入專案 `tests/AGENTS.md`（legacy `tests/CLAUDE.md`）的 mock 規範段落摘要（agent 不會自己讀專案 instruction 檔，必須主動注入；見上方「Rule Freshness」）
 - [ ] Uncommitted changes：需要 → 先 commit；Branch：不正確 → 先 checkout
