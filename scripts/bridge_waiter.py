@@ -41,6 +41,21 @@ UX 北極星（digest §1.14）：正常長跑期間主 session 完全不醒；�
   消費端＝scripts/watcher_rearm.py（掃 stale armed rows 單次 re-arm＋
   broken alert）與 hooks/watcher_pairing_nag.py（死亡檔催告升級）。
   `--liveness-path` 可覆寫；測試直呼 run_watcher 不傳＝停用。
+- AIR-146 frozen spec amendment——arm 前置腿（AIR-305）：T1 前新增 cwd×
+  workspace ledger self-check——`runs --json`（唯讀、ledger-local，caller
+  cwd 解析 workspace）核 fan-in 集全數在本 cwd 所屬 workspace ledger；
+  任一缺席、或在場 row 的 `wtPath` stamp 指向他 workspace → fail-loud
+  exit 2 帶修法（state=error、kind=cwd-ledger-mismatch，含正確 cwd 提示：
+  wtPath 或「cd 回派工回執 workspace」指引）。動機＝2026-10-11 三 waiter
+  cwd×ledger 錯位 exit 2 繞路重掛——該面原落 T7 reconcile「重生／重派禁
+  retry」誤導語義，實際修法只是 cd 回派工 workspace 重掛。探測同源走
+  BridgeClient（DELEGATE_BRIDGE_BIN 同一隻 binary 的公開 runs 面），零
+  私有 ledger 接觸（§1.2 存取邊界）。CLI 預設啟用（workspace root＝cwd
+  git toplevel、非 repo 退 cwd——與 bridge producer resolve_workspace_root
+  同式，兩側對同一 cwd 必然解析出同一 ledger 面）；測試直呼 run_watcher
+  不傳 workspace_root＝停用（liveness 腿同款）。狀態機 T1-T9 零變——本腿
+  只新增 arm 前的 error 面出口；DELEGATE_BRIDGE_BIN 缺場仍走既有
+  FileNotFoundError fail-loud（self-check 探測同受 main() 該 handler 涵蓋）。
 
 狀態機（frozen spec，S 級 oracle——adjudication Q9 裁決；變更須走卡 amendment）
 --------------------------------------------------------------------------------
@@ -92,7 +107,9 @@ exit 契約（adjudication Q4）
   全 terminal（single-id wait 對 terminal row 的 usage-error 面，
   wait_exit_for_status(Some(2))，status.rs:305-313）→ 落 T5/T6 collect 相、
   仍有 running → 真 usage
-  透傳（無 stdout 標記）；③版本不符 → error。reconcile／error 的 stdout
+  透傳（無 stdout 標記）；③版本不符 → error；④cwd×ledger 錯位
+  （AIR-305 arm 前置腿）→ error（kind=cwd-ledger-mismatch，帶修法與正確
+  cwd 提示）。reconcile／error 的 stdout
   尾行為單行 JSON，`state` 欄（unknown/reconcile｜error）機械可判。
 
 stdout：compact progress log＋尾行 CollectionReceipt／狀態標記 JSON；
@@ -218,13 +235,15 @@ class BridgeCli(Protocol):
 
     def show(self, job_id: str) -> dict: ...
 
+    def runs_json(self) -> list: ...
+
 
 def _default_runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, capture_output=True, text=True, check=False)
 
 
 class BridgeClient:
-    """delegate-bridge 公開 CLI 的 subprocess 包裝——唯讀三面：version/wait/show。
+    """delegate-bridge 公開 CLI 的 subprocess 包裝——唯讀四面：version/wait/show/runs。
 
     刻意不提供 stop／dispatch／judge 任何寫入或處置面（AC#6 代碼面保證）。
     """
@@ -284,6 +303,28 @@ class BridgeClient:
             ) from exc
         if not isinstance(payload, dict) or not isinstance(payload.get("job"), dict):
             raise BridgeError("corrupt", f"show {job_id} 缺 job 物件")
+        return payload
+
+    def runs_json(self) -> list:
+        """runs --json（唯讀、ledger-local）：caller cwd 所屬 workspace 的 raw rows。
+
+        lenient face（bridge producer 契約：空 ledger 非錯誤 → []）；非零
+        exit／stdout 不可解析＝corrupt fail-loud（T8 同面）。workspace 由
+        呼叫端 cwd 解析——本方法不設 cwd 參數，錯位偵測正是靠這個語義。
+        """
+        proc = self._run(["runs", "--json"])
+        if proc.returncode != 0:
+            raise BridgeError(
+                "corrupt", f"runs --json exit {proc.returncode}: {proc.stderr.strip()}"
+            )
+        try:
+            payload = json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise BridgeError(
+                "corrupt", f"runs --json stdout 不可解析：{exc}"
+            ) from exc
+        if not isinstance(payload, list):
+            raise BridgeError("corrupt", "runs --json 非 JSON 陣列")
         return payload
 
 
@@ -355,6 +396,99 @@ def native_wake_supported(version: str) -> bool:
         return compare_semver(version, NATIVE_WAKE_MIN_VERSION) >= 0
     except VersionGateError:
         return False
+
+
+# ---------------------------------------------------------------------------
+# cwd×workspace ledger self-check（AIR-305 arm 前置腿）
+# ---------------------------------------------------------------------------
+
+
+class CwdLedgerMismatchError(RuntimeError):
+    """cwd 與 job 所屬 workspace ledger 錯位（AIR-305）——修法＝cd 回派工
+    workspace 重掛，非 ledger 重生（禁 retry 語義不適用）。
+
+    detail 攜結構化欄（missingJobIds／claimedWorkspace／workspaceRoot／
+    searchedLedger），隨 state JSON 尾行落地供機判。
+    """
+
+    def __init__(self, message: str, detail: dict) -> None:
+        super().__init__(message)
+        self.detail = detail
+
+
+_CWD_LEDGER_FIX_HINT = (
+    "修法：cd 回派工時的 workspace（bridge task/review 回執印出 job id 的"
+    "那個 cwd／WT toplevel——ledger per-workspace，runs/show/wait 全以呼叫"
+    "端 cwd 解析）確認 `runs --json` 看得到該 id 後重掛 waiter"
+)
+
+
+def self_check_cwd_workspace(
+    client: BridgeCli, job_ids: list[str], workspace_root: Path
+) -> None:
+    """arm 前置腿（AIR-305）：cwd 所屬 workspace ledger 必須含整個 fan-in 集。
+
+    per-workspace ledger 事實（bridge producer）：runs/show/wait 皆以呼叫端
+    cwd 的 git toplevel 解析 workspace——cwd 錯位時 show 全數 not-found，
+    原落 T7 reconcile「重生／重派禁 retry」誤導語義（2026-10-11 三 waiter
+    繞路重掛實證）。本檢查在 arm 前把該面轉成帶修法的 fail-loud。兩個錯位
+    面：①fan-in id 不在本 cwd workspace ledger（runs --json 查無）；②在場
+    row 的 `wtPath` stamp 指向他 workspace（wt-bound 派工的權威歸屬戳）。
+    探測同源走注入 client（DELEGATE_BRIDGE_BIN 同一隻 binary 的公開
+    runs --json），零私有 ledger 接觸（§1.2 存取邊界）。不符＝raise
+    CwdLedgerMismatchError；相符＝靜默放行。
+    """
+    try:
+        rows = client.runs_json()
+    except BridgeError as exc:
+        raise LedgerCorruptError(
+            f"cwd×ledger self-check 探測失敗（runs --json）：{exc}"
+        ) from exc
+    by_id: dict[str, dict] = {
+        row["id"]: row
+        for row in rows
+        if isinstance(row, dict) and isinstance(row.get("id"), str)
+    }
+    missing = [job_id for job_id in job_ids if job_id not in by_id]
+    try:
+        root = workspace_root.resolve()
+    except OSError:
+        root = workspace_root
+    claimed: dict[str, str] = {}
+    for job_id in job_ids:
+        wt_path = by_id.get(job_id, {}).get("wtPath")
+        if not (isinstance(wt_path, str) and wt_path.strip()):
+            continue
+        try:
+            if Path(wt_path).resolve() != root:
+                claimed[job_id] = wt_path
+        except OSError:
+            claimed[job_id] = wt_path
+    if not missing and not claimed:
+        return
+    searched = workspace_root / ".delegate-bridge" / "jobs.json"
+    parts: list[str] = [
+        f"cwd×ledger 錯位——watcher cwd 解析的 workspace＝{workspace_root}"
+    ]
+    if missing:
+        parts.append(
+            f"fan-in 集不在本 workspace ledger：{'、'.join(missing)}"
+            f"（搜尋面＝{searched}）。{_CWD_LEDGER_FIX_HINT}"
+        )
+    for job_id, wt_path in claimed.items():
+        parts.append(
+            f"{job_id} row 的 wtPath 指向他 workspace：{wt_path}"
+            f"——正確 cwd 提示：cd {wt_path} 後重掛"
+        )
+    raise CwdLedgerMismatchError(
+        "；".join(parts),
+        {
+            "missingJobIds": missing,
+            "claimedWorkspace": claimed,
+            "workspaceRoot": str(workspace_root),
+            "searchedLedger": str(searched),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -922,6 +1056,7 @@ def run_watcher(
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
     liveness_path: Path | None = None,
+    workspace_root: Path | None = None,
 ) -> int:
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
@@ -941,6 +1076,22 @@ def run_watcher(
         )
     # 0921 wake-on-stuck 消費同步：雙模版本閘控（T8 amendment）
     native_wake = native_wake_supported(bridge_version)
+
+    # arm 前置腿（AIR-305 amendment）：cwd×workspace ledger self-check。
+    # workspace_root None＝停用（測試直呼 run_watcher 的預設，liveness 腿
+    # 同款）；不符＝fail-loud exit 2 帶修法，不落 armed 登記、不進狀態機
+    if workspace_root is not None:
+        try:
+            self_check_cwd_workspace(client, job_ids, workspace_root)
+        except CwdLedgerMismatchError as exc:
+            return _emit_state(
+                out,
+                err,
+                "error",
+                {"kind": "cwd-ledger-mismatch", "reason": str(exc), **exc.detail},
+            )
+        except LedgerCorruptError as exc:
+            return _emit_state(out, err, "error", {"reason": str(exc)})
 
     # T1 初始快照
     snapshots: dict[str, JobSnapshot] = {}
@@ -1193,9 +1344,8 @@ def run_watcher(
 # ---------------------------------------------------------------------------
 
 
-def _default_liveness_path() -> Path:
-    """cwd repo 的 liveness 台帳（AIR-152 登記腿）：git toplevel 優先，非 repo 退 cwd。"""
-    cwd = Path.cwd()
+def _git_toplevel(cwd: Path) -> Path | None:
+    """cwd 的 git toplevel；非 repo／git 不可用＝None（caller 自訂 fallback）。"""
     try:
         proc = subprocess.run(
             ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
@@ -1203,10 +1353,26 @@ def _default_liveness_path() -> Path:
             text=True,
             check=False,
         )
-        if proc.returncode == 0 and proc.stdout.strip():
-            return Path(proc.stdout.strip()) / ".agent-tmp" / "liveness.jsonl"
     except OSError:
-        pass
+        return None
+    if proc.returncode == 0 and proc.stdout.strip():
+        return Path(proc.stdout.strip())
+    return None
+
+
+def _default_workspace_root() -> Path:
+    """cwd 所屬 workspace root（AIR-305 self-check 參照面）：git toplevel，
+    非 repo 退 cwd——與 bridge producer resolve_workspace_root 同式。"""
+    cwd = Path.cwd()
+    return _git_toplevel(cwd) or cwd
+
+
+def _default_liveness_path() -> Path:
+    """cwd repo 的 liveness 台帳（AIR-152 登記腿）：git toplevel 優先，非 repo 退 cwd。"""
+    cwd = Path.cwd()
+    toplevel = _git_toplevel(cwd)
+    if toplevel is not None:
+        return toplevel / ".agent-tmp" / "liveness.jsonl"
     return cwd / ".agent-tmp" / "liveness.jsonl"
 
 
@@ -1285,6 +1451,7 @@ def main(argv: list[str] | None = None) -> int:
             sinks=sinks,
             anchors=anchors,
             liveness_path=liveness_path,
+            workspace_root=_default_workspace_root(),
         )
     except UsageError as exc:
         print(f"bridge_waiter: usage 錯誤：{exc}", file=sys.stderr)

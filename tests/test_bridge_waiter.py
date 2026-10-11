@@ -83,13 +83,16 @@ class FakeBridge:
         shows: dict[str, object] | None = None,
         version: str | None = "2.0.22",
         bin_path: str = "/fake/delegate/2.0.22/bin/delegate-bridge",
+        runs: list[dict] | None = None,
     ) -> None:
         self.bin_path = bin_path
         self._version = version
         self._waits = list(waits or [])
         self._shows = dict(shows or {})
+        self._runs = list(runs) if runs is not None else []
         self.wait_calls: list[dict] = []
         self.show_calls: list[str] = []
+        self.runs_calls = 0
 
     def version(self) -> str | None:
         return self._version
@@ -131,6 +134,10 @@ class FakeBridge:
                 str(entry["raise_kind"]), str(entry.get("message", ""))
             )
         return entry  # type: ignore[return-value]
+
+    def runs_json(self) -> list:
+        self.runs_calls += 1
+        return self._runs
 
 
 def run(
@@ -662,7 +669,7 @@ def test_ac6_no_stop_judge_commit_code_path() -> None:
         for name in dir(BridgeClient)
         if not name.startswith("_") and callable(getattr(BridgeClient, name))
     }
-    assert public <= {"version", "wait", "show"}, public
+    assert public <= {"version", "wait", "show", "runs_json"}, public
 
 
 def test_ac6_version_pin_fail_loud_with_upgrade_guidance() -> None:
@@ -862,6 +869,153 @@ def test_legacy_2_0_22_no_wake_flags_and_exit3_fail_loud() -> None:
 
 
 # ---------------------------------------------------------------------------
+# AIR-305 arm 前置腿：cwd×workspace ledger self-check
+# （CLI 預設啟用；測試直呼 run_watcher 不傳 workspace_root＝停用——liveness 腿同款）
+# ---------------------------------------------------------------------------
+
+
+def test_air305_self_check_match_passes_through_to_arm(tmp_path: Path) -> None:
+    """案例①相符放行：id 在本 workspace ledger（含 wtPath＝本 workspace）→ 正常盯場。"""
+    fake = FakeBridge(
+        runs=[
+            {"id": "job-a", "status": "running", "wtPath": str(tmp_path)},
+            {"id": "job-b", "status": "running"},  # 無 wtPath stamp（非 wt 派工）＝不比對
+        ],
+        waits=[{"exit": 0}],
+        shows={
+            "job-a": completed_payload("job-a", "done a"),
+            "job-b": completed_payload("job-b", "done b"),
+        },
+    )
+    code, out, _ = run(fake, ["job-a", "job-b"], workspace_root=tmp_path)
+    assert code == 0, "cwd×ledger 相符＝放行進狀態機"
+    assert fake.runs_calls == 1, "self-check 恰一次 runs --json 探測"
+    receipt = json.loads(out.strip().splitlines()[-1])
+    assert receipt["exitState"] == "completed"
+
+
+def test_air305_self_check_missing_job_exit_2_with_fix(tmp_path: Path) -> None:
+    """案例②不符 exit 2：id 不在本 workspace ledger（cwd×ledger 錯位）→
+    fail-loud 帶修法與搜尋面；不 arm、不落 armed 登記。"""
+    fake = FakeBridge(runs=[{"id": "other-job", "status": "running"}])
+    liveness = tmp_path / "liveness.jsonl"
+    code, out, err = run(
+        fake, ["job-a"], workspace_root=tmp_path, liveness_path=liveness
+    )
+    assert code == 2
+    marker = last_state_json(out)
+    assert marker["state"] == "error"
+    assert marker["kind"] == "cwd-ledger-mismatch"
+    assert marker["missingJobIds"] == ["job-a"]
+    assert marker["workspaceRoot"] == str(tmp_path)
+    assert marker["searchedLedger"] == str(tmp_path / ".delegate-bridge" / "jobs.json")
+    assert "修法" in marker["reason"], "修法訊息必須說出口"
+    assert "cd 回派工" in marker["reason"], "正確 cwd 提示必須在場"
+    assert "jobs.json" in marker["reason"]
+    assert fake.wait_calls == [], "錯位面不得進 wait"
+    assert not liveness.exists(), "fail 前不落 armed 登記（不污染配對催告）"
+    assert "cwd-ledger-mismatch" in err or "錯位" in err
+
+
+def test_air305_self_check_wtpath_elsewhere_names_correct_cwd(tmp_path: Path) -> None:
+    """錯位面②：row 在場但 wtPath stamp 指他 workspace → 提示正確 cwd。"""
+    other = tmp_path / "sibling-wt"
+    other.mkdir()
+    fake = FakeBridge(runs=[{"id": "job-a", "status": "running", "wtPath": str(other)}])
+    code, out, _ = run(fake, ["job-a"], workspace_root=tmp_path)
+    assert code == 2
+    marker = last_state_json(out)
+    assert marker["kind"] == "cwd-ledger-mismatch"
+    assert marker["claimedWorkspace"] == {"job-a": str(other)}
+    assert f"cd {other}" in marker["reason"]
+
+
+def test_air305_self_check_runs_corrupt_fail_loud(tmp_path: Path) -> None:
+    fake = FakeBridge(runs=[], shows={"job-a": completed_payload()})
+
+    def corrupt_runs() -> list:
+        raise _mod.BridgeError("corrupt", "runs --json exit 1: Corrupt jobs.json")
+
+    fake.runs_json = corrupt_runs  # type: ignore[method-assign]
+    code, out, _ = run(fake, ["job-a"], workspace_root=tmp_path)
+    assert code == 2
+    marker = last_state_json(out)
+    assert marker["state"] == "error"
+    assert "kind" not in marker, "corrupt 是 T8 面，非 cwd-ledger-mismatch"
+    assert "self-check 探測失敗" in marker["reason"]
+
+
+def test_air305_self_check_disabled_when_workspace_root_unset() -> None:
+    """測試直呼 run_watcher 不傳 workspace_root＝停用（既有測試集的隱含契約）。"""
+    fake = FakeBridge(waits=[{"exit": 0}], shows={"job-a": completed_payload()})
+    code, _, _ = run(fake, ["job-a"])
+    assert code == 0
+    assert fake.runs_calls == 0
+
+
+def test_air305_bridge_client_runs_json_cmd_and_parse() -> None:
+    """注入 runner 形態：BridgeClient.runs_json 的命令面與解析面。"""
+    captured: list[list[str]] = []
+
+    def runner(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+        captured.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, '[{"id":"job-a","status":"running"}]', "")
+
+    client = _mod.BridgeClient("/fake/bin", runner=runner)
+    assert client.runs_json() == [{"id": "job-a", "status": "running"}]
+    assert captured[0] == ["/fake/bin", "runs", "--json"]
+
+
+def test_air305_bridge_client_runs_json_fail_faces() -> None:
+    def runner_factory(code: int, out: str, err: str):
+        return lambda cmd: subprocess.CompletedProcess(cmd, code, out, err)
+
+    client = _mod.BridgeClient(
+        "/fake/bin", runner=runner_factory(1, "", "Corrupt jobs.json: …")
+    )
+    with pytest.raises(_mod.BridgeError) as exc_info:
+        client.runs_json()
+    assert exc_info.value.kind == "corrupt"
+
+    client = _mod.BridgeClient(
+        "/fake/bin", runner=runner_factory(0, "No jobs found.", "")
+    )
+    with pytest.raises(_mod.BridgeError, match="不可解析"):
+        client.runs_json()  # 非 JSON 輸出＝corrupt fail-loud
+
+    client = _mod.BridgeClient(
+        "/fake/bin", runner=runner_factory(0, '{"id":"job-a"}', "")
+    )
+    with pytest.raises(_mod.BridgeError, match="非 JSON 陣列"):
+        client.runs_json()
+
+
+def test_air305_e2e_cwd_ledger_mismatch_exit_2(tmp_path: Path) -> None:
+    """e2e：subprocess 面——空 ledger（cwd 錯位）→ exit 2 kind=cwd-ledger-mismatch。"""
+    scenario = {
+        "version": "2.0.22",
+        "runs": [],
+        "waits": [],
+        "shows": {},
+    }
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT), "job-a", "--bridge-bin", str(STUB)],
+        capture_output=True,
+        text=True,
+        env=_e2e_env(tmp_path, scenario),
+        cwd=str(REPO_ROOT),
+        timeout=120,
+        check=False,
+    )
+    assert proc.returncode == 2, proc.stderr
+    marker = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert marker["state"] == "error"
+    assert marker["kind"] == "cwd-ledger-mismatch"
+    assert marker["missingJobIds"] == ["job-a"]
+    assert "修法" in marker["reason"]
+
+
+# ---------------------------------------------------------------------------
 # E2E：subprocess 打 tests/fixtures/fake_bridge.py（仍不打真 bridge）
 # ---------------------------------------------------------------------------
 
@@ -890,6 +1044,8 @@ def test_e2e_subprocess_happy_path_with_rearm(tmp_path: Path) -> None:
     hb_new = _iso_in_past(10)
     scenario = {
         "version": "2.0.22",
+        # AIR-305 self-check 面：本 cwd workspace ledger 含 job-a（wtPath＝本 repo root）
+        "runs": [{"id": "job-a", "status": "running", "wtPath": str(REPO_ROOT)}],
         "waits": [
             {"exit": 124, "stdout": "job-a running\n", "stderr": ""},
             {"exit": 0, "stdout": "job-a completed\n", "stderr": ""},
@@ -919,6 +1075,7 @@ def test_e2e_subprocess_happy_path_with_rearm(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=_e2e_env(tmp_path, scenario),
+        cwd=str(REPO_ROOT),
         timeout=120,
         check=False,
     )
@@ -951,6 +1108,7 @@ def test_e2e_native_wake_exit3_advisory(tmp_path: Path) -> None:
     """e2e：真 BridgeClient subprocess 面——native wake exit 3 → advisory JSON 尾行。"""
     scenario = {
         "version": "2.0.23",
+        "runs": [{"id": "job-a", "status": "running", "wtPath": str(REPO_ROOT)}],
         "waits": [{"exit": 3, "stdout": WAKE_JSON, "stderr": ""}],
         "shows": {"job-a": show_payload()},
     }
@@ -959,6 +1117,7 @@ def test_e2e_native_wake_exit3_advisory(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         env=_e2e_env(tmp_path, scenario),
+        cwd=str(REPO_ROOT),
         timeout=120,
         check=False,
     )

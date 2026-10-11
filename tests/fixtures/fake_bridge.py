@@ -6,6 +6,8 @@
 - wait ...  → scenario.waits 依序供給 {exit, stdout, stderr}
 - show <id> --json → scenario.shows[id]（list 依呼叫次數供給；dict 恆同；
   帶 exit 鍵 → 模擬錯誤面）
+- runs --json → scenario.runs（AIR-305 cwd×ledger self-check 面；
+  缺省 → []）
 """
 
 import json
@@ -35,6 +37,9 @@ def main() -> int:
         sys.stdout.write(f"{version}\n")
         return 0
     cmd = args[0] if args else ""
+    if cmd == "runs":
+        sys.stdout.write(json.dumps(scenario.get("runs", [])))
+        return 0
     if cmd == "wait":
         index = state.get("wait", 0)
         state["wait"] = index + 1
