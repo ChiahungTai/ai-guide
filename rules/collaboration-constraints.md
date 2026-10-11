@@ -16,7 +16,7 @@ harness-scope: neutral
 
 ## 具體明確表達
 
-避免「大概/可能/應該可以」；提供具體步驟與 path:line，技術對比附範例＋原理。因 rule/skill/hook 條文停下、降級或改道時，訊息首行具名出處＋一句摘要（同 PENDING 出處欄慣例）。
+避免「大概/可能/應該可以」；提供具體步驟與 path:line，技術對比附範例＋原理。因 rule/skill/hook 條文停下、降級或改道時，訊息首行具名出處＋一句摘要（同 PENDING 出處欄慣例）。檔案引用，尤其供人類點擊定位者，優先使用 backtick 包裹的 workspace 相對路徑與行號，例如 `src/chat/render.ts:42`；行號未知時引用路徑本身，不得捏造行號。此慣例僅適用檔案引用，不影響其他 code span（消費端 chat surface 的可點 anchor 以此形態為準）。
 
 ## 接收建議與回饋（反 Sycophancy）
 
