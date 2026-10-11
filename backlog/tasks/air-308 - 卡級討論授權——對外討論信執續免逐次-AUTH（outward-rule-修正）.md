@@ -39,4 +39,7 @@ flowchart LR
 - [ ] #1 outward rule 新節＋豁免清單註冊落地（boundary receipt 記卡）
 - [ ] #2 dutymail-roundtrip＋handoff 引用面同步（rg 逐次 AUTH 掃描淨）
 - [ ] #3 雙顧問審查腿 receipt（glm job-mv39ax5r＋codex job-mv39ax8n Conditional Accept 修正全數吸收）
+- [ ] #4 outward rule 新節＋豁免清單註冊落地（boundary receipt 記卡）
+- [ ] #5 dutymail-roundtrip＋handoff 引用面同步（rg 逐次 AUTH 掃描淨）
+- [ ] #6 雙顧問審查腿 receipt（glm job-mv39ax5r＋codex job-mv39ax8n Conditional Accept 修正全數吸收）
 <!-- AC:END -->
