@@ -18,6 +18,7 @@ when_to_use: "Fires when judging evidence strength for acceptance claims — no-
 - **刪除/死碼自述**（zero caller /「沒人用」）:證據須涵蓋**全消費端**——靜態 import（LSP `findReferences`）+ 字串引用（rg 跨 .py/.yaml/.json）+ **非函式庫消費者**（scripts/、lab/、demo、saved config）+ 動態派發（getattr/importlib/registry auto-discovery/StrEnum 字串值）。只跑 LSP 宣稱「zero hits = 確認」**不足**。最低門檻：刪整檔/整 class 前，rg 符號名跨全專案 + 實際執行 import 測試（L4）受影響消費者——靜態 zero-hit ≠ runtime 無消費者（真實案例：自述「雙工具驗證零 caller」，實際 scripts/ 有 hard-import caller → runtime `ModuleNotFoundError`）。
 - **silent-failure claim**:宣稱「行為 silent」須附**執行證據**（跑了該輸入、觀察到靜默通過），非靜態推論。誤判 loud（實為 silent）以為會炸卻靜默腐敗（危險）；誤判 silent（實為 loud）虛驚、跑測試推翻（安全）。無執行證據時**預設標 'inferred loud'，禁標 'silent'**。
 - **自報元資料不可信**：agent 對自己輸出的 label 統計禁當驗收統計源；正解＝llm_label vs 標準答案逐案機械比對。
+- **派工腿測試統計**（writer／派工腿回報的 aggregate 測試數字）:不作驗收證據——驗收＝主控獨立重跑＋原始 exit code＋完整 log 覆核；aggregate 數字會取錯計數欄位、吞掉 pipeline 退出碼（真實案例：Flash 回報 21 測試全綠、Sol 擴測 8 RED；writer failure 計數欄位取錯）。
 （review 雙向應用條留在 rule——屬 code-review 消費端 bootstrap）
 
 **四態判定詞**：每個 claim 的證據判為 proves（證明成立）／contradicts（反證）／too weak（有證據但 authority、獨立性或深度不足）／missing（無 supporting evidence）。處置映射：proves→accept；contradicts→challenge（回查或推翻 claim）；too weak→supplement（補強證據再判）；missing→block（不得宣稱成立）。禁把 missing 誤當 contradicts、too weak 誤當 proves。
@@ -95,6 +96,15 @@ air-90 卡面記 Done，宣稱「狀態後綴（-pending/-inflight/-landed 等�
 - `unknown` — 認識態非防線態：接線在場但 runtime fire 未證。格先標 `unknown`＋附待跑驗證式，禁止暫填前三態（誤標 `unsupported`＝誇大缺口、`detected`＝假安慰）；Done 前所有 in-scope 格必須消除 `unknown`
 
 **禁跨類推論**：`detected` 不可當 `prevented` 用（偵測網存在≠攔截）；「每層各有 Done」不可推論「聯合起來護到了」——缺口只在合併視圖現形。
+
+## 對抗審查收斂協議（invariant／security-class 修復弧）
+
+> **適用範圍**：以多輪對抗審查收斂的修復弧（invariant／security-class bypass 修復——單輪審查證明不了「沒有 bypass」）。綠燈與自報從來不是 acceptance——獨立對抗驗證才是；四要素缺一即未收斂。
+
+- **攻擊面＝上一輪新規則**：下一輪審查工單直接攻擊上一輪新增的規則——每輪由 runtime 重現的 bypass 驅動，非理論枚舉；上輪新規則未被攻擊＝收斂宣告不成立。
+- **偽造嘗試表必交付**：每輪 reviewer 須交偽造嘗試表（攻了哪些面、破／沒破逐面釘死）——只報結論不報嘗試面＝攻擊面覆蓋無法判定，等於沒審。
+- **unverified risk 由 marshal 實證收口**：reviewer 載體端工具受限時誠實列 unverified risk——由 marshal 親跑探針實證後才裁決（升級或駁回），不得以「reviewer 未證」當「不存在」。
+- **收斂判定＝bounded attack set 零可重現 bypass**：由攻擊面覆蓋決定、非固定輪數；**連續乾淨輪≠安全**（真實案例：DB-100 修復弧 R1→R4——NBSP、DROP INDEX、writable_schema B-tree bypass 逐輪現形，三輪全綠後第四輪審查仍抓到 Important；多輪價值不衰減，bounded 最終審查 PASS 才算收口）。
 
 ## 盤點執行點雙掃（間接層＋直呼層）
 
