@@ -4,10 +4,10 @@ title: 長弧監督面——殭屍 heartbeat 防線＋進度主動中繼
 status: To Do
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:20'
+updated_date: '2026-10-11 02:55'
 labels: []
 dependencies: []
-ordinal: 292000
+ordinal: 30
 ---
 
 ## Description
@@ -49,4 +49,12 @@ flowchart LR
 
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2d9a5203〕〔已決策勿重辯：①dead-man switch 採雙防線——heartbeat 模板條文強制 liveness gate（belt）＋獨立 watchdog POC（suspenders；codex 意見採納：額度歸零時 LLM 連停都停不了，POC 先查 harness adapter 能力）②與 AIR-296 不重疊——不同 surface（spawn artifacts vs thread-level automation），引用判定概念不重做實作③watcher 改動走 bridge_waiter.py docstring frozen spec amendment 管道④素材源＝.agent-tmp/improve-20261011/（7d 窗）：codex-sess-report.md P-1/P-2/G-10、zcode-sess-report.md P2/G3。範圍：skills/bridge-dispatch、skills/deep-work、skills/autonomous-execution 條文＋scripts/bridge_waiter.py amendment＋watchdog POC（選做）。〕
+
+〔SC 收編 2026-10-11：dead-man switch 表態偏 watchdog 載體——條文模板可並存當第一道但不可當唯一道（現有雙防線設計成立）；誤殺防線＝「產物停滯＋心跳凍結」雙訊號，禁單一 CPU 訊號（model-bound 低 CPU 是常態——SC ticker 誤報教訓）〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+<!-- SECTION:NOTES:END -->

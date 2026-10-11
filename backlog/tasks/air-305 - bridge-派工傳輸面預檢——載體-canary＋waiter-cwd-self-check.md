@@ -4,10 +4,10 @@ title: bridge 派工傳輸面預檢——載體 canary＋waiter cwd self-check
 status: To Do
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:20'
+updated_date: '2026-10-11 02:55'
 labels: []
 dependencies: []
-ordinal: 296000
+ordinal: 10
 ---
 
 ## Description
@@ -47,4 +47,12 @@ flowchart LR
 
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2d9a5203〕〔已決策勿重辯：①waiter cwd self-check 機械化優先（腳本內建 fail-loud——三判準全過：純字串比對／繞路代價高／零判斷空間），條文一行輔助②canary 條款本體落 bridge repo plugin skill 源（版本凍結防 drift——glm 意見採納）；ai-guide 側 memory reference＋留守 skill 一行先行、bridge 出貨後 redirect③跨 repo 寫入走 bridge 維護弧對方主權面。素材源＝.agent-tmp/improve-20261011/：zcode-sess-report.md G2/P1/P6。範圍：scripts/bridge_waiter.py self-check＋單元測試、skills/bridge-dispatch 留守一行、memory reference 一條。bridge repo 面另記 deferred（不阻塞本卡）。〕
+
+〔SC 收編 2026-10-11：優先序表態＝與 AIR-303 並列最高（額度牆高頻）〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+<!-- SECTION:NOTES:END -->

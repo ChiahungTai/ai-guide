@@ -4,10 +4,10 @@ title: 驗收鏈語義三收編——測試統計、對抗審查收斂、judge �
 status: To Do
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:20'
+updated_date: '2026-10-11 02:55'
 labels: []
 dependencies: []
-ordinal: 293000
+ordinal: 50
 ---
 
 ## Description
@@ -46,4 +46,12 @@ flowchart LR
 
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2d9a5203〕〔已決策勿重辯：①writer 測試統計不作驗收證據——主控獨立重跑＋原始 exit code＋完整 log（Flash 21 綠 vs Sol 8 RED 實證）②對抗收斂協議四要素——攻擊面＝上輪新規則／偽造嘗試表必交付／unverified risk 由 marshal 實證收口／收斂判定＝bounded attack set 零可重現 bypass（codex 修正採納：由攻擊面覆蓋決定收斂，非固定輪數；連續乾淨輪≠安全）③judge 裁定討論步驟固化進 judge-review（glm vs codex 分歧裁決：補小節成本低，做——逐項回應、反駁附反證、可撤回、禁多數決）④素材源＝.agent-tmp/improve-20261011/：zcode-sess-report.md G1/L1＋codex-sess-report.md G2/G3/L3。範圍：skills/acceptance-evidence/SKILL.md 新節＋taxonomy 條、skills/judge-review/SKILL.md 裁定討論小節、rules/acceptance-evidence.md 指針（如需）。落地前載 instruction-writing skill＋依 review-engine profile 走落地前審查閘。〕
+
+〔SC 收編 2026-10-11：judge 裁定討論表態偏 codex（暫不開卡、補案例；2:1 vs glm）——本卡 AC#2 修訂：judge-review 不開新小節，改為補案例：先核 skill 結構是否適合收案例（instruction-writing 紀律），不合適則記 memory reference〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+<!-- SECTION:NOTES:END -->

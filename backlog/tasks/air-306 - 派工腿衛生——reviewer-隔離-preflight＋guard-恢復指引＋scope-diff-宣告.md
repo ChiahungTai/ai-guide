@@ -4,10 +4,10 @@ title: 派工腿衛生——reviewer 隔離 preflight＋guard 恢復指引＋sco
 status: To Do
 assignee: []
 created_date: '2026-10-11 02:20'
-updated_date: '2026-10-11 02:20'
+updated_date: '2026-10-11 02:55'
 labels: []
 dependencies: []
-ordinal: 297000
+ordinal: 60
 ---
 
 ## Description
@@ -46,4 +46,12 @@ flowchart LR
 
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2d9a5203〕〔已決策勿重辯：①reviewer isolation 以 spawn prompt 範本條文先行（self-check pwd toplevel＋禁觸共享 state 清單：.delegate-bridge/ ledger、provision dir）；bridge spawn 機械參數緩議（bridge repo）②guard deny message 改良落 hooks/ marshal admission guard（附 work-order schema 範例＋定義源路徑；非法 worker 仍不得自取授權）③scope diff 義務：交付報告必附 out-of-scope 清單＋收線 git diff baseline..HEAD 機械核對（路徑差機械查、語義超範圍 marshal 裁決——codex 分工採納）。素材源＝.agent-tmp/improve-20261011/：codex-sess-report.md P5/P3/P6。範圍：skills/agent-workflow、hooks/ guard 訊息、skills/implement＋skills/execution-plan 條文。〕
+
+〔SC 收編 2026-10-11：優先序表態＝同層中低（無異議）〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+<!-- SECTION:NOTES:END -->

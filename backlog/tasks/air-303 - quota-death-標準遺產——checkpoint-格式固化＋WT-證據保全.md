@@ -4,10 +4,10 @@ title: quota-death 標準遺產——checkpoint 格式固化＋WT 證據保全
 status: To Do
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:20'
+updated_date: '2026-10-11 02:55'
 labels: []
 dependencies: []
-ordinal: 294000
+ordinal: 20
 ---
 
 ## Description
@@ -47,4 +47,12 @@ flowchart LR
 
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 2d9a5203〕〔已決策勿重辯：①checkpoint 四資產（BUILD-REPAIR 形修復報告／原始 exit receipts／scope hash 清單／work-order 位置）進 skills/_common/task-recovery.md 範本②checkpoint 段回寫額度狀態＋臨界主動收斂③WT 證據保全採 evidence manifest 正面選取＋敏感資料檢查（codex 修正採納：反對純副檔名白名單——.log/.json 可含 credential）落 scripts/wt-close.sh＋kanban-board skill 一行④跨模型接手演練一次作 AC（fresh session 僅憑 checkpoint 零考古）。素材源＝.agent-tmp/improve-20261011/：codex-sess-report.md G1/P8/L5＋zcode-sess-report.md G5。範圍：task-recovery 範本、wt-close.sh、kanban-board skill 一行。〕
+
+〔SC 收編 2026-10-11：優先序表態＝與 AIR-305 並列最高（額度牆是高頻事件——SC 本弧即時碰上 codex native 池 100% 耗盡）〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+<!-- SECTION:NOTES:END -->
