@@ -38,6 +38,7 @@ consume_addresses = [
     "ai-guide-marshal",
     "ai-guide-exceptions",
     "code-reality-marshal",
+    "mosaic-alpha-marshal",
 ]
 
 [[class_rule]]

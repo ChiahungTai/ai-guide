@@ -527,7 +527,12 @@ class TestCustodyFence:
         """真實 config 授權集在場（鍵＋事故對址他址排除）——鎖單一源。"""
         policy = _policy()
         assert policy.consume_addresses == frozenset(
-            {"ai-guide-marshal", "ai-guide-exceptions", "code-reality-marshal"}
+            {
+                "ai-guide-marshal",
+                "ai-guide-exceptions",
+                "code-reality-marshal",
+                "mosaic-alpha-marshal",
+            }
         )
         assert self.FOREIGN not in policy.consume_addresses
 
