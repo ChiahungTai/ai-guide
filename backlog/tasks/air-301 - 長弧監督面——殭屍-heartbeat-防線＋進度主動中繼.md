@@ -4,7 +4,7 @@ title: 長弧監督面——殭屍 heartbeat 防線＋進度主動中繼
 status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:56'
+updated_date: '2026-10-11 12:51'
 labels: []
 dependencies: []
 ordinal: 30
@@ -59,6 +59,8 @@ flowchart LR
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
 
 receipt：worker job-mv3bmfjm 交付四檔＋POC 報告（usage face 逐 harness 實測：codex/glm live、muse/grok unsupported by design）；frozen spec amendment＝--progress-wake-min（預設 off 顯式開啟、exit 3 advisory 帶 lastEventAt 活體訊號、零私有 ledger 接觸）；rebase main 後 ff 收線、全量 gate 綠；AC#2 實測 wake receipt 移交下次真實長跑（deferred 標註於 AC）。
+
+progress wake 實測狀態（2026-10-11 三試未成——非 amendment bug）：v1 flash 偷跑秒回；v2 忘帶 --write-mode edit --yolo 落 plan mode（只提案不執行）；v3 ephemeral WT 派發未成（context 見底換手）。**接手者重跑配方**：①`scripts/wt-open.sh --ephemeral wake-test --base main` ②自該 WT 內 `bridge task --family glm --write-mode edit --yolo --background --prompt-file <WO>`，WO 內容＝「實際執行單一 Bash：sleep 180 && echo SLOW-DONE-180S，回報原始輸出與秒數」（v2 教訓：必須帶執行權，否則落 plan mode 秒回）③`bridge_waiter.py <jobId> --progress-wake-min 1` ④驗收：job 仍在跑時 watcher ~1 分鐘 exit 3、stdout 尾行 state=progress（帶 lastEventAt）＝AC#2 實測過。用畢的 ephemeral WT 記得拆。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
