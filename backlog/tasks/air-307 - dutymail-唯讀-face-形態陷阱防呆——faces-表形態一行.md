@@ -1,9 +1,10 @@
 ---
 id: AIR-307
 title: dutymail 唯讀 face 形態陷阱防呆——faces 表形態一行
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 03:06'
+updated_date: '2026-10-11 03:10'
 labels: []
 dependencies: []
 ordinal: 292000
@@ -31,3 +32,33 @@ flowchart LR
   E --> F["upstream 建議歸 bridge 裁決"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 faces 表形態一行落地（rg 命中 canonicalEnvelope 形態錨）
+- [ ] #2 五維檢查通過（術語照 bridge 輸出原樣 canonicalEnvelope/reply_type；無元資訊——as-of 屬 state 快照例外）
+- [ ] #3 drift 掃描通過（rg canonicalEnvelope|reply_type 掃 skills/ rules/ 引用面——handoff 語義引用無衝突）
+- [ ] #4 bridge 面 upstream work-order 已寄（envelope ca058d9d…）——回信對帳由收信鏈承接，非本卡阻塞
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+落地 receipt（審查閘四欄）：classification=ordinary（消費方法防呆，非 decision/authority/gate/authorization/acceptance 語義變更）／review=獨立 context×2（glm-5.3 job-mv38jdo8＋codex chatgpt-web/high job-mv38jdra，條文草案 Q4 逐字審——意見落檔 .agent-tmp/improve-20261011/opinion-shape-*.md；超越 ordinary 最低線）／session-freshness=fresh（instruction-writing 本 session 載入後編輯）／deployment-surfaces=healthy（skills 母鏈 symlink live 即生效；bundle 四端不含 _common＝N/A）。bridge 面對帳 deferred：work-order envelope ca058d9d…（seq 67）待 delegate-bridge-marshal 回信——由收信鏈承接，非本卡阻塞。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+形態一行已落地 skills/_common/dutymail-roundtrip.md（b77c9fe8，卡 WT 全量 gate 3801 綠、drift 掃描淨、ff-merge 收線、WT/branch 拆除零殘留）。終態圖：
+
+```mermaid
+flowchart LR
+  A["dutymail 唯讀 face 輸出"] --> B["faces 表形態一行落地"]
+  B --> C["先檢視最小 raw 樣本"]
+  C --> D["確認型別再 parse"]
+  B --> E["bridge 契約不動"]
+  E --> F["upstream work-order 已寄 seq67"]
+  F --> G["bridge 裁決（deferred 對帳）"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
