@@ -4,7 +4,7 @@ title: duty_receive 跨址 custody fence——process 禁掃他 repo 信箱（�
 status: To Do
 assignee: []
 created_date: '2026-10-11 11:40'
-updated_date: '2026-10-11 11:54'
+updated_date: '2026-10-11 12:02'
 labels: []
 dependencies: []
 ordinal: 295000
@@ -44,4 +44,6 @@ flowchart LR
 橋側實證錨點：bridge 回信（epoch 定位案）——兇手 sess_b7e5e2bd 反覆 process 掃過共享 store；他們 P3/P4 已閉環（5ad26c1＋251/251）。
 
 設計審查兩腿到站（2026-10-11）——意見全檔：.agent-tmp/improve-20261011/opinion-310-{codex,glm}.md。**機制修正（glm，裁決前提）**：duty_receive.py --address 是 required 單址參數（:1347）、模組內無多址掃描——越界＝AI session 餵他址當參數，非程式掃 store；fence 判準＝requested address ∈ 本 repo 消費授權集。**codex 主審**：顯式 consume-address allowlist（方案 b）＋核心執行邊界強制檢查（bind 前拒絕越權）——反對前綴判定、反對僅列舉層過濾。實作按此合成：授權集來源與 skip/fail-loud 語義細節讀兩檔意見後裁決。另：bridge 3.10.3 show --json finalText 已移頂層（schema 變更——AIR-307 錨點複查同族觀察）。
+
+marshal 綜合裁決（兩腿合成）：①consume-address allowlist 住 governance/dutymail-processor.toml（consume_addresses=[ai-guide-marshal, ai-guide-exceptions]，與 class×action 表同檔同治理——user 可編編制）②fence 雙層：CLI arg 驗證層＋bind 前核心執行邊界 ③fail-loud（單址 required 參數餵他址＝呼叫端錯誤——glm 證無掃描迴圈，skip 語義無場）。實作 WO＝.agent-tmp/improve-20261011/wo-310-impl.md
 <!-- SECTION:NOTES:END -->
