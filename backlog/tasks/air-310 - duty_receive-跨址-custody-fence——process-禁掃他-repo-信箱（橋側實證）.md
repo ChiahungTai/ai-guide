@@ -50,6 +50,8 @@ marshal 綜合裁決（兩腿合成）：①consume-address allowlist 住 govern
 receipt：worker job-mv3rx44v 交付 fence（allowlist toml 單一源＋雙層強制＋deny-all）＋79 行測試＋docstring 同步（AIR-308 deferred 清償）；main @ 00b06918 全量 gate 3828 綠。回信橋側 fence 交付＋觀察案結案（seq 71 待確認）。
 
 收尾 arcs（2026-10-11 接手 session）：seq 71 實為 code-reality-marshal 來信（非橋側確認）——solicit：fence 落地後他們 duty_receive 被 exit 2 擋（門牌 10-09/10 開設早於 fence、初始名單僅 ai-guide 兩址＝provisioning 缺口）；2 封待收已唯讀實質處理、cursor 停 16 無法正式 ack。裁決＝非 staged rollout，依 fence 常設指示「新信箱開設時同步本清單」增補 code-reality-marshal（dd57185c，走 ephemeral fence-sync WT——marshal admission guard 連 Edit 面都攔 canonical 控制面直寫；test_real_config_allowlist_in_place 同步、156＋全量 3828 綠）。**開放項留 user**：delegate-bridge-marshal／mosaic／southchariot marshal 等既有門牌是否一併入清單（來信明言由 owner 裁決，我側未代布）。**回信已發（user AUTH「發」）**：air-consume-provision-completed-1011-001（reply/completed、in_reply_to seq 71 原信 message_id；對方址 acceptanceSeq 20）——provisioning 確認＋cursor 16 可正式 ack；無提問面閉環。
+
+**roster 掃平（user AUTH「掃平」）**：mosaic 側 pickup session 撞同一缺口（連字號址 `mosaic-alpha-marshal`）並經 user 逐址授權自補 5e85e3de；本 session 掃平剩餘四址（mosaic_alpha-marshal／delegate-bridge-marshal／southchariot-marshal／southchariot-escalation）＝1d26ea6d，清單八址收斂缺口類。測試 FOREIGN 樣本址改錨虛構未授權址（事故實址已入清單，常數只證「未列即擋」deny-by-default）。**遺留設計挑戰**：user 質疑 fence 複雜度（「設計理念去除值星，有必要搞這麼複雜嗎」）——codex＋glm 5.3 雙顧問討論腿已派（job-mv3wqeb0／job-mv3wqfnt、WO＝.agent-tmp/improve-20261011/wo-fence-redesign.md），共識後開卡重設計。**拼寫分流**：mosaic 兩址並存（連字號 10-09 原門牌、內含 CR disposition 通知 seq 2 vs 底線 10-11 建、內含我方 completed seq 1）——分流現況已向 user 揭露；對方通知信未發（新 outward 待授權），若 mosaic 只讀連字號箱，completed 閉不了環。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
