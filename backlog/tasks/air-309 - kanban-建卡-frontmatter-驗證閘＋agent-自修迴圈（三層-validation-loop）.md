@@ -1,10 +1,10 @@
 ---
 id: AIR-309
 title: kanban 建卡 frontmatter 驗證閘＋agent 自修迴圈（三層 validation loop）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 08:16'
-updated_date: '2026-10-11 08:16'
+updated_date: '2026-10-11 08:25'
 labels: []
 dependencies: []
 ordinal: 294000
