@@ -1,10 +1,10 @@
 ---
 id: AIR-302
 title: 驗收鏈語義三收編——測試統計、對抗審查收斂、judge 裁定討論
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:00'
+updated_date: '2026-10-11 04:09'
 labels: []
 dependencies: []
 ordinal: 50
@@ -36,10 +36,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 acceptance-evidence skill 增兩節／條（測試統計＋對抗收斂協議），各帶本弧實證錨點——rg 命中可驗
-- [ ] #2 judge-review skill 增裁定討論步驟（逐項回應、反駁附反證、可撤回、禁多數決）
-- [ ] #3 instruction 落地前審查閘依 review-engine profile 完成所需審查腿（receipt 留卡 notes）
-- [ ] #4 deploy_agents.py bundle 驗證綠（90KiB gate 內）＋受影響引用面 drift 掃描（rg 單一關鍵詞掃引用）
+- [x] #1 acceptance-evidence skill 增兩節／條（測試統計＋對抗收斂協議），各帶本弧實證錨點——rg 命中可驗
+- [x] #2 judge-review skill 增裁定討論步驟（逐項回應、反駁附反證、可撤回、禁多數決）
+- [x] #3 instruction 落地前審查閘依 review-engine profile 完成所需審查腿（receipt 留卡 notes）
+- [x] #4 deploy_agents.py bundle 驗證綠（90KiB gate 內）＋受影響引用面 drift 掃描（rg 單一關鍵詞掃引用）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -54,4 +54,22 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+boundary receipt：classification=boundary（收斂判定＝acceptance 面語義）／review=cross-family fresh（codex webgpt 主弧審 G1/G2/G3 內容＋修正收斂判準）＋independent context（glm-5.3）＋Writer/Reviewer 分離（WT worker 寫、marshal 審 diff 後收線）；intent 分離腿未派＝顯式記錄降級／session-freshness=fresh／deployment-surfaces=healthy（skills symlink live 即生效，非 bundle 面）。全量 gate 3801 綠（6ffbc3c5）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+三處條文落地 main @ 6ffbc3c5：acceptance-evidence taxonomy 增「派工腿測試統計」條＋新節「對抗審查收斂協議」（四要素＋DB-100 R1→R4 真實案例）、judge-review 增「裁定討論」（四紀律＋雙向反轉真實案例）。終態圖：
+
+```mermaid
+flowchart LR
+  A["派工腿宣稱"] --> B["主控獨立重跑＋exit code"]
+  C["審查輪次"] --> D["攻擊上輪新規則＋偽造嘗試表"]
+  D --> E{"零可重現 bypass?"}
+  E -->|"否"| C
+  E -->|"是"| F["收斂 PASS"]
+  G["judge findings"] --> H["逐項回應＋反駁附反證"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
