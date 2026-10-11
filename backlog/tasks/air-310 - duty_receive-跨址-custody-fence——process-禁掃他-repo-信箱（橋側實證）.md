@@ -48,6 +48,8 @@ flowchart LR
 marshal 綜合裁決（兩腿合成）：①consume-address allowlist 住 governance/dutymail-processor.toml（consume_addresses=[ai-guide-marshal, ai-guide-exceptions]，與 class×action 表同檔同治理——user 可編編制）②fence 雙層：CLI arg 驗證層＋bind 前核心執行邊界 ③fail-loud（單址 required 參數餵他址＝呼叫端錯誤——glm 證無掃描迴圈，skip 語義無場）。實作 WO＝.agent-tmp/improve-20261011/wo-310-impl.md
 
 receipt：worker job-mv3rx44v 交付 fence（allowlist toml 單一源＋雙層強制＋deny-all）＋79 行測試＋docstring 同步（AIR-308 deferred 清償）；main @ 00b06918 全量 gate 3828 綠。回信橋側 fence 交付＋觀察案結案（seq 71 待確認）。
+
+收尾 arcs（2026-10-11 接手 session）：seq 71 實為 code-reality-marshal 來信（非橋側確認）——solicit：fence 落地後他們 duty_receive 被 exit 2 擋（門牌 10-09/10 開設早於 fence、初始名單僅 ai-guide 兩址＝provisioning 缺口）；2 封待收已唯讀實質處理、cursor 停 16 無法正式 ack。裁決＝非 staged rollout，依 fence 常設指示「新信箱開設時同步本清單」增補 code-reality-marshal（dd57185c，走 ephemeral fence-sync WT——marshal admission guard 連 Edit 面都攔 canonical 控制面直寫；test_real_config_allowlist_in_place 同步、156＋全量 3828 綠）。**開放項留 user**：delegate-bridge-marshal／mosaic／southchariot marshal 等既有門牌是否一併入清單（來信明言由 owner 裁決，我側未代布）。PENDING：向 code-reality-marshal 回信確認 provisioning 完成（outward send 待 user AUTH）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

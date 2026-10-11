@@ -60,7 +60,7 @@ SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7a
 
 receipt：worker job-mv3bmfjm 交付四檔＋POC 報告（usage face 逐 harness 實測：codex/glm live、muse/grok unsupported by design）；frozen spec amendment＝--progress-wake-min（預設 off 顯式開啟、exit 3 advisory 帶 lastEventAt 活體訊號、零私有 ledger 接觸）；rebase main 後 ff 收線、全量 gate 綠；AC#2 實測 wake receipt 移交下次真實長跑（deferred 標註於 AC）。
 
-progress wake 實測狀態（2026-10-11 三試未成——非 amendment bug）：v1 flash 偷跑秒回；v2 忘帶 --write-mode edit --yolo 落 plan mode（只提案不執行）；v3 ephemeral WT 派發未成（context 見底換手）。**接手者重跑配方**：①`scripts/wt-open.sh --ephemeral wake-test --base main` ②自該 WT 內 `bridge task --family glm --write-mode edit --yolo --background --prompt-file <WO>`，WO 內容＝「實際執行單一 Bash：sleep 180 && echo SLOW-DONE-180S，回報原始輸出與秒數」（v2 教訓：必須帶執行權，否則落 plan mode 秒回）③`bridge_waiter.py <jobId> --progress-wake-min 1` ④驗收：job 仍在跑時 watcher ~1 分鐘 exit 3、stdout 尾行 state=progress（帶 lastEventAt）＝AC#2 實測過。用畢的 ephemeral WT 記得拆。
+progress wake 實測（2026-10-11 收口）：v1 flash 偷跑秒回；v2 忘帶 --write-mode edit --yolo 落 plan mode；v3 卡點＝bridge 3.10.3 對 write-capable 派發強制 verified card worktree（ephemeral WT identity 綁卡空字串＝`--wt --card` 拒收「card mismatch」）——解法＝persistent card WT（`wt-open.sh AIR-301 --base main`）派發。**v3 實測過**：glm GLM-5.3-Flash 兩顆 job（sleep 180／sleep 100，皆真的執行——finalText 帶 SLOW-DONE-*、runs 面 tool.updated=181、exitCode 0）；watcher `--progress-wake-min 1` 恰 60s exit 3（背景直錄 WATCHER_RC=3）、stdout `state=progress` JSON（armedAt＋elapsedMinutes＋雙軸 silence），wake 時 job 仍在跑。觀察面註記：running 期快照 `lastEventAt=null`（bridge 3.10.3 running 期不帶該欄——活體訊號由雙軸 silence 承擔，終態 show 才帶 lastEventAt；advisory 語義不受損）。合成實測收 AC#2；真實長跑 wake receipt 維持 deferred（不變）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
