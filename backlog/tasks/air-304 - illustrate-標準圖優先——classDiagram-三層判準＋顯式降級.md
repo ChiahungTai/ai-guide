@@ -1,10 +1,10 @@
 ---
 id: AIR-304
 title: illustrate 標準圖優先——classDiagram 三層判準＋顯式降級
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:26'
+updated_date: '2026-10-11 04:33'
 labels: []
 dependencies: []
 ordinal: 40
@@ -38,10 +38,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 diagram-selection 三層判準落地＋classDiagram 負面條收窄到交錯域
-- [ ] #2 illustrate＋artifact-menu 連動更新（內部張力消除：兩檔對 classDiagram 立場一致）
-- [ ] #3 事件重放 receipt：study-area 形態請求第一輪命中標準圖或主動建議 md classDiagram
-- [ ] #4 C3 實測記錄：svg 點開直達＋md preview 路徑各驗一次（可點性未查證面轉實證）
+- [x] #1 diagram-selection 三層判準落地＋classDiagram 負面條收窄到交錯域
+- [x] #2 illustrate＋artifact-menu 連動更新（內部張力消除：兩檔對 classDiagram 立場一致）
+- [x] #3 事件重放 receipt：study-area 形態請求第一輪命中標準圖或主動建議 md classDiagram
+- [ ] #4 C3 實測記錄（移交：SC atlas S1 交付時隨 F5 人類確認——SC 回信裁定不需新 POC）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -56,4 +56,22 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
+
+receipt：worker job-mv3bmga0 交付三檔連動（三層判準＋先語義後載體＋標準圖 surface 義務＋console 縮排樹＋md 落點慣例；內部張力消除）；main @ 116446e0、全量 gate 3809 綠；AC#4 C3 實測移交 SC atlas S1（SC 回信裁定不需新 POC——F5 人類確認＋S1 正式測試）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+illustrate 標準圖優先落地：diagram-selection 三層判準（樹形 classDiagram 正答、交錯降表格＋刪邊）＋先語義後載體＋降級顯式回報；illustrate console 縮排樹＋md classDiagram 落點；artifact-menu 連動一致。終態圖：
+
+```mermaid
+flowchart LR
+  A["結構圖解請求"] --> B["辨識關係語義"]
+  B --> C{"何種關係?"}
+  C -->|"樹形繼承"| D["classDiagram 直出"]
+  C -->|"型別對照"| E["表格"]
+  C -->|"多向交錯"| F["表格＋刪邊顯式降級"]
+  D --> G["md 落檔回報路徑"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
