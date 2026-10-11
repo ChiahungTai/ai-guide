@@ -4,7 +4,7 @@ title: illustrate 標準圖優先——classDiagram 三層判準＋顯式降級
 status: Done
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 04:33'
+updated_date: '2026-10-11 12:31'
 labels: []
 dependencies: []
 ordinal: 40
@@ -58,6 +58,8 @@ flowchart LR
 SC 回信已收（reply_type=completed、envelope 41fe234c-4d56-46eb-bd68-85aa7aa6e843；reply raw＝.agent-tmp/improve-20261011/sc-reply-raw.json，7d 窗）——五題全表態＋SC 側 chat 連結設計結論，本信閉環
 
 receipt：worker job-mv3bmga0 交付三檔連動（三層判準＋先語義後載體＋標準圖 surface 義務＋console 縮排樹＋md 落點慣例；內部張力消除）；main @ 116446e0、全量 gate 3809 綠；AC#4 C3 實測移交 SC atlas S1（SC 回信裁定不需新 POC——F5 人類確認＋S1 正式測試）。
+
+C3 實測結果（2026-10-11 user 親點）：svg＋絕對路徑＝點開直達渲染 ✓；相對路徑（.agent-tmp/...）跨 workspace 場景＝路徑不存在 ✗——檔案連結對人類 viewport 的適用域確認：chat workspace root 與檔案所在 repo 一致時相對路徑可點、否則須絕對路徑。此發現補強 SC 信的「repo 層涵蓋不到」論點（illustrate 條文的 md 落檔回報路徑宜視情境給絕對路徑）。SC atlas S1 的正式測試仍歸 SC 側交付（本項非取代）。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
