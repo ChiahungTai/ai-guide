@@ -1,10 +1,10 @@
 ---
 id: AIR-303
 title: quota-death 標準遺產——checkpoint 格式固化＋WT 證據保全
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:00'
 labels: []
 dependencies: []
 ordinal: 20

@@ -1,10 +1,10 @@
 ---
 id: AIR-305
 title: bridge 派工傳輸面預檢——載體 canary＋waiter cwd self-check
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:00'
 labels: []
 dependencies: []
 ordinal: 10

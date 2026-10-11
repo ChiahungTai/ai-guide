@@ -1,10 +1,10 @@
 ---
 id: AIR-302
 title: 驗收鏈語義三收編——測試統計、對抗審查收斂、judge 裁定討論
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 02:19'
-updated_date: '2026-10-11 02:55'
+updated_date: '2026-10-11 04:00'
 labels: []
 dependencies: []
 ordinal: 50
