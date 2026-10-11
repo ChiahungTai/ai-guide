@@ -31,11 +31,24 @@
 
 **memory 整理在落盤之後**：工程狀態落盤成功後才做可選 memory 候選整理。gate 故障／無授權／無寫權都不能阻止保存工程狀態，也不能跳過後宣稱「已蒸餾」——未蒸餾就記交接待辦（owner／待辦承載）。
 
+## 長弧額外資產欄：quota-death 標準遺產（AIR-303）
+
+「隨時會死」是長弧（bridge 大弧／額度受限載具）的設計預設。長弧 checkpoint 除上表必要欄位外，額外固化四資產——**指針進 checkpoint、內容住各自檔案**（同上節「已有欄位不重抄」紀律）；fresh session 憑此零考古零重做接手（實證：DB-106 修復弧——Flash 額度死後 Sol 跨模型接手零重做）。
+
+| 資產欄 | 問的是 |
+|---|---|
+| 修復報告（BUILD-REPAIR 形） | 修復／施工弧的報告檔在哪、做到哪（已修／未修、RED／GREEN） |
+| 原始 exit receipts | 實跑命令的原始 exit code 紀錄檔（run-records 形）在哪——接手者免重跑已跑過的驗證 |
+| scope hash 清單 | 本弧觸及檔案＋hash 快照檔（final-scope 形）在哪——接手時機械比對本弧 dirty 是否仍在 scope 內 |
+| work-order 位置 | 本弧工單檔在哪——接手者讀工單即得授權與 spec 邊界（工單是 AUTH 憑證，非可省略的背景） |
+
+**額度回寫欄**（隨每次 checkpoint 更新一併寫）：剩餘額度狀態一行（provider／粗略水位）。額度臨界時**主動收斂**：先落盤 checkpoint、通知 user／board-control、停 heartbeat／背景派發——不開新工作面。
+
 ## 恢復順序（接手端）
 
 1. **定位指定任務**——以 user 指定／卡／工單為準；**不用「最新 session」猜身份**（同 worktree 並行 session 會撈錯）
 2. **核對當前實物**——git HEAD/dirty、卡狀態、EP 進度（該弧原有 EP 時）、active job（機械核對檔案／hash／job 狀態）。段落 receipt 在場時跑 `scripts/segment_receipt.py --verify <receipt>`（FRESH＝卡 notes checkpoint 指針與 EP 進度判斷欄（該弧原有 EP 時並持）仍有效；DRIFTED＝以實物 re-derive，receipt 是 validity token 非第二真相源；跨 repo 消費以 ai-guide checkout 絕對路徑呼叫）
-3. **active findings＋最新證據**——卡 notes、`.review`／EP review 區段、實跑結果指針
+3. **active findings＋最新證據**——卡 notes、`.review`／EP review 區段、實跑結果指針；長弧另收四資產（修復報告／原始 exit receipts／scope hash 清單／work-order——照 checkpoint 指針，見上節）
 4. **checkpoint 理由及未決**——為何轉向、哪些未決；checkpoint 舊 hash 只是比對依據，**不是當前 HEAD 必須回到的 target**
 5. **按需 STATE/memory**——STATE 是觀察層，補「為什麼」不覆蓋完成度；完成度以實物核對為準
 6. **所需新鮮 guidance**——governing rules/政策 session 中變更過，依 freshness 條款重載／fresh context；舊 context 不作新政策證明

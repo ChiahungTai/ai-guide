@@ -40,8 +40,16 @@
 #   ~/.agents/bridge-ledger-archive/<wt>-<YYYYMMDD-HHMMSS>/（0600、防碰撞；v1 無
 #   TTL/GC）。歸檔失敗即 die 保現場——證據隨 WT 移除即滅（drain 段函式＝
 #   scripts/bridge_sweeper.py archive_wt_bridge_evidence）。
+# - .agent-tmp 證據保全（AIR-303）：full 移除 WT 前掃 <wt>/.agent-tmp/，文檔型正面選取
+#   （.md/.log/.json/.exit——瘦身準則，build 產物/binary 不留；實證 935M→2.6M 誤拷風險）
+#   ＋敏感資料檢查（token/credential/api[_-]?key/password 命中者排除並列 warning——
+#   .log/.json 文檔型亦可含 credential，非純副檔名白名單）→ 歸檔主 repo
+#   .agent-tmp/wt-evidence/<卡id>/＋manifest.json（來源路徑＋sha256＋大小）。與 AIR-267
+#   bridge drain 並存不重疊（liveness.jsonl 非四類副檔名；identity contract 刻意隨 WT
+#   同滅不歸檔）。歸檔失敗即 die 保現場；preflight 面報告候選數（零變更）。
 #
-# 依賴：git、bash 3.2+。退出碼：0 成功／2 鎖衝突／3 驗證失敗／4 preflight 未過。
+# 依賴：git、bash 3.2+、python3（receipt gate／證據 manifest）；敏感掃描 rg（缺席退 grep -E）。
+# 退出碼：0 成功／2 鎖衝突／3 驗證失敗／4 preflight 未過。
 
 set -euo pipefail
 
@@ -114,6 +122,99 @@ ID_WT_PATH="$(jval "$IDENT" wt_path)"
 BASE_REF="${BASE_REF:-$ID_OWNING}"
 [ -n "$BASE_REF" ] || die "owning 線未知（identity 無 owning_line 且未給 --base）"
 
+# ── .agent-tmp 證據保全（AIR-303）：文檔型正面選取＋敏感掃描 → 主 repo 歸檔──────
+# 與 AIR-267 bridge drain 並存不重疊（drain 管 .delegate-bridge/jobs＋liveness.jsonl；
+# identity contract 刻意隨 WT 同滅不歸檔）。搬移僅 full 模式；preflight 走 ev_preflight_report。
+EV_DOC_FIND=( -type f \( -name '*.md' -o -name '*.log' -o -name '*.json' -o -name '*.exit' \) ! -name 'wt-identity.json' )
+EV_SENSITIVE_PAT='token|credential|api[_-]?key|password'
+
+ev_candidates() {  # NUL 分隔候選絕對路徑——文檔型正面選取（瘦身準則：非文檔型不留）
+  find "$WT_PATH/.agent-tmp" "${EV_DOC_FIND[@]}" -print0 2>/dev/null
+}
+
+ev_is_sensitive() {  # $1＝檔案；exit 0＝命中敏感模式（排除不歸檔，列 warning）
+  if command -v rg >/dev/null 2>&1; then
+    rg -iq "$EV_SENSITIVE_PAT" "$1" 2>/dev/null
+  else
+    grep -iqE "$EV_SENSITIVE_PAT" "$1" 2>/dev/null
+  fi
+}
+
+ev_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
+  else shasum -a 256 "$1" | cut -d' ' -f1; fi
+}
+
+ev_preflight_report() {  # 零變更——只報候選與敏感命中面（缺席靜默，同 bridge drain 預檢）
+  [ -d "$WT_PATH/.agent-tmp" ] || return 0
+  local n=0 m=0 f
+  while IFS= read -r -d '' f; do
+    n=$((n+1))
+    if ev_is_sensitive "$f"; then m=$((m+1)); fi
+  done < <(ev_candidates)
+  if [ "$n" -gt 0 ]; then
+    info "證據保全預檢：文檔型候選 ${n} 檔（敏感命中將排除 ${m} 檔）——full 收線歸檔至 $PRIMARY/.agent-tmp/wt-evidence/<卡id>/（AIR-303）"
+  fi
+  return 0
+}
+
+preserve_agent_tmp_evidence() {  # 0＝已歸檔／無可歸檔；1＝失敗（caller die 保現場）
+  local src_root="$WT_PATH/.agent-tmp"
+  [ -d "$src_root" ] || { info "證據保全：WT 無 .agent-tmp/，跳過"; return 0; }
+  local card_dir
+  if [ "$ID_MODE" = "ephemeral" ]; then
+    card_dir="${ID_TASK#"(ephemeral) "}"
+  else
+    card_dir="${ID_TASK:-$CUR_BR}"
+  fi
+  card_dir="$(printf '%s' "$card_dir" | tr -c 'A-Za-z0-9._-' '_')"
+  local dest="$PRIMARY/.agent-tmp/wt-evidence/$card_dir"
+  local tsv n_arch=0 n_excl=0 f rel size sha
+  tsv="$(mktemp)" || return 1
+  while IFS= read -r -d '' f; do
+    rel="${f#"$src_root"/}"
+    size="$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo '-')"
+    if ev_is_sensitive "$f"; then
+      printf 'excluded\t%s\t-\t%s\n' "$size" "$rel" >> "$tsv"
+      n_excl=$((n_excl+1))
+      warn "證據保全：敏感命中排除（${EV_SENSITIVE_PAT}）——不歸檔：${rel}"
+    else
+      # 「搬」以 copy 實作——WT 移除緊隨其後終態同；cp 失敗可重試（來源未動）
+      mkdir -p "$dest/$(dirname "$rel")" 2>/dev/null || true
+      if ! cp -p "$f" "$dest/$rel"; then rm -f "$tsv"; return 1; fi
+      sha="$(ev_sha256 "$dest/$rel")"
+      printf 'archived\t%s\t%s\t%s\n' "$size" "$sha" "$rel" >> "$tsv"
+      n_arch=$((n_arch+1))
+    fi
+  done < <(ev_candidates)
+  if [ "$n_arch" -eq 0 ] && [ "$n_excl" -eq 0 ]; then
+    rm -f "$tsv"
+    info "證據保全：.agent-tmp/ 無文檔型證據，跳過歸檔"
+    return 0
+  fi
+  mkdir -p "$dest" || { rm -f "$tsv"; return 1; }
+  python3 - "$tsv" "$dest/manifest.json" "$WT_PATH" "$CUR_BR" "$card_dir" "$n_arch" "$n_excl" <<'PY' || { rm -f "$tsv"; return 1; }
+import json, sys
+tsv_path, out_path, wt, br, card, n_arch, n_excl = sys.argv[1:8]
+rows = []
+with open(tsv_path) as fh:
+    for line in fh:
+        status, size, sha256, rel = line.rstrip("\n").split("\t", 3)
+        row = {"status": status, "source": rel, "size": int(size) if size.isdigit() else None}
+        if status == "archived":
+            row["sha256"] = sha256
+        rows.append(row)
+doc = {"schema": "wt-evidence-manifest/1", "wt": wt, "branch": br, "card": card,
+       "archived": int(n_arch), "excluded_sensitive": int(n_excl), "rows": rows}
+with open(out_path, "w") as fh:
+    json.dump(doc, fh, ensure_ascii=False, indent=2)
+    fh.write("\n")
+PY
+  rm -f "$tsv"
+  info "證據保全：${n_arch} 檔＋manifest → ${dest}（敏感排除 ${n_excl} 檔；非文檔型不留＝瘦身，AIR-303）"
+  return 0
+}
+
 # ── preflight 檢查（全唯讀）──────────────────────────────────────────────
 FAIL=0
 TOP="$(git -C "$WT_PATH" rev-parse --show-toplevel)"
@@ -134,7 +235,7 @@ else chk "P2 working tree clean" 0 "$DIRTY"; fi
 # 池 symlink 污染檢查（branch 若收進 symlink entry，收斂會污染 trunk——preflight 攔下）
 POLLUTED="$(git -C "$WT_PATH" ls-tree -r "$CUR_BR" -- .agents 2>/dev/null | grep 120000 || true)"
 if [ -z "$POLLUTED" ]; then chk "P2.5 無被追蹤的池 symlink" 1
-else chk "P2.5 無被追蹤的池 symlink" 0 "$POLLUTED——先 git rm --cached 清除再收"; fi
+else chk "P2.5 無被追蹤的池 symlink" 0 "${POLLUTED}——先 git rm --cached 清除再收"; fi
 
 COMMITS="$(git -C "$WT_PATH" log --format='%h %s' "${BASE_REF}..${CUR_BR}")"
 N_COMMITS="$(printf '%s' "$COMMITS" | grep -c . || true)"
@@ -197,6 +298,7 @@ if [ "$PREFLIGHT" = "1" ]; then
   # 歸檔在 full 模式）；清單一行，缺席靜默
   DRAIN_LIST="$(python3 "$SCRIPT_DIR/bridge_sweeper.py" drain --wt "$WT_PATH" --list-only)" || DRAIN_LIST=""
   if [ -n "$DRAIN_LIST" ]; then info "$DRAIN_LIST"; fi
+  ev_preflight_report
   if [ "$FAIL" = "1" ]; then
     receipt "fail(preflight-checks)"
     printf '[wt-close] preflight 未過（零變更）\n' >&2; exit 4
@@ -273,9 +375,15 @@ info "board finalization 提醒：git 收斂已完成——結案兩步（status
 # BRIDGE_LEDGER_ARCHIVE 覆寫（測試注入面）
 BRIDGE_LEDGER_ARCHIVE="${BRIDGE_LEDGER_ARCHIVE:-$HOME/.agents/bridge-ledger-archive}"
 if ! DRAIN_OUT="$(python3 "$SCRIPT_DIR/bridge_sweeper.py" drain --wt "$WT_PATH" --archive-root "$BRIDGE_LEDGER_ARCHIVE")"; then
-  die "bridge 證據歸檔失敗——現場保留，人工歸檔後重跑 wt-close（歸檔根：$BRIDGE_LEDGER_ARCHIVE）"
+  die "bridge 證據歸檔失敗——現場保留，人工歸檔後重跑 wt-close（歸檔根：${BRIDGE_LEDGER_ARCHIVE}）"
 fi
 if [ -n "$DRAIN_OUT" ]; then info "$DRAIN_OUT"; fi
+
+# ── .agent-tmp 證據保全（AIR-303）：移除 WT 前歸檔文檔型證據 → 主 repo ──────────
+# 證據（untracked）隨 WT 移除即滅——歸檔失敗即 die 保現場（同 bridge drain 哲學）
+if ! preserve_agent_tmp_evidence; then
+  die "agent-tmp 證據保全失敗——現場保留，人工歸檔後重跑 wt-close（歸檔根：$PRIMARY/.agent-tmp/wt-evidence/）"
+fi
 
 # ── 移除卡 WT → 刪 branch → 暫時 WT 收掉＋釋鎖─────────────────────────────
 # 順序依據：ff merge 已保證吸收；git 拒刪「被任何 WT checkout」的 branch——必須先移除
