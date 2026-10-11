@@ -39,6 +39,10 @@ consume_addresses = [
     "ai-guide-exceptions",
     "code-reality-marshal",
     "mosaic-alpha-marshal",
+    "mosaic_alpha-marshal",
+    "delegate-bridge-marshal",
+    "southchariot-marshal",
+    "southchariot-escalation",
 ]
 
 [[class_rule]]

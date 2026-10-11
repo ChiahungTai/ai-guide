@@ -465,7 +465,9 @@ class TestCustodyFence:
     runner 呼叫數＝0——holder status/bind/prepare/ack 全序列不得開始、
     state 不動。"""
 
-    FOREIGN = "delegate-bridge-marshal"  # 事故實址——他 repo 信箱
+    FOREIGN = "foreign-repo-marshal"  # 未授權樣本址——掃平後事故實址
+    # （delegate-bridge-marshal）已入清單；本常數只證「未列即擋」
+    # deny-by-default，不再指涉特定事故地址。
 
     def test_own_address_passes_full_cycle(self, state_file):
         """本址（授權集內）放行——holder 全序列照常（空批＝([], None)）。"""
@@ -524,7 +526,7 @@ class TestCustodyFence:
         assert runner.calls == []
 
     def test_real_config_allowlist_in_place(self):
-        """真實 config 授權集在場（鍵＋事故對址他址排除）——鎖單一源。"""
+        """真實 config 授權集在場（鍵＋未授權樣本址排除）——鎖單一源。"""
         policy = _policy()
         assert policy.consume_addresses == frozenset(
             {
@@ -532,6 +534,10 @@ class TestCustodyFence:
                 "ai-guide-exceptions",
                 "code-reality-marshal",
                 "mosaic-alpha-marshal",
+                "mosaic_alpha-marshal",
+                "delegate-bridge-marshal",
+                "southchariot-marshal",
+                "southchariot-escalation",
             }
         )
         assert self.FOREIGN not in policy.consume_addresses
