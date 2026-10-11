@@ -65,6 +65,8 @@ Phase 0 盤出在飛 watcher／未收線 bridge job → 「下一步」欄照 co
 
 有卡 → 引用卡（該弧原有 EP 時併引用段落）＋補這次對話剛定的決策；都無 → 現擠 brief（完整 schema）。
 
+> **marshal mode 交代（來源 session 為編排弧時必含——2026-10-11 user 裁決）**：packet schema「執行姿態」欄恆標 **marshal**，並交代接手方：設計／派工／審查收線／裁決自持，**implementation 一律走 lane（spawn／bridge），禁自己下場實作**。來源 session 在編排弧（implementation 由 lane 承接的弧）產 packet 漏標＝交接缺陷。
+
 ### Phase 1.5：交接資訊採「收取法形」書寫（AIR-168）
 
 packet 內的交接資訊以**收取法形**書寫——每項交付寫「**產出路徑**＋**收法**（哪個命令／怎麼讀）＋**對帳注記**（若有已知矛盾，明寫）」。**狀態快照（「誰在跑／做到哪」類手抄敘述）禁入 handoff**——寫下即爛；狀態一律以 `uv run python scripts/inflight_snapshot.py` 機械生成現值替代，不手抄進 packet。依據：AIR-168 契約 §附帶——收取法形實證全數存活、快照形寫下即爛。

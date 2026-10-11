@@ -40,6 +40,7 @@ description: "把工作交給另一個 LLM/session/repo 時，打包成對方讀
 | 欄位 | 說明 |
 |------|------|
 | 任務一句話 | 對方要做什麼 |
+| **執行姿態** | **marshal（編排）或 contributor（親自實作）**——來源 session 為 marshal 姿態（編排弧：設計/派工/審查收線歸 session、implementation 走 lane）時恆標 marshal，packet 必交代：接手方進 marshal mode——implementation 一律走 lane，禁自己下場實作 |
 | baseline commit | grounding |
 | 來源 EP 路徑 | 有 EP 必引（EP 是 self-contained 載體，不重造）|
 | 已完成清單 | 避免對方重做 |
