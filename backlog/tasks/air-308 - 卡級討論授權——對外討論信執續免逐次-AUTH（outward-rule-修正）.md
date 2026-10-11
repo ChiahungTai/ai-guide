@@ -1,10 +1,10 @@
 ---
 id: AIR-308
 title: 卡級討論授權——對外討論信執續免逐次 AUTH（outward rule 修正）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-11 03:29'
-updated_date: '2026-10-11 03:30'
+updated_date: '2026-10-11 03:34'
 labels: []
 dependencies: []
 ordinal: 293000
