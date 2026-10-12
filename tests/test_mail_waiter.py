@@ -1410,3 +1410,57 @@ def test_safe_repo_dirname_delegates_core_byte_wise():
     assert mod.safe_repo_dirname("┯") == "%E2%94%AF"
     assert mod.safe_repo_dirname("┯") != mod.safe_repo_dirname("%2F")
     assert mod.safe_repo_dirname("alpha_beta+") == "alpha_beta%2B"
+
+
+# ── start 透明化行（AIR-318——既有新鮮哨被 supersede 前先示警）─────────
+
+
+class TestStartTransparency:
+    """start 落新代前偵測既有新鮮哨：desired=running 且 armed_at 新鮮
+    （< 輪詢週期×門牌數×3——判準單一源＝_staleness_mark）＝印一行
+    supersede 預告（不擋不確認）；stale／stopped／state 缺席＝零預告。"""
+
+    def test_start_fresh_running_prints_supersede_notice(
+        self, tmp_path, capsys
+    ):
+        base = str(tmp_path / "st")
+        _seed_state(base, generation=4, cursors={ADDR: ("u0", "k0")},
+                    armed_at=time.time())
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
+        out = capsys.readouterr().out
+        assert "偵測到既有哨" in out
+        assert "supersede" in out
+        assert _read_state(base)["generation"] == 5  # 不擋——照常 arm
+        # 預告行在 armed 行之前（先示警後 arm——輸出順序面）
+        assert out.index("偵測到既有哨") < out.index("armed")
+
+    def test_start_stale_running_no_notice(self, tmp_path, capsys):
+        base = str(tmp_path / "st")
+        _seed_state(base, generation=4, cursors={ADDR: ("u0", "k0")},
+                    armed_at=time.time() - 10 * mod.POLL_SLICE_SECONDS)
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
+        assert "偵測到既有哨" not in capsys.readouterr().out
+
+    def test_start_stopped_flag_no_notice_even_fresh(
+        self, tmp_path, capsys
+    ):
+        """desired=stopped（新鮮 armed_at 也一樣）＝非「既有哨在場」——
+        停哨權威面，零預告；start 照常翻回 running。"""
+        base = str(tmp_path / "st")
+        _seed_state(base, desired="stopped", generation=4,
+                    cursors={ADDR: ("u0", "k0")}, armed_at=time.time())
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
+        assert "偵測到既有哨" not in capsys.readouterr().out
+        assert _read_state(base)["desired"] == "running"
+
+    def test_start_absent_or_corrupt_state_no_notice(
+        self, tmp_path, capsys
+    ):
+        base = str(tmp_path / "st")
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
+        assert "偵測到既有哨" not in capsys.readouterr().out
+        capsys.readouterr()
+        with open(_state_file(base), "w", encoding="utf-8") as fh:
+            fh.write("{broken")
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
+        assert "偵測到既有哨" not in capsys.readouterr().out

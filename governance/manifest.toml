@@ -30,6 +30,8 @@ scripts = [
     "hooks/duty_holder_release.py",
     "hooks/identity_pointer.py",
     "hooks/kanban-skill-gate.py",
+    # AIR-318 mail-autoarm advisory（SessionStart 缺哨提醒——marker 三態）
+    "hooks/mail_autoarm.py",
     "hooks/marshal_admission_guard.py",
     "hooks/memory-dirty-sensor.py",
     "hooks/memory-index-regen.py",

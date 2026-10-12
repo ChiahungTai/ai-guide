@@ -86,6 +86,17 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
 ---
 
+## 階段 0：通信整備（有卡＋長弧才跑；日間互動 session 免）
+
+夜間通信鏈 v1（AIR-318）進場段——長弧開跑前把信件面整備好：消費既有信、掛哨等新信、開夜間台帳。位置在自主 overlay dispatch 之前＝**所有 dispatch 分支（含 `/implement` 委派、`/at` resume）都先經過本段**；日間互動 session（人在鍵盤前）免跑。
+
+1. **once**：mail-handle once 流（`pending-replies`→`inbox`→逐封 `mark-read`；`process` 禁）。消費資格＝本卡 owning 值星（consuming-owner 邊界＝[mail-handle](../mail-handle/SKILL.md)）。
+2. **grant 查驗**：讀本卡 notes 的卡級討論授權四欄（卡 id＋首發 AUTH 引文＋餘額＋到期）。缺一＝read-and-park（只標已讀＋待回覆持久化），晨報記「建議 user 建立 grant」。
+3. **掛哨（條件式）**：substrate 有背景 shell 面才 `mail_waiter.py start` 並**真的執行印出的 worker 命令**（命令形與 session 級生命週期＝[mail-watch](../mail-watch/SKILL.md)）；無（headless -p／bridge worker）→ 記「本夜 unwatched」，禁 busy-poll。順序恆 once→start。
+4. **夜間台帳開帳**：`.agent-tmp/night-ledger-<卡id>.md`，抄 grant 邊界（餘額/到期/對址/主題）。
+
+---
+
 ## 流程 dispatch（自主 overlay，依 ARGUMENTS 決定程序）
 
 **deep-work 是「行為模式」（mode）+ 自主 overlay**，可疊加在任意 LLM-chain 程序上。組合時 procedure 委派，deep-work 疊加自主行為（自主決策、歧義選最合理並記錄、完整交付、錯誤自癒、語音通知）。
@@ -272,6 +283,13 @@ Agent prompt 開頭加上 /rules-reminder 規則摘要：
 - 每項必帶 user 動作（確認／否認／忽略）——無動作項刪
 - **STATE.md 一字不動**；digest 是**渲染層非第二 state**——數據宣稱只從卡面與機械底稿帶入
 - **fail-loud 尾段帶「未收割源」清單**：素材源＝parent 卡 FS、各卡 FS、STATE.md pending 台帳、settle queue、卡 notes verdict 物——列了的才可信，沒列的明示沒看
+
+**🌙 夜間通信摘要段（夜間通信鏈 v1——夜間長弧 completion report／晨間 digest 共用段模板；日間弧免、無夜間台帳免）**：
+
+- 發出／回覆 N 則——夜間台帳路徑（`.agent-tmp/night-ledger-<卡id>.md`）＋逐則歸卡＋grant 餘額
+- 待回覆遺留——N 則（read-and-park 落帳者列明）
+- watch 鏈狀態——掛哨中／已停哨／本夜 unwatched（headless -p／bridge worker 無背景 shell 面）
+- 需 user 動作——grant 建立／承接追認／work-order 確認（無動作項刪）
 
 ---
 

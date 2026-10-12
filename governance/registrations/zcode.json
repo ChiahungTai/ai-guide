@@ -208,6 +208,19 @@
             "timeoutMs": 10000
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "{{HOOK_PYTHON}}",
+            "args": [
+              "{{REPO}}/hooks/mail_autoarm.py"
+            ],
+            "enabled": true,
+            "timeoutMs": 10000
+          }
+        ]
       }
     ]
   }

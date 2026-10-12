@@ -718,6 +718,18 @@ def arm_command(addresses, generation, state_dir=None):
     return shlex.join(parts)
 
 
+def _supersedes_fresh_watch(state):
+    """start 透明化（AIR-318）：既有 state desired=running 且 worker 新鮮
+    （armed_at < 輪詢週期×門牌數×3——判準單一源＝_staleness_mark）→
+    True。start 落新代前印一行 supersede 預告（不擋不確認——舊 worker
+    依 generation CAS 自退是既有機制，此行只補人/LLM 可見的「發生了
+    什麼」）；stopped／stale／state 缺席或損壞＝False（零預告）。"""
+    if not isinstance(state, dict) or state.get("desired") != "running":
+        return False
+    mark, _age = _staleness_mark(state)
+    return mark.startswith("fresh")
+
+
 def cmd_start(identity, base_dir=None):
     """arm：desired=running＋generation+=1 → 印 arm 命令（可直接複製）。
 
@@ -725,6 +737,8 @@ def cmd_start(identity, base_dir=None):
     core.caller_repo_address 推導）；state 落 per-repo 目錄（
     repo_state_dir）。既有 per-address cursor 保留（coalesce 延續——
     舊信不再觸發）；state 缺席/損壞＝generation 歸零重 arm（1 起）。
+    AIR-318 透明化：既有新鮮哨（desired=running 且 armed_at 新鮮）＝
+    先印一行 supersede 預告再 arm（不擋不確認——_supersedes_fresh_watch）。
     J-2：load→+1→save 包進 _state_lock（與 stop/worker 寫入序列化——
     generation 無 lost update）。
     """
@@ -733,6 +747,13 @@ def cmd_start(identity, base_dir=None):
     addresses = [identity]
     with _state_lock(state_dir):
         existing = core.load_state(state_file)
+        if _supersedes_fresh_watch(existing):
+            armed = existing.get("armed_at")
+            print(
+                f"[{TAG}] 偵測到既有哨（armed_at "
+                f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(armed))}）"
+                "——本 start 將 supersede（一代換新，舊 worker 自退）"
+            )
         generation = 1 if existing is None else int(
             existing.get("generation") or 0
         ) + 1

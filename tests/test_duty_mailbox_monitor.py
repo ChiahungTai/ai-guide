@@ -164,7 +164,8 @@ class TestRegistrationRetirement:
 
     def test_zcode_other_hooks_untouched(self):
         """其他 hooks 不動：compact-restore-inject（UPS）與
-        bridge_ledger_sweeper（UPS＋SS）仍在且 enabled。"""
+        bridge_ledger_sweeper（UPS＋SS）仍在且 enabled（AIR-318 後 SS
+        另增 autoarm 群組——非 AIR-312 退役面，計數 pin 對齊現行模板）。"""
         doc = _registration("registrations/zcode.json")
         ups = _groups(doc, "UserPromptSubmit")
         ss = _groups(doc, "SessionStart")
@@ -172,7 +173,7 @@ class TestRegistrationRetirement:
         assert _hook_scripts(ups[1]) == ["bridge_ledger_sweeper.py"]
         assert _hook_scripts(ss[0]) == ["bridge_ledger_sweeper.py"]
         assert ups[0]["hooks"][0].get("enabled") is True
-        assert len(ups) == 2 and len(ss) == 1
+        assert len(ups) == 2 and len(ss) == 2  # SS＝sweeper＋autoarm（AIR-318）
 
     def test_cc_dormant_duty_entries_disabled(self):
         """cc dormant 模板（AIR-215 歷史資產）：duty legacy entry 保留
@@ -266,12 +267,14 @@ class TestInstallMergeFace:
         live_ss = live["hooks"]["events"]["SessionStart"]
         assert ups[0] == live_ups[0]
         assert ups[1] == live_ups[1]
-        # AIR-312 退役後模板貢獻＝compact＋sweeper（UPS）／sweeper（SS）
+        # AIR-312 退役＋AIR-318 autoarm 後模板貢獻＝compact＋sweeper（UPS）
+        # ／sweeper＋autoarm（SS）
         assert len(ups) == 3  # scbus＋compact＋sweeper（duty-receive／monitor 已退役）
-        assert len(ss) == 2  # scbus＋sweeper
+        assert len(ss) == 3  # scbus＋sweeper＋autoarm（AIR-318）
         assert ss[0] == live_ss[0]  # scbus async 條目零動
         assert gov._group_scripts(ups[2]) == frozenset({"bridge_ledger_sweeper.py"})
         assert gov._group_scripts(ss[1]) == frozenset({"bridge_ledger_sweeper.py"})
+        assert gov._group_scripts(ss[2]) == frozenset({"mail_autoarm.py"})
 
     def test_merge_idempotent(self):
         live = self._live()

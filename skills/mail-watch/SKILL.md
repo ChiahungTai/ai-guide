@@ -44,6 +44,12 @@ worker exit 0（尾行 JSON `state=mail`）喚醒你後，**你的回合＝re-ar
 
 漏掉 re-arm＝本 session 之後無人再喚醒你。尾行 `state=stopped`＝stop flag 權威（不 re-arm）；`state=superseded`＝新 arm 已接管（不需動作，除非 `status` 顯示無活 worker）；`state=fail-loud`＝配置面壞了（查 stderr 修因，不硬重試）。
 
+### 夜間喚醒回合強化（AIR-318——夜間通信鏈）
+
+1. **順序恆 re-arm → `status` 自檢 → once**：先貼 re-arm 命令、再跑 `status` 看 desired／staleness 自檢（`state=stopped`／`superseded` 依上段處置），最後進 once 看信。re-arm 失敗（命令非 0／背景 shell 未成立）→ 仍跑 once 看信，晨報記「watch 鏈已斷」（單夜從此無人喚醒——fail-loud 不靜默）。
+2. **bounded batch**：喚醒回合最多處理 10 封、最多 1 個新設計分岔；超量記 deferred（夜間台帳留名）續原工作——喚醒回合是收信回合，不是開新弧的回合。
+3. **熔斷**：單夜喚醒 >10 次 → `stop` 停哨＋晨報（防 ping-pong 燒額度——每輪喚醒都吃 context 與 token；>10 次＝通信鏈本身有迴圈，停哨等晨間判讀）。
+
 ## waiter 家族憲章（契約單一源——tri Q2 裁決）
 
 三員同契約：`scripts/bridge_waiter.py`（delegate-bridge fan-in）、harness_waiter、`scripts/mail_waiter.py`（本卡）。
