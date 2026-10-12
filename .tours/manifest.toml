@@ -6,3 +6,9 @@ base = "beb86429a35b6297b3429aedc9c97eae9d87fc7e"
 quality = "degraded"
 target = "11fd0d73369beee592917d7645471c113c47eaa1"
 tourPath = ".tours/delta/air-79-80.tour"
+
+[[delta_arc]]
+arcId = "air-323"
+base = "5dd6fbf88760d192c5065c1d25584976c140a7dc"
+cardId = "AIR-323"
+target = "89a93ffd5f18c5b4488a99a32b29def002cc7a3c"
