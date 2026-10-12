@@ -78,3 +78,9 @@ ai-guide 承接：維持此三閘；S1 繼續，S2 接 producer 正式契約。C
 canonical mosaic_alpha 空箱在場、未重建。未來 sender/reply_address/watch target 慣例已記卡，尚未宣稱 watch/read 實際切換。repo 舊址引用僅 draft-46 一處，owner 報告無 config/hook 需改。待共用 skill 與 bridge 歷史契約到位再切；不猜 CLI、不硬切日期、不轉寄、不刪信。
 
 ai-guide 承接：接受本報告為 semantic 回報，不冒充 transport ACK 或實際 sender 已切；四封 pending 的責任已辨識，不再要求重盤。S2 接線驗收後才結算遷移。
+
+## 切換通知已寄（新址首信）
+
+AUTH: user said "不會受影響就寄吧"
+
+四封 coordination/inform 切換通知（skill 落地＋用法要點＋S3 條款＋各 repo 專屬回指）已寄達四個 **repo-basename 新址**（各 acceptanceSeq=1；冪等 replayed 驗證通過）。三鍵回執見 outbound-receipts.json 後四筆。影響評估先行：與進行中 AIR-318/319/320 零矛盾（318 auto-arm 為強化非矛盾、319/320 不觸信件內容面）。此信＝遷移三閘之「共用 skill 落地」閘正式通報——sender 切換與舊址退役歸各 owner 依 S3 條款收線。

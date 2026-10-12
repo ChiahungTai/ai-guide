@@ -42,5 +42,53 @@
     "envelopeSha256": "95a69090358d73286c2753e4e2d186553afdd09a7ff4daf71f76aee8ab96d1eb",
     "replayed": false,
     "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94"
+  },
+  {
+    "repo": "delegate-bridge",
+    "to": "delegate-bridge",
+    "acceptanceSeq": 1,
+    "envelopeId": "0adca6e2-4948-4d93-9ab3-ecb6aabc8fc5",
+    "envelopeSha256": "2e86cfc0ae3bd4363e830e0df7a5e2be7a158eb936f4e95110c2c799fc12d1de",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94",
+    "class": "coordination",
+    "card": "AIR-312",
+    "note": "切換通知（skill 落地＋S3 條款）——新址首信"
+  },
+  {
+    "repo": "southchariot",
+    "to": "southchariot",
+    "acceptanceSeq": 1,
+    "envelopeId": "85c646d0-d898-49ba-96aa-5b8957a2fa95",
+    "envelopeSha256": "0b6254f156ea659084730459deb63fbfe3eb7701f0b66d88312702d18502667a",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94",
+    "class": "coordination",
+    "card": "AIR-312",
+    "note": "切換通知（含 seq74 介面回饋確認＋DB-114 指針）"
+  },
+  {
+    "repo": "mosaic_alpha",
+    "to": "mosaic_alpha",
+    "acceptanceSeq": 1,
+    "envelopeId": "72b4ffde-e974-4f61-b68d-877349fb3bd0",
+    "envelopeSha256": "42c44aaa017060bd2524a3c6b406299671d290b145efb647b678407bce1617a4",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94",
+    "class": "coordination",
+    "card": "AIR-312",
+    "note": "切換通知（含 MOS-189/190 回報回指）"
+  },
+  {
+    "repo": "code-reality",
+    "to": "code-reality",
+    "acceptanceSeq": 1,
+    "envelopeId": "2182a50b-f463-49a7-8c12-504d84720de2",
+    "envelopeSha256": "684d6724e9ba10f5b041780c16d2efecf8e2b4fdcbc4c0371fb6a21a93c4e474",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94",
+    "class": "coordination",
+    "card": "AIR-312",
+    "note": "切換通知（含 CR-8 三閘之 skill 閘通過宣告）"
   }
 ]
