@@ -4,7 +4,7 @@ title: 實作派工規則補強——spawn 判準自帶定義、歷史先例不�
 status: In Progress
 assignee: []
 created_date: '2026-10-12 05:48'
-updated_date: '2026-10-12 05:49'
+updated_date: '2026-10-12 06:10'
 labels: []
 dependencies: []
 references:
@@ -52,3 +52,14 @@ flowchart LR
 〔已決策勿重辯：①設計討論 muse job-mv4tpdid-8bj8un＋codex job-mv4tpdlo-o8fjl4 雙腿審議、Marshal 裁定收斂（.agent-tmp/air313-adjudication.md）②判準復用 agents/AGENTS.md 注 b 既有詞彙（behavior-bearing／一行也算）不造第二定義源 ③豁免＝原則式「Marshal 本職與可證零行為 editorial」，不用列舉 ④P2 只落 Marshal 姿勢節單一源 ⑤「直行」術語須消歧（UC 規模段流程直行≠姿態授權）⑥指針給 skill 名（agent-workflow——部署面可達）不寫外 repo 路徑 ⑦不新建機械閘（hook 三判準缺二；marshal_admission_guard 推廣另卡）⑧效力範圍限縮——不寫成跨層級全序〕
 範圍：ai-development-guide.md Marshal 姿勢節兩句條文（定稿見 .agent-tmp/air313-adjudication.md）＋bundle 再生驗證；落地前審查閘 boundary（fresh＋intent＋跨家族腿＋四欄回執）。Follow-up 不入本卡：implement Apply Changes vs 注 b 矛盾、collaboration-constraints:32 消歧、guard marker 推廣、漏收信 admission。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+落地前審查閘回執（Marshal——ZCode session sess_789605c0）：
+classification=boundary（姿態/授權面條文變更）
+review=設計腿 muse job-mv4tpdid-8bj8un＋codex job-mv4tpdlo-o8fjl4（凍結草案、findings-only，措辭要素由此二腿產出）；落地確認腿 muse job-mv4unk1l-uizhh8（凍結 diff 76c04b4a vs 裁定——verdict accept、9 要素勾稽全過、G1-G3 殘餘 gaming 面屬「細則住 skill」既定取捨列 follow-up）；Marshal 機械驗證：rg 新句在場舊句零殘留、spawn/直行/先例 反掃零漂移、deploy --dry-run exit 0（bundle 30,197B＝muse/grok 30KiB 治理預算 98%——WARN 非 FAIL，proximity 註記）、scan_skills_desc FAIL=0、check_single_source 對 baseline 零新增（路徑更正：skills/scan-project/scripts/）
+session-freshness=fresh（author session 開場載 instruction-writing skill 後才 authoring；裁定與措辭皆本 session 內鏈）
+deployment-surfaces=pending（merge 後 main 跑 deploy_agents.py＋四端 bundle 含新條文驗證——AC#4）
+writer：glm Flash job-mv4u1rkc-oxltw5（定稿逐字落地；V3/V4/V5 因環境無 Bash 由 Marshal 補跑——.agent-tmp/air313-fix-result.md 誠實申報）
+<!-- SECTION:NOTES:END -->
