@@ -1,10 +1,10 @@
 ---
 id: AIR-314
 title: 姿態條文消歧——implement Apply Changes 後門封堵＋跨 repo 寫入語義澄清
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 06:28'
-updated_date: '2026-10-12 06:56'
+updated_date: '2026-10-12 10:07'
 labels: []
 dependencies: []
 references:
@@ -36,11 +36,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. implement skill 與注 b 零矛盾：judge ✅ 修補回 worker batch、主 session 例外明文（純機械套用＋validator gate）
-2. collaboration-constraints 跨 repo 寫入句＝授權協調歸屬語義（無親改歧義）
-3. 單一源反掃零漂移；desc gate FAIL=0；card_validate PASS
-4. 四端 bundle 逐字載入驗證（collaboration rule 入 bundle）
-5. 審查閘四欄回執齊
+- [x] #1 implement skill 與注 b 零矛盾：judge ✅ 修補回 worker batch、主 session 例外明文（純機械套用＋validator gate）
+- [x] #2 collaboration-constraints 跨 repo 寫入句＝授權協調歸屬語義（無親改歧義）
+- [x] #3 單一源反掃零漂移；desc gate FAIL=0；card_validate PASS
+- [x] #4 四端 bundle 逐字載入驗證（collaboration rule 入 bundle）
+- [x] #5 審查閘四欄回執齊
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -54,3 +54,18 @@ flowchart LR
 <!-- SECTION:NOTES:BEGIN -->
 確認腿（muse job-mv4w5nv9）：accept-with-fixes——四項裁定逐條在場語義無損、deep-work pointer 單一源成立、與指南/5c/注 b 零矛盾。F1（AIR-316 卡出現在 diff）經 Marshal 機械驗證＝rebase 假影（branch 自身僅觸 3 檔、merge-base 演練零衝突——wt-close 標準 rebase 即消解，非真回歸）。F2（本節內 scope 限定）＋F3（loop 殘留 apply 泛稱）＋術語同步（可證→過閘證，對齊 AIR-315）→微修腿 job-mv4wf8em 執行中。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+implement「Apply Changes」後門封堵（改 Compile Repair Batch——judge ✅ 修補派 impl-lite worker、deep-work 同款複本對齊、loop 泛稱清理）＋collaboration 跨 repo 寫入澄清為授權協調非親改。確認腿 accept-with-fixes→advisory 全吸收（F1＝rebase 假影免修）。
+
+```mermaid
+flowchart LR
+  J[judge 核可清單] --> B[規劃修補工單]
+  B --> W[impl-lite repair batch worker]
+  W --> L[套用後 re-review 迭代]
+  C[跨 repo 寫入] --> A[主 session 授權協調]
+  A -.->|mutation 非親改| O[對方 repo 主權]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

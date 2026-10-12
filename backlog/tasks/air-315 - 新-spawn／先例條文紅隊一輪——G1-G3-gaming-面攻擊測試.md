@@ -1,10 +1,10 @@
 ---
 id: AIR-315
 title: 新 spawn／先例條文紅隊一輪——G1-G3 gaming 面攻擊測試
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 06:29'
-updated_date: '2026-10-12 06:56'
+updated_date: '2026-10-12 10:07'
 labels: []
 dependencies: []
 references:
@@ -37,10 +37,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. 三開口各有明確攻擊測試結論（守住＝已驗證殘餘；守不住→收斂項）
-2. 守不住者的收斂落地且單一源零漂移
-3. desc gate FAIL=0；card_validate PASS
-4. 觸及 guide/細則者過審查閘四欄回執
+- [x] #1 三開口各有明確攻擊測試結論（守住＝已驗證殘餘；守不住→收斂項）
+- [x] #2 守不住者的收斂落地且單一源零漂移
+- [x] #3 desc gate FAIL=0；card_validate PASS
+- [x] #4 觸及 guide/細則者過審查閘四欄回執
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -56,3 +56,20 @@ flowchart LR
 
 Flash 收斂腿（job-mv4vqhmk）交付＋Marshal 補跑閘 3/4（dry-run exit0 98%、desc FAIL=0）＋commit f28e9eb2（guide 兩詞淨零位元組＋agent-workflow 判據操作化段逐字）。確認腿 job-mv4wda9x 執行中。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+九劇本紅隊：6 守住、2 guide 層破口、1 真空。三則收斂落地——guide「控制面行為」（對齊注 b）＋「過閘證」（認證主體＝機械閘）＋agent-workflow 判據操作化段（閘綠定義/註解行 behavior-bearing/本職封閉列舉）。確認腿 accept。已驗證可接受殘餘三項記錄於紅隊報告（typo+閘+熔斷、LLM 語義判定無機械閘、卡 WT 自做無機械擋）。
+
+```mermaid
+flowchart LR
+  R[紅隊九劇本] --> H[6 守住]
+  R --> B2[2 guide 破口]
+  R --> V[1 真空]
+  B2 --> F[兩詞收斂]
+  V --> P[細則操作化投影]
+  F --> D[四端部署驗證]
+  P --> D
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
