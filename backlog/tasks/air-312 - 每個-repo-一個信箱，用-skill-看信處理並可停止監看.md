@@ -1,10 +1,10 @@
 ---
 id: AIR-312
 title: 每個 repo 一個信箱，用 skill 看信處理並可停止監看
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 23:14'
-updated_date: '2026-10-12 05:04'
+updated_date: '2026-10-12 06:16'
 labels: []
 dependencies: []
 references:
@@ -33,12 +33,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 一 repo 一信箱＝repo name；linked worktree 解析到同 repo，跨址不能誤讀消費
-- [ ] #2 看完標 read，信留原處可重看；read 不表示工作完成，與現役 CLI/SC 契約一致
-- [ ] #3 需要回信保留待回覆，寄出後清除；換新 session 不漏掉待回覆
-- [ ] #4 once/watch/stop/status 簡單可用，一 repo 一 watcher；不增加 session 管理或逐信工作狀態機
-- [ ] #5 prompt consume/monitor/consume config/exception forwarding 退役，現役引用同步
-- [ ] #6 Flash 實作＋實跑驗證＋post-build 獨立審查與 Marshal 裁定；五 repo 遷移有對帳證據
+- [x] #1 一 repo 一信箱＝repo name；linked worktree 解析到同 repo，跨址不能誤讀消費
+- [x] #2 看完標 read，信留原處可重看；read 不表示工作完成，與現役 CLI/SC 契約一致
+- [x] #3 需要回信保留待回覆，寄出後清除；換新 session 不漏掉待回覆
+- [x] #4 once/watch/stop/status 簡單可用，一 repo 一 watcher；不增加 session 管理或逐信工作狀態機
+- [x] #5 prompt consume/monitor/consume config/exception forwarding 退役，現役引用同步
+- [x] #6 Flash 實作＋實跑驗證＋post-build 獨立審查與 Marshal 裁定；五 repo 遷移有對帳證據
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -69,4 +69,23 @@ post-build R1：Muse fresh job-mv4jkl53-9zecoi completed＋native intent Bacon c
 中間檢查點：R1 job-mv4jxz9o-6ioelq 已 completed，worker 回報500 tests PASS（尚非Marshal獨立重跑）；Bacon 針對 frozen .agent-tmp/air312-r1-followup/source 做六finding followup。S2 已派 fresh Muse implementer job-mv4loqfn-kct6dv（muse-spark-1.3 xhigh，既定EP重實作升級），waiter已掛；範圍普通 inbox/history/mark-read/pending-replies/reply，真store與其他repo禁寫。user提供 bridge mail list/get 正式命令與既有DB-112契約一致，無producer阻塞。
 
 R2 整弧複審（ZCode Marshal session，凍結 revision ea46a4a4）：muse review face approve 零 findings；codex task face（28K 閘階梯 b 檔案承載）12 findings——裁定採納 10（CX01 並行 token 共用補同 repo consume 短鎖、CX02 虛稱已釋放、CX03 ACK response-loss 診斷、CX04 孤兒 holder 清理、RP01 send TOCTOU snapshot、ID01 bare 繞道、WT01 Unicode 編碼碰撞、DOC01 skill dirname 少一層、DOC02 sender 指引舊址、TEST02 ID echo）、acknowledge 1（TEST01 e2e send 階段覆蓋＝已知限制）。裁定表入 .review/air-312.md。Marshal 獨立驗收：271 mail＋189 相依＋267 governance 全綠、CLI smoke、inert probe、single-source 對 baseline 零新增、R1 六 finding 逐項機械驗證通過。十項修正派 Flash job-mv4sel9d-odqenj（glm write-mode edit，user steering：實作歸 Flash、muse 留審查）；修後獨立重跑＋fix delta 複審（muse）。
+
+R2 修正閉環：Flash job-mv4sktod 十項落地＋測試快修 job-mv4uhzey；Marshal runbook 實跑 RED 18F→GREEN 290 passed、相依 189、e2e 1、desc FAIL=0、pre-commit 全 repo 3818 passed 2 skipped；fix-delta 複審 muse job-mv4urnha verdict=approve findings=[]（.review/air-312.md closure）。S3 遷移明示未完（sender 已切新址、舊址退役待對帳——migration.md），不擋本卡 AC。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+一 repo 一信箱（repo basename 身份閘）＋普通 inbox：讀信標 read、原信留原處、待回覆寄出成功才解除；once/watch/stop/status＋per-repo watcher；duty 自動收信/monitor/consume TOML/exceptions 轉寄退役（inert）。R1＋R2 審查鏈閉環、290+189+267＋全 repo 3818 測試綠；舊址退役＝S3 開放項（migration.md）。
+
+```mermaid
+flowchart LR
+  S["session 任意 harness"] -->|"once pending-replies inbox show"| R["本 repo 信箱 alias=repo basename"]
+  R -->|"LLM 判讀全文"| M["mark-read 一次一封"]
+  M -->|"原信留原處"| H["acked history 可重看"]
+  M -->|"需回信"| P["待回覆 per-repo"]
+  P -->|"reply receipt 三鍵"| C["寄出成功解除"]
+  S -->|"watch stop status"| W["per-repo watcher"]
+  X["舊 marshal 址"] -.->|"S3 對帳後退役"| R
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

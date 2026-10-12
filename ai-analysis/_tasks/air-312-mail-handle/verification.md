@@ -70,3 +70,14 @@ Frozen revision: branch `air-312` commit `ea46a4a4` (tree clean at dispatch). Al
 - Marshal direct code read of the transaction core (`mark_read`, `_mark_read_with_token`, `_s2_bind_no_takeover`, `send_reply`): failure paths retain pending and evidence, no steal, ID+SHA pinned retry, receipt three-key validation before clear — no defect found.
 
 R2 whole-arc review (post-freeze): muse review face job `job-mv4pe6oq-h43mmb` (full inline diff, `--base main`) completed with schema-validated verdict **approve, findings []**. codex leg: 28K chatgpt-web gate refused the inline review (~117K tokens o200k) — per plugin ladder dispatched as task face `job-mv4pgmjv-x8lv31` with file-borne work order (`.agent-tmp/air312-final-evidence/review-codex-r2-workorder.md`; reviewer runs read-only `git diff main` itself; sink `.agent-tmp/air312-final-evidence/review-codex-r2-findings.md`).
+
+## R2 fix round (commit `a4cb4bd1`)
+
+Ten adjudicated fixes implemented by glm Flash writer `job-mv4sktod-848qii` (write-mode edit; its spawn tree has no execution tools — honestly reported zero verification with a prepared runbook). Marshal executed the runbook verbatim (`.agent-tmp/air312-final-evidence/r2-verification-runbook.sh`):
+
+- RED phase (HEAD=ea46a4a4 code restored, new tests against old code): **18 failed, 2 passed** (runbook predicted 15 expected-RED; 18 is stronger — three guard-tolerance predictions also proved RED). Full log `r2-fix-red.log`.
+- GREEN phase (fixed code restored, `cmp` identity verified): one test failed on its own setup gap (`test_reread_stale_holder_release_failure_kept_and_disclosed` — direct `open()` on a holder path whose parent dir didn't exist; test bug, not impl bug). Quick-fix round `job-mv4uhzey-q4knpj` switched the test to the real `_save_inbox_holder` helper; rerun **1 passed** (`r2-testfix-result.md`).
+- Full mail suite after fix: **290 passed** (= 271 baseline + 19 new), `r2-fix-suite1.log` rerun post-fix. Dependent suite **189 passed** (`r2-fix-suite2.log`). E2E isolated-store **1 passed** (`r2-fix-e2e.log`). Skills desc gate **FAIL=0** (`r2-fix-scan.log`).
+- Commit `a4cb4bd1` pre-commit hook ran the **whole repo suite: 3818 passed, 2 skipped** — the writer-environment failures never reproduce in the main environment.
+
+Fix-delta review: muse review face `job-mv4urnha-t0obwg` (`--base ea46a4a4`) — verdict recorded in `.review/air-312.md`.

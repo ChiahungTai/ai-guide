@@ -70,3 +70,11 @@ User-visible：skill 四模式、inbox read/history、待回覆；後兩項依 p
 ## 進度
 
 建卡 commit 33731634；WT /Users/ctai/Github/ai-guide-air-312。前兩 Flash jobs 因 user steering 明確停止，零 source edits。現在 user「我都轉貼了，你可以開始動工了」授權繼續。S1 先做，S2 不假報；post-build/部署 pending。
+
+**終態結算（ZCode Marshal session sess_789605c0 收線）**：
+- S1 實作＝Flash job-mv4hwczo（identity／退役／watcher／skill）；R1 六 finding 修正＝job-mv4jxz9o；S2 普通 inbox＝Muse job-mv4loqfn；R2 十項修正＝Flash job-mv4sktod＋測試快修 job-mv4uhzey。
+- R2 整弧審查：muse review face **approve 零 findings**（job-mv4pe6oq）；codex task face 12 findings（job-mv4pgmjv，28K 閘階梯 b 檔案承載）→裁定 10 採納 1 記錄（.review/air-312.md）。
+- Marshal 獨立驗證：mail 全套 **290 passed**（271 基準＋19 R2 新測試；RED 18F→GREEN）、相依 189、governance 267、e2e 1、desc FAIL=0、inert probe 零效、single-source 對 baseline 零新增；commit pre-commit 全 repo **3818 passed 2 skipped**。
+- 凍結 revisions：實作 ea46a4a4 → R2 修正 a4cb4bd1；fix-delta 複審 muse job-mv4urnha（--base ea46a4a4）。
+- S3 遷移（**明示未完、不擋本卡 AC**）：五新址建立＋四通知信寄達；CR-8、Mosaic owner 回報入 migration.md；sender 指引已切 repo basename（F9）；舊址退役待 sender/在飛對帳收線——舊址讀取以 producer 唯讀面（dutymail mail list）對帳，非 S2 CLI。
+- 部署：merge 後 main 為 source 權威；live registration prune＝operator `--prune-stale` 維護窗動作（hooks/AGENTS.md），非本弧自動執行。
