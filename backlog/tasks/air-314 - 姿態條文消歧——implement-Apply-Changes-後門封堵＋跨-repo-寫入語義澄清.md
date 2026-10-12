@@ -4,7 +4,7 @@ title: 姿態條文消歧——implement Apply Changes 後門封堵＋跨 repo �
 status: In Progress
 assignee: []
 created_date: '2026-10-12 06:28'
-updated_date: '2026-10-12 06:30'
+updated_date: '2026-10-12 06:56'
 labels: []
 dependencies: []
 references:
@@ -48,3 +48,9 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide b0b9c2f4〕〔已決策勿重辯：①修補方向＝AIR-313 設計腿裁定（muse Q4-4＋codex Q4）——judge ✅ 修補回 worker batch（對齊 agent-workflow:47 repair batch），主 session 只做純機械套用＋validator gate 的明文例外；②collaboration:32 澄清為「授權／協調／歸屬」非親改；③注 b 正典不動——implement skill 對齊它〕範圍：skills/implement/SKILL.md Apply Changes 段改寫＋rules/collaboration-constraints.md:32 一句澄清；boundary 審查閘（fresh＋intent＋跨家族）＋四欄回執；merge 後 deploy。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+確認腿（muse job-mv4w5nv9）：accept-with-fixes——四項裁定逐條在場語義無損、deep-work pointer 單一源成立、與指南/5c/注 b 零矛盾。F1（AIR-316 卡出現在 diff）經 Marshal 機械驗證＝rebase 假影（branch 自身僅觸 3 檔、merge-base 演練零衝突——wt-close 標準 rebase 即消解，非真回歸）。F2（本節內 scope 限定）＋F3（loop 殘留 apply 泛稱）＋術語同步（可證→過閘證，對齊 AIR-315）→微修腿 job-mv4wf8em 執行中。
+<!-- SECTION:NOTES:END -->
