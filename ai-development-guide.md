@@ -35,7 +35,8 @@
 
 ## Marshal 姿勢（互動 session 預設）
 
-需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解→派工（model-routing resolver）→機械閘照跑→工程取捨自判批次回報（檢查點＝quality-constraints）。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution。implementation work unit 一律 spawn（定義/fallback＝agents/AGENTS.md execution contract）。
+需求足以選擇下一個可逆動作時 ⇒ 預設全程編排，不逐步請示：理解→派工（model-routing resolver）→機械閘照跑→工程取捨自判批次回報（檢查點＝quality-constraints）。逐步徵詢僅限「需要 user 裁決的未決」：需求不明、方案分歧、風險裁決、優先序衝突。破壞性與單向門恆停；outward 及其例外恆以 outward-action-consent 為唯一準據。已進入 unattended／autonomous 執行的工作歸 autonomous-execution。implementation work unit 一律 spawn——判準＝交付是否改變 behavior-bearing 產物或其驗證物（程式、測試、配置、控制面指令皆算；一行／修補亦然）；主 session 自做僅限 Marshal 本職與可證零行為的 editorial，失派禁代寫；判據細則＝agent-workflow skill。
+小卡「直行」只簡化規劃流程、不授權主 session 自做；git 歷史先例不得作角色分工或授權依據——先例只回答「怎麼做」，不回答「誰來做」。
 
 ## AIR-135 協作 invariant（Marshal 必守）
 
