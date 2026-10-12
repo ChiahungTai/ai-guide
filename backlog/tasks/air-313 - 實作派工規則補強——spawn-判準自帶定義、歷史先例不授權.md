@@ -1,10 +1,10 @@
 ---
 id: AIR-313
 title: 實作派工規則補強——spawn 判準自帶定義、歷史先例不授權
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 05:48'
-updated_date: '2026-10-12 06:10'
+updated_date: '2026-10-12 06:23'
 labels: []
 dependencies: []
 references:
@@ -38,11 +38,11 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. Marshal 姿勢節 spawn 條款自帶判準（behavior-bearing 或其驗證物、一行也算；豁免＝Marshal 本職與可證零行為 editorial；失派禁代寫；細則指 agent-workflow skill）
-2. 先例句落地：小卡「直行」只簡化規劃流程不授權自做；git 歷史先例不作角色分工或授權依據
-3. 單一源紀律：rg 掃 spawn／直行／先例 引用面零漂移；skills desc gate FAIL=0；card_validate PASS
-4. 部署投影更新：merge 後 main 重跑 deploy，四端 bundle 含新條文（規範載入驗證非僅 source 存在）
-5. 落地前審查閘回執四欄齊（classification=boundary／review 腿＋evidence／session-freshness／deployment-surfaces）
+- [x] #1 Marshal 姿勢節 spawn 條款自帶判準（behavior-bearing 或其驗證物、一行也算；豁免＝Marshal 本職與可證零行為 editorial；失派禁代寫；細則指 agent-workflow skill）
+- [x] #2 先例句落地：小卡「直行」只簡化規劃流程不授權自做；git 歷史先例不作角色分工或授權依據
+- [x] #3 單一源紀律：rg 掃 spawn／直行／先例 引用面零漂移；skills desc gate FAIL=0；card_validate PASS
+- [x] #4 部署投影更新：merge 後 main 重跑 deploy，四端 bundle 含新條文（規範載入驗證非僅 source 存在）
+- [x] #5 落地前審查閘回執四欄齊（classification=boundary／review 腿＋evidence／session-freshness／deployment-surfaces）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -62,4 +62,22 @@ review=設計腿 muse job-mv4tpdid-8bj8un＋codex job-mv4tpdlo-o8fjl4（凍結�
 session-freshness=fresh（author session 開場載 instruction-writing skill 後才 authoring；裁定與措辭皆本 session 內鏈）
 deployment-surfaces=pending（merge 後 main 跑 deploy_agents.py＋四端 bundle 含新條文驗證——AC#4）
 writer：glm Flash job-mv4u1rkc-oxltw5（定稿逐字落地；V3/V4/V5 因環境無 Bash 由 Marshal 補跑——.agent-tmp/air313-fix-result.md 誠實申報）
+
+部署收線：main @ 8048cb21 跑 deploy_agents.py（四端 OK；muse/grok 30,304B＝98% 治理預算 WARN 非 FAIL——proximity 已註記，slimming 另行）；AC#4 驗證＝四端 bundle 逐字含兩句新條文（rg 各 1 命中）。deployment-surfaces=healthy。審查閘回執收斂：classification=boundary／review=設計雙腿＋確認腿 accept＋Marshal 機械驗證／session-freshness=fresh／deployment-surfaces=healthy。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Marshal 姿勢節兩句條文落地並部署四端：spawn 判準自帶（behavior-bearing／驗證物／一行也算；豁免＝本職＋可證零行為 editorial；失派禁代寫）＋歷史先例不作姿態授權（「直行」消歧）。設計＝muse＋codex 雙腿審議收斂、確認腿 accept、審查閘四欄回執齊。
+
+```mermaid
+flowchart LR
+  A[session 查 git 歷史先例] --> B{先例說以前都自己做?}
+  B -->|是| C[新規則擋下 先例不授權]
+  B -->|否| D[實作一律派 writer]
+  C --> D
+  D --> E[主 session 留在編排與審查]
+  F[四端 bundle] --> G[條文逐字載入驗證]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
