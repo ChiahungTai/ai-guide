@@ -107,10 +107,16 @@
 
 | 訊息要給誰 | 動詞 |
 |---|---|
-| repo/workspace 承接、須跨 session 存活的責任信 | `send --to-address <repo>-marshal` |
+| repo/workspace 承接、須跨 session 存活的責任信 | `send --to-address <repo>`（repo basename——AIR-312 命名） |
 | 已知 live session 的即時對話 | `send --to <session_id>` |
 
 同信多址雙寄製造雙 envelope＋ack 歧義，禁。
+
+> **遷移註記（AIR-312 S3——sender/reply_address 切新址）**：在飛 thread
+> 的回信仍落舊址（`<repo>-marshal`）——舊址讀取以 raw producer 唯讀面
+> （`dutymail mail list --address <舊址> --box pending`）對帳，非 S2 CLI
+> （S2 只消費呼叫端 repo 身份址）；對帳完成後舊址才退役
+> （「Repo address cardinality」節）。
 
 ### Holder ≠ monitor
 

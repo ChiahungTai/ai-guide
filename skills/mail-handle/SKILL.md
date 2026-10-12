@@ -19,7 +19,8 @@ allowed-tools: [Bash]
 
 - **腳本路徑從本 skill 真實位置反推**：本檔經 symlink 部署
   （`~/.agents/skills/mail-handle/SKILL.md` → ai-guide repo）。以
-  `readlink -f` 取本 SKILL.md 真實路徑、兩層 `dirname` 上溯＝ai-guide
+  `readlink -f` 取本 SKILL.md 真實路徑、三層 `dirname` 上溯（檔案→
+  mail-handle 目錄→skills→repo root）＝ai-guide
   repo root（下稱 `$AI_GUIDE`），腳本一律用絕對路徑
   `"$AI_GUIDE/scripts/<name>.py"` 呼叫——相對 `scripts/...` 只在
   cwd=ai-guide 時成立（其他 repo 呼叫即失效）。
@@ -31,7 +32,7 @@ allowed-tools: [Bash]
 ## 模式（once／watch／status／stop）
 
 ```bash
-AI_GUIDE="$(dirname "$(dirname "$(readlink -f <本 SKILL.md 檔路徑>)")")"
+AI_GUIDE="$(dirname "$(dirname "$(dirname "$(readlink -f <本 SKILL.md 檔路徑>)")")")"
 
 # once：本輪有界讀完（先待回覆、再 pending 全文、逐封 mark-read）
 uv run python "$AI_GUIDE/scripts/duty_receive.py" pending-replies

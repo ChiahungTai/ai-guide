@@ -20,10 +20,11 @@ allowed-tools: [Bash]
 
 ```bash
 # ai-guide 源碼路徑從本 skill 真實位置反推（本檔經 symlink 部署——
-# readlink -f 取真實路徑、兩層 dirname 上溯＝repo root）；腳本一律
+# readlink -f 取真實路徑、三層 dirname 上溯（檔案→mail-watch 目錄→
+# skills→repo root）＝repo root）；腳本一律
 # 絕對路徑呼叫，絕不 cd 進 ai-guide（身份閘以呼叫當下 cwd 反推 repo
 # 身份——cd 進去＝身份誤導成 ai-guide）。
-AI_GUIDE="$(dirname "$(dirname "$(readlink -f <本 SKILL.md 檔路徑>)")")"
+AI_GUIDE="$(dirname "$(dirname "$(dirname "$(readlink -f <本 SKILL.md 檔路徑>)")")")"
 
 # arm：generation+=1＋印 worker 背景命令（門牌＝本 repo 身份；免 --address）
 uv run python "$AI_GUIDE/scripts/mail_waiter.py" start

@@ -13,6 +13,8 @@ e2e lives in tests/test_duty_inbox_s2_e2e.py.
 import hashlib
 import json
 import os
+import threading
+import time
 
 import pytest
 
@@ -197,6 +199,9 @@ def test_prepare_failure_retains_pending_and_releases(tmp_path):
 
 
 def test_ack_failure_retains_pending(tmp_path):
+    """ACK 錯誤＝outcome unknown（F3/R2-CX03）：release 後唯讀重查——
+    仍 pending ⇒ 報「ACK 結果未知（response-loss）」，禁宣稱 cursor
+    未前進；pending 義務保留。"""
     runner = _seq_runner([
         _mail_get_doc("env-1"),
         _status_doc(0, False),
@@ -204,8 +209,9 @@ def test_ack_failure_retains_pending(tmp_path):
         _prepare_doc("env-1"),
         _face_error("ack-bad", "storage"),
         _release_doc(),
+        _mail_get_doc("env-1", pending=True),
     ])
-    with pytest.raises(Exception):
+    with pytest.raises(mod.S2Error, match="ACK 結果未知"):
         mod.mark_read(ADDR, "env-1", runner, state_dir=str(tmp_path))
     pend = mod.load_pending_replies(mod.pending_path(ADDR, str(tmp_path)))
     assert pend is not None
@@ -412,3 +418,350 @@ def test_no_note_read_never_clears_obligation(tmp_path):
     mod.mark_read(ADDR, "env-1", runner, state_dir=st)
     kept = mod.load_pending_replies(mod.pending_path(ADDR, st))
     assert "env-1" in kept["replies"]
+
+
+# ── R2 修正（F1–F5、F10——marshal 裁定採納）────────────────────────────
+
+
+def test_ack_error_requery_committed_response_loss(tmp_path):
+    """F3/R2-CX03：ACK 錯誤但唯讀重查 pending=False ⇒ committed
+    （acked=True＋response-loss 標記），非錯誤；holder 已清。"""
+    st = str(tmp_path)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _status_doc(0, False),
+        _bind_doc(1, "tok-1"),
+        _prepare_doc("env-1"),
+        _face_error("ack-bad", "storage"),
+        _release_doc(),
+        _mail_get_doc("env-1", pending=False),
+    ])
+    out = mod.mark_read(ADDR, "env-1", runner, state_dir=st)
+    assert out["acked"] is True
+    assert out["ack_outcome"] == "committed"
+    assert out["ack_response_loss"] is True
+    assert not os.path.exists(mod.inbox_holder_path(ADDR, st))
+
+
+def test_ack_error_requery_itself_fails_reports_unknown(tmp_path):
+    """F3：重查本身失敗 ⇒ unknown＋重查錯誤揭露。"""
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _status_doc(0, False),
+        _bind_doc(1, "tok-1"),
+        _prepare_doc("env-1"),
+        _face_error("ack-bad", "storage"),
+        _release_doc(),
+        _face_error("store-down", "storage"),
+    ])
+    with pytest.raises(mod.S2Error, match="重查失敗"):
+        mod.mark_read(ADDR, "env-1", runner, state_dir=str(tmp_path))
+
+
+def test_mark_read_id_echo_mismatch_no_state_change(tmp_path):
+    """F10/R2-TEST02：mail get 回應 envelopeId 與查詢不符 ⇒ S2Error、
+    零 holder/prepare/ack（與 send_reply incoming 檢查對稱）。"""
+    runner = _seq_runner([
+        _ok({"addressId": "a1", "alias": ADDR, "primaryCursor": 0,
+             "item": _mail_item("env-OTHER", pending=True)}),
+    ])
+    with pytest.raises(mod.S2Error, match="ID 不符"):
+        mod.mark_read(ADDR, "env-1", runner, state_dir=str(tmp_path))
+    assert len(runner.calls) == 1
+    assert not os.path.exists(
+        mod.inbox_holder_path(ADDR, str(tmp_path)))
+
+
+def test_reread_clears_stale_own_holder_without_reconsuming(tmp_path):
+    """F4/R2-CX04：ACK 成功＋release 失敗 ⇒ holder 殘留；第二次同 ID
+    mark-read（已 ACK 重看）短路前清殘留 holder，不重 ACK/prepare/bind。"""
+    st = str(tmp_path)
+    runner1 = _seq_runner([
+        _mail_get_doc("env-1"),
+        _status_doc(0, False),
+        _bind_doc(1, "tok-1"),
+        _prepare_doc("env-1"),
+        _ack_doc(),
+        _face_error("rel-bad", "storage"),
+    ])
+    with pytest.raises(mod.S2Error, match="release 失敗"):
+        mod.mark_read(ADDR, "env-1", runner1, state_dir=st)
+    assert os.path.exists(mod.inbox_holder_path(ADDR, st))
+    runner2 = _seq_runner([
+        _mail_get_doc("env-1", pending=False),
+        _release_doc(),
+    ])
+    out = mod.mark_read(ADDR, "env-1", runner2, state_dir=st)
+    assert out["acked"] is False
+    assert out["reread"] is True
+    assert out["released_stale_holder"] is True
+    assert not os.path.exists(mod.inbox_holder_path(ADDR, st))
+    assert not any(c[:2] == ["receive", "prepare"] for c in runner2.calls)
+    assert not any(c[:2] == ["receive", "ack"] for c in runner2.calls)
+    assert not any(c[:2] == ["holder", "bind"] for c in runner2.calls)
+
+
+def test_reread_stale_holder_release_failure_kept_and_disclosed(tmp_path):
+    """F4 對照：殘留 holder release 失敗 ⇒ 檔案保留＋訊息揭露，重看
+    本身照常成功（唯讀不受殘留牽連）。"""
+    st = str(tmp_path)
+    mod._save_inbox_holder(ADDR, st, 1, "tok-stale")
+    runner = _seq_runner([
+        _mail_get_doc("env-1", pending=False),
+        _face_error("rel-bad", "storage"),
+    ])
+    out = mod.mark_read(ADDR, "env-1", runner, state_dir=st)
+    assert out["acked"] is False
+    assert out["released_stale_holder"] is False
+    assert "tok-stale" in out["stale_holder_note"]
+    assert os.path.exists(mod.inbox_holder_path(ADDR, st))
+
+
+def test_holder_save_failure_release_fail_discloses_token(
+        tmp_path, monkeypatch):
+    """F2/R2-CX02：存 token 失敗且 release 亦失敗 ⇒ 訊息含完整 token
+    （人工恢復證據）、不宣稱已釋放。"""
+
+    def _boom(address, state_dir, epoch, token):
+        raise OSError("disk full (injected)")
+
+    monkeypatch.setattr(mod, "_save_inbox_holder", _boom)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _status_doc(0, False),
+        _bind_doc(1, "tok-1"),
+        _face_error("rel-bad", "storage"),
+    ])
+    with pytest.raises(mod.S2Error) as excinfo:
+        mod.mark_read(ADDR, "env-1", runner, state_dir=str(tmp_path))
+    msg = str(excinfo.value)
+    assert "tok-1" in msg
+    assert "release 亦失敗" in msg
+    assert "已釋放" not in msg
+
+
+def test_holder_save_failure_release_ok_keeps_honest_message(
+        tmp_path, monkeypatch):
+    """F2 對照：release 成功 ⇒ 維持「已釋放」訊息（既有行為回歸）。"""
+
+    def _boom(address, state_dir, epoch, token):
+        raise OSError("disk full (injected)")
+
+    monkeypatch.setattr(mod, "_save_inbox_holder", _boom)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _status_doc(0, False),
+        _bind_doc(1, "tok-1"),
+        _release_doc(),
+    ])
+    with pytest.raises(mod.S2Error, match="已釋放剛取得的 token"):
+        mod.mark_read(ADDR, "env-1", runner, state_dir=str(tmp_path))
+
+
+def test_concurrent_mark_read_serialized_under_pending_lock(tmp_path):
+    """F1/R2-CX01：同 repo 兩執行緒 mark_read——holder/prepare/ack 消費
+    段在 `_pending_lock` 內序列化（每 thread 的 transport 呼叫成連續塊、
+    token 不交錯）。fcntl flock 跨執行緒（各自 os.open fd）互斥。"""
+    st = str(tmp_path)
+
+    class _FakeStore:
+        """狀態型 fake store：bind 遞增 epoch／token、release 清 bound
+        ；status/prepare 各帶 sleep 擴大交錯窗口（驗證序列化用）。"""
+
+        def __init__(self):
+            self.lock = threading.Lock()
+            self.epoch = 0
+            self.bound = False
+            self.tokens = {}
+            self.calls = []
+
+        def run(self, argv):
+            key = tuple(argv[:2])
+            if key == ("holder", "status"):
+                time.sleep(0.05)
+                with self.lock:
+                    self.calls.append((threading.get_ident(), list(argv)))
+                    doc = {"addressId": "a1", "alias": ADDR,
+                           "bindingEpoch": self.epoch,
+                           "bound": self.bound, "role": "consume"}
+                return _ok(doc)
+            with self.lock:
+                self.calls.append((threading.get_ident(), list(argv)))
+            if key == ("holder", "bind"):
+                with self.lock:
+                    self.epoch += 1
+                    self.bound = True
+                    token = f"tok-{self.epoch}"
+                    self.tokens[threading.get_ident()] = token
+                    epoch = self.epoch
+                return _ok({"addressId": "a1", "alias": ADDR,
+                            "bindingEpoch": epoch, "holderToken": token,
+                            "role": "consume"})
+            if key == ("receive", "prepare"):
+                time.sleep(0.12)
+                return _prepare_doc("env-1")
+            if key == ("receive", "ack"):
+                return _ack_doc()
+            if key == ("holder", "release"):
+                with self.lock:
+                    self.bound = False
+                return _release_doc()
+            if key == ("mail", "get"):
+                return _mail_get_doc("env-1")
+            raise AssertionError("unexpected: " + repr(argv))
+
+    store = _FakeStore()
+    errs = []
+
+    def _work():
+        try:
+            mod.mark_read(ADDR, "env-1", store.run, state_dir=st)
+        except Exception as exc:  # 測試收集面——兩執行緒皆須成功
+            errs.append(exc)
+
+    threads = [threading.Thread(target=_work) for _ in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(30)
+    assert errs == [], f"並行 mark_read 失敗：{errs!r}"
+
+    # 消費段（status/bind/prepare/ack/release）必須成兩個連續 per-thread
+    # 塊（mail get 在鎖外，排除後看序列）。
+    tail = [tid for tid, argv in store.calls
+            if tuple(argv[:2]) != ("mail", "get")]
+    blocks = 1 + sum(
+        1 for i in range(1, len(tail)) if tail[i] != tail[i - 1])
+    assert blocks == 2, f"消費段交錯：{tail!r}"
+    # token 不交錯：每 thread 恰一 bind／一 prepare，prepare token＝
+    # 自己 bind 的 token。
+    for tid in {tid for tid, _ in store.calls}:
+        mine = [argv for t, argv in store.calls if t == tid]
+        binds = [a for a in mine if a[:2] == ["holder", "bind"]]
+        preps = [a for a in mine if a[:2] == ["receive", "prepare"]]
+        assert len(binds) == 1, f"bind 數異常：{mine!r}"
+        assert len(preps) == 1, f"prepare 數異常：{mine!r}"
+        assert preps[0][preps[0].index("--token") + 1] == store.tokens[tid]
+
+
+def _snapshot_path(st, envelope_id="out-1"):
+    return os.path.join(
+        st, "repos", mod.safe_repo_dirname(ADDR), "outbox",
+        mod.safe_repo_dirname(envelope_id) + ".json")
+
+
+def test_send_uses_validated_snapshot_not_mutable_draft(tmp_path):
+    """F5/R2-RP01：send 一律以 validated snapshot 發送——驗證後呼叫端
+    draft 檔被改（TOCTOU）不影響送出內容；成功清 pending＋snapshot。"""
+    st = str(tmp_path / "state")
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1", to_addr=ADDR)
+    with open(draft, "rb") as fh:
+        original = fh.read()
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {"env-1": {"note": "n", "target": ADDR}}})
+
+    seen = {}
+
+    def runner(argv):
+        if argv[:2] == ["mail", "get"]:
+            return _mail_get_doc("env-1")
+        assert argv[0] == "send"
+        # 攔截：送達 runner 時篡改呼叫端 draft 檔（模擬驗證後 TOCTOU）
+        with open(draft, "w", encoding="utf-8") as fh:
+            fh.write('{"tampered": true}')
+        seen["path"] = argv[2]
+        with open(argv[2], "rb") as fh:
+            seen["bytes"] = fh.read()
+        return _send_doc("out-1")
+
+    out = mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert out["cleared"] is True
+    assert seen["path"] != draft
+    assert seen["bytes"] == original
+    assert not os.path.exists(_snapshot_path(st)), "成功後 snapshot 應清除"
+    kept = mod.load_pending_replies(mod.pending_path(ADDR, st))
+    assert kept is None or "env-1" not in kept.get("replies", {})
+
+
+def test_send_retry_after_transport_failure_sends_snapshot(tmp_path):
+    """F5：首次 send transport 失敗 ⇒ pin＋snapshot 保留；重試以同
+    draft 發送，實際送出內容讀 snapshot（原 validated bytes）。"""
+    st = str(tmp_path / "state")
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1", to_addr=ADDR)
+    with open(draft, "rb") as fh:
+        original = fh.read()
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {"env-1": {"note": "n", "target": ADDR}}})
+
+    def runner_fail(argv):
+        if argv[:2] == ["mail", "get"]:
+            return _mail_get_doc("env-1")
+        raise _face_error("store-down", "storage")
+
+    with pytest.raises(mod.S2Error):
+        mod.send_reply(ADDR, "env-1", draft, runner_fail, state_dir=st)
+    snap = _snapshot_path(st)
+    assert os.path.exists(snap)
+    with open(snap, "rb") as fh:
+        assert fh.read() == original
+    kept = mod.load_pending_replies(mod.pending_path(ADDR, st))
+    assert kept["replies"]["env-1"]["reply_sha256"] == hashlib.sha256(
+        original).hexdigest()
+
+    seen = {}
+
+    def runner_ok(argv):
+        if argv[:2] == ["mail", "get"]:
+            return _mail_get_doc("env-1")
+        with open(argv[2], "rb") as fh:
+            seen["bytes"] = fh.read()
+        return _send_doc("out-1")
+
+    out = mod.send_reply(ADDR, "env-1", draft, runner_ok, state_dir=st)
+    assert out["cleared"] is True
+    assert seen["bytes"] == original
+    assert not os.path.exists(snap)
+
+
+def test_send_corrupt_snapshot_refuses_retry(tmp_path):
+    """F5：snapshot 損壞（SHA 對不上 pin）＝fail-loud 禁發（零 send
+    呼叫）。"""
+    st = str(tmp_path / "state")
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1", to_addr=ADDR)
+    with open(draft, "rb") as fh:
+        pinned_sha = hashlib.sha256(fh.read()).hexdigest()
+    os.makedirs(os.path.dirname(_snapshot_path(st)), exist_ok=True)
+    with open(_snapshot_path(st), "wb") as fh:
+        fh.write(b'{"corrupted": true}')
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {"env-1": {
+            "note": "n", "target": ADDR,
+            "reply_envelope_id": "out-1", "reply_sha256": pinned_sha}}})
+    runner = _seq_runner([_mail_get_doc("env-1")])
+    with pytest.raises(mod.S2Error, match="snapshot 損壞"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert not any(c[0] == "send" for c in runner.calls)
+
+
+def test_send_missing_snapshot_refuses_retry(tmp_path):
+    """F5：snapshot 缺席（如修前 pin 的遺留）＝fail-loud 禁發。"""
+    st = str(tmp_path / "state")
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1", to_addr=ADDR)
+    with open(draft, "rb") as fh:
+        pinned_sha = hashlib.sha256(fh.read()).hexdigest()
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {"env-1": {
+            "note": "n", "target": ADDR,
+            "reply_envelope_id": "out-1", "reply_sha256": pinned_sha}}})
+    runner = _seq_runner([_mail_get_doc("env-1")])
+    with pytest.raises(mod.S2Error, match="snapshot 缺席"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert not any(c[0] == "send" for c in runner.calls)

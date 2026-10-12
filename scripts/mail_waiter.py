@@ -105,7 +105,6 @@ import fcntl
 import importlib.util
 import json
 import os
-import re
 import shlex
 import subprocess
 import sys
@@ -187,20 +186,17 @@ def state_base_dir(base_dir=None):
     return os.path.join(root, "ai-guide", STATE_DIRNAME)
 
 
-# per-repo 目錄名 identity 編碼（AIR-312 R1 I3——injective）：安全字元
-# （A-Za-z0-9._-）原樣、其餘逐字 percent-encode（% 自身→%25）——折 _
-# 舊制把 alpha+beta 與 alpha_beta 折成同一目錄（A stop 動到 B state）；
-# percent-encode 一對一（解碼唯一）、無註冊表。常態 repo basename 全落
-# 安全集——既有目錄名零遷移。
-_SAFE_DIRNAME_RE = re.compile(r"[^A-Za-z0-9._-]")
+# per-repo 目錄名 identity 編碼（AIR-312 R1 I3——injective）：單一定義＝
+# core.safe_repo_dirname（UTF-8 byte-wise percent-encode——本檔不留副本
+# ，R2-WT01：雙副本 code-point 舊制對非 ASCII 有折疊碰撞）。percent-
+# encode 一對一（解碼唯一）、無註冊表。常態 repo basename 全落安全集
+# ——既有目錄名零遷移。
 
 
 def safe_repo_dirname(identity):
-    """identity → injective 檔案系統目錄名（percent-encode；空＝unknown）。"""
-    safe = _SAFE_DIRNAME_RE.sub(
-        lambda m: "".join(f"%{ord(ch):02X}" for ch in m.group()), identity
-    )
-    return safe or "unknown"
+    """identity → injective 檔案系統目錄名（委派 core 單一定義；
+    percent-encode；空＝unknown）。"""
+    return core.safe_repo_dirname(identity)
 
 
 def repo_state_dir(identity, base_dir=None):

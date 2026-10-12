@@ -26,6 +26,9 @@ send（intent＋reply_address＋envelope_id）
   命名＝**repo basename**（本 repo＝`ai-guide`——git common-dir primary
   root 推導、custody fence exact match）；歷史 `<repo>-marshal` 舊址
   （`ai-guide-marshal` 等）＝AIR-311 前慣例，過渡期並存、對帳後退役。
+  **遷移註記（AIR-312 S3）**：在飛 thread 的回信仍落舊址——舊址讀取以
+  raw producer 唯讀面（`dutymail mail list --address <舊址> --box
+  pending`）對帳，非 S2 CLI（S2 只消費呼叫端 repo 身份址）。
   **holder**＝目前哪個 session 值星（epoch-fenced、可換代不搬信）——
   責任 identity 與執行者 identity 分開。章位分離（AIR-298）：消費章（prepare/ack）
   ＝值星 session 短持、durable INBOX 送達＋viewport 顯示無章可持（holderless
@@ -34,9 +37,9 @@ send（intent＋reply_address＋envelope_id）
 - **門牌建立**：新 repo 加入 dutymail 時建 repo basename 門牌
   （`address create` 一次性；`dutymail address create --alias <repo>`）。
 - **reply_address 慣例**：從 repo mailbox 發出者，body machine-header `reply_address` 一律
-  ＝originating repo-marshal；只有明確 direct-session 對話才回 session address。
+  ＝originating repo basename（AIR-312 命名；歷史 repo-marshal 舊址見上「遷移註記」）；只有明確 direct-session 對話才回 session address。
 - **session address 殘餘角色＝direct channel**（指定特定 session／session-exit continuation）；
-  不當 backlog 輪詢、死後不收新 primary routing（回 repo-marshal）。
+  不當 backlog 輪詢、死後不收新 primary routing（回 repo mailbox＝repo basename）。
 - **不預設 card sub-address**；任務歸屬用 body machine-headers（`class`/`task`/`card`）＋
   `in_reply_to` thread 鍵。**label 是 display metadata 不是地址**（session label 歸
   SessionDiscovery seam，AIR-254.1/254.2）。

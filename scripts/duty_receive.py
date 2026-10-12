@@ -793,12 +793,22 @@ GIT_RESOLVE_TIMEOUT_SECONDS = 3
 def _git_common_dir(cwd):
     """cwd 的 git common-dir（絕對路徑）→ str | None。
 
-    linked worktree／primary 皆回 primary 的 `.git` 目錄。舊 git 無
+    linked worktree／primary 皆回 primary 的 `.git` 目錄。bare repo
+    （`git rev-parse --is-bare-repository`＝true）→ None（fail-closed
+    前置——bare 命名 `<x>/.git` 的 common-dir basename 恰為 `.git`，
+    無此檢查會誤判 `<x>` 為 primary root）。舊 git 無
     `--path-format=absolute` 時退路：輸出可能相對 cwd——join 後絕對化。
     非 git／git 掛死／git 缺席＝None（fail-closed 前置）。cwd 可注入
     （測試）；None＝process cwd。"""
     base = cwd if cwd else os.getcwd()
     try:
+        bare = subprocess.run(
+            ["git", "rev-parse", "--is-bare-repository"],
+            capture_output=True, text=True, check=False, cwd=base,
+            timeout=GIT_RESOLVE_TIMEOUT_SECONDS,
+        )
+        if bare.returncode == 0 and bare.stdout.strip() == "true":
+            return None
         proc = subprocess.run(
             ["git", "rev-parse", "--path-format=absolute",
              "--git-common-dir"],
@@ -830,10 +840,11 @@ def _caller_primary_root(cwd=None):
 
     以 common-dir 佈局反推：primary／linked worktree 的 common-dir 恆
     `<primary>/.git` → dirname 即 primary root。basename 非 `.git` 的
-    git-dir 佈局（bare repo：common-dir＝repo 本體 `<x>.git`；submodule
-    ：`<super>/.git/modules/<name>`；分離 gitdir）＝無法判定 primary
-    root → None（寧擋不放）。root 以 realpath 規範化（macOS /tmp 符號
-    連結面；symlink 進入路徑同身份）。"""
+    git-dir 佈局（bare repo：common-dir＝repo 本體 `<x>.git`；bare 命名
+    `<x>/.git` 由 `_git_common_dir` 的 `--is-bare-repository` 前置拒絕；
+    submodule：`<super>/.git/modules/<name>`；分離 gitdir）＝無法判定
+    primary root → None（寧擋不放）。root 以 realpath 規範化（macOS
+    /tmp 符號連結面；symlink 進入路徑同身份）。"""
     common = _git_common_dir(cwd)
     if not common or os.path.basename(common) != ".git":
         return None
@@ -1467,15 +1478,24 @@ class S2Error(RuntimeError):
         self.exit_code = exit_code
 
 
-_SAFE_REPO_RE = re.compile(r"[^A-Za-z0-9._-]")
+# byte-wise percent 編碼安全集（單一定義——mail_waiter 自本函式委派，
+# 不留副本）。code-point 舊制對非 ASCII 以「字」為單位編碼，會與 ASCII
+# percent 序列碰撞（「┯」U+252F 與 "%2F" 同映 %252F——injective 破裂）
+# ；byte-wise UTF-8 逐 byte 一對一（解碼唯一）。ASCII 輸出與舊制同
+# （既有 state 目錄零遷移）；非 ASCII 舊編碼目錄成孤兒（無人再寫，
+# watcher 重 arm 重建）。
+_SAFE_REPO_BYTES = frozenset(
+    b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+)
 
 
 def safe_repo_dirname(identity):
-    """identity → injective 目錄名（mail_waiter.safe_repo_dirname 同語義：
-    safe 字元原樣、其餘逐字 percent-encode、`%`→`%25`、空→unknown）。"""
-    safe = _SAFE_REPO_RE.sub(
-        lambda m: "".join(f"%{ord(ch):02X}" for ch in m.group()),
-        identity or "",
+    """identity → injective 目錄名（UTF-8 byte-wise percent-encode）：
+    `A-Za-z0-9._-` 逐 byte 原樣、其餘 byte → `%XX`（大寫 hex）、空→
+    unknown。單一定義——mail_waiter.safe_repo_dirname 委派本函式。"""
+    safe = "".join(
+        chr(b) if b in _SAFE_REPO_BYTES else f"%{b:02X}"
+        for b in (identity or "").encode("utf-8")
     )
     return safe or "unknown"
 
@@ -1761,6 +1781,33 @@ def _s2_release_best_effort(runner, address, token):
     return True
 
 
+def _clear_stale_holder_on_reread(address, runner, state_dir=None):
+    """已 ACK 重看短路前清自家殘留 holder（零 ACK/prepare）→ 併入 result
+    的 dict 片段。
+
+    saved holder 在場＝前次消費在 release 前崩潰的殘留——檔案即自家
+    custody 記錄，token 屬自家：best-effort release＋成功才清檔；失敗
+    保留檔案＋揭露。holder 檔損壞＝無 token 可釋放——保留＋揭露，不擋
+    唯讀重看。"""
+    try:
+        saved = _load_inbox_holder(address, state_dir)
+    except S2Error as exc:
+        return {"released_stale_holder": False,
+                "stale_holder_note": f"holder 檔損壞——保留作 evidence（{exc}）"}
+    if saved is None:
+        return {}
+    with _pending_lock(address, state_dir):
+        released = _s2_release_best_effort(runner, address, saved["token"])
+        if released:
+            _clear_inbox_holder(address, state_dir)
+    if released:
+        return {"released_stale_holder": True}
+    return {"released_stale_holder": False,
+            "stale_holder_note": (
+                "殘留 holder release 失敗——檔案保留作 evidence"
+                f"（token {saved['token']}）")}
+
+
 def mark_read(address, envelope_id, runner, state_dir=None,
               note=None, target=None):
     """S2 標已讀（一次一封）→ result dict。
@@ -1792,6 +1839,13 @@ def mark_read(address, envelope_id, runner, state_dir=None,
             f"mail get 缺 item：{sorted(result) if isinstance(result, dict) else result!r}",
             False, 0,
         )
+    if item.get("envelopeId") != envelope_id:
+        # ID echo 檢查（與 send_reply incoming 對稱）：回應與查詢不符＝
+        # 對象不明——禁 ACK、禁任何持久化/holder 動作。
+        raise S2Error(
+            f"mail get ID 不符（查詢 {envelope_id!r}≠回 "
+            f"{item.get('envelopeId')!r}）——禁 ACK、不動任何狀態"
+        )
     env, absence = decode_canonical_item(item)
     if absence is not None:
         raise S2Error(f"{envelope_id}：{absence}")
@@ -1802,8 +1856,11 @@ def mark_read(address, envelope_id, runner, state_dir=None,
         )
     pending_flag = item.get("pending")
     if pending_flag is False:
-        # 已 ACK 重看：不消費（零 holder／prepare／ack）。有 note 仍記義務；
-        # 無 note 永不清除既有義務（只讀）。
+        # 已 ACK 重看：不消費（零 holder 取得／prepare／ack）。有 note 仍
+        # 記義務；無 note 永不清除既有義務（只讀）。進短路前清自家殘留
+        # holder（前次 release 前崩潰遺留——best-effort，失敗保留揭露）。
+        reread_extra = _clear_stale_holder_on_reread(
+            address, runner, state_dir)
         if note is not None:
             try:
                 with _pending_lock(address, state_dir):
@@ -1823,10 +1880,14 @@ def mark_read(address, envelope_id, runner, state_dir=None,
                         pending_path(address, state_dir), doc)
             except OSError as exc:
                 raise S2Error(f"待回覆寫入失敗——未更動（{exc!r}）") from exc
-            return {"envelope_id": envelope_id, "acked": False,
-                    "reread": True, "pending": True, "envelope": env}
-        return {"envelope_id": envelope_id, "acked": False,
-                "reread": True, "pending": False, "envelope": env}
+            out = {"envelope_id": envelope_id, "acked": False,
+                   "reread": True, "pending": True, "envelope": env}
+            out.update(reread_extra)
+            return out
+        out = {"envelope_id": envelope_id, "acked": False,
+               "reread": True, "pending": False, "envelope": env}
+        out.update(reread_extra)
+        return out
     if pending_flag is not True:
         raise DutymailFaceError(
             "shape-drift", "unknown",
@@ -1847,24 +1908,36 @@ def mark_read(address, envelope_id, runner, state_dir=None,
         except OSError as exc:
             raise S2Error(
                 f"待回覆寫入失敗——no-ACK（{exc!r}）") from exc
-    saved = _load_inbox_holder(address, state_dir)
-    if saved is not None:
+    # 同 repo consume 段短鎖：holder 取得→save→prepare→ACK→release 整段
+    # 序列化——兩個並行 mark_read 不再交錯 token（第二個進鎖時看到第一個
+    # 的終態）。段內禁呼叫任何再取 _pending_lock 的函式（fcntl 非重入，
+    # 自我死鎖）：note 寫入在段外、_mark_read_with_token 只動 holder 檔
+    # 與 transport、_save/_load_inbox_holder 不取鎖——保持此性質。
+    with _pending_lock(address, state_dir):
+        saved = _load_inbox_holder(address, state_dir)
+        if saved is not None:
+            return _mark_read_with_token(
+                address, envelope_id, env, runner, state_dir,
+                saved["token"], saved["epoch"])
+        try:
+            token, epoch = _s2_bind_no_takeover(runner, address)
+        except (S2Error, DutymailFaceError, BinaryMissing):
+            raise
+        try:
+            _save_inbox_holder(address, state_dir, epoch, token)
+        except OSError as exc:
+            # release 結果誠實回報：失敗時 holder 可能殘留 active——token
+            # 完整揭露作人工恢復證據，禁宣稱已釋放。
+            if _s2_release_best_effort(runner, address, token):
+                raise S2Error(
+                    f"holder 存檔失敗——已釋放剛取得的 token（不靜默失權；"
+                    f"pending 已保留；{exc!r}）") from exc
+            raise S2Error(
+                "holder 存檔失敗——release 亦失敗——holder 可能殘留 "
+                f"active；token＝{token}（保留作人工恢復證據）；pending "
+                f"已保留；{exc!r}") from exc
         return _mark_read_with_token(
-            address, envelope_id, env, runner, state_dir,
-            saved["token"], saved["epoch"])
-    try:
-        token, epoch = _s2_bind_no_takeover(runner, address)
-    except (S2Error, DutymailFaceError, BinaryMissing):
-        raise
-    try:
-        _save_inbox_holder(address, state_dir, epoch, token)
-    except OSError as exc:
-        _s2_release_best_effort(runner, address, token)
-        raise S2Error(
-            f"holder 存檔失敗——已釋放剛取得的 token（不靜默失權；"
-            f"pending 已保留；{exc!r}）") from exc
-    return _mark_read_with_token(
-        address, envelope_id, env, runner, state_dir, token, epoch)
+            address, envelope_id, env, runner, state_dir, token, epoch)
 
 
 def _mark_read_with_token(address, envelope_id, env, runner, state_dir,
@@ -1912,8 +1985,29 @@ def _mark_read_with_token(address, envelope_id, env, runner, state_dir,
     except DutymailFaceError as exc:
         if _s2_release_best_effort(runner, address, token):
             _clear_inbox_holder(address, state_dir)
+        # ACK 錯誤＝outcome unknown（transport 可能已提交、回應遺失）
+        # ——唯讀重查定界，禁宣稱「cursor 未前進」。本段在 consume 短鎖
+        # 內，同 repo 無並行消費者可插隊——重查結果可信。
+        try:
+            recheck = mail_get(runner, address, envelope_id)
+            re_item = recheck.get("item")
+            if isinstance(re_item, dict) and re_item.get("pending") is False:
+                # ACK 已提交（回應遺失）——committed，非錯誤。
+                return {"envelope_id": envelope_id, "acked": True,
+                        "reread": False, "pending": False,
+                        "envelope": env, "ack_outcome": "committed",
+                        "ack_response_loss": True}
+            if isinstance(re_item, dict):
+                unknown_detail = (
+                    "重查仍 pending" if re_item.get("pending") is True
+                    else f"重查 pending 狀態不明（{re_item.get('pending')!r}）")
+            else:
+                unknown_detail = f"重查 item 缺席/異形（{re_item!r}）"
+        except (DutymailFaceError, S2Error, BinaryMissing, OSError) as re_exc:
+            unknown_detail = f"重查失敗（{re_exc!r}）"
         raise S2Error(
-            f"ACK 失敗——cursor 未前進、pending 已保留（{exc}）") from exc
+            "ACK 結果未知（response-loss）——cursor 狀態未確認，pending "
+            f"義務保留（{unknown_detail}；原 ACK 錯誤：{exc}）") from exc
     try:
         holder_release(runner, address, token)
     except (DutymailFaceError, BinaryMissing, OSError) as exc:
@@ -1930,6 +2024,27 @@ def _mark_read_with_token(address, envelope_id, env, runner, state_dir,
 _SHA256_HEX_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
+def _atomic_write_0600(path, data):
+    """bytes → 0600 atomic 寫（pid 後綴 tmp＋os.replace；OSError 原樣
+    傳出）。"""
+    tmp = path + "." + str(os.getpid()) + ".tmp"
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def _s2_outbox_snapshot_path(address, state_dir, envelope_id):
+    """outbound snapshot 路徑（validated draft bytes 的單一發送源）。
+    envelope_id 經 safe_repo_dirname 編碼（呼叫端供給——禁路徑逃逸）。"""
+    outbox = os.path.join(s2_repo_dir(address, state_dir), "outbox")
+    return os.path.join(
+        outbox, safe_repo_dirname(envelope_id) + ".json")
+
+
 def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
     """S2 回信（一次一封）→ {"cleared": True, "receipt": {...}}。
 
@@ -1937,10 +2052,16 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
     content is never authority）。本 wrapper 只做機械驗證：pending 待回覆
     在場 → draft `in_reply_to` 就是該 incoming ID → draft `to.address`
     就是 pending target。首次 send 前 pin outbound envelope ID＋draft 檔
-    bytes SHA（存 pending entry）；重試要求同 ID＋同 bytes（response-loss
-    重試冪等——transport 以 envelope ID 去重）。一次 send 調用；成功
-    receipt 三鍵＋envelope/target 匹配才解除；任一失敗保留 pending（含
-    pin）並 raise。draft 內容不抄入 pending（只 pin ID＋SHA）。
+    bytes SHA（存 pending entry），並把已驗證的 draft bytes 寫入 outbox
+    snapshot（`<state>/repos/<enc>/outbox/<id>.json`，0600 atomic）；
+    `send --envelope-file` 一律傳 snapshot 路徑——呼叫端 draft 檔在驗證
+    讀取後仍可能被改（TOCTOU），實際發送內容以 snapshot 為準。重試要求
+    同 ID＋呼叫端 draft 同 bytes（SHA==pin，既有檢查），實際發送仍讀
+    snapshot；snapshot 缺席/損壞（SHA 對不上 pin）＝fail-loud 禁發。
+    response-loss 重試冪等——transport 以 envelope ID 去重。一次 send
+    調用；成功 receipt 三鍵＋envelope/target 匹配才解除（並清 snapshot）
+    ；任一失敗保留 pending（含 pin）＋snapshot 並 raise。draft 內容不
+    抄入 pending（只 pin ID＋SHA）。
     """
     if not isinstance(address, str) or not address:
         raise S2Error("address 須為非空字串", 2)
@@ -2006,8 +2127,19 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
         if to_addr != target:
             raise S2Error(
                 f"draft 收件（{to_addr!r}）≠待回覆 target（{target!r}）——禁發送")
+        snapshot_path = _s2_outbox_snapshot_path(
+            address, state_dir, draft_id)
         if pinned_id is None and pinned_sha is None:
-            # 首次 send 前 pin（同一臨界段內、send 前）。
+            # 首次 send 前 pin（同一臨界段內、send 前）：先寫 snapshot
+            # （validated bytes）、後寫 pin——pin 成功蘊含 snapshot 在場
+            # （snapshot 寫入失敗＝未發送、未 pin，狀態乾淨可重來）。
+            try:
+                os.makedirs(os.path.dirname(snapshot_path), exist_ok=True)
+                _atomic_write_0600(snapshot_path, draft_bytes)
+            except OSError as exc:
+                raise S2Error(
+                    f"outbox snapshot 寫入失敗——未發送、未 pin（{exc!r}）"
+                ) from exc
             entry["reply_envelope_id"] = draft_id
             entry["reply_sha256"] = draft_sha
             doc["replies"][in_reply_to] = entry
@@ -2016,9 +2148,23 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
             except OSError as exc:
                 raise S2Error(
                     f"reply pin 寫入失敗——未發送（{exc!r}）") from exc
+        else:
+            # 重試：呼叫端 draft 檔已過 SHA==pin 對帳（上）；實際發送
+            # 內容以 snapshot 為準——缺席/損壞＝fail-loud 禁發。
+            try:
+                with open(snapshot_path, "rb") as fh:
+                    snap_bytes = fh.read()
+            except OSError as exc:
+                raise S2Error(
+                    "outbox snapshot 缺席/不可讀——禁發（fail-loud；"
+                    f"{exc!r}；路徑 {snapshot_path}）") from exc
+            if _s2_hashlib.sha256(snap_bytes).hexdigest() != pinned_sha:
+                raise S2Error(
+                    "outbox snapshot 損壞（SHA 對不上 pin 記錄）——禁發"
+                    "（fail-loud）")
         try:
             receipt = _call(
-                runner, ["send", "--envelope-file", envelope_file])
+                runner, ["send", "--envelope-file", snapshot_path])
         except (DutymailFaceError, BinaryMissing, OSError) as exc:
             raise S2Error(
                 f"send 失敗——pending 保留（含 pin，同 draft 可重試；{exc!r}）"
@@ -2041,6 +2187,10 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
             raise S2Error(
                 f"receipt envelopeSha256 形非法（{srv_sha!r}）——pending 保留")
         _pending_clear_reply(address, state_dir, in_reply_to)
+        try:
+            os.remove(snapshot_path)
+        except FileNotFoundError:
+            pass
         return {"cleared": True, "receipt": receipt}
 
 
@@ -2255,14 +2405,21 @@ def _cmd_mark_read(args):
               file=sys.stderr)
         return 1
     if out["acked"]:
+        loss = ("（ACK 回應遺失——唯讀重查確認已提交）"
+                if out.get("ack_response_loss") else "")
         print(f"[duty-inbox] {address}：已標已讀 {out['envelope_id']}"
-              "（原信留原處可重看）")
+              f"（原信留原處可重看）{loss}")
     elif out.get("pending"):
         print(f"[duty-inbox] {address}：重看 {out['envelope_id']}"
               "（已 ACK 歷史，不再消費；待回覆已記）")
     else:
         print(f"[duty-inbox] {address}：重看 {out['envelope_id']}"
               "（已 ACK 歷史，不再消費）")
+    if out.get("released_stale_holder"):
+        print(f"[duty-inbox] {address}：已清殘留 holder（前次崩潰遺留）")
+    if out.get("stale_holder_note"):
+        print(f"[duty-inbox] {address}：{out['stale_holder_note']}",
+              file=sys.stderr)
     return 0
 
 

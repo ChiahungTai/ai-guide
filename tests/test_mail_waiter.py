@@ -1399,3 +1399,14 @@ class TestTriPanelFixes:
         entry = st["addresses"][other]
         assert entry["cursor"] == "b0"  # 不推進（雙欄）
         assert entry["accepted_cursor"] == "kb0"
+
+
+# ── R2 修正（F7——byte-wise percent 編碼單一定義）──────────────────────
+
+
+def test_safe_repo_dirname_delegates_core_byte_wise():
+    """waiter 不留編碼副本——委派 core.safe_repo_dirname（單一定義，
+    R2-WT01）；非 ASCII 與 ASCII percent 序列不折疊（byte-wise UTF-8）。"""
+    assert mod.safe_repo_dirname("┯") == "%E2%94%AF"
+    assert mod.safe_repo_dirname("┯") != mod.safe_repo_dirname("%2F")
+    assert mod.safe_repo_dirname("alpha_beta+") == "alpha_beta%2B"

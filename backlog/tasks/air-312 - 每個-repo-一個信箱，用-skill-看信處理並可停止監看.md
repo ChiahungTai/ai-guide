@@ -4,7 +4,7 @@ title: 每個 repo 一個信箱，用 skill 看信處理並可停止監看
 status: In Progress
 assignee: []
 created_date: '2026-10-11 23:14'
-updated_date: '2026-10-12 01:56'
+updated_date: '2026-10-12 05:04'
 labels: []
 dependencies: []
 references:
@@ -67,4 +67,6 @@ post-build R1：Muse fresh job-mv4jkl53-9zecoi completed＋native intent Bacon c
 中間檢查點：S1 writer job-mv4hwczo-zmc1c5 completed；Marshal 獨立 mail 510 tests、governance 267 tests PASS（詳細 verification.md）。Muse fresh review job-mv4jkl53-9zecoi 與 S2 design review job-mv4k179q-vsqqs8 均 completed，已逐項裁定；R1 六項修正由 job-mv4jxz9o-6ioelq 單 writer 執行，尚未驗收。DB-112 installed mail list/get 已查證，ACK 後原文可讀，S2 已非 producer 缺口；consumer 工單 .agent-tmp/air312-s2-implementation.md 已備，R1 收線後再派。仍未部署、未宣稱舊址退役。
 
 中間檢查點：R1 job-mv4jxz9o-6ioelq 已 completed，worker 回報500 tests PASS（尚非Marshal獨立重跑）；Bacon 針對 frozen .agent-tmp/air312-r1-followup/source 做六finding followup。S2 已派 fresh Muse implementer job-mv4loqfn-kct6dv（muse-spark-1.3 xhigh，既定EP重實作升級），waiter已掛；範圍普通 inbox/history/mark-read/pending-replies/reply，真store與其他repo禁寫。user提供 bridge mail list/get 正式命令與既有DB-112契約一致，無producer阻塞。
+
+R2 整弧複審（ZCode Marshal session，凍結 revision ea46a4a4）：muse review face approve 零 findings；codex task face（28K 閘階梯 b 檔案承載）12 findings——裁定採納 10（CX01 並行 token 共用補同 repo consume 短鎖、CX02 虛稱已釋放、CX03 ACK response-loss 診斷、CX04 孤兒 holder 清理、RP01 send TOCTOU snapshot、ID01 bare 繞道、WT01 Unicode 編碼碰撞、DOC01 skill dirname 少一層、DOC02 sender 指引舊址、TEST02 ID echo）、acknowledge 1（TEST01 e2e send 階段覆蓋＝已知限制）。裁定表入 .review/air-312.md。Marshal 獨立驗收：271 mail＋189 相依＋267 governance 全綠、CLI smoke、inert probe、single-source 對 baseline 零新增、R1 六 finding 逐項機械驗證通過。十項修正派 Flash job-mv4sel9d-odqenj（glm write-mode edit，user steering：實作歸 Flash、muse 留審查）；修後獨立重跑＋fix delta 複審（muse）。
 <!-- SECTION:NOTES:END -->

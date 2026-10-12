@@ -530,6 +530,18 @@ class TestRepoIdentity:
         with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
             mod.caller_repo_address(str(bare))
 
+    def test_bare_repo_named_dotgit_fail_closed(self, tmp_path):
+        """F6/R2-ID01：bare 命名 `<x>/.git`（common-dir basename 恰為
+        `.git`）＝`--is-bare-repository` 前置拒絕——無此檢查會誤判 `<x>`
+        為 primary root。正控制（primary／linked WT）不受影響。"""
+        bare = tmp_path / "alpha" / ".git"
+        subprocess.run(
+            ["git", "init", "-q", "--bare", str(bare)], check=True)
+        assert mod._git_common_dir(str(bare)) is None
+        assert mod._caller_primary_root(str(bare)) is None
+        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
+            mod.caller_repo_address(str(bare))
+
     def test_cwd_none_uses_process_cwd(self, tmp_path, monkeypatch):
         """cwd=None＝process cwd（CLI 面——monkeypatch.chdir 注入）。"""
         repo = _git_repo(tmp_path, name="alpha")
@@ -2242,3 +2254,55 @@ class TestResolutionSinkWiring:
 # （hook sink factory 接線測試已隨 hook 退役移除——sink 注入面住
 # scripts/duty_receive.py process_once，TestDispositionSinkWiring／
 # TestResolutionSinkWiring 照常釘 core 面。）
+
+
+# ── R2 修正（F6／F7／F8——marshal 裁定採納）────────────────────────────
+
+
+class TestSafeRepoDirname:
+    """F7/R2-WT01：UTF-8 byte-wise percent 編碼單一定義——非 ASCII
+    code-point 舊制的折疊碰撞修除（「┯」U+252F 與 "%2F" 舊制同映
+    %252F，injective 破裂）。"""
+
+    def test_utf8_byte_wise_encoding(self):
+        assert mod.safe_repo_dirname("┯") == "%E2%94%AF"
+        assert mod.safe_repo_dirname("%2F") == "%252F"
+        assert mod.safe_repo_dirname("┯") != mod.safe_repo_dirname("%2F")
+
+    def test_ascii_unchanged(self):
+        assert mod.safe_repo_dirname("alpha_beta") == "alpha_beta"
+        assert mod.safe_repo_dirname("alpha+beta") == "alpha%2Bbeta"
+        assert mod.safe_repo_dirname("a/b") == "a%2Fb"
+        assert mod.safe_repo_dirname("") == "unknown"
+
+    def test_colliding_pair_now_injective(self):
+        seen = {mod.safe_repo_dirname(s) for s in ("┯", "%2F", "%252F")}
+        assert len(seen) == 3
+
+
+class TestSkillDocRootDerivation:
+    """F8/R2-DOC01：skill 文檔反推 repo root 公式＝三層 dirname（檔案
+    →skill 目錄→skills→repo root）——兩層會停在 skills/（腳本路徑落空）
+    ；真實 symlink 入口 realpath 解析後 scripts/duty_receive.py 在場。"""
+
+    @pytest.mark.parametrize("skill_rel", [
+        "skills/mail-handle/SKILL.md",
+        "skills/mail-watch/SKILL.md",
+    ])
+    def test_three_dirname_formula_resolves_to_repo_root(
+            self, skill_rel, tmp_path):
+        skill = str(REPO_ROOT / skill_rel)
+        # 部署拓撲（~/.agents/skills/<name>/SKILL.md → repo skills/…）在
+        # tmp 重現成真實 symlink 入口後解析。
+        link = str(tmp_path / "SKILL.md")
+        os.symlink(skill, link)
+        resolved = os.path.realpath(link)
+        root = os.path.dirname(os.path.dirname(os.path.dirname(resolved)))
+        assert os.path.isfile(os.path.join(root, "scripts",
+                                           "duty_receive.py"))
+        assert os.path.samefile(root, str(REPO_ROOT))
+        with open(skill, encoding="utf-8") as fh:
+            text = fh.read()
+        assert 'dirname "$(dirname "$(dirname' in text
+        assert "兩層" not in text
+        assert "三層" in text
