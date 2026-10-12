@@ -191,7 +191,7 @@ user 親手貼原本是隱式授權載體；直送後 AI 可直達另一 session
 - ❌ 以 transport receipt 冒充「對方收到」——receipt＝queued-visible 非完成
 - ❌ discovery exit 3（`source_unavailable`／`source_malformed`／`whoami_unavailable`／`whoami_malformed`）仍嘗試 dutymail 直送——降 manual paste fallback（reason=`discovery-unavailable`，Phase 5 consumer contract）
 - ❌ 交接對象為排程／autonomous session 時，把 holder bind／`duty_receive` 處置面列入交接指示（真實案例：cron session 搶章吃掉催辦信——holder 態觀察〔status 盤點〕可帶，bind／收信處置指示禁入）
-  （本條禁的是** handoff 信件內容**向 autonomous 接手者交付 holder bind／處置指示——不是禁止 autonomous session 依自家卡自主消費；後者的 consuming-owner 邊界＝[mail-handle](../mail-handle/SKILL.md)「consuming-owner」節。）
+  （本條禁的是**handoff 信件內容**向 autonomous 接手者交付 holder bind／處置指示——不是禁止 autonomous session 依自家卡自主消費；後者的 consuming-owner 邊界＝[mail-handle](../mail-handle/SKILL.md)「consuming-owner」節。）
 
 ## 流程位置
 
