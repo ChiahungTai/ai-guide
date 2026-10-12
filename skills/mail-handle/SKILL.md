@@ -101,6 +101,10 @@ primary root＝fail-closed 拒絕（寧擋不放）。**無 override 機制**：
   repo>`（scoped；語義＝[dutymail-roundtrip](../_common/dutymail-roundtrip.md)）。
 - digest class 計數與 surface 摘要是**分類呈報，不是看信**——禁宣稱「已讀」。
 
+## consuming-owner（誰可以消費）
+
+同 repo 多 session 並存時，**只有本卡 owning 值星 session 做 `mark-read`／`reply` 消費**；觀察者 session（reviewer、其他 WT、非 owning）只跑唯讀面（`inbox`／`show`／`pending-replies`）不消費、不另 `start` 搶哨（要接手值星＝接手 owning 卡，非 supersede 別人的哨）。機械兜底＝`_s2_bind_no_takeover` 活 holder 恆拒＋同 repo 消費段短鎖；本節是語義面，機械面已由 S2 實作保證。unattended（deep-work）下的消費資格同此判定。
+
 ## 紅線
 
 - **禁碰他 repo 信箱**——身份閘恆 fail-closed，不繞過（含唯讀跨址診斷
