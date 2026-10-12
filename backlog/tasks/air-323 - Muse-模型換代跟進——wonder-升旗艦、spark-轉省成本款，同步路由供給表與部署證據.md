@@ -1,12 +1,14 @@
 ---
 id: AIR-323
 title: Muse 模型換代跟進——wonder 升旗艦、spark 轉省成本款，同步路由供給表與部署證據
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 22:36'
 updated_date: '2026-10-12 22:36'
 labels: []
 dependencies: []
+references:
+  - skills/model-routing/catalog.toml
 ordinal: 308000
 ---
 
