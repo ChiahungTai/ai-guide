@@ -1,12 +1,14 @@
 ---
 id: AIR-313
 title: 實作派工規則補強——spawn 判準自帶定義、歷史先例不授權
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 05:48'
-updated_date: '2026-10-12 05:48'
+updated_date: '2026-10-12 05:49'
 labels: []
 dependencies: []
+references:
+  - AIR-313
 ordinal: 298000
 ---
 
