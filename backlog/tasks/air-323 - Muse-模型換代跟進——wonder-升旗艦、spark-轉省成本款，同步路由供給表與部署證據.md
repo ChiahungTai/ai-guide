@@ -4,7 +4,7 @@ title: Muse 模型換代跟進——wonder 升旗艦、spark 轉省成本款，�
 status: In Progress
 assignee: []
 created_date: '2026-10-12 22:36'
-updated_date: '2026-10-12 22:59'
+updated_date: '2026-10-12 23:13'
 labels: []
 dependencies: []
 references:
@@ -45,14 +45,14 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 catalog.toml：muse-wonder-1.0 identity＋bridge-muse-wonder-1.0 binding 在場（token/provider_native/effort_values 含 max/image_transport）；spark identity/binding 原樣保留；wonder 五 workload conditional/pending_first_use 播種＋drift 註記齊（is_default 翻轉、context_limit 同值、bridge 3.14.0 pin＋L4 job id）
-- [ ] #2 SKILL.md：dispatch 預設段＋family 表 muse 列改 wonder 旗艦＋spark lite（含 bridge 裸委派落 wonder、spark 需顯式 --model 註記）；深推理建議 max＋CLI 值域列明；容量欄 context_limit 1,007,997＋payload 天花板 460,800 tokens
-- [ ] #3 agents/AGENTS.md muse code 行同步（wonder 全棧、spark lite）
-- [ ] #4 全量測試綠：uv run pytest（含同步後 availability_snapshot/sync_agents/parity_lint 及受影響 fixtures）
-- [ ] #5 sync_agents.py --check 綠＋card_validate 綠＋live 源（skills/agents/rules/tests/root AGENTS.md）muse 引用語義一致（wonder＝旗艦／spark＝lite，無過時「spark 全棧」殘留）
-- [ ] #6 rules/AGENTS.md 尺寸 gate 節補 muse 1.4.6 截尾鐵證（共享池／截尾通知模板／skills catalog 32KB 壓縮三事實）；瘦身裁決不變
-- [ ] #7 .agents/mail-autoarm.json 入版控（AIR-318 補件）
-- [ ] #8 落地前審查閘回執四欄入卡 notes（classification/review evidence ref/session-freshness/deployment-surfaces）
+- [x] #1 catalog.toml：muse-wonder-1.0 identity＋bridge-muse-wonder-1.0 binding 在場（token/provider_native/effort_values 含 max/image_transport）；spark identity/binding 原樣保留；wonder 五 workload conditional/pending_first_use 播種＋drift 註記齊（is_default 翻轉、context_limit 同值、bridge 3.14.0 pin＋L4 job id）
+- [x] #2 SKILL.md：dispatch 預設段＋family 表 muse 列改 wonder 旗艦＋spark lite（含 bridge 裸委派落 wonder、spark 需顯式 --model 註記）；深推理建議 max＋CLI 值域列明；容量欄 context_limit 1,007,997＋payload 天花板 460,800 tokens
+- [x] #3 agents/AGENTS.md muse code 行同步（wonder 全棧、spark lite）
+- [x] #4 全量測試綠：uv run pytest（含同步後 availability_snapshot/sync_agents/parity_lint 及受影響 fixtures）
+- [x] #5 sync_agents.py --check 綠＋card_validate 綠＋live 源（skills/agents/rules/tests/root AGENTS.md）muse 引用語義一致（wonder＝旗艦／spark＝lite，無過時「spark 全棧」殘留）
+- [x] #6 rules/AGENTS.md 尺寸 gate 節補 muse 1.4.6 截尾鐵證（共享池／截尾通知模板／skills catalog 32KB 壓縮三事實）；瘦身裁決不變
+- [x] #7 .agents/mail-autoarm.json 入版控（AIR-318 補件）
+- [x] #8 落地前審查閘回執四欄入卡 notes（classification/review evidence ref/session-freshness/deployment-surfaces）
 - [ ] #9 收 Done 時 Final Summary 帶 as-built 終態圖（mermaid）
 <!-- AC:END -->
 
@@ -76,4 +76,6 @@ G. 機械閘——scripts/sync_agents.py --check（parity）、scripts/card_vali
 
 <!-- SECTION:NOTES:BEGIN -->
 〔1013 checkpoint〕主實作回收（impl-lite att-1）：五 commit（1961d2ee catalog／df6199cb SKILL+agents／78b32218 rules 鐵證／4b90fb47 tests／90e10b8f marker 補件）、全量 3862 passed 1 skipped、parity/validator/語義掃描三閘綠、marshal 機械覆核 diff scope 符合。偏差②覆核結論：marker 檔為 primary untracked（不隨 WT），agent 重建 bytes 與 primary 現存檔一致（{\"protocol\": 1}）——無衝突。repair 腿（att-2）進行中：SKILL.md 檔位表深推理列＋可考值域註記 ultra→max 殘留三行（主實作 scope-out finding，同 face 前後矛盾）。審查閘分類：ordinary（供給事實同步、無 gate/authority 語義變更）→ 待一條獨立 context 審查腿。AIR-318 觀察：開場 advisory 陰性但 armed_at straddle 180s 窗＝不可判定；已重掛哨 gen 3（下個 session 結論性觀測機會）。
+
+〔1013 收斂〕F1 微修 89a93ffd 落地（全量閘 3861 passed 2 skipped）。弧 code-complete：branch air-323 七顆 commit（1961d2ee/df6199cb/78b32218/4b90fb47/90e10b8f/0a21db23/89a93ffd）。〔落地前審查閘回執〕classification=ordinary（供給事實同步——外部 model 換代＋user 兩次裁定輸入；無 decision/authority/gate/authorization/acceptance 面語義變更，路由政策骨架不變）／review=獨立 context 腿 fresh-eyes code-reviewer att-air323-review-1：PASS-with-findings——2 info（F1 wonder qualification 消費點標註已採納修復；F2 branch-base 落後卡 md 差異由收線 rebase 吸收），軸 A-F（事實準確/單一源 drift/證據誠實/instruction 合規/結構/marker）全查證零 critical-major-minor，reviewer 自證命令清單在 session task receipt／session-freshness=fresh（本 session＝author session；弧中無 redeploy／bundle 變動；instruction-writing skill 於任何 instruction 檔編輯前已載入並注入工單）／deployment-surfaces=pending（merge 後 deploy_agents.py 重投影 rules bundle＋驗證——本卡觸 rules/AGENTS.md＋skills/agents 面）。
 <!-- SECTION:NOTES:END -->
