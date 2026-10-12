@@ -1,10 +1,10 @@
 ---
 id: AIR-322
 title: mail_waiter 指令拒絕檔案形 --state-dir，防止掛哨假成功
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 13:47'
-updated_date: '2026-10-12 14:27'
+updated_date: '2026-10-12 14:33'
 labels:
   - bug
 dependencies: []
@@ -33,15 +33,15 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. start --state-dir <已存在檔案>：exit≠0、stderr 含父目錄建議、零 state 寫入（無新 state.json/state.lock）
-2. worker --state-dir <已存在檔案>：exit≠0、不讀 state、不建 lock、不觸發冷啟路徑
-3. stop/status --state-dir <已存在檔案>：exit≠0、不誤判 state 缺席/未啟動
-4. --state-dir <dir>/state.json（尾名 state.json、路徑不存在）：四 subcommand 皆拒、不建立同名目錄或檔案
-5. 合法既存目錄與尚不存在的合法目錄：既有行為不變（start 可 arm、status 正常報）
-6. 預設 start banner：含 state file 與 state dir 標示；arm 命令仍為最後一行
-7. symlink 指向檔案、路徑尾端斜線形：辨識結果與語義一致（指向檔案→拒）
-8. 新增回歸測試含真實 subprocess CLI 形態（非僅 mock validator）；既有測試全綠
-9. mail_autoarm hook（state_file_path 直讀、不帶 flag）行為不變
+- [x] #1 start --state-dir <已存在檔案>：exit≠0、stderr 含父目錄建議、零 state 寫入（無新 state.json/state.lock）——test_cli_reject_existing_file_start_stop_status＋entry guards＋main live probe
+- [x] #2 worker --state-dir <已存在檔案>：exit≠0、不讀 state、不建 lock、不觸發冷啟路徑——test_cli_reject_existing_file_worker_no_face_call＋test_worker_rejects_before_loop_no_face_call
+- [x] #3 stop/status --state-dir <已存在檔案>：exit≠0、不誤判 state 缺席/未啟動——同 #1 CLI 測試（stdout 無冷啟/desired=unknown）
+- [x] #4 --state-dir <dir>/state.json（尾名 state.json、路徑不存在）：四 subcommand 皆拒、不建立同名目錄或檔案——test_cli_reject_state_json_basename_all_subcommands＋main live probe（exit 2）
+- [x] #5 合法既存目錄與尚不存在的合法目錄：既有行為不變——test_cli_valid_dirs_behavior_unchanged＋test_none_and_directory_shapes_pass
+- [x] #6 預設 start banner：含 state file 與 state dir 標示；arm 命令仍為最後一行——test_cli_default_start_banner_labels_file_dir_arm_last（含 dir==dirname(file) 一致性）
+- [x] #7 symlink 指向檔案、路徑尾端斜線形：辨識結果與語義一致——test_cli_reject_symlink_to_file_and_trailing_slash＋dangling symlink（lexists）修復腿
+- [x] #8 新增回歸測試含真實 subprocess CLI 形態；既有測試全綠——TestStateDirCliRejection 真 spawn＋全量 3863 passed
+- [x] #9 mail_autoarm hook（state_file_path 直讀、不帶 flag）行為不變——test_mail_autoarm 22 passed、未動 hook 消費面函式
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -69,3 +69,18 @@ impl-lite 完成（agent_52997c6d）：12 新測試 RED→GREEN（RED 證據 .ag
 
 收斂：bi panel（muse job-mv5bn6lp completed／codex job-mv5bn6ok auth-failed-but-delivered——findings 可裁決、caveat 記錄）→judge 6/6 採納→修復批次（agent_b8cf86c2）RED 6→GREEN 17→全量 3863 passed→PLW1510 既存項補 check=False→path-scoped ruff clean＋檔案套件 72 passed。部署面：4 surfaces 全 N/A（touches 零命中）；hook core-reuse 面由 test_mail_autoarm 22 passed 實證。tour corpus：空集 pass。improvement 訊號：review 14/liveness 9/recurrence 104/budget 5——判讀 admission 0（歷史註記與熱檔活躍度，無 actionable）。風險分級：simple bug 卡、非🔴高風險（單檔 CLI robustness、無邊界/會計/風控面）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+修復落地（main b4a552b0）：四入口共用 _resolve_state_dir fail-loud 驗證（空字串／尾名 state.json／既存非目錄／尾斜線／dangling symlink 皆拒、訊息帶父目錄建議、exit 2）＋start banner 消歧（state file／state dir 分行、arm 命令保尾行）；bi panel（muse＋codex）6 findings 全採收斂；17 新測試＋全量 3863 passed；live probe：回報原案（--state-dir 指向 state 檔）在 main 上 exit 2 拒絕。
+
+終態圖（as-built）：
+```mermaid
+flowchart LR
+    cli["four subcommands"] -->|"explicit state-dir"| gate["_resolve_state_dir"]
+    gate -->|"empty or basename state.json or lexists non-dir"| reject["reject: exit 2, stderr parent-dir suggestion"]
+    gate -->|"None default or valid directory"| ok["start arms, worker polls"]
+    ok --> banner["banner: armed, state file, state dir, arm command last"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
