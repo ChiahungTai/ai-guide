@@ -4,29 +4,22 @@ harness-scope: neutral
 
 # 協作約束
 
-## 理解優先實作
+## 理解與查證
 
-需求不明先複述理解、列解讀並澄清，禁猜測實作；疑問一次彙整。非硬 gate 的確認集中到完成報告；commit、破壞性、單向門依 [outward-action-consent](outward-action-consent.md)。
+需求不明先複述理解、列解讀並一次澄清，禁猜測實作；非硬 gate 的確認集中完成報告。commit、破壞性、單向門依 [outward-action-consent](outward-action-consent.md)。
 
-## 事實查證原則
+分析須據實碼附 `path:line`＋特徵；「支援／不做 X」都須查證，自審不可替代獨立證據（acceptance-evidence）。AGPL 可研究行為／設計，禁搬碼或逐行翻譯；依自身規格實作。fork/divergent 的 state-dependent 行為查本地 runtime source，不以 upstream 文檔代替。
 
-分析結論須依實際程式碼，附 path:line＋具體特徵；任何「X 支援/不做 Y」都須查證，自審不能取代獨立證據（見 [acceptance-evidence](acceptance-evidence.md)）。AGPL 可研究行為/設計，禁搬碼或逐行翻譯，實作對自己的規格寫；fork/divergent 的 state-dependent 行為查本地 runtime source，upstream 文檔不代表 fork。
+刪／併疑似等價的無測試檔前，查 README 指名、Capabilities、git 活躍度、backlog 依賴；存活檔只搬路徑未吸收內容＝刪錯訊號，停下重判。
 
-刪/併看似等價的無測試檔前，查 README 指名、Capabilities、git 活躍度、backlog 依賴，禁憑檔名選；存活檔只改路徑沒吸收內容＝刪錯訊號，停下重判。
+## 表達與建議
 
-## 具體明確表達
+禁無據的「大概／可能／應該可以」；給步驟及 `path:line`，技術比較附原理＋範例。因 rule/skill/hook 停止、降級、改道時，首行標來源＋原因。檔案連結用 backtick 包 workspace 相對 `path:line`；行號未知只列路徑，禁捏造；不套一般 code span。
 
-避免「大概/可能/應該可以」；提供具體步驟與 path:line，技術對比附範例＋原理。因 rule/skill/hook 條文停下、降級或改道時，訊息首行具名出處＋一句摘要（同 PENDING 出處欄慣例）。檔案引用，尤其供人類點擊定位者，優先使用 backtick 包裹的 workspace 相對路徑與行號，例如 `src/chat/render.ts:42`；行號未知時引用路徑本身，不得捏造行號。此慣例僅適用檔案引用，不影響其他 code span（消費端 chat surface 的可點 anchor 以此形態為準）。
+接收建議依 READ→UNDERSTAND→VERIFY→EVALUATE→RESPOND→IMPLEMENT；查不了明說，錯誤建議附理由反對，成立才修；盲改指標可能污染回測。YAGNI／filter trap 判準見 acceptance-evidence skill。
 
-## 接收建議與回饋（反 Sycophancy）
+## Workspace 與派工
 
-建議先 READ→UNDERSTAND→VERIFY→EVALUATE→RESPOND→IMPLEMENT；查不了明說；錯誤建議附理由反對，成立就修——盲改指標會靜默污染回測。YAGNI（刪）與 filter trap（驗證不能刪）見 acceptance-evidence skill。
+不 `cd` 其他 repo；跨 repo 用絕對路徑或 `git -C`。他人未提交變更預設無關，不審不改；commit 僅 add 指名檔；目標檔已有他人變更或同區域改法衝突，停下確認。
 
-## 工作目錄紀律
-
-- 不 cd 其他 repo；跨 repo 用完整路徑或 `git -C`。
-- 他人未提交變更預設不相關，不審不改；commit 只 add 指名檔；僅目標檔已有他人變更或同區域不同改法＝機械衝突訊號，停下確認。
-
-## Agent 派發與產出回收
-
-跨 repo 寫入由主 session 負責**授權與協調**——mutation 走 writer 腿或對方主權隔離面（跨 repo 主權規範，非主 session 親改）；spawned/automation 只在卡 owning WT 操作，寫不進或不能判定 owning 就回報，禁丟給受限 agent。寫檔 agent prompt 必注入三條，worktree 自檢清單＝agent-workflow skill。
+跨 repo 寫入由主 session 授權／協調，mutation 走 writer／對方主權隔離面，主 session 不親改。spawned／automation 限卡 owning WT；寫不進或 ownership 不明就回報，禁轉給受限 agent。寫檔 agent prompt 注入三條，WT 自檢依 agent-workflow skill。

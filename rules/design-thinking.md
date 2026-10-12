@@ -2,18 +2,18 @@
 harness-scope: neutral
 ---
 
-# 設計思考紀律（深層思考＋架構三視角）
+# 設計思考紀律
 
-## 決策與後果（強制）
+## 決策與後果
 
-所有決策先釐清使用者行為、成功條件與約束，分開事實／假設，比較必含「不做／刪除現有」的選項；追蹤「變更→直接行為／責任→間接消費者／invariant」。會改判的未驗證假設：可低成本、隔離可逆、無 outward 者先實測再交付（POC 判準＝deep-thinking skill，清理＝must-execute-before-complete）；需外部授權或證據不足者保留為未知附查證依賴請示。未識別間接影響須標已查範圍，不編造後果；跨 context、共用契約、state／外部副作用或改判未知須深入，局部決策簡短交付——流程與停止條件＝deep-thinking skill。
+先釐清使用者行為／成功條件／約束，分清事實／假設；比較含「不做／刪除現有」，追蹤變更→直接行為／責任→間接消費者／invariant。
 
-專案／套件行為宣稱須查實際來源並附位置，假設不得冒充已查證事實；已提供的可信材料可直接引用，未驗證的改判關鍵不得當作實質行動依據。
+改判未知：低成本、隔離可逆、無 outward 者先 POC 再交付（deep-thinking 判準、must-execute-before-complete 清理）；需授權／缺證者列未知、查證依賴並請示。間接影響不明只標已查範圍，禁捏造；跨 context／共用契約／state／外部副作用／改判未知須深入，局部可簡報；停止條件見 deep-thinking skill。
 
-## 決策分級與三視角
+專案／套件行為宣稱須查源附位置；可信材料可引用；未驗證的改判關鍵不得作行動依據。
 
-單向門（不可逆）須查失敗與回復條件，雙向門仍查間接影響；code 可回滾≠資料／外部動作可逆；判斷用 LLM，確定性機械工作用程式。架構面：Clean Architecture＋DDD 三 lens（lens 語義＝arch-thinking skill）；不憑目錄或 `_private` 命名判邊界，不強制分層模板；設計／審查涉及依賴、重用、共用契約、state 或修復／刪除／重構時，載 arch-thinking 觸發表查證。
+## 可逆性與架構
 
-## 觸發情境
+單向門查失敗／回復條件，雙向門查間接影響；code 可回滾≠資料／外部動作可逆。語義用 LLM，機械確定性工作用程式。
 
-架構/技術選型/性能/重構/AI 建議/資訊架構決策；股票分析另載 trading-analysis skill。
+Clean Architecture＋DDD 三 lens（見 arch-thinking），不強制模板／過度分層，也不憑目錄或 `_private` 判邊界；涉及依賴、重用、共用契約、state，或修復／刪除／重構時載 arch-thinking 觸發表。適用架構、技術選型、性能、重構、AI 建議、資訊架構；股票分析另載 trading-analysis skill。

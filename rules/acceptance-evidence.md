@@ -1,5 +1,8 @@
 ---
 harness-scope: neutral
+bundle-projection: pointer
+pointer-target: acceptance-evidence
+bootstrap-pointer: "驗收只認獨立於被驗證物的證據（自寫 test＋impl 同綠只證自洽）。宣稱「不影響 X」須附獨立機械證據（diff／殘留／references），self-report 不算。oracle 四級：S（獨立 frozen spec/TC）、H（歷史真實數據／carrier 行為）、I（impl 衍生）、N（無）——I/N 禁 autonomous 補強。驗證深度 L1 靜態→L6 人類觀察，禁低層冒充高層。taxonomy／L1-L6 表／深層理論＝acceptance-evidence skill。"
 ---
 
 # 驗收證據階層
