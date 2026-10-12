@@ -292,9 +292,11 @@ Workflow 完成後回傳 `{confirmed, stats}` → Main LLM 進入「/judge-revie
 
 用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併；**指定帳本＝`.review/<branch>.md` 工作帳本**——findings 與 judge 決策落盤〔header identity 含 scope／review_profile／coverage 三欄，欄位定義見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「帳本 header identity」〕，供 post-build 證據身份比對、弧級 review coverage 核對與跨 session resume 消費；findings 只走 context 不落盤＝比對鍵缺席，post-build 將 fallback 全審）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
 
-#### 主 LLM — Apply Changes
+#### 主 LLM — Compile Repair Batch
 
-根據 judge-review 的 ✅ 採納清單修改 code——**先規劃整批、再批次套用**：逐項定位修改點與改法（目標檔先 Read，見 tool-discipline「檔案修改禁令」Read 紀律），多個 Edit 同 block 一次發出：跨檔獨立、同檔不同位置（old_string 不重疊）皆可；同檔鄰近一行式小修合併為單一較大 Edit。只有真依賴（先改簽名看結果再改 caller）才序列。修改完跑 `uv run ruff check --fix && uv run ruff format`。
+根據 judge-review 的 ✅ 採納清單**規劃整批修補工單 → 派 impl-lite repair batch worker 套用**：逐項定位修改點與改法（目標檔先 Read，見 tool-discipline「檔案修改禁令」Read 紀律），同 authority＋同 read-set 的多個小修合併一批派工（形態＝[agent-workflow](../agent-workflow/SKILL.md) 5c repair batch——工單照 [work-order](../_common/work-order.md)「批次 envelope」節，逐 unit 收 PASS/FAIL/NOT-DONE）；**禁把 implementation 偷回主座席直做**——分工邊界＝[agents/AGENTS.md](../../agents/AGENTS.md)「全生命週期 execution contract」註 b＋全域指南「Marshal 姿勢」節 spawn 判準。主 session 直做的明文例外僅兩者：**可證零行為的 editorial**（註 b 豁免）與 **validator gate 執行**（跑 card_validate 等驗證器——驗收面非修改面）。
+
+工單內的套用指示（repair batch worker 遵循，非主 LLM 自做步驟）：多個 Edit 同 block 一次發出——跨檔獨立、同檔不同位置（old_string 不重疊）皆可；同檔鄰近一行式小修合併為單一較大 Edit；只有真依賴（先改簽名看結果再改 caller）才序列。套用完跑 `uv run ruff check --fix && uv run ruff format`。
 
 #### loop 迭代收斂（Loop engineering — apply 後 re-review）
 
@@ -302,7 +304,7 @@ apply 後**不是一輪結束**，而是 loop 迭代收斂（self-correcting）�
 
 1. **re-review**（同 profile base 配置）審 apply 後的 diff
 2. **pass 判定**：re-review findings **再 invoke /judge-review**（非主 LLM 自判，保 Writer/Reviewer 分離）
-3. judge-review 有新 ✅ 採納 → 再 apply → re-review（迭代）
+3. judge-review 有新 ✅ 採納 → 再派 repair batch → re-review（迭代）
 4. **收斂條件**：judge-review 無新 ✅ 採納（pass）或**達迭代上限 3 輪**（純防無限 loop，**與 base lens 配置無關**——兩個獨立的上限）
 
 **達上限硬性處置**（loop 未收斂）：標 ⚠️「loop 未收斂（達 3 輪上限，仍有未修 finding）」+ **阻止 Capabilities/Kanban 升級**（階段 5a 結算條件加「loop 須收斂」）+ **layer 旗標導向 layer 2（跨家族第二意見）**（階段 6 layer 旗標條件加「loop 未收斂」）。

@@ -174,9 +174,9 @@ permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途�
 
 用 Skill tool invoke `judge-review`，傳入**所有 agent 的 review findings**（合併；**含 coverage**——各軸完成／未驗＋evidence ref，欄位語義見 [workflow-review-pattern](../_common/workflow-review-pattern.md)「帳本 header identity」的 scope／review_profile／coverage 三欄）。評估每項：✅ 採納 / ❌ 不採納 / ⚠️ 需確認。
 
-#### 主 LLM — Apply Changes
+#### 主 LLM — Compile Repair Batch
 
-根據 judge-review 的 ✅ 採納清單修改 code。修改完跑 `ruff check --fix && ruff format`。
+根據 judge-review 的 ✅ 採納清單**規劃整批修補工單 → 派 impl-lite repair batch worker 套用**（**禁把 implementation 偷回主座席直做**——分工邊界與工單形態單一源＝[implement](../implement/SKILL.md)「主 LLM — Compile Repair Batch」；註 b＝[agents/AGENTS.md](../../agents/AGENTS.md)）。
 
 ---
 

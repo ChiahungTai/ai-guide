@@ -29,4 +29,4 @@ harness-scope: neutral
 
 ## Agent 派發與產出回收
 
-跨 repo 寫入由主 session 負責；spawned/automation 只在卡 owning WT 操作，寫不進或不能判定 owning 就回報，禁丟給受限 agent。寫檔 agent prompt 必注入三條，worktree 自檢清單＝agent-workflow skill。
+跨 repo 寫入由主 session 負責**授權與協調**——mutation 走 writer 腿或對方主權隔離面（跨 repo 主權規範，非主 session 親改）；spawned/automation 只在卡 owning WT 操作，寫不進或不能判定 owning 就回報，禁丟給受限 agent。寫檔 agent prompt 必注入三條，worktree 自檢清單＝agent-workflow skill。
