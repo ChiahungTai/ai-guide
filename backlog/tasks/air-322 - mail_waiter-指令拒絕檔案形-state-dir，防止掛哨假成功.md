@@ -4,7 +4,7 @@ title: mail_waiter 指令拒絕檔案形 --state-dir，防止掛哨假成功
 status: Done
 assignee: []
 created_date: '2026-10-12 13:47'
-updated_date: '2026-10-12 14:33'
+updated_date: '2026-10-12 21:15'
 labels:
   - bug
 dependencies: []
@@ -68,6 +68,8 @@ uv run python .../mail_waiter.py worker --address <repo> --generation N --state-
 impl-lite 完成（agent_52997c6d）：12 新測試 RED→GREEN（RED 證據 .agent-tmp/red_run.txt——含 <dir>/state.json 形態 start 假成功原案重現）；全量 3858 passed、test_mail_autoarm 22 passed；證據檔 .agent-tmp/{green_file,final_file,full_suite}.txt。偏差：＋_guard_state_dir 包裝；既存 ruff PLW1510 標記不修。bi panel diff 審查派出（muse job-mv5bn6lp＋codex job-mv5bn6ok）。
 
 收斂：bi panel（muse job-mv5bn6lp completed／codex job-mv5bn6ok auth-failed-but-delivered——findings 可裁決、caveat 記錄）→judge 6/6 採納→修復批次（agent_b8cf86c2）RED 6→GREEN 17→全量 3863 passed→PLW1510 既存項補 check=False→path-scoped ruff clean＋檔案套件 72 passed。部署面：4 surfaces 全 N/A（touches 零命中）；hook core-reuse 面由 test_mail_autoarm 22 passed 實證。tour corpus：空集 pass。improvement 訊號：review 14/liveness 9/recurrence 104/budget 5——判讀 admission 0（歷史註記與熱檔活躍度，無 actionable）。風險分級：simple bug 卡、非🔴高風險（單檔 CLI robustness、無邊界/會計/風控面）。
+
+事後補記（1013 晨）：回報者回信提供『當時完整命令列』宣稱 banner 第二行印檔案形路徑（推翻歸因①）。機械反證：committed 2efe47dd（21:53 前未修改）cmd_start:745→repo_state_dir 產目錄→:776 arm_command→:717 直用目錄——該版無法輸出檔案形；值星 session 21:44:53 同檔案實跑印目錄形（在卷）。判定：引用係重建記憶（worker 命令由首行 state 欄位組裝、誤記為第二行拷貝）；②③佐證僅證 worker 以檔案形 argv 執行（無爭議面）。已回紀錄保全澄清（db-air322-closure-note-20261013，seq=6）照對方裁定結案。卡面已決策①維持『顯式覆寫進入面』判定不變。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
