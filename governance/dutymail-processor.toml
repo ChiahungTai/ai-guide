@@ -26,14 +26,16 @@
 #                 行列空 list）
 #   action      = "auto" | "surface"
 
-# ── custody 授權不在本檔（AIR-311 per-caller 化）─────────────────────
+# ── custody 授權不在本檔（AIR-312 repo 身份制）─────────────────────
 #
-# 跨址 custody fence 的消費授權集（consume_addresses）已 per-caller 化
-# ——duty_receive 以呼叫端 repo root（cwd `git rev-parse --show-toplevel`
-# realpath）解析該 repo 自持的 governance/dutymail-consume.toml；各
-# repo 主權自持（provision 先行、禁 fallback 中央清單）。本檔自此
-# triage-only：只承載 class×action 分診表——出現 consume_addresses 鍵
-# ＝未知頂層鍵，載入即 ConfigError fail-loud（配置錯誤要大聲）。
+# 跨址 custody fence 的消費授權集已改 repo 身份制——duty_receive 以呼叫
+# 端 git common-dir 反推 primary root 的 basename 為 canonical alias
+# （linked WT／subdir／symlink 同一身份；非 git／bare／無法判定 fail-
+# closed），requested address 須 exact-match。AIR-311 per-caller 授權檔
+# （governance/dutymail-consume.toml）已退役刪除——殘留檔不授予任何
+# 位址、無 migration bypass。本檔自此 triage-only：只承載 class×action
+# 分診表——出現 consume_addresses 鍵＝未知頂層鍵，載入即 ConfigError
+# fail-loud（配置錯誤要大聲）。
 
 [[class_rule]]
 class = "usage-liveness"

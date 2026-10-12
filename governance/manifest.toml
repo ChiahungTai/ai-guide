@@ -28,8 +28,6 @@ scripts = [
     "hooks/compact-restore-inject.py",
     "hooks/compact-tail-inject.py",
     "hooks/duty_holder_release.py",
-    "hooks/duty_mailbox_monitor.py",
-    "hooks/duty_receive.py",
     "hooks/identity_pointer.py",
     "hooks/kanban-skill-gate.py",
     "hooks/marshal_admission_guard.py",
@@ -44,6 +42,12 @@ scripts = [
     "hooks/watcher_pairing_nag.py",
     "hooks/zcode_agent_background_gate.py",
 ]
+# AIR-312：hooks/duty_receive.py 與 hooks/duty_mailbox_monitor.py 自本
+# 清單除名（duty 自動收信／monitor 註冊退役——腳本留 repo 作 dormant
+# 無接線資產；收信＝明確 CLI once，見 skills/mail-handle）。
+# duty_holder_release.py 保留：SessionEnd 清潔釋章（release cleanup）非
+# 自動處理面——codex/grok 接線不釘 --address（過渡期新舊址 holder 皆
+# 釋；state per-session 自限）。
 
 [surfaces.rules]
 # wrap（Q2）：installer 子進程呼叫既有權威工具，輸出透傳＋退出碼串接；

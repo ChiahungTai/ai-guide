@@ -22,14 +22,17 @@ send（intent＋reply_address＋envelope_id）
 
 ## 地址模型（address-model 裁定）
 
-- **per-repo mailbox**：`<repo>-marshal`（本 repo＝`ai-guide-marshal`）＝repo 的長期責任入口
-  （durable alias）。**holder**＝目前哪個 session 值星（epoch-fenced、可換代不搬信）——
+- **per-repo mailbox**：repo 的長期責任入口（durable alias）。AIR-312
+  命名＝**repo basename**（本 repo＝`ai-guide`——git common-dir primary
+  root 推導、custody fence exact match）；歷史 `<repo>-marshal` 舊址
+  （`ai-guide-marshal` 等）＝AIR-311 前慣例，過渡期並存、對帳後退役。
+  **holder**＝目前哪個 session 值星（epoch-fenced、可換代不搬信）——
   責任 identity 與執行者 identity 分開。章位分離（AIR-298）：消費章（prepare/ack）
   ＝值星 session 短持、durable INBOX 送達＋viewport 顯示無章可持（holderless
   常態）；ext 長持只及 escalation／人類 viewport 地址——正典＝
   `governance/scbus-address-ownership.md`「章位分離」。
-- **門牌建立**：新 repo 加入 dutymail 時由該 repo 值星建 `<repo>-marshal` 門牌
-  （`address create` 一次性；跨 repo 對址慣例）。
+- **門牌建立**：新 repo 加入 dutymail 時建 repo basename 門牌
+  （`address create` 一次性；`dutymail address create --alias <repo>`）。
 - **reply_address 慣例**：從 repo mailbox 發出者，body machine-header `reply_address` 一律
   ＝originating repo-marshal；只有明確 direct-session 對話才回 session address。
 - **session address 殘餘角色＝direct channel**（指定特定 session／session-exit continuation）；
@@ -51,14 +54,18 @@ send（intent＋reply_address＋envelope_id）
 |---|---|---|
 | transport ack（delivery cursor） | dutymail store | duty receive processor（處置後） |
 | human seen/done | SC workspaceState | 人類（✓/Undo）——transport 永不代推 |
-| AI 提醒 baseline（holderless pending 計數） | session-local advisory（AIR-254.4；review 修復改 pendingCount 源）；session 級 mail-waiter（AIR-266——背景 shell 掛哨喚醒，推進自己的 events 觀察游標）與此並存、互不代理 | 各 session 自己（監看 hook） |
+| AI 提醒 baseline（holderless pending 計數） | session-local advisory；session 級 mail-waiter（AIR-266——背景 shell 掛哨喚醒，推進自己的 events 觀察游標）與此並存、互不代理 | 各 session 自己（session 級 watcher） |
 
 同一 address 任一時刻僅一個 consuming authority（epoch-fenced holder）；prepare 不消耗、
 ack 是唯一 cursor 前進邊、只前進連續前綴；crash 重送不跳信。
 
 ## 值星收信處理器（ai-guide 側落點）
 
-`hooks/duty_receive.py`（SessionStart＋UserPromptSubmit 邊界）→ `scripts/duty_receive.py`：
+`scripts/duty_receive.py`（AIR-312 起 SessionStart＋UserPromptSubmit 自動
+hook 已退役且入口 inert no-op；普通 once 消費面＝S2 inbox 子命令
+（`inbox`／`show`／`pending-replies`／`mark-read`／`reply`；`process`
+processor 留歷史相容）；流程入口＝
+[mail-handle](../mail-handle/SKILL.md)）：
 bind（consent CAS）→ prepare（bounded batch ≤8）→ triage（**default-deny**：class×action 表
 〔`governance/dutymail-processor.toml`，user 可編輯〕＋intent∈{inform,receipt}＋可機械驗證才
 auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest 吸收；surface＝一行摘要
@@ -66,6 +73,8 @@ auto；未知 class/solicit/人類信恆 surface）→ 處置（auto＝digest �
 SC-305 上線——surface 項照樣計入 ack 前處置，差別只是不注入全文〕）→ ack（**絕不
 flush-ack**——全批處置前不觸發）。auto 絕不宣稱 work accepted
 （terminal status 只是 fact）。處理器不自發信（處理面與送信分離）；**送信＝outward、首發逐次 AUTH**——卡級討論授權豁免＝[outward rule](../../rules/outward-action-consent.md)「卡級討論授權」節（grant 載體＝卡、前提與上限見該條）。
+門牌＝呼叫端 repo 身份（alias＝repo basename，custody fence exact
+match——AIR-312；歷史 `<repo>-marshal` 舊址過渡期並存，對帳後退役）。
 
 ## class 封閉詞彙（body machine-header——AIR-283）
 
@@ -149,9 +158,11 @@ transport receipt（機器面，delivery 保證）≠ semantic reply（消費面
 
 ## 閒置語義
 
-無 duty session＝零查詢零輸出（註冊面即邊界；無背景輪詢/watcher）。SC badge 的未處理數
-源＝dutymail projection（undone 數），不是 AI 提醒 baseline（AIR-254.4 降級）。monitor 的
-holderless advisory＝常態語義（B′ 解凍 2026-10-06，SC-305 上線：pending 在 INBOX 等人
+無明確觸發＝零查詢零輸出（AIR-312：自動收信／monitor 註冊已退役——
+hook 入口 inert no-op；普通看信走 S2 inbox（`inbox`／`mark-read`）；
+閒置掛哨面＝session 級 mail-waiter per-repo watcher）。SC badge 的未處理數
+源＝dutymail projection（undone 數），不是 AI 提醒 baseline。holderless pending
+＝常態語義（B′ 解凍 2026-10-06，SC-305 上線：pending 在 INBOX 等人
 判讀——workspace 信終點＝durable INBOX；`dutymail receive status` 可查，非異常窗口）。
 
 ## zero-pending gate 語義（G5 正典——本檔為 ai-guide 側定義源）

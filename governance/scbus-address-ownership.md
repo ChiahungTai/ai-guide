@@ -72,14 +72,21 @@
 > session 開場讀本節，STATE.md 1001 起載指針。
 > 通用 template：所有 repo 一體適用；他 repo 命名（各 `<repo>-marshal`）已符合，
 > convention 采納隨各自觸點跟進——不發動跨 repo 搬遷，採納細節由各 repo 自主。
-> duty 消費 custody 授權（AIR-311）＝per-caller：duty_receive 只消費呼叫端 repo
-> 自持 `governance/dutymail-consume.toml` 所列 address（cwd git toplevel 解析；
-> ai-guide 份在本 repo）——class×action 分診表仍中央（dutymail-processor.toml）。
+> duty 消費 custody 授權（AIR-312 repo 身份制）＝duty_receive 只消費呼叫端 repo
+> 自己的 address——canonical alias 由呼叫端 git common-dir 反推 primary root
+> 的 basename 推導（linked WT／subdir／symlink 同一身份；非 git／bare／無法
+> 判定 fail-closed；錯址在任何 consuming side effect 前拒絕）。AIR-311
+> per-caller consume TOML 已退役（無授權檔、無 migration bypass）——
+> class×action 分診表仍中央（dutymail-processor.toml）。
 
 ### Repo address cardinality（一 repo 一門牌）
 
-- 每個 repo 預設**恰一個** well-known durable inbound address，命名 `<repo>-marshal`
-  （ai-guide 即 `ai-guide-marshal`）。
+- 每個 repo 預設**恰一個** well-known durable inbound address。AIR-312
+  命名＝**repo basename**（ai-guide 即 `ai-guide`；duty_receive 身份閘
+  exact match 強制）；歷史命名 `<repo>-marshal`（`ai-guide-marshal` 等
+  五址＋舊 exceptions 址）＝AIR-311 前慣例、過渡期並存——sender/
+  reply_address 切換與在飛責任對帳完成後才退役（AIR-312 S3 對帳條款
+  ——不以 pending=0 宣稱完成）。
 - **章位分離（AIR-298）**：消費章（prepare/ack 的 epoch-fenced holder binding）歸
   **當時的值星 session**——ext 決定論身分長持只及 escalation／人類 viewport 地址，
   AI 消費者地址不適用；INBOX 章（送達＋viewport 顯示）無章可持——durable INBOX
@@ -125,51 +132,32 @@
 > interim workaround superseded），非支援監看路徑。
 
 - 值星/Marshal session 的收件義務＝**知會新到 delivery events＋掃自己的
-  session inbox**，兩面都免 holder 身分：canonical 面由 receipt-timeline hook
-  自動知會（下條）；人工 point-in-time 輪詢＝`dutymail receive status`
-  （scbus 時代 address pending badge 已隨換代退役——現行面見下條 monitor；
-  歷史實證錨 AIR-168 驗收③保留標註）。**已知崩潰史（SCR-8，scbus 時代）**：
+  session inbox**：自動知會面已隨 AIR-312 退役（prompt 邊界 monitor 註冊
+  拆除，見下條）——現行面＝session 內明確觸發（[mail-handle](../skills/mail-handle/SKILL.md)
+  mail_waiter per-repo watcher 掛哨喚醒；once 看信＝S2 inbox（mail-handle））
+  ＋人工 point-in-time 輪詢＝
+  `dutymail receive status`（歷史實證錨 AIR-168 驗收③保留標註；scbus 時代
+  address pending badge 與 session inbox 輪詢已隨換代退役）。
+  **已知崩潰史（SCR-8，scbus 時代）**：
   address row 在而磁上 `new/` 目錄缺時，pending badge 視圖曾整命令崩
   （raw FileNotFoundError）；上游已修（sc-router scr-8——缺目錄讀面 fail-soft
   回空清單＋pending_note，修復入 v0.2.0），本機已升級（歷史事實；maildir 直讀
-  降級路徑隨 invariant 條退役）。scbus 時代 session inbox 輪詢已退役——現行
-  收信處理面＝duty_receive 處理器＋monitor advisory（下條）。session 換手
+  降級路徑隨 invariant 條退役）。session 換手
   不動搖 ownership。因監控需求 acquire/renew/force-reclaim canonical address
   皆違反本節。
 - **interaction-boundary hook monitor（AIR-225.1 建面；AIR-233 scbus receipts
   消費面從未落地——AIR-254.4 降級重寫為 dutymail 面；review 修復重設計為
-  holderless pending 語義）**：
-  `hooks/duty_mailbox_monitor.py`（zcode UserPromptSubmit＋SessionStart 各
-  獨立 sync 條目，註冊單一源＝governance registrations；AIR-225.1/233 舊
-  提醒 hook 檔隨重寫退役）以 dutymail 唯讀面為資料
-  源——`holder status`（live 偵測）＋`receive status`（pendingCount 現值）
-  ；events face 消費（accepted 事件史計數）已退役——事件史不因 ack 消失
-  ，對他方 holding 門牌會誤報且與 duty_receive 衝突行語義矛盾。決策表
-  （per address）：`holder status` live=true（本 session hold——
-  duty-receive per-session state epoch==status.epoch，或他方 live）→ 靜默
-  （covered：處理面由 holder 承擔；收信處理面單一源＝duty_receive 處理器
-  ；monitor ≠ holder——禁 bind/prepare/ack，三軸不互代理）＋baseline 歸零
-  （session-local advisory baseline，非遷移 zero-pending gate）
-  ；live=false（holderless——B′ 常態：pending 在 INBOX 等人判讀）→
-  `receive status` pendingCount >0 且 ≠ baseline 出一行 advisory
-  （「holderless pending N 封（pending 在 INBOX 等人判讀——B′：
-  workspace 信終點＝durable INBOX；dutymail receive status 可查）」
-  ——「本 session 提醒到哪」語義，絕不宣稱 global 狀態、不觸 human
-  seen/done）；>0 且 ==baseline 靜默（防每 prompt 轟炸）；==0 靜默＋
-  baseline 歸零（session-local advisory baseline，非遷移 zero-pending gate）。holderless＝常態（B′ 語義——AIR-258 解凍；2026-10-06
-  SC-305 上線後 pending 落 durable INBOX 等人判讀，非 B′ 前 duty-active
-  異常窗口語義；monitor 只提醒不代開 duty session）。baseline＝
-  `${XDG_STATE_HOME:-~/.local/state}/ai-guide/duty-monitor/
-  <safe_session_id>.json`（session-local——兩 session baseline 互不干擾
-  ；按 address 記 `last_pending`；0600 atomic 寫、
-  **advance-after-emit**——stdout 寫出成功後才推進，寫失敗寧可下次重複
-  提醒；閒置完全安靜＝註冊面即邊界，無背景迴圈/watcher）。**舊全域游標檔
-  `scbus-address-monitor.json` 隨本重寫停用——不刪不改零讀取（留歷史
-  對帳）**。**monitor eligibility gate**：session cwd 在 script 所在 repo
-  內才查詢／提醒／推進（user-level 註冊跨專案觸發——防錯誤 session 吃掉
-  baseline；fail-closed——cwd 缺席亦不推進）。face 失敗 hook 呈 fail-soft
-  （單門牌 stderr 註記續跑其他、零該門牌 stdout、exit 0）；人工輪詢
-  （`dutymail receive status`）保留為 point-in-time fallback。
+  holderless pending 語義；**AIR-312 註冊退役**）**：
+  `hooks/duty_mailbox_monitor.py` 曾掛 zcode UserPromptSubmit＋SessionStart
+  sync 條目——**AIR-312 起註冊拆除**（manifest hooks surface 除名；腳本
+  留 repo，入口 inert no-op——觸發零 face 呼叫零寫入零輸出；重掛＝違反
+  退役裁定）。現行知會面＝session 級
+  mail_waiter per-repo watcher（背景 shell 掛哨喚醒——
+  [mail-watch](../skills/mail-watch/SKILL.md)）＋消費入口（S2 inbox——
+  [mail-handle](../skills/mail-handle/SKILL.md)）；人工
+  point-in-time 輪詢
+  （`dutymail receive status`）保留為 fallback。monitor 的 holderless
+  pending advisory／pending-age 帳語義＝歷史契約（git log）。
 - 回歸鎖：情境 own session=0、retired address=0、canonical marshal>0 仍必須視為
   actionable（2026-10-01 事故形態——值星只掃 primary＋自己而漏 marshal）。
 - ack 綁 live holder＋epoch fencing：跨身分 session 面 ack 他人位址必被拒
@@ -182,8 +170,9 @@
   **規範禁令不隨換代退役**：session 面冒身 acquire 禁（identity 非 authN、
   trust boundary 內可 spoof 是事實描述非授權，見紅線節——規範禁令不因技術
   可行而撤）。
-- 閉環驅動路徑：monitor 發現 marshal 新到收件紀錄（receipt timeline；fallback
-  ＝pending 快照 >0）後，正常消費＝**值星 session 持章自收**（duty_receive
+- 閉環驅動路徑：發現本 repo 新到收件（現行面＝mail_waiter per-repo watcher
+  喚醒；消費面＝S2 inbox（mail-handle once）；歷史〔AIR-312 前〕＝prompt 邊界 monitor；
+  fallback＝pending 快照 >0）後，正常消費＝**值星 session 持章自收**（duty_receive
   處理器 bind→prepare→ack；前任 session 死後 death-evidence 接管——章位分離
   見上，AIR-298）。程式面無從舉證時（外點 bind 無 per-session state 檔、
   token 遺失——2026-10-09 epoch-102 孤兒綁定實證），24h 窗口內持有實質

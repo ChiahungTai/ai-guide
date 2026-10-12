@@ -1,0 +1,46 @@
+[
+  {
+    "repo": "delegate-bridge",
+    "to": "delegate-bridge-marshal",
+    "acceptanceSeq": 73,
+    "addressId": "ce5c5df9-61c7-4fcd-9de4-3edce616c09f",
+    "deliverySeq": 73,
+    "envelopeId": "030572fe-bc4a-4863-b30a-89268b1099cb",
+    "envelopeSha256": "06f20e67634a55416d65923443b6365e268982380a6638148cbe190e0260f830",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94"
+  },
+  {
+    "repo": "mosaic_alpha",
+    "to": "mosaic-alpha-marshal",
+    "acceptanceSeq": 4,
+    "addressId": "77bab466-5beb-4c21-8626-dd0eb410c4c9",
+    "deliverySeq": 4,
+    "envelopeId": "78502f82-35c9-4bdc-b800-b609756e3cd3",
+    "envelopeSha256": "d181a38579b54cff6b9a2a11efb388882b2f74abcad878699a522d760574a704",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94"
+  },
+  {
+    "repo": "code-reality",
+    "to": "code-reality-marshal",
+    "acceptanceSeq": 22,
+    "addressId": "5e32d28f-25db-4a6c-8e93-575cecb4ab1f",
+    "deliverySeq": 22,
+    "envelopeId": "0f4211ac-8f36-42c6-a263-f055bd1602dd",
+    "envelopeSha256": "e667f48a9c25dea46022b9dce3caaf9b1e32ab4a37979b22bbad50c0666f8967",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94"
+  },
+  {
+    "repo": "southchariot",
+    "to": "southchariot-marshal",
+    "acceptanceSeq": 41,
+    "addressId": "852b42d5-a829-44c3-ac46-14ae9a3df4f7",
+    "deliverySeq": 41,
+    "envelopeId": "9a09079e-a7ed-4ea1-bca7-1169f054c93e",
+    "envelopeSha256": "95a69090358d73286c2753e4e2d186553afdd09a7ff4daf71f76aee8ab96d1eb",
+    "replayed": false,
+    "storeId": "1b08e53e-10c3-4321-b38f-c26044a01a94"
+  }
+]

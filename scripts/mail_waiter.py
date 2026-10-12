@@ -1,19 +1,31 @@
 #!/usr/bin/env python3
-"""mail_waiter — session 級信件喚醒 watcher（AIR-266）。
+"""mail_waiter — session 級信件喚醒 watcher（AIR-266；AIR-312 per-repo）。
 
-一句話：session 內 arm 一個背景 shell worker 對 per-address mailbox 掛哨
+一句話：session 內 arm 一個背景 shell worker 對本 repo mailbox 掛哨
 （dutymail wait），新事件到＝exit 0 喚醒本 session（尾行單行 JSON——唯一
-機判面）；wait-timeout 恆內部消化續輪，絕不外洩；處理面恆歸
-`duty_receive process`（唯一 consuming authority 鏈）——本 watcher 是純
-觀察軸，絕不碰 holder 綁定面、批次預取面、回執面與對外送信面。
+機判面）；wait-timeout 恆內部消化續輪，絕不外洩；本 watcher 是純
+觀察軸，絕不碰 holder 綁定面、批次預取面、回執面與對外送信面——
+喚醒回合零消費、不跑 `duty_receive process`（五態處置＋ACK 不是普通
+看信；看信走 skills/mail-handle once＝`inbox`／`mark-read`，S2 已接線；
+skill 契約單一源＝skills/mail-watch）。
+
+AIR-312 per-repo：watcher 只 watch 呼叫端 repo 自己的信箱——門牌
+alias＝呼叫端 git common-dir 反推 primary root 的 basename（身份解析
+單一源＝core.caller_repo_address；非 git cwd＝無 watch 目標，fail-loud
+exit 2，不 fallback 預設門牌）。state per-repo：
+`<XDG>/ai-guide/mail-waiter/<repo>/state.json`——A stop 不影響 B；每
+repo 一 watcher，不造 daemon／協調層。start 印出的 arm 命令釘
+`--address`＋`--state-dir`（背景 shell cwd 無關）；新 session 於同
+repo start＝generation+1 接續（cursor 保留），零 session 管理。
 
 waiter 家族契約（與 bridge_waiter／harness_waiter 同一族——細節單一源＝
 skills/mail-watch/SKILL.md「waiter 家族憲章」節）：
 - 背景 shell exit＝唯一 push 原語；exit 0＝新事件喚醒（尾行 JSON 帶
   re-arm 命令）；timeout（dutymail class-6）內部 re-arm 不外洩。
 - 處置權恆歸 caller（woken LLM）——watcher 只喚醒不處理。
-- 喚醒回合 invariant（skill 明文合約）：①跑 `duty_receive process`
-  ②成功 re-arm——兩者完成才算喚醒回合結束。
+- 喚醒回合 invariant（skill 明文合約；AIR-312 R1 I1 修訂）：成功
+  re-arm——喚醒回合即結束（消費面 S2 前不接線：零 process、零 ACK、
+  零五態帳；看信知識面＝SC INBOX）。
 
 核心不變量（EP invariants 對應）：
 - 純觀察軸（invariant 1）：dutymail 呼叫面 allowlist 只有 wait／events；
@@ -59,8 +71,8 @@ unkinded `events`（無 --kind）首頁對滾取 head token（空 mailbox 空頁
 不漏）。跨形態舊 state（entry 缺 accepted_cursor 欄位）視同冷啟——單欄
 cursor 的 kind-ness 無從判定，重掃免 wedge 於 fail-loud 迴圈。
 
-State schema（EP 凍結；XDG state 機器級、0600 atomic 寫）：
-`$ {XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/state.json`
+State schema（EP 凍結；AIR-312 per-repo 目錄、0600 atomic 寫）：
+`$ {XDG_STATE_HOME:-~/.local/state}/ai-guide/mail-waiter/<repo>/state.json`
 {"desired": "running|stopped", "generation": <int>, "armed_at": <unix>,
  "addresses": {"<alias>": {"cursor": "<unkinded events token|null=冷啟>",
  "accepted_cursor": "<kinded token|null=冷啟>", "last_event_seq": <int>}},
@@ -93,6 +105,8 @@ import fcntl
 import importlib.util
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
 import time
@@ -112,7 +126,6 @@ core = importlib.util.module_from_spec(_CORE_SPEC)
 _CORE_SPEC.loader.exec_module(core)
 
 TAG = "mail-waiter"
-DEFAULT_ADDRESS = "ai-guide-marshal"
 STATE_DIRNAME = "mail-waiter"
 STATE_FILENAME = "state.json"
 # EP S1：wait 內層 deadline 取短切片 60s（cap 600000 內）逐門牌輪轉
@@ -172,6 +185,33 @@ def state_base_dir(base_dir=None):
         "~/.local/state"
     )
     return os.path.join(root, "ai-guide", STATE_DIRNAME)
+
+
+# per-repo 目錄名 identity 編碼（AIR-312 R1 I3——injective）：安全字元
+# （A-Za-z0-9._-）原樣、其餘逐字 percent-encode（% 自身→%25）——折 _
+# 舊制把 alpha+beta 與 alpha_beta 折成同一目錄（A stop 動到 B state）；
+# percent-encode 一對一（解碼唯一）、無註冊表。常態 repo basename 全落
+# 安全集——既有目錄名零遷移。
+_SAFE_DIRNAME_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def safe_repo_dirname(identity):
+    """identity → injective 檔案系統目錄名（percent-encode；空＝unknown）。"""
+    safe = _SAFE_DIRNAME_RE.sub(
+        lambda m: "".join(f"%{ord(ch):02X}" for ch in m.group()), identity
+    )
+    return safe or "unknown"
+
+
+def repo_state_dir(identity, base_dir=None):
+    """per-repo state 目錄（AIR-312）：explicit base_dir 優先（worker／
+    測試釘指定——arm 命令永遠帶 --state-dir）；預設＝
+    `<XDG>/ai-guide/mail-waiter/<encoded-identity>/`——一 repo 一目錄
+    （A stop 不影響 B 的機械基礎）。identity 經 safe_repo_dirname
+    injective 編碼（不折疊——alpha+beta 與 alpha_beta 分目錄）。"""
+    if base_dir is not None:
+        return base_dir
+    return os.path.join(state_base_dir(None), safe_repo_dirname(identity))
 
 
 def state_file_path(base_dir=None):
@@ -663,25 +703,39 @@ def _emit_diag(err, text):
 # ── start／stop／status（subcommand 實作；AC2 五欄）────────────────────
 
 
-def arm_command(addresses, generation, base_dir=None):
-    """start 印出的 arm 命令（worker 形，背景 shell 用——cwd＝repo）。"""
-    parts = ["uv", "run", "python", "scripts/mail_waiter.py", "worker"]
+def arm_command(addresses, generation, state_dir=None):
+    """start 印出的 arm 命令（worker 形，背景 shell 用——`--address`＋
+    `--state-dir` 由 start 釘死）。AIR-312 R1 I2：script 路徑＝本檔
+    `__file__` 反推的絕對路徑（相對 `scripts/...` 只在 cwd=ai-guide
+    成立——consumer repo／linked WT 子目錄入口失效）；參數 shlex.join
+    shell 安全（含空格 state 路徑／門牌不破形）——輸出可執行非僅 argv
+    展示。caller cwd／身份解析面零變（start 已在呼叫端 cwd 完成）。"""
+    if state_dir is None:
+        state_dir = repo_state_dir(addresses[0])
+    parts = [
+        "uv", "run", "python",
+        os.path.join(_REPO, "scripts", "mail_waiter.py"), "worker",
+    ]
     for address in addresses:
         parts += ["--address", address]
-    parts += ["--generation", str(generation),
-              "--state-dir", state_base_dir(base_dir)]
-    return " ".join(parts)
+    parts += ["--generation", str(generation), "--state-dir", state_dir]
+    return shlex.join(parts)
 
 
-def cmd_start(addresses, base_dir=None):
+def cmd_start(identity, base_dir=None):
     """arm：desired=running＋generation+=1 → 印 arm 命令（可直接複製）。
 
-    既有 per-address cursor 保留（coalesce 延續——舊信不再觸發）；state
-    缺席/損壞＝generation 歸零重 arm（1 起）。J-2：load→+1→save 包進
-    _state_lock（與 stop/worker 寫入序列化——generation 無 lost update）。
+    AIR-312：門牌＝呼叫端 repo 身份（identity——main 面經
+    core.caller_repo_address 推導）；state 落 per-repo 目錄（
+    repo_state_dir）。既有 per-address cursor 保留（coalesce 延續——
+    舊信不再觸發）；state 缺席/損壞＝generation 歸零重 arm（1 起）。
+    J-2：load→+1→save 包進 _state_lock（與 stop/worker 寫入序列化——
+    generation 無 lost update）。
     """
-    state_file = state_file_path(base_dir)
-    with _state_lock(base_dir):
+    state_dir = repo_state_dir(identity, base_dir)
+    state_file = state_file_path(state_dir)
+    addresses = [identity]
+    with _state_lock(state_dir):
         existing = core.load_state(state_file)
         generation = 1 if existing is None else int(
             existing.get("generation") or 0
@@ -701,16 +755,18 @@ def cmd_start(addresses, base_dir=None):
                 state["last_exit"] = last_exit
         core.save_state(state_file, state)
     print(f"[{TAG}] armed：generation {generation}、"
-          f"addresses {','.join(addresses)}、state {state_file}")
-    print(arm_command(addresses, generation, base_dir))
+          f"address {identity}、state {state_file}")
+    print(arm_command(addresses, generation, state_dir))
     return EXIT_OK
 
 
-def cmd_stop(base_dir=None):
+def cmd_stop(identity, base_dir=None):
     """落 flag（desired=stopped；generation 不動）——worker 下輪自退，
-    尾行回報 stopped。J-2：與 start/worker 寫入同走 _state_lock。"""
-    state_file = state_file_path(base_dir)
-    with _state_lock(base_dir):
+    尾行回報 stopped。AIR-312：只動本 repo 的 per-repo state——A stop
+    不影響 B。J-2：與 start/worker 寫入同走 _state_lock。"""
+    state_dir = repo_state_dir(identity, base_dir)
+    state_file = state_file_path(state_dir)
+    with _state_lock(state_dir):
         state = core.load_state(state_file)
         if state is None:
             state = _fresh_state(0, [])
@@ -739,10 +795,12 @@ def _staleness_mark(state, now=None):
     return f"fresh（threshold {threshold:.0f}s）", age
 
 
-def cmd_status(base_dir=None):
+def cmd_status(identity, base_dir=None):
     """唯讀五欄報告：desired／generation／armed_at（＋staleness）／
-    per-address cursor（＋last_event_seq）／last_exit——可隨時跑、零寫入。"""
-    state_file = state_file_path(base_dir)
+    per-address cursor（＋last_event_seq）／last_exit——可隨時跑、零寫入。
+    AIR-312：只讀本 repo 的 per-repo state。"""
+    state_dir = repo_state_dir(identity, base_dir)
+    state_file = state_file_path(state_dir)
     state = core.load_state(state_file)
     if state is None:
         print(f"[{TAG}] state 缺席（冷啟；{state_file}）")
@@ -767,7 +825,7 @@ def cmd_status(base_dir=None):
             print(f"[{TAG}] address {alias}：cursor={cursor_txt}"
                   f"（last_event_seq={seq}）")
     else:
-        print(f"[{TAG}] address（無紀錄——預設門牌 {DEFAULT_ADDRESS}）")
+        print(f"[{TAG}] address（無紀錄——本 repo 門牌 {identity}）")
     last_exit = state.get("last_exit")
     if last_exit:
         print(f"[{TAG}] last_exit={last_exit}")
@@ -780,22 +838,20 @@ def cmd_status(base_dir=None):
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
-            "mail_waiter：session 級信件喚醒 watcher（AIR-266——dutymail "
-            "wait 挂哨＋尾行 JSON 喚醒；generation CAS；timeout 內部消化）"
+            "mail_waiter：session 級信件喚醒 watcher（AIR-266／AIR-312 "
+            "per-repo——dutymail wait 挂哨＋尾行 JSON 喚醒；generation "
+            "CAS；timeout 內部消化；門牌＝呼叫端 repo 身份）"
         )
     )
     sub = parser.add_subparsers(dest="command", required=True)
     start = sub.add_parser(
         "start",
-        help="arm：generation+=1＋印 worker 背景命令（可直接複製）",
-    )
-    start.add_argument(
-        "--address", action="append", metavar="ALIAS",
-        help=f"挂哨門牌（可重複；預設 {DEFAULT_ADDRESS}）",
+        help="arm：generation+=1＋印 worker 背景命令（門牌＝本 repo 身份）",
     )
     start.add_argument(
         "--state-dir", default=None, metavar="DIR",
-        help="state 目錄覆寫（預設 XDG state／~/.local/state；測試注入）",
+        help="per-repo state 目錄覆寫（預設 XDG state／mail-waiter/<repo>"
+        "；測試注入）",
     )
     stop = sub.add_parser(
         "stop", help="落 flag（desired=stopped）——worker 下輪自退"
@@ -815,7 +871,7 @@ def parse_args(argv=None):
     )
     worker.add_argument(
         "--address", action="append", metavar="ALIAS",
-        help="挂哨門牌（可重複）",
+        help="挂哨門牌（start 印出釘死——背景 shell cwd 無關）",
     )
     worker.add_argument(
         "--generation", type=int, required=True, metavar="N",
@@ -829,15 +885,35 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
+    if args.command == "worker":
+        if not args.address:
+            # arm 命令恆釘 --address——裸 worker 無 watch 目標＝配置錯，
+            # fail-loud（不猜門牌、禁空轉心跳迴圈）。
+            _emit_diag(
+                sys.stderr,
+                "worker 缺 --address——arm 命令由 start 印出（門牌＝本 "
+                "repo 身份），禁裸跑",
+            )
+            return EXIT_FAIL_LOUD
+        return run_worker(
+            args.address, args.generation, args.state_dir
+        )
+    # start/stop/status：門牌＝呼叫端 repo 身份（AIR-312）——非 git cwd
+    # ＝無 watch 目標，fail-loud exit 2（不猜不 fallback）。
+    try:
+        identity = core.caller_repo_address()
+    except core.ConfigError as exc:
+        _emit_diag(
+            sys.stderr,
+            f"repo 身份無法判定——mail_waiter 只 watch 呼叫端 repo 信箱"
+            f"（{exc}）",
+        )
+        return EXIT_FAIL_LOUD
     if args.command == "start":
-        return cmd_start(args.address or [DEFAULT_ADDRESS], args.state_dir)
+        return cmd_start(identity, args.state_dir)
     if args.command == "stop":
-        return cmd_stop(args.state_dir)
-    if args.command == "status":
-        return cmd_status(args.state_dir)
-    return run_worker(
-        args.address or [DEFAULT_ADDRESS], args.generation, args.state_dir
-    )
+        return cmd_stop(identity, args.state_dir)
+    return cmd_status(identity, args.state_dir)
 
 
 if __name__ == "__main__":

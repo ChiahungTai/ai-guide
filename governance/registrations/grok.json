@@ -50,7 +50,7 @@
           },
           {
             "type": "command",
-            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/duty_holder_release.py --address ai-guide-marshal",
+            "command": "{{HOOK_PYTHON}} {{REPO}}/hooks/duty_holder_release.py",
             "timeout": 10
           }
         ]

@@ -13,7 +13,7 @@ allowed-tools: [Bash, Read]
 
 - **唯讀 viewport**：七面各一行、異常面才展開；產出給人快速判讀——「講人話」是正當風格，一行講不清的才展開。
 - **紅線——只報告，處置歸 session 判斷**（sitrep 自身零寫入、零處置）：
-  - **不處理信**——`duty_receive process` 是 holder-gated 唯一處理面，sitrep 禁觸任何處理面
+  - **不處理信**——`duty_receive process` 是 holder-gated 五態處理面（普通看信走 S2 `inbox`／`mark-read`，AIR-312），sitrep 禁觸任何處理面（含 S2 寫入面）
   - **不 re-arm watcher**——arm/stop 是 [mail-watch](../mail-watch/SKILL.md) 的寫入面；stale 只提示，不代 arm
   - **不收線 bridge job**——collect／sink 驗收是 caller 的活（sweep 本身就只標不殺）
   - **不 kill 卡住的 subagent**——卡住嫌疑只標記；殺不殺、要不要重派，session 決定

@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""dutymail 值星收信處理器核心（AIR-254.3 S1——模組＋CLI）。
+"""dutymail 值星收信處理器核心（AIR-254.3 S1——模組＋CLI；AIR-312 repo
+身份制）。
 
-職責：在 SessionStart／UserPromptSubmit 邊界（值星在場時），以
-epoch-fenced holder 身分對 per-repo mailbox（alias＝exact alias，如
-ai-guide-marshal）執行一個完整收信週期——`holder` 面取權威 →
-`receive prepare` 取 bounded 批次 → 逐封 triage → 全部處置完才
-`receive ack`。輸出＝digest 行＋surface 一行摘要（hook 層包成
+職責：以明確 CLI 呼叫（AIR-312 起 SessionStart／UserPromptSubmit 自動
+hook 已退役且入口 inert no-op——普通 once 消費面＝S2 inbox 子命令
+（`inbox`／`show`／`pending-replies`／`mark-read`／`reply`，skills/
+mail-handle 契約）；本 processor（`process`）保留作歷史相容、非 skill
+新預設），
+以 epoch-fenced holder 身分對 per-repo mailbox（alias＝repo basename，
+如 ai-guide）執行一個完整收信週期——`holder` 面取權威 → `receive
+prepare` 取 bounded 批次 → 逐封 triage → 全部處置完才 `receive ack`。
+輸出＝digest 行＋surface 一行摘要（hook 層包成
 hookSpecificOutput.additionalContext；CLI 層印純文字行；B′ AIR-258——
 envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
 
@@ -31,17 +36,16 @@ envelope 全文不注入 conversation，全文判讀面＝SC INBOX）。
   `release_holder`（codex/grok SessionEnd hook 接線）。
 - holder state（bearer token）存 per-session 檔 0600、atomic 寫、
   路徑可注入（測試 fake state，不碰真 store）。
-- 跨址 custody fence（AIR-310；AIR-311 per-caller 化）：process 只准
-  消費呼叫端 repo 授權的 address——custody 授權集 consume_addresses
-  per-caller 解析＝呼叫端 repo root（cwd `git rev-parse --show-toplevel`
-  realpath）自持的 governance/dutymail-consume.toml；非 git cwd／檔
-  缺席／鍵缺席＝ConfigError deny-all fail-loud（無法判定授權面＝不
-  消費）。class×action 分診表留中央（script root 的
-  dutymail-processor.toml，triage-only）。requested address 不在呼叫
-  端清單＝address 屬他 repo custody，holder 全序列（status/bind/
-  prepare/ack）不得開始：CLI 入口 arg 驗證 exit 2＋process_once bind
-  前核心閘（CustodyFenceError fail-closed——gate 不下沉 face wrapper，
-  唯讀跨址診斷不受此閘）。新信箱開設時同步該 repo 的 consume 檔。
+- 跨址 custody fence（AIR-312 repo 身份制）：process 只准消費呼叫端
+  repo 自己的 address——canonical alias＝呼叫端 git common-dir 反推
+  primary root 的 basename（linked WT／subdir／symlink 同一身份；非
+  git／bare／git-dir 佈局無法判定＝ConfigError deny-all fail-closed）。
+  requested address 須 exact-match canonical name；錯址在任何 consuming
+  side effect 前拒絕：CLI 入口 arg 驗證 exit 2＋process_once bind 前
+  核心閘（CustodyFenceError fail-closed——gate 不下沉 face wrapper，
+  唯讀跨址診斷不受此閘）。AIR-311 per-caller consume TOML 已隨本卡
+  退役——無授權檔、無 migration bypass（殘留 consume 檔不授予任何
+  位址，載入面無視其存在）。
 - v1 絕不主動送信：本檔不觸達 send／replies 面（回信＝outward，須
   逐次 AUTH，非本處理器範圍；授權面豁免與條件＝rules/
   outward-action-consent.md「卡級討論授權」節——AIR-308 deferred
@@ -140,12 +144,12 @@ class ConfigError(RuntimeError):
 
 
 class CustodyFenceError(RuntimeError):
-    """跨址 custody fence（AIR-310；AIR-311 per-caller 化）——requested
-    address 不在呼叫端 consume_addresses 授權集（per-caller 單一源＝
-    <呼叫端 repo>/governance/dutymail-consume.toml）＝address 屬他
-    repo custody：holder 全序列（status/bind/prepare/ack）不得開始，
-    禁消費（fail-closed）。CLI 入口 arg 驗證 exit 2；process_once
-    起手（ensure_holder 前）是核心閘。"""
+    """跨址 custody fence（AIR-312 repo 身份制）——requested address 非
+    呼叫端 repo canonical alias（exact match 失敗）＝address 屬他 repo
+    custody：holder 全序列（status/bind/prepare/ack）不得開始，禁消費
+    （fail-closed）。canonical alias 單一源＝caller_repo_address（呼叫
+    端 git common-dir 反推 primary root 的 basename）。CLI 入口 arg
+    驗證 exit 2；process_once 起手（ensure_holder 前）是核心閘。"""
 
 
 class DutymailFaceError(RuntimeError):
@@ -256,14 +260,22 @@ def _resolve_binary():
 
 def _default_runner(argv):
     """真實 dutymail 呼叫（無 shell）；非零 exit＝解析 stderr typed
-    failure 成 DutymailFaceError raise（fail-soft 由上層吸收）。"""
-    proc = subprocess.run(
-        [_resolve_binary()] + list(argv),
-        capture_output=True,
-        text=True,
-        timeout=DUTYMAIL_TIMEOUT_SECONDS,
-        check=False,
-    )
+    failure 成 DutymailFaceError raise（fail-soft 由上層吸收）。解析
+    成功但 spawn 失敗（env 釘死路徑不存在等）＝BinaryMissing typed
+    raise——缺席面恆 typed，不走裸 FileNotFoundError traceback。"""
+    try:
+        proc = subprocess.run(
+            [_resolve_binary()] + list(argv),
+            capture_output=True,
+            text=True,
+            timeout=DUTYMAIL_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except FileNotFoundError as exc:
+        raise BinaryMissing(
+            "dutymail binary spawn 失敗（解析成功但路徑不存在）："
+            f"{_resolve_binary()!r}"
+        ) from exc
     if proc.returncode != 0:
         raise _face_error_from_stderr(proc.stderr, proc.returncode)
     return proc.stdout
@@ -746,11 +758,12 @@ class Policy:
     deny、未列 class 恒 deny、恆人工名單 class（ALWAYS_SURFACE_CLASSES）
     恒 deny；列為 auto 需 intent 在該 class 的 auto_intent 內。
 
-    consume_addresses＝跨址 custody fence 授權集（AIR-311 per-caller；
-    exact match）——duty_receive process 只准消費呼叫端 repo 清單所列
-    address（單一源＝<呼叫端 repo>/governance/dutymail-consume.toml，
-    經 load_policy 兩源化載入）。直構 Policy 未給＝空集＝deny-all
-    （fail-closed：繞過 load_policy 的 caller 消費不到任何 address）。"""
+    consume_addresses＝跨址 custody fence 授權集（AIR-312 repo 身份制；
+    exact match）——duty_receive process 只准消費呼叫端 repo 的 canonical
+    alias（單一源＝caller_repo_address：呼叫端 git common-dir 反推
+    primary root 的 basename，經 load_policy 載入）。直構 Policy 未給
+    ＝空集＝deny-all（fail-closed：繞過 load_policy 的 caller 消費不到
+    任何 address）。"""
 
     def __init__(self, rules, consume_addresses=frozenset()):
         self._rules = rules  # class -> (action, frozenset(auto_intent))
@@ -768,94 +781,94 @@ class Policy:
         return action == "auto" and intent in auto_intents
 
 
-# ── policy 兩源化（AIR-311）：分診表讀 script root、custody 讀 caller root ──
+# ── repo 身份（AIR-312）：canonical alias＝呼叫端 git common-dir 反推
+#    primary root 的 basename——一 repo 一信箱，linked WT／subdir／
+#    symlink 同一身份；非 git／bare／無法判定 fail-closed ──────────────
 
-# custody 授權檔相對呼叫端 repo root 的路徑（per-caller 單一源）
-CONSUME_RELPATH = os.path.join("governance", "dutymail-consume.toml")
-# caller root 解析逾時（git rev-parse 正常毫秒級；上限防掛死熱路徑
-# ——收斂在 hook timeoutMs 預算內，病態 git 掛死不佔滿 hook 額度）
-CALLER_ROOT_TIMEOUT_SECONDS = 3
+# git rev-parse 解析逾時（正常毫秒級；上限防掛死熱路徑——病態 git 掛死
+# 不佔滿呼叫預算；逾時＝無法判定＝deny）
+GIT_RESOLVE_TIMEOUT_SECONDS = 3
 
 
-def _caller_root(cwd=None):
-    """呼叫端 repo root（AIR-311 per-caller custody 解析）：以 cwd 跑
-    `git rev-parse --show-toplevel` 取 toplevel（realpath 規範化——
-    macOS /tmp 符號連結面）。失敗／非 git 目錄＝None → custody
-    deny-all fail-loud（無法判定呼叫端 repo＝不消費——寧擋不放）。
-    cwd 可注入（測試）；預設＝process cwd（CLI 面＝呼叫 shell、hook
-    面＝harness project dir）。"""
+def _git_common_dir(cwd):
+    """cwd 的 git common-dir（絕對路徑）→ str | None。
+
+    linked worktree／primary 皆回 primary 的 `.git` 目錄。舊 git 無
+    `--path-format=absolute` 時退路：輸出可能相對 cwd——join 後絕對化。
+    非 git／git 掛死／git 缺席＝None（fail-closed 前置）。cwd 可注入
+    （測試）；None＝process cwd。"""
+    base = cwd if cwd else os.getcwd()
     try:
         proc = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=False,
-            cwd=cwd if cwd is not None else os.getcwd(),
-            timeout=CALLER_ROOT_TIMEOUT_SECONDS,
+            ["git", "rev-parse", "--path-format=absolute",
+             "--git-common-dir"],
+            capture_output=True, text=True, check=False, cwd=base,
+            timeout=GIT_RESOLVE_TIMEOUT_SECONDS,
+        )
+        if proc.returncode == 0:
+            out = proc.stdout.strip()
+            return out or None
+        proc = subprocess.run(
+            ["git", "rev-parse", "--git-common-dir"],
+            capture_output=True, text=True, check=False, cwd=base,
+            timeout=GIT_RESOLVE_TIMEOUT_SECONDS,
+        )
+        if proc.returncode != 0:
+            return None
+        out = proc.stdout.strip()
+        if not out:
+            return None
+        return out if os.path.isabs(out) else os.path.abspath(
+            os.path.join(base, out)
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
-    if proc.returncode != 0:
+
+
+def _caller_primary_root(cwd=None):
+    """呼叫端 repo 的 primary root（realpath）→ str | None（fail-closed）。
+
+    以 common-dir 佈局反推：primary／linked worktree 的 common-dir 恆
+    `<primary>/.git` → dirname 即 primary root。basename 非 `.git` 的
+    git-dir 佈局（bare repo：common-dir＝repo 本體 `<x>.git`；submodule
+    ：`<super>/.git/modules/<name>`；分離 gitdir）＝無法判定 primary
+    root → None（寧擋不放）。root 以 realpath 規範化（macOS /tmp 符號
+    連結面；symlink 進入路徑同身份）。"""
+    common = _git_common_dir(cwd)
+    if not common or os.path.basename(common) != ".git":
         return None
-    root = proc.stdout.strip()
-    return os.path.realpath(root) if root else None
+    root = os.path.dirname(common)
+    if not root or not os.path.isdir(root):
+        return None
+    return os.path.realpath(root)
 
 
-def _load_consume_addresses(caller_root):
-    """custody 授權集載入（per-caller）：讀
-    <caller_root>/governance/dutymail-consume.toml 的 consume_addresses。
-    caller_root 判定不能（非 git cwd／git rev-parse 失敗）、檔缺席、
-    鍵缺席、壞形＝ConfigError deny-all fail-loud（語義平移 AIR-310
-    鍵缺席裁定——配置錯誤要大聲，不靜默放行、禁 fallback 中央清單）。"""
-    if not caller_root:
+def caller_repo_address(cwd=None):
+    """呼叫端 repo 的 canonical mailbox alias＝primary root basename →
+    str。身份無法判定（非 git／bare／git-dir 佈局不明）＝ConfigError
+    deny-all fail-loud（無法判定呼叫端 repo＝不消費——寧擋不放）。
+    cwd 可注入（測試）；預設＝process cwd（CLI 面＝呼叫 shell、hook
+    面＝harness project dir）。"""
+    root = _caller_primary_root(cwd)
+    if root is None:
         raise ConfigError(
-            "無法判定呼叫端 repo（非 git cwd／git rev-parse 失敗）＝不消費"
-            "（custody deny-all fail-loud）"
+            "無法判定呼叫端 repo（非 git／bare／git-dir 佈局無法判定）"
+            "＝不消費（custody deny-all fail-loud）"
         )
-    path = os.path.join(caller_root, CONSUME_RELPATH)
-    try:
-        with open(path, "rb") as fh:
-            doc = tomllib.load(fh)
-    except FileNotFoundError as exc:
-        raise ConfigError(
-            f"custody 授權檔缺席（per-caller deny-all）：{path}——本 repo"
-            "未設 duty 消費授權面＝不消費（provision 先行）"
-        ) from exc
-    except (OSError, tomllib.TOMLDecodeError) as exc:
-        raise ConfigError(f"custody 授權檔解析失敗（{path}）：{exc}") from exc
-    extra = set(doc) - {"consume_addresses"}
-    if extra:
-        raise ConfigError(
-            f"custody 授權檔未知頂層鍵：{sorted(extra)}"
-            f"（僅允許 consume_addresses）"
-        )
-    if "consume_addresses" not in doc:
-        raise ConfigError(
-            "consume_addresses 缺席——custody 授權集必填（缺席＝deny-all；"
-            "新信箱開設時同步本清單）"
-        )
-    addrs = doc["consume_addresses"]
-    if (
-        not isinstance(addrs, list)
-        or not all(isinstance(x, str) and x for x in addrs)
-    ):
-        raise ConfigError(
-            "consume_addresses 應為非空字串陣列（address exact match）"
-        )
-    return frozenset(addrs)
+    return os.path.basename(root)
 
 
 def load_policy(path, caller_root=None):
-    """載入分診表＋custody 授權 → Policy（AIR-311 兩源化）。
+    """載入分診表＋custody 授權 → Policy（AIR-312 repo 身份制）。
 
-    兩源：class×action 分診表讀 `path`（script root 的 processor.toml
-    ——中央基線不 fork）；custody 授權集 consume_addresses 讀呼叫端
-    repo root 自持的 governance/dutymail-consume.toml（per-caller——
-    `caller_root` 缺席＝以 cwd git toplevel 即時解析；可注入測試）。
-    任一源缺席／TOML 壞形／未知鍵／壞值一律 ConfigError（呼叫端
-    fail-loud exit 3——不靜默全 surface、不靜默放行）。processor 表已
-    triage-only：consume_addresses 鍵入本表＝未知頂層鍵（custody 授權
-    已隨各 repo 的 consume 檔走）。"""
+    分診表讀 `path`（script root 的 processor.toml——中央基線不 fork；
+    triage-only：出現 consume_addresses 鍵＝未知頂層鍵 ConfigError）。
+    custody 授權集由呼叫端 repo 身份推導：canonical alias＝
+    caller_repo_address（`caller_root`＝呼叫端定位目錄——repo root 或
+    repo 內任意層，linked WT／subdir 同身份；None＝process cwd；可注入
+    測試）。分診表缺席／TOML 壞形／未知鍵／壞值、或身份無法判定一律
+    ConfigError（呼叫端 fail-loud exit 3——不靜默全 surface、不靜默放
+    行）。"""
     try:
         with open(path, "rb") as fh:
             doc = tomllib.load(fh)
@@ -868,7 +881,7 @@ def load_policy(path, caller_root=None):
         raise ConfigError(
             f"分診表未知頂層鍵：{sorted(extra)}"
             f"（triage-only 僅允許 class_rule——custody 授權集已 "
-            f"per-caller 化＝呼叫端 repo 的 {CONSUME_RELPATH}）"
+            f"repo 身份制＝caller_repo_address 推導，無授權檔）"
         )
     rows = doc.get("class_rule", [])
     if not isinstance(rows, list):
@@ -918,10 +931,8 @@ def load_policy(path, caller_root=None):
         if klass in rules:
             raise ConfigError(f"class {klass} 重複定義")
         rules[klass] = (action, frozenset(intents))
-    consume = _load_consume_addresses(
-        _caller_root() if caller_root is None else caller_root
-    )
-    return Policy(rules, consume)
+    canonical = caller_repo_address(caller_root)
+    return Policy(rules, frozenset({canonical}))
 
 
 # ── triage：default-deny 分診（純函式）──────────────────────────────
@@ -1346,19 +1357,19 @@ def process_once(address, runner, policy, state_file,
     「已消費但帳面恆停 received」假陽性 stale）。None（預設）＝不
     推進，既有行為不變。
 
-    跨址 custody fence（AIR-310；AIR-311 per-caller 授權面）：起手即驗
-    address ∈ policy.consume_addresses（holder bind 前核心閘——任何
-    holder status/bind/prepare/ack 之前；consume_addresses 載自呼叫端
-    repo 的 governance/dutymail-consume.toml，見 load_policy）；不在
-    授權集＝CustodyFenceError fail-closed，runner 零呼叫。閘只圈
+    跨址 custody fence（AIR-312 repo 身份制）：起手即驗 address ＝呼叫
+    端 repo canonical alias（holder bind 前核心閘——任何 holder
+    status/bind/prepare/ack 之前；canonical 單一源＝caller_repo_address
+    ——git common-dir 反推 primary root basename，見 load_policy）；
+    錯址＝CustodyFenceError fail-closed，runner 零呼叫。閘只圈
     process_once（custody 邊界），不下沉 _call／face wrapper——唯讀
     跨址（status/events/wait 診斷）是合法行為，禁誤傷。
     """
     if address not in policy.consume_addresses:
         raise CustodyFenceError(
             f"address 屬他 repo custody——禁消費：{address}"
-            f"（不在呼叫端 consume_addresses 授權集；per-caller 單一源＝"
-            f"<呼叫端 repo>/{CONSUME_RELPATH}）"
+            f"（canonical alias＝呼叫端 repo 身份——git common-dir 反推"
+            f" primary root basename，exact match）"
         )
     now = now_us if now_us is not None else time.time_ns() // 1000
     st = ensure_holder(address, runner, state_file)
@@ -1420,6 +1431,619 @@ def process_once(address, runner, policy, state_file,
     return lines, commit
 
 
+# ── S2 ordinary inbox（AIR-312 S2：read→read，原信留原處，只記待回覆）──
+#
+# 普通 inbox 模型（user 裁定）：看完即 read（transport ACK＝自動標已讀
+# 邊），信留原處可重看；只需保留待回覆（寄出成功 receipt 才解除）；工作
+# 歸既有卡。本節是 S2 消費面唯一入口——禁調 legacy process_once、
+# _prepare_with_recovery 或 disposition sinks（五態 ledger 已 superseded）。
+#
+# 狀態佈局（per-repo，XDG state／ai-guide/duty-receive/repos/<編碼>/）：
+# - pending-replies.json（0600 atomic）：最小待回覆 {incoming ID → note／
+#   target／reply pin}，不複製 incoming 原文。
+# - pending-replies.lock：per-repo 短鎖（flock；只罩檔案變更＋send 臨界
+#   段，不罩 LLM 思考）。
+# - inbox-holder.json：自家短 holder token（消費期間短持有；crash 恢復
+#   用，無 session registry）。
+# per-session state 檔（state_path）是 legacy process 面，與本節互不讀寫。
+# repos/ 中間層：base 頂同時住 legacy per-session 檔，repo 目錄另起
+# repos/ 命名空間故不與 session 檔碰撞；編碼函式與 mail_waiter 的
+# safe_repo_dirname 同語義（percent-encode，不折疊）。
+
+import fcntl as _s2_fcntl  # per-repo 短鎖（與既有 session 鎖同機制）
+import hashlib as _s2_hashlib
+from contextlib import contextmanager as _s2_contextmanager
+
+
+class S2Error(RuntimeError):
+    """S2 消費面錯誤（fail-loud：CLI 面恆非零 exit，無 fail-soft 成功）。
+
+    exit_code：2＝custody fence（錯址），3＝身份無法判定／配置，
+    1＝其餘（含 transport 失敗的如實上報）。
+    """
+
+    def __init__(self, message, exit_code=1):
+        super().__init__(message)
+        self.exit_code = exit_code
+
+
+_SAFE_REPO_RE = re.compile(r"[^A-Za-z0-9._-]")
+
+
+def safe_repo_dirname(identity):
+    """identity → injective 目錄名（mail_waiter.safe_repo_dirname 同語義：
+    safe 字元原樣、其餘逐字 percent-encode、`%`→`%25`、空→unknown）。"""
+    safe = _SAFE_REPO_RE.sub(
+        lambda m: "".join(f"%{ord(ch):02X}" for ch in m.group()),
+        identity or "",
+    )
+    return safe or "unknown"
+
+
+def s2_repo_dir(address, state_dir=None):
+    """S2 per-repo 狀態目錄（state_dir 可注入——測試隔離；預設 XDG）。"""
+    base = state_dir if state_dir is not None else _state_base_dir()
+    return os.path.join(base, "repos", safe_repo_dirname(address))
+
+
+def pending_path(address, state_dir=None):
+    """待回覆檔路徑（per-repo；0600 atomic 寫）。"""
+    return os.path.join(s2_repo_dir(address, state_dir),
+                        "pending-replies.json")
+
+
+def pending_lock_path(address, state_dir=None):
+    """待回覆短鎖路徑（dedicated lock file；禁鎖資料檔本身）。"""
+    return os.path.join(s2_repo_dir(address, state_dir),
+                        "pending-replies.lock")
+
+
+def inbox_holder_path(address, state_dir=None):
+    """自家短 holder token 路徑（per-repo；crash 恢復用）。"""
+    return os.path.join(s2_repo_dir(address, state_dir),
+                        "inbox-holder.json")
+
+
+@_s2_contextmanager
+def _pending_lock(address, state_dir=None):
+    """per-repo 短 critical-section 鎖（blocking flock；呼叫端只罩檔案
+    變更＋send 臨界段——transport 呼叫可入內，LLM 思考禁入內）。"""
+    path = pending_lock_path(address, state_dir)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    fd = os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        _s2_fcntl.flock(fd, _s2_fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            _s2_fcntl.flock(fd, _s2_fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+
+def load_pending_replies(path):
+    """讀待回覆檔 → dict | None。缺檔＝無待回覆（None）；壞 JSON／非
+    dict／address 缺席＝S2Error fail-loud（狀態損壞不大聲會丟回覆義務，
+    禁視同空）。"""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError) as exc:
+        raise S2Error(f"待回覆檔損壞——fail-loud（{exc!r}；路徑 {path}）")
+    if not isinstance(doc, dict) or not isinstance(doc.get("address"), str):
+        raise S2Error(f"待回覆檔形漂移（路徑 {path}）")
+    replies = doc.get("replies")
+    if replies is None:
+        doc["replies"] = {}
+    elif not isinstance(replies, dict):
+        raise S2Error(f"待回覆檔 replies 非 object（路徑 {path}）")
+    return doc
+
+
+def save_pending_replies(path, doc):
+    """atomic 寫（pid 後綴 tmp＋os.replace）＋0600。OSError 原樣傳出
+    （呼叫端＝no-ACK 條件）。"""
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + "." + str(os.getpid()) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, sort_keys=True)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def _pending_ensure(address, state_dir=None):
+    """pending 檔存在保證（缺席建空骨架；既有不動——no-note 讀不清除
+    義務）。回傳 doc。"""
+    path = pending_path(address, state_dir)
+    doc = load_pending_replies(path)
+    if doc is None:
+        doc = {"address": address, "replies": {}}
+        save_pending_replies(path, doc)
+        return doc
+    if doc.get("address") != address:
+        raise S2Error(
+            f"待回覆檔 address 不符（檔內 {doc.get('address')!r}≠{address!r}）"
+            "——不猜 ownership，fail-loud"
+        )
+    return doc
+
+
+def _pending_upsert_note(address, state_dir, envelope_id, note, target):
+    """先持久記待回覆（ACK 前；既有 reply pin 保留——crash 重試冪等）。
+    呼叫端保證 note/target 雙全。"""
+    with _pending_lock(address, state_dir):
+        doc = _pending_ensure(address, state_dir)
+        entry = doc["replies"].get(envelope_id)
+        if not isinstance(entry, dict):
+            entry = {}
+        entry["note"] = note
+        entry["target"] = target
+        entry.setdefault("created_at_iso",
+                         datetime.now(UTC).isoformat(timespec="seconds"))
+        entry.setdefault("reply_envelope_id", None)
+        entry.setdefault("reply_sha256", None)
+        doc["replies"][envelope_id] = entry
+        save_pending_replies(pending_path(address, state_dir), doc)
+
+
+def _pending_clear_reply(address, state_dir, incoming_id):
+    """成功 receipt 後解除待回覆（reply 臨界段內呼叫）。"""
+    path = pending_path(address, state_dir)
+    doc = load_pending_replies(path)
+    if doc is None or incoming_id not in doc.get("replies", {}):
+        raise S2Error(f"待回覆缺席、無法解除：{incoming_id}")
+    del doc["replies"][incoming_id]
+    save_pending_replies(path, doc)
+
+
+# ── S2 讀信面（producer mail list/get 原文＋body string 完整）──────────
+
+
+def decode_canonical_item(item):
+    """mail item → (env dict | None, absence | None)。
+
+    成功回 (env, None)——env 是 canonicalEnvelope 二次解析後的完整
+    object，`body` 保持 string 原樣（不 JSON-decode、不截斷；plain/long
+    text 皆合法）。原文缺席（exported／unslotted／壞形）回 (None,
+    reason)——呼叫端明示呈現、禁默默 ACK（absence stays explicit）。"""
+    if not isinstance(item, dict):
+        return None, "item 非 object"
+    canon = item.get("canonicalEnvelope")
+    payload = item.get("payloadState")
+    export = item.get("exportRef")
+    if canon is None:
+        return None, (
+            f"body absent（payloadState={payload!r} exportRef={export!r}）——"
+            "exported compaction 或歷史缺體，原信不可重看、禁 ACK"
+        )
+    if not isinstance(canon, str) or not canon:
+        return None, f"body absent（canonicalEnvelope 非全文 string）"
+    try:
+        env = json.loads(canon)
+    except ValueError as exc:
+        return None, f"canonicalEnvelope 解析失敗（{exc!r}）——禁 ACK"
+    if not isinstance(env, dict):
+        return None, "canonicalEnvelope 非 object——禁 ACK"
+    body = env.get("body")
+    if not isinstance(body, str):
+        return None, "body 非 string——禁 ACK（frozen envelope 要求 string）"
+    return env, None
+
+
+def mail_list(runner, address, box="pending", cursor=None, limit=None):
+    """`mail list` 唯讀面 → result dict（tokenless zero-write；cursor 原樣
+    透傳——preserve cursor）。box∈{pending,all,acked}（預設 pending）。"""
+    if box not in ("pending", "all", "acked"):
+        raise S2Error(f"box 非法：{box!r}（應 pending|all|acked）", 2)
+    argv = ["mail", "list", "--address", address, "--box", box]
+    if cursor is not None:
+        argv += ["--cursor", cursor]
+    if limit is not None:
+        argv += ["--limit", str(limit)]
+    return _call(runner, argv)
+
+
+def mail_get(runner, address, envelope_id):
+    """`mail get` 唯讀面 → result dict（含 item＋primaryCursor）。"""
+    if not isinstance(envelope_id, str) or not envelope_id:
+        raise S2Error("envelope id 須為非空字串", 2)
+    return _call(
+        runner, ["mail", "get", "--address", address,
+                 "--envelope-id", envelope_id])
+
+
+def _s2_bind_no_takeover(runner, address):
+    """S2 短 holder 取得 → (token, epoch)。
+
+    status 觀察 binding active 在場＝另一 holder 正持有——無條件拒絕
+    （S2 不做 age/death 接管：既有 _bind_fresh 的 death-evidence 路徑
+    在此不適用；換代正當路徑＝對方釋放後下一次顯式操作重試）。rebind
+    CAS 競敗（epoch-conflict）同樣拒絕不重試。"""
+    observed = holder_status(runner, address)
+    epoch = observed.get("bindingEpoch")
+    if not _non_negative_int(epoch):
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"holder status bindingEpoch 非非負整數：{observed!r}",
+            False, 0,
+        )
+    if holder_active(observed):
+        raise S2Error(
+            f"{address}：另一 holder 正持有（epoch {epoch}）——S2 不搶、"
+            "不做 death 接管；待對方釋放後下一次顯式操作重試"
+            "（pending 已保留）"
+        )
+    try:
+        result = holder_bind(runner, address, epoch)
+    except DutymailFaceError as exc:
+        if exc.code == CAS_CONFLICT_CODE:
+            raise S2Error(
+                f"{address}：holder 競敗（bind CAS epoch-conflict）——"
+                "本輪不消費、不重試（pending 已保留）"
+            ) from exc
+        raise
+    token = result.get("holderToken")
+    new_epoch = result.get("bindingEpoch")
+    if not isinstance(token, str) or not token:
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"holder bind holderToken 缺席：{sorted(result)}", False, 0,
+        )
+    if not _positive_int(new_epoch):
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"holder bind bindingEpoch 非正整數：{sorted(result)}",
+            False, 0,
+        )
+    return token, new_epoch
+
+
+def _load_inbox_holder(address, state_dir=None):
+    """讀自家短 holder 檔 → dict | None（缺檔＝無；壞形＝S2Error）。"""
+    path = inbox_holder_path(address, state_dir)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError) as exc:
+        raise S2Error(f"holder 檔損壞——fail-loud（{exc!r}；路徑 {path}）")
+    if (
+        not isinstance(doc, dict)
+        or doc.get("address") != address
+        or not isinstance(doc.get("token"), str)
+        or not doc["token"]
+        or not isinstance(doc.get("epoch"), int)
+    ):
+        raise S2Error(f"holder 檔形漂移（路徑 {path}）——不猜 ownership")
+    return doc
+
+
+def _save_inbox_holder(address, state_dir, epoch, token):
+    """存自家短 holder（0600 atomic）。OSError 原樣傳出（呼叫端＝釋放
+    已取 token 後報錯、不靜默失權）。"""
+    path = inbox_holder_path(address, state_dir)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    doc = {
+        "address": address, "epoch": epoch, "token": token,
+        "bound_at_iso": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+    tmp = path + "." + str(os.getpid()) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, sort_keys=True)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, path)
+
+
+def _clear_inbox_holder(address, state_dir=None):
+    """刪自家 holder 檔（缺席 no-op；其他 OSError 保留作 evidence 上報）。"""
+    try:
+        os.remove(inbox_holder_path(address, state_dir))
+    except FileNotFoundError:
+        pass
+
+
+def _s2_release_best_effort(runner, address, token):
+    """釋放自家 token（best-effort）→ True（已釋放）| False（失敗保留
+    evidence）。失敗不 raise——呼叫端如實上報、保留 holder 檔＋pending。"""
+    try:
+        holder_release(runner, address, token)
+    except (DutymailFaceError, BinaryMissing, OSError):
+        return False
+    return True
+
+
+def mark_read(address, envelope_id, runner, state_dir=None,
+              note=None, target=None):
+    """S2 標已讀（一次一封）→ result dict。
+
+    順序（裁定算法）：輸入驗證 → mail get 原文在場性驗證 → 已 ACK 重看
+    短路（不消費）→ 待回覆先持久（ACK 前；失敗＝no-ACK）→ 自家短 holder
+    取得（活 holder 無條件拒）→ prepare max-count=1 前綴精確驗證（錯位＝
+    no-ACK/no-skip）→ ACK → 只釋放自家 token。
+
+    不調 legacy process_once／_prepare_with_recovery／disposition sinks。
+    任一失敗保留 pending＋evidence 並 raise（CLI 面非零；無 fail-soft）。
+    """
+    if not isinstance(address, str) or not address:
+        raise S2Error("address 須為非空字串", 2)
+    if not isinstance(envelope_id, str) or not envelope_id:
+        raise S2Error("envelope id 須為非空字串", 2)
+    if (note is None) != (target is None):
+        raise S2Error("note 與 target 須雙給（回覆需要兩者）或雙無", 2)
+    if note is not None and (
+        not isinstance(note, str) or not note
+        or not isinstance(target, str) or not target
+    ):
+        raise S2Error("note/target 須為非空字串", 2)
+    result = mail_get(runner, address, envelope_id)
+    item = result.get("item")
+    if not isinstance(item, dict):
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"mail get 缺 item：{sorted(result) if isinstance(result, dict) else result!r}",
+            False, 0,
+        )
+    env, absence = decode_canonical_item(item)
+    if absence is not None:
+        raise S2Error(f"{envelope_id}：{absence}")
+    if item.get("deliverySeq") is None:
+        raise S2Error(
+            f"{envelope_id}：unslotted 歷史列（deliverySeq null，只在 box "
+            "all 可見）——非 pending 前綴、禁 ACK；請以 show 重看原文"
+        )
+    pending_flag = item.get("pending")
+    if pending_flag is False:
+        # 已 ACK 重看：不消費（零 holder／prepare／ack）。有 note 仍記義務；
+        # 無 note 永不清除既有義務（只讀）。
+        if note is not None:
+            try:
+                with _pending_lock(address, state_dir):
+                    doc = _pending_ensure(address, state_dir)
+                    entry = doc["replies"].get(envelope_id)
+                    if not isinstance(entry, dict):
+                        entry = {}
+                    entry["note"] = note
+                    entry["target"] = target
+                    entry.setdefault(
+                        "created_at_iso",
+                        datetime.now(UTC).isoformat(timespec="seconds"))
+                    entry.setdefault("reply_envelope_id", None)
+                    entry.setdefault("reply_sha256", None)
+                    doc["replies"][envelope_id] = entry
+                    save_pending_replies(
+                        pending_path(address, state_dir), doc)
+            except OSError as exc:
+                raise S2Error(f"待回覆寫入失敗——未更動（{exc!r}）") from exc
+            return {"envelope_id": envelope_id, "acked": False,
+                    "reread": True, "pending": True, "envelope": env}
+        return {"envelope_id": envelope_id, "acked": False,
+                "reread": True, "pending": False, "envelope": env}
+    if pending_flag is not True:
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"mail item pending 非布林：{pending_flag!r}", False, 0,
+        )
+    # pending 前綴成員：先持久（note 有則記義務；無則僅建空骨架——失敗
+    # 即 no-ACK），再短持有消費。
+    try:
+        with _pending_lock(address, state_dir):
+            _pending_ensure(address, state_dir)
+    except OSError as exc:
+        raise S2Error(
+            f"待回覆檔寫入失敗——no-ACK（{exc!r}）") from exc
+    if note is not None:
+        try:
+            _pending_upsert_note(
+                address, state_dir, envelope_id, note, target)
+        except OSError as exc:
+            raise S2Error(
+                f"待回覆寫入失敗——no-ACK（{exc!r}）") from exc
+    saved = _load_inbox_holder(address, state_dir)
+    if saved is not None:
+        return _mark_read_with_token(
+            address, envelope_id, env, runner, state_dir,
+            saved["token"], saved["epoch"])
+    try:
+        token, epoch = _s2_bind_no_takeover(runner, address)
+    except (S2Error, DutymailFaceError, BinaryMissing):
+        raise
+    try:
+        _save_inbox_holder(address, state_dir, epoch, token)
+    except OSError as exc:
+        _s2_release_best_effort(runner, address, token)
+        raise S2Error(
+            f"holder 存檔失敗——已釋放剛取得的 token（不靜默失權；"
+            f"pending 已保留；{exc!r}）") from exc
+    return _mark_read_with_token(
+        address, envelope_id, env, runner, state_dir, token, epoch)
+
+
+def _mark_read_with_token(address, envelope_id, env, runner, state_dir,
+                          token, epoch):
+    """持自家 token 的單封消費（prepare 1 → 驗 ID → ACK → 只釋放自家）。
+    失敗保留 pending＋evidence（holder 檔僅釋放成功才刪）。"""
+    try:
+        prepared = receive_prepare(
+            runner, address, token, max_count=1)
+    except DutymailFaceError as exc:
+        if _is_fencing(exc):
+            # 自家舊 token 被證 stale（他方已推進）——只清已證 stale 的自家
+            # 檔，不猜 ownership、不搶；下一次顯式操作重試。
+            try:
+                os.remove(inbox_holder_path(address, state_dir))
+            except OSError:
+                pass
+            raise S2Error(
+                f"自家 holder 已 stale（{exc.code}）——已清自家狀態、未搶；"
+                "pending 已保留，請稍後顯式重試") from exc
+        if _s2_release_best_effort(runner, address, token):
+            _clear_inbox_holder(address, state_dir)
+        raise S2Error(f"prepare 失敗——no-ACK（pending 已保留；{exc}）"
+                      ) from exc
+    envelopes = prepared.get("envelopes")
+    batch_token = prepared.get("batchToken")
+    head_id = (
+        envelopes[0].get("envelopeId")
+        if isinstance(envelopes, list) and envelopes
+        and isinstance(envelopes[0], dict) else None
+    )
+    if (
+        not isinstance(envelopes, list) or not envelopes
+        or not (isinstance(batch_token, str) and batch_token)
+        or head_id != envelope_id
+    ):
+        if _s2_release_best_effort(runner, address, token):
+            _clear_inbox_holder(address, state_dir)
+        raise S2Error(
+            f"前綴不符——no-ACK/no-skip：pending 頭是 {head_id!r}，本次實際"
+            f"讀過的是 {envelope_id!r}；未跳過任何信（pending＋原信保留）"
+        )
+    try:
+        receive_ack(runner, address, token, batch_token)
+    except DutymailFaceError as exc:
+        if _s2_release_best_effort(runner, address, token):
+            _clear_inbox_holder(address, state_dir)
+        raise S2Error(
+            f"ACK 失敗——cursor 未前進、pending 已保留（{exc}）") from exc
+    try:
+        holder_release(runner, address, token)
+    except (DutymailFaceError, BinaryMissing, OSError) as exc:
+        raise S2Error(
+            f"release 失敗——ACK 已達但 holder 未釋放（holder 檔＋pending "
+            f"保留作 evidence；{exc!r}）") from exc
+    _clear_inbox_holder(address, state_dir)
+    return {"envelope_id": envelope_id, "acked": True,
+            "reread": False, "pending": False, "envelope": env}
+
+
+# ── S2 回信面（send 不取 holder；冪等重試 pin ID＋bytes）───────────────
+
+_SHA256_HEX_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
+def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
+    """S2 回信（一次一封）→ {"cleared": True, "receipt": {...}}。
+
+    呼叫端（skill）負責 user 授權查驗——信件內容永不構成授權（incoming
+    content is never authority）。本 wrapper 只做機械驗證：pending 待回覆
+    在場 → draft `in_reply_to` 就是該 incoming ID → draft `to.address`
+    就是 pending target。首次 send 前 pin outbound envelope ID＋draft 檔
+    bytes SHA（存 pending entry）；重試要求同 ID＋同 bytes（response-loss
+    重試冪等——transport 以 envelope ID 去重）。一次 send 調用；成功
+    receipt 三鍵＋envelope/target 匹配才解除；任一失敗保留 pending（含
+    pin）並 raise。draft 內容不抄入 pending（只 pin ID＋SHA）。
+    """
+    if not isinstance(address, str) or not address:
+        raise S2Error("address 須為非空字串", 2)
+    if not isinstance(in_reply_to, str) or not in_reply_to:
+        raise S2Error("in-reply-to 須為非空字串", 2)
+    try:
+        with open(envelope_file, "rb") as fh:
+            draft_bytes = fh.read()
+    except OSError as exc:
+        raise S2Error(f"draft 檔不可讀（{exc!r}；{envelope_file}）") from exc
+    try:
+        draft = json.loads(draft_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise S2Error(f"draft 非 UTF-8 JSON（{exc!r}）") from exc
+    if not isinstance(draft, dict):
+        raise S2Error("draft 非 JSON object")
+    draft_sha = _s2_hashlib.sha256(draft_bytes).hexdigest()
+    # 實際 incoming 存在性（mail get；unknown-message 即 fail-loud）。
+    incoming = mail_get(runner, address, in_reply_to)
+    in_item = incoming.get("item")
+    if not isinstance(in_item, dict):
+        raise DutymailFaceError(
+            "shape-drift", "unknown",
+            f"mail get 缺 item：{in_reply_to}", False, 0,
+        )
+    if in_item.get("envelopeId") != in_reply_to:
+        raise S2Error(
+            f"incoming ID 不符（查詢 {in_reply_to!r}≠回 {in_item.get('envelopeId')!r}）"
+        )
+    with _pending_lock(address, state_dir):
+        path = pending_path(address, state_dir)
+        doc = load_pending_replies(path)
+        if doc is None or not isinstance(
+                doc.get("replies", {}).get(in_reply_to), dict):
+            raise S2Error(
+                f"無待回覆 {in_reply_to}——先 mark-read 記義務再回信")
+        entry = doc["replies"][in_reply_to]
+        target = entry.get("target")
+        if not isinstance(target, str) or not target:
+            raise S2Error(f"待回覆 {in_reply_to} 無 reply target——禁發送")
+        # draft 欄位驗證（在 pin 比對之後取 ID——changed-bytes 優先報）：
+        pinned_id = entry.get("reply_envelope_id")
+        pinned_sha = entry.get("reply_sha256")
+        if pinned_id is not None or pinned_sha is not None:
+            if draft_sha != pinned_sha or not isinstance(pinned_sha, str):
+                raise S2Error(
+                    "draft bytes 已變更（SHA 不符首次 pin）——重試必須同一"
+                    "實物；要換內容請先以新 draft 重新走授權流程")
+            draft_id_check = draft.get("envelope_id")
+            if draft_id_check != pinned_id:
+                raise S2Error(
+                    f"draft envelope ID 已變更（{draft_id_check!r}≠pin "
+                    f"{pinned_id!r}）——重試必須同一 ID")
+        draft_id = draft.get("envelope_id")
+        if not isinstance(draft_id, str) or not draft_id:
+            raise S2Error("draft 缺 envelope_id（非空字串）")
+        if draft.get("in_reply_to") != in_reply_to:
+            raise S2Error(
+                f"draft in_reply_to（{draft.get('in_reply_to')!r}）≠待回覆 "
+                f"{in_reply_to!r}——禁發送")
+        to_block = draft.get("to")
+        to_addr = to_block.get("address") if isinstance(to_block, dict) else None
+        if to_addr != target:
+            raise S2Error(
+                f"draft 收件（{to_addr!r}）≠待回覆 target（{target!r}）——禁發送")
+        if pinned_id is None and pinned_sha is None:
+            # 首次 send 前 pin（同一臨界段內、send 前）。
+            entry["reply_envelope_id"] = draft_id
+            entry["reply_sha256"] = draft_sha
+            doc["replies"][in_reply_to] = entry
+            try:
+                save_pending_replies(path, doc)
+            except OSError as exc:
+                raise S2Error(
+                    f"reply pin 寫入失敗——未發送（{exc!r}）") from exc
+        try:
+            receipt = _call(
+                runner, ["send", "--envelope-file", envelope_file])
+        except (DutymailFaceError, BinaryMissing, OSError) as exc:
+            raise S2Error(
+                f"send 失敗——pending 保留（含 pin，同 draft 可重試；{exc!r}）"
+            ) from exc
+        # 成功 receipt 驗證：envelopeId 匹配、acceptanceSeq 正、SHA 形合法。
+        # Server SHA 是 canonical-envelope SHA——禁與 draft 檔 pretty-JSON
+        # SHA 比對（只驗形狀）。
+        if not isinstance(receipt, dict):
+            raise S2Error(f"send receipt 非 object——pending 保留（{receipt!r}）")
+        if receipt.get("envelopeId") != draft_id:
+            raise S2Error(
+                f"receipt envelopeId（{receipt.get('envelopeId')!r}）≠draft "
+                f"（{draft_id!r}）——pending 保留")
+        acc_seq = receipt.get("acceptanceSeq")
+        if not _positive_int(acc_seq):
+            raise S2Error(
+                f"receipt acceptanceSeq 非正整數（{acc_seq!r}）——pending 保留")
+        srv_sha = receipt.get("envelopeSha256")
+        if not (isinstance(srv_sha, str) and _SHA256_HEX_RE.match(srv_sha)):
+            raise S2Error(
+                f"receipt envelopeSha256 形非法（{srv_sha!r}）——pending 保留")
+        _pending_clear_reply(address, state_dir, in_reply_to)
+        return {"cleared": True, "receipt": receipt}
+
+
 # ── CLI 面（模組＋CLI；hook 前導為 hooks/duty_receive.py）────────────
 
 
@@ -1464,6 +2088,208 @@ def _load_disposition_sinks(session_id, base_dir=None):
         return None, None
 
 
+def _s2_runner(store_root):
+    """store 隔離 runner（--store-root 顯式透傳；None＝預設 ~/.dutymail——
+    測試恆顯式隔離，禁預設真 store）。"""
+
+    def run(argv):
+        if store_root:
+            return _default_runner(
+                ["--store-root", store_root] + list(argv))
+        return _default_runner(list(argv))
+
+    return run
+
+
+def _resolve_s2_address(requested):
+    """S2 身份解析 → canonical alias。requested 省略＝呼叫端身份；給定須
+    exact-match（錯址＝S2Error exit 2，呼叫端在任何 side effect 前檢查—
+    —含唯讀面）。身份無法判定＝S2Error exit 3。呼叫端 cwd 保持（禁 cd）。
+    """
+    try:
+        canonical = caller_repo_address()
+    except ConfigError as exc:
+        raise S2Error(f"呼叫端 repo 身份無法判定——不消費（{exc}）", 3)
+    if requested is not None and requested != canonical:
+        raise S2Error(
+            f"address 屬他 repo custody——禁動作：{requested}（本 repo "
+            f"canonical＝{canonical}，exact match）", 2)
+    return canonical
+
+
+def _render_inbox_items(alias, box, result):
+    """mail list result → stdout 行（全文＋body string 完整＋cursor 保留；
+    缺席明示）。"""
+    lines = []
+    items = result.get("items")
+    if not isinstance(items, list):
+        raise S2Error(f"mail list 缺 items：{sorted(result)}")
+    lines.append(
+        f"[duty-inbox] {alias} box={result.get('box', box)} "
+        f"items={len(items)} primaryCursor={result.get('primaryCursor')}")
+    for item in items:
+        if not isinstance(item, dict):
+            lines.append("[duty-inbox] item 非 object（明示略過 1 列）")
+            continue
+        eid = item.get("envelopeId", "unknown")
+        env, absence = decode_canonical_item(item)
+        if absence is not None:
+            lines.append(
+                f"[duty-inbox] {eid} acceptanceSeq={item.get('acceptanceSeq')} "
+                f"deliverySeq={item.get('deliverySeq')} "
+                f"pending={item.get('pending')} {absence}")
+            continue
+        lines.append(
+            f"[duty-inbox] {eid} acceptanceSeq={item.get('acceptanceSeq')} "
+            f"deliverySeq={item.get('deliverySeq')} "
+            f"pending={item.get('pending')} "
+            f"from={json.dumps(env.get('from'), ensure_ascii=False)} "
+            f"created_at_us={env.get('created_at_us')}")
+        lines.append(f"body: {env.get('body')}")
+    nxt = result.get("nextCursor")
+    lines.append(
+        f"[duty-inbox] nextCursor={nxt if isinstance(nxt, str) and nxt else 'null'}")
+    return lines
+
+
+def _render_show_item(alias, result):
+    item = result.get("item")
+    if not isinstance(item, dict):
+        raise S2Error(f"mail get 缺 item：{sorted(result)}")
+    env, absence = decode_canonical_item(item)
+    eid = item.get("envelopeId", "unknown")
+    if absence is not None:
+        return [f"[duty-inbox] {alias} {eid} {absence}"]
+    return [
+        f"[duty-inbox] {alias} {eid} "
+        f"acceptanceSeq={item.get('acceptanceSeq')} "
+        f"deliverySeq={item.get('deliverySeq')} pending={item.get('pending')} "
+        f"primaryCursor={result.get('primaryCursor')}",
+        f"envelope: {json.dumps(env, ensure_ascii=False)}",
+        f"body: {env.get('body')}",
+    ]
+
+
+def _cmd_inbox(args):
+    try:
+        address = _resolve_s2_address(args.address)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    runner = _s2_runner(args.store_root)
+    try:
+        result = mail_list(
+            runner, address, box=args.box, cursor=args.cursor,
+            limit=args.limit)
+        for line in _render_inbox_items(address, args.box, result):
+            print(line)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    except (DutymailFaceError, BinaryMissing) as exc:
+        print(f"[duty-inbox] transport 失敗：{exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _cmd_show(args):
+    try:
+        address = _resolve_s2_address(args.address)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    runner = _s2_runner(args.store_root)
+    try:
+        result = mail_get(runner, address, args.envelope_id)
+        for line in _render_show_item(address, result):
+            print(line)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    except (DutymailFaceError, BinaryMissing) as exc:
+        print(f"[duty-inbox] transport 失敗：{exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _cmd_pending_replies(args):
+    try:
+        address = _resolve_s2_address(args.address)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    try:
+        doc = load_pending_replies(pending_path(address, args.state_dir))
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    replies = doc.get("replies", {}) if doc else {}
+    if not replies:
+        print(f"[duty-inbox] {address}：無待回覆")
+        return 0
+    print(f"[duty-inbox] {address}：待回覆 {len(replies)} 件")
+    for eid in sorted(replies):
+        entry = replies[eid] if isinstance(replies[eid], dict) else {}
+        print(
+            f"[duty-inbox] {eid} note={entry.get('note', '')!r} "
+            f"target={entry.get('target', '')!r}")
+    return 0
+
+
+def _cmd_mark_read(args):
+    try:
+        address = _resolve_s2_address(args.address)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    runner = _s2_runner(args.store_root)
+    try:
+        out = mark_read(
+            address, args.envelope_id, runner, state_dir=args.state_dir,
+            note=args.note, target=args.target)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    except (DutymailFaceError, BinaryMissing) as exc:
+        print(f"[duty-inbox] transport 失敗——pending 已保留：{exc}",
+              file=sys.stderr)
+        return 1
+    if out["acked"]:
+        print(f"[duty-inbox] {address}：已標已讀 {out['envelope_id']}"
+              "（原信留原處可重看）")
+    elif out.get("pending"):
+        print(f"[duty-inbox] {address}：重看 {out['envelope_id']}"
+              "（已 ACK 歷史，不再消費；待回覆已記）")
+    else:
+        print(f"[duty-inbox] {address}：重看 {out['envelope_id']}"
+              "（已 ACK 歷史，不再消費）")
+    return 0
+
+
+def _cmd_reply(args):
+    try:
+        address = _resolve_s2_address(args.address)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    runner = _s2_runner(args.store_root)
+    try:
+        out = send_reply(
+            address, args.in_reply_to, args.envelope_file, runner,
+            state_dir=args.state_dir)
+    except S2Error as exc:
+        print(f"[duty-inbox] {exc}", file=sys.stderr)
+        return exc.exit_code
+    except (DutymailFaceError, BinaryMissing) as exc:
+        print(f"[duty-inbox] transport 失敗——pending 已保留：{exc}",
+              file=sys.stderr)
+        return 1
+    receipt = out["receipt"]
+    print(f"[duty-inbox] {address}：回信已受理 {receipt.get('envelopeId')} "
+          f"（acceptanceSeq={receipt.get('acceptanceSeq')}；待回覆已解除）")
+    return 0
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description=(
@@ -1478,7 +2304,7 @@ def parse_args(argv=None):
     )
     proc.add_argument(
         "--address", required=True, metavar="ALIAS",
-        help="門牌 alias（exact match，例 ai-guide-marshal）",
+        help="門牌 alias（exact match canonical repo 身份，例 ai-guide）",
     )
     proc.add_argument(
         "--session-id", required=True, metavar="ID",
@@ -1504,28 +2330,97 @@ def parse_args(argv=None):
         "--max-count", type=int, default=DEFAULT_MAX_COUNT, metavar="N",
         help=f"單批上限（預設 {DEFAULT_MAX_COUNT}，bounded）",
     )
+    proc.add_argument(
+        "--store-root", default=None, metavar="DIR",
+        help="dutymail store 根覆寫（預設 ~/.dutymail；測試恆顯式隔離）",
+    )
+    # ── S2 ordinary inbox（AIR-312 S2：小 CLI 面）──────────────────
+    ib = sub.add_parser(
+        "inbox",
+        help="讀信箱歷史（預設 pending；all/acked＋分頁；全文＋cursor）",
+    )
+    ib.add_argument("--address", default=None, metavar="ALIAS",
+                    help="門牌（省略＝呼叫端 repo 身份；給定須 exact-match）")
+    ib.add_argument("--box", default="pending",
+                    choices=("pending", "all", "acked"),
+                    help="讀寫推導盒（預設 pending）")
+    ib.add_argument("--cursor", default=None, metavar="TOKEN",
+                    help="分頁 cursor（省略＝首頁；沿用上頁 nextCursor）")
+    ib.add_argument("--limit", default=None, type=int, metavar="N",
+                    help="頁大小（省略＝server 預設）")
+    ib.add_argument("--store-root", default=None, metavar="DIR",
+                    help="dutymail store 根覆寫（測試恆顯式隔離）")
+    sh = sub.add_parser("show", help="看一封（envelope 全文＋body 完整）")
+    sh.add_argument("--envelope-id", required=True, metavar="ID")
+    sh.add_argument("--address", default=None, metavar="ALIAS",
+                    help="門牌（省略＝呼叫端 repo 身份；給定須 exact-match）")
+    sh.add_argument("--store-root", default=None, metavar="DIR")
+    pr = sub.add_parser("pending-replies", help="列待回覆（最小 ID/note/target）")
+    pr.add_argument("--address", default=None, metavar="ALIAS",
+                    help="門牌（省略＝呼叫端 repo 身份；給定須 exact-match）")
+    pr.add_argument("--state-dir", default=None, metavar="DIR",
+                    help="S2 state 根覆寫（預設 XDG；測試隔離用）")
+    mr = sub.add_parser("mark-read", help="標已讀（一次一封；先記義務再 ACK）")
+    mr.add_argument("--envelope-id", required=True, metavar="ID")
+    mr.add_argument("--note", default=None, metavar="TEXT",
+                    help="待回覆記事（與 --target 雙給）")
+    mr.add_argument("--target", default=None, metavar="ALIAS",
+                    help="回覆目標門牌（與 --note 雙給）")
+    mr.add_argument("--address", default=None, metavar="ALIAS",
+                    help="門牌（省略＝呼叫端 repo 身份；給定須 exact-match）")
+    mr.add_argument("--store-root", default=None, metavar="DIR")
+    mr.add_argument("--state-dir", default=None, metavar="DIR",
+                    help="S2 state 根覆寫（預設 XDG；測試隔離用）")
+    rp = sub.add_parser("reply", help="回信（pending 義務＋持久 draft 冪等）")
+    rp.add_argument("--in-reply-to", required=True, metavar="ID",
+                    help="待回覆 incoming envelope ID")
+    rp.add_argument("--envelope-file", required=True, metavar="PATH",
+                    help="持久 outbound draft 檔（pin ID＋bytes 重試）")
+    rp.add_argument("--address", default=None, metavar="ALIAS",
+                    help="門牌（省略＝呼叫端 repo 身份；給定須 exact-match）")
+    rp.add_argument("--store-root", default=None, metavar="DIR")
+    rp.add_argument("--state-dir", default=None, metavar="DIR",
+                    help="S2 state 根覆寫（預設 XDG；測試隔離用）")
     return parser.parse_args(argv)
+
+
+def _process_runner(store_root):
+    """legacy process 面的 store 隔離 runner（預設行為零變）。"""
+
+    def run(argv):
+        if store_root:
+            return _default_runner(
+                ["--store-root", store_root] + list(argv))
+        return _default_runner(list(argv))
+
+    return run
 
 
 def main(argv=None) -> int:
     args = parse_args(argv)
+    if args.command in ("inbox", "show", "pending-replies",
+                        "mark-read", "reply"):
+        return {
+            "inbox": _cmd_inbox, "show": _cmd_show,
+            "pending-replies": _cmd_pending_replies,
+            "mark-read": _cmd_mark_read, "reply": _cmd_reply,
+        }[args.command](args)
     try:
         policy = load_policy(args.config)
     except ConfigError as exc:
         print(f"[{HOOK_TAG}] config fail-loud：{exc}", file=sys.stderr)
         return 3
-    # 跨址 custody fence 第一層（AIR-310→AIR-311 per-caller）：入口 arg
-    # 驗證——requested address 不在呼叫端授權集＝他 repo custody，禁
-    # 消費（第二層＝process_once bind 前核心閘；此處先擋，零副作用
-    # 退出。授權集載自呼叫端 repo 的 dutymail-consume.toml——見
-    # load_policy；非 git cwd／caller 檔缺席已在 load_policy 面以
+    # 跨址 custody fence 第一層（AIR-312 repo 身份制）：入口 arg 驗證
+    # ——requested address ≠ 呼叫端 repo canonical alias＝他 repo
+    # custody，禁消費（第二層＝process_once bind 前核心閘；此處先擋，
+    # 零副作用退出。canonical 單一源＝caller_repo_address——見
+    # load_policy；非 git cwd／bare／無法判定已在 load_policy 面以
     # ConfigError exit 3 deny-all）。
     if args.address not in policy.consume_addresses:
         print(
             f"[{HOOK_TAG}] address 屬他 repo custody——禁消費："
-            f"{args.address}（不在呼叫端 consume_addresses 授權集——"
-            f"<呼叫端 repo>/{CONSUME_RELPATH}；新信箱開設時同步該 repo"
-            f"清單）",
+            f"{args.address}（canonical alias＝呼叫端 repo 身份——git "
+            f"common-dir 反推 primary root basename，exact match）",
             file=sys.stderr,
         )
         return 2
@@ -1538,7 +2433,7 @@ def main(argv=None) -> int:
     )
     try:
         lines, commit = process_once(
-            args.address, _default_runner, policy, sfile,
+            args.address, _process_runner(args.store_root), policy, sfile,
             max_count=args.max_count, disposition_sink=recv_sink,
             resolution_sink=res_sink,
         )

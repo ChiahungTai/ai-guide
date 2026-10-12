@@ -190,20 +190,22 @@ class TestRegistrationWiring:
         return hits
 
     def test_codex_sessionend_release_wired(self):
-        """MF1(i)：codex SessionEnd 面 release hook 恰一條、帶 --address
-        （與收信 hook 同 address 慣例）、有 timeout。"""
+        """MF1(i)：codex SessionEnd 面 release hook 恰一條、有 timeout。
+        AIR-312：不釘 --address——過渡期新舊信箱皆可持章，release 以
+        per-session state 自限（釘舊址會拒釋新 canonical holder）。"""
         hits = self._release_cmds(self._codex()["hooks"]["SessionEnd"])
         assert len(hits) == 1
         h, cmd = hits[0]
-        assert "ai-guide-marshal" in cmd
+        assert "--address" not in cmd
         assert h.get("timeout")
 
     def test_grok_sessionend_release_wired(self):
-        """MF1(i)：grok SessionEnd 面 release hook 恰一條、帶 --address。"""
+        """MF1(i)：grok SessionEnd 面 release hook 恰一條（AIR-312 不釘
+        --address——同 codex 面）。"""
         hits = self._release_cmds(self._grok()["hooks"]["SessionEnd"])
         assert len(hits) == 1
         h, cmd = hits[0]
-        assert "ai-guide-marshal" in cmd
+        assert "--address" not in cmd
         assert h.get("timeout")
 
     def test_manifest_lists_release_hook(self):

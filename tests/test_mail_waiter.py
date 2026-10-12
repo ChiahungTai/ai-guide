@@ -38,7 +38,9 @@ EP＝ai-analysis/_tasks/10-07-mail-waiter/ep.md。涵蓋：
 import io
 import json
 import os
+import shlex
 import stat
+import subprocess
 import threading
 import time
 
@@ -46,7 +48,7 @@ from conftest import load_module
 
 mod = load_module("scripts/mail_waiter.py")
 
-ADDR = "ai-guide-marshal"
+ADDR = "test-repo"  # worker 機制測試用泛用 alias（worker 由 arm 釘址，無身份推導）
 
 
 # ── fake dutymail runner／state helpers ────────────────────────────────
@@ -167,6 +169,27 @@ def _cursor_of(call):
     return call[call.index("--cursor") + 1]
 
 
+def _arm_argv(command):
+    """arm/rearm 命令 → argv（shlex 語義——shell 安全 quoting 的機判面）。"""
+    return shlex.split(command)
+
+
+def _assert_worker_argv(argv, addresses, generation, state_dir):
+    """worker 形 argv 結構釘（AIR-312 R1 I2）：script＝本 repo 絕對路徑
+    （相對路徑只在 cwd=ai-guide 成立——consumer repo 入口失效）、參數
+    經 shell-safe quoting 還原無損。"""
+    assert argv[:3] == ["uv", "run", "python"]
+    assert os.path.isabs(argv[3])
+    assert argv[3] == os.path.join(mod._REPO, "scripts", "mail_waiter.py")
+    assert argv[4] == "worker"
+    assert argv[argv.index("--generation") + 1] == str(generation)
+    assert argv[argv.index("--state-dir") + 1] == state_dir
+    got_addresses = [
+        argv[i + 1] for i, a in enumerate(argv) if a == "--address"
+    ]
+    assert got_addresses == list(addresses)
+
+
 # ── K：雙軸架構釘（AIR-268——wait 中斷器＋events 真值）─────────────────
 
 
@@ -255,8 +278,9 @@ class TestWakeupContract:
         assert rc == 0
         assert tail["state"] == "mail"
         assert tail["new"] == [{"address": ADDR, "count": 1}]
-        assert "scripts/mail_waiter.py worker" in tail["rearm"]
-        assert "--generation 1" in tail["rearm"]
+        _assert_worker_argv(
+            _arm_argv(tail["rearm"]), [ADDR], 1, str(base)
+        )
         assert runner.calls[0] == _wait_face_call()
         assert runner.calls[1] == _kinded_events_face_call(cursor="k0")
         assert runner.calls[2] == _kinded_events_face_call(cursor="k1")
@@ -267,7 +291,8 @@ class TestWakeupContract:
 
     def test_w1_rearm_command_directly_copyable(self, tmp_path):
         """rearm 命令含 worker 形完整參數（--address/--generation/--state-dir）
-        ——skill/LLM 可直接複製到背景 shell。"""
+        ——skill/LLM 可直接複製到背景 shell；shlex 還原後參數無損（I2：
+        script 絕對路徑＋shell-safe quoting——背景 shell cwd 無關）。"""
         base = tmp_path / "st"
         _seed_state(base, cursors={ADDR: ("u0", "k0")})
         runner = ScriptRunner([
@@ -276,9 +301,9 @@ class TestWakeupContract:
             _ok_page([], None),
         ])
         _rc, tail, _out = _run(base, runner)
-        assert tail["rearm"].startswith("uv run python scripts/mail_waiter.py")
-        assert f"--address {ADDR}" in tail["rearm"]
-        assert f"--state-dir {base}" in tail["rearm"]
+        _assert_worker_argv(
+            _arm_argv(tail["rearm"]), [ADDR], 1, str(base)
+        )
 
     def test_w1_next_round_wait_uses_advanced_unkinded_cursor(
         self, tmp_path,
@@ -416,7 +441,7 @@ class TestStopFlag:
         （flag 權威：不吃 generation/argv 面）。"""
         base = tmp_path / "st"
         _seed_state(base, desired="running", cursors={ADDR: ("u0", "k0")})
-        assert mod.cmd_stop(str(base)) == mod.EXIT_OK  # flag 落下
+        assert mod.cmd_stop(ADDR, str(base)) == mod.EXIT_OK  # flag 落下
         runner = ScriptRunner([])
         rc, tail, _out = _run(base, runner)
         assert rc == 0
@@ -482,7 +507,7 @@ class TestGenerationCas:
 
         def _second_arm():
             # 第 2 輪 wait 進行中——新 arm 落地（generation 1→2）
-            assert mod.cmd_start([ADDR], str(base)) == mod.EXIT_OK
+            assert mod.cmd_start(ADDR, str(base)) == mod.EXIT_OK
 
         runner = ScriptRunner([timeout, (timeout, _second_arm)])
         rc, tail, _out = _run(base, runner)
@@ -706,14 +731,12 @@ class TestControlPlane:
     def test_start_first_arm_prints_copyable_command(self, tmp_path, capsys):
         """fresh state → start：generation=1＋desired=running＋armed_at＋
         per-address 冷啟 entry（雙 cursor 欄）；stdout 印可直接複製的
-        worker 背景命令。"""
+        worker 背景命令（I2：script 絕對路徑、shlex quoting 可還原）。"""
         base = str(tmp_path / "st")
-        assert mod.cmd_start([ADDR], base) == mod.EXIT_OK
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
         out = capsys.readouterr().out
-        assert "uv run python scripts/mail_waiter.py worker" in out
-        assert f"--address {ADDR}" in out
-        assert "--generation 1" in out
-        assert f"--state-dir {base}" in out
+        command = out.strip().splitlines()[-1]
+        _assert_worker_argv(_arm_argv(command), [ADDR], 1, base)
         st = _read_state(base)
         assert st["desired"] == "running"
         assert st["generation"] == 1
@@ -729,7 +752,7 @@ class TestControlPlane:
         （coalesce 延續——舊信不再觸發）。"""
         base = str(tmp_path / "st")
         _seed_state(base, generation=5, cursors={ADDR: ("keep9", "keepk")})
-        assert mod.cmd_start([ADDR], base) == mod.EXIT_OK
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
         out = capsys.readouterr().out
         assert "--generation 6" in out
         entry = _read_state(base)["addresses"][ADDR]
@@ -743,7 +766,7 @@ class TestControlPlane:
         os.makedirs(base, exist_ok=True)
         with open(_state_file(base), "w", encoding="utf-8") as fh:
             fh.write("{broken")
-        assert mod.cmd_start([ADDR], base) == mod.EXIT_OK
+        assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
         assert _read_state(base)["generation"] == 1
 
     def test_stop_writes_flag_keeps_generation(self, tmp_path, capsys):
@@ -751,7 +774,7 @@ class TestControlPlane:
         印確認＋worker 下輪自退說明。"""
         base = str(tmp_path / "st")
         _seed_state(base, generation=7, cursors={ADDR: ("u0", "k0")})
-        assert mod.cmd_stop(base) == mod.EXIT_OK
+        assert mod.cmd_stop(ADDR, base) == mod.EXIT_OK
         st = _read_state(base)
         assert st["desired"] == "stopped"
         assert st["generation"] == 7  # flag 不推進 generation
@@ -760,7 +783,7 @@ class TestControlPlane:
     def test_stop_absent_state_creates_flag(self, tmp_path):
         """state 缺席下 stop＝落 flag（fresh minimal state）不炸。"""
         base = str(tmp_path / "st")
-        assert mod.cmd_stop(base) == mod.EXIT_OK
+        assert mod.cmd_stop(ADDR, base) == mod.EXIT_OK
         st = _read_state(base)
         assert st["desired"] == "stopped"
 
@@ -772,7 +795,7 @@ class TestControlPlane:
             base, generation=3, cursors={ADDR: ("tok8", "ktok8")},
             armed_at=time.time() - 5,
         )
-        assert mod.cmd_status(base) == mod.EXIT_OK
+        assert mod.cmd_status(ADDR, base) == mod.EXIT_OK
         out = capsys.readouterr().out
         assert "desired=running" in out
         assert "generation=3" in out
@@ -788,7 +811,7 @@ class TestControlPlane:
             base, cursors={ADDR: ("u0", "k0")},
             armed_at=time.time() - 10 * mod.POLL_SLICE_SECONDS,
         )
-        assert mod.cmd_status(base) == mod.EXIT_OK
+        assert mod.cmd_status(ADDR, base) == mod.EXIT_OK
         out = capsys.readouterr().out
         assert "stale" in out
         assert "re-arm" in out
@@ -796,10 +819,295 @@ class TestControlPlane:
     def test_status_absent_state_reports_cold(self, tmp_path, capsys):
         """state 缺席＝冷啟報告（不炸、零殘留——status 唯讀）。"""
         base = str(tmp_path / "st")
-        assert mod.cmd_status(base) == mod.EXIT_OK
+        assert mod.cmd_status(ADDR, base) == mod.EXIT_OK
         out = capsys.readouterr().out
         assert "desired=" in out
         assert "generation=" in out
+
+
+# ── per-repo watcher（AIR-312）：身份推導門牌、per-repo state、A stop
+#    不影響 B ───────────────────────────────────────────────────────────
+
+
+def _git_repo(tmp_path, name="watch-a"):
+    """tmp git repo（身份解析載體——basename 即 canonical alias）。"""
+    repo = tmp_path / name
+    repo.mkdir(parents=True)
+    import subprocess
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    return repo
+
+
+class TestRepoScopedWatcher:
+    """AIR-312：mail_waiter 只 watch 呼叫端 repo 信箱（alias＝repo
+    basename——git common-dir primary root 推導）；state per-repo——
+    A stop 不影響 B；新 session start 接續（generation/cursor 既有機制
+    沿用，零 session 管理）。"""
+
+    def test_start_derives_identity_and_per_repo_state(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        """start（無 --address）＝呼叫端 repo 身份為門牌；state 落
+        per-repo 目錄 `<XDG>/ai-guide/mail-waiter/<repo>/state.json`；
+        arm 命令釘 --address＋--state-dir（背景 shell cwd 無關）。"""
+        repo = _git_repo(tmp_path, "watch-a")
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        monkeypatch.chdir(repo)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        state_dir = xdg / "ai-guide" / "mail-waiter" / "watch-a"
+        doc = json.loads((state_dir / "state.json").read_text())
+        assert doc["desired"] == "running"
+        assert list(doc["addresses"]) == ["watch-a"]
+        out = capsys.readouterr().out
+        assert "--address watch-a" in out
+        assert f"--state-dir {state_dir}" in out
+
+    def test_non_git_cwd_fail_loud_exit2(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        """非 git cwd＝身份無法判定＝fail-loud exit 2（無 watch 目標
+        ——不猜不 fallback 預設門牌）。"""
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg"))
+        monkeypatch.chdir(plain)
+        assert mod.main(["start"]) == mod.EXIT_FAIL_LOUD
+        assert "無法判定" in capsys.readouterr().err
+
+    def test_stop_a_does_not_affect_b(self, tmp_path, monkeypatch):
+        """A stop 不影響 B：兩 repo 各自 per-repo state——A 落 stopped
+        flag、B desired=running 不動。"""
+        a = _git_repo(tmp_path, "watch-a")
+        b = _git_repo(tmp_path, "watch-b")
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        monkeypatch.chdir(a)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        monkeypatch.chdir(b)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        monkeypatch.chdir(a)
+        assert mod.main(["stop"]) == mod.EXIT_OK
+        a_doc = json.loads(
+            (xdg / "ai-guide" / "mail-waiter" / "watch-a" / "state.json")
+            .read_text()
+        )
+        b_doc = json.loads(
+            (xdg / "ai-guide" / "mail-waiter" / "watch-b" / "state.json")
+            .read_text()
+        )
+        assert a_doc["desired"] == "stopped"
+        assert b_doc["desired"] == "running"
+
+    def test_status_reads_own_repo_only(self, tmp_path, monkeypatch, capsys):
+        """status 唯讀自己 repo 的 state：B（無 state）回冷啟報告——
+        不見 A 的任何 cursor／generation。"""
+        a = _git_repo(tmp_path, "watch-a")
+        b = _git_repo(tmp_path, "watch-b")
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        monkeypatch.chdir(a)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        monkeypatch.chdir(b)
+        capsys.readouterr()
+        assert mod.main(["status"]) == mod.EXIT_OK
+        out = capsys.readouterr().out
+        assert "desired=unknown" in out  # B 冷啟——A 的 running 不洩
+        assert "watch-b" in out
+
+    def test_new_session_start_continues_generation(
+        self, tmp_path, monkeypatch,
+    ):
+        """新 session 接續：同 repo 二次 start＝generation+1、既有
+        cursor 保留（零 session 管理——state 即接續面）。"""
+        repo = _git_repo(tmp_path, "watch-a")
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        monkeypatch.chdir(repo)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        state_file = (
+            xdg / "ai-guide" / "mail-waiter" / "watch-a" / "state.json"
+        )
+        doc = json.loads(state_file.read_text())
+        doc["addresses"]["watch-a"]["cursor"] = "keep-u9"
+        doc["addresses"]["watch-a"]["accepted_cursor"] = "keep-k9"
+        state_file.write_text(json.dumps(doc))
+        assert mod.main(["start"]) == mod.EXIT_OK
+        doc2 = json.loads(state_file.read_text())
+        assert doc2["generation"] == 2
+        assert doc2["addresses"]["watch-a"]["cursor"] == "keep-u9"
+        assert doc2["addresses"]["watch-a"]["accepted_cursor"] == "keep-k9"
+
+
+# ── per-repo state 目錄 identity 編碼（AIR-312 R1 I3：injective 不碰撞）──
+
+
+class TestRepoStateDirInjective:
+    """repo_state_dir 的 identity→目錄名映射必須 injective（AIR-312 R1
+    I3）：折 _ sanitizer 把 alpha+beta 與 alpha_beta 折成同一目錄＝A stop
+    會動到 B 的 state——percent-encode（含字面 %）後一對一。"""
+
+    def test_encoding_injective_plus_vs_underscore(self, monkeypatch):
+        monkeypatch.setenv("XDG_STATE_HOME", "/xdg")
+        a = mod.repo_state_dir("alpha+beta")
+        b = mod.repo_state_dir("alpha_beta")
+        assert a != b  # 舊折 _ 行為：兩者同目錄（finding 原案）
+        assert b.endswith("/alpha_beta")
+
+    def test_encoding_injective_literal_percent(self, monkeypatch):
+        monkeypatch.setenv("XDG_STATE_HOME", "/xdg")
+        # 字面 % 也須編碼——"a+b" 編碼後與字面 "a%2Bb" 不同目錄（否則
+        # percent-encode 自身引入新碰撞）。
+        assert mod.repo_state_dir("a+b") != mod.repo_state_dir("a%2Bb")
+
+    def test_encoding_safe_identity_unchanged(self, monkeypatch):
+        # 常態 repo basename（安全字元集）不轉寫——既有目錄名零遷移。
+        monkeypatch.setenv("XDG_STATE_HOME", "/xdg")
+        assert mod.repo_state_dir("my-repo_1.0").endswith("/my-repo_1.0")
+
+    def test_encoding_space_and_slash_distinct(self, monkeypatch):
+        monkeypatch.setenv("XDG_STATE_HOME", "/xdg")
+        assert mod.repo_state_dir("a b") != mod.repo_state_dir("a_b")
+        assert mod.repo_state_dir("a/b") != mod.repo_state_dir("a_b")
+
+    def test_stop_a_does_not_affect_b_colliding_names(
+        self, tmp_path, monkeypatch,
+    ):
+        """finding 驗證式真跑：start(A) start(B) stop(A)——A 落 stopped
+        flag 後 B state（desired/generation/cursor）零變；兩 repo 目錄名
+        編碼後互不折疊。"""
+        a = _git_repo(tmp_path, "alpha+beta")
+        b = _git_repo(tmp_path, "alpha_beta")
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        monkeypatch.chdir(a)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        monkeypatch.chdir(b)
+        assert mod.main(["start"]) == mod.EXIT_OK
+        a_dir = xdg / "ai-guide" / "mail-waiter" / "alpha%2Bbeta"
+        b_dir = xdg / "ai-guide" / "mail-waiter" / "alpha_beta"
+        assert a_dir.is_dir() and b_dir.is_dir()  # 兩目錄分明（不折疊）
+        # B 推進 cursor（模擬已掛哨歷史）再回 A stop——B 不得被動到。
+        b_state = b_dir / "state.json"
+        doc = json.loads(b_state.read_text())
+        doc["addresses"]["alpha_beta"]["cursor"] = "keep-b1"
+        b_state.write_text(json.dumps(doc))
+        monkeypatch.chdir(a)
+        assert mod.main(["stop"]) == mod.EXIT_OK
+        a_doc = json.loads((a_dir / "state.json").read_text())
+        b_doc = json.loads(b_state.read_text())
+        assert a_doc["desired"] == "stopped"
+        assert b_doc["desired"] == "running"  # B 不被 A stop 波及
+        assert b_doc["addresses"]["alpha_beta"]["cursor"] == "keep-b1"
+        assert list(b_doc["addresses"]) == ["alpha_beta"]
+
+
+# ── arm 命令形（AIR-312 R1 I2：絕對路徑＋shell-safe quoting）──────────
+
+
+class TestArmCommandShape:
+    def test_arm_command_absolute_and_shell_safe(self):
+        """arm 命令：script＝本檔反推絕對路徑（相對 scripts/... 只在
+        cwd=ai-guide 成立——consumer repo 入口失效的 finding 原案）；
+        含空格參數經 shlex.join quoting、shlex.split 還原無損。"""
+        spaced = "/state dir with spaces/repo"
+        command = mod.arm_command(["a b"], 3, spaced)
+        _assert_worker_argv(_arm_argv(command), ["a b"], 3, spaced)
+        assert "'" in command  # shell-safe quoting 在場（裸空白 join 已廢）
+        assert os.path.isabs(_arm_argv(command)[3])
+
+
+# ── arm 命令實跑證（I2 驗證式——argv 檢查不足以證明可執行）──────────────
+
+
+class TestArmCommandRealExecution:
+    """start 印出的 worker 命令「真的能執行」：consumer repo 子目錄入口
+    ＋含空格 repo 名（state 路徑含空格）＋fake dutymail binary＋隔離
+    XDG state；命令原樣交 shell 從與兩 repo 都無關的 cwd 執行（背景
+    shell 語義——不 cd 進 ai-guide），worker 冷啟喚醒 exit 0、state 落
+    per-repo 目錄、stub 收到的門牌是單一 argv。零真 store 往返。"""
+
+    def test_printed_command_executes_from_consumer_repo_subdir(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        repo = _git_repo(tmp_path, "consumer repo")  # repo 名含空格
+        (repo / "docs").mkdir()
+        xdg = tmp_path / "xdg state"  # 隔離 state 根（也含空格）
+        plain_page = json.dumps({
+            "schemaVersion": 1, "ok": True,
+            "result": {"items": [
+                {"eventSeq": 1, "kind": "mail.accepted",
+                 "payloadJson": "{}", "atUs": 1000},
+            ], "nextCursor": "u1"},
+        })
+        kinded_page = json.dumps({
+            "schemaVersion": 1, "ok": True,
+            "result": {"items": [
+                {"eventSeq": 1, "kind": "mail.accepted",
+                 "payloadJson": "{}", "atUs": 1000},
+            ], "nextCursor": "k1"},
+        })
+        empty_page = json.dumps({
+            "schemaVersion": 1, "ok": True,
+            "result": {"items": [], "nextCursor": None},
+        })
+        stub = tmp_path / "stub-dutymail"
+        stub.write_text("\n".join([
+            "#!/bin/sh",
+            'n=$(cat "$STUB_CNT" 2>/dev/null || echo 0)',
+            "n=$((n + 1))",
+            'printf "%s" "$n" > "$STUB_CNT"',
+            'printf "%s" "$3" > "$STUB_ADDR"',  # events argv 第 3 參＝門牌
+            'case " $* " in',
+            '  *" --kind "*)',
+            '    if [ "$n" -eq 3 ]; then '
+            f"printf '%s' '{kinded_page}'; else "
+            f"printf '%s' '{empty_page}'; fi ;;",
+            "  *)",
+            '    if [ "$n" -eq 1 ]; then '
+            f"printf '%s' '{plain_page}'; else "
+            f"printf '%s' '{empty_page}'; fi ;;",
+            "esac",
+        ]) + "\n", encoding="utf-8")
+        stub.chmod(0o755)
+        stub_env = {
+            "XDG_STATE_HOME": str(xdg),
+            "DUTYMAIL_BIN": str(stub),
+            "STUB_CNT": str(tmp_path / "stub-calls"),
+            "STUB_ADDR": str(tmp_path / "stub-addr"),
+        }
+        for key, value in stub_env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.chdir(repo / "docs")  # subdir 入口（身份＝repo basename）
+        assert mod.main(["start"]) == mod.EXIT_OK
+        command = capsys.readouterr().out.strip().splitlines()[-1]
+        # I3 編碼：repo 名內空格折 %20（injective）；--state-dir 的空格
+        # 由 XDG 根承載——shlex quoting 仍被實跑驗證。
+        state_dir = xdg / "ai-guide" / "mail-waiter" / "consumer%20repo"
+        _assert_worker_argv(
+            _arm_argv(command), ["consumer repo"], 1, str(state_dir)
+        )
+        # 原樣交 shell 執行——cwd 與 ai-guide／consumer repo 皆無關
+        unrelated = tmp_path / "unrelated"
+        unrelated.mkdir()
+        env = dict(os.environ)
+        env.update(stub_env)
+        proc = subprocess.run(
+            command, shell=True, cwd=str(unrelated), env=env,
+            capture_output=True, text=True, timeout=120,
+        )
+        assert proc.returncode == 0, proc.stderr
+        tail = json.loads(
+            [ln for ln in proc.stdout.splitlines() if ln.strip()][-1]
+        )
+        assert tail["state"] == "mail"
+        assert tail["new"] == [{"address": "consumer repo", "count": 1}]
+        doc = json.loads((state_dir / "state.json").read_text())
+        entry = doc["addresses"]["consumer repo"]
+        assert entry["cursor"] == "u1"
+        assert entry["accepted_cursor"] == "k1"
+        # quoting 正確性實證：含空格門牌以單一 argv 抵達 stub（非被拆詞）
+        assert (tmp_path / "stub-addr").read_text() == "consumer repo"
 
 
 # ── state 慣例（0600 atomic；worker 寫入）─────────────────────────────
@@ -911,13 +1219,13 @@ class TestTriPanelFixes:
 
         def _start(i):
             try:
-                assert mod.cmd_start([f"start-{i}"], base) == mod.EXIT_OK
+                assert mod.cmd_start(f"start-{i}", base) == mod.EXIT_OK
             except Exception as exc:
                 errors.append(f"start-{i}: {exc!r}")
 
         def _stop():
             try:
-                assert mod.cmd_stop(base) == mod.EXIT_OK
+                assert mod.cmd_stop(ADDR, base) == mod.EXIT_OK
             except Exception as exc:
                 errors.append(f"stop: {exc!r}")
 

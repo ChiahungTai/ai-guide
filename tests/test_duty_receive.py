@@ -18,28 +18,31 @@
 - digest 輸出形（N/M/K＋最舊 X 分鐘＋class 計數）；surface＝一行摘要
   （class 計數＋envelope_id 前 3＋SC INBOX 指針，無 body——B′ AIR-258：
   全文判讀面＝SC INBOX）；無新信零輸出。
-- hook 面：stdin payload 驅動 run()——eligibility gate（cwd repo 外＝
-  零查詢零輸出）、store 缺席（class 4 storage）fail-soft＝零 stdout
-  exit 0＋stderr 註記、stdin 壞 JSON/未知事件靜默、config 壞形 fail-loud
-  exit 3、args 誤用 exit 2。
+- hook 面（AIR-312 R1 M1）：退役 inert no-op——任何事件×新舊地址＝
+  零 face 呼叫、零 state／ledger 副作用、零 stdout、exit 恆 0（stale
+  session snapshot 相容；行為測試由 retirement tests 取代，不 skip）。
 - BinaryMissing 消音缺口（AIR-274 M1）：resolver 全 miss typed raise、
   hook 面 consecutive-miss sidecar 計數（<3 靜默／≥3 stderr advisory、
   exit 恆 0）、binary 在場呼叫歸零（resolve 已過——含 face 失敗；唯
   BinaryMissing 不歸零）、store-absent 不入計數、CLI typed
   exit 1。
-- policy 載入兩源（AIR-311 per-caller 化）：class×action 分診表讀
+- policy 載入（AIR-312）：class×action 分診表讀
   governance/dutymail-processor.toml（script root 中央基線；triage-only
   ——未知鍵／壞形 fail-loud，出現 consume_addresses 鍵即未知鍵）；
-  custody 授權集讀呼叫端 repo root 自持的 governance/
-  dutymail-consume.toml（cwd git toplevel 解析、可注入；非 git cwd／
-  檔缺席／鍵缺席 fail-loud deny-all）。代碼層底線：solicit 恆 surface、
+  custody 授權集由呼叫端 repo 身份推導（canonical alias＝repo basename
+  ——無 TOML、無 migration bypass）。代碼層底線：solicit 恆 surface、
   未列 class 恆 surface（config 無法放寪）。
-- 跨址 custody fence（AIR-310→AIR-311 per-caller）：本址放行（holder
-  全序列照常）／他址禁消費（runner 零呼叫、CLI exit 2）／founding
-  case 重鎖（ai-guide caller root 不含 delegate-bridge-marshal——請求
-  即拒，AIR-310 掃平後不設防、本卡鎖回）／非 git cwd・caller 檔缺席・
-  鍵缺席 deny-all（含直構 Policy 空集）。
-- governance 接線：zcode/cc 註冊雙事件各一條＋manifest scripts 登記。
+- 跨址 custody fence（AIR-312 repo 身份制）：canonical alias＝呼叫端
+  git common-dir 反推 primary root 的 basename（primary／linked WT／
+  subdir／symlink 同一身份；非 git／bare／git-dir 佈局無法判定＝
+  ConfigError deny-all fail-closed）；本址（exact match）放行（holder
+  全序列照常）／錯址禁消費（runner 零呼叫、CLI exit 2）／AIR-311
+  per-caller consume TOML 退役——無授權檔、殘留檔不授予任何位址
+  （無 migration bypass；含直構 Policy 空集）。
+- governance 退役契約（AIR-312）：zcode registrations 零 duty
+  auto-process／monitor 條目；cc dormant 模板 duty 條目 enabled=false
+  （legacy entry 不可默默啟動退役流程）；manifest scripts 零兩 hook、
+  duty_holder_release 保留（release cleanup）。
 
 測試全走 injectable runner（fake dutymail 回固定 JSON）＋fake state 路徑
 （tmp_path）——不碰真 store（真 store 往返＝S3，marshal 職責）。
@@ -62,7 +65,7 @@ mod = load_module("scripts/duty_receive.py")
 hook = load_module("hooks/duty_receive.py")
 ddmod = load_module("scripts/duty_disposition.py")
 
-ADDR = "ai-guide-marshal"
+ADDR = "ai-guide"  # AIR-312：canonical alias＝repo basename（本 repo 身份）
 REPO = str(REPO_ROOT)
 REAL_CONFIG = str(REPO_ROOT / "governance" / "dutymail-processor.toml")
 
@@ -88,15 +91,6 @@ def _ok(result):
 
 def _err(code, error_class, exit_code=3, message="typed failure"):
     return mod.DutymailFaceError(
-        code=code, error_class=error_class, message=message,
-        retryable=False, exit_code=exit_code,
-    )
-
-
-def _hook_err(code, error_class, exit_code=3, message="typed failure"):
-    """hook 面錯誤——用 hook.core 的類別實例（conftest 載入的 mod 與
-    hook import 的 core 是同檔案不同 instance，except 面看後者）。"""
-    return hook.core.DutymailFaceError(
         code=code, error_class=error_class, message=message,
         retryable=False, exit_code=exit_code,
     )
@@ -216,16 +210,9 @@ def _read_state(path):
 
 
 def _policy():
-    # caller root 顯式注入 ai-guide repo root——與 pytest cwd 解耦；
-    # custody 源＝真實 governance/dutymail-consume.toml（兩 ai-guide 址）。
+    # caller 定位目錄顯式注入 ai-guide repo root——與 pytest cwd 解耦；
+    # custody 集由 repo 身份推導（AIR-312：canonical＝ai-guide）。
     return mod.load_policy(REAL_CONFIG, caller_root=str(REPO_ROOT))
-
-
-def _hook_run(raw, runner, state_dir, config_path=REAL_CONFIG, **kw):
-    return hook.run(
-        raw, ADDR, runner=runner, state_dir=str(state_dir),
-        config_path=config_path, **kw
-    )
 
 
 @pytest.fixture
@@ -307,6 +294,14 @@ class TestBinaryResolution:
         monkeypatch.setattr(mod.glob, "glob", fake_glob)
         got = mod._resolve_binary()
         assert got.endswith("/4.2.0/bin/aarch64-apple-darwin/dutymail")
+
+    def test_runner_spawn_missing_binary_typed(self, monkeypatch):
+        """解析成功但 spawn 失敗（env 釘死路徑不存在）＝BinaryMissing
+        typed raise——不走裸 FileNotFoundError traceback（CLI 契約：缺席
+        面恆 typed exit 1）。"""
+        monkeypatch.setenv("DUTYMAIL_BIN", "/nonexistent/dead/dutymail")
+        with pytest.raises(mod.BinaryMissing, match="spawn 失敗"):
+            mod._default_runner(["holder", "status"])
 
     def test_zcode_cache_precedes_claude_cache(self, monkeypatch):
         """優先序釘死：兩 cache 皆在場 → zcode rung 勝（既有行為零變——
@@ -466,186 +461,177 @@ class TestPolicy:
         assert policy.allows("usage-liveness", "solicit") is False
 
 
-# ── 跨址 custody fence（AIR-310→AIR-311 per-caller）：授權面跟呼叫端
-#    repo 走——放行／他址禁消費／founding case 重鎖／解析不能 deny-all ──
+# ── repo 身份與跨址 custody fence（AIR-312）：canonical alias＝呼叫端
+#    git common-dir 反推 primary root 的 basename；錯址零 side effect ──
 
 
-def _git_caller_repo(tmp_path, name="caller-repo", consume=None):
-    """tmp git repo（caller root 測試載體）：`git init`＋可選寫入
-    governance/dutymail-consume.toml（consume=None＝檔缺席案例）。"""
+def _git_repo(tmp_path, name="alpha"):
+    """tmp git repo（身份解析測試載體）：`git init`＋空 commit
+    （worktree add 前置）。"""
     repo = tmp_path / name
-    (repo / "governance").mkdir(parents=True)
+    repo.mkdir(parents=True)
     subprocess.run(["git", "init", "-q", str(repo)], check=True)
-    if consume is not None:
-        (repo / "governance" / "dutymail-consume.toml").write_text(
-            consume, encoding="utf-8",
-        )
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.email=t@t", "-c",
+         "user.name=t", "commit", "-q", "--allow-empty", "-m", "init"],
+        check=True,
+    )
     return repo
 
 
-class TestCustodyFence:
-    """跨址 custody fence 雙層（AIR-311 per-caller 化）：CLI 入口 arg
-    驗證（exit 2）＋process_once bind 前核心閘（CustodyFenceError）。
-    oracle：他址輸入 runner 呼叫數＝0——holder status/bind/prepare/ack
-    全序列不得開始、state 不動。custody 授權面 per-caller＝呼叫端 repo
-    自持的 governance/dutymail-consume.toml（caller root＝cwd git
-    toplevel）。"""
+class TestRepoIdentity:
+    """呼叫端 repo 身份解析（AIR-312）：canonical alias＝git common-dir
+    反推 primary root 的 basename。primary／linked WT／subdir／symlink
+    同一身份；非 git／bare／git-dir 佈局無法判定＝fail-closed。"""
 
-    FOREIGN = "foreign-repo-marshal"  # 未授權樣本址——「未列即擋」
-    # deny-by-default 樣本，不指涉特定事故地址。
-    FOUNDED = "delegate-bridge-marshal"  # founding case（AIR-310 原始
-    # 事故址）：ai-guide caller root 清單不含它——AIR-310 掃平後中央
-    # 清單含它、此案不設防；本卡 per-caller 化把它鎖回 fence。
+    def test_primary_repo_basename(self, tmp_path):
+        repo = _git_repo(tmp_path, name="alpha")
+        assert mod.caller_repo_address(str(repo)) == "alpha"
 
-    def test_own_address_passes_full_cycle(self, state_file):
-        """本址（呼叫端清單內）放行——holder 全序列照常（空批＝([], None)）。"""
+    def test_linked_worktree_same_identity(self, tmp_path):
+        repo = _git_repo(tmp_path, name="alpha")
+        wt = tmp_path / "alpha-wt"
+        subprocess.run(
+            ["git", "-C", str(repo), "worktree", "add", "-q", "-b",
+             "side", str(wt)],
+            check=True,
+        )
+        assert mod.caller_repo_address(str(wt)) == "alpha"
+
+    def test_subdir_same_identity(self, tmp_path):
+        repo = _git_repo(tmp_path, name="alpha")
+        sub = repo / "deep" / "nested"
+        sub.mkdir(parents=True)
+        assert mod.caller_repo_address(str(sub)) == "alpha"
+
+    def test_symlink_path_same_identity(self, tmp_path):
+        repo = _git_repo(tmp_path, name="alpha")
+        link = tmp_path / "repo-link"
+        link.symlink_to(repo)
+        assert mod.caller_repo_address(str(link)) == "alpha"
+
+    def test_primary_root_is_realpath(self, tmp_path):
+        """macOS /tmp 符號連結面：primary root 以 realpath 規範化。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        root = mod._caller_primary_root(str(repo))
+        assert root == os.path.realpath(str(repo))
+
+    def test_non_git_cwd_fail_closed(self, tmp_path):
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        assert mod._caller_primary_root(str(plain)) is None
+        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
+            mod.caller_repo_address(str(plain))
+
+    def test_bare_repo_fail_closed(self, tmp_path):
+        bare = tmp_path / "alpha.git"
+        subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
+        assert mod._caller_primary_root(str(bare)) is None
+        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
+            mod.caller_repo_address(str(bare))
+
+    def test_cwd_none_uses_process_cwd(self, tmp_path, monkeypatch):
+        """cwd=None＝process cwd（CLI 面——monkeypatch.chdir 注入）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        monkeypatch.chdir(repo)
+        assert mod.caller_repo_address() == "alpha"
+
+    def test_resolve_timeout_guarded(self, tmp_path, monkeypatch):
+        """git 掛死（timeout）＝None → ConfigError fail-closed（不佔死
+        熱路徑——AIR-311 收斂語義沿用）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+
+        def _boom(*a, **kw):
+            raise subprocess.TimeoutExpired(cmd="git", timeout=0.1)
+
+        monkeypatch.setattr(mod.subprocess, "run", _boom)
+        assert mod._caller_primary_root(str(repo)) is None
+        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
+            mod.caller_repo_address(str(repo))
+
+
+class TestRepoIdentityFence:
+    """跨址 custody fence（AIR-312 repo 身份制）：requested address
+    exact-match canonical name；錯址在任何 consuming side effect 前拒絕
+    （runner 零呼叫、state 不動）；consume TOML 退役——檔案在場也不
+    授予任何位址（無 migration bypass）。"""
+
+    FOREIGN = "foreign-repo-marshal"  # 未授權樣本址——「非本 repo 即擋」
+
+    def test_own_address_passes_full_cycle(self, tmp_path, state_file):
+        """本址（canonical）放行——holder 全序列照常（空批＝([], None)）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
         runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
         lines, commit = mod.process_once(
-            ADDR, runner, _policy(), state_file, now_us=NOW_US,
+            "alpha", runner, policy, state_file, now_us=NOW_US,
         )
         assert lines == [] and commit is None
         assert len(runner.calls) == 3  # status＋bind＋prepare——fence 未擋
 
-    def test_foreign_address_fenced_zero_face_calls(self, state_file):
-        """他址＝他 repo custody——bind 前核心閘拒絕：runner 零呼叫、
+    def test_foreign_address_fenced_zero_face_calls(
+        self, tmp_path, state_file,
+    ):
+        """錯址＝他 repo custody——bind 前核心閘拒絕：runner 零呼叫、
         state 不動（禁 status/bind/prepare/ack 全序列）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
         runner = _seq_runner([])  # 越閘即 AssertionError——序列不得開始
         with pytest.raises(mod.CustodyFenceError, match="他 repo custody"):
             mod.process_once(
-                self.FOREIGN, runner, _policy(), state_file, now_us=NOW_US,
+                self.FOREIGN, runner, policy, state_file, now_us=NOW_US,
             )
         assert runner.calls == []
         assert not os.path.exists(state_file)
 
-    def test_founding_case_delegate_bridge_fenced_zero_calls(self, state_file):
-        """founding case 重鎖（AIR-311）：ai-guide caller root 清單不含
-        delegate-bridge-marshal——請求該址＝CustodyFenceError、runner
-        零呼叫（掃平後此案不設防，本卡鎖回）。"""
+    def test_foundling_case_delegate_bridge_fenced(self, tmp_path,
+                                                   state_file):
+        """歷史 founding case（AIR-310 事故址 delegate-bridge-marshal）：
+        repo 身份制下非本 repo 即擋（舊 per-caller 清單語義退役後同樣
+        fail-closed）。"""
+        repo = _git_repo(tmp_path, name="ai-guide")
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
         runner = _seq_runner([])
         with pytest.raises(mod.CustodyFenceError, match="他 repo custody"):
             mod.process_once(
-                self.FOUNDED, runner, _policy(), state_file, now_us=NOW_US,
+                "delegate-bridge-marshal", runner, policy, state_file,
+                now_us=NOW_US,
             )
         assert runner.calls == []
-        assert not os.path.exists(state_file)
 
-    def test_caller_root_resolves_git_toplevel(self, tmp_path):
-        """_caller_root：tmp git init 目錄＋顯式 cwd 注入 → realpath
-        toplevel（符號連結規範化）。"""
-        repo = _git_caller_repo(tmp_path)
-        assert mod._caller_root(cwd=str(repo)) == os.path.realpath(
-            str(repo)
-        )
+    def test_similar_name_not_accepted(self, tmp_path, state_file):
+        """exact-match：'ai-guide-marshal'、'ai-guide2'、前後綴變體皆非
+        canonical 'ai-guide'——字面相似不構成同一身份。"""
+        repo = _git_repo(tmp_path, name="ai-guide")
+        policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+        for wrong in ("ai-guide-marshal", "ai-guide2", "xai-guide"):
+            runner = _seq_runner([])
+            with pytest.raises(mod.CustodyFenceError):
+                mod.process_once(
+                    wrong, runner, policy, state_file, now_us=NOW_US,
+                )
+            assert runner.calls == []
 
-    def test_caller_root_non_git_cwd_none(self, tmp_path):
-        """非 git cwd → None（deny-all 前置——解析不能即不消費）。"""
-        plain = tmp_path / "plain"
-        plain.mkdir()
-        assert mod._caller_root(cwd=str(plain)) is None
-
-    def test_per_caller_consume_file_central_triage(self, tmp_path):
-        """兩源釘死：custody 讀 caller root 自持 consume 檔（caller 自訂
-        清單生效）；分診表仍讀中央 REAL_CONFIG（usage-liveness auto 規則
-        在場——script root 基線不隨 caller fork）。"""
-        repo = _git_caller_repo(
-            tmp_path, consume='consume_addresses = ["caller-only-marshal"]\n'
+    def test_consume_toml_presence_grants_nothing(self, tmp_path):
+        """無 migration bypass：殘留 per-caller consume TOML（AIR-311
+        形）在呼叫端 repo 在場——不授予任何位址（custody 集仍＝身份
+        單元集；檔案被無視）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        (repo / "governance").mkdir()
+        (repo / "governance" / "dutymail-consume.toml").write_text(
+            'consume_addresses = ["alpha", "bonus-marshal"]\n',
+            encoding="utf-8",
         )
         policy = mod.load_policy(REAL_CONFIG, caller_root=str(repo))
-        assert policy.consume_addresses == frozenset(
-            {"caller-only-marshal"}
-        )
-        assert policy.allows("usage-liveness", "inform")  # triage 中央
-        assert self.FOREIGN not in policy.consume_addresses
-
-    def test_non_git_cwd_deny_all_fail_loud(self, tmp_path, monkeypatch):
-        """非 git cwd（caller root 判定不能）＝ConfigError deny-all
-        fail-loud——訊息寫清「無法判定呼叫端 repo＝不消費」。"""
-        plain = tmp_path / "plain"
-        plain.mkdir()
-        monkeypatch.chdir(plain)
-        with pytest.raises(mod.ConfigError, match="無法判定呼叫端 repo"):
-            mod.load_policy(REAL_CONFIG)
-
-    def test_cli_foreign_address_exit2(self, tmp_path, capsys, monkeypatch):
-        """CLI 入口 arg 驗證：他址 exit 2＋「禁消費」訊息（閘在
-        state/sink 建構前——零副作用退出；caller root 注入 ai-guide
-        repo——與 pytest cwd 解耦）。"""
-        monkeypatch.setattr(
-            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
-        )
-        rc = mod.main([
-            "process", "--address", self.FOREIGN,
-            "--session-id", "sess-cli", "--config", REAL_CONFIG,
-            "--state-dir", str(tmp_path),
-        ])
-        assert rc == 2
-        err = capsys.readouterr().err
-        assert "address 屬他 repo custody——禁消費" in err
-        assert self.FOREIGN in err
-
-    def test_cli_founding_case_delegate_bridge_exit2(
-        self, tmp_path, capsys, monkeypatch,
-    ):
-        """founding case CLI 面：ai-guide caller root 請求
-        delegate-bridge-marshal → exit 2（真實兩源組合下此案恆被擋——
-        AIR-310 掃平後不設防、本卡鎖回）。"""
-        monkeypatch.setattr(
-            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
-        )
-        rc = mod.main([
-            "process", "--address", self.FOUNDED,
-            "--session-id", "sess-cli", "--config", REAL_CONFIG,
-            "--state-dir", str(tmp_path),
-        ])
-        assert rc == 2
-        err = capsys.readouterr().err
-        assert "address 屬他 repo custody——禁消費" in err
-        assert self.FOUNDED in err
-
-    def test_caller_consume_file_missing_deny_all(self, tmp_path):
-        """caller consume 檔缺席＝ConfigError deny-all（provision 先行
-        ——禁 fallback 中央清單的雙源窗口，AIR-311 決策⑤）。"""
-        repo = _git_caller_repo(tmp_path)
-        with pytest.raises(mod.ConfigError, match="custody 授權檔缺席"):
-            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
-
-    def test_caller_consume_key_missing_deny_all(self, tmp_path):
-        """caller consume 檔在場但鍵缺席＝ConfigError deny-all（語義
-        平移 AIR-310 鍵缺席裁定——配置錯誤要大聲）。"""
-        repo = _git_caller_repo(tmp_path, consume="other_key = 1\n")
-        with pytest.raises(mod.ConfigError, match="consume_addresses"):
-            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
-
-    def test_caller_consume_unknown_key_deny_all(self, tmp_path):
-        """caller consume 檔未知頂層鍵＝ConfigError deny-all（鏡像
-        processor 表「未知鍵要大聲」裁定——授權檔靜默忽略更危險）。"""
-        repo = _git_caller_repo(
-            tmp_path,
-            consume=(
-                'consume_addresses = ["ai-guide-marshal"]\n'
-                'extra_key = ["x"]\n'
-            ),
-        )
-        with pytest.raises(mod.ConfigError, match="未知頂層鍵"):
-            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
-
-    def test_caller_consume_bad_entry_deny_all(self, tmp_path):
-        """caller consume 檔 entry 非字串／空字串＝ConfigError deny-all
-        （exact match 契約的壞形拒絕）。"""
-        repo = _git_caller_repo(
-            tmp_path,
-            consume='consume_addresses = ["ai-guide-marshal", 42]\n',
-        )
-        with pytest.raises(mod.ConfigError, match="非空字串陣列"):
-            mod.load_policy(REAL_CONFIG, caller_root=str(repo))
+        assert policy.consume_addresses == frozenset({"alpha"})
 
     def test_processor_consume_key_now_unknown_fail_loud(self, tmp_path):
         """processor.toml triage-only enforcement：出現 consume_addresses
-        鍵＝未知頂層鍵 ConfigError（本卡後 re-add 中央清單即大聲失敗，
-        不靜默忽略）。"""
+        鍵＝未知頂層鍵 ConfigError（re-add 中央清單即大聲失敗，不靜默
+        忽略）。"""
         p = tmp_path / "c.toml"
         p.write_text(
-            'consume_addresses = ["ai-guide-marshal"]\n'
+            'consume_addresses = ["ai-guide"]\n'
             '[[class_rule]]\nclass = "usage-liveness"\n'
             'auto_intent = ["inform"]\naction = "auto"\n',
             encoding="utf-8",
@@ -665,17 +651,68 @@ class TestCustodyFence:
         assert runner.calls == []
 
     def test_real_config_allowlist_in_place(self):
-        """真實兩源在場（AIR-311）：ai-guide consume 檔＝恰兩址；
-        processor 檔已無 consume_addresses 鍵（triage-only）。"""
+        """真實組合（AIR-312）：本 repo 身份 canonical＝ai-guide——
+        consume 集恰一址；per-caller consume 檔已退役不在場
+        （governance/dutymail-consume.toml 刪除）。"""
         policy = mod.load_policy(REAL_CONFIG, caller_root=str(REPO_ROOT))
-        assert policy.consume_addresses == frozenset(
-            {"ai-guide-marshal", "ai-guide-exceptions"}
+        assert policy.consume_addresses == frozenset({"ai-guide"})
+        assert not (
+            REPO_ROOT / "governance" / "dutymail-consume.toml"
+        ).exists()
+
+    def test_cli_wrong_address_exit2(self, tmp_path, capsys, monkeypatch):
+        """CLI 入口 arg 驗證：錯址 exit 2＋「禁消費」訊息（閘在
+        state/sink 建構前——零副作用退出；身份由真實 process cwd 解析
+        ——monkeypatch.chdir 注入 tmp repo）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        monkeypatch.chdir(repo)
+        rc = mod.main([
+            "process", "--address", self.FOREIGN,
+            "--session-id", "sess-cli", "--config", REAL_CONFIG,
+            "--state-dir", str(tmp_path),
+        ])
+        assert rc == 2
+        err = capsys.readouterr().err
+        assert "address 屬他 repo custody——禁消費" in err
+        assert self.FOREIGN in err
+
+    def test_cli_non_git_cwd_exit3(self, tmp_path, capsys, monkeypatch):
+        """CLI 面：非 git cwd（身份無法判定）＝ConfigError fail-loud
+        exit 3——deny-all 大聲（與「錯址 exit 2」分流：無法判定≠判定後
+        拒絕）。"""
+        plain = tmp_path / "plain"
+        plain.mkdir()
+        monkeypatch.chdir(plain)
+        rc = mod.main([
+            "process", "--address", "whatever",
+            "--session-id", "sess-cli", "--config", REAL_CONFIG,
+            "--state-dir", str(tmp_path),
+        ])
+        assert rc == 3
+        err = capsys.readouterr().err
+        assert "無法判定呼叫端 repo" in err
+
+    def test_cli_own_address_passes_fence_to_binary_missing(
+        self, tmp_path, capsys, monkeypatch,
+    ):
+        """CLI 面：canonical 地址通過 fence（推進到 binary 解析面——
+        resolver 全 miss＝exit 1 而非 2/3，證明零 TOML 下身份閘放行）。"""
+        repo = _git_repo(tmp_path, name="alpha")
+        monkeypatch.chdir(repo)
+        monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
+        monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+        monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
+        monkeypatch.setattr(
+            mod, "STABLE_FACE", "/nonexistent/stable/face/dutymail"
         )
-        raw = tomllib.loads(
-            (REPO_ROOT / "governance" / "dutymail-processor.toml")
-            .read_text(encoding="utf-8")
-        )
-        assert "consume_addresses" not in raw
+        rc = mod.main([
+            "process", "--address", "alpha",
+            "--session-id", "sess-cli", "--config", REAL_CONFIG,
+            "--state-dir", str(tmp_path),
+        ])
+        assert rc == 1  # binary missing——fence 已過（非 2 custody／非 3 config）
+        err = capsys.readouterr().err
+        assert "binary missing" in err
 
 
 # ── triage：default-deny 判定＋機械驗證────────────────────────────────
@@ -1646,163 +1683,79 @@ class TestDigestRendering:
         assert "最舊 -" not in digest
 
 
-# ── hook 面：stdin 驅動／eligibility／fail-soft／fail-loud────────────
+# ── hook 面：退役 inert no-op（AIR-312 R1 M1 retirement tests）────────
 
 
-@pytest.fixture(autouse=True)
-def _gate(monkeypatch):
-    monkeypatch.setattr(hook, "script_repo_root", lambda: REPO)
-    # AIR-311 per-caller custody：hook 面的 caller root 由 payload cwd
-    # 承載（F2 修正後語義＝呼叫端 session 所在 repo）——測試 payload 的
-    # cwd＝本 repo 真實 root（REPO），讀真實 dutymail-consume.toml 兩
-    # ai-guide 址；pytest cwd 解耦由 REPO＝REPO_ROOT 錨定保證。
+class TestHookInertRetirement:
+    """退役 hook inert no-op（AIR-312 R1 M1）：任何事件×新舊地址＝零
+    face 呼叫（status/bind/prepare/ack 全不觸）、零 holder state／
+    disposition ledger／sidecar 寫入、零 stdout、exit 恆 0。stale
+    session snapshot 相容：prune 前啟動的 session 仍持舊註冊（以絕對
+    路徑呼叫本檔），no-op 零效吸收；新 session snapshot 零 duty 條目
+    不再觸發。歷史對照：舊址 receive 自 repo 身份制起被 custody fence
+    拒絕（零 face 呼叫）——本 pin 是「連 fence 都不再需要」（零呼叫）。"""
 
-
-class TestHookRun:
-    def test_happy_path_additional_context(self, tmp_path):
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner([
-            _status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc(),
-        ])
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path, now_us=NOW_US)
-        assert code == 0
-        doc = json.loads(out)
-        assert doc["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
-        ctx = doc["hookSpecificOutput"]["additionalContext"]
-        assert "新到 1、0 件例行已處理、1 件等你" in ctx
-        assert "全文見 SC INBOX" in ctx and "e-1" in ctx
-        assert envs[0]["canonicalEnvelope"] not in ctx  # B′：全文不注入
-        commit()
-        state = tmp_path / "sess-1.json"
-        assert "batch_token" not in _read_state(str(state))
-
-    def test_sessionstart_event(self, tmp_path):
-        runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
-        code, out, _commit = _hook_run(SS_STDIN, runner, tmp_path)
-        assert (code, out) == (0, "")  # 無新信零 stdout
-
-    def test_no_new_mail_zero_stdout(self, tmp_path):
-        runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-
-    def test_eligibility_gate_outside_repo_zero_queries(self, tmp_path):
-        runner = _seq_runner([])
-        raw = _stdin(cwd="/tmp/other-project")
-        code, out, commit = _hook_run(raw, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert runner.calls == []  # 零查詢
-
-    def test_cwd_missing_fail_closed(self, tmp_path):
-        runner = _seq_runner([])
-        raw = json.dumps({"hook_event_name": "UserPromptSubmit",
-                          "session_id": "s1"})
-        code, out, commit = _hook_run(raw, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert runner.calls == []
-
-    def test_missing_session_id_zero_queries(self, tmp_path):
-        runner = _seq_runner([])
-        raw = json.dumps({"hook_event_name": "UserPromptSubmit", "cwd": REPO})
-        code, out, commit = _hook_run(raw, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert runner.calls == []
-
-    def test_bad_stdin_json_silent(self, tmp_path):
-        runner = _seq_runner([])
-        code, out, commit = _hook_run("{not json", runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert runner.calls == []
-
-    def test_unknown_event_silent(self, tmp_path):
-        runner = _seq_runner([])
-        raw = _stdin(event="Stop")
-        code, out, commit = _hook_run(raw, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert runner.calls == []
-
-    def test_store_absent_fail_soft_stderr_note(self, tmp_path, capsys):
-        """store 缺席（class 4 storage）＝stderr 一行註記＋零 stdout exit 0。"""
-        runner = _seq_runner([
-            _hook_err("store-incompatible", "storage", exit_code=4),
-        ])
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        err = capsys.readouterr().err
-        assert "store" in err
-        assert "duty-receive" in err
-
-    def test_other_face_failure_fail_soft(self, tmp_path, capsys):
-        runner = _seq_runner([
-            _hook_err("unknown-address", "admission", exit_code=3),
-        ])
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        err = capsys.readouterr().err
-        assert "unknown-address" in err  # 實際錯誤摘要隨行
-
-    def test_config_bad_fail_loud_exit3(self, tmp_path, capsys):
-        runner = _seq_runner([])
-        code, out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path, config_path=str(tmp_path / "nope.toml"),
+    @pytest.mark.parametrize("event", ["SessionStart", "UserPromptSubmit",
+                                       "Stop"])
+    @pytest.mark.parametrize("address", ["ai-guide", "ai-guide-marshal"])
+    def test_main_inert_all_events_all_addresses(
+        self, event, address, tmp_path, monkeypatch, capsys,
+    ):
+        calls = []
+        monkeypatch.setattr(
+            sys, "stdin", io.StringIO(_stdin(event=event))
         )
-        assert (code, out, commit) == (3, "", None)
-        assert runner.calls == []
-        assert "config" in capsys.readouterr().err
-
-    def test_holder_conflict_surfaced_as_line(self, tmp_path):
-        runner = _seq_runner([
-            _status_doc(epoch=4),
-            _hook_err("epoch-conflict", "fencing", exit_code=5),
-        ])
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-        assert code == 0 and commit is None
-        ctx = json.loads(out)["hookSpecificOutput"]["additionalContext"]
-        assert "衝突" in ctx
-        assert not any(c[0] == "receive" for c in runner.calls)
-
-    def test_main_missing_address_exit2(self, tmp_path, monkeypatch):
-        monkeypatch.setattr(sys, "stdin", io.StringIO(UPS_STDIN))
-        with pytest.raises(SystemExit) as exc:
-            hook.main([])
-        assert exc.value.code == 2
-
-    def test_main_happy_commit_after_stdout(self, tmp_path, capsys,
-                                            monkeypatch):
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner([
-            _status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc(),
-        ])
-        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        monkeypatch.setattr(sys, "stdin", io.StringIO(UPS_STDIN))
-        rc = hook.main(
-            ["--address", ADDR, "--config", REAL_CONFIG], runner=runner
-        )
-        assert rc == 0
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg"))
+        assert hook.main(["--address", address], runner=calls.append) == 0
+        assert calls == []  # runner 恆零呼叫——唯讀 status 也不查
         captured = capsys.readouterr()
-        assert "新到 1" in captured.out
-        state = tmp_path / "ai-guide" / "duty-receive" / "sess-1.json"
-        assert "batch_token" not in _read_state(str(state))
+        assert captured.out == ""
+        assert captured.err == ""
+        # 零副作用：holder state／ledger／lock／miss sidecar 都不落
+        xdg = tmp_path / "xdg"
+        assert not xdg.exists() or list(xdg.rglob("*")) == []
+
+    def test_subprocess_entry_zero_output_zero_state(
+        self, tmp_path, monkeypatch,
+    ):
+        """真 entrypoint 實跑（subprocess）：舊註冊呼叫形（--address 舊址
+        ＋stdin payload）＋隔離 XDG——exit 0、stdout/stderr 空、state 樹
+        零檔。"""
+        xdg = tmp_path / "xdg"
+        monkeypatch.setenv("XDG_STATE_HOME", str(xdg))
+        proc = subprocess.run(
+            [sys.executable, str(REPO_ROOT / "hooks" / "duty_receive.py"),
+             "--address", "ai-guide-marshal"],
+            input=_stdin(), capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 0
+        assert proc.stdout == ""
+        assert proc.stderr == ""
+        assert not xdg.exists() or list(xdg.rglob("*")) == []
+
+    def test_source_zero_internal_flow(self):
+        """結構 pin：內部 hook flow（core／ledger 載入／eligibility／
+        lock／sink factory）全數移除——inert 面零 dutymail 依賴。"""
+        source = (
+            REPO_ROOT / "hooks" / "duty_receive.py"
+        ).read_text(encoding="utf-8")
+        for token in ("importlib", "hook_payload_compat", "process_once",
+                      "duty_disposition", "is_eligible",
+                      "acquire_session_lock", "disposition_sink_factory"):
+            assert token not in source, token
+
+    def test_garbage_stdin_still_inert(self, monkeypatch, capsys):
+        """壞 JSON／空 stdin——照樣零輸出 exit 0（no-op 不分诊 payload）。"""
+        for raw in ("{not json", "", "   \n"):
+            monkeypatch.setattr(sys, "stdin", io.StringIO(raw))
+            assert hook.main([], runner=None) == 0
+        assert capsys.readouterr().out == ""
 
 
 # ── per-session 併發鎖（AIR-255 B：dedicated lock file＋bounded fallback）──
-
-
-class FakeLock:
-    """注入用 fake lock（測試不真 flock 阻塞——lock 注入面模擬兩形）。"""
-
-    def __init__(self, held=True, error=None):
-        self.held = held
-        self.error = error
-        self.released = 0
-
-    def release(self):
-        self.released += 1
-
-
-def _factory_for(lock):
-    """lock_factory 產生器——閉包綁定當輪 lock（避 B023 loop binding）。"""
-    return lambda session_id, state_dir: lock
+#
+# （hook 前導層鎖整合測試已隨 hook 退役移除——鎖機制本身住
+# scripts/duty_receive.py core，TestSessionLock 照常釘 core 面。）
 
 
 class TestSessionLock:
@@ -1925,171 +1878,7 @@ class TestSessionLock:
         ) == 1
 
 
-class TestHookLockIntegration:
-    """hook 前導層鎖整合：critical section 涵蓋 process_once→ack commit
-    全序列（取鎖後 load state 重新判定——process_once 內部 load 自然滿足）。"""
-
-    def test_lock_held_release_only_after_commit(self, tmp_path):
-        """持鎖正常路徑：run() 返回時仍持鎖（ack commit 在鎖內）、
-        commit() 後釋放。"""
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner(
-            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
-        )
-        lock = FakeLock(held=True)
-        code, _out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path,
-            lock_factory=_factory_for(lock),
-        )
-        assert code == 0
-        assert lock.released == 0  # critical section 未結束——ack 前不釋放
-        commit()
-        assert lock.released == 1
-
-    def test_lock_released_when_no_commit(self, tmp_path):
-        """空批次（commit=None）→ 即刻釋放。"""
-        runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
-        lock = FakeLock(held=True)
-        code, out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path,
-            lock_factory=_factory_for(lock),
-        )
-        assert (code, out, commit) == (0, "", None)
-        assert lock.released == 1
-
-    def test_lock_released_on_face_failure(self, tmp_path):
-        """face 失敗 fail-soft 路徑也釋放（不留洩漏鎖）。"""
-        runner = _seq_runner(
-            [_hook_err("store-incompatible", "storage", exit_code=4)]
-        )
-        lock = FakeLock(held=True)
-        code, _out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path,
-            lock_factory=_factory_for(lock),
-        )
-        assert (code, _out, commit) == (0, "", None)
-        assert lock.released == 1
-
-    def test_lock_timeout_fallback_runs_and_counts(self, tmp_path, capsys):
-        """撞鎖逾時 fallback：照跑（輸出照常）＋stderr 一行「lock timeout
-        ——可能重複呈報（bounded）」＋sidecar 計數 +1（state 主檔零觸碰）。"""
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner(
-            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
-        )
-        holder = mod.acquire_session_lock("sess-1", str(tmp_path), delays=())
-        assert holder.held
-        try:
-            lock = FakeLock(held=False)
-            code, out, commit = _hook_run(
-                UPS_STDIN, runner, tmp_path,
-                lock_factory=_factory_for(lock),
-            )
-        finally:
-            holder.release()
-        assert code == 0
-        assert "新到 1" in json.loads(out)[
-            "hookSpecificOutput"
-        ]["additionalContext"]  # 照跑不擋
-        err = capsys.readouterr().err
-        assert "lock timeout" in err
-        assert "可能重複呈報" in err and "bounded" in err
-        commit()
-        assert mod.read_lock_fallbacks(
-            mod.fallback_path("sess-1", str(tmp_path))
-        ) == 1
-        assert "lock_fallbacks" not in _read_state(
-            str(tmp_path / "sess-1.json")
-        )
-
-    def test_fallback_counter_accumulates_across_cycles(self, tmp_path):
-        """fallback 計數跨輪累積（muse 可觀測性——重報率突增才複議重鎖）。"""
-        for _ in range(2):
-            runner = _seq_runner(
-                [_status_doc(), _bind_doc(), _prepare_doc([])]
-            )
-            lock = FakeLock(held=False)
-            code, _out, _commit = _hook_run(
-                UPS_STDIN, runner, tmp_path,
-                lock_factory=_factory_for(lock),
-            )
-            assert code == 0
-        assert mod.read_lock_fallbacks(
-            mod.fallback_path("sess-1", str(tmp_path))
-        ) == 2
-
-    def test_release_bump_failure_does_not_mask_commit_exception(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        """F-4：bump 例外不得遮蔽 commit 原例外——ack raise 時 bump 也 raise，
-        原例外（storage DutymailFaceError）須原樣傳播、release 照走＋
-        stderr 一行計數丟失註記。"""
-
-        def _boom(session_id, base_dir=None):
-            raise RuntimeError("bump boom")
-
-        monkeypatch.setattr(hook.core, "bump_lock_fallback", _boom)
-        envs = [_env_item("e-1", klass="handoff")]
-        ack_err = _hook_err("storage-down", "storage", exit_code=4)
-        runner = _seq_runner(
-            [_status_doc(), _bind_doc(), _prepare_doc(envs), ack_err]
-        )
-        lock = FakeLock(held=False)
-        code, _out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path,
-            lock_factory=_factory_for(lock),
-        )
-        assert code == 0 and commit is not None
-        with pytest.raises(hook.core.DutymailFaceError):
-            commit()
-        assert lock.released == 1  # release 照走
-        assert "計數丟失" in capsys.readouterr().err
-
-    def test_release_bump_failure_noted_release_runs(
-        self, tmp_path, monkeypatch, capsys
-    ):
-        """F-4 補面：commit 正常、bump 失敗——只 stderr 註記、零例外外洩。"""
-
-        def _boom(session_id, base_dir=None):
-            raise RuntimeError("bump boom")
-
-        monkeypatch.setattr(hook.core, "bump_lock_fallback", _boom)
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner(
-            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
-        )
-        lock = FakeLock(held=False)
-        code, _out, commit = _hook_run(
-            UPS_STDIN, runner, tmp_path,
-            lock_factory=_factory_for(lock),
-        )
-        assert code == 0
-        commit()  # 不 raise 即通過
-        assert lock.released == 1
-        err = capsys.readouterr().err
-        assert "計數丟失" in err and "lock timeout" in err
-
-    def test_real_lock_default_factory_no_contention(self, tmp_path):
-        """不注入 lock_factory（生產路徑）＝真 flock 取放——單 process 無
-        競爭零 stderr、行為與既有測試一致。"""
-        envs = [_env_item("e-1", klass="handoff")]
-        runner = _seq_runner(
-            [_status_doc(), _bind_doc(), _prepare_doc(envs), _ack_doc()]
-        )
-        code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-        assert code == 0
-        assert "新到 1" in out
-        commit()
-        assert (tmp_path / "sess-1.lock").exists()  # dedicated 檔在場
-
-
 # ── BinaryMissing 消音缺口服務（AIR-274 M1）──────────────────────────
-
-
-def _hook_binary_missing():
-    """hook 面 BinaryMissing——用 hook.core 的類別實例（except 面看後者，
-    同 _hook_err 慣例）。"""
-    return hook.core.BinaryMissing("dutymail binary not found")
 
 
 class TestBinaryMissingSink:
@@ -2101,92 +1890,21 @@ class TestBinaryMissingSink:
         assert mod.miss_path("a/b c", base).endswith("a_b_c.misses")
         assert mod.read_miss_count(mod.miss_path("sess-1", base)) == 0
 
-    def test_hook_miss_accumulates_below_threshold_silent(
-        self, tmp_path, capsys
-    ):
-        """BinaryMissing（環境壞）與 store-absent 分流：sidecar 計數累積；
-        未達門檻（<3）靜默、零 stdout、exit 恆 0。"""
-        runner = _seq_runner([_hook_binary_missing() for _ in range(2)])
-        for expected in (1, 2):
-            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-            assert (code, out, commit) == (0, "", None)
-            assert mod.read_miss_count(
-                mod.miss_path("sess-1", str(tmp_path))
-            ) == expected
-            assert "binary missing" not in capsys.readouterr().err
-
-    def test_hook_miss_threshold_advisory_stderr(self, tmp_path, capsys):
-        """達門檻（≥3）→ stderr advisory 一行（surface 可見）；exit 恆 0、
-        零 stdout（advisory 不擋 prompt）。"""
-        runner = _seq_runner([_hook_binary_missing() for _ in range(3)])
-        for i in range(1, 4):
-            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-            assert (code, out, commit) == (0, "", None)
-            err = capsys.readouterr().err
-            if i < 3:
-                assert "binary missing" not in err  # 未達門檻靜默
-            else:
-                assert "dutymail binary missing x 3" in err
-                assert "請檢查 plugin 安裝" in err
-
-    def test_hook_miss_counter_0600_no_tmp_leftover(self, tmp_path):
-        """sidecar 寫入形態釘死：0600、atomic 寫不留 tmp 殘屍。"""
-        _hook_run(
-            UPS_STDIN, _seq_runner([_hook_binary_missing()]), tmp_path
+    def test_hook_inert_never_touches_miss_counter(self, tmp_path,
+                                                   monkeypatch, capsys):
+        """retirement pin（AIR-312 R1 M1）：退役 hook 呼叫零效——miss
+        sidecar 恆缺席、零歸零呼叫、零 advisory（舊 hook 消音計數面
+        已隨內部 flow 移除；BinaryMissing 面僅存 CLI）。"""
+        monkeypatch.setattr(
+            sys, "stdin", io.StringIO(UPS_STDIN)
         )
-        p = mod.miss_path("sess-1", str(tmp_path))
-        assert stat.S_IMODE(os.stat(p).st_mode) == 0o600
-        assert [f for f in os.listdir(tmp_path) if f.endswith(".tmp")] == []
-
-    def test_hook_success_face_call_resets_counter(self, tmp_path):
-        """計數歸零時機＝binary 在場呼叫（resolve 已過——含 face 失敗；
-        唯 BinaryMissing 不歸零）——sidecar 檔移除；之後再 miss 從 1
-        重計（連續 miss 語義）。"""
-        miss_runner = _seq_runner([_hook_binary_missing() for _ in range(2)])
-        for _ in range(2):
-            _hook_run(UPS_STDIN, miss_runner, tmp_path)
-        p = mod.miss_path("sess-1", str(tmp_path))
-        assert mod.read_miss_count(p) == 2
-        ok_runner = _seq_runner([_status_doc(), _bind_doc(), _prepare_doc([])])
-        code, _out, _commit = _hook_run(UPS_STDIN, ok_runner, tmp_path)
-        assert code == 0
-        assert not os.path.exists(p)  # binary 在場呼叫歸零（resolve 已過）
-        again = _seq_runner([_hook_binary_missing()])
-        code, _out, _commit = _hook_run(UPS_STDIN, again, tmp_path)
-        assert code == 0
-        assert mod.read_miss_count(p) == 1
-
-    def test_store_absent_path_still_zero_counter(self, tmp_path):
-        """既有行為零變：store-absent（合法軟 path）不走 miss 計數。"""
-        runner = _seq_runner([
-            _hook_err("store-incompatible", "storage", exit_code=4),
-            _hook_err("store-incompatible", "storage", exit_code=4),
-        ])
-        for _ in range(2):
-            code, out, commit = _hook_run(UPS_STDIN, runner, tmp_path)
-            assert (code, out, commit) == (0, "", None)
-        assert not os.path.exists(mod.miss_path("sess-1", str(tmp_path)))
-
-    def test_hook_face_error_between_misses_resets_counter(
-        self, tmp_path, capsys
-    ):
-        """binary 在場呼叫歸零（resolve 已過——含 face 失敗）：miss×2 →
-        store-absent face 失敗（binary 已執行）→ 計數歸零；再 miss 從 1
-        重計、未達門檻靜默。"""
-        miss_runner = _seq_runner([_hook_binary_missing() for _ in range(3)])
-        for _ in range(2):
-            _hook_run(UPS_STDIN, miss_runner, tmp_path)
-        p = mod.miss_path("sess-1", str(tmp_path))
-        assert mod.read_miss_count(p) == 2
-        face_err_runner = _seq_runner([
-            _hook_err("store-incompatible", "storage", exit_code=4),
-        ])
-        code, out, commit = _hook_run(UPS_STDIN, face_err_runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert mod.read_miss_count(p) == 0  # face 失敗但 resolve 已過——歸零
-        code, out, commit = _hook_run(UPS_STDIN, miss_runner, tmp_path)
-        assert (code, out, commit) == (0, "", None)
-        assert mod.read_miss_count(p) == 1
+        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg"))
+        calls = []
+        assert hook.main(["--address", ADDR], runner=calls.append) == 0
+        assert calls == []
+        assert not os.path.exists(mod.miss_path("sess-1", str(
+            tmp_path / "xdg" / "ai-guide" / "duty-receive"
+        )))
         assert "binary missing" not in capsys.readouterr().err
 
     def test_negative_miss_sidecar_treated_as_zero(self, tmp_path, capsys):
@@ -2212,10 +1930,9 @@ class TestBinaryMissingSink:
     def test_cli_binary_missing_typed_exit1(self, tmp_path, monkeypatch,
                                             capsys):
         """CLI 面：main 接 BinaryMissing → stderr typed 訊息＋exit 1
-        （不再 traceback；其他 Exception 維持現狀）。"""
-        monkeypatch.setattr(
-            mod, "_caller_root", lambda cwd=None: str(REPO_ROOT)
-        )
+        （不再 traceback；其他 Exception 維持現狀）。身份由真實 process
+        cwd 解析（本 repo——canonical 過 fence 推進到 binary 面）。"""
+        monkeypatch.chdir(REPO)
         monkeypatch.delenv("DUTYMAIL_BIN", raising=False)
         monkeypatch.setattr(mod.shutil, "which", lambda name: None)
         monkeypatch.setattr(mod.glob, "glob", lambda pattern: [])
@@ -2232,18 +1949,27 @@ class TestBinaryMissingSink:
         assert "dutymail binary not found" in err
 
 
-# ── governance 接線：registrations 雙事件＋manifest scripts 登記───────
+# ── governance 退役契約（AIR-312）：duty auto-process／monitor 註冊
+#    退役——zcode 零條目、cc dormant 停用、manifest 除名、release 保留──
 
 
-class TestRegistrationWiring:
+class TestAutoHookRetirement:
+    """duty receive／monitor 自動 hook 退役契約（AIR-312）。oracle＝
+    registrations 模板本體：zcode 模板零 duty auto 條目（其他 hooks
+    不動）；cc dormant 模板的 duty legacy entry 不可默默啟動（enabled
+    =false）；manifest hooks surface 除名兩腳本、duty_holder_release
+    保留（release cleanup——SessionEnd 釋章接線仍在 codex/grok）。"""
+
     def _doc(self, rel):
         return json.loads(
             (REPO_ROOT / "governance" / rel).read_text(encoding="utf-8")
         )
 
+    def _raw(self, rel):
+        return (REPO_ROOT / "governance" / rel).read_text(encoding="utf-8")
+
     def _groups(self, doc, event):
-        events = doc.get("events", doc)
-        return events.get(event, [])
+        return doc.get("events", doc).get(event, [])
 
     def _scripts(self, group):
         return [
@@ -2252,51 +1978,90 @@ class TestRegistrationWiring:
             for h in group.get("hooks", [])
         ]
 
-    def test_zcode_both_events_one_group_each(self):
+    def _duty_entries(self, doc):
+        out = []
+        for groups in doc.get("events", doc).values():
+            if isinstance(groups, dict):  # grok 形：單 group 物件
+                groups = [groups]
+            if not isinstance(groups, list):
+                continue
+            for g in groups:
+                if not isinstance(g, dict):
+                    continue
+                for h in g.get("hooks", []):
+                    joined = " ".join(
+                        [h.get("command", "")] + [str(a) for a in h.get(
+                            "args", [])]
+                    )
+                    if ("duty_receive.py" in joined
+                            or "duty_mailbox_monitor.py" in joined):
+                        out.append(h)
+        return out
+
+    def test_zcode_zero_duty_auto_entries(self):
+        """zcode 模板（現役註冊面）零 duty auto-process／monitor 條目
+        ——UserPromptSubmit／SessionStart 邊界不再自動收信或提醒。"""
         doc = self._doc("registrations/zcode.json")
-        for event in ("UserPromptSubmit", "SessionStart"):
-            hits = [g for g in self._groups(doc, event)
-                    if "duty_receive.py" in self._scripts(g)]
-            assert len(hits) == 1, event
-            entry = hits[0]["hooks"][0]
-            assert entry["type"] == "process"
-            assert "async" not in entry  # sync——additionalContext 通道
-            assert entry.get("timeoutMs")
-            assert entry["args"][1:] == ["--address", "ai-guide-marshal"]
+        assert self._duty_entries(doc) == []
 
-    def test_cc_dormant_same_shape(self):
+    def test_zcode_other_hooks_untouched(self):
+        """其他 hooks 不動：compact-restore-inject／bridge_ledger_sweeper
+        兩事件條目仍在且 enabled。"""
+        doc = self._doc("registrations/zcode.json")
+        for event, script in (
+            ("UserPromptSubmit", "compact-restore-inject.py"),
+            ("UserPromptSubmit", "bridge_ledger_sweeper.py"),
+            ("SessionStart", "bridge_ledger_sweeper.py"),
+        ):
+            hits = [g for g in self._groups(doc, event)
+                    if script in self._scripts(g)]
+            assert len(hits) == 1, (event, script)
+            assert hits[0]["hooks"][0].get("enabled") is True
+
+    def test_cc_dormant_duty_entries_disabled(self):
+        """cc dormant 模板（AIR-215 歷史資產）：duty legacy entry 保留
+        形但 enabled=false——回滾套用模板亦不默默啟動退役自動流程。"""
         doc = self._doc("registrations/cc.json")
-        for event in ("UserPromptSubmit", "SessionStart"):
-            hits = [g for g in self._groups(doc, event)
-                    if "duty_receive.py" in self._scripts(g)]
-            assert len(hits) == 1, event
+        entries = self._duty_entries(doc)
+        assert len(entries) == 4  # 2× duty_receive＋2× monitor（歷史形）
+        assert all(e.get("enabled") is False for e in entries)
 
-    def test_manifest_inventory_lists_hook(self):
+    def test_manifest_duty_auto_hooks_delisted_release_retained(self):
         import tomllib
-        raw = (REPO_ROOT / "governance" / "manifest.toml").read_bytes()
-        manifest = tomllib.loads(raw.decode("utf-8"))
-        assert "hooks/duty_receive.py" in manifest["surfaces"]["hooks"]["scripts"]
+        manifest = tomllib.loads(self._raw("manifest.toml"))
+        scripts = manifest["surfaces"]["hooks"]["scripts"]
+        assert "hooks/duty_receive.py" not in scripts
+        assert "hooks/duty_mailbox_monitor.py" not in scripts
+        assert "hooks/duty_holder_release.py" in scripts  # release cleanup
 
-    def test_duty_receive_entries_untouched(self):
-        """AIR-254.4 monitor 改名重寫不動 duty-receive 條目（zcode=2、cc=2）。
-        （原 test_scbus_entries_untouched pin 的 scbus-address-pending-reminder
-        條目已由 AIR-254.4 裁定退役——guard 前提失效，改 pin 相鄰卡不可動的
-        duty-receive 接線面。）"""
-        zc = self._doc("registrations/zcode.json")
-        cc = self._doc("registrations/cc.json")
-
-        def count(doc):
-            n = 0
-            for groups in doc.get("events", doc).values():
-                for g in groups:
-                    for h in g.get("hooks", []):
-                        args = h.get("args", [])
-                        if any("duty_receive.py" in a for a in args):
-                            n += 1
-            return n
-
-        assert count(zc) == 2
-        assert count(cc) == 2
+    def test_release_cleanup_wired_codex_grok(self):
+        """duty_holder_release SessionEnd 接線保留（codex/grok）——清潔
+        釋章不屬退役的自動處理面。AIR-312：release 不釘 --address（舊
+        釘 ai-guide-marshal 會拒釋新 canonical 信箱的 holder——過渡期
+        新舊址皆可持章；state per-session 自限，session 只釋自己綁的
+        章）。註冊 command 面零 duty auto 腳本、零 ai-guide-marshal 殘留
+        （註釋文字提及單一源不算）。"""
+        codex = self._raw("registrations/codex.toml")
+        assert "duty_holder_release.py" in codex
+        codex_cmds = "\n".join(
+            ln for ln in codex.splitlines() if ln.strip().startswith(
+                "command"
+            )
+        )
+        grok = self._doc("registrations/grok.json")
+        assert self._duty_entries(grok) == []
+        grok_cmds = json.dumps(grok, ensure_ascii=False)
+        assert "duty_holder_release.py" in grok_cmds
+        assert "ai-guide-marshal" not in grok_cmds
+        for rel, cmds in (
+            ("codex.toml", codex_cmds),
+            ("grok.json", grok_cmds),
+            ("zcode.json", json.dumps(
+                self._doc("registrations/zcode.json"), ensure_ascii=False
+            )),
+        ):
+            assert "duty_receive.py" not in cmds, rel
+            assert "duty_mailbox_monitor.py" not in cmds, rel
 
 
 # ── disposition ledger 接線（AIR-287——最小接線：sink 注入面）──────────
@@ -2474,116 +2239,6 @@ class TestResolutionSinkWiring:
         assert rec["session_id"] == "sess-1"
 
 
-class TestHookSinkFactory:
-    def test_factory_threaded_to_process_once(self):
-        """hook run()：disposition_sink_factory(session_id) → sink 進
-        process_once（生產面記帳接線；factory 可注入——測試 fake）。"""
-        seen = []
-
-        def factory(session_id):
-            def sink(address, dispositions, now_us):
-                seen.append((session_id, address, len(dispositions)))
-            return sink
-
-        code, out, _commit = hook.run(
-            UPS_STDIN, ADDR, runner=_hook_full_runner(),
-            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
-            disposition_sink_factory=factory,
-        )
-        assert code == 0 and out
-        assert seen == [("sess-1", ADDR, 1)]
-
-    def test_factory_absent_by_default_no_sink(self):
-        """factory 缺席（既有呼叫面）＝零記帳——既有測試與行為不變。"""
-        code, out, _commit = hook.run(
-            UPS_STDIN, ADDR, runner=_hook_full_runner(),
-            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
-        )
-        assert code == 0 and out
-
-    def test_factory_raise_fail_soft_stderr_sink_none(self, capsys):
-        """factory 建構失敗＝stderr 一行＋sink=None 照跑（記帳面故障
-        不擋收信——缺口大聲）。"""
-        def factory(session_id):
-            raise OSError("no ledger dir")
-
-        code, out, _commit = hook.run(
-            UPS_STDIN, ADDR, runner=_hook_full_runner(),
-            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
-            disposition_sink_factory=factory,
-        )
-        assert code == 0 and out  # 收信照常
-        assert "duty-disposition" in capsys.readouterr().err
-
-    def test_resolution_factory_threaded_to_commit(self):
-        """resolution factory（AIR-287 bi 必修 1）：session_id 抽取後
-        建構、注入 commit 邊界——commit 前零呼叫、commit 推進。"""
-        seen = []
-
-        def factory(session_id):
-            def sink(address, disps, now_us):
-                seen.append(("received", len(disps)))
-
-            return sink
-
-        def res_factory(session_id):
-            def sink(address, disps, now_us):
-                seen.append(("resolved", [d.action for d in disps]))
-
-            return sink
-
-        code, out, commit = hook.run(
-            UPS_STDIN, ADDR, runner=_hook_full_runner(),
-            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
-            disposition_sink_factory=factory,
-            resolution_sink_factory=res_factory,
-        )
-        assert code == 0 and out
-        assert seen == [("received", 1)]  # stdout 寫出前僅記帳
-        commit()
-        assert seen == [("received", 1), ("resolved", ["auto"])]
-
-    def test_resolution_factory_raise_fail_soft(self, capsys):
-        """resolution factory 建構失敗＝stderr 一行＋照跑（推進面故障
-        不擋收信；commit 不 raise）。"""
-        def res_factory(session_id):
-            raise OSError("no ledger dir")
-
-        code, out, commit = hook.run(
-            UPS_STDIN, ADDR, runner=_hook_full_runner(),
-            state_dir=_hook_state_dir(), config_path=REAL_CONFIG,
-            resolution_sink_factory=res_factory,
-        )
-        assert code == 0 and out
-        assert "duty-disposition" in capsys.readouterr().err
-        commit()  # resolution None——零推進、不 raise
-
-    def test_default_resolution_factory_advances_ledger(
-        self, tmp_path, monkeypatch,
-    ):
-        """生產面預設 factory＝safe resolution sink（session 綁定）——
-        auto 推進 handled、故障只 stderr（XDG 注入零真 state 往返）。"""
-        monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path))
-        ledger = str(tmp_path / "ai-guide" / "duty-disposition")
-        ddmod.set(ADDR, "e-res-1", "received", session_id="sess-x",
-                  now_us=1, base_dir=ledger)
-        sink = hook._default_resolution_factory("sess-x")
-        sink(ADDR, [SimpleNamespace(
-            action="auto", envelope_id="e-res-1", canonical="{}",
-        )], NOW_US)
-        rec = ddmod.get(ADDR, "e-res-1", base_dir=ledger)
-        assert rec["state"] == "handled"
-        assert rec["session_id"] == "sess-x"
-
-
-def _hook_full_runner():
-    """hook 面完整 fake runner：status→bind→prepare(1 封)→ack。"""
-    return _seq_runner([
-        _status_doc(), _bind_doc(),
-        _prepare_doc([_env_item("e-1")]), _ack_doc(),
-    ])
-
-
-def _hook_state_dir():
-    import tempfile
-    return tempfile.mkdtemp(prefix="duty-disp-hook-")
+# （hook sink factory 接線測試已隨 hook 退役移除——sink 注入面住
+# scripts/duty_receive.py process_once，TestDispositionSinkWiring／
+# TestResolutionSinkWiring 照常釘 core 面。）

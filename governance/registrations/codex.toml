@@ -22,10 +22,13 @@ command = "{{REPO}}/hooks/stop-notification.sh"
 # dutymail holder release（AIR-288 judge MF1——bridge item 6(a)）：session
 # 清潔關閉以 live token 釋出消費權威（release 失敗 fail-soft 不擋收尾；
 # 殘局由 ZCode 面 death-evidence takeover 兜底，單一源＝
-# scripts/duty_receive.py）。
+# scripts/duty_receive.py）。AIR-312：不釘 --address——過渡期新舊信箱
+# （ai-guide／ai-guide-marshal）皆可持章，release 以 session 自己的
+# per-session state 自限（只釋本 session 綁的章）；釘舊址會拒釋新
+# canonical 信箱的 holder。
 [[hooks.SessionEnd.hooks]]
 type = "command"
-command = "{{HOOK_PYTHON}} {{REPO}}/hooks/duty_holder_release.py --address ai-guide-marshal"
+command = "{{HOOK_PYTHON}} {{REPO}}/hooks/duty_holder_release.py"
 timeout = 10
 
 [[hooks.Stop]]

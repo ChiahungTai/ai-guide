@@ -141,7 +141,8 @@
 - `bridge-dispatch` — bridge 委派 bootstrap gate 面＋consumer governance 留守（AIR-268 退役形態：操作知識隨 bridge release 出貨為 `delegate:bridge-dispatch` plugin skill——版本凍結、隨版控；本檔只留 plugin pointer＋AIR-216 收線核對／route 值域／waiter 治理／grok authority profile／session label；always-on 核心＝rules/bridge-dispatch.md）
 - `context7` — Context7 MCP 文檔查詢（library/framework/SDK/API 用法先查最新文檔再回答，優先於 web search；跨 harness MCP 支援）
 - `voice-notification` — 三通道語音通知（系統召回 / 進度提醒 / 完成通知；信件喚醒非語音面——AIR-266 起 mail-waiter 走背景 shell exit）
-- `mail-watch` — session 級信件喚醒 waiter 手冊（start/stop/status、dutymail wait 挂哨＋尾行 JSON 喚醒、喚醒回合兩步合約（①process ②re-arm）、generation CAS 雙 arm 防護、waiter 家族憲章；AIR-266）
+- `mail-handle` — 普通 repo inbox 信件處理（一 repo 一信箱 alias＝repo basename、身份閘 fail-closed——submodule／分離 git-dir 不支援無 override；once（pending 全文＋逐封 mark-read＋待回覆）／watch／status／stop；看完信留原處、只記待回覆；禁跑 process 當 once、digest≠看信；AIR-312 S2 已接線）
+- `mail-watch` — session 級信件喚醒 waiter 手冊（start/stop/status、per-repo watcher（門牌＝呼叫端 repo 身份、state per-repo identity 編碼——AIR-312）、dutymail wait 挂哨＋尾行 JSON 喚醒、喚醒回合＝re-arm＋重進 mail-handle once、stop 保留待回覆、generation CAS 雙 arm 防護、升級窗口（舊全域 watcher 停止程序）、waiter 家族憲章；AIR-266）
 - `sitrep` — 值星 session 唯讀即時全景快照（一次彙總七面各一行、異常才展開：active 卡／STATE.md 起手點／信箱 pending〔delivery cursor 面，禁宣稱「都看過了」〕／watcher 態／bridge job 收線＋運行時間＋產出活性〔雙 state-root，terminal 未收與 zombie 現形〕／spawn subagent 進度＋活性〔mtime＋size 增長趨勢——卡住與靜默終態（completed/failed/stopped）現形〕／git 乾淨度；紅線＝只報告不處置——不處理信、不 re-arm、不收線、不 kill sub、不 commit；消費端——呼叫各機制唯讀面不重刻；與 standup 分工＝sitrep 現在快照、standup 昨日回顧）
 
 ### UI / 協作

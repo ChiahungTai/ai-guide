@@ -187,36 +187,6 @@
             "type": "process",
             "command": "{{HOOK_PYTHON}}",
             "args": [
-              "{{REPO}}/hooks/duty_receive.py",
-              "--address",
-              "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/duty_mailbox_monitor.py",
-              "--address",
-              "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
               "{{REPO}}/hooks/bridge_ledger_sweeper.py"
             ],
             "enabled": true,
@@ -226,36 +196,6 @@
       }
     ],
     "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/duty_receive.py",
-              "--address",
-              "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "process",
-            "command": "{{HOOK_PYTHON}}",
-            "args": [
-              "{{REPO}}/hooks/duty_mailbox_monitor.py",
-              "--address",
-              "ai-guide-marshal"
-            ],
-            "enabled": true,
-            "timeoutMs": 10000
-          }
-        ]
-      },
       {
         "hooks": [
           {
