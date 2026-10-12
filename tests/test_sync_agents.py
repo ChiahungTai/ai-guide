@@ -1129,6 +1129,7 @@ def test_real_catalog_loads():
         "gpt-6-astra",
         "fabel",
         "muse-spark-1.3",
+        "muse-wonder-1.0",
     } <= set(cat.identities)
 
 

@@ -26,6 +26,7 @@ CATALOG_TOKENS = frozenset(
         "gpt-6-astra",
         "fabel",
         "muse-spark-1.3",
+        "muse-wonder-1.0",
         "chatgpt-web/high",
         "opus",
         "sonnet",
