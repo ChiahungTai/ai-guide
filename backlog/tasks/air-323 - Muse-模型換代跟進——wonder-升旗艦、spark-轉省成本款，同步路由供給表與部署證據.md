@@ -1,10 +1,10 @@
 ---
 id: AIR-323
 title: Muse 模型換代跟進——wonder 升旗艦、spark 轉省成本款，同步路由供給表與部署證據
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 22:36'
-updated_date: '2026-10-12 23:13'
+updated_date: '2026-10-12 23:21'
 labels: []
 dependencies: []
 references:
@@ -53,7 +53,7 @@ flowchart LR
 - [x] #6 rules/AGENTS.md 尺寸 gate 節補 muse 1.4.6 截尾鐵證（共享池／截尾通知模板／skills catalog 32KB 壓縮三事實）；瘦身裁決不變
 - [x] #7 .agents/mail-autoarm.json 入版控（AIR-318 補件）
 - [x] #8 落地前審查閘回執四欄入卡 notes（classification/review evidence ref/session-freshness/deployment-surfaces）
-- [ ] #9 收 Done 時 Final Summary 帶 as-built 終態圖（mermaid）
+- [x] #9 收 Done 時 Final Summary 帶 as-built 終態圖（mermaid）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -79,3 +79,28 @@ G. 機械閘——scripts/sync_agents.py --check（parity）、scripts/card_vali
 
 〔1013 收斂〕F1 微修 89a93ffd 落地（全量閘 3861 passed 2 skipped）。弧 code-complete：branch air-323 七顆 commit（1961d2ee/df6199cb/78b32218/4b90fb47/90e10b8f/0a21db23/89a93ffd）。〔落地前審查閘回執〕classification=ordinary（供給事實同步——外部 model 換代＋user 兩次裁定輸入；無 decision/authority/gate/authorization/acceptance 面語義變更，路由政策骨架不變）／review=獨立 context 腿 fresh-eyes code-reviewer att-air323-review-1：PASS-with-findings——2 info（F1 wonder qualification 消費點標註已採納修復；F2 branch-base 落後卡 md 差異由收線 rebase 吸收），軸 A-F（事實準確/單一源 drift/證據誠實/instruction 合規/結構/marker）全查證零 critical-major-minor，reviewer 自證命令清單在 session task receipt／session-freshness=fresh（本 session＝author session；弧中無 redeploy／bundle 變動；instruction-writing skill 於任何 instruction 檔編輯前已載入並注入工單）／deployment-surfaces=pending（merge 後 deploy_agents.py 重投影 rules bundle＋驗證——本卡觸 rules/AGENTS.md＋skills/agents 面）。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+muse 換代落地（main b552b65f）：wonder-1.0 旗艦（bridge 裸委派預設、深推理建議 max）＋spark-1.3 lite（顯式指名）；catalog 雙 identity/binding 並存＋wonder 五 workload pending_first_use 播種（spark 實測證據原樣保留）；SKILL.md 五處語義同步；agents 對照表同步；rules/AGENTS.md 補 muse 1.4.6 截尾鐵證（裁決＝維持瘦身）；AIR-318 marker 補入版控；delta tour pending row 已 register（arcId=air-323）。收斂證據：全量 3862 passed、parity/validator/tour 閘綠、fresh-eyes 審查 PASS-with-findings（2 info 全處置：F1 已修 89a93ffd、F2 rebase 吸收）、回執四欄齊（deployment-surfaces=healthy——bundle freshness 通過、skills symlink 活）。
+
+```mermaid
+flowchart LR
+    cat["catalog.toml<br/>wonder identity+binding<br/>spark 原樣＋5 pending 種子"]
+    skill["SKILL.md 五處同步<br/>wonder 旗艦/spark lite<br/>深推理 max＋payload 460K"]
+    docs["agents+rules 對照<br/>截尾鐵證維持瘦身"]
+    tests["三測試檔同步<br/>3862 passed"]
+    marker["marker 補件"]
+    review["fresh-eyes 審查<br/>PASS-with-findings"]
+    merge["wt-close full<br/>rebase+ff-only"]
+    live["live：symlink 即時<br/>bundle freshness 綠"]
+    cat --> merge
+    skill --> merge
+    docs --> merge
+    tests --> merge
+    marker --> merge
+    review --> merge
+    merge --> live
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
