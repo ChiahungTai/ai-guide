@@ -1,10 +1,10 @@
 ---
 id: AIR-319
 title: 夜間授權與消費章語義修齊——紅線表 send 列＋consuming-owner 條款
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 11:00'
-updated_date: '2026-10-12 11:01'
+updated_date: '2026-10-12 12:49'
 labels: []
 dependencies: []
 references:
@@ -38,10 +38,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. 紅線表 dutymail send/reply 列落地（codex 條文）＋預設拒絕子句
-2. handoff:193 語義澄清（澄清後與 M0 once 無矛盾——交叉引用）
-3. per-repo consuming-owner 條款入 mail-handle（owning 值星 mark-read；觀察者唯讀不搶哨）
-4. rg 反掃交叉引用一致；desc gate FAIL=0；boundary 審查閘四欄
+- [x] #1 紅線表 dutymail send/reply 列落地（codex 條文）＋預設拒絕子句
+- [x] #2 handoff:193 語義澄清（澄清後與 M0 once 無矛盾——交叉引用）
+- [x] #3 per-repo consuming-owner 條款入 mail-handle（owning 值星 mark-read；觀察者唯讀不搶哨）
+- [x] #4 rg 反掃交叉引用一致；desc gate FAIL=0；boundary 審查閘四欄（確認腿 accept）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -49,3 +49,23 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide db24b2b9〕〔已決策勿重辯：①裁定筆記同上 ②grant 面內＝「已滿足的 outward 同意閘」非黃線推翻紅線（codex 措辭框架）③handoff:193＝禁 handoff 信件內容交付處置指示，非禁自主消費——澄清非放寬 ④consuming-owner＝同 repo 唯一 owning 值星消費，機械面恆由 _s2_bind_no_takeover 兜底 ⑤outward rule 本體零改〕範圍：skills/autonomous-execution 紅線表 send/reply 列＋預設拒絕子句、skills/handoff:193 澄清、skills/mail-handle consuming-owner 段。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+收線：確認腿 accept-with-fixes advisory 全吸收（F1 粗體/F2 start 平面消歧）；merge 744d2440。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+夜間授權與消費章語義：紅線表 dutymail send/reply 列（已滿足 outward 同意閘措辭）＋預設拒絕子句＋handoff:193 澄清＋mail-handle consuming-owner 節。advisory 全吸收。
+
+```mermaid
+flowchart LR
+  A[夜間寄信] --> G{有 grant}
+  G -->|否| Rd[紅線 晨報]
+  G -->|面內| Y[同意閘已滿足]
+  C[收信] --> Ow[owning 值星消費]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

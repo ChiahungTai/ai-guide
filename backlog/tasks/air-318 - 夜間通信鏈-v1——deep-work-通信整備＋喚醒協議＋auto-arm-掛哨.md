@@ -1,10 +1,10 @@
 ---
 id: AIR-318
 title: 夜間通信鏈 v1——deep-work 通信整備＋喚醒協議＋auto-arm 掛哨
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 11:00'
-updated_date: '2026-10-12 11:01'
+updated_date: '2026-10-12 12:49'
 labels: []
 dependencies: []
 references:
@@ -40,13 +40,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. M0 通信整備在 deep-work overlay 所有 dispatch 分支（含 /implement、resume）在場；無 grant 走 read-and-park 終態
-2. SessionStart auto-arm hook 上線（純觀察軸零消費面——rg 驗 worker 命令僅 wait/events）＋registration 入 governance 模板
-3. 喚醒回合：re-arm→status→once 順序條文＋bounded batch＋熔斷；零 actionable 只 re-arm
-4. start 偵測新鮮 armed_at 印 supersede 告知行（不擋不確認）
-5. 夜間台帳格式＋晨報「夜間通信摘要」段落條文；ledger 不直寫卡 notes
-6. dry-run：一夜雙 session 模擬（inform/solicit 往返＋ledger＋晨報段）；unwatched substrate 降級終態
-7. boundary 審查閘四欄＋desc gate FAIL=0
+- [x] #1 M0 通信整備在 deep-work overlay 所有 dispatch 分支在場；無 grant 走 read-and-park 終態
+- [x] #2 SessionStart auto-arm hook 上線（三態實測）＋registration 入 governance 模板
+- [x] #3 喚醒回合順序條文＋bounded batch＋熔斷；零 actionable 只 re-arm
+- [x] #4 start 偵測新鮮 armed_at 印 supersede 告知行（不擋不確認）
+- [x] #5 夜間台帳格式＋晨報段落條文；ledger 不直寫卡 notes
+- [ ] #6 dry-run 一夜雙 session 模擬（拆卡：隨 user dogfood/首夜實跑驗證——機制面已測、端到端夜跑待實證）
+- [x] #7 boundary 審查閘四欄（確認腿 accept）＋desc gate FAIL=0
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -54,3 +54,23 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide db24b2b9〕〔已決策勿重辯：①muse job-mv5467do＋codex job-mv5467ge 雙腿設計、Marshal 裁定（.agent-tmp/air318-adjudication.md＋air318-history-survey.md 歷史形態）②夜間＝執行預分工＋資訊交換不承接；lead 卡彙整無 runtime 權威 ③喚醒協議 re-arm→status→once＋bounded batch≤10 封/≤1 設計分岔＋熔斷 K=10 初值 ④read-and-park 合法終態 ⑤grant 模板逐卡枚舉禁 blanket ⑥auto-arm hook＝純觀察軸（wait/events 零消費）default-on、最新 session 持哨 ⑦start 接管透明化一行不擋 ⑧無背景 shell 面＝unwatched 降級禁 busy-poll ⑨夜間台帳 session-local 晨間 marshal 合併（board single-writer）〕範圍：skills/deep-work M0（overlay 前置含 /implement resume）、mail-watch 喚醒節強化、hooks 新 auto-arm（SessionStart 純觀察軸）、mail_waiter start 透明化行、night-ledger＋晨報段。前置：AIR-319 消費章語義。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+收線：Flash 落地四件→Marshal 補跑（hook 三態實測/autoarm 22＋waiter 55＋monitor 63/全套 pre-commit 綠）→測試契約同步兩輪微修→muse 確認腿 accept；merge 2efe47dd；registration＋manifest 落地。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+夜間通信鏈 v1：deep-work 階段 0 通信整備（once/grant/條件掛哨/夜間台帳）＋喚醒協議（re-arm→status→once＋熔斷）＋mail_autoarm SessionStart hook（三態實測）＋start 透明化＋晨報摘要段。確認腿 accept。
+
+```mermaid
+flowchart LR
+  D[deep-work 開場] --> O[M0 once grant watch]
+  N[夜間新信] --> W[喚醒 re-arm status once]
+  S[SC 按 + 開 session] --> H[auto-arm hook]
+  W --> L[台帳] --> R[晨報]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->

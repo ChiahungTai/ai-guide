@@ -1,10 +1,10 @@
 ---
 id: AIR-321
 title: bridge-dispatch 禁第二 pin 補 carve-out——sanctioned derived locator 禁刪
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-12 12:22'
-updated_date: '2026-10-12 12:22'
+updated_date: '2026-10-12 12:49'
 labels: []
 dependencies: []
 references:
@@ -35,10 +35,10 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 1. 4 處 carve-out 語義一致且零擴權（muse 確認腿 verdict）
-2. merge 上 main＋四端 bundle 重投影（規範載入驗證）
-3. 回執 delegate-bridge（envelope 三鍵留痕）
-4. card_validate PASS
+- [x] #1 4 處 carve-out 語義一致且零擴權（muse 確認腿 accept-with-fixes→F1-F4 吸收）
+- [x] #2 merge 上 main（87a76703）＋四端 bundle 重投影（規範載入驗證——dutymail runtime 列舉在場）
+- [x] #3 回執 delegate-bridge（a4f9c1e2/seq3；完成通知另寄）
+- [x] #4 card_validate PASS
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -46,3 +46,23 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 5837b6a4＋ephemeral WT 工作樹〕〔已決策勿重辯：①carve-out 方向＝consult 共識（derived locator≠獨立權威；刪除雙雙否決）②bridge 側修復歸 bridge release round（非本卡）〕範圍：驗收 WT 4 處→確認腿→merge（ephemeral fast-path）→deploy→回執。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+收線：ephemeral WT rebase merge（87a76703）＋四端 bundle 落地（dutymail runtime 列舉在場）；完成信待寄。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+bridge-dispatch 禁第二 pin carve-out：derived locator（codex symlink＋dutymail current）非第二權威、禁刪；跨 repo 信承載→ephemeral WT 驗收→rebase merge 87a76703→四端部署。完成信待寄。
+
+```mermaid
+flowchart LR
+  I[刪 symlink 斷 codex MCP] --> C[跨家族 consult]
+  C --> E[ephemeral WT 4 處]
+  E --> M[merge + deploy]
+  M --> L[完成信]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
