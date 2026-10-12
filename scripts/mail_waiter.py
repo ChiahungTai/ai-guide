@@ -18,6 +18,11 @@ repo 一 watcher，不造 daemon／協調層。start 印出的 arm 命令釘
 `--address`＋`--state-dir`（背景 shell cwd 無關）；新 session 於同
 repo start＝generation+1 接續（cursor 保留），零 session 管理。
 
+AIR-322 state-dir 語義閘：--state-dir 只吃目錄——已存在非目錄或尾名
+state.json（保留檔名）＝四 subcommand 入口在動任何 state 讀寫前
+fail-loud 拒（stderr [TAG] 一行＋父目錄建議；exit 2；不自動正規化
+續跑——crash-only，錯輸入拒絕非猜測）。
+
 waiter 家族契約（與 bridge_waiter／harness_waiter 同一族——細節單一源＝
 skills/mail-watch/SKILL.md「waiter 家族憲章」節）：
 - 背景 shell exit＝唯一 push 原語；exit 0＝新事件喚醒（尾行 JSON 帶
@@ -212,6 +217,69 @@ def repo_state_dir(identity, base_dir=None):
 
 def state_file_path(base_dir=None):
     return os.path.join(state_base_dir(base_dir), STATE_FILENAME)
+
+
+class StateDirError(Exception):
+    """--state-dir 目錄語義違反（AIR-322）——str(exc) 即診斷行（含父
+    目錄建議；[TAG] 前綴由 _emit_diag 補）。"""
+
+
+def _resolve_state_dir(base_dir):
+    """顯式 --state-dir 的目錄語義驗證（AIR-322）→ 放行回 base_dir
+    原值（不轉寫）；違反 raise StateDirError。
+
+    caller 把 state「檔案」路徑誤餵 --state-dir 時，舊行為＝start/stop
+    撞 _state_lock makedirs 的 FileExistsError、load_state 的
+    NotADirectoryError 被當冷啟（誤導訊息）、worker 背景靜默崩潰——
+    掛哨看似成功實則未啟動。本閘由四 subcommand 入口（cmd_start／
+    cmd_stop／cmd_status／run_worker）在動任何 state 讀寫／lock／
+    makedirs 之前呼叫（F1 choke-point：不放 repo_state_dir 內——
+    worker 走 state_file_path(base_dir) 繞過它；不放 argparse type
+    ——路徑來源含預設組裝）。
+
+    規則（只對顯式傳入；base_dir None＝預設組裝恆目錄形，免驗放行）：
+    - 空字串/純空白 → 拒（放行形＝state_file_path("") 落 cwd 相對
+      路徑——arm 命令帶 --state-dir '' 跨 cwd 分離 state）。
+    - 尾名 state.json → 拒（本 CLI 保留檔名——state 檔在目錄內、非
+      目錄本身；含路徑不存在的形態，防首次執行建出
+      `<...>/state.json/state.json` 巢狀錯目錄；真是目錄也拒）。
+    - 已存在且非目錄 → 拒（普通檔案／指向檔案的 symlink／dangling
+      symlink／尾斜線形 file/——lexists 判準：exists() 對 broken
+      symlink 恆 False 會放行、對 POSIX file/ 形亦 False；先剝尾
+      斜線再 lexists 才驗得到語義）。
+    - 不存在的其他路徑 → 放行（新 arm 本來就要建目錄）。
+    拒絕訊息帶父目錄建議（剝尾斜線後路徑的 dirname——dirname 對
+    "…/f/" 形回傳檔案自身非父目錄）；不自動正規化成父目錄續跑
+    （F2 crash-only——錯輸入拒絕非猜測）。
+    """
+    if base_dir is None:
+        return base_dir
+    if not base_dir.strip():
+        raise StateDirError("--state-dir 不可為空字串；請傳入目錄路徑")
+    path = base_dir.rstrip("/") or base_dir
+    if os.path.basename(path) == STATE_FILENAME:
+        raise StateDirError(
+            f"--state-dir 須為目錄，但尾名是保留檔名 {STATE_FILENAME}"
+            f"（{base_dir}）——state 檔在該目錄內、非目錄本身；"
+            f"建議改傳父目錄：{os.path.dirname(path)}"
+        )
+    if os.path.lexists(path) and not os.path.isdir(path):
+        raise StateDirError(
+            f"--state-dir 須為目錄，但路徑已存在且非目錄（{base_dir}）"
+            f"——建議改傳父目錄：{os.path.dirname(path)}"
+        )
+    return base_dir
+
+
+def _guard_state_dir(base_dir, err):
+    """_resolve_state_dir 的入口包裝：違反＝印 stderr 一行（[TAG] 前綴
+    ＋父目錄建議）回 False（呼叫端 exit 非零）；放行回 True。"""
+    try:
+        _resolve_state_dir(base_dir)
+    except StateDirError as exc:
+        _emit_diag(err, str(exc))
+        return False
+    return True
 
 
 def _fresh_state(generation, addresses):
@@ -565,6 +633,10 @@ def run_worker(addresses, generation, base_dir=None, runner=None,
     out = stdout if stdout is not None else sys.stdout
     err = stderr if stderr is not None else sys.stderr
     run = runner if runner is not None else _waiter_runner
+    # AIR-322：入口先驗 --state-dir 目錄語義——非法在進輪詢前大聲拒
+    # （worker 是背景 shell 主體，靜默崩潰＝掛哨假成功的根因面）。
+    if not _guard_state_dir(base_dir, err):
+        return EXIT_FAIL_LOUD
     state_file = state_file_path(base_dir)
 
     def _superseded():
@@ -739,9 +811,14 @@ def cmd_start(identity, base_dir=None):
     舊信不再觸發）；state 缺席/損壞＝generation 歸零重 arm（1 起）。
     AIR-318 透明化：既有新鮮哨（desired=running 且 armed_at 新鮮）＝
     先印一行 supersede 預告再 arm（不擋不確認——_supersedes_fresh_watch）。
+    AIR-322：入口先驗 --state-dir 目錄語義（任何 state 讀寫前）；
+    banner 分行標 state file／state dir（檔案路徑不混 armed 首行
+    ——降低抄錯面；arm 命令仍為最後一行，行解析消費端不變）。
     J-2：load→+1→save 包進 _state_lock（與 stop/worker 寫入序列化——
     generation 無 lost update）。
     """
+    if not _guard_state_dir(base_dir, sys.stderr):
+        return EXIT_FAIL_LOUD
     state_dir = repo_state_dir(identity, base_dir)
     state_file = state_file_path(state_dir)
     addresses = [identity]
@@ -771,8 +848,9 @@ def cmd_start(identity, base_dir=None):
             if last_exit is not None:
                 state["last_exit"] = last_exit
         core.save_state(state_file, state)
-    print(f"[{TAG}] armed：generation {generation}、"
-          f"address {identity}、state {state_file}")
+    print(f"[{TAG}] armed：generation {generation}、address {identity}")
+    print(f"[{TAG}] state file：{state_file}")
+    print(f"[{TAG}] state dir：{state_dir}")
     print(arm_command(addresses, generation, state_dir))
     return EXIT_OK
 
@@ -780,7 +858,10 @@ def cmd_start(identity, base_dir=None):
 def cmd_stop(identity, base_dir=None):
     """落 flag（desired=stopped；generation 不動）——worker 下輪自退，
     尾行回報 stopped。AIR-312：只動本 repo 的 per-repo state——A stop
-    不影響 B。J-2：與 start/worker 寫入同走 _state_lock。"""
+    不影響 B。AIR-322：入口先驗 --state-dir 目錄語義（任何 state 讀寫
+    前）。J-2：與 start/worker 寫入同走 _state_lock。"""
+    if not _guard_state_dir(base_dir, sys.stderr):
+        return EXIT_FAIL_LOUD
     state_dir = repo_state_dir(identity, base_dir)
     state_file = state_file_path(state_dir)
     with _state_lock(state_dir):
@@ -815,7 +896,10 @@ def _staleness_mark(state, now=None):
 def cmd_status(identity, base_dir=None):
     """唯讀五欄報告：desired／generation／armed_at（＋staleness）／
     per-address cursor（＋last_event_seq）／last_exit——可隨時跑、零寫入。
-    AIR-312：只讀本 repo 的 per-repo state。"""
+    AIR-312：只讀本 repo 的 per-repo state。AIR-322：入口先驗 --state-dir
+    目錄語義（非法即拒——不誤判 state 缺席/冷啟）。"""
+    if not _guard_state_dir(base_dir, sys.stderr):
+        return EXIT_FAIL_LOUD
     state_dir = repo_state_dir(identity, base_dir)
     state_file = state_file_path(state_dir)
     state = core.load_state(state_file)

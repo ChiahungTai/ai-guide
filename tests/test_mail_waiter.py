@@ -44,6 +44,7 @@ import subprocess
 import threading
 import time
 
+import pytest
 from conftest import load_module
 
 mod = load_module("scripts/mail_waiter.py")
@@ -1094,7 +1095,7 @@ class TestArmCommandRealExecution:
         env.update(stub_env)
         proc = subprocess.run(
             command, shell=True, cwd=str(unrelated), env=env,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=120, check=False,
         )
         assert proc.returncode == 0, proc.stderr
         tail = json.loads(
@@ -1464,3 +1465,354 @@ class TestStartTransparency:
             fh.write("{broken")
         assert mod.cmd_start(ADDR, base) == mod.EXIT_OK
         assert "偵測到既有哨" not in capsys.readouterr().out
+
+
+# ── AIR-322：--state-dir 檔案形 fail-loud（入口目錄語義驗證閘）─────────
+#
+# caller 把 state 檔案路徑誤餵 --state-dir 時，舊行為＝start/stop 撞
+# _state_lock makedirs 的 FileExistsError、status/load_state 的
+# NotADirectoryError 被當冷啟（誤導訊息）、worker 背景靜默崩潰——掛哨
+# 看似成功實則未啟動。修法＝四 subcommand 入口在動任何 state 讀寫／
+# lock／makedirs 前過 _resolve_state_dir 閘（拒絕訊息帶父目錄建議）。
+
+
+class TestResolveStateDirRules:
+    """_resolve_state_dir 規則面（F1 choke-point）：None＝預設組裝恆
+    目錄形免驗；合法既存／尚不存在的目錄放行；尾名 state.json（保留
+    檔名——含不存在與真目錄形）與已存在非目錄（檔案／指向檔案的
+    symlink／尾斜線形）拒。"""
+
+    def test_none_and_directory_shapes_pass(self, tmp_path):
+        assert mod._resolve_state_dir(None) is None  # 預設組裝——免驗放行
+        d = tmp_path / "d"
+        d.mkdir()
+        assert mod._resolve_state_dir(str(d)) == str(d)
+        # 尾斜線目錄＝合法（語義是目錄）
+        assert mod._resolve_state_dir(str(d) + "/") == str(d) + "/"
+        absent = tmp_path / "absent"
+        # 不存在的合法路徑放行——新 arm 本來就要建目錄
+        assert mod._resolve_state_dir(str(absent)) == str(absent)
+
+    def test_state_json_basename_rejected_even_absent_or_dir(
+        self, tmp_path,
+    ):
+        """尾名 state.json＝本 CLI 保留檔名：不存在的路徑也拒（防首次
+        執行建出 `<...>/state.json/state.json` 巢狀錯目錄）；真是目錄
+        也拒（F1——拒絕而非猜測意圖）。"""
+        absent = tmp_path / "x" / mod.STATE_FILENAME
+        with pytest.raises(mod.StateDirError):
+            mod._resolve_state_dir(str(absent))
+        as_dir = tmp_path / mod.STATE_FILENAME
+        as_dir.mkdir()
+        with pytest.raises(mod.StateDirError):
+            mod._resolve_state_dir(str(as_dir))
+
+    def test_existing_non_dir_shapes_rejected(self, tmp_path):
+        """已存在非目錄：普通檔案／指向檔案的 symlink／尾斜線形 file/
+        （POSIX 對 file/ 的 exists() 恆 False——先剝尾斜線才驗得到語義）
+        皆拒。"""
+        f = tmp_path / "f"
+        f.write_text("x", encoding="utf-8")
+        link = tmp_path / "link"
+        os.symlink(str(f), str(link))
+        for bad in (str(f), str(f) + "/", str(link)):
+            with pytest.raises(mod.StateDirError):
+                mod._resolve_state_dir(bad)
+
+    def test_rejection_message_carries_parent_suggestion(self, tmp_path):
+        """拒絕訊息＝一行診斷：--state-dir 須為目錄＋完整父目錄建議行
+        （F-5——含「建議改傳父目錄」與預期路徑，非裸子字串）。"""
+        f = tmp_path / "f"
+        f.write_text("x", encoding="utf-8")
+        with pytest.raises(mod.StateDirError) as excinfo:
+            mod._resolve_state_dir(str(f))
+        msg = str(excinfo.value)
+        assert "--state-dir" in msg
+        assert f"建議改傳父目錄：{tmp_path}" in msg
+
+    def test_parent_suggestion_trailing_slash_uses_stripped_dirname(
+        self, tmp_path,
+    ):
+        """尾斜線形建議路徑（F-2）：dirname("…/file/") 回傳檔案自身
+        ——建議須為剝尾斜線後路徑的 dirname（state.json 分支同改）。"""
+        f = tmp_path / "st"
+        f.write_text("x", encoding="utf-8")
+        with pytest.raises(mod.StateDirError) as excinfo:
+            mod._resolve_state_dir(str(f) + "/")
+        msg = str(excinfo.value)
+        assert f"建議改傳父目錄：{tmp_path}" in msg
+        assert f"建議改傳父目錄：{f}" not in msg  # 檔案自身非父目錄
+        sj = tmp_path / "nested" / mod.STATE_FILENAME
+        with pytest.raises(mod.StateDirError) as excinfo:
+            mod._resolve_state_dir(str(sj) + "/")
+        msg = str(excinfo.value)
+        assert f"建議改傳父目錄：{tmp_path / 'nested'}" in msg
+        assert f"建議改傳父目錄：{sj}" not in msg
+
+    def test_empty_and_whitespace_strings_rejected(self):
+        """空字串/純空白拒（F-1）：放行形＝state_file_path("") 落 cwd
+        相對路徑、arm 命令帶 --state-dir '' 跨 cwd 分離 state。"""
+        for bad in ("", "   "):
+            with pytest.raises(mod.StateDirError) as excinfo:
+                mod._resolve_state_dir(bad)
+            assert "--state-dir 不可為空字串；請傳入目錄路徑" == str(
+                excinfo.value,
+            )
+
+    def test_dangling_symlink_rejected_lexists(self, tmp_path):
+        """dangling symlink 拒（F-3）：exists() 對 broken symlink 為
+        False 會放行（死於下游 makedirs 非規格訊息）——lexists 為真
+        且非有效目錄即拒。尾斜線形 lexists(l/) 本身 False（macOS
+        實測 2026-10-12）——靠剝尾斜線後驗，同樣拒。"""
+        dang = tmp_path / "dangling"
+        os.symlink(str(tmp_path / "nope"), str(dang))
+        for bad in (str(dang), str(dang) + "/"):
+            with pytest.raises(mod.StateDirError):
+                mod._resolve_state_dir(bad)
+
+
+class TestStateDirEntryGuards:
+    """四 subcommand 入口（cmd_start／cmd_stop／cmd_status／worker）在
+    動任何 state 讀寫前過閘：非法即 exit 非零＋stderr [TAG] 一行（含
+    父目錄建議）＋零 side effect（無 state.json／state.lock、目標原樣）。"""
+
+    def test_cmd_entries_reject_before_state_touch(self, tmp_path, capsys):
+        f = tmp_path / "st"
+        f.write_text("keep", encoding="utf-8")
+        for entry in (mod.cmd_start, mod.cmd_stop, mod.cmd_status):
+            assert entry(ADDR, str(f)) == mod.EXIT_FAIL_LOUD
+            err = capsys.readouterr().err
+            # F-5：完整診斷行（含建議與預期路徑）非裸子字串
+            assert err == (
+                f"[{mod.TAG}] --state-dir 須為目錄，但路徑已存在且非目錄"
+                f"（{f}）——建議改傳父目錄：{tmp_path}\n"
+            )
+        assert f.read_text(encoding="utf-8") == "keep"  # 目標檔案原樣
+        assert os.listdir(str(tmp_path)) == ["st"]  # 零 state 寫入（lock/json 皆無）
+
+    def test_worker_rejects_before_loop_no_face_call(self, tmp_path):
+        f = tmp_path / "st"
+        f.write_text("keep", encoding="utf-8")
+        out, err = io.StringIO(), io.StringIO()
+        rc = mod.run_worker(
+            [ADDR], 1, base_dir=str(f), runner=ScriptRunner([]),
+            stdout=out, stderr=err, sleep=lambda _s: None,
+        )
+        assert rc == mod.EXIT_FAIL_LOUD
+        assert out.getvalue() == ""  # 未進迴圈——零尾行、零 face 呼叫
+        assert err.getvalue() == (
+            f"[{mod.TAG}] --state-dir 須為目錄，但路徑已存在且非目錄"
+            f"（{f}）——建議改傳父目錄：{tmp_path}\n"
+        )
+        assert f.read_text(encoding="utf-8") == "keep"
+        assert os.listdir(str(tmp_path)) == ["st"]
+
+    def test_entries_reject_empty_string_cwd_stays_clean(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        """空字串 --state-dir 四入口皆拒（F-1）且 cwd 零 state 寫入
+        （無 state.json/state.lock）——放行形＝cwd 相對路徑分離
+        state。"""
+        monkeypatch.chdir(str(tmp_path))
+        for entry in (mod.cmd_start, mod.cmd_stop, mod.cmd_status):
+            assert entry(ADDR, "") == mod.EXIT_FAIL_LOUD
+            assert "不可為空字串" in capsys.readouterr().err
+        out, err = io.StringIO(), io.StringIO()
+        rc = mod.run_worker(
+            [ADDR], 1, base_dir="", runner=ScriptRunner([]),
+            stdout=out, stderr=err, sleep=lambda _s: None,
+        )
+        assert rc == mod.EXIT_FAIL_LOUD
+        assert "不可為空字串" in err.getvalue()
+        assert os.listdir(str(tmp_path)) == []  # cwd 無 state.json/state.lock
+
+
+def _cli(subcommand, state_dir, cwd, extra_env=None, timeout=120):
+    """真 CLI subprocess（AC8——僅 mock validator 會漏 CLI dispatch 接線
+    ；spawn 形與 arm 命令同入口：uv run python <絕對路徑>）。worker 形
+    帶最小必要參數（--address/--generation）；非法 --state-dir 應在
+    進入輪詢迴圈前拒絕退出（被測行為），timeout 純防呆。"""
+    argv = [
+        "uv", "run", "python",
+        os.path.join(mod._REPO, "scripts", "mail_waiter.py"), subcommand,
+    ]
+    if subcommand == "worker":
+        argv += ["--address", ADDR, "--generation", "1"]
+    if state_dir is not None:
+        argv += ["--state-dir", state_dir]
+    env = dict(os.environ)
+    env.update(extra_env or {})
+    return subprocess.run(
+        argv, cwd=str(cwd), env=env, capture_output=True, text=True,
+        timeout=timeout, check=False,
+    )
+
+
+class TestStateDirCliRejection:
+    """AIR-322 回歸（真 subprocess CLI 形態）：四 subcommand 對檔案形
+    --state-dir 一律大聲拒——exit≠0、stderr [TAG]＋父目錄建議、零
+    state 寫入、不誤判冷啟/未啟動、worker 不觸發任何 dutymail face。"""
+
+    def test_cli_reject_existing_file_start_stop_status(
+        self, tmp_path,
+    ):
+        """start/stop/status --state-dir <已存在普通檔案>：exit≠0＋stderr
+        建議＋父目錄零新增＋stdout 無冷啟/缺席誤判（AC1/AC3）。"""
+        repo = _git_repo(tmp_path)
+        target = tmp_path / "st"
+        target.write_text("i am a file", encoding="utf-8")
+        before = sorted(os.listdir(str(tmp_path)))
+        for subcommand in ("start", "stop", "status"):
+            proc = _cli(subcommand, str(target), cwd=repo)
+            assert proc.returncode == mod.EXIT_FAIL_LOUD, (
+                subcommand, proc.stdout,
+            )
+            # F-5：完整建議行（含「建議改傳父目錄」與預期路徑）
+            assert (f"[{mod.TAG}] --state-dir 須為目錄，但路徑已存在且"
+                    f"非目錄（{target}）——建議改傳父目錄：{tmp_path}"
+                    in proc.stderr), (subcommand, proc.stderr)
+            # 不誤判 state 缺席/未啟動（status 舊行為＝印冷啟報告）
+            assert "冷啟" not in proc.stdout
+            assert "desired=unknown" not in proc.stdout
+        assert sorted(os.listdir(str(tmp_path))) == before  # 零 side effect
+        assert target.read_text(encoding="utf-8") == "i am a file"
+
+    def test_cli_reject_existing_file_worker_no_face_call(
+        self, tmp_path,
+    ):
+        """worker --state-dir <已存在普通檔案>：進入輪詢前即拒（AC2）
+        ——exit≠0＋零 dutymail face 呼叫（stub 觸碰記號缺席）＋不建
+        lock／不觸發冷啟寫入。"""
+        repo = _git_repo(tmp_path)
+        target = tmp_path / "st"
+        target.write_text("i am a file", encoding="utf-8")
+        marker = tmp_path / "stub-hit"
+        stub = tmp_path / "stub-dutymail"
+        stub.write_text(
+            f'#!/bin/sh\ntouch "{marker}"\n', encoding="utf-8",
+        )
+        stub.chmod(0o755)
+        proc = _cli(
+            "worker", str(target), cwd=repo, timeout=60,
+            extra_env={"DUTYMAIL_BIN": str(stub)},
+        )
+        assert proc.returncode == mod.EXIT_FAIL_LOUD
+        assert (f"--state-dir 須為目錄，但路徑已存在且非目錄"
+                f"（{target}）——建議改傳父目錄：{tmp_path}"
+                in proc.stderr)
+        assert not marker.exists()  # 未進迴圈——零 face 呼叫（非冷啟路徑）
+        assert target.read_text(encoding="utf-8") == "i am a file"
+
+    def test_cli_reject_state_json_basename_all_subcommands(
+        self, tmp_path,
+    ):
+        """--state-dir <dir>/state.json（尾名保留檔名、整條不存在）：
+        四 subcommand 皆拒（含首次執行——防建出 state.json 巢狀錯目錄）
+        ；拒絕後零建立（nested/ 目錄根本不出現）（AC4）。"""
+        repo = _git_repo(tmp_path)
+        bad = tmp_path / "nested" / mod.STATE_FILENAME
+        for subcommand in ("start", "stop", "status", "worker"):
+            proc = _cli(subcommand, str(bad), cwd=repo, timeout=60)
+            assert proc.returncode == mod.EXIT_FAIL_LOUD, (
+                subcommand, proc.stdout,
+            )
+            # F-5：完整建議行——建議＝dirname(剝尾斜線後傳入路徑)
+            assert (f"建議改傳父目錄：{tmp_path / 'nested'}"
+                    in proc.stderr), (subcommand, proc.stderr)
+        assert not os.path.exists(str(tmp_path / "nested"))  # 零建立
+
+    def test_cli_reject_symlink_to_file_and_trailing_slash(
+        self, tmp_path,
+    ):
+        """指向檔案的 symlink、dangling symlink（F-3——lexists 判準）
+        與尾斜線形 file/（POSIX exists() 恆 False——語義仍指向檔案）
+        皆拒（拒絕訊息的建議路徑＝父目錄，尾斜線形亦然——F-2/F-5）；
+        對照組：真目錄帶尾斜線＝放行照常 arm（AC7）。"""
+        repo = _git_repo(tmp_path)
+        real = tmp_path / "real-file"
+        real.write_text("f", encoding="utf-8")
+        link = tmp_path / "link-to-file"
+        os.symlink(str(real), str(link))
+        dangling = tmp_path / "dangling"
+        os.symlink(str(tmp_path / "nope"), str(dangling))
+        for bad in (str(link), str(real) + "/", str(dangling),
+                    str(dangling) + "/"):
+            proc = _cli("start", bad, cwd=repo)
+            assert proc.returncode == mod.EXIT_FAIL_LOUD, (bad, proc.stdout)
+            # F-5：完整建議行——尾斜線形建議仍為父目錄（非檔案自身）
+            assert f"建議改傳父目錄：{tmp_path}" in proc.stderr, bad
+            assert f"建議改傳父目錄：{real}" not in proc.stderr, bad
+        good = tmp_path / "good-dir"
+        good.mkdir()
+        proc = _cli("start", str(good) + "/", cwd=repo)
+        assert proc.returncode == 0, proc.stderr  # 目錄尾斜線＝合法
+        assert (good / mod.STATE_FILENAME).is_file()
+
+    def test_cli_reject_empty_string_all_subcommands(self, tmp_path):
+        """--state-dir ''（空字串，F-1）：四 subcommand 皆 exit 2 大聲
+        拒＋cwd 零 state 寫入（無 state.json/state.lock）——放行形＝
+        state 檔落 cwd 相對路徑、跨 cwd 分離 state。"""
+        repo = _git_repo(tmp_path)
+        for subcommand in ("start", "stop", "status", "worker"):
+            proc = _cli(subcommand, "", cwd=repo, timeout=60)
+            assert proc.returncode == mod.EXIT_FAIL_LOUD, (
+                subcommand, proc.stdout,
+            )
+            assert ("--state-dir 不可為空字串；請傳入目錄路徑"
+                    in proc.stderr), (subcommand, proc.stderr)
+        assert not (repo / mod.STATE_FILENAME).exists()  # cwd 無 state 寫入
+        assert not (repo / mod.STATE_LOCK_FILENAME).exists()
+
+    def test_cli_valid_dirs_behavior_unchanged(self, tmp_path):
+        """合法既存目錄與尚不存在的合法目錄：行為不變——start 照常 arm
+        （state.json 落位、generation=1、新目錄自動建）、status 照常
+        五欄報告（AC5）。"""
+        repo = _git_repo(tmp_path)
+        existing = tmp_path / "st"
+        existing.mkdir()
+        proc = _cli("start", str(existing), cwd=repo)
+        assert proc.returncode == 0, proc.stderr
+        doc = json.loads((existing / mod.STATE_FILENAME).read_text())
+        assert doc["generation"] == 1
+        fresh = tmp_path / "brand-new"
+        proc = _cli("start", str(fresh), cwd=repo)
+        assert proc.returncode == 0, proc.stderr
+        assert (fresh / mod.STATE_FILENAME).is_file()  # 新 arm 建目錄
+        proc = _cli("status", str(fresh), cwd=repo)
+        assert proc.returncode == 0, proc.stderr
+        assert "generation=1" in proc.stdout
+
+    def test_cli_default_start_banner_labels_file_dir_arm_last(
+        self, tmp_path,
+    ):
+        """預設（不帶 --state-dir）start banner（F3）：armed 首行不再混
+        state 檔案路徑；state file：／state dir：兩行在場標示；arm 命令
+        仍為最後一行（行解析消費端相容——尾行以 uv run python 開頭）
+        （AC6）。"""
+        repo = _git_repo(tmp_path, "banner-repo")
+        xdg = tmp_path / "xdg"
+        proc = _cli("start", None, cwd=repo,
+                    extra_env={"XDG_STATE_HOME": str(xdg)})
+        assert proc.returncode == 0, proc.stderr
+        lines = [ln for ln in proc.stdout.strip().splitlines() if ln.strip()]
+        armed = lines[0]
+        assert armed.startswith(f"[{mod.TAG}] armed：")
+        assert "state" not in armed  # 首行不混檔案路徑（F3 消歧）
+        file_line = [ln for ln in lines
+                     if ln.startswith(f"[{mod.TAG}] state file：")]
+        dir_line = [ln for ln in lines
+                    if ln.startswith(f"[{mod.TAG}] state dir：")]
+        assert len(file_line) == 1 and len(dir_line) == 1
+        assert mod.STATE_FILENAME in file_line[0]
+        assert "banner-repo" in dir_line[0]
+        assert mod.STATE_FILENAME not in dir_line[0]
+        # F-6：三路徑一致——banner 的 state dir 恰為 state file 的 dirname
+        file_path = file_line[0].split("：", 1)[1]
+        dir_path = dir_line[0].split("：", 1)[1]
+        assert dir_path == os.path.dirname(file_path)
+        # 順序（mockup）：armed → state file → state dir → arm 命令最後
+        assert (lines.index(file_line[0])
+                < lines.index(dir_line[0]) < len(lines) - 1)
+        last = lines[-1]
+        assert last.startswith("uv run python")
+        assert "worker" in last
