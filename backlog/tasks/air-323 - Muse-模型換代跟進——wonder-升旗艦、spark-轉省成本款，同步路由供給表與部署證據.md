@@ -4,7 +4,7 @@ title: Muse 模型換代跟進——wonder 升旗艦、spark 轉省成本款，�
 status: In Progress
 assignee: []
 created_date: '2026-10-12 22:36'
-updated_date: '2026-10-12 22:36'
+updated_date: '2026-10-12 22:59'
 labels: []
 dependencies: []
 references:
@@ -71,3 +71,9 @@ E. 測試同步——tests/test_availability_snapshot.py、tests/test_sync_agent
 F. .agents/mail-autoarm.json 入版控（AIR-318 補件——比照 .agents/marshal-governance.json／memory-governance.json tracked 慣例）。
 G. 機械閘——scripts/sync_agents.py --check（parity）、scripts/card_validate.py、live 源 muse 引用語義掃描（wonder＝旗艦／spark＝lite 一致，無「spark 全棧」過時殘留）。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔1013 checkpoint〕主實作回收（impl-lite att-1）：五 commit（1961d2ee catalog／df6199cb SKILL+agents／78b32218 rules 鐵證／4b90fb47 tests／90e10b8f marker 補件）、全量 3862 passed 1 skipped、parity/validator/語義掃描三閘綠、marshal 機械覆核 diff scope 符合。偏差②覆核結論：marker 檔為 primary untracked（不隨 WT），agent 重建 bytes 與 primary 現存檔一致（{\"protocol\": 1}）——無衝突。repair 腿（att-2）進行中：SKILL.md 檔位表深推理列＋可考值域註記 ultra→max 殘留三行（主實作 scope-out finding，同 face 前後矛盾）。審查閘分類：ordinary（供給事實同步、無 gate/authority 語義變更）→ 待一條獨立 context 審查腿。AIR-318 觀察：開場 advisory 陰性但 armed_at straddle 180s 窗＝不可判定；已重掛哨 gen 3（下個 session 結論性觀測機會）。
+<!-- SECTION:NOTES:END -->
