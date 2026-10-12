@@ -86,6 +86,13 @@ label = "Muse Spark 1.3"
 name = "native_vision"
 evidence = "repo_observed"
 
+[[model_identity]]
+id = "muse-wonder-1.0"
+label = "Muse Wonder 1.0"
+[[model_identity.capability]]
+name = "native_vision"
+evidence = "repo_observed"
+
 # ---- DispatchBinding（carrier/surface 可用 wire token；native／alias／slug 分欄）----
 
 [[dispatch_binding]]
@@ -185,6 +192,25 @@ token_kind = "provider_native"
 family = "muse"
 effort_encoding = "param"
 effort_values = ["low", "medium", "high", "xhigh", "ultra"]
+transport = ["image_transport"] # --image 輸入（repo-observed）
+
+# muse 換代（2026-10-12 meta catalog is_default 翻轉）：wonder-1.0 升旗艦（user
+# 2026-10-13 裁定）、spark-1.3 降 lite（顯式 --model 指名；bridge 裸委派落 wonder＝
+# DEFAULT_MODEL pin）。context_limit 1,007,997 兩代同值；effort 檔位表 wonder 起
+# 新增 max（CLI 值域 none|minimal|low|medium|high|xhigh|max|ultra）。bridge 3.14.0：
+# VALID_EFFORTS 補 max、L4 探針 job-mv5rv84c-xijkim。spark workload qualification
+# ＝spark 實測證據原樣保留；wonder 播 pending_first_use 種子（首次實測 PASS 後升
+# qualified）。
+[[dispatch_binding]]
+id = "bridge-muse-wonder-1.0"
+model_identity = "muse-wonder-1.0"
+carrier = "bridge"
+surface = "muse-family"
+token = "muse-wonder-1.0"
+token_kind = "provider_native"
+family = "muse"
+effort_encoding = "param"
+effort_values = ["low", "medium", "high", "xhigh", "max", "ultra"]
 transport = ["image_transport"] # --image 輸入（repo-observed）
 
 # AIR-218 direct binding：grok CLI headless 直呼（`grok -p`）——fabel 身分
@@ -338,6 +364,20 @@ binding_scope = ["bridge-muse-spark-1.3"]
 minimum_effective_effort = "xhigh"
 
 [[qualification]]
+workload = "ep_synthesis"
+model_identity = "muse-wonder-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-muse-wonder-1.0"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "muse-wonder-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-muse-wonder-1.0"]
+
+[[qualification]]
 workload = "visual_observation"
 model_identity = "glm-5.3-flash"
 status = "qualified"
@@ -374,6 +414,13 @@ evidence_source = "repo_observed"
 binding_scope = ["bridge-muse-spark-1.3"]
 minimum_effective_effort = "xhigh"
 
+[[qualification]]
+workload = "implement_from_accepted_ep"
+model_identity = "muse-wonder-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-muse-wonder-1.0"]
+
 # AIR-168 repo_observed（sc-router 0923 TDD 六段）：codex chatgpt-web/high 寫測試失敗＝工單形狀錯（路徑非內聯；webgpt 內聯規則既有實例），不記 unqualified
 # muse xhigh 寫測試 caveat：class-body scoping 陷阱（見 test-driven-development 反模式表）＋回覆混散文須 strip
 # GLM-5.3 adjudication corroboration：bridge judge/resume PASS（sc-router 0923 弧；tri adjudication＝job-mueq12g4-lj1iy1）
@@ -394,6 +441,13 @@ evidence_source = "repo_observed"
 binding_scope = ["bridge-muse-spark-1.3"]
 
 [[qualification]]
+workload = "evidence_retrieval"
+model_identity = "muse-wonder-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-muse-wonder-1.0"]
+
+[[qualification]]
 workload = "review_findings"
 model_identity = "glm-5.3-flash"
 status = "qualified"
@@ -406,3 +460,10 @@ model_identity = "muse-spark-1.3"
 status = "qualified"
 evidence_source = "repo_observed"
 binding_scope = ["bridge-muse-spark-1.3"]
+
+[[qualification]]
+workload = "review_findings"
+model_identity = "muse-wonder-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["bridge-muse-wonder-1.0"]
