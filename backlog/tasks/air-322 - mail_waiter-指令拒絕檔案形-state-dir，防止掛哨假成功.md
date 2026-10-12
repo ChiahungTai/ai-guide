@@ -1,13 +1,15 @@
 ---
 id: AIR-322
 title: mail_waiter 指令拒絕檔案形 --state-dir，防止掛哨假成功
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 13:47'
-updated_date: '2026-10-12 13:47'
+updated_date: '2026-10-12 13:48'
 labels:
   - bug
 dependencies: []
+references:
+  - scripts/mail_waiter.py
 ordinal: 307000
 ---
 
