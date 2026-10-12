@@ -10,11 +10,11 @@ when_to_use: "Fires only at the bridge bootstrap gate face — the first consequ
 
 ## 模組定位
 
-- **bootstrap gate 面**：跨 repo bridge 派工的首個有後果決策前，always-on 錨＝[rules/bridge-dispatch.md](../../rules/bridge-dispatch.md)（registry pin 唯一源＋禁手拼 pin／禁第二 pin、glm provision 前置、waiter 配對、長輸出檔案承載——最小核心與資格論證在 rule 端，本檔不重複）；本檔只做 plugin redirect＋留守面承載。
+- **bootstrap gate 面**：跨 repo bridge 派工的首個有後果決策前，always-on 錨＝[rules/bridge-dispatch.md](../../rules/bridge-dispatch.md)（registry pin 唯一源＋禁手拼 pin／禁第二 pin〔禁的是「新增」獨立指標——runbook-sanctioned registry-derived locators 是 derived locator 非第二權威，禁以紀律為由刪除〕、glm provision 前置、waiter 配對、長輸出檔案承載——最小核心與資格論證在 rule 端，本檔不重複）；本檔只做 plugin redirect＋留守面承載。
 - **操作知識消費方式（pointer 接手可達）**：
   - ZCode／CC plugin session：`delegate:bridge-dispatch`（delegate plugin 安裝即達）。
   - Muse session：plugin projection（`plugin:delegate:bridge-dispatch`，stage-muse-projection 安裝）；caller kit＝legacy fallback。
-  - bare shell／repo checkout fallback：caller-surface 合法入口對照表已隨 plugin skill「Legal entry points」節——plugin 面外從 registry pin（`installed_plugins.json` 取 `installPath`）或 repo checkout 解析，禁手拼版本化 cache 路徑、禁第二 pin。
+  - bare shell／repo checkout fallback：caller-surface 合法入口對照表已隨 plugin skill「Legal entry points」節——plugin 面外從 registry pin（`installed_plugins.json` 取 `installPath`）或 repo checkout 解析，禁手拼版本化 cache 路徑、禁第二 pin（＝禁「新增」獨立指標；runbook-sanctioned registry-derived locators＝derived locator 非第二權威，禁以紀律為由刪除——細節與真實案例＝plugin skill「Legal entry points」節「Stable entry boundary (db-96)」條）。
 - **已隨 plugin 出貨（本檔不再承載；rule／model-routing 端指針經此 redirect）**：caller surface 入口對照表、MCP face 接線與 MCP tool dispatch（knownFalseNegative、codex config wiring）、dispatch⇄collection 完整模式（waiter 配對／124 語義／terminal ≠ complete／sink 三步驗收——驗收程序單一源＝`delegate:delegate-run-output` plugin skill「Receipt acceptance」節）、webgpt 大內容（雙軸預算／fat-AGENTS 替代路由／review face 28K 閘階梯／失敗態分流）、Brief capability contract 五要素、glm provision fallback 語義／resume model-match／`--steps` 禁令、Dispatch prompt 禁以 `/` 開頭。
 
 ## 結構證據收線核對（terminal collection；AIR-216；as-of 2026-10-01——rg pattern 隨 bridge jsonl schema 漂移以實際欄位為準，且各 family ledger 事件鍵不同（四形）：glm＝`"toolName"`；muse/codex＝`payload_type`（tool.result／tool.search／tool.bash 等）；grok＝NDJSON camelCase tool 事件（toolCallId/toolName/rawInput）＋**事件錨定 status**（in-stream tool failure 永非終局、exit code 僅佐證；anchor-less text 串流＝`output-token-limit` 大聲失敗——bridge 2.10.0 DB-72，源＝delegate-bridge docs/ep.md S1 honest-completion 條款）——先判讀該 job 的 schema 再核，0 命中 floor 以 schema 確認後為準）
