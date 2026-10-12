@@ -1,12 +1,14 @@
 ---
 id: AIR-314
 title: 姿態條文消歧——implement Apply Changes 後門封堵＋跨 repo 寫入語義澄清
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 06:28'
 updated_date: '2026-10-12 06:30'
 labels: []
 dependencies: []
+references:
+  - AIR-314
 ordinal: 299000
 ---
 

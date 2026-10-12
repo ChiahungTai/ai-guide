@@ -1,12 +1,14 @@
 ---
 id: AIR-316
 title: marshal_admission_guard 推廣——delegate-bridge repo marker opt-in
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 06:29'
 updated_date: '2026-10-12 06:30'
 labels: []
 dependencies: []
+references:
+  - AIR-316
 ordinal: 301000
 ---
 

@@ -1,12 +1,14 @@
 ---
 id: AIR-315
 title: 新 spawn／先例條文紅隊一輪——G1-G3 gaming 面攻擊測試
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-12 06:29'
 updated_date: '2026-10-12 06:30'
 labels: []
 dependencies: []
+references:
+  - AIR-315
 ordinal: 300000
 ---
 
