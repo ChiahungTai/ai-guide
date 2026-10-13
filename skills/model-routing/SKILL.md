@@ -74,6 +74,8 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 `state={available, unavailable, unknown}`＋source＋observed-at／freshness＋failure family＋retryable-at。輸入來源＝memory spine（`model-runtime-entitlements`）／runtime probe，每次 dispatch 形成。stale／unknown 永不當 available。DispatchTrace（work-unit-local）至少記：contract hash、candidate/binding、failure family、retryable-at、attempt disposition；1308 candidate 在 retryable-at 前不重選；retry 有界（429 依既定 backoff／並發政策、候選耗盡轉 no-candidate，禁 loop）。窗口重置週期與「是否再 probe」的消費語義見下方「窗口語義（重置週期正典）」節：距 last-probe 超過週期→值得再 probe（web 池不適用週期推度，見該節 codex 行）；現值不可推度——retryable-at ≠ available。
 
+**消費規則（AIR-324）**：availability 檢查正典入口＝`uv run python scripts/probe_entitlements.py` 的 verdict 投影（per-pool evidence 行＋範圍限定 dispatch_verdict 行——stdout、零新持久化）；spine＝probe 不可跑時的 as-of fallback。證據限制：raw `bridge_usage` 的 codex 行僅證 native 訂閱池（派工 default 池 webgpt 不在該輸出）。核心 invariant：任何池的負面觀測只能限制該池（retryable_at 不跨池）。
+
 ### Planning vs dispatch authority（AIR-240）
 
 **EntitlementWindowSnapshot**（`scripts/entitlement_window_snapshot.py`，AIR-239）與 **ArcPlan temporal 意圖欄**（`temporal_allocation`——preferred_family／planned_not_before／on_unavailable＋entitlement_snapshot provenance；validator＝`arc_spec.py` compile stage）＝**advisory planning evidence**——只供排序／排程參考；**AvailabilitySnapshot＝dispatch 唯一 live authority**（resolver 七步順序不變）。freshness precedence：fresh probe/event ＞ 較舊 spine observation；stale 一律降 unknown；帶 provider reset 時間戳的事件 ＞ 依週期推算。ArcPlan `on_unavailable=fallback` 只是授權 resolver 在「已 qualified＋live available＋顯式列舉於 fallback_families」的候選間考慮——不得降低 WorkUnitContract、不得製造跨家族 independence（explicit-only 與 no-silent-downgrade 不變）。
@@ -124,7 +126,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 ## dispatch 預設（user 裁定；訂閱現值查 spine `model-runtime-entitlements`——變更改 spine 條目，政策變更改本段）
 
-**額度現值（V）不住本檔**——派工前「這家現在能不能派」查 memory spine `model-runtime-entitlements`（`~/.agents/memory-spine/`，as-of rolling state；查不到＝探測後派，禁從歷史 instruction 推定）。政策（路由/failover/顯式指定優先權）與機制（計費模型/分帳/窗口形態）仍在本檔；耗盡處置政策見 memory `quota-failover-policy`。
+**額度現值（V）不住本檔**——派工前「這家現在能不能派」正典入口＝`scripts/probe_entitlements.py` verdict 投影（per-pool 判讀，stdout；消費規則見 AvailabilitySnapshot 節）；probe 不可跑時 fallback 查 memory spine `model-runtime-entitlements`（`~/.agents/memory-spine/`，as-of rolling state；查不到＝探測後派，禁從歷史 instruction 推定）。政策（路由/failover/顯式指定優先權）與機制（計費模型/分帳/窗口形態）仍在本檔；耗盡處置政策見 memory `quota-failover-policy`。
 
 **harness 主軸（user 的開發入口決定主力 model——與下方 external-runtime「角色 → family → profile 映射」同源）：**
 
