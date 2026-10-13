@@ -127,7 +127,10 @@ INVARIANTS = [
         "claude_only": [],
         # 非 entry 的共用庫（被 sensor import，自身不是 hook 入口）——
         # 任何機器都不該要求註冊（註冊它反而是錯的接線）
-        "exempt": ["memory_hook_common.py"],
+        # hook_payload_compat.py＝13 支 hooks import 的 stdin 正規化共用庫（AIR-218）；
+        # memory-guard-injection.py＝AIR-187 S1b 觀察面 dormant-by-design（docstring
+        # 明載不攔截、掛載隨 S2 deny 另弧；memory-audit skill 指名）——非「懶得接線」豁免。
+        "exempt": ["memory_hook_common.py", "hook_payload_compat.py", "memory-guard-injection.py"],
         "note": "hooks/*.py 是「code 在、接線不在」的孤兒溫床（真實案例 "
         "2026-08-29 F8：compact-tail-inject.py 兩處註冊面皆無、從未生效——"
         "防線看起來存在，實際從未攔截；0919 第二例：CC hooks 在非 main "
@@ -616,7 +619,8 @@ def check_hook_registration(inv: dict) -> list[tuple[str, str, str]]:
     以檔名子字串比對——註冊處以絕對路徑引用 hook 腳本，檔名是穩定鍵。
     豁免語義（claude_only/exempt）：缺席-證據 guard 非 allowlist——
     claude_only 成員宣稱有意缺席所有 repo 模板面（豁免僅在 Claude 面缺場時
-    生效），exempt 成員是非入口共用庫；兩者定義細節住 REGISTRY 條目註解。
+    生效），exempt 成員是非入口共用庫或有意未掛載的 dormant 面（逐案註解緣由
+    ——REGISTRY 列表行註釋）；兩者定義細節住 REGISTRY 條目註解。
     """
     if inv.get("type") != "hook_registration":
         return []
