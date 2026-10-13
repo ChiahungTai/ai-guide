@@ -6,6 +6,8 @@
 
 > **compiled-from 溯源行（ArcPlan 弧——AIR-135.1.2）**：工單頭帶 `compiled-from: card=<id> baseline=<sha> plan=<ver/hash> plan_unit=<unit_id>`——以 ArcPlan 為準，本單值僅快照；非 ArcPlan 弧免此行。
 
+> **Minimum Dispatch Packet（AIR-325——原子派工的最小工單形）**：目標／範圍邊界／已知決策（含 baseline 指針）／禁止事項／首個回報點——五欄齊即可派，其餘細節由 worker 調查或後續補充；與 §「批次 envelope」及各 § 紅線不相斥（紅線恆全量承載）。
+
 ## 1. 紅線（首段，違反＝失敗）
 
 - 禁 `git add`／`git commit`／`git push`／改任何 backlog 卡狀態——止步於 working tree 編輯（「止步 commit 前」不夠，AIR-18 自行 staged 多檔教訓）；例外：`--marshal` 派工（DB-33 authority profile）的 writer 工單本 no-commit fence 不適用——commit 授權依 caller conditional commit delegation（見 §8「marshal mode 條款」；push／backlog 紅線不變）
@@ -57,6 +59,8 @@
 > review 工單（external second-opinion）必讀含審查方法論 bundle：`review-engine`（含 [code-quality profile](../review-engine/code-quality-profile.md)）+ 結構軸 `arch-thinking`——findings 沿用 bundle 既有詞彙（不定義新詞，詞彙單一源在對應 skill），供 in-harness judge 對譯裁決。
 
 ## 5. 已決策（勿重辯）＋矛盾例外
+
+已知事實、必要契約與驗收邊界由 Marshal 工單提供；未知的實作入口、內部呼叫鏈與測試配置由 worker 在授權範圍內調查，發現影響上游決策的矛盾時回報 Marshal 裁決，不得自行推翻（AIR-325）。
 
 - 逐條列出已定案事項（落點、thin forwarder 維持、兩層契約、模板節名、family 角色拆名等），標「勿重辯」
 - **矛盾例外**：若發現現有檔案內容、程式碼、官方文檔或驗收輸出與已決策具體衝突（同段已有矛盾的既定義），**停下來在報告中舉證**，不要自行改設計或為服從工單靜默做錯
