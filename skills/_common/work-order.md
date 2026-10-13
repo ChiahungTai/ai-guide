@@ -212,4 +212,4 @@ dispatch 工單必記凍結 artifact path＋`assigned_manifest_digest`；produce
 
 ---
 
-> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm|grok`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法單一源見 model-routing skill「完成回報收法」決策樹。中斷/恢復的 checkpoint 欄位與恢復順序單一源＝[task-recovery](task-recovery.md)——工單照 §3/§10 落 baseline identity 與 jobId 即已覆蓋對應欄位，不另抄欄位表。`rules/model-routing.md`（family／profile 詞彙）與 `skills/model-routing/SKILL.md`（resolver／WorkUnitContract schema）為詞彙與映射單一源，本模板不自帶定義。
+> 消費形態：skill 間以 `../_common/work-order.md` link 引用，或主 session 直接依本模板填寫新工單本文後經 bridge `task`（`--family muse|codex|glm|grok`）派發。長跑工單派發後回報 jobId（供 `wait`／`show` 晚收與跨 session 認領），收法判斷單一源＝[waiter-charter](waiter-charter.md)、transport 操作知識＝`delegate:bridge-dispatch` plugin skill（model-routing「完成回報收法」節為導航——AIR-328）。中斷/恢復的 checkpoint 欄位與恢復順序單一源＝[task-recovery](task-recovery.md)——工單照 §3/§10 落 baseline identity 與 jobId 即已覆蓋對應欄位，不另抄欄位表。`rules/model-routing.md`（family／profile 詞彙）與 `skills/model-routing/SKILL.md`（resolver／WorkUnitContract schema）為詞彙與映射單一源，本模板不自帶定義。

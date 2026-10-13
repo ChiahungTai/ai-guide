@@ -29,10 +29,12 @@ repo 的 per-repo watcher state（`<XDG>/ai-guide/mail-waiter/<repo
 - armed_at 新鮮（< 輪詢週期×門牌數×3——判準單一源＝mail_waiter
   `_staleness_mark`）→ 不動（有活哨）
 - 其餘（state 缺席／損壞／desired=running 但 stale／缺 armed_at）→
-  印一行 advisory：「[mail-autoarm] 已為 <repo> 掛哨——請執行背景
-  shell：<start 命令>（依 mail-watch 協議：start 後執行其印出的
-  worker 命令）」（hook 唯讀無法代產 worker 命令——generation 由
-  start 落定，故 advisory 帶的是 start 命令）
+  印一行 advisory：「[mail-autoarm] <repo> 尚未掛哨——掛哨請執行
+  背景 shell：<start 命令>（依 mail-watch 協議：start 後執行其
+  印出的 worker 命令）」（AIR-328 誠實措辭——缺哨＝需啟動指示，
+  禁宣稱已掛哨；通知契約＝skills/_common/waiter-charter.md。
+  hook 唯讀無法代產 worker 命令——generation 由 start 落定，
+  故 advisory 帶的是 start 命令）
 
 部署 runtime＝governance-resolved Python 3.12；全檔維持 Python 3.9
 語法相容（hooks/AGENTS.md rollback floor）。決策表：
@@ -179,7 +181,7 @@ def run(raw, state_dir=None):
             if mark.startswith("fresh"):
                 return 0, ""  # 有活哨——不動
         line = (
-            "[{0}] 已為 {1} 掛哨——請執行背景 shell：{2}"
+            "[{0}] {1} 尚未掛哨——掛哨請執行背景 shell：{2}"
             "（依 mail-watch 協議：start 後執行其印出的 worker 命令）"
         ).format(HOOK_TAG, identity, _start_command(waiter))
         return 0, _context(line)

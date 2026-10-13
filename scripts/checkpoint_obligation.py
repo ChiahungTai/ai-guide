@@ -260,7 +260,7 @@ def build_obligation(slice: dict, runtime: dict) -> dict:
                 "liveness_source": liveness_source,
             },
             "collection_form_pointer": (
-                "收法單一源＝work-order §10 交付報告格式＋model-routing「完成回報收法」（引用不重抄）"
+                "收法判斷單一源＝`skills/_common/waiter-charter.md`；bridge transport 操作＝`delegate:bridge-dispatch` plugin；報告格式＝work-order §10（引用不重抄）"
             ),
         },
         # 十欄 9 下一個可執行 action——sink_state 機械衍生，非自由敘述

@@ -89,7 +89,7 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 ### Spawn 預設背景
 
-派發預設須讓主對話保持可回應，使用 carrier 實際提供的非阻塞機制；派發與回收是一組義務。ZCode Agent tool 的前台阻塞與中斷風險由背景 gate 承接，不推定其他 carrier 有相同生命週期。因此：
+派發預設須讓主對話保持可回應，使用 carrier 實際提供的非阻塞機制；派發與回收是一組義務。ZCode Agent tool 的前台阻塞與中斷風險由背景 gate 承接，不推定其他 carrier 有相同生命週期。通知能力選擇（有事件才喚醒、無事件不注入回合）唯一源＝[waiter-charter](../_common/waiter-charter.md)。因此：
 
 - **依 schema 派發**：tool schema 提供 `run_in_background` 時明帶 `true`；原生 async spawn 沒有此欄位時不補參數，以回傳 handle 接原生 wait／通知。派發同時建立 collection owner（watch handle／registry entry），回報「進行中」不能取代回收。
 - **背景 gate（ZCode 已上線）**：省略或 `run_in_background != true` 的 Agent 派發被 PreToolUse hook 以 allow＋updatedInput 自動補成背景（rewrite 式零浪費，fail-open）——**省略參數不再等於前景**；真要前景（含 <30s 短 probe 例外）須 prompt 前 200 字帶 `[fg]` 機械子串。機制細節（audit log、per-session 啟動快照限制）見 `hooks/AGENTS.md`「Agent 背景 gate」

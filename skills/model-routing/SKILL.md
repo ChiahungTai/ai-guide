@@ -1,6 +1,6 @@
 ---
 name: model-routing
-description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。AIR-91 doctrine（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步／AvailabilitySnapshot tri-state／ArcOverride／RoutingPolicy／DispatchPlan/Trace schema——model 供給事實單一源＝catalog.toml、registry 部署預設＝agents/presets.toml，本檔不重抄值）＋dispatch 預設與額度 failover（policy 面；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm/grok-bridge）→(model, effort, 容量) 解析＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與八類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、收法、三態判定、定向接續、session-id、fork、1301、1308、1302、work unit、WorkUnitContract、resolver、DispatchPlan、qualification、judgment floor、catalog、presets。"
+description: "Spawn／委派／派工前必載——決定用哪個 model 的解析表單一源。AIR-91 doctrine（WorkUnitContract schema／Role→authority allow-list／resolver precedence 七步／AvailabilitySnapshot tri-state／ArcOverride／RoutingPolicy／DispatchPlan/Trace schema——model 供給事實單一源＝catalog.toml、registry 部署預設＝agents/presets.toml，本檔不重抄值）＋dispatch 預設與額度 failover（policy 面；額度現值不住本檔，查 spine model-runtime-entitlements）＋external-runtime family（muse/codex/glm/grok-bridge）→(model, effort, 容量) 解析＋lite 分工律（保護面厚度、判斷密集位 full）＋eligibility gate／reviewer 交接契約／套用三路徑＋rate limit 並發表＋webgpt 使用約束與八類失敗態＋glm bridge 契約（native-ID-only、write-mode、effectiveModel）＋spawn 失敗態（1301/1308/1302、classifier unavailable 重試≤2）＋thoughtLevel sticky 但書。always-on 骨架在 rules/model-routing.md。觸發詞：spawn model、派工、委派、工單、額度、failover、tier、pins、glm-5.3-flash、chatgpt-web、webgpt、muse、codex、分工律、保護面、haiku、external-runtime、effectiveModel、額度池、wham、ran out of room、eligibility、定向接續、session-id、fork、1301、1308、1302、work unit、WorkUnitContract、resolver、DispatchPlan、qualification、judgment floor、catalog、presets。"
 ---
 
 # Model Routing — 解析表與 provider 事實
@@ -241,7 +241,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 | `Selected model is at capacity` | web 池模型容量拒絕 turn-0（與上行 usage-limit 屬不同失敗分類——signature 辨識 failure class，非帳號額度證明） | bounded 序列化重試（實證可成功）；持續不退 → 換 alternate carrier；禁並發盲重派 |
 | `turn token is invalid, expired, or revoked` | 工具呼叫層 turn token／continuation state 失效（任務側誠實棄審、零編造）；**原始訊號只在 daemon stderr（`broker claim ... valid=false`）——rollout 事件流乾淨收尾、此形態 error surface 無文可配（片語表攔不到；09-12 有拒絕文的形態才可配）** | 禁帶同一失效 token 原樣重試（失效的是 token 非 payload）；現行可用 recovery＝換 carrier（實證：muse 承接）；**bridge ledger 會誤判 completed（fail-closed 拒絕以 `turn.completed` 乾淨收尾＝上游契約缺口，修正建議歸 codex-chatgpt-web repo）——收法必須 L1/L2 receipt 檢查（程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節）** |
 
-> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 6 類歸因修訂（0921）實證源＝AIR-123 決策⑤＋`tests/fixtures/availability_spine_fresh.md`:13；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes；第 3 行排障順序修訂（0926）實證源＝mosaic scbus 信 message 64b87ec9／job-muhx8gw5，AIR-209 卡）；bridge 進程面卡死（wait 空轉等）分流見「完成回報收法」節 transport 三態判定。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
+> 本表＝webgpt runtime 側任務失敗八類（user 裁定五類＋`ChatGPT displayed an error` 09-16 回應段形態＋末二行 09-12 續證二簽名，實證源＝`backlog/drafts/draft-6` :16；第 6 類歸因修訂（0921）實證源＝AIR-123 決策⑤＋`tests/fixtures/availability_spine_fresh.md`:13；第 8 類收法補層 09-19 bridge noop-completion，實證源＝AIR-135.7 卡 notes；第 3 行排障順序修訂（0926）實證源＝mosaic scbus 信 message 64b87ec9／job-muhx8gw5，AIR-209 卡）；bridge 進程面卡死（wait 空轉等）分流＝transport 操作知識，單一源＝`delegate:bridge-dispatch` plugin skill（AIR-328 起 model-routing 不載 transport 三態判定——見本檔「完成回報收法」導航節）。bridge 機械分類另有表外非池失敗（trusted-env——turn context 組裝缺 cwd），處置見 delegate-bridge 側 webgpt 工單文檔。
 
 ### glm（bridge）委派契約
 
@@ -285,7 +285,7 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 - **完成回報固定欄位**：jobId 或 thread id／base commit／改檔清單／實跑驗收命令與原始輸出／未驗證項
 - **reviewer 讀料順序**：work order → diff → evidence → writer report 最後讀
 - **產出**：accept／reject／needs-fix 三態 verdict；無 reviewer record 不得結卡（record 落 EP 或工單指定位置）
-- **承載者（硬性）**：外部 runtime 委派＝caller 背景 Bash process 直呼 bridge（run_in_background＋stdout 重導），**禁 subagent wrapper 承載**——外部 runtime 不佔 in-harness agent slot／rate limit（wrapper 唯一「價值」是被誤判的 600s timeout 約束——從未存在，見「完成回報收法」）
+- **承載者（硬性）**：外部 runtime 委派＝caller 背景 Bash process 直呼 bridge（run_in_background＋stdout 重導），**禁 subagent wrapper 承載**——外部 runtime 不佔 in-harness agent slot／rate limit（wrapper 唯一「價值」是被誤判的 600s timeout 約束——從未存在；transport 操作知識＝`delegate:bridge-dispatch` plugin skill）
 
 ### flag profile → spawn 參數（external-runtime）
 
@@ -329,44 +329,20 @@ authority 輸出契約：evidence artifact 不含 disposition/apply 欄；findin
 
 **審查工作流鏈形態**（MOS-74 實證）：review 工單預告驗證式 → judge → 修正 → `--session-id` 同 session followup——reviewer 帶自己 findings context 複驗，優於 fresh context（followup 工單零背景重複＋驗證式直接回收複用；reviewer 對自己 findings 的修正驗證比 fresh context 準）。
 
-### 完成回報收法
+### 完成回報收法（導航——AIR-328 收斂；判斷與操作各自單一源）
 
-> **經濟學動機**：LLM 層輪詢每輪＝1+ request 且全 context 重送；push 收法等待期間 0 request、完成時恰好 1 request。輪詢只存在 bridge 進程內部（muse `wait` 內建亞秒級固定輪詢——零 LLM 成本）。
+> 本節原載完整收法決策樹與 transport 操作知識——與 delegate plugin 重複定義（雙權威漂移風險），AIR-328 刪成導航：model-routing 不再持有收法判斷或 transport 操作知識。
 
-**決策樹**（未載入背景的 session 單讀可執行）：
-
-1. **簡單直跑（review／critique／diagnosis）**：主 session 背景 Bash 直呼 bridge 阻塞形（`task`，家族經 `--family`）→ process exit 自動喚醒 → stdout 即 finalText；jobId 記錄不變（reviewer 交接契約欄位照舊）。派發時必印 `[Bridge] family=<f> model=<m> effort=<e>`（與 in-harness `[Agent] model=…` spawn 確認對稱——派發前肉眼攔截；muse effort 口語誤讀事故即此欄位缺席所致）
-2. **長跑（>10min，xhigh 委派）＝fire-and-forget 優先**：`task --background "<prompt>"`（長 prompt 改 `--prompt-file <path>` 形態）提交 → jobId 即回 → caller 結束 turn 釋放（不掛前景、不綁 session）。**收法分流（session 是否需接續）**：session 活著且完成後要接續做事 → **背景 Bash 掛 `wait <jobId>`（首選 wait 收法）**——零 model request，wait exit 觸發 harness notification **自動喚醒 session 接續**；session 將結束或不在乎即時收 → 純認領制（事後任何時刻 `show <jobId>`——**完成無推送、不會自己回來**，須主動查）。finalText 由 per-job jsonl 重導出，ledger entry 只存 status／exitCode／summary。**timeout 語義（AIR-47 S3 起對外單一形，所有 bridge task family 共用——wait 是 bridge ledger job lifecycle 面，非 family carrier 面）**：
-   - bridge `wait <jobId>`：timeout 到期＝`process.exit(124)`——exit 124＋status 仍 running＝重掛；`--timeout 0`＝forever（長跑必帶）
-   - 任一家回非 completed 終態 → `jobs/<id>.jsonl`＋working tree 對照再判（reconcileStaleRunning 可能過早標 interrupted）
-   - **兩端 SessionEnd 差異（caller 在哪家 harness，決定能否跨 session 認領）**：ZCode 端 plugin hooks 不執行 → background worker（detached，脫離 caller 進程樹）跨 session 存活 → 任何 session 以 `runs`／`show` 認領（fire-and-forget 完整可用）；CC 端 SessionEnd hook 殺 running job 進程樹＋標 interrupted → holder session 必須活著 → fire-and-forget 限縮為「session 內釋放 turn」，跨 session 認領前先確認 holder 在場（事實源：`…/delegate-market/delegate/<ver>/scripts/session-lifecycle-hook.mjs`＋`hooks/hooks.json`，以 plugin cache 現版為準）
-   - **liveness ticker（長跑 implement 委派的卡住偵測——user 要求）**：`wait` 只盯「完成」；wedge（如 sandbox 孤兒行程握 stdio）下 wait 永掛。派長跑 implement 工單時**平行掛第二個背景 Bash ticker**：每 5 分鐘檢查 liveness 訊號（目標目錄 `fd . <dirs> --changed-within 5m`＋`tool-outputs/` 下最新檔 mtime〔`.spool/` 只收 staging 期——commit 後輸出長在 `tool-outputs/<task>/` 下持續增長，禁只看 `.spool/` 目錄 mtime〕）——**停滯 >20 分鐘 exit 1 → 背景 Bash 完成自動喚醒 caller 處置**（show 診斷→`stop <jobId>`／kill pipeline children，救援法＝delegate-bridge memory `muse-build-round-ops`）。門檻誠實註記：低 CPU（0.5–1%）是正常（model-bound）——訊號必須是「檔案寫入停滯＋spool 凍結」組合，禁單看 CPU；大輪思考停頓可達數分鐘故取保守門檻。advisory 先報不殺。bridge 端 heartbeat 已交付——背景 worker 每 ~2s 寫 `extra.heartbeatAt`＋`lastEventAt` 雙軸（前景不寫）；consumer＝`wait --stuck-after <ms>`（strict parser、stderr 軸別 alert＋dedup）＋`runs` 600s `running (stuck?)` 提示；AIR-71 fleet 架構位（execution identity 觀測 runtime 腿）不變。上方 ticker 建議保留——它看工作產物停滯，與 heartbeat 軸互補。
-3. **prompt 工程（codex gpt-5-4-prompting 改寫）**：官方 companion 已退役（AIR-47）——wrapper 形態不再是 ai-guide 路由引用面（plugin 快取仍在場可手動用）；歷史實證保留供參（**已退役形態，僅供考古**——現行一律直跑）：wrapper Bash 10min 上限是約束事實、wrapper 在 runtime 未終局時提前 complete 是系統性常態（muse×2＋codex×2 均需介入實證）——預期超時的工單改走 2
-4. **LLM 層 fallback（罕見——原始派發無背景 Bash 掛載；前景短 arm 仍可用）**：ETA-gate 紀律——推估完成時刻前零檢查（一段 `--timeout <eta>` arm）→ 屆時單次檢查 → 未終局重掛遞減 timeout 的阻塞 wait arm（起點＝bridge 預設 5min／4min，按 ETA 緊化至 ~30s 級；每 arm 到期＝1 request）——**永不做 LLM 層定時輪詢**
-
-> **多工複用（fire-and-forget 的複用形態）**：一個 session 持 N 個 jobId 統一掃（`runs --json` sweep 後逐個 `show`／`wait` 認領）；並行 quota 語義＝同 5h window token 加總（並行買 wall-time 不省花費），實用並行上限 2-3 長任務。
->
-> **晚收陷阱（Muse 諮詢收編——決策樹尾注）**：`wait` 用有界 timeout 迴圈、勿單一大 block；`stop`/清理前先 `show`／`export`（ledger GC 會吃證據；`export` 對 codex job fail-loud——codex 無 trajectory export 等價物，AIR-47 R8）；委派工單設計成冪等（timeout 後可能重 wait 重收）；jobId 持久化在 workspace ledger（`.delegate-bridge/`），不依賴提交 session 的 context——認領 session 只需 jobId＋同 workspace。
->
-> **診斷手段（非收法）**：`.delegate-bridge/jobs.json`／`show <jobId> --json`／`ps` 進程核對——懷疑 job 狀態時用它們查證，不當等待機制。
->
-> **收法 ≠ 驗收**：`wait`／`show` 回 `completed` 只證 transport 終態，不證工作交付——檔案承載腿收法後按工單具名 receipt 驗收（L1 在場→L2 錨點→L3 人工；tripwire 不翻案），程序唯一定義＝delegate-bridge repo `plugins/delegate/skills/delegate-run-output/SKILL.md`「Receipt acceptance」節（0919 bridge noop-completion 教訓）。
+- **收法判斷**（何時等／何時留 pending／何時通知；無事件不注入回合）＝[waiter-charter](../_common/waiter-charter.md)——當次 exposed capability 優先、活躍 bounded wait（<=60s per call）、無路徑留 durable pending。
+- **transport 操作知識**（bridge `wait`／`show`／timeout 124 語義、fire-and-forget 與 waiter 配對）＝`delegate:bridge-dispatch` plugin skill「Dispatch ⇄ collection pairing」節（隨 bridge release 出貨、版本凍結）——plugin 未承載的兩條不可約減事實暫置於此，待 carrier 認養：①CC 端 SessionEnd hook 會殺 running job 進程樹——holder session 必須活著，跨 session 認領前先確認 holder 在場；②ledger GC 會吃證據——`stop`／清理前先 `show`／`export`，委派工單設計成冪等。
+- **收法 ≠ 驗收**：`wait`／`show` 回 `completed` 只證 transport 終態，不證工作交付——receipt 驗收程序唯一定義＝`delegate:delegate-run-output` plugin skill「Receipt acceptance」節（0919 bridge noop-completion 教訓）。
+- **派發 preview 不變**：bridge 派發必印 `[Bridge] family=<f> model=<m> effort=<e>`（與 in-harness `[Agent] model=…` spawn 確認對稱——派發前肉眼攔截；muse effort 口語誤讀事故即此欄位缺席所致）。
 
 > 工單模板見 `skills/_common/work-order.md`（foreign runtime 共用；prompt 為任務本文，禁含委派語言）。
 
-#### transport 三態判定（症狀→證據→處置）
-
-> 收法執行中懷疑 job 卡死時的處置分流；證據以上方診斷手段採集。
-
-| 症狀 | 證據 | 處置 |
-|------|------|------|
-| transport 未啟動 | env/module 錯誤、log `MODULE_NOT_FOUND`、exit 1、jobs.json 無該 job | 可安全重派 |
-| transport 在跑、caller 已收（jobId 在手、wait 掛載中） | jobs.json 狀態 running、ps 進程在 | 背景 Bash 掛阻塞 `wait` 收，禁重派（雙跑） |
-| transport 死中途、wait 空轉（背景 Bash 活、job 無進展） | 進程已亡、jobs.json 停滯、無新輸出 | 機械驗收（working tree＋jobs.json 終局）＋停背景 Bash job（bridge `stop <jobId>`／kill，恢復主體＝caller process） |
-
 ### 套用（三路徑都從 catalog／presets 取值，不寫死絕對 model）
 
-- **external-runtime 派發前重讀本檔「完成回報收法」節**——收法演進快，禁用 session 記憶／memory desc 派發（真實案例：過期派發事故——看到改版 commit 標題 ≠ 重讀條文，舊詞 resume-to-poll 被 wrapper 契約拒絕）
+- **external-runtime 派發前重讀收法導航**（本檔「完成回報收法」節＋[waiter-charter](../_common/waiter-charter.md)）——收法演進快，禁用 session 記憶／memory desc 派發（真實案例：過期派發事故——看到改版 commit 標題 ≠ 重讀條文，舊詞 resume-to-poll 被 wrapper 契約拒絕）
 - **CC Workflow path**（ultracode；CC 端；ZCode 端＝registry 釘選）：script `agent({model})` 填 literal —— review command agent = inherit（lite 預設；高保護面／跨邊界語義面升 full）；lite 類＝named preset 生成檔 inherit（spawn-time 需點名時用 CC 詞彙 `sonnet`——**sonnet／haiku 的 catalog binding＝pending_binding**，補 binding 前由 harness 詞彙面解析）
 - **inherit＝contract-preserving carrier bypass**：spawn 未點名 model 時（CC 8/9 preset 的實際路徑）——正式語義五條（identity／contract-preserving／升級路徑／pending_binding／追蹤）見上方「inherit（pseudo-binding）」節
 - **CC Agent Tool path**（fallback）：spawn `model` param 同上

@@ -1,6 +1,6 @@
 ---
 name: mail-watch
-description: "session 級 dutymail 信件喚醒 waiter — 背景 shell 掛哨 dutymail wait，新事件到＝worker exit 0 喚醒本 session（尾行 JSON 帶門牌×事件數＋re-arm 命令）；喚醒回合＝re-arm＋重進 mail-handle once 看信。涵蓋 start/stop/status 控制、waiter 純觀察軸紅線（零收信處理面呼叫）、generation CAS 雙 arm 防護、session 級生命週期（隨 session 存亡）、升級窗口（舊全域 watcher 停止程序）與 waiter 家族憲章。觸發詞：信件喚醒、信箱掛哨、mail-watch、mail_waiter、dutymail watcher、waiter re-arm、背景 shell 喚醒。"
+description: "session 級 dutymail 信件喚醒 waiter — 背景 shell 掛哨 dutymail wait，新事件到＝worker exit 0 喚醒本 session（尾行 JSON 帶門牌×事件數＋re-arm 命令）；喚醒回合＝re-arm＋重進 mail-handle once 看信。涵蓋 start/stop/status 控制、waiter 純觀察軸紅線（零收信處理面呼叫）、generation CAS 雙 arm 防護、session 級生命週期（隨 session 存亡）、升級窗口（舊全域 watcher 停止程序）與 waiter 家族憲章（通知能力選擇唯一源＝waiter-charter）。觸發詞：信件喚醒、信箱掛哨、mail-watch、mail_waiter、dutymail watcher、waiter re-arm、背景 shell 喚醒。"
 allowed-tools: [Bash]
 ---
 
@@ -50,11 +50,11 @@ worker exit 0（尾行 JSON `state=mail`）喚醒你後，**你的回合＝re-ar
 2. **bounded batch**：喚醒回合最多處理 10 封、最多 1 個新設計分岔；超量記 deferred（夜間台帳留名）續原工作——喚醒回合是收信回合，不是開新弧的回合。
 3. **熔斷**：單夜喚醒 >10 次 → `stop` 停哨＋晨報（防 ping-pong 燒額度——每輪喚醒都吃 context 與 token；>10 次＝通信鏈本身有迴圈，停哨等晨間判讀）。
 
-## waiter 家族憲章（契約單一源——tri Q2 裁決）
+## waiter 家族憲章（契約單一源——tri Q2 裁決；通知能力選擇唯一源＝[waiter-charter](../_common/waiter-charter.md)）
 
 三員同契約：`scripts/bridge_waiter.py`（delegate-bridge fan-in）、harness_waiter、`scripts/mail_waiter.py`（本卡）。
 
-- **背景 shell exit＝唯一 push 原語**：harness 無原生回呼——watcher 以退出喚醒 session。
+- **背景 shell exit＝本家族的喚醒原語**：watcher 以背景 shell 退出喚醒自己的 session——這是本家族機制面，不是跨 harness 的唯一通知路徑；該 shell exit 能否把 session 叫回來依 carrier 當次實際能力判定（選路唯一源＝[waiter-charter](../_common/waiter-charter.md)）。
 - **exit 0＝喚醒**：stdout 尾行單行 JSON＝唯一機判面（mail_waiter：`{"state":"mail","new":[{address,count}...],"rearm":"..."}`）；其餘進度行走 stdout、診斷走 stderr。
 - **timeout 恆內部消化**：等待超時（dutymail class-6／bridge 124 等價語義）內部 re-arm 續輪，絕不外洩成喚醒。
 - **處置權恆歸 caller**：watcher 只喚醒；stalled／錯誤面交人（或 woken LLM）判斷，watcher 不 stop 不重派不代處理。

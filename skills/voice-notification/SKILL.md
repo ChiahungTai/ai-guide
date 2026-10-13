@@ -20,7 +20,7 @@ allowed-tools: [Bash]
 | **進度提醒** | 長任務進行中，每 10 分鐘 | [stop-notification.sh](../../hooks/stop-notification.sh) hook | 機械（Stop event + sentinel） |
 | **完成通知** | 任務完成 | 本 skill say 樣板 | LLM 自主 |
 
-> 系統召回與進度提醒由 hook 機械執行（不靠 LLM 記得）；完成通知由 LLM 在 command 內 say。三通道台詞語意不重疊，稱謂清單只在本 skill 定義一處。信件喚醒不經語音——session 級 mail-waiter（AIR-266）以背景 shell exit 喚醒 LLM，非人類音訊面。
+> 系統召回與進度提醒由 hook 機械執行（不靠 LLM 記得）；完成通知由 LLM 在 command 內 say。三通道台詞語意不重疊，稱謂清單只在本 skill 定義一處。信件喚醒不經語音——session 級 mail-waiter（AIR-266）以背景 shell exit 喚醒 LLM（通知能力選擇唯一源＝[waiter-charter](../_common/waiter-charter.md)），非人類音訊面。
 
 ## 機械白名單（哪些任務觸發語音）
 

@@ -1,8 +1,8 @@
 ---
 name: deep-work
 
-description: "深度工作模式 - 自主開發流程引擎：一整套開發流程直接跑（execution-plan → implement → post-build），AI 全力發揮、慢慢思考、完整交付；長弧背景派工配三層監督標配＋heartbeat liveness gate"
-when_to_use: "Autonomous full development pipeline (CC-workflow concept). Three trigger scenarios: 睡前下 UC 級任務 / 外出離開 / 任務不難但想整套開發流程自主跑。Chain runs unattended: plan→build→post-build→report, ending at commit consent. 觸發詞：長弧監督、三層監督、heartbeat liveness gate、殭屍 heartbeat。"
+description: "深度工作模式 - 自主開發流程引擎：一整套開發流程直接跑（execution-plan → implement → post-build），AI 全力發揮、慢慢思考、完整交付；長弧背景派工依通知契約配置監督（waiter-charter）＋heartbeat liveness gate"
+when_to_use: "Autonomous full development pipeline (CC-workflow concept). Three trigger scenarios: 睡前下 UC 級任務 / 外出離開 / 任務不難但想整套開發流程自主跑。Chain runs unattended: plan→build→post-build→report, ending at commit consent. 觸發詞：長弧監督、通知契約、heartbeat liveness gate、殭屍 heartbeat。"
 argument-hint: "任務描述 | Execution Plan 檔案路徑"
 allowed-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent"]
 ---
@@ -68,13 +68,13 @@ dispatch（從 committed ref；agent 依賴 uncommitted → 先 commit〔該預�
 
 permission mode 是 CLI 啟動旗標 / dir 設定，**命令本身無法中途切換**。若當前非 auto-mode → 印出警告「非 auto-mode，無人值守會卡在權限提示；請以 `claude agents`（dir defaultMode=auto）或 `--permission-mode auto` 重啟」並停下，**不靜默降級成互動模式硬跑**。
 
-## 長弧監督標配（三層監督＋heartbeat liveness gate）
+## 長弧監督配置（通知契約制＋heartbeat liveness gate）
 
-長弧背景派工（bridge 腿、背景 agent、跨 session loop）的監督機制自己會死——監督面必配**三層**，單層各有死法（某 harness 無原生通知／heartbeat 殭屍化／watcher 自身死亡），不是可選項：
+長弧背景派工（bridge 腿、背景 agent、跨 session loop）的監督機制自己會死——監督者活體是安全前提。通知與收取依 [waiter-charter](../_common/waiter-charter.md) 當次能力判定（**無事件不注入回合**；收取義務不缺——register/watcher 配對照舊，單一源＝[agent-workflow](../agent-workflow/SKILL.md)「Worker supervision contract」）：
 
-1. **原生完成通知**：harness 原生通知面能接的腿優先接（逐 harness 有無喚醒路徑的對照表單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)「harness 完成通知對照表」——ZCode 背景任務 exit 即通知；codex 僅原生 subagent 有、bridge job 無）。
-2. **thread-level heartbeat automation**：定時喚醒盯進度（如每 5 分鐘）——**強制帶 liveness gate**（見下），否則殭屍化。
-3. **有變化才通知**：watcher stalled-advisory＋階段性進度 wake（`scripts/bridge_waiter.py --progress-wake-min`——長腿靜默期主動推送一行活體訊號 sitrep；frozen spec amendment 單一源＝該檔 module docstring AIR-301 節）。
+1. **原生完成通知**：有 confirmed event route 才接（逐 harness 有無喚醒路徑的對照表單一源＝[bridge-dispatch](../bridge-dispatch/SKILL.md)「harness 完成通知對照表」——ZCode 背景任務 exit 即通知；codex 僅原生 subagent 有、bridge job 無）。
+2. **有變化才通知**：watcher stalled-advisory＋階段性進度 wake（`scripts/bridge_waiter.py --progress-wake-min`——長腿靜默期主動推送一行活體訊號 sitrep；frozen spec amendment 單一源＝該檔 module docstring AIR-301 節）。
+3. **無通知路徑**：durable pending receipt＋resume 指令——**不以 recurring heartbeat automation 補監控**（定時喚醒製造空回合＝洗版）；heartbeat automation 僅限 user 明示的時間工作（含 recurring 報表），使用時**強制帶 liveness gate**（見下），否則殭屍化。
 
 ### heartbeat liveness gate 三要素（任何 heartbeat／automation 模板強制）
 

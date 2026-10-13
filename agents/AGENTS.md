@@ -31,7 +31,7 @@ agents/
 > 治理原則：external-runtime 家族入口＝單一 thin forwarder（工單即介面），**不長特化 agent**——routing 混入 transport agent 的前車之鑑（`~/Github/delegate-bridge/FIX-S3-R2.md:49`）。跨 harness agent 定義保持 thin，路由決策與解析表在 `skills/model-routing/SKILL.md`（詞彙定義見 `rules/model-routing.md` tier 詞彙句），工單協議在 `skills/_common/work-order.md`。
 
 - **原則**：external-runtime 家族（muse／codex／glm）不新增特化 agent 定義檔；任務以工單為介面派發，profile 決定 spawn 參數。
-- **派發與收法單一源**：flag 具體值（flag profile → spawn 參數表）、dispatch 形態（bridge 必經、直呼 bridge CLI）、收法（收法決策樹〔fire-and-forget 為頭形態〕／ETA-gate）、transport 三態判定（未啟動／在跑／死中途）——單一源在 `skills/model-routing/SKILL.md`，本檔不複載。
+- **派發與收法單一源**：flag 具體值（flag profile → spawn 參數表）、dispatch 形態（bridge 必經、直呼 bridge CLI）——單一源在 `skills/model-routing/SKILL.md`（AIR-328 起原收法決策樹／transport 三態判定已刪成導航節）；收法判斷單一源＝`skills/_common/waiter-charter.md`，bridge transport 操作知識＝`delegate:bridge-dispatch` plugin，本檔不複載。
 - **flag 未暴露項對策**：以工單紅線替代（見 `skills/_common/work-order.md` 紅線首段），flag 暴露列 delegate-bridge 側 bridge roadmap（本 repo 不動跨 repo，僅記錄）。
 
 ## 全生命週期 execution contract

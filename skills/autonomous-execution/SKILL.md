@@ -133,7 +133,7 @@ Error Self-Healing（上）是 per-error（單一錯誤重試 ceiling）。**缺
 
 ## 長弧監督面（heartbeat zombie 防線）
 
-長弧無人值守的監督機制（thread-level heartbeat automation、背景 watcher）自己會死——監督者活體是無人值守的安全前提。監督**配置**（三層監督標配）單一源＝[deep-work](../deep-work/SKILL.md)「長弧監督標配」節；本節載判定與安全邊界：
+長弧無人值守的監督機制（thread-level heartbeat automation、背景 watcher）自己會死——監督者活體是無人值守的安全前提。監督**配置**（通知契約制——無事件不注入回合，通知能力選擇唯一源＝[waiter-charter](../_common/waiter-charter.md)）單一源＝[deep-work](../deep-work/SKILL.md)「長弧監督配置」節；本節載判定與安全邊界：
 
 - **liveness gate（任何 heartbeat／automation 模板強制）**：每次 wake 至少一次工具呼叫＋一行進度落盤；連續 N 次（預設 3）零工具呼叫或空回應 → 判定 zombie，自停 automation 並 **loud 失敗落盤**（禁靜默消失）；wake 前先查 quota，額度歸零即自停落盤、不再派工。**條文模板是第一道非唯一道**——額度歸零時 LLM 連自停都停不了（真實案例 AIR-301 素材：codex 大架構弧 heartbeat 指令寫了停止條件，但「無法繼續」終態沒被偵測——96 次空回應殭屍 8 小時，零通知零失敗紀錄），進程外獨立 watchdog 是第二道（最小 driver 形態＝[watchdog POC 報告](../../ai-analysis/reports/2026-10-11-air301-watchdog-poc.md)）。
 - **誤殺防線（判定雙訊號）**：判「worker／監督迴路已死」須**產物停滯＋心跳凍結**兩訊號同時成立，**禁單一 CPU 訊號**（model-bound 低 CPU 是常態——真實案例：SC ticker 以 CPU 軸誤報）。內容面訊號為唯一可靠訊號的判定原則承襲 AIR-296（spawn 僵屍偵測——metadata 凍結對執行中 agent 是常態，禁當判準）；spawn artifacts surface（subagent 進程層）歸其 zombie sweeper 轄，本節是 thread-level automation surface——引用判定概念，不重做實作。

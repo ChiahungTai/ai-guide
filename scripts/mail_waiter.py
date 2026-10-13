@@ -25,7 +25,7 @@ fail-loud 拒（stderr [TAG] 一行＋父目錄建議；exit 2；不自動正規
 
 waiter 家族契約（與 bridge_waiter／harness_waiter 同一族——細節單一源＝
 skills/mail-watch/SKILL.md「waiter 家族憲章」節）：
-- 背景 shell exit＝唯一 push 原語；exit 0＝新事件喚醒（尾行 JSON 帶
+- 背景 shell exit＝本家族喚醒原語（能力判讀唯一源＝`skills/_common/waiter-charter.md`）；exit 0＝新事件喚醒（尾行 JSON 帶
   re-arm 命令）；timeout（dutymail class-6）內部 re-arm 不外洩。
 - 處置權恆歸 caller（woken LLM）——watcher 只喚醒不處理。
 - 喚醒回合 invariant（skill 明文合約；AIR-312 R1 I1 修訂）：成功

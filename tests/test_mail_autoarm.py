@@ -7,7 +7,9 @@
   不擋 session start——大聲＝additionalContext 可見，非靜默當 absent）。
 - 偵測面分流：desired=stopped（停哨權威）與 armed_at 新鮮（< 輪詢週期
   ×門牌數×3）＝靜默不動；state 缺席／stale＝advisory 一行（帶 repo
-  身份＋start 命令＋mail-watch 協議提示）。
+  身份＋start 命令＋mail-watch 協議提示）。AIR-328 誠實面：缺哨
+  advisory＝「尚未掛哨」需啟動指示，禁宣稱「已為…掛哨」（negative
+  predicate 釘死；provenance=S——EP 段落 2／TC4 凍結驗收）。
 - hook 紅線：零 dutymail 呼叫、零寫入（測試零 face runner 注入即證——
   run() 契約無 runner 參數可碰 face）；身份/state 讀面全隔離（tmp git
   repo＋XDG_STATE_HOME monkeypatch，禁碰真 repo 根與真 store）。
@@ -155,7 +157,11 @@ class TestDetectionRouting:
         code, out = mod.run(_payload(repo))
         assert code == 0
         assert "[mail-autoarm]" in out
-        assert "已為 autoarm-repo 掛哨" in out  # 身份＝repo basename
+        # AIR-328 誠實 advisory（provenance=S——EP 段落 2／TC4 凍結驗收）：
+        # 缺哨＝需啟動指示，禁宣稱已掛哨
+        assert "尚未掛哨" in out
+        assert "已為" not in out  # negative predicate——假成功宣稱禁出場
+        assert "autoarm-repo" in out  # 身份＝repo basename
         assert "scripts/mail_waiter.py start" in out  # arm 命令＝start 形
         assert "worker" in out  # mail-watch 協議提示在場
 
@@ -180,7 +186,8 @@ class TestDetectionRouting:
             armed_at=time.time() - 10 * 60.0,  # 遠超 60s×1×3
         )
         _code, out = mod.run(_payload(repo))
-        assert "已為 autoarm-repo 掛哨" in out
+        assert "尚未掛哨" in out  # AIR-328——stale＝尚未掛哨，非已掛哨
+        assert "已為" not in out  # negative predicate（provenance=S：TC4）
 
     def test_stopped_flag_respected_silent(self, tmp_path, monkeypatch):
         """desired=stopped＝user 停哨權威——即使 armed_at 也不 re-arm
@@ -205,7 +212,8 @@ class TestDetectionRouting:
         state_file = _seed_watcher_state(xdg, "autoarm-repo")
         state_file.write_text("{broken", encoding="utf-8")
         _code, out = mod.run(_payload(repo))
-        assert "已為 autoarm-repo 掛哨" in out
+        assert "尚未掛哨" in out  # AIR-328——損壞 state 照缺哨誠實提示
+        assert "已為" not in out  # negative predicate（provenance=S：TC4）
 
     def test_zero_face_calls_zero_writes(self, tmp_path, monkeypatch):
         """hook 紅線：全程零 dutymail 呼叫、零 state 寫入——advisory 跑

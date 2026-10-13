@@ -27,7 +27,7 @@
 | 下一個可執行 action | 接手第一動 |
 | read-set 與未恢復範圍 | 接手要讀什麼、哪些範圍未涵蓋 |
 
-**已有欄位不重抄**——既有 owner 持有者只留指針：成功條件→卡 AC／EP；baseline/dirty→[work-order](work-order.md) §3、[workflow-review-pattern](workflow-review-pattern.md) header identity；實跑與段落結果→卡 notes／EP 進度節＋evidence 檔；findings→`.review/<branch>.md`／EP review 區段；job 收法→[work-order](work-order.md) §10 附加＋model-routing「完成回報收法」；授權→[outward-action-consent](../../rules/outward-action-consent.md) AUTH line。
+**已有欄位不重抄**——既有 owner 持有者只留指針：成功條件→卡 AC／EP；baseline/dirty→[work-order](work-order.md) §3、[workflow-review-pattern](workflow-review-pattern.md) header identity；實跑與段落結果→卡 notes／EP 進度節＋evidence 檔；findings→`.review/<branch>.md`／EP review 區段；job 收法→[work-order](work-order.md) §10 附加＋[waiter-charter](waiter-charter.md)（收法判斷；transport 操作＝delegate plugin）；授權→[outward-action-consent](../../rules/outward-action-consent.md) AUTH line。
 
 **memory 整理在落盤之後**：工程狀態落盤成功後才做可選 memory 候選整理。gate 故障／無授權／無寫權都不能阻止保存工程狀態，也不能跳過後宣稱「已蒸餾」——未蒸餾就記交接待辦（owner／待辦承載）。
 

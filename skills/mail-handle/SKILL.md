@@ -74,8 +74,9 @@ uv run python "$AI_GUIDE/scripts/mail_waiter.py" stop
   repo `start` 即接續（generation+1、cursor 保留）；待回覆跨 session
   仍在（`pending-replies` 即見）。
 - watcher 只喚醒不處理：被喚醒後重進同一 once 流程（契約細節＝
-  [mail-watch](../mail-watch/SKILL.md)）；`stop` 只停等待、保留待回覆。
-  不呼叫 watch 就不掛哨（無自動 watch）。
+  [mail-watch](../mail-watch/SKILL.md)；通知能力選擇唯一源＝
+  [waiter-charter](../_common/waiter-charter.md)）；`stop` 只停等待、
+  保留待回覆。不呼叫 watch 就不掛哨（無自動 watch）。
 
 ## 三視圖（不互冒）
 
