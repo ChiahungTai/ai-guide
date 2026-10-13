@@ -3,7 +3,7 @@
 
 acceptance_contract（arc_goal_compile 輸出的 ```json 區塊，schema
 `acceptance-contract/1`）×unit 分派表（schema `arc-units/1`）→ 每 unit 一份
-assigned-predicate manifest（schema `arc-manifest/1`）：worker 帶著它負責的
+assigned-predicate manifest（schema `arc-manifest/2`）：worker 帶著它負責的
 AC predicates 清單上工，handback 逐 predicate 回 verdict（join＝
 scripts/arc_handback_join.py）。
 
@@ -16,8 +16,8 @@ stderr＋exit 2，永不靜默投影）：
 
 輸出：`DIR/<unit_id「#」後綴>.json`（如 `AIR-234#impl-a`→`impl-a.json`）::
 
-    {"schema": "arc-manifest/1", "card_id": "…", "unit_id": "…",
-     "contract_hash": "<hex64>",
+    {"schema": "arc-manifest/2", "card_id": "…", "unit_id": "…",
+     "contract_hash": "<hex64>", "assigned_manifest_digest": "<hex64>",
      "predicates": [{"ac_id", "kind", "verifier", "expected",
                      〔選填〕"reason"／"satisfied"／"satisfied_at_baseline"}, …]}
 
@@ -30,6 +30,11 @@ predicate 條目形（repair-1 R1 覆蓋語義＝assigned ac_ids 全數投影）
 
 `contract_hash`＝sha256(canonical_json(contract))；canonical＝sort_keys＋
 緊湊分隔符＋UTF-8（與 scripts/arc_spec.py 同形）。
+`assigned_manifest_digest`＝整份 manifest 排除自身 digest 欄後的 canonical
+JSON SHA-256；只允許有限 JSON 值。dispatch 保存 artifact path＋digest，
+collection 使用凍結 artifact 與 dispatch-recorded expected digest。
+既有輸出只允許同 canonical 內容冪等重跑（保留原 bytes）；整組先檢查
+衝突，新檔 exclusive creation。並行競爭 fail-loud，非整組原子交易。
 
 邊界：
 - pure projector：無 process side effects（不 spawn、不寫卡、不觸 git）；
@@ -53,7 +58,7 @@ from pathlib import Path
 
 ACCEPTANCE_CONTRACT_SCHEMA = "acceptance-contract/1"
 ARC_UNITS_SCHEMA = "arc-units/1"
-MANIFEST_SCHEMA = "arc-manifest/1"
+MANIFEST_SCHEMA = "arc-manifest/2"
 
 
 class ManifestError(Exception):
@@ -61,8 +66,23 @@ class ManifestError(Exception):
 
 
 def canonical_json(data: dict) -> str:
-    """canonical JSON——sort_keys＋緊湊分隔符＋UTF-8（同 arc_spec 慣例）。"""
-    return json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    """有限 JSON canonical encoding；manifest 身份與輸出衝突共用。"""
+    try:
+        return json.dumps(
+            data,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        )
+    except (ValueError, TypeError) as e:
+        raise ManifestError(f"invalid: finite JSON required（{e}）") from e
+
+
+def assigned_manifest_digest(manifest: dict) -> str:
+    """完整分派內容的 SHA-256；自身 digest 欄排除，producer/join 單一源。"""
+    body = {k: v for k, v in manifest.items() if k != "assigned_manifest_digest"}
+    return hashlib.sha256(canonical_json(body).encode("utf-8")).hexdigest()
 
 
 def contract_hash(contract: dict) -> str:
@@ -89,6 +109,8 @@ def _validate_structures(contract: dict, units_doc: dict) -> None:
             f"got {type(units_doc).__name__}"
         )
     _fail(errors)
+    canonical_json(contract)
+    canonical_json(units_doc)
     errors = []
     if contract.get("schema") != ACCEPTANCE_CONTRACT_SCHEMA:
         errors.append(
@@ -121,7 +143,9 @@ def _validate_structures(contract: dict, units_doc: dict) -> None:
         errors.extend(_validate_judgment_required(contract))
     if not isinstance(units_doc.get("units"), list):
         errors.append("invalid: units reason=units 須為 list（arc-units/1 形）")
-    for i, unit in enumerate(units_doc.get("units", []) if isinstance(units_doc.get("units"), list) else []):
+    for i, unit in enumerate(
+        units_doc.get("units", []) if isinstance(units_doc.get("units"), list) else []
+    ):
         if not isinstance(unit, dict):
             errors.append(f"invalid: units[{i}] reason=須為 object")
             continue
@@ -129,12 +153,8 @@ def _validate_structures(contract: dict, units_doc: dict) -> None:
         ac_ids = unit.get("ac_ids")
         if not isinstance(unit_id, str) or not unit_id:
             errors.append(f"invalid: units[{i}] reason=unit_id 須為非空字串")
-        if not isinstance(ac_ids, list) or not all(
-            isinstance(a, str) for a in ac_ids
-        ):
-            errors.append(
-                f"invalid: units[{i}] reason=ac_ids 須為字串 list"
-            )
+        if not isinstance(ac_ids, list) or not all(isinstance(a, str) for a in ac_ids):
+            errors.append(f"invalid: units[{i}] reason=ac_ids 須為字串 list")
     _fail(errors)
 
 
@@ -166,9 +186,7 @@ def _validate_judgment_required(contract: dict) -> list[str]:
             )
             continue
         if j["ac_id"] in seen:
-            errors.append(
-                f"invalid: judgment_required ac_id={j['ac_id']} reason=重複"
-            )
+            errors.append(f"invalid: judgment_required ac_id={j['ac_id']} reason=重複")
         seen.add(j["ac_id"])
         if j["ac_id"] in pred_ids:
             errors.append(
@@ -199,9 +217,7 @@ def check_set_invariants(contract: dict, units_doc: dict) -> None:
         overlap = assigned_union & acs
         if overlap:
             owners = [
-                uid
-                for uid, prev in per_unit
-                if prev & acs and uid != u["unit_id"]
+                uid for uid, prev in per_unit if prev & acs and uid != u["unit_id"]
             ]
             errors.append(
                 f"invalid: ac_id={sorted(overlap)} reason=units {owners}＋"
@@ -211,7 +227,9 @@ def check_set_invariants(contract: dict, units_doc: dict) -> None:
 
     missing = sorted(all_ac - assigned_union)
     for ac in missing:
-        errors.append(f"missing: ac_id={ac} reason=未分派給任何 unit（漏分派；不變式 1）")
+        errors.append(
+            f"missing: ac_id={ac} reason=未分派給任何 unit（漏分派；不變式 1）"
+        )
     unknown = sorted(assigned_union - all_ac)
     if unknown:
         errors.append(
@@ -228,6 +246,10 @@ def _manifest_filename(unit_id: str) -> str:
             f"invalid: unit_id={unit_id} reason=須帶「#」後綴以衍生 manifest 檔名"
         )
     suffix = unit_id.rsplit("#", 1)[1]
+    if "\x00" in suffix:
+        raise ManifestError(
+            f"invalid: unit_id={unit_id!r} reason=「#」後綴不可含 NUL（檔名邊界）"
+        )
     if not suffix or "/" in suffix or "\\" in suffix or ".." in suffix:
         raise ManifestError(
             f"invalid: unit_id={unit_id} reason=「#」後綴須為安全檔名（非空、"
@@ -243,9 +265,7 @@ def project_unit(contract: dict, unit: dict) -> dict:
     contract reason；按 ac_id 排序。"""
     assigned = set(unit["ac_ids"])
     by_ac: dict[str, dict] = {p["ac_id"]: p for p in contract["predicates"]}
-    by_jud: dict[str, dict] = {
-        j["ac_id"]: j for j in contract["judgment_required"]
-    }
+    by_jud: dict[str, dict] = {j["ac_id"]: j for j in contract["judgment_required"]}
     outside = sorted(assigned - set(by_ac) - set(by_jud))
     if outside:
         raise ManifestError(
@@ -274,13 +294,15 @@ def project_unit(contract: dict, unit: dict) -> dict:
                 "reason": by_jud[ac]["reason"],
             }
         predicates.append(entry)
-    return {
+    manifest = {
         "schema": MANIFEST_SCHEMA,
         "card_id": contract["card_id"],
         "unit_id": unit["unit_id"],
         "contract_hash": contract_hash(contract),
         "predicates": predicates,
     }
+    manifest["assigned_manifest_digest"] = assigned_manifest_digest(manifest)
+    return manifest
 
 
 def project_manifests(contract: dict, units_doc: dict) -> list[tuple[str, dict]]:
@@ -314,6 +336,28 @@ def _load_json(path: Path, label: str) -> dict:
         raise ManifestError(f"{label} malformed JSON: {path}（{e}）") from e
 
 
+def _write_manifests(out_dir: Path, manifests: list[tuple[str, dict]]) -> None:
+    """整組 preflight 先於任何寫入；新檔 exclusive create，已知衝突零寫入。"""
+    pending: list[tuple[Path, dict]] = []
+    for filename, manifest in manifests:
+        path = out_dir / filename
+        if path.exists():
+            existing = _load_json(path, "existing manifest")
+            if canonical_json(existing) != canonical_json(manifest):
+                raise ManifestError(
+                    f"invalid: output conflict: {path}（禁止覆寫分派 artifact）"
+                )
+        else:
+            pending.append((path, manifest))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for path, manifest in pending:
+        with path.open("x", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(manifest, ensure_ascii=False, indent=2, allow_nan=False)
+                + "\n"
+            )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="arc_manifest",
@@ -324,33 +368,29 @@ def main(argv: list[str] | None = None) -> int:
         ),
         epilog=(
             "contract＝arc_goal_compile 輸出的 ```json 區塊（acceptance-contract/1）；"
-            "units＝arc-units/1 分派表；manifest schema＝arc-manifest/1"
+            "units＝arc-units/1 分派表；manifest schema＝arc-manifest/2；"
+            "每次 dispatch 使用唯一路徑，已發出 artifact 禁覆寫"
         ),
     )
     parser.add_argument("contract", help="acceptance_contract JSON 檔路徑")
     parser.add_argument("--units", required=True, help="arc-units/1 分派表 JSON 檔路徑")
-    parser.add_argument("--out-dir", required=True, help="manifest 輸出目錄（不存在則建立）")
+    parser.add_argument(
+        "--out-dir", required=True, help="manifest 輸出目錄（不存在則建立）"
+    )
 
     args = parser.parse_args(argv)
     try:
         contract = _load_json(Path(args.contract), "contract")
         units_doc = _load_json(Path(args.units), "units")
         manifests = project_manifests(contract, units_doc)
-    except ManifestError as e:
+        out_dir = Path(args.out_dir)
+        _write_manifests(out_dir, manifests)
+    except (ManifestError, OSError, UnicodeError) as e:
         for line in str(e).splitlines():
             print(f"[arc-manifest] ERROR: {line}", file=sys.stderr)
         return 2
 
-    out_dir = Path(args.out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    total_predicates = 0
-    for filename, manifest in manifests:
-        out_path = out_dir / filename
-        out_path.write_text(
-            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-        total_predicates += len(manifest["predicates"])
+    total_predicates = sum(len(manifest["predicates"]) for _, manifest in manifests)
     print(
         f"[arc-manifest] units: {len(manifests)}／predicates: {total_predicates}"
         f" → {out_dir}"

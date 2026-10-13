@@ -1,5 +1,5 @@
 {
-  "schema": "arc-manifest/1",
+  "schema": "arc-manifest/2",
   "card_id": "AIR-234",
   "unit_id": "AIR-234#impl-a",
   "contract_hash": "150a9879818a348cd3af2b3c8bab4eeaa3c620425b8102f9b0cf6ded81eb37c5",
@@ -28,5 +28,6 @@
       "satisfied": false,
       "satisfied_at_baseline": null
     }
-  ]
+  ],
+  "assigned_manifest_digest": "961b585ef468a5a3861a04800d4a9ee7da1d63c6151d3cd3f8b7e3699d66b5f1"
 }

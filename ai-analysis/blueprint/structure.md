@@ -19,19 +19,19 @@ L2 部署接線（各 harness 全域位置）
 
 | 層 | 內容 | 單源與治理 | 生成/接線 | 機械守護 |
 | --- | --- | --- | --- | --- |
-| L0 | guide（`ai-development-guide.md`）、`rules/`、`skills/`（含 `_common/` 共用子範本）、`agents/roles/`、`hooks/`、`muse-plugins/memory-governance/`、root `AGENTS.md`＋`CLAUDE.md` wrapper、`backlog/`、`ai-analysis/` | 各域治理檔：[rules](../../rules/AGENTS.md)／[agents](../../agents/AGENTS.md)／[hooks](../../hooks/AGENTS.md) AGENTS.md＋[skills](../../skills/AGENTS.md)＋root AGENTS.md | —（手改） | — |
-| L1 | `agents/zcode/`＋`agents/claude/` registry；非 Claude 三家 bundle（`~/.{zcode,codex,config/muse}/AGENTS.md`）；`blueprint/index.html`（本目錄四檔投影） | `roles/` 為 authoring 單源 | `scripts/sync_agents.py`（roles→雙 registry）；`scripts/deploy_agents.py`（guide＋neutral rules→bundle）；index.html 手寫＋殼 codegen | `agents_projection_sync`、`deploy_bundle_freshness` |
-| L2 | skills 三根（`~/.claude`／`~/.zcode`／`~/.agents` `skills`）、agents 兩根（`~/.zcode`／`~/.claude` `agents`）、Claude rules 目錄 symlink＋`~/.claude/CLAUDE.md`→guide、hooks 絕對路徑 config、muse user-scope plugin＋marker `.agents/memory-governance.json` | Claude rules＝目錄 symlink 即時生效；非 Claude＝bundle snapshot（改 rule 後須重跑 deploy） | symlink／config 引用（hooks 無目錄載入點不能 symlink：Claude settings.json→repo `settings.json`〔gitignored〕、ZCode config.json merge `governance/registrations/zcode.json`） | `hook_registration`、`zcode_live_parity`、`skill_allowlist_coverage` |
+| L0 | guide（`ai-development-guide.md`）、`rules/`、`skills/`（含 `_common/` 共用子範本）、`agents/roles/`、`hooks/`、`muse-plugins/memory-governance/`、root 與模組 `AGENTS.md`（單檔 source，wrapper 已退役）、`backlog/`、`ai-analysis/` | 各域治理檔：[rules](../../rules/AGENTS.md)／[agents](../../agents/AGENTS.md)／[hooks](../../hooks/AGENTS.md) AGENTS.md＋[skills](../../skills/AGENTS.md)＋root AGENTS.md | —（手改） | — |
+| L1 | `agents/zcode/`＋`agents/claude/` registry；ZCode／Codex／Muse／grok bundle；`blueprint/index.html`（本目錄文件與 root 受眾節投影） | `roles/` 為 authoring 單源、`agents/presets.toml` 為 binding 部署源；bundle targets＝[governance manifest](../../governance/manifest.toml) `surfaces.rules` | `scripts/sync_agents.py`（roles＋presets→雙 registry）；`scripts/deploy_agents.py`（guide＋neutral rules→bundle）；index.html 由 source refresh（手寫＋殼 codegen） | `agents_projection_sync`、`deploy_bundle_freshness`、[projection freshness manifest](projection-manifest.toml) |
+| L2 | skills 母鏈 `~/.agents/skills`→repo `skills/`；`~/.zcode/agents`→`agents/zcode/`、`~/.grok/agents`→`agents/claude/`；hooks 絕對路徑註冊、Muse user-scope plugin＋marker `.agents/memory-governance.json` | symlink 活視圖與 bundle snapshot 分開；CC guide/rules/skills/agents 自動載入 symlinks 與 hooks 註冊已退役（AIR-215），`agents/claude/` 是 grok registry 源名，不代表 CC 接線 | [governance manifest](../../governance/manifest.toml) 擁有 symlinks 與 registrations：grok hooks 整檔 render、ZCode hooks 子樹 merge、Codex TOML groups；四 bundle 目標同 manifest | `hook_registration`、`zcode_live_parity`、`skill_allowlist_coverage` |
 | L3 | `.agents/memory/` 主體（gitignored 自帶池 git）＋`memory-inbox/`、`~/.agents/memory-spine/`、`.tours/`（corpus＋manifest provenance）、`.code-reality/`（graph.db）、`.review/`（profile-driven findings，弧後清理） | 寫入端紀律＝memory-audit skill；tour 契約＝tour-bootstrap／code-reality skill | 記憶拓撲（AIR-223 direct-anchor）：主體＝唯一 real dir；ZCode→主體直鏈（唯一必要鏈）、CC 舊徑 symlink→主體（optional compat，可缺席）；codex 唯讀（單一寫入點） | memory hooks sensors＋index-regen PreToolUse gate、`tour_validate`（finalization gate） |
 | L4 | ZCode cron ×3、launchd（backlog-cleanup／report-server `:6421`／nightly-sequence）、mosaic 23:20 report | 反查表＝[schedule-registry](../schedule-registry.md) A1–A6 | cron prompt 引用 skill 為方法論源；`deploy/scripts/run-backlog-cleanup.sh`→kanban precheck | precheck 紅燈跳過該卡 |
 
-跨 repo 邊（消費非部署）：code-reality（`~/Github/code-reality`，機械 symbol graph 工具鏈）、delegate-bridge（`~/Github/delegate-bridge`，三家族委派 bridge）、mosaic（report-server 宿主、測試契約 consumer）。
+跨 repo 邊（消費非部署）：code-reality（`~/Github/code-reality`，機械 symbol graph 工具鏈）、delegate-bridge（`~/Github/delegate-bridge`，Muse／Codex／GLM／grok 四家族委派 bridge；契約回 root [AGENTS.md](../../AGENTS.md)）、mosaic（report-server 宿主、測試契約 consumer）。
 
 ## 四種邊型
 
 ### 部署邊（誰投影到哪）
 
-三個 generator＋symlink 群＋兩家 config——**唯一由 invariant 機械守護的邊群**（新鮮度/projection/接線三向）。細節與截斷線約束在 [rules/AGENTS.md](../../rules/AGENTS.md)「部署紀律」與 [agents/AGENTS.md](../../agents/AGENTS.md)「registry 結構」，此處不複載。
+generator＋symlink 群＋harness 註冊——新鮮度/projection/接線由機械 invariant 守護，期望拓撲在 [governance manifest](../../governance/manifest.toml)，各機器是否生效須另驗 install/check/verify。bundle 對應 ZCode／Codex／Muse／grok 的全域 `AGENTS.md`；grok 的注意力預算與其他 harness 截斷線分開。細節在 [rules/AGENTS.md](../../rules/AGENTS.md)「部署紀律」與 [agents/AGENTS.md](../../agents/AGENTS.md)「registry 結構」，此處不複載。
 
 ### 引用邊（誰引用誰）
 
@@ -74,11 +74,11 @@ L2 部署接線（各 harness 全域位置）
 
 | 項 | 狀態 | 處置 |
 | --- | --- | --- |
-| `blueprint/index.html` 投影落後（Priority backbone 段與本檔未入投影） | ✅ 投影落後已解（AIR-81） | AIR-81 收斂：backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估，不在本卡範圍） |
-| grok-build 未安裝但 dispatch matrix 引用 | ⚠️ | 已標「引用前先查證」；安裝後補 SessionEnd 條目 |
+| `blueprint/index.html` 投影 freshness | 機械閘在場 | `scripts/projection_freshness.py` 對照 upstream hash；先重投影再更新快照，hash 對齊不取代內容覆核 |
+| grok 註冊定義與本機生效狀態 | source 在場、機器面另驗 | governance manifest 包含 grok hooks、agents 與 bundle；本圖描述 source 拓撲，不以 source 在場證明本機部署 |
 | ZCode 無 SessionEnd 事件（plugin 孤兒清理缺席） | ⚠️ | hooks/AGENTS.md 定案＝remediation 成本極低非缺口 |
 | `skills/AGENTS.md` 索引手維護（自標 drift-prone） | ⚠️ | 無機械防線；超載時可評估 invariant 化 |
-| AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md） | ✅ 已解（AIR-164——skills 升 AGENTS.md source＋CLAUDE.md @wrapper，與各域對稱） | — |
+| AGENTS.md 家族單檔 source | ✅ wrapper 已退役（AIR-290） | root 與各域以 AGENTS.md 為 source；legacy wrapper 不再是 active 載體 |
 | WT 形態（board single-writer／wt-open/close） | ✅ 已落地（AIR-72） | 落地錨點＝workflow.md「待建基建」＋`scripts/wt-open.sh`／`scripts/wt-close.sh`（wt-open 試點通過、wt-close 真卡收線已驗——AIR-77 74d483d；receipt 每次執行自動落盤 .git/wt-close.log——AIR-112；board single-writer 大致落地）；_tasks 遷移由 AIR-77 落地。此處僅 pointer，語義以 workflow.md 為準 |
 
 ## 維護語義

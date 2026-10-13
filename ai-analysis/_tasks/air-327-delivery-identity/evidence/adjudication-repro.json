@@ -1,0 +1,32 @@
+[
+  {
+    "case": "intent-F1-surrogate",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "    return hashlib.sha256(canonical_json(body).encode(\"utf-8\")).hexdigest()",
+      "                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^",
+      "UnicodeEncodeError: 'utf-8' codec can't encode character '\\ud800' in position 930: surrogates not allowed"
+    ]
+  },
+  {
+    "case": "fresh-F1-unhashable",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "    by_ac.setdefault(v.get(\"ac_id\"), []).append(v)",
+      "    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^",
+      "TypeError: cannot use 'list' as a dict key (unhashable type: 'list')"
+    ]
+  },
+  {
+    "case": "fresh-F3-nul",
+    "exit": 1,
+    "stdout": "",
+    "stderr_tail": [
+      "    return io.open(self, mode, buffering, encoding, errors, newline)",
+      "           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+      "ValueError: embedded null byte"
+    ]
+  }
+]

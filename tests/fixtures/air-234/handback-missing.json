@@ -1,5 +1,6 @@
 {
-  "schema": "arc-handback/1",
+  "schema": "arc-handback/2",
+  "assigned_manifest_digest": "961b585ef468a5a3861a04800d4a9ee7da1d63c6151d3cd3f8b7e3699d66b5f1",
   "card_id": "AIR-234",
   "unit_id": "AIR-234#impl-a",
   "verdicts": [

@@ -14,6 +14,7 @@
   ＋verifier/expected 空字串＋contract reason。輸出與固化 fixture byte-equal。
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -61,7 +62,7 @@ class TestHappyPath:
         assert rc == 0
         for name in ("impl-a.json", "impl-b.json", "settle.json"):
             m = _load(out_dir / name)
-            assert m["schema"] == "arc-manifest/1"
+            assert m["schema"] == "arc-manifest/2"
             assert m["card_id"] == "AIR-234"
             assert len(m["predicates"]) > 0, f"{name} predicates 空"
 
@@ -205,9 +206,7 @@ class TestSetInvariants:
             ],
         )
         out_dir = tmp_path / "out"
-        rc = am.main(
-            [str(CONTRACT), "--units", str(units), "--out-dir", str(out_dir)]
-        )
+        rc = am.main([str(CONTRACT), "--units", str(units), "--out-dir", str(out_dir)])
         assert rc == 2
         assert not out_dir.exists(), "撞名時不得寫出任何檔"
 
@@ -293,7 +292,9 @@ class TestStructuralBoundaries:
     def test_unit_id_without_hash_suffix_fails(self, tmp_path: Path) -> None:
         """無「#」後綴無法衍生檔名——fail-loud 禁靜默改用全名。"""
         doc = _load(UNITS)
-        doc["units"] = [{"unit_id": "no-hash", "ac_ids": ["1", "2", "3", "4", "5", "6", "7"]}]
+        doc["units"] = [
+            {"unit_id": "no-hash", "ac_ids": ["1", "2", "3", "4", "5", "6", "7"]}
+        ]
         rc, _ = _run(tmp_path, units=_write_json(tmp_path / "u.json", doc))
         assert rc == 2
 
@@ -301,7 +302,10 @@ class TestStructuralBoundaries:
         """「#」後綴帶路徑字元——fail-loud 禁目錄逃逸。"""
         doc = _load(UNITS)
         doc["units"] = [
-            {"unit_id": "AIR-234#../escape", "ac_ids": ["1", "2", "3", "4", "5", "6", "7"]}
+            {
+                "unit_id": "AIR-234#../escape",
+                "ac_ids": ["1", "2", "3", "4", "5", "6", "7"],
+            }
         ]
         rc, _ = _run(tmp_path, units=_write_json(tmp_path / "u.json", doc))
         assert rc == 2
@@ -347,15 +351,15 @@ class TestCli:
     ) -> None:
         bad = tmp_path / "bad.json"
         bad.write_text("{not json", encoding="utf-8")
-        rc = am.main([str(bad), "--units", str(UNITS), "--out-dir", str(tmp_path / "o")])
+        rc = am.main(
+            [str(bad), "--units", str(UNITS), "--out-dir", str(tmp_path / "o")]
+        )
         assert rc == 2
         assert "ERROR" in capsys.readouterr().err
 
     def test_creates_out_dir(self, tmp_path: Path) -> None:
         out_dir = tmp_path / "nested" / "out"
-        rc = am.main(
-            [str(CONTRACT), "--units", str(UNITS), "--out-dir", str(out_dir)]
-        )
+        rc = am.main([str(CONTRACT), "--units", str(UNITS), "--out-dir", str(out_dir)])
         assert rc == 0
         assert (out_dir / "impl-a.json").exists()
 
@@ -386,3 +390,133 @@ class TestCli:
         err = capsys.readouterr().err
         assert "ERROR" in err
         assert "object" in err
+
+
+# Oracle provenance: S — AIR-327 accepted EP S1 frozen identity/custody contract.
+class TestDispatchCustody:
+    def test_digest_matches_ep_canonical_definition(self, tmp_path: Path) -> None:
+        rc, out_dir = _run(tmp_path)
+        assert rc == 0
+        for path in out_dir.glob("*.json"):
+            m = _load(path)
+            stored = m.pop("assigned_manifest_digest")
+            assert m["schema"] == "arc-manifest/2"
+            expected = hashlib.sha256(
+                json.dumps(
+                    m,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ).encode("utf-8")
+            ).hexdigest()
+            assert stored == expected
+
+    def test_same_content_retry_preserves_original_bytes(self, tmp_path: Path) -> None:
+        rc, out_dir = _run(tmp_path)
+        assert rc == 0
+        path = out_dir / "impl-a.json"
+        m = _load(path)
+        path.write_text(
+            json.dumps(dict(reversed(list(m.items()))), ensure_ascii=False),
+            encoding="utf-8",
+        )
+        original = path.read_bytes()
+        assert _run(tmp_path)[0] == 0
+        assert path.read_bytes() == original
+
+    @pytest.mark.parametrize("existing", ["different", "malformed", "nonfinite"])
+    def test_preflight_whole_batch_preserves_known_conflict(
+        self, tmp_path: Path, existing: str, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        out_dir = tmp_path / "out"
+        out_dir.mkdir()
+        path = out_dir / "settle.json"  # last unit; earlier outputs must not be created
+        content = {
+            "different": "{}",
+            "malformed": "{broken",
+            "nonfinite": '{"bad":NaN}',
+        }[existing]
+        path.write_text(content, encoding="utf-8")
+        rc, _ = _run(tmp_path)
+        assert rc == 2
+        assert path.read_text(encoding="utf-8") == content
+        assert not (out_dir / "impl-a.json").exists()
+        assert not (out_dir / "impl-b.json").exists()
+        assert "ERROR" in capsys.readouterr().err
+
+    def test_changed_contract_cannot_overwrite_dispatch(self, tmp_path: Path) -> None:
+        assert _run(tmp_path)[0] == 0
+        originals = {p.name: p.read_bytes() for p in (tmp_path / "out").glob("*.json")}
+        contract = _load(CONTRACT)
+        contract["predicates"][0]["expected"] = "new specification"
+        path = _write_json(tmp_path / "changed.json", contract)
+        assert _run(tmp_path, contract=path)[0] == 2
+        assert {
+            p.name: p.read_bytes() for p in (tmp_path / "out").glob("*.json")
+        } == originals
+
+    @pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+    @pytest.mark.parametrize("owner", ["contract", "units"])
+    def test_nonfinite_inputs_fail_without_outputs(
+        self, tmp_path: Path, value: float, owner: str
+    ) -> None:
+        doc = _load(CONTRACT if owner == "contract" else UNITS)
+        doc["extra"] = value  # even unprojected input must be valid finite JSON
+        path = _write_json(tmp_path / "bad.json", doc)
+        kwargs = {owner: path}
+        rc, out_dir = _run(tmp_path, **kwargs)
+        assert rc == 2
+        assert not out_dir.exists()
+
+    def test_reassign_ac_subset_changes_digest_only_not_contract_hash(self) -> None:
+        c = _load(CONTRACT)
+        original = am.project_unit(
+            c, {"unit_id": "AIR-234#impl-a", "ac_ids": ["1", "2", "3"]}
+        )
+        reassigned = am.project_unit(
+            c, {"unit_id": "AIR-234#impl-a", "ac_ids": ["1", "2"]}
+        )
+        assert original["contract_hash"] == reassigned["contract_hash"]
+        assert (
+            original["assigned_manifest_digest"]
+            != reassigned["assigned_manifest_digest"]
+        )
+
+    def test_exclusive_creation_race_fails_and_preserves_competitor(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        original_open = Path.open
+        competing = tmp_path / "out" / "impl-a.json"
+
+        def racing_open(path: Path, mode: str = "r", *args, **kwargs):
+            if path == competing and mode == "x":
+                with original_open(path, "w", encoding="utf-8") as stream:
+                    stream.write("competitor")
+            return original_open(path, mode, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", racing_open)
+        rc, out_dir = _run(tmp_path)
+        assert rc == 2
+        assert competing.read_text(encoding="utf-8") == "competitor"
+        assert not (out_dir / "impl-b.json").exists()
+        assert "ERROR" in capsys.readouterr().err
+
+
+# Oracle provenance: H — Marshal reproduced embedded NUL exit1, then adopted
+# filename-boundary rejection/exit2 before this repair implementation.
+class TestMalformedFilenameRepair:
+    def test_nul_suffix_is_rejected_without_outputs(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        units = _load(UNITS)
+        units["units"][0]["unit_id"] = "AIR-234#im\x00pl-a"
+        units_path = _write_json(tmp_path / "nul-units.json", units)
+        rc, out_dir = _run(tmp_path, units=units_path)
+        assert rc == 2
+        assert not out_dir.exists()
+        err = capsys.readouterr().err
+        assert "unit_id" in err and "NUL" in err

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- EP: ai-analysis/_tasks/air-327-delivery-identity/ep.md; baseline: 7dbfd020fec402ca3c0eabb2c55a5752ae6e2057 -->
+<title>AIR-327 交付身份與工作流一致性</title>
+<style>body{max-width:900px;margin:4rem auto;padding:0 1.5rem;background:#f7f7f3;color:#202830;font:18px/1.8 system-ui}h1{line-height:1.3}article{background:white;padding:1.4rem 2rem;margin:1rem 0;border-radius:12px}small{color:#53616a}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:.7rem;border-bottom:1px solid #ddd}a{color:#12607a}</style>
+<h1>交付回執，必須對得上派工規格</h1>
+<p><strong>✅ 實作與 post-build 已收斂</strong> · AIR-327 · <a href="ep.md">完整計畫與驗收情境</a> · <a href="post-build.md">驗證與裁決</a></p>
+<article><h2>這次改什麼</h2><table><tr><th>目前問題</th><th>完成後的行為</th></tr><tr><td>相同 AC 編號可能沿用舊回執</td><td>回執、凍結規格、派工記錄三方身份吻合才進驗收</td></tr><tr><td>worker 禁 commit，卻被要求 commit 證活</td><td>觀測活動不創造提交權限</td></tr><tr><td>架構摘要仍描述退役部署面</td><td>依現行定義源刷新摘要與投影</td></tr></table></article>
+<article><h2>決策邊界</h2><p>格式與身份通過，不等於工作完成；FAIL／NOT-DONE 仍交 Marshal 判斷。模型資格新政策、統一 watcher、派工引擎與新增排程不在本次範圍。</p></article>
+<article><h2>驗證與未完成</h2><p>Sol 實作、GLM-5.3 獨立審查、Flash 靜態核對，Marshal 裁決四項修正後完成定向複審。修後全量測試：3929 passed、1 skipped。CLI 異常輸入、身份負例與投影來源均已核對。</p><p>source 仍在隔離 worktree，尚未 commit 或合併 canonical。接續 Flash＋Terra 歷史對話 dry-run，結果另列；不把測試通過當作 live guide 已啟用。</p></article>
+<small>本頁是人類閱讀的進度摘要；規格與證據以 EP、卡面及收尾回執為準。</small></html>

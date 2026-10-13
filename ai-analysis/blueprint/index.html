@@ -639,7 +639,7 @@
     </tbody>
   </table>
   <p><b>優先級：方向 &gt;&gt; 品質</b>。LLM 預期能做到 Clean Code 等級（頂多需人提點）；災難性、無法靠 polish 彌補的是方向錯。所以 viewport 重度傾斜在<b>方向驗證</b>，不浪費人注意力在 code 品質（那是 <code>/code-review</code>＋LLM 自身能力的事）。viewport 渲染的是人類用來承載意圖／理解結構的 artifact（use case／scenario／UI／範例／心智模型），不是 code 結構。</p>
-  <div class="note"><b>規範正典不複製</b>：三層介入表與核心流程命令分類表（含工具／維護命令歸類）的正典住 root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節——本頁不複製（殼不裝治理規則複本，本站殼頭宣言）。upstream 變更由 projection freshness gate 追蹤（<a href="projection-manifest.toml">manifest</a>）。</div>
+  <div class="note"><b>規範正典不複製</b>：三層介入表與核心流程命令分類表的正典住 root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節；工具／維護命令完整索引回 <a href="../../skills/AGENTS.md">skills/AGENTS.md</a> 單檔 source（wrapper 已退役）。本頁呈現兩軌道用途，分類與審查層級請回源；upstream 變更由 projection freshness gate 追蹤（<a href="projection-manifest.toml">manifest</a>）。</div>
   <p class="src">受眾二分＋blind spot 原理投影自：root <a href="../../AGENTS.md">AGENTS.md</a>「命令的受眾視角」節；三層介入／命令分類表請回源參照</p>
 </section>
 
@@ -650,17 +650,17 @@
   <table>
     <thead><tr><th>層</th><th>內容</th><th>單源與治理</th><th>生成／接線</th><th>機械守護</th></tr></thead>
     <tbody>
-      <tr><td>L0 authoring（手改單源）</td><td>guide、<code>rules/</code>、<code>skills/</code>（含 <code>_common/</code>）、<code>agents/roles/</code>、<code>hooks/</code>、memory-governance plugin、root AGENTS.md＋CLAUDE.md wrapper、<code>backlog/</code>、<code>ai-analysis/</code></td><td>各域治理檔：<a href="../../rules/AGENTS.md">rules</a>／<a href="../../agents/AGENTS.md">agents</a>／<a href="../../hooks/AGENTS.md">hooks</a> AGENTS.md＋<a href="../../skills/AGENTS.md">skills</a>／<a href="../../governance/AGENTS.md">governance</a>／<a href="../../scripts/AGENTS.md">scripts</a> 各域 AGENTS.md＋root AGENTS.md</td><td>—（手改）</td><td>—</td></tr>
-      <tr><td>L1 生成投影（禁手改）</td><td><code>agents/zcode/</code>＋<code>agents/claude/</code> registry；非 Claude 三家 bundle；<code>blueprint/index.html</code>（本目錄四檔投影）</td><td><code>roles/</code> 為 authoring 單源</td><td><code>sync_agents.py</code>／<code>deploy_agents.py</code>；index.html 手寫＋殼 codegen</td><td><code>agents_projection_sync</code>、<code>deploy_bundle_freshness</code></td></tr>
-      <tr><td>L2 部署接線（各 harness 全域位置）</td><td>skills 三根、agents 兩根、Claude rules 目錄 symlink＋CLAUDE.md、hooks 絕對路徑 config、muse user-scope plugin＋marker</td><td>Claude rules＝目錄 symlink 即時生效；非 Claude＝bundle snapshot（改 rule 後須重跑 deploy）</td><td>symlink／config 引用（hooks 無目錄載入點不能 symlink）</td><td><code>hook_registration</code>、<code>zcode_live_parity</code>、<code>skill_allowlist_coverage</code></td></tr>
+      <tr><td>L0 authoring（手改單源）</td><td>guide、<code>rules/</code>、<code>skills/</code>（含 <code>_common/</code>）、<code>agents/roles/</code>、<code>hooks/</code>、memory-governance plugin、root 與模組 AGENTS.md（單檔 source，wrapper 已退役）、<code>backlog/</code>、<code>ai-analysis/</code></td><td>各域治理檔：<a href="../../rules/AGENTS.md">rules</a>／<a href="../../agents/AGENTS.md">agents</a>／<a href="../../hooks/AGENTS.md">hooks</a> AGENTS.md＋<a href="../../skills/AGENTS.md">skills</a>／<a href="../../governance/AGENTS.md">governance</a>／<a href="../../scripts/AGENTS.md">scripts</a> 各域 AGENTS.md＋root AGENTS.md</td><td>—（手改）</td><td>—</td></tr>
+      <tr><td>L1 生成投影</td><td><code>agents/zcode/</code>＋<code>agents/claude/</code> registry；ZCode／Codex／Muse／grok bundle；<code>blueprint/index.html</code>（本目錄文件與 root 受眾節投影）</td><td><code>roles/</code> 為 authoring 單源、<code>agents/presets.toml</code> 為 binding 部署源；bundle targets 回 <a href="../../governance/manifest.toml">governance manifest</a></td><td><code>sync_agents.py</code>／<code>deploy_agents.py</code>；index.html 由 source refresh（手寫＋殼 codegen）</td><td><code>agents_projection_sync</code>、<code>deploy_bundle_freshness</code>、<a href="projection-manifest.toml">projection freshness manifest</a></td></tr>
+      <tr><td>L2 部署接線（各 harness 全域位置）</td><td><code>~/.agents/skills</code>→repo <code>skills/</code>；<code>~/.zcode/agents</code>→<code>agents/zcode/</code>、<code>~/.grok/agents</code>→<code>agents/claude/</code>；hooks 絕對路徑註冊、Muse plugin＋marker</td><td>symlink 活視圖與 bundle snapshot 分開；CC guide/rules/skills/agents 自動載入 symlinks 與 hooks 註冊已退役（AIR-215）；<code>agents/claude/</code> 是 grok registry 源名</td><td><a href="../../governance/manifest.toml">governance manifest</a> 擁有 symlinks 與 registrations：grok hooks 整檔 render、ZCode hooks 子樹 merge、Codex TOML groups；四 bundle 目標同 manifest</td><td><code>hook_registration</code>、<code>zcode_live_parity</code>、<code>skill_allowlist_coverage</code></td></tr>
       <tr><td>L3 狀態資料</td><td><code>.agents/memory/</code> 主體＋<code>memory-inbox/</code>、memory-spine、<code>.tours/</code>、<code>.code-reality/</code>、<code>.review/</code></td><td>寫入端紀律＝memory-audit skill；tour 契約＝tour-bootstrap／code-reality skill</td><td>主體＝唯一 real dir；ZCode→主體直鏈（AIR-223）；CC 舊徑 symlink→主體（optional compat，可缺席）；codex 唯讀（單一寫入點）</td><td>memory hooks sensors＋index-regen gate、<code>tour_validate</code></td></tr>
       <tr><td>L4 排程消費</td><td>ZCode cron ×3、launchd（backlog-cleanup／report-server :6421／nightly-sequence）、mosaic 23:20 report</td><td>反查表＝<a href="../schedule-registry.md">schedule-registry</a> A1–A6</td><td>cron prompt 引用 skill 為方法論源</td><td>precheck 紅燈跳過該卡</td></tr>
     </tbody>
   </table>
-  <p>跨 repo 邊（消費非部署）：code-reality（機械 symbol graph 工具鏈）、delegate-bridge（三家族委派 bridge）、mosaic（report-server 宿主、測試契約 consumer）。非 Claude bundle 受 harness 截斷線約束（rule 只放首個有後果決策前在場的最小核心）。</p>
+  <p>跨 repo 邊（消費非部署）：code-reality（機械 symbol graph 工具鏈）、delegate-bridge（Muse／Codex／GLM／grok 四家族委派 bridge；契約回 root <a href="../../AGENTS.md">AGENTS.md</a>）、mosaic（report-server 宿主、測試契約 consumer）。bundle 的治理預算與各 harness 截斷線分開，rule 只放首個有後果決策前在場的最小核心。</p>
   <h3>四種邊型</h3>
   <ul class="dots">
-    <li><b>部署邊</b>（誰投影到哪）：三個 generator＋symlink 群＋兩家 config——<b>唯一由 invariant 機械守護的邊群</b>（細節在 rules／agents AGENTS.md「部署紀律」「registry 結構」，此處不複載）。</li>
+    <li><b>部署邊</b>（誰投影到哪）：generator＋symlink 群＋harness 註冊由機械 invariant 守護；期望拓撲回 <a href="../../governance/manifest.toml">governance manifest</a>，各機器是否生效另驗 install/check/verify。bundle 對應 ZCode／Codex／Muse／grok 全域 AGENTS.md，grok 注意力預算與他端截斷線分開（細節回 rules／agents AGENTS.md）。</li>
     <li><b>引用邊</b>（誰引用誰）：rule 留 always-on 核心＋pointer、深層住同名 skill（reference 分層配對，見下表）；其餘 rule→skill pointer 為常規跳轉；skill→skill 以 review-engine 家族真相源與 <code>_common/</code> 20 檔為樞紐。</li>
     <li><b>消費邊</b>（workflow 哪階段用誰）：生命週期 dispatch 表在 agents/AGENTS.md（execution contract）；命令分類表在 root AGENTS.md（本頁 <a class="jump" href="#s11" onclick="return go2('s11')">11</a> 節）；核心流程拓撲在 skills/AGENTS.md；排程反查表在 schedule-registry。</li>
     <li><b>治理邊</b>（誰驗誰）：single-source invariants 11 條（<code>check_single_source.py</code>，<code>/sync-sources</code> 消費）＋blueprint 對齊覆核觸發＋kanban precheck＋memory hooks。</li>
@@ -685,11 +685,11 @@
   <table>
     <thead><tr><th>項</th><th>狀態</th><th>處置</th></tr></thead>
     <tbody>
-      <tr><td><code>blueprint/index.html</code> 投影落後</td><td>✅ 本卡已解（AIR-81）</td><td>backbone 段＋本章投影＋八站導引卡已入投影；「投影無 gate」仍是結構性弱點（另行評估）</td></tr>
-      <tr><td>grok-build 未安裝但 dispatch matrix 引用</td><td>⚠️</td><td>已標「引用前先查證」；安裝後補 SessionEnd 條目</td></tr>
+      <tr><td><code>blueprint/index.html</code> 投影 freshness</td><td>機械閘在場</td><td><code>scripts/projection_freshness.py</code> 對照 upstream hash；先重投影再更新快照，hash 對齊不取代內容覆核</td></tr>
+      <tr><td>grok 註冊定義與本機生效狀態</td><td>source 在場、機器面另驗</td><td>governance manifest 包含 grok hooks、agents 與 bundle；本圖描述 source 拓撲，不以 source 在場證明本機部署</td></tr>
       <tr><td>ZCode 無 SessionEnd 事件</td><td>⚠️</td><td>hooks/AGENTS.md 定案＝remediation 成本極低非缺口</td></tr>
       <tr><td><code>skills/AGENTS.md</code> 索引手維護（自標 drift-prone）</td><td>⚠️</td><td>無機械防線；超載時可評估 invariant 化</td></tr>
-      <tr><td>AGENTS.md 家族命名不對稱（skills/ 治理檔名 CLAUDE.md）</td><td>✅ 已解（AIR-164——skills 升 AGENTS.md source＋CLAUDE.md @wrapper，與各域對稱）</td><td>—</td></tr>
+      <tr><td>AGENTS.md 家族單檔 source</td><td>✅ wrapper 已退役（AIR-290）</td><td>root 與各域以 AGENTS.md 為 source；legacy wrapper 不再是 active 載體</td></tr>
       <tr><td>WT 形態（board single-writer／wt-open/close）</td><td>✅ 已落地（AIR-72；大致——語義以 workflow.md 為準）</td><td>錨點＝workflow.md「待建基建」＋<code>scripts/wt-open.sh</code>／<code>wt-close.sh</code>；_tasks 遷移由 AIR-77 落地</td></tr>
     </tbody>
   </table>

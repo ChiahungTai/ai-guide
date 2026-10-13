@@ -9,10 +9,14 @@
 """
 
 import contextlib
+import copy
+import hashlib
 import io
 import json
+import subprocess
 from pathlib import Path
 
+import pytest
 from conftest import REPO_ROOT, load_module
 
 hb = load_module("scripts/arc_handback_join.py")
@@ -22,6 +26,8 @@ FIXTURES = REPO_ROOT / "tests" / "fixtures" / "air-234"
 MANIFEST = FIXTURES / "manifests" / "impl-a.json"
 HANDBACK_PASS = FIXTURES / "handback-pass.json"
 HANDBACK_MISSING = FIXTURES / "handback-missing.json"
+# S: dispatch expectation independently frozen from EP encoding, not read at collection.
+ASSIGNED_DIGEST = "961b585ef468a5a3861a04800d4a9ee7da1d63c6151d3cd3f8b7e3699d66b5f1"
 
 
 def _load(path: Path) -> dict:
@@ -42,11 +48,20 @@ def _run(
     """跑 CLI 並回 (rc, stdout, stderr)——join 違約行按工單走 stdout。"""
     buf_out, buf_err = io.StringIO(), io.StringIO()
     with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
-        rc = hb.main(["--manifest", str(manifest), "--handback", str(handback)])
+        rc = hb.main(
+            [
+                "--manifest",
+                str(manifest),
+                "--handback",
+                str(handback),
+                "--expected-digest",
+                ASSIGNED_DIGEST,
+            ]
+        )
     return rc, buf_out.getvalue(), buf_err.getvalue()
 
 
-def _handback_with(tmp_path: Path, **overrides: dict) -> Path:
+def _handback_with(tmp_path: Path, **overrides: object) -> Path:
     doc = _load(HANDBACK_PASS)
     doc.update(overrides)
     return _write_json(tmp_path / "handback.json", doc)
@@ -214,9 +229,7 @@ class TestJoinViolations:
                 {"ac_id": "2", "verdict": "PASS", "evidence": "y"},
             ],
         )
-        rc, out, _ = _run(
-            manifest=_write_json(tmp_path / "m2.json", m), handback=path
-        )
+        rc, out, _ = _run(manifest=_write_json(tmp_path / "m2.json", m), handback=path)
         assert rc == 2
         assert "ac_id=1" in out
         assert "重複" in out
@@ -250,9 +263,7 @@ class TestSchemaAndFiles:
     def test_bad_manifest_schema(self, tmp_path: Path) -> None:
         m = _load(MANIFEST)
         m["schema"] = "arc-manifest/9"
-        rc, out, _ = _run(
-            manifest=_write_json(tmp_path / "m.json", m)
-        )
+        rc, out, _ = _run(manifest=_write_json(tmp_path / "m.json", m))
         assert rc == 2
         assert "schema" in out
 
@@ -301,18 +312,262 @@ class TestSeamWithArcManifest:
         """arc_manifest 產物可直接餵 join（介面契約釘死的接縫）——非只對
         固化 fixture 成立。"""
         out_dir = tmp_path / "manifests"
-        assert am.main(
+        assert (
+            am.main(
+                [
+                    str(FIXTURES / "contract.json"),
+                    "--units",
+                    str(FIXTURES / "units.json"),
+                    "--out-dir",
+                    str(out_dir),
+                ]
+            )
+            == 0
+        )
+        handback = _handback_with(tmp_path)  # verdicts 對 ac 1/2/3
+        rc, out, _ = _run(manifest=out_dir / "impl-a.json", handback=handback)
+        assert rc == 0
+        assert "join OK: 3 predicates" in out
+
+
+# Oracle provenance: S — accepted AIR-327 EP S1 oracle1–11, frozen before GREEN.
+# JSON identity below is computed independently from the EP encoding contract.
+def _oracle_digest(manifest: dict) -> str:
+    body = {k: v for k, v in manifest.items() if k != "assigned_manifest_digest"}
+    return hashlib.sha256(
+        json.dumps(
+            body,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def _identity_pair() -> tuple[dict, dict, str]:
+    manifest = _load(MANIFEST)
+    manifest["schema"] = "arc-manifest/2"
+    digest = _oracle_digest(manifest)
+    manifest["assigned_manifest_digest"] = digest
+    handback = _load(HANDBACK_PASS)
+    handback.update(schema="arc-handback/2", assigned_manifest_digest=digest)
+    return manifest, handback, digest
+
+
+def _identity_run(
+    tmp_path: Path, manifest: dict, handback: dict, expected: str
+) -> tuple[int, str]:
+    m = _write_json(tmp_path / "assigned.json", manifest)
+    h = _write_json(tmp_path / "returned.json", handback)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        rc = hb.main(
+            ["--manifest", str(m), "--handback", str(h), "--expected-digest", expected]
+        )
+    return rc, out.getvalue()
+
+
+class TestAssignedIdentity:
+    def test_expected_only_oracle11(self, tmp_path: Path) -> None:
+        """Only dispatch expectation differs; all artifact fields remain valid."""
+        m, h, digest = _identity_pair()
+        assert _identity_run(tmp_path, m, h, digest)[0] == 0
+        rc, out = _identity_run(tmp_path, m, h, "0" * 64)
+        assert rc == 2
+        assert "identity" in out and "expected" in out
+
+    def test_formatting_and_retry_preserve_identity(self, tmp_path: Path) -> None:
+        m, h, digest = _identity_pair()
+        reordered = dict(reversed(list(m.items())))
+        rc, _ = _identity_run(tmp_path, reordered, h, digest)
+        assert rc == 0
+        assert hb.join(m, h, digest) == []
+        assert hb.join(m, copy.deepcopy(h), digest) == []
+
+    @pytest.mark.parametrize(
+        "field", ["contract_hash", "verifier", "expected", "predicates"]
+    )
+    @pytest.mark.parametrize("recompute", [False, True])
+    def test_changed_dispatch_rejects_old_handback(
+        self, tmp_path: Path, field: str, recompute: bool
+    ) -> None:
+        m, h, digest = _identity_pair()
+        if field == "contract_hash":
+            m[field] = "f" * 64
+        elif field == "predicates":
+            m[field] = m[field][:2]
+        else:
+            m["predicates"][0][field] += " changed"
+        if recompute:
+            m["assigned_manifest_digest"] = _oracle_digest(m)
+        rc, out = _identity_run(tmp_path, m, h, digest)
+        assert rc == 2
+        assert "identity" in out
+
+    @pytest.mark.parametrize("value", [None, 42, [], "wrong", "0" * 64])
+    def test_handback_digest_invalid(self, tmp_path: Path, value: object) -> None:
+        m, h, digest = _identity_pair()
+        if value is None:
+            h.pop("assigned_manifest_digest")
+        else:
+            h["assigned_manifest_digest"] = value
+        rc, out = _identity_run(tmp_path, m, h, digest)
+        assert rc == 2
+        assert "identity" in out
+
+    @pytest.mark.parametrize("owner", ["manifest", "handback"])
+    def test_legacy_schema_rejected(self, tmp_path: Path, owner: str) -> None:
+        m, h, digest = _identity_pair()
+        if owner == "manifest":
+            m["schema"] = "arc-manifest/1"
+            digest = _oracle_digest(m)
+            m["assigned_manifest_digest"] = h["assigned_manifest_digest"] = digest
+        else:
+            h["schema"] = "arc-handback/1"
+        rc, out = _identity_run(tmp_path, m, h, digest)
+        assert rc == 2 and "schema" in out
+
+    @pytest.mark.parametrize(
+        "fault,diagnostic",
+        [
+            ("missing", "missing: ac_id=3"),
+            ("duplicate", "duplicate verdict"),
+            ("unknown", "未知 ac_id"),
+            ("empty", "evidence"),
+        ],
+    )
+    def test_identity_does_not_replace_structure(
+        self, tmp_path: Path, fault: str, diagnostic: str
+    ) -> None:
+        m, h, digest = _identity_pair()
+        if fault == "missing":
+            h["verdicts"].pop()
+        elif fault == "duplicate":
+            h["verdicts"].append(h["verdicts"][0])
+        elif fault == "unknown":
+            h["verdicts"].append({"ac_id": "99", "verdict": "PASS", "evidence": "x"})
+        else:
+            h["verdicts"][0]["evidence"] = ""
+        rc, out = _identity_run(tmp_path, m, h, digest)
+        assert rc == 2 and diagnostic in out
+        assert "identity" not in out
+
+    @pytest.mark.parametrize("verdict", ["FAIL", "NOT-DONE"])
+    def test_valid_identity_is_not_semantic_acceptance(
+        self, tmp_path: Path, verdict: str
+    ) -> None:
+        m, h, digest = _identity_pair()
+        h["verdicts"][0]["verdict"] = verdict
+        assert _identity_run(tmp_path, m, h, digest)[0] == 0
+
+    @pytest.mark.parametrize("owner", ["manifest", "handback"])
+    @pytest.mark.parametrize("nonfinite", [float("nan"), float("inf"), float("-inf")])
+    def test_nonfinite_cli_exit2(
+        self, tmp_path: Path, owner: str, nonfinite: float
+    ) -> None:
+        m, h, digest = _identity_pair()
+        (m if owner == "manifest" else h)["extra"] = nonfinite
+        rc, out = _identity_run(tmp_path, m, h, digest)
+        assert rc == 2 and "finite" in out
+
+    def test_real_cli_producer_join_and_required_expected(self, tmp_path: Path) -> None:
+        """Drive script entry points in real subprocesses (no monkeypatched IO)."""
+        out_dir = tmp_path / "dispatch"
+        producer = subprocess.run(
             [
+                "uv",
+                "run",
+                "python",
+                "scripts/arc_manifest.py",
                 str(FIXTURES / "contract.json"),
                 "--units",
                 str(FIXTURES / "units.json"),
                 "--out-dir",
                 str(out_dir),
-            ]
-        ) == 0
-        handback = _handback_with(tmp_path)  # verdicts 對 ac 1/2/3
-        rc, out, _ = _run(
-            manifest=out_dir / "impl-a.json", handback=handback
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
         )
-        assert rc == 0
-        assert "join OK: 3 predicates" in out
+        assert producer.returncode == 0, producer.stderr
+        m = _load(out_dir / "impl-a.json")
+        digest = _oracle_digest(m)
+        assert m["assigned_manifest_digest"] == digest
+        h = _load(HANDBACK_PASS)
+        h.update(schema="arc-handback/2", assigned_manifest_digest=digest)
+        h_path = _write_json(tmp_path / "h.json", h)
+        cmd = [
+            "uv",
+            "run",
+            "python",
+            "scripts/arc_handback_join.py",
+            "--manifest",
+            str(out_dir / "impl-a.json"),
+            "--handback",
+            str(h_path),
+        ]
+        for expected, rc in [(digest, 0), ("0" * 64, 2)]:
+            result = subprocess.run(
+                cmd + ["--expected-digest", expected],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            assert result.returncode == rc, result.stdout + result.stderr
+            if rc == 2:
+                assert "identity" in result.stdout and "expected" in result.stdout
+        missing = subprocess.run(
+            cmd, cwd=REPO_ROOT, capture_output=True, text=True, check=False
+        )
+        assert missing.returncode == 2 and "--expected-digest" in missing.stderr
+
+
+# Oracle provenance: H — Marshal CLI repros in air327-adjudication-repro.json;
+# target exit2/typed diagnostics adopted before repair implementation.
+class TestMalformedInputRepair:
+    def test_lone_surrogate_manifest_is_identity_diagnostic(
+        self, tmp_path: Path
+    ) -> None:
+        manifest, handback, digest = _identity_pair()
+        manifest["surrogate"] = "\ud800"
+        m_path = tmp_path / "surrogate.json"
+        # ASCII JSON escape reaches the actual consumer UTF-8 digest boundary.
+        m_path.write_text(json.dumps(manifest, ensure_ascii=True), encoding="utf-8")
+        h_path = _write_json(tmp_path / "handback.json", handback)
+        result = subprocess.run(
+            [
+                "uv",
+                "run",
+                "python",
+                "scripts/arc_handback_join.py",
+                "--manifest",
+                str(m_path),
+                "--handback",
+                str(h_path),
+                "--expected-digest",
+                digest,
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 2, result.stdout + result.stderr
+        assert "invalid: identity" in result.stdout
+        assert "UTF-8" in result.stdout
+        assert "Traceback" not in result.stderr
+
+    @pytest.mark.parametrize("ac_id", [["3"], {"id": "3"}])
+    def test_unhashable_handback_ac_is_diagnosed_before_grouping(
+        self, tmp_path: Path, ac_id: object
+    ) -> None:
+        manifest, handback, digest = _identity_pair()
+        handback["verdicts"][2]["ac_id"] = ac_id
+        rc, out = _identity_run(tmp_path, manifest, handback, digest)
+        assert rc == 2
+        assert "invalid: verdicts[2]" in out and "ac_id" in out
+        assert "missing: ac_id=3" in out
+        assert "identity" not in out

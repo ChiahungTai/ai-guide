@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """arc_handback_join——AIR-234 manifest×handback 結構 join（fail-closed 缺項閘）。
 
-manifest（`arc-manifest/1`，scripts/arc_manifest.py 產物）×handback
-（`arc-handback/1`，worker 交付）→ 機械 join：worker 自報 DONE 是否結構齊全
+manifest（`arc-manifest/2`，scripts/arc_manifest.py 產物）×handback
+（`arc-handback/2`，worker 交付）→ 機械 join：分派身份與回執結構是否齊全
 ——缺任何 assigned predicate 的 verdict 即拒收（transport terminal 不等於
 DONE；collection 用本工具把缺項擋在 DONE 前）。
 
@@ -18,12 +18,15 @@ join 規則（全過→exit 0＋stdout 一行 `join OK: N predicates`）：
 3. manifest 每 predicate 恰一個 verdict；handback 無未知 `ac_id`
 4. `verdict` ∈ {`PASS`, `FAIL`, `NOT-DONE`}
 5. `evidence` 非空字串
+6. 重算 manifest digest，與 manifest 自報、handback echo、dispatch-recorded
+   expected digest 全數比對；只允許有限 JSON 值。舊 schema 明確拒絕。
 
 違反→stdout 逐行列缺項（`missing: ac_id=…`／`invalid: ac_id=… reason=…`）
 ＋exit 2；一次全列不首報即停。檔案層錯誤（不存在／JSON 壞）→stderr
 ERROR＋exit 2。
 
-CLI：`uv run python scripts/arc_handback_join.py --manifest MANIFEST --handback HANDBACK`
+CLI：`uv run python scripts/arc_handback_join.py --manifest MANIFEST --handback HANDBACK --expected-digest DIGEST`
+expected digest 必須取自 dispatch 記錄，不能收線時由 supplied manifest 推導。
 """
 
 import argparse
@@ -31,13 +34,21 @@ import json
 import sys
 from pathlib import Path
 
-MANIFEST_SCHEMA = "arc-manifest/1"
-HANDBACK_SCHEMA = "arc-handback/1"
+# 直跑 script 與以 module 載入共用同一 producer helper。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from scripts.arc_manifest import (
+    MANIFEST_SCHEMA,
+    ManifestError,
+    assigned_manifest_digest,
+    canonical_json,
+)
+
+HANDBACK_SCHEMA = "arc-handback/2"
 VALID_VERDICTS = ("PASS", "FAIL", "NOT-DONE")
 
 
-def join(manifest: dict, handback: dict) -> list[str]:
-    """結構 join——回錯誤行 list（空＝全過）；純函數、不觸 IO。"""
+def join(manifest: dict, handback: dict, expected_digest: str) -> list[str]:
+    """身份＋結構 join（非語義裁決）；expected 值由 dispatch 記錄提供。"""
     errors: list[str] = []
     if not isinstance(manifest, dict):
         errors.append(
@@ -62,6 +73,39 @@ def join(manifest: dict, handback: dict) -> list[str]:
             f"invalid: handback schema={handback.get('schema')!r} reason="
             f"須為 {HANDBACK_SCHEMA!r}"
         )
+    try:
+        recomputed = assigned_manifest_digest(manifest)
+        canonical_json(handback)
+    except ManifestError as e:
+        errors.append(f"invalid: identity reason={e}")
+    except UnicodeEncodeError:
+        errors.append(
+            "invalid: identity reason=manifest JSON 須能 UTF-8 編碼（孤立 Unicode surrogate）"
+        )
+    else:
+        for label, value in (
+            (
+                "manifest assigned_manifest_digest",
+                manifest.get("assigned_manifest_digest"),
+            ),
+            (
+                "handback assigned_manifest_digest",
+                handback.get("assigned_manifest_digest"),
+            ),
+            ("dispatch expected_digest", expected_digest),
+        ):
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(c not in "0123456789abcdef" for c in value)
+            ):
+                errors.append(
+                    f"invalid: identity {label} reason=須為小寫 SHA-256 hex64"
+                )
+            elif value != recomputed:
+                errors.append(
+                    f"invalid: identity {label} reason=與重算 manifest digest 不一致"
+                )
     if manifest.get("card_id") != handback.get("card_id"):
         errors.append(
             f"invalid: card_id reason=manifest={manifest.get('card_id')!r} "
@@ -87,9 +131,7 @@ def join(manifest: dict, handback: dict) -> list[str]:
             continue
         ac = p.get("ac_id")
         if not isinstance(ac, str) or not ac:
-            errors.append(
-                f"invalid: predicates[{i}] reason=ac_id 須為非空字串"
-            )
+            errors.append(f"invalid: predicates[{i}] reason=ac_id 須為非空字串")
             continue
         if ac in seen_ac:
             errors.append(
@@ -105,12 +147,16 @@ def join(manifest: dict, handback: dict) -> list[str]:
         errors.append("invalid: handback reason=verdicts 須為 list")
         verdicts = []
 
-    by_ac: dict[object, list[dict]] = {}
+    by_ac: dict[str, list[dict]] = {}
     for i, v in enumerate(verdicts):
         if not isinstance(v, dict):
             errors.append(f"invalid: verdicts[{i}] reason=須為 object")
             continue
-        by_ac.setdefault(v.get("ac_id"), []).append(v)
+        ac = v.get("ac_id")
+        if not isinstance(ac, str) or not ac:
+            errors.append(f"invalid: verdicts[{i}] reason=ac_id 須為非空字串")
+            continue
+        by_ac.setdefault(ac, []).append(v)
 
     # 規則 2 前半：manifest 每 predicate 恰一個 verdict（缺＝missing、多＝invalid）
     for ac in manifest_acs:
@@ -171,8 +217,15 @@ def main(argv: list[str] | None = None) -> int:
             "collection，不歸 join"
         ),
     )
-    parser.add_argument("--manifest", required=True, help="arc-manifest/1 JSON 檔路徑")
-    parser.add_argument("--handback", required=True, help="arc-handback/1 JSON 檔路徑")
+    parser.add_argument(
+        "--manifest", required=True, help="arc-manifest/2 凍結 JSON 檔路徑"
+    )
+    parser.add_argument("--handback", required=True, help="arc-handback/2 JSON 檔路徑")
+    parser.add_argument(
+        "--expected-digest",
+        required=True,
+        help="dispatch 記錄的 digest（不得收線時從 manifest 推導）",
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -182,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[arc-join] ERROR: {e}", file=sys.stderr)
         return 2
 
-    errors = join(manifest, handback)
+    errors = join(manifest, handback, args.expected_digest)
     if errors:
         for line in errors:
             print(line)

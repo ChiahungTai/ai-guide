@@ -147,16 +147,19 @@
 
 ## Handback closure（ArcPlan 弧 worker 交付——AIR-234）
 
-> ArcPlan 弧的 worker 交付必帶 `arc-handback/1` handback JSON——逐 assigned predicate 回 verdict＋evidence，是 collection 端 fail-closed machine join 的輸入；非 ArcPlan 弧免此節。assigned predicate 清單來源＝per-unit manifest：`scripts/arc_manifest.py`（acceptance_contract 投影 per-unit manifest，schema `arc-manifest/1`——每 unit 一檔，unit 分派違 set 不變式 fail-loud）。
+> ArcPlan 弧的 worker 交付必帶 `arc-handback/2` handback JSON——原樣 echo 本次 `assigned_manifest_digest`，逐 assigned predicate 回 verdict＋evidence，是 collection 端 fail-closed identity＋structure join 的輸入；非 ArcPlan 弧免此節。assigned predicate 清單來源＝per-unit manifest：`scripts/arc_manifest.py`（acceptance_contract 投影 per-unit manifest，schema `arc-manifest/2`——每 unit 一檔，unit 分派違 set 不變式 fail-loud）。
+
+dispatch 工單必記凍結 artifact path＋`assigned_manifest_digest`；producer `--out-dir` 使用本次 dispatch 唯一路徑，規格修訂另存新路徑，保存至本弧驗收與證據承接完成。producer 只允許同 canonical 內容冪等重跑；不同內容／malformed 既有輸出拒絕覆寫，整組先檢查衝突、新檔 exclusive creation（並行競爭明確失敗，非整組原子交易）。digest 定義單一源＝`scripts/arc_manifest.py:assigned_manifest_digest()`；這是內容身份檢查，不是認證簽章，artifact custody 歸 Marshal。相同內容 retry 可沿用身份，禁止額外 attempt 綁定。
 
 完整形：
 
 ```json
-{"schema": "arc-handback/1", "card_id": "…", "unit_id": "…", "verdicts": [{"ac_id": "…", "verdict": "PASS|FAIL|NOT-DONE", "evidence": "命令＋exit／file:line／commit sha"}], "deviations": [], "journal": "…"}
+{"schema": "arc-handback/2", "card_id": "…", "unit_id": "…", "assigned_manifest_digest": "<dispatch 提供的 hex64>", "verdicts": [{"ac_id": "…", "verdict": "PASS|FAIL|NOT-DONE", "evidence": "命令＋exit／file:line／已授權 commit sha"}], "deviations": [], "journal": "…"}
 ```
 
 - 鐵律：**缺任何 assigned predicate＝transport 可 terminal 但不得進 DONE／READY_FOR_REVIEW**；verdict 逐條附 evidence，禁無證據 PASS
-- join 工具：`uv run python scripts/arc_handback_join.py --manifest <manifest> --handback <handback>`（exit 0＝結構齊；exit 2＝缺項逐行列出）——join 只驗結構（缺 verdict／非三值／evidence 空），FAIL／NOT-DONE 語義裁決歸 collection
+- join 工具：`uv run python scripts/arc_handback_join.py --manifest <dispatch 凍結 manifest> --handback <handback> --expected-digest <dispatch 記錄 digest>`（exit 0＝身份與結構有效；exit 2＝身份不符或缺項逐行列出）。join 重算 supplied manifest digest，再核 manifest 自報、handback echo 與 expected；expected 必取自 dispatch 記錄，禁止收線時從 supplied manifest 推導，禁止重投影最新 contract 代驗舊回執；舊 `/1` 明確拒絕，既有工作由 Marshal 重新確認／分派，不自動重派或造 PASS
+- **結構通過≠完成**：FAIL／NOT-DONE 可 exit 0，但不得標完成；repair／重派／語義裁決歸 collection，並仍須既有 retry-safe／authority gates
 - collection 端收線接線（何時跑 join、擋什麼）單一源＝[agent-workflow](../agent-workflow/SKILL.md)「ArcPlan 弧 handback join」條
 
 ## Operational preflight（可機械查假設 dispatch 前先驗——AIR-234）

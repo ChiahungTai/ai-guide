@@ -9,7 +9,7 @@ sha1 = "afeeb3d25c041357a51cb798e8753e4ece6c2f33"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/structure.md"
-sha1 = "eb4dc9c2e2674f1f24519d464a1a82e5c404c2bb"
+sha1 = "283df77be5c2a5eda028577e9840d52b29687116"
 
 [[projection.upstream]]
 path = "ai-analysis/blueprint/workflow.md"
@@ -22,4 +22,4 @@ sha1 = "04be24099f72a28e648e76f3af0df6ef5ee13b01"
 [[projection.upstream]]
 path = "AGENTS.md"
 section = "命令的受眾視角"
-sha1 = "a17c87ebdf3ec2d2d5c438d71244c840bf4452bf"
+sha1 = "e49c2c00c748be9b40412a7d86901ae98304cb93"
