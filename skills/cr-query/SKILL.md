@@ -97,6 +97,17 @@ Two facts backends, complementary not competing:
 - **build 失敗語義（不擋開工、不擋實作——只限證據權限）**：該次查證走 degraded 路線——受影響 claim 逐條 `unverified-by-graph`＋negative structural verdict **不得 terminal 收斂**（與 AIR-224 receipt 模型相容：`cr(route=degraded, reason=…)` 承載）；degraded reason 建議值＝`WT-graph-absent`／`WT-graph-stale`（本節區域慣例——供 AIR-224.1 觀察窗 telemetry 區分「WT graph 缺席/過期」降級成因；reason 值面本為自由承載，不動 [workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar）。
 - **升級語義**：背景 build 成功且 freshness=true 後，後續查證升級 current-tree evidence（同 symbol 重查即得 current-tree verdict，先前的 baseline-borrowed 標註不再適用）。升級 current-tree 後舊標註辨識＝剝離 `, provenance=baseline-borrowed` 後綴；lint/cr_usage 感知面歸 AIR-224.1 觀察窗或後續弧。
 
+## primary post-merge warm-up（AIR-329）
+
+卡弧 merge 進 owning 線後，對持有合併態的 primary checkout graph slot 做機會性背景重建，降低下一弧首次 CR 消費等待。語義唯一源＝本節；wt-close receipt token（`graph-fresh`／`graph-stale=confirmed`／`freshness-unavailable`／`graph-warmup-skipped`）與收尾流程（commit skill trunk merge 段）皆引用此處。
+
+- **身份防護**：僅 merge 落地於 primary 本身才判 build（wt-close 語境＝`MERGE_WT==PRIMARY`）；暫時/trunk WT merge → skip＋note——對 primary 跑 freshness 量的是錯誤狀態（primary 未持有合併態）。
+- **程序**：freshness face（`code-reality freshness --repo <primary> --json`）→ confirmed-stale 才踢 `code-reality build --repo <primary>` 背景 single-flight——與 demand build 共用單飛（已在跑不重啟；build 冪等）；build 完成後重驗 identity，stale-on-arrival 交 demand-trigger（上節）再收。
+- **無條件快檢原則**：trunk 前進不必然 stale（content-addressed identity 才是判準）、docs-only 不保證 fresh（doc-set-drift 實例，AIR-206）——禁以弧內容推測跳過快檢，信任 verdict。
+- **邊界**：非阻塞 best-effort；失敗不影響 merge 收線；session 級背景 shell 隨 session 消亡屬良性（消費前 freshness gate 兜底）。
+- **AIR-228 scope amendment**：「AIR-228 維持 card-WT evidence-demand single-flight。新增 primary post-merge opportunistic warm-up，僅改善 graph availability，不提供 freshness acceptance。」——消費前驗證（AIR-135 條 2）不變；禁把 warm-up 改造成 review 阻塞式前置。
+- **量測**：warm-up reuse rate＝下一弧實際消費該次 build identity 的弧數／成功 warm-up 弧數；每次 kick 記 merge SHA／verdict／build 結果與耗時（收尾報告＋卡 notes 承載）；receipt token 細化為數據源；命中率高且重複成本低 → 再評估腳本自動派工。
+
 ## 🔴 Anti-over-reliance (the failure this skill prevents)
 
 Graph edges are **static parse-time** facts. They miss:

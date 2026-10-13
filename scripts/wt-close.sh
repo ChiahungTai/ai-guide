@@ -31,10 +31,18 @@
 #   （格式：timestamp|mode|wt|branch|result；mode＝preflight|full）。失敗調用也記
 #   （failure receipt）；log 寫入失敗僅 stderr 警告、不改變 exit code——收線本身是主體。
 #   .git 內容永不進版控（machine-local，刻意不隨 clone 同步）、存活於 WT 移除。
-# - CR freshness 提醒（AIR-164）：full 收斂且 trunk 實際前進（merge 前 card branch 尚未
-#   含於 trunk）→ 印「graph 可能 stale——下次 review 前 code-reality rebuild」到 stderr
-#   並落 receipt（result=pass;graph-stale-reminded）。非正確性依賴、不自動 build
-#   （rebuild 決策歸 marshal）。
+# - CR freshness 三態快檢（AIR-329——AIR-164 提醒升級）：full 收斂且 trunk 實際前進
+#   （merge 前 card branch 尚未含於 trunk）時，對 primary 合併態快檢 graph 新鮮度
+#   （非正確性依賴）。身份防護：merge 落於暫時/trunk WT（MERGE_WT≠primary）→
+#   stderr skip note＋receipt pass;graph-warmup-skipped，不跑快檢（primary 未持有
+#   合併態，對它跑 freshness 量的是錯誤狀態）。MERGE_WT==primary → code-reality
+#   freshness --repo <primary> --json（fail-open：binary 缺席／exit 2／輸出解析
+#   失敗 → stderr warn＋receipt pass;freshness-unavailable，不擋收線、不改 exit
+#   code）；fresh=true → pass;graph-fresh；fresh=false → stderr 附確切重建命令＋
+#   pass;graph-stale=confirmed。四 token＝收線回執 graph 態數據源（warm-up reuse
+#   rate 量測）。腳本不自動 build（rebuild 決策與執行歸 marshal instruction——
+#   cr-query skill「primary post-merge warm-up」節）；freshness 冷啟首跑可花數秒
+#   （warm cache <1s）——刻意不加 timeout 機構。
 # - bridge 證據 drain（AIR-267 S2）：preflight 報告在場證據（零變更）；full 移除 WT 前
 #   歸檔 <wt>/.delegate-bridge/jobs/＋<wt>/.agent-tmp/liveness.jsonl 至
 #   ~/.agents/bridge-ledger-archive/<wt>-<YYYYMMDD-HHMMSS>/（0600、防碰撞；v1 無
@@ -339,8 +347,8 @@ else
   warn "post-build receipt 缺席（${RECEIPT_FILE}）——非 receipt 弧照收，落 receipt 標注"
   receipt "receipt-absent"
 fi
-# CR freshness（AIR-164）：merge 前先捕捉 trunk 是否已含 card branch——未含＝本次收斂
-# 將實際前進 trunk（供收尾條件式提醒；非正確性依賴）
+# CR freshness（AIR-164→AIR-329）：merge 前先捕捉 trunk 是否已含 card branch——未含＝
+# 本次收斂將實際前進 trunk（供收尾條件式三態快檢；非正確性依賴）
 TRUNK_ADVANCED=0
 git -C "$PRIMARY" merge-base --is-ancestor "$MERGE_TARGET_BRANCH" "$TRUNK" || TRUNK_ADVANCED=1
 cleanup_tmp() { [ -n "${TMP_WT:-}" ] && git -C "$PRIMARY" worktree remove --force "$TMP_WT" 2>/dev/null || true; }
@@ -399,8 +407,30 @@ info "已移除：WT $WT_PATH ＋ branch $CUR_BR （identity contract 隨 .agent
 
 rm -rf "$LOCK"; trap - EXIT
 if [ "$TRUNK_ADVANCED" = "1" ]; then
-  warn "CR freshness 提醒：trunk 已實際前進（吸收 ${CUR_BR}）——code-reality graph 可能 stale，下次 review 前建議 code-reality rebuild（非正確性依賴，不自動 build）"
-  receipt "pass;graph-stale-reminded"
+  # CR freshness 三態快檢（AIR-329）：進入條件＝收斂成功＋trunk 實際前進。
+  # 身份防護先行：merge 落於暫時/trunk WT → primary 未持有合併態，freshness 量的
+  # 是錯誤狀態——skip 不判 build。fail-open：缺席／exit 2／解析失敗都不擋收線。
+  if [ "$MERGE_WT" != "$PRIMARY" ]; then
+    warn "merge 落於暫時 trunk WT——primary 未持有合併態，graph warm-up skip（identity 錯配防護）"
+    receipt "pass;graph-warmup-skipped"
+  elif ! command -v code-reality >/dev/null 2>&1; then
+    warn "code-reality 缺席——freshness 快檢不可用（fail-open，不擋收線）"
+    receipt "pass;freshness-unavailable"
+  else
+    FRESH_RC=0
+    FRESH_JSON="$(code-reality freshness --repo "$PRIMARY" --json)" || FRESH_RC=$?
+    FRESH_VAL="$(printf '%s' "$FRESH_JSON" | python3 -c 'import json,sys;print(str(json.load(sys.stdin).get("fresh")).lower())' 2>/dev/null)" || FRESH_VAL=""
+    if [ "$FRESH_VAL" = "true" ]; then
+      printf '[wt-close] CR freshness：graph fresh（primary 合併態）——免重建\n' >&2
+      receipt "pass;graph-fresh"
+    elif [ "$FRESH_VAL" = "false" ]; then
+      warn "graph confirmed-stale——背景重建：code-reality build --repo ${PRIMARY}（single-flight，勿阻塞收線；決策與執行歸 marshal）"
+      receipt "pass;graph-stale=confirmed"
+    else
+      warn "freshness 快檢不可用（exit=$FRESH_RC 或輸出解析失敗）——fail-open 不擋收線"
+      receipt "pass;freshness-unavailable"
+    fi
+  fi
 else
   receipt "pass"
 fi

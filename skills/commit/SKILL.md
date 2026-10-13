@@ -193,7 +193,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 6. **高風險與機械例外**：🔴高風險弧（boundary／核心架構／會計風控）不走本程序——仍人確認；**分類記錄缺失或無法判定＝fail-closed 走人確認**（禁自判「非高風險」繞道；分類錨＝卡 AC 約束區／Plan 規模分級）；互動機械例外①–④照舊；
 7. **commit 後記帳**：刷新 receipt `head_sha`＝新 HEAD（同階段 6 機制）＋報告附 receipt id（一 receipt 一 commit，跨弧不延伸）。
 
-trunk merge（ff-only）＝**marshal 自主（AIR-200 predicate delegation；正典＝outward rule「Commit 專屬段」邊界宣告）**：前置四件＝fresh receipt（rebase 即失效）＋ff-only＋控制面弧 landing receipt 四欄成立＋merge 後 canonical-only surface 輕量 probe；rebase 前須重驗 receipt；merge 後 main 崩＝marshal 責任（立即 revert＋揭露＋依賴傳播）。git 收線移轉 marshal、卡 Done 翻牌仍 user；push／deploy／跨 repo outward 恆停。
+trunk merge（ff-only）＝**marshal 自主（AIR-200 predicate delegation；正典＝outward rule「Commit 專屬段」邊界宣告）**：前置四件＝fresh receipt（rebase 即失效）＋ff-only＋控制面弧 landing receipt 四欄成立＋merge 後 canonical-only surface 輕量 probe；rebase 前須重驗 receipt；merge 後 main 崩＝marshal 責任（立即 revert＋揭露＋依賴傳播）。git 收線移轉 marshal、卡 Done 翻牌仍 user；push／deploy／跨 repo outward 恆停。merge 成功且 primary 持有合併態 → freshness face（`code-reality freshness --repo <primary> --json`），confirmed-stale 即背景踢 `code-reality build --repo <primary>`（single-flight、非阻塞；收尾報告記一行 kick 結果）；身份防護（暫時/trunk WT merge → skip）、三態語義與 AIR-228 scope amendment 單一源＝[cr-query](../cr-query/SKILL.md)「primary post-merge warm-up」節——不重抄。
 
 ### 階段 4：生成 Commit Message
 
