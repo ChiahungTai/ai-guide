@@ -1,12 +1,14 @@
 ---
 id: AIR-329
 title: 弧收線 merge 後自動重建 code-reality 結構圖
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-13 23:07'
 updated_date: '2026-10-13 23:07'
 labels: []
 dependencies: []
+references:
+  - skills/cr-query/SKILL.md
 ordinal: 314000
 ---
 
