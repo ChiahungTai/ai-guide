@@ -25,7 +25,7 @@
 
 文檔角色：AGENTS.md＝導航/完成能力；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph（手繪版已退役）；backlog/＝任務卡。長文按需 link 禁全量 transclude。
 
-規模：simple（單檔小 tweak/bug）→card AC 直行；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→owning 卡＋**card Planning Contract**；full（架構/跨模組/🔴高風險/新 boundary）→standalone EP。promotion／public contract 判準、bounded child、六欄定義＝execution-plan skill 流程規模分級節。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
+規模：simple（單檔小 tweak/bug）→card AC 直行；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→owning 卡＋**card Planning Contract**；full（架構/跨模組/🔴高風險/新 boundary：state ownership、public contract、跨 context invariant、控制面 authority）→standalone EP。promotion／public contract 判準、bounded child、六欄定義＝execution-plan skill 流程規模分級節。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
 
 動卡第一動設 In Progress；銜接機制（建卡即 commit 防 id 撞、結案兩步、precheck）單一源 kanban-board skill。
 
