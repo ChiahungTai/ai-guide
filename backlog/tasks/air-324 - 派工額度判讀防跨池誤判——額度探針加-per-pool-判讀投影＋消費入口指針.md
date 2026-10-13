@@ -1,10 +1,10 @@
 ---
 id: AIR-324
 title: 派工額度判讀防跨池誤判——額度探針加 per-pool 判讀投影＋消費入口指針
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-13 00:29'
-updated_date: '2026-10-13 00:40'
+updated_date: '2026-10-13 01:49'
 labels: []
 dependencies: []
 references:
@@ -41,12 +41,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 probe_entitlements.py verdict 投影落地：per-pool evidence 行（含 dispatch_role 欄）＋範圍限定 dispatch_verdict 行＋unknown 時 WARN 行；latest-*.json schema v1 欄位不變（diff 驗）
-- [ ] #2 證據層 fail-closed：error/缺席/stale→該池 unknown＋WARN、全文無該池 available 字樣；healthz 綠僅 healthy/transport_only/quota_visibility=none
-- [ ] #3 池隔離 invariant：負面觀測/retryable_at 不跨池、無 family 級 available/unavailable 宣稱、default 池 unknown→verdict=unknown
-- [ ] #4 文檔指針×3（model-routing 兩節＋bridge-dispatch 模組定位）＋script docstring：rg 可掃、pointer-only 無兩池語義複本
-- [ ] #5 測試全綠：新 fixture 四組＋既有 test_probe_entitlements/test_availability_snapshot＋全量 pytest
-- [ ] #6 落地前審查閘回執四欄入卡 notes；收 Done 時 Final Summary 帶 as-built 終態圖
+- [x] #1 probe_entitlements.py verdict 投影落地：per-pool evidence 行（含 dispatch_role 欄）＋範圍限定 dispatch_verdict 行＋unknown 時 WARN 行；latest-*.json schema v1 欄位不變（diff 驗）
+- [x] #2 證據層 fail-closed：error/缺席/stale→該池 unknown＋WARN、全文無該池 available 字樣；healthz 綠僅 healthy/transport_only/quota_visibility=none
+- [x] #3 池隔離 invariant：負面觀測/retryable_at 不跨池、無 family 級 available/unavailable 宣稱、default 池 unknown→verdict=unknown
+- [x] #4 文檔指針×3（model-routing 兩節＋bridge-dispatch 模組定位）＋script docstring：rg 可掃、pointer-only 無兩池語義複本
+- [x] #5 測試全綠：新 fixture 四組＋既有 test_probe_entitlements/test_availability_snapshot＋全量 pytest
+- [x] #6 落地前審查閘回執四欄入卡 notes；收 Done 時 Final Summary 帶 as-built 終態圖
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -69,4 +69,22 @@ G. 非目標白名單：不改 availability_snapshot.py、不改 delegate-bridge
 
 <!-- SECTION:NOTES:BEGIN -->
 〔C 重議備用（兩家 advisory 草稿，A+B 後復發且歸因繞過正典入口時啟用）〕muse 版：「[availability] bridge_usage 的 codex 行＝native 訂閱池 only；預設派工池 webgpt（chatgpt-web/*）不在此輸出——下結論前跑 probe_entitlements verdict 或查 spine model-runtime-entitlements。」codex 版：「[availability advisory] bridge_usage 的 codex 用量僅代表 codex-native 訂閱池；chatgpt-web/* 為獨立池且無結構化 usage 資料。禁止由 native 耗盡推定 webgpt 不可派；請依 model-routing 核對目標 pool 與派工證據。」前置條件（兩家共識）：先機械實測四 harness 的 MCP tool-name 命中率（覆蓋矩陣），未測不得上線。
+
+〔1013 收線回執〕classification=ordinary（evidence adapter 強化＋消費指針；無 gate/authority 語義變更——availability_snapshot.py 權威不動）／review=fresh-eyes code-reviewer att-air324-review-1 PASS-with-findings（3 minor＋3 info）＋bridge GLM-5.3 judge job-mv5zu3kq 真覆核裁決（F1-F3 ✅ F4-F6 ❌）＋repair batch att-air324-repair-1 三 unit PASS＋marshal followup 機械覆核／session-freshness=fresh／deployment-surfaces=N/A（四 surface 候選偵測零命中——純 scripts/skills 源碼面，bundle 無涉）。job ids：muse job-mv5xt31f／codex job-mv5xt35e（跨家族共識腿）、judge job-mv5zu3kq。
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+per-pool 判讀投影落地（main 508d2cd7）：probe_entitlements verdict——per-pool evidence 行（dispatch_role/signal/evidence_scope/quota_visibility）＋範圍限定 dispatch_verdict（via-default-pool 恆帶）＋unknown WARN；codex-native 真實形態（raw.rate_limit/credits）處理＋reset_past 過期註記；審查 F1-F3 修復（未來時間戳/stale 邊界釘測）；model-routing 兩節＋bridge-dispatch 指針。收斂：fresh-eyes PASS-with-findings（3 minor 全修＋3 info 裁決不修）→bridge GLM-5.3 judge 真覆核裁決→repair batch 三 unit PASS→全量 3881 passed→receipt ok→wt-close 收線。
+
+```mermaid
+flowchart LR
+    raw["raw bridge_usage<br/>（codex 行＝native only）"] -->|"消費點指針重定向"| probe["probe verdict 投影<br/>per-pool evidence 行"]
+    probe --> native["codex-native<br/>named-only quota_only"]
+    probe --> web["webgpt<br/>default transport_only"]
+    native --> verdict["dispatch_verdict<br/>available-via-default-pool"]
+    web --> verdict
+    verdict --> live["live 實證：本機誤判場景<br/>輸出正確反結論"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
