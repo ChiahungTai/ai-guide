@@ -1011,6 +1011,8 @@ def test_verdict_codex_native_live_rate_exhausted(tmp_path: Path) -> None:
     assert "quota_visibility=structured" in native
     expected_retry = _mod._iso_z(datetime.fromtimestamp(1792297281, tz=UTC))
     assert f"retryable_at={expected_retry}" in native
+    # reset_at 在 observed_at 之後（未來重置點）→ 無 reset_past 註記
+    assert not native.endswith(" reset_past")
 
 
 def test_verdict_codex_native_live_ok_not_exhausted(tmp_path: Path) -> None:
@@ -1043,7 +1045,42 @@ def test_verdict_codex_native_credits_zero_without_rate_limit(tmp_path: Path) ->
     assert "retryable_at" not in native
 
 
-# ---- T2 unknown 邊界（四形：healthz error／parse error／缺席／stale）----
+def test_verdict_evidence_line_reset_past_token(tmp_path: Path) -> None:
+    """retryable_at 早於 observed_at（上游 stale normalized：重置點已過的耗盡
+    紀錄）→ evidence 行尾 reset_past 顯性註記。
+
+    消費面語義：retryable_at 過去≠可派——此形態下 upstream 給的 reset 點在
+    觀察當下已過，紀錄不再代表現值；真實現值以超過 VERDICT_STALE_S（6h）
+    門檻外 re-probe 為準。token 只加註、不改 signal 與 retryable_at 欄本身。
+    """
+    past_reset_s = int((NOW_LIVE - timedelta(seconds=60)).timestamp())
+    raw = {
+        **CODEX_NATIVE_LIVE_RATE_EXHAUSTED_RAW,
+        "rate_limit": {
+            **CODEX_NATIVE_LIVE_RATE_EXHAUSTED_RAW["rate_limit"],
+            "primary_window": {
+                **CODEX_NATIVE_LIVE_RATE_EXHAUSTED_RAW["rate_limit"][
+                    "primary_window"
+                ],
+                "reset_at": past_reset_s,
+            },
+        },
+    }
+    out_dir = tmp_path / "probe"
+    write_record(
+        out_dir,
+        record_from_bridge_entry({**CODEX_NATIVE_LIVE_ENTRY, "raw": raw}, NOW_LIVE_ISO),
+    )
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW_LIVE)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    assert "signal=exhausted" in native
+    expected_retry = _mod._iso_z(datetime.fromtimestamp(past_reset_s, tz=UTC))
+    assert f"retryable_at={expected_retry}" in native
+    assert native.endswith(" reset_past")
+
+
+# ---- T2 unknown 邊界（五形：healthz error／parse error／缺席／stale
+#      （含 6h 嚴格邊界）／未來時間戳）----
 
 
 def test_verdict_healthz_error_is_unknown(tmp_path: Path) -> None:
@@ -1132,6 +1169,72 @@ def _webgpt_healthy_rec_at(turns_root: Path, now: datetime) -> Any:
         turns_root=turns_root,
         opener=lambda url, timeout: _FakeResponse(json.dumps(HEALTHZ_OK).encode()),
     )
+
+
+def test_verdict_future_timestamp_is_unknown(tmp_path: Path) -> None:
+    """未來時間戳（probe_ts_utc 在 now 之後）→ 該池 unknown＋WARN——時鐘偏移
+    不入場（fail-closed，同 stale：禁偽造新鮮度冒充可派證據）。"""
+    out_dir = tmp_path / "probe"
+    future = NOW + timedelta(seconds=1)
+    write_record(
+        out_dir,
+        record_from_bridge_entry(CODEX_OK_ENTRY, _mod._iso_z(future)),
+    )
+    write_record(out_dir, _webgpt_healthy_rec_at(tmp_path / "turns", future))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    for needle in ("codex/codex-native (named-only):", "codex/chatgpt-web (default):"):
+        line = _line_with(lines, needle)
+        assert "signal=unknown" in line, line
+        assert "signal=not_exhausted" not in line
+        assert "signal=healthy" not in line
+    # 兩種 WARN 都在場：named-only 池 WARN＋default 池 WARN
+    assert any("[WARN] codex/codex-native (named-only) unknown" in ln for ln in lines)
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    # default 池證據是未來時間戳 → verdict=unknown（禁推定 available）
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
+
+
+def test_verdict_stale_boundary_exactly_6h_projects_normally(
+    tmp_path: Path,
+) -> None:
+    """age 恰 VERDICT_STALE_S（21600s＝6h）＝非 stale——照常投影 signal
+    （_pool_signal 嚴格大於語義釘住：> 非 >=）。"""
+    out_dir = tmp_path / "probe"
+    boundary = NOW - timedelta(seconds=_mod.VERDICT_STALE_S)
+    write_record(
+        out_dir,
+        record_from_bridge_entry(CODEX_OK_ENTRY, _mod._iso_z(boundary)),
+    )
+    write_record(out_dir, _webgpt_healthy_rec_at(tmp_path / "turns", boundary))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    assert "signal=not_exhausted" in _line_with(
+        lines, "codex/codex-native (named-only):"
+    )
+    assert "signal=healthy" in _line_with(lines, "codex/chatgpt-web (default):")
+    assert not any(ln.startswith("[WARN] codex") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith(
+        "codex=available-via-default-pool（outcome unverified until job receipt）"
+    )
+
+
+def test_verdict_stale_boundary_one_second_over_is_stale(tmp_path: Path) -> None:
+    """age VERDICT_STALE_S＋1s（21601s）＝stale → unknown＋WARN（邊界右側
+    fail-closed，與恰 6h 案合成釘死嚴格大於）。"""
+    out_dir = tmp_path / "probe"
+    over = NOW - timedelta(seconds=_mod.VERDICT_STALE_S + 1)
+    write_record(
+        out_dir,
+        record_from_bridge_entry(CODEX_OK_ENTRY, _mod._iso_z(over)),
+    )
+    write_record(out_dir, _webgpt_healthy_rec_at(tmp_path / "turns", over))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    for needle in ("codex/codex-native (named-only):", "codex/chatgpt-web (default):"):
+        line = _line_with(lines, needle)
+        assert "signal=unknown" in line, line
+        assert "signal=not_exhausted" not in line
+        assert "signal=healthy" not in line
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
 
 
 # ---- T3 不合併守衛（雙向：兩池 state 互不影響）----

@@ -47,7 +47,7 @@ verdict 投影（AIR-324——availability 判讀正典入口；純 stdout、零
   verdict 恆 unknown（usage probe unsupported 是 capability 事實——現值
   走 spine 事件面，非 probe 缺陷）。
 - 範例輸出（2026-10-13 誤判實例形態：native 週窗耗盡＋webgpt 健康）：
-  [availability] codex/codex-native (named-only): signal=exhausted evidence_scope=quota_only quota_visibility=structured source=delegate-bridge usage --json observed_at=2026-10-13T00:00:00Z retryable_at=2026-10-05T11:33:20Z
+  [availability] codex/codex-native (named-only): signal=exhausted evidence_scope=quota_only quota_visibility=structured source=delegate-bridge usage --json observed_at=2026-10-13T00:00:00Z retryable_at=2026-10-05T11:33:20Z reset_past
   [availability] codex/chatgpt-web (default): signal=healthy evidence_scope=transport_only quota_visibility=none source=local healthz+browser-turns observed_at=2026-10-13T00:00:00Z
   [availability] dispatch_verdict: codex=available-via-default-pool（codex-native 受阻不阻擋預設派工；outcome unverified until job receipt）
 """
@@ -651,6 +651,14 @@ def _pool_evidence_line(
     signal: str,
     retryable_at: str | None,
 ) -> str:
+    """evidence 行組裝（verdict 投影消費面；reset_past 顯性註記）。
+
+    reset_past 語義：retryable_at 早於 observed_at（probe_ts_utc）＝上游
+    stale normalized 耗盡紀錄——重置點在觀察當下已過，此 retryable_at 不再
+    是未來可派時點。行尾註記提醒消費端：retryable_at 過去≠可派，真實現值
+    以超過 VERDICT_STALE_S（6h）門檻外 re-probe 為準；token 只加註、不改
+    signal 與 retryable_at 欄本身（signal 仍照新鮮度契約投影）。
+    """
     scope = "transport_only" if pool == WEBGPT_POOL else "quota_only"
     visibility = "none"
     parsed = record.get("parsed") if record is not None else None
@@ -676,6 +684,12 @@ def _pool_evidence_line(
     )
     if retryable_at is not None:
         line += f" retryable_at={retryable_at}"
+        retry_dt = _parse_iso_z(retryable_at)
+        observed_dt = (
+            _parse_iso_z(record.get("probe_ts_utc")) if record is not None else None
+        )
+        if retry_dt is not None and observed_dt is not None and retry_dt < observed_dt:
+            line += " reset_past"
     return line
 
 
@@ -697,7 +711,8 @@ def verdict_lines(out_dir: Path, families: set[str], now: datetime) -> list[str]
     """AIR-324 verdict 投影行集（stdout 用；讀 latest 指針、零持久化）。
 
     per-pool evidence 行（每池一行：dispatch_role/signal/evidence_scope/
-    quota_visibility/source/observed_at[＋retryable_at]）＋WARN 行（非
+    quota_visibility/source/observed_at[＋retryable_at[＋reset_past]]）＋
+    WARN 行（非
     default 池 signal=unknown 時逐池一行；default 池 verdict=unknown 時加印
     default-pool WARN）＋dispatch_verdict 行（僅由各 family 的 default 池
     推導，token 恆帶 via-default-pool 範圍限定）：default 池 healthy/
@@ -705,6 +720,10 @@ def verdict_lines(out_dir: Path, families: set[str], now: datetime) -> list[str]
     until job receipt——派工層有限 fail-open，定案靠 job receipt）；
     exhausted → unavailable-via-default-pool（retryable_at=…）；
     unknown/unreachable/degraded → unknown。
+
+    reset_past 顯性註記（消費面）：retryable_at 早於 observed_at＝上游
+    stale normalized 耗盡紀錄——重置點已過的紀錄，retryable_at 過去≠可派，
+    真實現值以 6h 門檻（VERDICT_STALE_S）外 re-probe 為準。
     """
     lines: list[str] = []
     for family in sorted(families):
