@@ -786,3 +786,498 @@ def test_module_source_has_no_spine_write_surface() -> None:
     assert "os.replace(tmp, path)" in src
     # 無 open(...) 寫模式（w/a/x）
     assert not re.search(r"\bopen\([^)]*['\"][wax][+b]?'", src)
+
+
+# ---- AIR-324 verdict 投影（per-pool 判讀；池隔離鐵律）----
+
+# bridge usage codex ok 態 fixture（形態對齊 GLM live fixture 的 normalized
+# limits 結構——codex-native ok 態未經 live 採樣，limits 形態契約釘在解析器）。
+CODEX_OK_ENTRY: dict[str, Any] = {
+    "family": "codex",
+    "fetchedAt": "2026-09-15T15:54:29.888Z",
+    "planType": "plus",
+    "raw": {
+        "code": 200,
+        "data": {
+            "level": "plus",
+            "limits": [
+                {
+                    "type": "WEEKLY_WINDOW",
+                    "unit": 7,
+                    "percentage": 42,
+                    "remaining": 580,
+                    "usage": 1000,
+                    "currentValue": 420,
+                    "nextResetTime": 1791200000000,
+                    "usageDetails": [],
+                }
+            ],
+        },
+    },
+    "status": "ok",
+}
+
+# 2026-10-13 誤判實例形態：週窗 100%＋credits 0（remaining 0）
+CODEX_EXHAUSTED_ENTRY: dict[str, Any] = {
+    **CODEX_OK_ENTRY,
+    "raw": {
+        "code": 200,
+        "data": {
+            "level": "plus",
+            "limits": [
+                {
+                    "type": "WEEKLY_WINDOW",
+                    "unit": 7,
+                    "percentage": 100,
+                    "remaining": 0,
+                    "usage": 1000,
+                    "currentValue": 1000,
+                    "nextResetTime": 1791200000000,
+                    "usageDetails": [],
+                }
+            ],
+        },
+    },
+}
+
+# codex-native live 形態（2026-10-13 本機 bridge usage 採樣；PII 欄已剝除
+# 僅留結構欄）——與 GLM normalized limits 形態不同：quota 訊號在 raw 頂層
+# rate_limit（週窗 604800s／used_percent／reset_at epoch 秒）與 credits
+# （balance 字串）。此形態即誤判實例當下真實狀態。
+NOW_LIVE = datetime(2026, 10, 13, 0, 51, 19, tzinfo=UTC)
+NOW_LIVE_ISO = "2026-10-13T00:51:19Z"
+CODEX_NATIVE_LIVE_RATE_EXHAUSTED_RAW: dict[str, Any] = {
+    "plan_type": "plus",
+    "rate_limit": {
+        "allowed": False,
+        "limit_reached": True,
+        "primary_window": {
+            "limit_window_seconds": 604800,
+            "reset_after_seconds": 444602,
+            "reset_at": 1792297281,
+            "used_percent": 100,
+        },
+        "secondary_window": None,
+    },
+    "credits": {
+        "balance": "0",
+        "has_credits": False,
+        "unlimited": False,
+        "overage_limit_reached": False,
+    },
+}
+
+CODEX_NATIVE_LIVE_ENTRY: dict[str, Any] = {
+    "family": "codex",
+    "fetchedAt": NOW_LIVE_ISO,
+    "planType": "plus",
+    "raw": CODEX_NATIVE_LIVE_RATE_EXHAUSTED_RAW,
+    "status": "ok",
+}
+
+CODEX_NATIVE_LIVE_OK_ENTRY: dict[str, Any] = {
+    "family": "codex",
+    "fetchedAt": NOW_LIVE_ISO,
+    "planType": "plus",
+    "raw": {
+        "plan_type": "plus",
+        "rate_limit": {
+            "allowed": True,
+            "limit_reached": False,
+            "primary_window": {
+                "limit_window_seconds": 604800,
+                "reset_after_seconds": 444602,
+                "reset_at": 1792297281,
+                "used_percent": 42,
+            },
+            "secondary_window": None,
+        },
+        "credits": {"balance": "0", "has_credits": False, "unlimited": False},
+    },
+    "status": "ok",
+}
+
+
+def _webgpt_healthy_rec(turns_root: Path) -> Any:
+    _seed_turn_dir(turns_root, "turn-completed", TURN_COMPLETED)
+    return probe_webgpt(
+        NOW,
+        healthz_url="http://127.0.0.1:17841/healthz",
+        turns_root=turns_root,
+        opener=lambda url, timeout: _FakeResponse(json.dumps(HEALTHZ_OK).encode()),
+    )
+
+
+def _webgpt_unreachable_rec() -> Any:
+    """connection refused（transport 確認死）——unreachable 形態。"""
+    import urllib.error
+
+    def refuse(url: str, timeout: float) -> object:
+        raise urllib.error.URLError("connection refused")
+
+    return probe_webgpt(
+        NOW,
+        healthz_url="http://127.0.0.1:17841/healthz",
+        turns_root=tmp_unused_turns(),
+        opener=refuse,
+    )
+
+
+def _webgpt_signal_error_rec() -> Any:
+    """healthz 回應非 JSON（HealthSignalError）——非 transport 確認死 → unknown 形態。"""
+    return probe_webgpt(
+        NOW,
+        healthz_url="http://127.0.0.1:17841/healthz",
+        turns_root=tmp_unused_turns(),
+        opener=lambda url, timeout: _FakeResponse(b"not json"),
+    )
+
+
+def tmp_unused_turns() -> Path:
+    return Path("/nonexistent-browser-turns")
+
+
+def _verdict_text(lines: list[str]) -> str:
+    return "\n".join(lines)
+
+
+def _line_with(lines: list[str], needle: str) -> str:
+    matched = [ln for ln in lines if needle in ln]
+    assert matched, f"no verdict line contains {needle!r} in: {lines}"
+    return matched[0]
+
+
+def test_pool_dispatch_role_mapping_pins_air221() -> None:
+    """dispatch_role 映射（AIR-221 RoutingPolicy 投影）：webgpt=default、
+    codex-native=named-only、單池 family（glm/muse/grok 形）=default。"""
+    assert _mod.pool_dispatch_role("codex", "chatgpt-web") == "default"
+    assert _mod.pool_dispatch_role("codex", "codex-native") == "named-only"
+    assert _mod.pool_dispatch_role("glm", "glm-native") == "default"
+    assert _mod.pool_dispatch_role("muse", "unknown") == "default"
+    assert _mod.pool_dispatch_role("grok", "grok-free") == "default"
+
+
+# ---- T1 池隔離（誤判實例形態）----
+
+
+def test_verdict_pool_isolation_native_exhausted_webgpt_healthy(
+    tmp_path: Path,
+) -> None:
+    """2026-10-13 誤判實例形態：native 週窗耗盡＋webgpt 健康。
+
+    池隔離鐵律：native 的 exhausted（含 retryable_at）只限制 codex-native
+    （named-only）；dispatch_verdict 僅由 default 池（chatgpt-web）推導＝
+    available-via-default-pool——全文禁無範圍限定的 family 級宣稱。
+    """
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_EXHAUSTED_ENTRY, NOW_ISO))
+    write_record(out_dir, _webgpt_healthy_rec(tmp_path / "turns"))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    text = _verdict_text(lines)
+
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    webgpt = _line_with(lines, "codex/chatgpt-web (default):")
+    assert "signal=exhausted evidence_scope=quota_only" in native
+    assert "quota_visibility=structured" in native
+    expected_retry = _mod._iso_z(datetime.fromtimestamp(1791200000000 / 1000, tz=UTC))
+    assert f"retryable_at={expected_retry}" in native
+    assert "signal=healthy evidence_scope=transport_only" in webgpt
+    assert "quota_visibility=none" in webgpt
+    # retryable_at 不跨池：webgpt 行無 retryable_at 欄位
+    assert "retryable_at" not in webgpt
+
+    verdict = _line_with(lines, "dispatch_verdict: codex=")
+    assert verdict.endswith(
+        "codex=available-via-default-pool（codex-native 受阻不阻擋預設派工；"
+        "outcome unverified until job receipt）"
+    )
+    # 無範圍限定的 family 級 available/unavailable 宣稱禁出現（token 恆帶
+    # via-default-pool；WARN 行的「禁推定 available」是禁令非宣稱，不在比對面）
+    assert "codex unavailable" not in text
+    assert not re.search(r"codex=(?:un)?available(?!-via-default-pool)", text)
+
+
+# ---- T1b live 形態（2026-10-13 採樣：quota 訊號在 raw.rate_limit/credits）----
+
+
+def test_verdict_codex_native_live_rate_exhausted(tmp_path: Path) -> None:
+    """live 採樣形態：raw.rate_limit 週窗 used_percent=100 → exhausted
+    （retryable_at=reset_at epoch 秒轉 ISO；quota_visibility=structured）。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_NATIVE_LIVE_ENTRY, NOW_LIVE_ISO))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW_LIVE)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    assert "signal=exhausted evidence_scope=quota_only" in native
+    assert "quota_visibility=structured" in native
+    expected_retry = _mod._iso_z(datetime.fromtimestamp(1792297281, tz=UTC))
+    assert f"retryable_at={expected_retry}" in native
+
+
+def test_verdict_codex_native_live_ok_not_exhausted(tmp_path: Path) -> None:
+    """live 形態 allowed=true＋used_percent=42 → not_exhausted（structured）。"""
+    out_dir = tmp_path / "probe"
+    write_record(
+        out_dir, record_from_bridge_entry(CODEX_NATIVE_LIVE_OK_ENTRY, NOW_LIVE_ISO)
+    )
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW_LIVE)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    assert "signal=not_exhausted" in native
+    assert "quota_visibility=structured" in native
+
+
+def test_verdict_codex_native_credits_zero_without_rate_limit(tmp_path: Path) -> None:
+    """rate_limit 缺席＋credits 耗盡（balance "0"＋has_credits false）→ exhausted
+    （保守偏向——named-only 池寧誤報 exhausted 不誤報可派）。"""
+    entry = {
+        "family": "codex",
+        "fetchedAt": NOW_LIVE_ISO,
+        "planType": "plus",
+        "raw": {"credits": {"balance": "0", "has_credits": False, "unlimited": False}},
+        "status": "ok",
+    }
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(entry, NOW_LIVE_ISO))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW_LIVE)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    assert "signal=exhausted" in native
+    assert "retryable_at" not in native
+
+
+# ---- T2 unknown 邊界（四形：healthz error／parse error／缺席／stale）----
+
+
+def test_verdict_healthz_error_is_unknown(tmp_path: Path) -> None:
+    """healthz 腿 error（非 transport 確認死）→ webgpt 池 unknown＋WARN＋verdict=unknown。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_OK_ENTRY, NOW_ISO))
+    write_record(out_dir, _webgpt_signal_error_rec())
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    webgpt = _line_with(lines, "codex/chatgpt-web (default):")
+    assert "signal=unknown" in webgpt
+    assert "available" not in webgpt  # 該池證據行無 available 字樣
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    verdict = _line_with(lines, "dispatch_verdict: codex=")
+    assert verdict.endswith("codex=unknown")
+    assert "available" not in verdict
+
+
+def test_verdict_native_parse_error_is_unknown_named_only_warn(
+    tmp_path: Path,
+) -> None:
+    """native parse error → named-only 池 unknown＋pool WARN；不污染 default 結論。"""
+    out_dir = tmp_path / "probe"
+    write_record(
+        out_dir,
+        _mod.ProbeRecord(
+            family="codex",
+            pool="codex-native",
+            probe_ts_utc=NOW_ISO,
+            source="delegate-bridge usage --json",
+            status="error",
+            failure_class="parse_error",
+            parsed={"value": "unknown", "detail": "bridge stdout not JSON"},
+            raw={},
+            notes="",
+        ),
+    )
+    write_record(out_dir, _webgpt_healthy_rec(tmp_path / "turns"))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    assert "signal=unknown" in native
+    assert "available" not in native
+    assert any("[WARN] codex/codex-native (named-only) unknown" in ln for ln in lines)
+    # named-only 池 unknown 不把 default 池結論拖成 unknown
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith(
+        "codex=available-via-default-pool（outcome unverified until job receipt）"
+    )
+
+
+def test_verdict_pool_record_absent_is_unknown(tmp_path: Path) -> None:
+    """default 池 record 缺席（無 latest 指針）→ unknown＋WARN＋verdict=unknown。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_OK_ENTRY, NOW_ISO))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    webgpt = _line_with(lines, "codex/chatgpt-web (default):")
+    assert "signal=unknown" in webgpt
+    assert "source=absent" in webgpt
+    assert "observed_at=absent" in webgpt
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    assert "available-via-default-pool" not in _verdict_text(lines)
+
+
+def test_verdict_stale_timestamp_is_unknown(tmp_path: Path) -> None:
+    """stale timestamp（超過新鮮度慣例）→ 該池 unknown＋WARN——禁沿用過期紀錄冒充新鮮。"""
+    out_dir = tmp_path / "probe"
+    stale_now = NOW - timedelta(hours=7)
+    write_record(
+        out_dir,
+        record_from_bridge_entry(CODEX_OK_ENTRY, _mod._iso_z(stale_now)),
+    )
+    write_record(out_dir, _webgpt_healthy_rec_at(tmp_path / "turns", stale_now))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    for needle in ("codex/codex-native (named-only):", "codex/chatgpt-web (default):"):
+        line = _line_with(lines, needle)
+        assert "signal=unknown" in line, line
+        assert "signal=not_exhausted" not in line
+        assert "signal=healthy" not in line
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
+
+
+def _webgpt_healthy_rec_at(turns_root: Path, now: datetime) -> Any:
+    _seed_turn_dir(turns_root, "turn-completed", TURN_COMPLETED)
+    return probe_webgpt(
+        now,
+        healthz_url="http://127.0.0.1:17841/healthz",
+        turns_root=turns_root,
+        opener=lambda url, timeout: _FakeResponse(json.dumps(HEALTHZ_OK).encode()),
+    )
+
+
+# ---- T3 不合併守衛（雙向：兩池 state 互不影響）----
+
+
+def test_verdict_no_merge_native_ok_webgpt_unreachable(tmp_path: Path) -> None:
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_OK_ENTRY, NOW_ISO))
+    write_record(out_dir, _webgpt_unreachable_rec())
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    webgpt = _line_with(lines, "codex/chatgpt-web (default):")
+    assert "signal=not_exhausted" in native  # native 不被 webgpt 拖累
+    assert "signal=unreachable evidence_scope=transport_only" in webgpt
+    assert "quota_visibility=none" in webgpt
+    # default 池 unreachable → verdict=unknown＋WARN（非 available）
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
+
+
+def test_verdict_no_merge_native_exhausted_webgpt_unreachable(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_EXHAUSTED_ENTRY, NOW_ISO))
+    write_record(out_dir, _webgpt_unreachable_rec())
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    native = _line_with(lines, "codex/codex-native (named-only):")
+    webgpt = _line_with(lines, "codex/chatgpt-web (default):")
+    assert "signal=exhausted" in native
+    assert "retryable_at=" in native  # native 的 retryable_at 僅在 native 行
+    assert "signal=unreachable" in webgpt  # webgpt 不被 native 拖成 exhausted
+    assert "retryable_at" not in webgpt
+    assert any(ln.startswith("[WARN] codex default pool unknown") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
+
+
+# ---- T4 default 池 unknown → verdict=unknown＋WARN ----
+
+
+def test_verdict_default_pool_unknown_yields_unknown_verdict(tmp_path: Path) -> None:
+    """native 再健康，default 池（webgpt）unknown → verdict=unknown＋WARN。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(CODEX_OK_ENTRY, NOW_ISO))
+    lines = _mod.verdict_lines(out_dir, {"codex"}, NOW)
+    assert "signal=not_exhausted" in _line_with(lines, "codex/codex-native (named-only):")
+    assert any(
+        ln.startswith("[WARN] codex default pool unknown——先探測再派，禁推定 available")
+        for ln in lines
+    )
+    assert _line_with(lines, "dispatch_verdict: codex=").endswith("codex=unknown")
+
+
+# ---- 單池 family 投影（glm ok／muse unsupported 結構事實）----
+
+
+def test_verdict_glm_single_pool_ok_available(tmp_path: Path) -> None:
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(GLM_OK_ENTRY, NOW_ISO))
+    lines = _mod.verdict_lines(out_dir, {"glm"}, NOW)
+    glm_line = _line_with(lines, "glm/glm-native (default):")
+    assert "signal=not_exhausted evidence_scope=quota_only" in glm_line
+    assert "quota_visibility=structured" in glm_line
+    assert _line_with(lines, "dispatch_verdict: glm=").endswith(
+        "glm=available-via-default-pool（outcome unverified until job receipt）"
+    )
+
+
+def test_verdict_muse_unsupported_is_unknown(tmp_path: Path) -> None:
+    """muse usage probe unsupported（capability 事實）→ 池 unknown＋WARN＋verdict=unknown。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(MUSE_UNSUPPORTED_ENTRY, NOW_ISO))
+    lines = _mod.verdict_lines(out_dir, {"muse"}, NOW)
+    muse_line = _line_with(lines, "muse/unknown (default):")
+    assert "signal=unknown" in muse_line
+    assert "quota_visibility=none" in muse_line
+    assert any(ln.startswith("[WARN] muse default pool unknown") for ln in lines)
+    assert _line_with(lines, "dispatch_verdict: muse=").endswith("muse=unknown")
+
+
+# ---- main 接線：verdict 投影真的印到 stdout ----
+
+
+def test_main_prints_verdict_projection(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    out_dir = tmp_path / "probe"
+    out_dir.mkdir()
+    bin_dir = tmp_path / "delegate" / "bin"
+    bin_dir.mkdir(parents=True)
+    (bin_dir / "delegate-bridge").write_text("", encoding="utf-8")
+    registry = tmp_path / "registry.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "plugins": [
+                    {
+                        "id": "delegate@delegate-market",
+                        "installPath": str(bin_dir.parent),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    fresh_healthz = {
+        **HEALTHZ_OK,
+        "last_successful_model_catalog_request_at": datetime.now(UTC)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z"),
+    }
+
+    def fake_runner(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess:
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=0,
+            stdout=json.dumps(
+                {"families": [CODEX_OK_ENTRY, GLM_OK_ENTRY, MUSE_UNSUPPORTED_ENTRY]}
+            ),
+            stderr="",
+        )
+
+    real_probe_webgpt = _mod.probe_webgpt
+
+    def fake_probe_webgpt(now: datetime, **kwargs: object) -> object:
+        return real_probe_webgpt(
+            now,
+            healthz_url=kwargs["healthz_url"],
+            turns_root=kwargs["turns_root"],
+            opener=lambda url, timeout: _FakeResponse(
+                json.dumps(fresh_healthz).encode()
+            ),
+        )
+
+    monkeypatch.setattr(_mod, "DEFAULT_OUT_DIR", out_dir)
+    monkeypatch.setattr(_mod, "DEFAULT_REGISTRY", registry)
+    monkeypatch.setattr(_mod, "TURNS_ROOT", tmp_path / "turns")
+    monkeypatch.setattr(_mod.subprocess, "run", fake_runner)
+    monkeypatch.setattr(_mod, "probe_webgpt", fake_probe_webgpt)
+    rc = _mod.main(["--family", "codex"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "[availability] codex/chatgpt-web (default): signal=healthy" in out
+    assert "[availability] codex/codex-native (named-only): signal=not_exhausted" in out
+    assert "dispatch_verdict: codex=available-via-default-pool" in out
+    # scope fence：--family codex 不印 glm/muse verdict
+    assert "dispatch_verdict: glm=" not in out
+    assert "dispatch_verdict: muse=" not in out

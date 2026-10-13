@@ -31,11 +31,31 @@
 
 用法：uv run python scripts/probe_entitlements.py [--min-interval 30]
       [--family codex|glm|muse] [--out-dir DIR]
+
+verdict 投影（AIR-324——availability 判讀正典入口；純 stdout、零新持久化）：
+- 每池一行 evidence＋每 family 一行 dispatch_verdict（僅由該 family 的
+  default 池推導）；min-interval skip 的腿讀 latest 指針照樣投影——跑本
+  script 即是取得「這家現在能不能派」答案最省力的路。exit 契約不變
+  （aggregate_exit）。
+- 池隔離鐵律：任何池的負面觀測（exhausted/unreachable/degraded/unknown）
+  只能限制該池；retryable_at 不跨池；dispatch_verdict token 恆帶
+  via-default-pool 範圍限定——永不出現無範圍限定的 family 級
+  available/unavailable 宣稱。
+- 證據層 fail-closed：error／缺席／stale（超過 VERDICT_STALE_S）／未來
+  時間戳 → 該池 unknown＋WARN；webgpt 池證據＝transport_only＋
+  quota_visibility=none（healthz 綠只證 process 活，禁宣稱額度）；muse
+  verdict 恆 unknown（usage probe unsupported 是 capability 事實——現值
+  走 spine 事件面，非 probe 缺陷）。
+- 範例輸出（2026-10-13 誤判實例形態：native 週窗耗盡＋webgpt 健康）：
+  [availability] codex/codex-native (named-only): signal=exhausted evidence_scope=quota_only quota_visibility=structured source=delegate-bridge usage --json observed_at=2026-10-13T00:00:00Z retryable_at=2026-10-05T11:33:20Z
+  [availability] codex/chatgpt-web (default): signal=healthy evidence_scope=transport_only quota_visibility=none source=local healthz+browser-turns observed_at=2026-10-13T00:00:00Z
+  [availability] dispatch_verdict: codex=available-via-default-pool（codex-native 受阻不阻擋預設派工；outcome unverified until job receipt）
 """
 
 import argparse
 import json
 import logging
+import math
 import os
 import re
 import subprocess
@@ -453,6 +473,276 @@ def aggregate_exit(records: list[Any]) -> int:
     return 0 if any(r.status == "ok" for r in records) else 1
 
 
+# ---- AIR-324 verdict 投影（stdout；池隔離鐵律——不動 latest-*.json schema）----
+
+# dispatch_role 映射（AIR-221 RoutingPolicy 投影）：codex 兩池分工——
+# chatgpt-web=default（bridge 派工未指名一律 webgpt）、codex-native=
+# named-only（user 指名才可派）；其餘單池 family（glm/muse；grok 尚無
+# probe 腿）＝default（單池即預設池）。
+POOL_DISPATCH_ROLE: dict[tuple[str, str], str] = {
+    ("codex", "chatgpt-web"): "default",
+    ("codex", "codex-native"): "named-only",
+}
+WEBGPT_POOL = "chatgpt-web"
+# verdict 證據新鮮度（對齊本 script 既有 CATALOG_STALE_S 慣例：5h 級額度
+# 窗口下，超過 6h 的觀測不再代表現值——fail-closed 降 unknown，禁沿用
+# 過期紀錄冒充新鮮觀測）。
+VERDICT_STALE_S = 6 * 3600
+
+
+def pool_dispatch_role(family: str, pool: str) -> str:
+    """per-pool dispatch role（AIR-221 RoutingPolicy 投影；未列冊單池=default）。"""
+    return POOL_DISPATCH_ROLE.get((family, pool), "default")
+
+
+def _finite_num(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _next_reset_iso(entry: dict[str, Any]) -> str | None:
+    ms = entry.get("nextResetTime")
+    if not _finite_num(ms) or not (ms > 0):
+        return None
+    return _iso_z(datetime.fromtimestamp(ms / 1000, tz=UTC))
+
+
+def _epoch_s_to_iso(value: Any) -> str | None:
+    if not _finite_num(value) or not (value > 0):
+        return None
+    return _iso_z(datetime.fromtimestamp(value, tz=UTC))
+
+
+def _codex_native_exhaustion(raw: dict[str, Any]) -> tuple[str, str | None] | None:
+    """codex-native ok 態 raw（bridge usage 原樣落地）→ (signal, retryable_at)。
+
+    live 形態（2026-10-13 本機採樣；與 GLM normalized limits 形態不同——
+    quota 訊號在 raw 頂層）：rate_limit.allowed／limit_reached／
+    primary_window{used_percent, reset_at(epoch 秒), limit_window_seconds=
+    604800＝週窗}＋credits{balance:str, has_credits}。週窗 used_percent>=100
+    或 limit_reached／allowed=false → exhausted（retryable_at=reset_at）；
+    allowed=true → not_exhausted。rate_limit 缺席時由 credits 判（balance
+    <=0 且 has_credits=false → exhausted——保守偏向：codex-native 是
+    named-only 池，寧誤報 exhausted 不誤報可派）。非此二形態 → None
+    （交回 GLM limits 形態判讀；皆不中 → unknown fail-closed）。
+    """
+    rate_limit = raw.get("rate_limit")
+    if not isinstance(rate_limit, dict):
+        credits = raw.get("credits")
+        if isinstance(credits, dict):
+            balance = credits.get("balance")
+            if credits.get("has_credits") is False and _balance_zero(balance):
+                return "exhausted", None
+        return None
+    primary = rate_limit.get("primary_window")
+    primary = primary if isinstance(primary, dict) else {}
+    retryable = _epoch_s_to_iso(primary.get("reset_at"))
+    used_pct = primary.get("used_percent")
+    if _finite_num(used_pct) and not (used_pct < 100):
+        return "exhausted", retryable
+    if rate_limit.get("limit_reached") is True or rate_limit.get("allowed") is False:
+        return "exhausted", retryable
+    if rate_limit.get("allowed") is True:
+        return "not_exhausted", None
+    return None
+
+
+def _balance_zero(balance: Any) -> bool:
+    if isinstance(balance, bool):
+        return False
+    if isinstance(balance, (int, float)):
+        return math.isfinite(balance) and not (balance > 0)
+    if isinstance(balance, str):
+        try:
+            value = float(balance)
+        except ValueError:
+            return False
+        return math.isfinite(value) and not (value > 0)
+    return False
+
+
+def _limits_exhaustion(parsed: dict[str, Any]) -> tuple[str, str | None]:
+    """bridge usage ok 態 limits → (signal, retryable_at)。
+
+    週窗 100%（percentage>=100）或 credits 0（remaining<=0）→ exhausted
+    （帶 nextResetTime 轉 ISO 的 retryable_at）；有可判讀數值而無耗盡簽名
+    → not_exhausted；無任何可判讀 limit → unknown（禁無證據宣稱
+    not_exhausted）。
+    """
+    limits = parsed.get("limits")
+    if not isinstance(limits, list) or not limits:
+        return "unknown", None
+    saw_readable = False
+    for entry in limits:
+        if not isinstance(entry, dict):
+            continue
+        pct = entry.get("percentage")
+        rem = entry.get("remaining")
+        if _finite_num(pct):
+            saw_readable = True
+            if not (pct < 100):  # >= 100（非有限值已排除）
+                return "exhausted", _next_reset_iso(entry)
+        if _finite_num(rem):
+            saw_readable = True
+            if not (rem > 0):  # <= 0（credits 0）
+                return "exhausted", _next_reset_iso(entry)
+    return ("not_exhausted", None) if saw_readable else ("unknown", None)
+
+
+def _pool_signal(
+    record: dict[str, Any] | None, pool: str, now: datetime
+) -> tuple[str, str | None]:
+    """latest 指針內容 → (signal, retryable_at)；證據層 fail-closed。
+
+    池隔離鐵律（AIR-324）：任何負面觀測只限制本池——unreachable/exhausted
+    永不外溢到同 family 其他池或 family 級結論。缺席／stale（超過
+    VERDICT_STALE_S）／未來時間戳／error 態 → unknown；webgpt error 態中
+    transport 確認死（connection refused/timeout）→ unreachable（仍是負面
+    觀測、僅限本池），healthz 回應不可判讀 → unknown。
+    """
+    if record is None:
+        return "unknown", None
+    ts = _parse_iso_z(record.get("probe_ts_utc"))
+    if ts is None:
+        return "unknown", None
+    age_s = (now - ts).total_seconds()
+    if age_s < 0 or age_s > VERDICT_STALE_S:
+        return "unknown", None
+    status = record.get("status")
+    parsed = record.get("parsed")
+    if not isinstance(parsed, dict):
+        parsed = {}
+    if pool == WEBGPT_POOL:
+        # webgpt 池由 healthz 判：transport_only＋quota_visibility=none——
+        # healthz 綠只證 process 活，禁宣稱額度
+        if status == "ok":
+            verdict = parsed.get("verdict")
+            if verdict == "healthy":
+                return "healthy", None
+            if verdict == "degraded":
+                return "degraded", None
+            return "unknown", None
+        if (
+            parsed.get("verdict") == "unreachable"
+            and record.get("failure_class") in {"transport_error", "transport_timeout"}
+        ):
+            return "unreachable", None
+        return "unknown", None
+    # bridge usage 腿由 quota 判（quota_only）——codex-native 先讀 live raw 形態
+    # （rate_limit/credits），不中再退 GLM normalized limits 形態
+    if status == "ok":
+        if pool == "codex-native":
+            raw = record.get("raw")
+            if isinstance(raw, dict):
+                codex_signal = _codex_native_exhaustion(raw)
+                if codex_signal is not None:
+                    return codex_signal
+        return _limits_exhaustion(parsed)
+    return "unknown", None  # error／unsupported／其他 → fail-closed
+
+
+def _pool_evidence_line(
+    family: str,
+    pool: str,
+    record: dict[str, Any] | None,
+    signal: str,
+    retryable_at: str | None,
+) -> str:
+    scope = "transport_only" if pool == WEBGPT_POOL else "quota_only"
+    visibility = "none"
+    parsed = record.get("parsed") if record is not None else None
+    if record is not None and record.get("status") == "ok" and pool != WEBGPT_POOL:
+        if (
+            isinstance(parsed, dict)
+            and isinstance(parsed.get("limits"), list)
+            and parsed["limits"]
+        ):
+            visibility = "structured"
+        else:
+            raw = record.get("raw")
+            if pool == "codex-native" and isinstance(raw, dict):
+                visibility = (
+                    "structured" if _codex_native_exhaustion(raw) is not None else "none"
+                )
+    source = record.get("source") if record is not None else "absent"
+    observed = record.get("probe_ts_utc") if record is not None else "absent"
+    line = (
+        f"[availability] {family}/{pool} ({pool_dispatch_role(family, pool)}): "
+        f"signal={signal} evidence_scope={scope} quota_visibility={visibility} "
+        f"source={source} observed_at={observed}"
+    )
+    if retryable_at is not None:
+        line += f" retryable_at={retryable_at}"
+    return line
+
+
+def _warn_pool_unknown(family: str, pool: str, role: str) -> str:
+    return f"[WARN] {family}/{pool} ({role}) unknown——觀測僅限此池，指名派工前先探測"
+
+
+def _warn_default_pool(family: str) -> str:
+    return f"[WARN] {family} default pool unknown——先探測再派，禁推定 available"
+
+
+def _family_pools(family: str) -> list[tuple[str, str]]:
+    if family == "codex":
+        return [("codex", FAMILY_POOL["codex"]), ("codex", WEBGPT_POOL)]
+    return [(family, FAMILY_POOL[family])]
+
+
+def verdict_lines(out_dir: Path, families: set[str], now: datetime) -> list[str]:
+    """AIR-324 verdict 投影行集（stdout 用；讀 latest 指針、零持久化）。
+
+    per-pool evidence 行（每池一行：dispatch_role/signal/evidence_scope/
+    quota_visibility/source/observed_at[＋retryable_at]）＋WARN 行（非
+    default 池 signal=unknown 時逐池一行；default 池 verdict=unknown 時加印
+    default-pool WARN）＋dispatch_verdict 行（僅由各 family 的 default 池
+    推導，token 恆帶 via-default-pool 範圍限定）：default 池 healthy/
+    not_exhausted → available-via-default-pool（恆附 outcome unverified
+    until job receipt——派工層有限 fail-open，定案靠 job receipt）；
+    exhausted → unavailable-via-default-pool（retryable_at=…）；
+    unknown/unreachable/degraded → unknown。
+    """
+    lines: list[str] = []
+    for family in sorted(families):
+        rows: list[dict[str, Any]] = []
+        for _family, pool in _family_pools(family):
+            record = _read_latest(out_dir, family, pool)
+            signal, retryable_at = _pool_signal(record, pool, now)
+            rows.append({"pool": pool, "signal": signal, "retryable_at": retryable_at})
+            lines.append(_pool_evidence_line(family, pool, record, signal, retryable_at))
+        for row in rows:
+            role = pool_dispatch_role(family, row["pool"])
+            if row["signal"] == "unknown" and role != "default":
+                lines.append(_warn_pool_unknown(family, row["pool"], role))
+        default = next(
+            (r for r in rows if pool_dispatch_role(family, r["pool"]) == "default"),
+            None,
+        )
+        if default is None:
+            continue
+        if default["signal"] in {"healthy", "not_exhausted"}:
+            parts = [
+                f"{row['pool']} 受阻不阻擋預設派工"
+                for row in rows
+                if pool_dispatch_role(family, row["pool"]) == "named-only"
+                and row["signal"] == "exhausted"
+            ]
+            parts.append("outcome unverified until job receipt")
+            verdict = "available-via-default-pool（" + "；".join(parts) + "）"
+        elif default["signal"] == "exhausted":
+            retryable = default["retryable_at"] or "unknown"
+            verdict = f"unavailable-via-default-pool（retryable_at={retryable}）"
+        else:
+            verdict = "unknown"
+            lines.append(_warn_default_pool(family))
+        lines.append(f"[availability] dispatch_verdict: {family}={verdict}")
+    return lines
+
+
 # ---- 額度事件入帳（P3：合成注入測試；提醒式不自動寫）----
 
 
@@ -693,6 +983,10 @@ def main(argv: list[str] | None = None) -> int:
             f"probed {rec.family}/{rec.pool} status={rec.status} "
             f"failure_class={rec.failure_class} -> {record_filename(rec)}"
         )
+    # AIR-324 verdict 投影：per-pool evidence＋dispatch_verdict（skip 的腿讀
+    # latest 指針照樣投影；純 stdout、不改 exit 契約）
+    for line in verdict_lines(out_dir, want, now):
+        print(line)
     return aggregate_exit(records)
 
 
