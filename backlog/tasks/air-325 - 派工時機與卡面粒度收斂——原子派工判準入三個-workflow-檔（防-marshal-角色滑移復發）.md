@@ -1,10 +1,10 @@
 ---
 id: AIR-325
 title: 派工時機與卡面粒度收斂——原子派工判準入三個 workflow 檔（防 marshal 角色滑移復發）
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-13 02:00'
-updated_date: '2026-10-13 02:44'
+updated_date: '2026-10-13 02:55'
 labels: []
 dependencies: []
 references:
@@ -43,13 +43,13 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 agent-workflow 5d 原子派工條文在場：第一個合法 dispatch 里程碑、gate 不跳但 gate 內最小化、唯讀研究腿不冒充 implementation、readiness 自檢句（rg 可掃）
-- [ ] #2 kanban-board 欄位分工節粒度判準在場：換做法測試＋下沉 work-order 指針＋真實案例 marker
-- [ ] #3 work-order.md：下沉分工判準＋Minimum Dispatch Packet 五欄模板節（目標/範圍邊界/已知決策/禁止事項/首個回報點）
-- [ ] #4 single-source drift 掃描乾淨：三檔各守 owner 面無互相重複、引用點已核（rg 證據）
-- [ ] #5 全量 pytest 綠＋card_validate --all 綠
-- [ ] #6 post-build bi panel（muse＋codex diff 審查）＋fresh-eyes 腿 findings 全處置、bridge GLM-5.3 judge 裁決、回執四欄入卡 notes（boundary 分類）
-- [ ] #7 決策④量測承接：結案時以離線 DB 量測一條派工弧的 intent→first valid job 間隔（防 gaming 佐證；無可量測弧時如實記錄），結果記卡 Notes；advisory 非 gate、不入三檔條文（judge R4）
+- [x] #1 agent-workflow 5d 原子派工條文在場：第一個合法 dispatch 里程碑、gate 不跳但 gate 內最小化、唯讀研究腿不冒充 implementation、readiness 自檢句（rg 可掃）
+- [x] #2 kanban-board 欄位分工節粒度判準在場：換做法測試＋下沉 work-order 指針＋真實案例 marker
+- [x] #3 work-order.md：下沉分工判準＋Minimum Dispatch Packet 五欄模板節（目標/範圍邊界/已知決策/禁止事項/首個回報點）
+- [x] #4 single-source drift 掃描乾淨：三檔各守 owner 面無互相重複、引用點已核（rg 證據）
+- [x] #5 全量 pytest 綠＋card_validate --all 綠
+- [x] #6 post-build bi panel（muse＋codex diff 審查）＋fresh-eyes 腿 findings 全處置、bridge GLM-5.3 judge 裁決、回執四欄入卡 notes（boundary 分類）
+- [x] #7 決策④量測承接：結案時以離線 DB 量測一條派工弧的 intent→first valid job 間隔（防 gaming 佐證；無可量測弧時如實記錄），結果記卡 Notes；advisory 非 gate、不入三檔條文（judge R4）
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -65,3 +65,25 @@ C. skills/_common/work-order.md——Marshal 工單供給/worker 調查分工判
 D. 機械驗證——rg 三檔條文在場且無跨檔重複定義（各 owner 面單一源）、引用點 drift 掃描（改定義源掃引用慣例）、card_validate、全量 pytest。
 非目標：hooks/、rules/、governance/、任何 runtime 機制、model-routing。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔1013 結案回執〕classification=boundary（instruction 條文語義變更——dispatch 流程 decision/gate 面；落地前審查閘：baseline fresh＋intent 分離＋跨家族腿）／review=tri-panel：fresh-eyes att-air325-review-1 PASS-with-findings＋muse job-mv61vp1j PASS-with-findings＋codex job-mv61vp7k FAIL（2 major）——三腿收斂迫出 M1 gate 析取歧義＋M2 packet 指針缺口＋M3 量測收窄；bridge GLM-5.3 judge job-mv62cs1b（22 Reads 真覆核）：M1/M2/M3 全✅ R1-R4、i3/i4 ❌／session-freshness=fresh／deployment-surfaces=N/A（四 surface 零命中——紅 skills 條文面）。job ids：討論 muse job-mv604lcx／codex job-mv604lgk；審查 muse job-mv61vp1j／codex job-mv61vp7k；judge job-mv62cs1b。〔i3/i4 結案義務〕①三檔共享列舉（實作入口/內部呼叫鏈/測試配置）各守 owner 面——未來變更須三檔同步（agent-workflow 5d／kanban 粒度判準／work-order §5）；②Minimum Dispatch Packet 落點為檔首 blockquote 區（非字面「模板首節」）——偏差經 tri-panel 審查接受。〔AC#7 量測〕intent→first valid dispatch＝15.9 分鐘（本弧自身＝P1 落地前 baseline 樣本；intent 09:58:45 user 原話「OK就開卡老規矩實作」→10:14:42 impl-lite spawn；含建卡/Plan/AC/開工/wt-open/工單全前置——後續弧對照此 baseline 判 P1 效果）。〔GLM judge 腿工具面觀察〕finalText turn-anchor 組裝丟失 verdict 本體（dropped 3391 chars），從 jsonl streaming/subagent-plan payload 完整回收——大輸出裁決腿宜帶 sink 檔承載（bridge-dispatch 長輸出紀律既有條款）。
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+原子派工判準落地三 workflow 檔（main c2467540）：agent-workflow 5d（第一個合法 dispatch 里程碑——gate 不跳、gate 內最小化、**不得以最小工單替代 gate**、readiness 自檢＝gate 逐項齊＋packet 五欄齊）；kanban-board Plan/AC 粒度判準（換做法測試＋mos-192 真實案例）；work-order.md Minimum Dispatch Packet（五欄＝gate 備齊後最小可派形、**十節契約不豁免**）＋§5 下沉分工＋矛盾交叉引用。收斂：tri-panel（fresh-eyes＋muse＋codex——codex 判 FAIL 迫出兩 major）→bridge GLM-5.3 judge 逐條核實裁決（M1/M2/M3 全✅＋R1-R4）→repair batch 逐字替換（74053a75）→AC#7 量測 15.9min（本弧 baseline 樣本）。
+
+```mermaid
+flowchart LR
+    user["user：派個 X 做 Y"] --> gate{"gate 備齊？"}
+    gate -->|"是"| packet["Minimum Dispatch Packet<br/>五欄（十節契約不豁免）"]
+    gate -->|"否"| block["回報阻塞點<br/>不得以最小工單替代 gate"]
+    packet --> go["立即 dispatch<br/>worker 自查實作入口"]
+    go --> selfcheck["readiness 自檢<br/>gate 逐項齊＋五欄齊"]
+```
+
+<!-- SECTION:FINAL_SUMMARY:END -->
