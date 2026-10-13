@@ -64,3 +64,9 @@ E. scripts/probe_entitlements.py docstring——verdict 輸出用法說明。
 F. 機械閘——card_validate、全量 pytest、rg 指針掃描（C/D 落點在場且無兩池語義複本）。
 G. 非目標白名單：不改 availability_snapshot.py、不改 delegate-bridge、不加 hook、不新增持久化 state。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔C 重議備用（兩家 advisory 草稿，A+B 後復發且歸因繞過正典入口時啟用）〕muse 版：「[availability] bridge_usage 的 codex 行＝native 訂閱池 only；預設派工池 webgpt（chatgpt-web/*）不在此輸出——下結論前跑 probe_entitlements verdict 或查 spine model-runtime-entitlements。」codex 版：「[availability advisory] bridge_usage 的 codex 用量僅代表 codex-native 訂閱池；chatgpt-web/* 為獨立池且無結構化 usage 資料。禁止由 native 耗盡推定 webgpt 不可派；請依 model-routing 核對目標 pool 與派工證據。」前置條件（兩家共識）：先機械實測四 harness 的 MCP tool-name 命中率（覆蓋矩陣），未測不得上線。
+<!-- SECTION:NOTES:END -->
