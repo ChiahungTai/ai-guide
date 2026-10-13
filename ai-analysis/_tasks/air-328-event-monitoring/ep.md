@@ -8,7 +8,7 @@
 
 使用者的問題是 session 被定時監控洗版。成功條件：一般監控使用既有 observer；無變化留在程序內等待，有事件才依真實 carrier 能力通知；沒有 after-turn delivery 的 carrier 誠實用活躍回合 bounded wait，或留待收入口。不藉 recurring automation 增加空回合。使用者明示的時間工作（包含 recurring 報表）不受此限制。
 
-架構不是最小補丁：移除相互矛盾的 definitions，建立唯一 notification/delivery 契約，保留不同 domain 的 state ownership。GLM-5.3 初審與重评 job-mv6djzrv-3nlfkl / job-mv6dvbhz-u3ng2x；Muse 初審 job-mv6fgb9g-9d0wp0。原分析 ai-analysis/reports/2026-10-13-monitoring-architecture.md；逐項裁決 evidence/design-adjudication.md。使用者已同意「5.3, muse 審查過後，ＯＫ就開使實作吧，這次flash 實作 sol, muse 審查，你judge」。
+架構不是最小補丁：移除相互矛盾的 definitions，建立唯一 notification/delivery 契約，保留不同 domain 的 state ownership。GLM-5.3 初審與重评 job-mv6djzrv-3nlfkl / job-mv6dvbhz-u3ng2x；Muse 初審 job-mv6fgb9g-9d0wp0（歷史 jobId 在 primary repo ledger，本 WT 查無為預期）。原分析 ai-analysis/reports/2026-10-13-monitoring-architecture.md（frozen 歷史——殘留糾正前措辭〔收取去重／重放不重複處理等〕，以本文與裁決為準）；逐項裁決 evidence/design-adjudication.md。使用者已同意「5.3, muse 審查過後，ＯＫ就開使實作吧，這次flash 實作 sol, muse 審查，你judge」。
 
 不做：新增 daemon、统一 observer state/cursor、carrier adapter、SIGTERM reaper、自重啟避回收、143≈正常五小時回收推論、修改外 repo/plugin、全域禁 recurring。SC stub 規範來信不併本卡。
 
@@ -20,7 +20,7 @@
 
 | 責任 | 唯一 owner | 消費者 |
 |---|---|---|
-| 通知能力選擇／無事件不注入回合 | 新 skills/_common/waiter-charter.md | mail-watch、bridge-dispatch、agent-workflow、deep-work、autonomous-execution |
+| 通知能力選擇／無事件不注入回合 | 新 skills/_common/waiter-charter.md | mail-watch、bridge-dispatch、agent-workflow、deep-work、autonomous-execution、model-routing |
 | collection-owner invariant／supervision 裁決 | skills/agent-workflow/SKILL.md | 上列 workflows、model-routing 指針 |
 | Bridge receipt acceptance／transport 操作 | 已安裝 delegate plugin | guide 只引用、不重定義 |
 | Mail 觀察／generation／游標與夜間上限 | mail-watch 與既有 mail_waiter | mail-handle、deep-work |
@@ -42,7 +42,7 @@
 | ID | 情境／觸發 | 預期 consumer 行為 | 證據／oracle |
 |---|---|---|---|
 | TC1 | Codex 多顆長工、無外部 exit push，時間壓力＋既有三層規則＋便宜 cron 誘因 | 不建 recurring monitor；記 owner並活躍 bounded wait，不假稱 turn 後續跑 | user 原話＋fresh-context baseline/treatment action dry-run；不得冒充 live trace |
-| TC2 | 既已授權 watch，使用者追問有沒有收信；state running/stale、marker absent | status不撤銷意圖；核當前state與owner，re-arm既有watch；不再次索取同意 | 歷史 H3 frozen corpus，及對稱 explicit stop variation |
+| TC2 | 既已授權 watch，使用者追問有沒有收信；state running/stale、marker absent | status不撤銷意圖；核當前state與owner，re-arm既有watch；不再次索取同意 | 歷史 H3 frozen corpus（primary `/Users/ctai/Github/ai-guide/.agent-tmp/air327-retained/`；派工前照本段落凍結程序 snapshot 進本 WT evidence），及對稱 explicit stop variation |
 | TC3 | 最新 explicit stop 或 desired stopped，僅 status 或 startup opt-in marker | 不自動 arm，status不變generation；後來明示start才可重新啟動 | 既有 mail_waiter stop/status tests；hook禁止副作用 |
 | TC4 | 缺哨／stale＋valid marker的 SessionStart | advisory說明尚未掛哨；不可宣稱完成；無marker保持silent，malformed fail-loud | test_mail_autoarm 原測試和新增negative predicate；先RED再GREEN |
 | TC5 | 多輪 timeout、事件重放、caller退出後恢復、雙arm與等待中stop | timeout內消化，domain身份不混用；requery不漏pending；mail可重喚醒但處置依S2冪等；bridge124不重派 | 既有 mail/bridge/harness suites選對case，subprocess整合測試，缺口顯式列出 |
@@ -56,7 +56,7 @@
 
 Context：TC1/2/3/5/6/7/8。Read本EP、裁決、所有受影響原文。Flash只執行已定設計，遇新boundary提問不自決。
 
-修改要點：charter定觀察與投遞分界、能力選擇、無事件留observer、當次 exposed capability 優先／歷史表僅 prior；有confirmed event route才用，否則活躍boundedwait，無路徑留durablepending＋限制。charter引用 collection-owner＋各domain，不複製其判斷。將model-routing收法決策樹刪成navigation，原transport知識指plugin。各skill刪換名三層／mandatory heartbeat與通用exit-push；description與引用一起同步。
+修改要點：charter定觀察與投遞分界、能力選擇、無事件留observer、當次 exposed capability 優先／歷史表僅 prior；有confirmed event route才用，否則活躍boundedwait（<=60s per call，裁決 F3 界值），無路徑留durablepending＋限制。charter引用 collection-owner＋各domain，不複製其判斷。將model-routing收法決策樹刪成navigation，原transport知識指plugin。各skill刪換名三層／mandatory heartbeat與通用exit-push；description與引用一起同步。
 
 watch intent priority：最新明示stop優先；較新的明示start可覆蓋。當次explicitwatch或已核實的prior running intent延續；status只讀、不授權亦不撤銷。marker僅opt-in advisory；absent不抹除explicitwatch，malformed使autoarm提示fail-loud。watcher freshness不證callback接線。Domain annex只解釋各自rearm/replay/stop指向，不合併state，也不增加exactly-once保證。
 
