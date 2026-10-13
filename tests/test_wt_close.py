@@ -93,6 +93,12 @@ def _stub_code_reality(base: Path, body: str) -> Path:
     return stub_bin
 
 
+def _argv_marker_body(marker: Path, tail: str) -> str:
+    """F2/F3 共用 marker 型 stub 機制：stub 先寫 argv 進 marker 檔（檔案副作用不被
+    command substitution 吞掉），再跑 tail（echo JSON／exit code）。"""
+    return "printf '%s\\n' \"$@\" > \"" + str(marker) + "\"\n" + tail
+
+
 def _close(wt: Path, *, path: str | None = None) -> subprocess.CompletedProcess:
     env = os.environ.copy()
     if path is not None:
@@ -164,13 +170,18 @@ def test_merge_wt_not_primary_skips_warmup(tmp_path: Path) -> None:
     _git(repo, "checkout", "-b", "side")  # primary 讓出 main
     trunk_wt = repo.parent / "repo-trunk"
     _git(repo, "worktree", "add", str(trunk_wt), "main")
-    stub = _stub_code_reality(tmp_path, 'echo "SHOULD-NOT-BE-CALLED"; exit 3\n')
+    marker = tmp_path / "cr-invocation.txt"
+    stub = _stub_code_reality(
+        tmp_path,
+        _argv_marker_body(marker, 'echo "SHOULD-NOT-BE-CALLED"; exit 3\n'),
+    )
 
     done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
 
     assert done.returncode == 0, done.stderr
     assert "graph warm-up skip" in done.stderr
     assert "SHOULD-NOT-BE-CALLED" not in done.stderr  # 身份防護先行——stub 未被呼叫
+    assert not marker.exists()  # 獨立證明：外部命令未被呼叫（檔案副作用不被 command substitution 捕捉）
     assert _last_full_result(repo) == "pass;graph-warmup-skipped"
     assert not wt.exists()
 
@@ -187,6 +198,98 @@ def test_freshness_exit2_fail_open_receipt_unavailable(tmp_path: Path) -> None:
     assert "freshness 快檢不可用" in done.stderr
     assert _last_full_result(repo) == "pass;freshness-unavailable"
     assert not wt.exists()
+
+
+def test_freshness_exit2_with_fresh_true_json_receipt_unavailable(tmp_path: Path) -> None:
+    """F1 回歸：exit 2＋stdout {"fresh": true}——rc-JSON 不一致不得報 graph-fresh
+    （合法 fresh verdict 只配 exit 0；判定 RC 帶入，JSON 不單獨成立）。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": true}'; exit 2\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "freshness 快檢不可用" in done.stderr
+    assert _last_full_result(repo) == "pass;freshness-unavailable"
+    assert not wt.exists()
+
+
+def test_freshness_exit2_with_fresh_false_json_receipt_unavailable(tmp_path: Path) -> None:
+    """F1 回歸：exit 2＋stdout {"fresh": false}——exit 2＝unavailable，不得報
+    graph-stale=confirmed（合法 stale verdict 只配 exit 1，照 freshness face 契約）。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": false}'; exit 2\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "freshness 快檢不可用" in done.stderr
+    assert _last_full_result(repo) == "pass;freshness-unavailable"
+    assert not wt.exists()
+
+
+def test_freshness_exit0_with_fresh_false_receipt_unavailable(tmp_path: Path) -> None:
+    """F1 回歸：rc-JSON 不一致（exit 0＋fresh=false）→ unavailable。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": false}'; exit 0\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert _last_full_result(repo) == "pass;freshness-unavailable"
+    assert not wt.exists()
+
+
+def test_freshness_exit1_with_fresh_true_receipt_unavailable(tmp_path: Path) -> None:
+    """F1 回歸：rc-JSON 不一致（exit 1＋fresh=true）→ unavailable。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": true}'; exit 1\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert _last_full_result(repo) == "pass;freshness-unavailable"
+    assert not wt.exists()
+
+
+def test_freshness_non_json_output_receipt_unavailable(tmp_path: Path) -> None:
+    """F2：stdout not-json（exit 0）＝解析失敗 → fail-open unavailable，收線 exit 0 不變。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stub = _stub_code_reality(tmp_path, "echo not-json; exit 0\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "freshness 快檢不可用" in done.stderr
+    assert _last_full_result(repo) == "pass;freshness-unavailable"
+    assert not wt.exists()
+
+
+def test_freshness_invocation_form_freshness_repo_json(tmp_path: Path) -> None:
+    """F2：freshness 呼叫形態——stub argv 記錄進 marker 檔，斷言含 freshness／--repo／
+    primary 實路徑／--json。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    marker = tmp_path / "cr-freshness-argv.txt"
+    stub = _stub_code_reality(
+        tmp_path,
+        _argv_marker_body(marker, "echo '{\"fresh\": true}'; exit 0\n"),
+    )
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert marker.exists(), "stub 應被呼叫（MERGE_WT==primary）——marker 檔未落"
+    argv = marker.read_text(encoding="utf-8").splitlines()
+    assert "freshness" in argv
+    assert "--repo" in argv
+    assert str(repo) in argv  # primary 實路徑
+    assert "--json" in argv
 
 
 def test_code_reality_absent_fail_open_receipt_unavailable(tmp_path: Path) -> None:

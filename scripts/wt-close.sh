@@ -36,10 +36,12 @@
 #   （非正確性依賴）。身份防護：merge 落於暫時/trunk WT（MERGE_WT≠primary）→
 #   stderr skip note＋receipt pass;graph-warmup-skipped，不跑快檢（primary 未持有
 #   合併態，對它跑 freshness 量的是錯誤狀態）。MERGE_WT==primary → code-reality
-#   freshness --repo <primary> --json（fail-open：binary 缺席／exit 2／輸出解析
-#   失敗 → stderr warn＋receipt pass;freshness-unavailable，不擋收線、不改 exit
-#   code）；fresh=true → pass;graph-fresh；fresh=false → stderr 附確切重建命令＋
-#   pass;graph-stale=confirmed。四 token＝收線回執 graph 態數據源（warm-up reuse
+#   freshness --repo <primary> --json，判定 RC 帶入（exit 1＝合法 stale verdict，
+#   照 freshness face 契約）：rc=0＋fresh=true → pass;graph-fresh；rc=1＋
+#   fresh=false → stderr 附確切重建命令＋pass;graph-stale=confirmed；其餘一切
+#   組合（binary 缺席／exit 2／其他 rc／rc-JSON 不一致／解析失敗）→ stderr warn＋
+#   receipt pass;freshness-unavailable（fail-open：不擋收線、不改 exit code）。
+#   四 token＝收線回執 graph 態數據源（warm-up reuse
 #   rate 量測）。腳本不自動 build（rebuild 決策與執行歸 marshal instruction——
 #   cr-query skill「primary post-merge warm-up」節）；freshness 冷啟首跑可花數秒
 #   （warm cache <1s）——刻意不加 timeout 機構。
@@ -409,7 +411,9 @@ rm -rf "$LOCK"; trap - EXIT
 if [ "$TRUNK_ADVANCED" = "1" ]; then
   # CR freshness 三態快檢（AIR-329）：進入條件＝收斂成功＋trunk 實際前進。
   # 身份防護先行：merge 落於暫時/trunk WT → primary 未持有合併態，freshness 量的
-  # 是錯誤狀態——skip 不判 build。fail-open：缺席／exit 2／解析失敗都不擋收線。
+  # 是錯誤狀態——skip 不判 build。判定 RC 帶入：rc=0＋fresh=true → fresh；
+  # rc=1＋fresh=false（exit 1＝合法 stale verdict）→ confirmed-stale；其餘一切
+  # 組合（exit 2／其他 rc／rc-JSON 不一致／解析失敗）fail-open——不擋收線。
   if [ "$MERGE_WT" != "$PRIMARY" ]; then
     warn "merge 落於暫時 trunk WT——primary 未持有合併態，graph warm-up skip（identity 錯配防護）"
     receipt "pass;graph-warmup-skipped"
@@ -420,14 +424,14 @@ if [ "$TRUNK_ADVANCED" = "1" ]; then
     FRESH_RC=0
     FRESH_JSON="$(code-reality freshness --repo "$PRIMARY" --json)" || FRESH_RC=$?
     FRESH_VAL="$(printf '%s' "$FRESH_JSON" | python3 -c 'import json,sys;print(str(json.load(sys.stdin).get("fresh")).lower())' 2>/dev/null)" || FRESH_VAL=""
-    if [ "$FRESH_VAL" = "true" ]; then
+    if [ "$FRESH_RC" -eq 0 ] && [ "$FRESH_VAL" = "true" ]; then
       printf '[wt-close] CR freshness：graph fresh（primary 合併態）——免重建\n' >&2
       receipt "pass;graph-fresh"
-    elif [ "$FRESH_VAL" = "false" ]; then
+    elif [ "$FRESH_RC" -eq 1 ] && [ "$FRESH_VAL" = "false" ]; then
       warn "graph confirmed-stale——背景重建：code-reality build --repo ${PRIMARY}（single-flight，勿阻塞收線；決策與執行歸 marshal）"
       receipt "pass;graph-stale=confirmed"
     else
-      warn "freshness 快檢不可用（exit=$FRESH_RC 或輸出解析失敗）——fail-open 不擋收線"
+      warn "freshness 快檢不可用（exit=${FRESH_RC}，或 rc 與 JSON 不一致／解析失敗）——fail-open 不擋收線"
       receipt "pass;freshness-unavailable"
     fi
   fi
