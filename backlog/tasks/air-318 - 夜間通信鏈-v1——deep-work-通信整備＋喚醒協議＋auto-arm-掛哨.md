@@ -4,7 +4,7 @@ title: 夜間通信鏈 v1——deep-work 通信整備＋喚醒協議＋auto-arm 
 status: Done
 assignee: []
 created_date: '2026-10-12 11:00'
-updated_date: '2026-10-12 12:49'
+updated_date: '2026-10-13 03:36'
 labels: []
 dependencies: []
 references:
@@ -59,6 +59,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 收線：Flash 落地四件→Marshal 補跑（hook 三態實測/autoarm 22＋waiter 55＋monitor 63/全套 pre-commit 綠）→測試契約同步兩輪微修→muse 確認腿 accept；merge 2efe47dd；registration＋manifest 落地。
+
+〔1013 AC#6 處置——user 裁決「等之後感覺怪再驗」＋現場小實驗補證〕L5 機械實驗（手動觸發 hook 兩分支）：stale 分支✅（worker kill＋armed_at 回撥 1h→手動 SessionStart payload→advisory 正確輸出一行、exit 0）；fresh 分支✅（armed_at 恢復→同 payload→0 bytes 輸出、exit 0）。advisory 機制端到端實證通過；L6「真實 SessionStart delivery」按 user 裁決不再主動觀測——之後自然觀測到再說。哨已重掛 generation 4。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
