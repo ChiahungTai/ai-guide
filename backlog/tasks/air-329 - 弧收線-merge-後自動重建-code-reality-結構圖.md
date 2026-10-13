@@ -4,7 +4,7 @@ title: 弧收線 merge 後自動重建 code-reality 結構圖
 status: In Progress
 assignee: []
 created_date: '2026-10-13 23:07'
-updated_date: '2026-10-13 23:07'
+updated_date: '2026-10-13 23:59'
 labels: []
 dependencies: []
 references:
@@ -58,5 +58,11 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 005b99f4〕
 〔已決策勿重辯：①執行形態＝C hybrid（codex 二輪裁決 job-mv7a8u7c-z9iqng；一輪 job-mv7a8u7c-z9iqng 前作 job-mv799q9j-zdzwoo 已否決 SessionStart/Stop hook）——wt-close.sh 只升級 freshness 快檢＋receipt token＋stderr 附重建命令，腳本不自動 build；重建的決策與執行歸收尾 instruction（定義單一源＝cr-query skill 新節）②時點＝merge 落地後；身份防護＝僅 primary 持有合併後 trunk 時才判 build（MERGE_WT≠primary 的暫時/trunk WT merge→skip＋note，防 identity 錯配——codex 盲點③）③無條件跑 freshness、信任 verdict：trunk 前進不必然 stale（content-addressed identity 才是判準，cr-query:89）；docs-only 也不保證 fresh（doc-set-drift 實例，AIR-206）④非阻塞 best-effort：失敗不影響 merge 收線；session 級背景 shell 隨 session 死屬良性（demand-trigger 兜底）；與 demand build 共用 single-flight；build 完成後重驗 identity，stale-on-arrival 交 demand-trigger 再收⑤AIR-228 scope amendment（codex 擬句）：「AIR-228 維持 card-WT evidence-demand single-flight。新增 primary post-merge opportunistic warm-up，僅改善 graph availability，不提供 freshness acceptance」——禁改造成 review 阻塞式前置⑥量測先行：receipt token 細化（graph-stale=confirmed／graph-fresh／freshness-unavailable）＋卡 notes 記 warm-up kick；核心指標＝warm-up reuse rate（下一弧實際消費該 build identity 的弧數／成功 warm-up 弧數）；命中率高才評估 A 形（腳本自動 build）⑦消費前 freshness gate（AIR-135 條2）不動——本機制非正確性依賴〕
-範圍：skills/cr-query/SKILL.md（新節 primary post-merge warm-up＋AIR-228 amendment）、skills/commit/SKILL.md（收尾 merge 後一步，引用 cr-query 節不重抄）、scripts/wt-close.sh（AIR-164 提醒升級為 freshness 快檢三態＋receipt token＋MERGE_WT==primary 防護）、舊 token「graph-stale-reminded」引用面 rg 全掃同步；禁碰 backlog/ 卡 metadata（board single-writer——writer 唯讀卡面）
+範圍：skills/cr-query/SKILL.md（新節 primary post-merge warm-up＋AIR-228 amendment）、skills/commit/SKILL.md（收尾 merge 後一步，引用 cr-query 節不重抄）、scripts/wt-close.sh（AIR-164 提醒升級為 freshness 快檢三態＋receipt token＋MERGE_WT==primary 防護）、根 AGENTS.md（收尾條一行指針——引用面同步〔0914 Plan 修訂補列：初版範圍漏列，review/judge 面已涵蓋該檔〕）、舊 token「graph-stale-reminded」引用面 rg 全掃同步；禁碰 backlog/ 卡 metadata（board single-writer——writer 唯讀卡面）
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AIR-329 收線結算：實作 2365adcc＋修正 ac503756；雙家族 review（muse job-mv7ba4xe-tsnnlc 3 findings＋codex job-mv7ba56w-fkcgbu 2 findings→同位同 claim 合併 3 條，F1/F3 跨家族交叉命中）＋GLM-5.3 judge（job-mv7bhsig-shg8fm 三條全 ✅、無 additional）＋修正迴圈（job-mv7bpsj1-0h9sjj，TDD RED 4 failed→GREEN）；帳本 .review/air-329.md 收斂（✅3／未決 0）；全 repo 3938 passed（pre-commit）；followup-review 腿未派——orchestrator 機驗替代已顯性揭露於帳本收斂記錄（機械驗證式＋突變測試獨立重跑）；evidence 隨 WT 拆除自動歸檔 .agent-tmp/wt-evidence/AIR-329/
+<!-- SECTION:NOTES:END -->
