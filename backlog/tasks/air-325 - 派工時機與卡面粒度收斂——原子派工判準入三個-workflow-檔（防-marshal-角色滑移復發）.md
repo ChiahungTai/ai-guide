@@ -4,7 +4,7 @@ title: 派工時機與卡面粒度收斂——原子派工判準入三個 workfl
 status: In Progress
 assignee: []
 created_date: '2026-10-13 02:00'
-updated_date: '2026-10-13 02:04'
+updated_date: '2026-10-13 02:44'
 labels: []
 dependencies: []
 references:
@@ -49,6 +49,7 @@ flowchart LR
 - [ ] #4 single-source drift 掃描乾淨：三檔各守 owner 面無互相重複、引用點已核（rg 證據）
 - [ ] #5 全量 pytest 綠＋card_validate --all 綠
 - [ ] #6 post-build bi panel（muse＋codex diff 審查）＋fresh-eyes 腿 findings 全處置、bridge GLM-5.3 judge 裁決、回執四欄入卡 notes（boundary 分類）
+- [ ] #7 決策④量測承接：結案時以離線 DB 量測一條派工弧的 intent→first valid job 間隔（防 gaming 佐證；無可量測弧時如實記錄），結果記卡 Notes；advisory 非 gate、不入三檔條文（judge R4）
 <!-- AC:END -->
 
 ## Implementation Plan
