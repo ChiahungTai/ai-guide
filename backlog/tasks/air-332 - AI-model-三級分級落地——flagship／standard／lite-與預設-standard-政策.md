@@ -4,7 +4,7 @@ title: AI model 三級分級落地——flagship／standard／lite 與預設 sta
 status: In Progress
 assignee: []
 created_date: '2026-10-14 03:01'
-updated_date: '2026-10-14 03:07'
+updated_date: '2026-10-14 04:05'
 labels: []
 dependencies: []
 references:
@@ -71,3 +71,9 @@ flowchart LR
 
 〔範圍：skills/model-routing/SKILL.md（dispatch 預設段三級政策＋family 表 muse/codex 行）；skills/model-routing/catalog.toml（tier 欄＋wonder-full row；loader schema 擴充若需附測試）；旗艦字樣 sweep（rg 實測 12 檔）逐檔 triage——live 條文更新、真實案例／user 裁決 provenance 保留；~/.agents/memory-spine/reference_model-runtime-entitlements.md as-of 更新〕
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+〔審查腿收斂——AIR-332 落地前審查閘回執〕classification=boundary（routing policy／authority 面）。review=三腿：fresh-eyes（in-harness，PASS-with-findings：fable/fabel＋4 suggestion）＋intent-primed（CHANGES-REQUIRED：F1 judge/verdict 四檔未對帳＋F2/F3 intent-drift）＋跨家族 muse 外審（CHANGES-REQUIRED 12 findings，job-mv7k0pve-p2ii76）——findings 經 judge 裁決 14 項：12 項修復（修復批 a332-fix 全綠：pytest 107 passed／--check exit 0／殘留掃描僅 user 引句）；1 項改判——「旗艦裁決」機制名改名「judge 裁決」（推翻 worker 階段保留裁定：gloss 跨檔無效、outward rule 為 always-on bundle；user 引句逐字保留）；2 項 intent-drift（觸發②③擴張讀法）裁採納——user 核可之綜合文本本含此措辭，卡 Plan ④ 為簡寫。session-freshness=fresh（authoring 全程本 session；改動條文即時在 context）。deployment-surfaces=見次行。〔AC#3 旗艦 sweep triage 總結〕live 條文改寫 8 檔（model-routing SKILL×10 處／agent-workflow×3＋能力下限／conversation-dispatch／kanban-board 主體修正＋commit/autonomous-execution/deep-work/outward rule 機制名改名）；provenance 保留（AIR-50/AIR-24 案例 marker、webgpt user 原話×2、10-13 wonder 裁定＋當時詞彙註、deep-work user 引句）；個別：fabel 正名（卡 Plan ① 書 fable＝誤植，catalog identity 為 fabel——Plan 凍結不改，以本行為準）；sonnet/haiku 無 catalog identity row＝設計內（harness_alias_tokens 詞彙面，tier 由三級表 lite 行承載）；wonder-full qualification binding_scope=["*"]（AIR-218 先例形——binding 落地同 commit 收窄＋斷言，屬 wonder-full 轉正弧義務）；full/vision/lite requirement token 與 tier 三級正交（glossary 消歧行已落）。〔跟催〕CR 端 CR-10 承接 (a)(b)(c)，對齊信 aiguide-cr-align-cr10-20261014 已確認（K2 成立、逐段回報走本址）；S4 交付即開 gate 翻轉小卡（機械判準＝delta 欄位在場）。
+<!-- SECTION:NOTES:END -->
