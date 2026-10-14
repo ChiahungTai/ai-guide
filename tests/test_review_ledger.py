@@ -750,3 +750,91 @@ def test_lint_header_only_zero_findings_still_checks_cr_receipt(tmp_path):
     assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
     assert "cr.receipt.roster_missing" in r.stdout
 
+
+# ---------- 多張 keyed 表逐表 lint（對齊 parse_ledger 已有的 multi-keyed-table 語義）──
+# parse_ledger 的 ID-join 覆蓋全部 keyed 表（last-wins）；lint 只查第一張＝後續表的
+# canonical 欄位／decision 值域／status 終態／malformed 全不驗。第一張 canonical-good、
+# 第二張違規的雙表帳本：違規只可能在第二張——現行實作 EXIT_OK＝RED 的機械重現。
+
+
+def _two_table_ledger(
+    tmp_path: Path,
+    name: str,
+    table2_header: tuple[str, ...],
+    table2_rows: tuple[str, ...],
+) -> Path:
+    """第一張表 canonical-good（F-01 verified ✅）＋第二張表（footer）的合成帳本。"""
+    return write_ledger(
+        tmp_path,
+        (
+            "- legs：L1 fixture-job-multi n/a",
+            "- L1: cr: n/a（reason=無結構查證 trigger；fixture synthetic）",
+        ),
+        name=name,
+        table_rows=(
+            "| F-01 | Important | a.py:1 | 第一表 finding（fixture 資料） | 修法 | `true` | verified | ✅ |",
+        ),
+        footer_lines=(
+            "",
+            "## Apply 記錄",
+            "",
+            *table2_header,
+            *table2_rows,
+        ),
+    )
+
+
+def test_lint_second_keyed_table_missing_columns_fails(tmp_path):
+    # (a) 第二張 keyed 表缺 canonical 欄 → columns.missing（逐表查 header）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-cols.md",
+        ("| ID | 狀態 | apply 落點 |", "|---|---|---|"),
+        ("| F-01 | resolved | fixture |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "columns.missing" in r.stdout
+    assert "[OK]" not in r.stdout
+
+
+def test_lint_second_keyed_table_decision_domain_fails(tmp_path):
+    # (b) 第二張 keyed 表 decision 不含合法 emoji → decision.domain（fid 定位）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-decision.md",
+        CANONICAL_TABLE_HEADER,
+        ("| F-02 | Important | b.py:1 | 第二表 finding（fixture 資料） | 修法 | `true` | verified | 待定 |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "decision.domain" in r.stdout
+    assert "F-02" in r.stdout
+
+
+def test_lint_second_keyed_table_row_malformed_fails(tmp_path):
+    # (c) 第二張 keyed 表資料列欄數不足 → row.malformed（fid 定位）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-malformed.md",
+        CANONICAL_TABLE_HEADER,
+        ("| F-02 | Important |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "row.malformed" in r.stdout
+    assert "F-02" in r.stdout
+
+
+def test_lint_both_keyed_tables_canonical_ok(tmp_path):
+    # 防矯枉過正：兩張 keyed 表皆 canonical → EXIT_OK
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-ok.md",
+        CANONICAL_TABLE_HEADER,
+        ("| F-02 | Suggestion | b.py:2 | 第二表 finding（fixture 資料） | 修法 | `true` | closed | ✅ |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "[OK]" in r.stdout
+

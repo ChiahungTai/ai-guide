@@ -524,48 +524,51 @@ def cmd_lint(text: str, name: str, stage: str = "converged") -> int:
         for t in (normalize_table(r) for r in split_tables(text.splitlines()))
         if t
     ]
-    finding_table: list[list[str]] | None = None
-    id_i: int | None = None
+    keyed_tables: list[tuple[int, list[list[str]]]] = []
     for rows in tables:
         idx = id_col_index(rows[0])
         if idx is not None:
-            finding_table = rows
-            id_i = idx
-            break
-    if finding_table is None or id_i is None:
+            keyed_tables.append((idx, rows))
+    if not keyed_tables:
         violations.append("table.missing: 無 Finding Record 表（找不到含 ID 欄的表格）")
         for v in violations:
             print(f"[{name}] [FAIL] {v}")
         return EXIT_FAIL
 
-    headers = finding_table[0]
-    missing_cols = [
-        c for c, _ in CANONICAL_COLUMNS if find_canonical_col(headers, c) is None
-    ]
-    if missing_cols:
-        violations.append("columns.missing: " + ",".join(missing_cols))
-
-    dec_i = find_canonical_col(headers, "決策")
-    st_i = find_canonical_col(headers, "狀態")
+    # 全部 keyed 表逐表檢查（與 parse_ledger 的 multi-keyed-table ID-join 對齊——
+    # 只查第一張＝後續表的欄位／值域／malformed 全不驗）：canonical 欄位完整性
+    # 逐表查（各表 header 各自判）；decision/status/malformed 的 fid 跨表合併
+    # （ID-join 語義下 fid 跨表唯一）。header-only 表零資料列＝零資料檢查項、
+    # header 照查（AIR-331 豁免僅及「整表被濾成 table.missing」）。
     bad_decision: list[str] = []
     bad_status: list[str] = []
     malformed: list[str] = []
-    for row in finding_table[1:]:
-        needed = max(x for x in (id_i, dec_i, st_i) if x is not None)
-        if len(row) <= needed:
-            malformed.append(
-                row[id_i][:16] if id_i < len(row) else f"row{len(malformed) + 1}"
-            )
-            continue
-        fid = row[id_i].strip() or "?"
-        # 值域檢查僅 converged（F-1）：discovery 態 decision=—／status=open 是常態
-        if stage == "converged":
-            if dec_i is not None:
-                matches = [d for d in DECISION_EMOJI if d in row[dec_i]]
-                if len(matches) != 1:
-                    bad_decision.append(fid)
-            if st_i is not None and status_bucket(row[st_i]) not in TERMINAL_STATUSES:
-                bad_status.append(fid)
+    for id_i, finding_table in keyed_tables:
+        headers = finding_table[0]
+        missing_cols = [
+            c for c, _ in CANONICAL_COLUMNS if find_canonical_col(headers, c) is None
+        ]
+        if missing_cols:
+            violations.append("columns.missing: " + ",".join(missing_cols))
+
+        dec_i = find_canonical_col(headers, "決策")
+        st_i = find_canonical_col(headers, "狀態")
+        for row in finding_table[1:]:
+            needed = max(x for x in (id_i, dec_i, st_i) if x is not None)
+            if len(row) <= needed:
+                malformed.append(
+                    row[id_i][:16] if id_i < len(row) else f"row{len(malformed) + 1}"
+                )
+                continue
+            fid = row[id_i].strip() or "?"
+            # 值域檢查僅 converged（F-1）：discovery 態 decision=—／status=open 是常態
+            if stage == "converged":
+                if dec_i is not None:
+                    matches = [d for d in DECISION_EMOJI if d in row[dec_i]]
+                    if len(matches) != 1:
+                        bad_decision.append(fid)
+                if st_i is not None and status_bucket(row[st_i]) not in TERMINAL_STATUSES:
+                    bad_status.append(fid)
     if bad_decision:
         violations.append("decision.domain: " + ",".join(bad_decision))
     if bad_status:
