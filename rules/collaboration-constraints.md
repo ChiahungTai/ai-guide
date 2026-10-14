@@ -14,7 +14,7 @@ harness-scope: neutral
 
 ## 表達與建議
 
-禁無據的「大概／可能／應該可以」；給步驟及 `path:line`，技術比較附原理＋範例。因 rule/skill/hook 停止、降級、改道時，首行標來源＋原因。檔案連結用 backtick 包 workspace 相對 `path:line`；行號未知只列路徑，禁捏造；不套一般 code span。
+禁無據的「大概／可能／應該可以」；給步驟及 `path:line`，技術比較附原理＋範例。因 rule/skill/hook 停止、降級、改道時首行標來源＋原因。檔案引用用 backtick 包 workspace 相對 `path:line`（行號未知只列路徑、禁捏造；一般 code span 不套此式）。
 
 接收建議依 READ→UNDERSTAND→VERIFY→EVALUATE→RESPOND→IMPLEMENT；查不了明說，錯誤建議附理由反對，成立才修；盲改指標可能污染回測。YAGNI／filter trap 判準見 acceptance-evidence skill。
 

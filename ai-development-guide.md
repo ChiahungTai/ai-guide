@@ -6,7 +6,7 @@
 
 ## Session 開場導引
 
-- **先定位現在在哪**：有 STATE.md 先讀最近 session 觀察，再以 active card／board 狀態與 card notes／EP 進度節核對目前工作、已完成處與 resume point；觀察層不能取代現況來源。
+- **先定位現在在哪**：有 STATE.md 先讀最近觀察，再以 active card／board＋card notes／EP 進度核對現況與 resume point；觀察層不代現況來源。
 - **再決定下一個入口**：標準開發主鏈為 /execution-plan → /implement → /post-build → /commit；分支與各步方法論＝skills/AGENTS.md 索引。
 - **skill 優先序**：skill 方法論衝突時，ai-guide 部署的 skills 優先於 harness 內建／marketplace bundled 同功能 skill。
 - **需要跨 context 接續時先結算**：context 將耗盡先把進度與待辦寫回 EP／card；同一工作稍後續跑用 /at，交給另一個 session／repo／provider 用 /handoff。
@@ -23,7 +23,7 @@
 
 功能先定義 Use Case。AGENTS.md Capabilities＝已完成能力索引，backlog＝承諾池；多卡優先序＝project blueprint dependency graph（backbone），未支撐卡走 kanban triage；操作/refs/precheck 單一源＝kanban-board skill；UC 狀態流轉與 Capabilities 寫入＝metadata-sync skill。
 
-文檔角色：AGENTS.md＝導航/完成能力；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph（手繪版已退役）；backlog/＝任務卡。長文按需 link 禁全量 transclude。
+文檔角色：AGENTS.md＝導航/完成能力；architecture.md＝why；SYSTEM-MAP.md＝跨域現狀；dependency 地圖＝code-reality graph；backlog/＝任務卡。長文按需 link 禁全量 transclude。
 
 規模：simple（單檔小 tweak/bug）→card AC 直行；standard（跨檔 feature/refactor、無新 architecture/boundary 決策）→owning 卡＋**card Planning Contract**；full（架構/跨模組/🔴高風險/新 boundary：state ownership、public contract、跨 context invariant、控制面 authority）→standalone EP。promotion／public contract 判準、bounded child、六欄定義＝execution-plan skill 流程規模分級節。小 bug/doc 免 UC；碰單位邊界/除權息/時區/會計/風控即非 simple，至少列受影響 invariant＋驗證式（silent-corruption 例外）。
 
@@ -31,7 +31,7 @@
 
 ## Solo + AI 開發工作流
 
-一人＋AI、無團隊/CI；一 EP＝一 session（bounded child 卡各自一 session，繼承 parent EP 已定決策），段落自含、可結算接續。model 退化先結算再 handoff 新 session；Writer/Reviewer 分離，review 支援跨 context／跨家族 findings 回貼。push 由 user 自行執行（VSCode）——LLM 恆不 push（outward rule 不變），亦不過問、不提醒 push 事宜（收尾報告免列 push 待辦）。
+一人＋AI、無團隊/CI；一 EP＝一 session（bounded child 卡各自一 session，繼承 parent EP 已定決策），段落自含、可結算接續。model 退化先結算再 handoff 新 session；Writer/Reviewer 分離，review 支援跨 context／跨家族 findings 回貼。push 由 user 自行執行——LLM 恆不 push（outward rule 不變）、不過問不提醒（收尾報告免列 push 待辦）。
 
 ## Marshal 姿勢（互動 session 預設）
 
@@ -43,7 +43,7 @@
 定義源：條 1/4＝所指 skill；條 2 freshness 判準＝本節。
 
 1. **instruction owner**：durable mechanism 誕生弧必取 owner；coverage 看 owner 不看文件數。predicate 單一源＝[instruction-writing](skills/instruction-writing/SKILL.md)；接線＝implement 5b＋post-build coverage gate。
-2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。freshness 判準＝indexed identity 對比（含 dirty WT/content；HEAD-only ≠ fresh）；機械求值＝code-reality `freshness` face（消費語法/消費面＝cr-query）。
+2. **producer freshness**：derived evidence 消費前驗 freshness；refresh 只是 optimization。freshness 判準＝indexed identity 對比（含 dirty WT/content；HEAD-only ≠ fresh）；機械求值＝code-reality `freshness` face，消費面＝cr-query。
 3. **advisory startup**：startup hook 只 advisory；correctness gate 在 consumer boundary。
 4. **supervision fence**：弱訊號只 wake；hard death／redispatch 需 authoritative evidence＋scope fence。契約＝[agent-workflow](skills/agent-workflow/SKILL.md)。
 

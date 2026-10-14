@@ -16,4 +16,4 @@ harness-scope: neutral
 
 單向門查失敗／回復條件，雙向門查間接影響；code 可回滾≠資料／外部動作可逆。語義用 LLM，機械確定性工作用程式。
 
-Clean Architecture＋DDD 三 lens（見 arch-thinking），不強制模板／過度分層，也不憑目錄或 `_private` 判邊界；涉及依賴、重用、共用契約、state，或修復／刪除／重構時載 arch-thinking 觸發表。適用架構、技術選型、性能、重構、AI 建議、資訊架構；股票分析另載 trading-analysis skill。
+Clean Architecture＋DDD 三 lens（見 arch-thinking）：不強制模板／過度分層、不憑目錄或 `_private` 判邊界；涉及依賴、重用、共用契約、state、修復／刪除／重構時載其觸發表。適用架構/選型/性能/重構/AI 建議/資訊架構；股票分析另載 trading-analysis skill。

@@ -2,7 +2,7 @@
 harness-scope: neutral
 bundle-projection: pointer
 pointer-target: bridge-dispatch
-bootstrap-pointer: "跨 repo 呼叫 delegate-bridge 時以 `bridge-dispatch` skill 為細節源——registry pin＝安裝位置唯一真相源，禁手拼版本化 cache 路徑、禁第二 pin（禁的是「新增」獨立指標；runbook-sanctioned 的 registry-derived locators〔codex `~/.local/bin/delegate-bridge` symlink、dutymail runtime `current`〕＝derived locator 非第二權威，刪之即斷 codex MCP——禁以本紀律為由刪除）；glm 首派前 primary checkout 需已 provision（db-87 起 worktree 自動 fallback 繼承——per-WT 儀式已除）；glm 預設 plan tier 唯讀——file-writing 腿必帶 `--write-mode edit --wt --card`（漏 flag＝job 成功零產出）；brief 須附 capability manifest（五要素契約含 availability lint＝skill）。派工必配回收：waiter（`scripts/bridge_waiter.py` 背景 fan-in）exit 依 harness 通知能力喚醒（能力判讀唯一源＝`skills/_common/waiter-charter.md`；ZCode 背景任務 exit 即喚醒、codex 背景程序 exit 不注入 thread）——exit 124＝re-arm 非失敗、exit 2 禁重派；terminal ≠ complete：有 sink 登記以 artifact 機驗（存在＋非空＋錨點）、無登記以 bounded receipt 非空為完成。長輸出逼近上限→交付一律檔案承載，禁純文字長文；codex web 整包預算 <100K chars。caller surface 入口對照、webgpt、glm resume model-match、失敗態分流＝skill。"
+bootstrap-pointer: "呼叫 delegate-bridge 前先載 `bridge-dispatch` skill（操作面＝plugin skill `delegate:bridge-dispatch`）——registry pin＝唯一真相源：禁手拼版本化 cache 路徑、禁新增第二 pin；registry-derived locators（codex symlink、dutymail `current`）非第二 pin，禁刪（刪斷 codex MCP）。glm 首派前 primary 須 provision（worktree 自動繼承）；glm 寫檔腿必帶 `--write-mode edit --wt --card`（漏＝成功零產出）；brief 附 capability manifest。派工必配 waiter 回收（能力判讀唯一源＝`skills/_common/waiter-charter.md`）：exit 124＝re-arm、exit 2 禁重派；terminal≠complete——sink 以 artifact 存在＋非空＋錨點機驗、無 sink 以 receipt 非空。長輸出檔案承載；codex web 預算 <100K chars。入口對照、webgpt、resume、失敗分流＝skill。"
 ---
 
 # Bridge Dispatch 紀律

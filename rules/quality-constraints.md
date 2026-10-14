@@ -12,7 +12,7 @@ harness-scope: neutral
 
 損壞比缺失危險：無效輸入／溢出／轉型／解析失敗立即崩潰，禁吞錯續行或修補壞資料；驗非空、必要欄位、NaN、inf。適用量化／高頻／即時風控／批次；排除長會話、複雜 UI、UX 優先互動。邊界見 validation-strategy skill。
 
-機械依賴欄位成為 authoritative state 前須 consumer-equivalent 機驗（fail-closed），寫入保障≥下游讀取契約。LLM 可定語義，自由文字不能獨擔機械契約；機械讀者上線才收緊該面，保留人／LLM-only 記錄自由。
+機械依賴欄位成為 authoritative state 前須 consumer-equivalent 機驗（fail-closed；寫入保障≥讀取契約）。LLM 可定語義，自由文字不能獨擔機械契約；機械讀者上線才收緊，人／LLM-only 記錄保留自由。
 
 ## 派生產物
 
