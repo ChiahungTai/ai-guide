@@ -4,7 +4,7 @@ title: review_ledger 零 findings 帳本誤報 FAIL——header-only 表豁免�
 status: In Progress
 assignee: []
 created_date: '2026-10-14 00:36'
-updated_date: '2026-10-14 00:36'
+updated_date: '2026-10-14 00:53'
 labels: []
 dependencies: []
 references:
@@ -26,3 +26,21 @@ flowchart LR
     C -- "有列" --> Z["既有逐列語義 不變"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 - [x] 兩處表格過濾保留 header-only 表：零資料列＝零 findings，parse tally 全 0、lint EXIT_OK（discovery＋converged）——〔證據：tests 66 passed，案例釘住〕
+- [x] 真缺表（全文無含 ID 欄表頭）維持 FAIL——〔證據：既有 air-86 純 prose 案例照綠未改寫〕
+- [x] header-only 表缺 canonical 欄照 `columns.missing` FAIL；garbage 資料列照 `row.malformed`/unparsed——〔證據：新增案例 3/5〕
+- [x] header-only 表＋資料表並存：findings 只計資料表——〔證據：新增案例 4〕
+- [x] converged 面零 findings 帳本 legs 名冊／CR receipt 檢查照查不豁免——〔證據：新增案例 6〕
+- [x] `uv run pytest tests/test_review_ledger.py -x -q` 全綠——〔證據：orchestrator 獨立重跑 66 passed＋pre-commit 全 repo 3944 passed @66f5566b〕
+<!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+〔baseline：ai-guide 256273ac〕
+〔已決策勿重辯：修法②（雙家族討論收斂——codex job-mv7dioh7＋GLM-5.3 job-mv7dips7）：interpreter 層 header-only 表豁免（含 ID 欄表頭＋零資料列＝合法零 findings）；帳本格式與 workflow-review-pattern 凍結 grammar 零變更；真缺表 fail-closed 底線不動；①pseudo-row 否決（虛構 finding 污染 tally/join，實質違反凍結 grammar）〕
+範圍：skills/post-build/scripts/review_ledger.py（兩處表格過濾條件）、tests/test_review_ledger.py（六條邊界案例）
+<!-- SECTION:PLAN:END -->
