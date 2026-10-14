@@ -1,12 +1,14 @@
 ---
 id: AIR-330
 title: cr-query 紀律面支援 stale-delta 三層標註措辭——依賴 code-reality 端先落地
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-14 00:12'
-updated_date: '2026-10-14 00:12'
+updated_date: '2026-10-14 00:32'
 labels: []
 dependencies: []
+references:
+  - skills/cr-query/SKILL.md
 ordinal: 315000
 ---
 
@@ -22,3 +24,9 @@ flowchart LR
     C --> D["negative 查詢可救回 scope 分離例外"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+outbound 台帳：code-reality 催辦信已寄（envelope aiguide-cr-delta-nudge-20261014，acceptanceSeq=6；AUTH user 原話「沒有的話就寄信催一下」）；歸屬裁決記錄同日回信 delegate-bridge（aiguide-crdelta-reply-20261014，acceptanceSeq=9，AUTH「這是誰該作就誰作啊」）
+<!-- SECTION:NOTES:END -->
