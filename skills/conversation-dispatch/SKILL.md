@@ -42,7 +42,7 @@ when_to_use: "Fires when a verification need (查資料/盤點/機械驗證/背�
 | 查證問句形態 | 外派對象 | 備註 |
 |---|---|---|
 | 廣度探索（多檔掃描、「哪些/哪裡」類） | 內建 `Explore`（繼承主 session 模型＝唯讀探察正確形態） | spawn 型別分流：唯讀探察用 Explore（以主 session 所在 tier 查 model-routing 並發表） |
-| 機械對帳（rg 清點、diff 對照、殘留掃描） | registry 角色 `lite-verify` | lite 機械必 registry 角色——內建型別無 pin＝旗艦燒機械段（AIR-50） |
+| 機械對帳（rg 清點、diff 對照、殘留掃描） | registry 角色 `lite-verify` | lite 機械必 registry 角色——內建型別無 pin＝座位模型燒機械段（AIR-50） |
 | 逐字規格查詢（API 簽名、條文原文、參數表） | registry 角色 `spec-miner` | |
 | 多源交叉查證（db/git/log/memory/cr 多軸） | registry 角色 `cross-verify-investigator` | |
 

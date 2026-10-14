@@ -1171,6 +1171,87 @@ def test_real_catalog_initial_qualification_records():
     assert flash_visual[0].evidence_source == "user_observed"
 
 
+# --- AIR-332：model_identity tier 欄（capability ladder 三級；缺席合法＝退表款）---
+
+
+@pytest.mark.parametrize("tier", ["flagship", "standard", "lite"])
+def test_catalog_tier_enum_values_load(tier: str):
+    """tier 在場＝合法三值之一，載入成功並可在 ModelIdentity 讀取。"""
+    text = mutated_catalog(
+        '[[model_identity]]\nid = "glm-5.3"',
+        f'[[model_identity]]\nid = "glm-5.3"\ntier = "{tier}"',
+    )
+    assert sync.parse_catalog(text).identities["glm-5.3"].tier == tier
+
+
+def test_catalog_tier_absent_is_legal():
+    """tier 缺席合法——native 退表款不帶 tier。"""
+    cat = load_fixture_catalog()
+    assert cat.identities["gpt-5.6-sol"].tier is None
+
+
+def test_catalog_rejects_unknown_tier():
+    text = mutated_catalog(
+        '[[model_identity]]\nid = "glm-5.3"',
+        '[[model_identity]]\nid = "glm-5.3"\ntier = "boss"',
+    )
+    with pytest.raises(AssertionError, match="tier"):
+        sync.parse_catalog(text)
+
+
+def test_real_catalog_tier_ladder():
+    """AIR-332：真 catalog tier 階梯——三級指定值＋退表款（sol）缺席＋identity
+    全集凍結（新增 identity 未收編進本測試即翻紅）。"""
+    cat = sync.load_catalog(REPO_ROOT)
+    tiers = {mid: ident.tier for mid, ident in cat.identities.items()}
+    assert tiers["muse-wonder-full-1.0"] == "flagship"
+    assert tiers["gpt-6-astra"] == "flagship"
+    assert tiers["fabel"] == "flagship"
+    assert tiers["glm-5.3"] == "standard"
+    assert tiers["claude-opus"] == "standard"
+    assert tiers["chatgpt-web-high"] == "standard"
+    assert tiers["muse-wonder-1.0"] == "standard"
+    assert tiers["glm-5.3-flash"] == "lite"
+    assert tiers["muse-spark-1.3"] == "lite"
+    assert tiers["gpt-5.6-sol"] is None
+    # identity 全集斷言：新增 model_identity 忘標 tier／未決策時此處翻紅
+    assert set(cat.identities) == {
+        "glm-5.3",
+        "glm-5.3-flash",
+        "claude-opus",
+        "chatgpt-web-high",
+        "gpt-5.6-sol",
+        "gpt-6-astra",
+        "fabel",
+        "muse-spark-1.3",
+        "muse-wonder-1.0",
+        "muse-wonder-full-1.0",
+    }
+    assert {mid for mid, t in tiers.items() if t is None} == {"gpt-5.6-sol"}
+
+
+def test_real_catalog_wonder_full_pending_first_use():
+    """AIR-332：wonder-full-1.0 播 pending_first_use 種子（workload 對齊既有
+    muse 家族 rows；無 binding 前 scope 萬用——首次實測後轉正再收窄）。"""
+    cat = sync.load_catalog(REPO_ROOT)
+    recs = [
+        rec
+        for rec in cat.qualifications
+        if rec.model_identity == "muse-wonder-full-1.0"
+    ]
+    assert {rec.workload for rec in recs} == {
+        "ep_synthesis",
+        "adjudication",
+        "implement_from_accepted_ep",
+        "evidence_retrieval",
+        "review_findings",
+    }
+    assert all(
+        rec.status == "conditional" and rec.evidence_source == "pending_first_use"
+        for rec in recs
+    )
+
+
 # --- 選擇層 table fixtures（executable spec——demand 表在測試側；
 # --- runtime failure injection 留 S3）---
 

@@ -39,7 +39,7 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 
 1. **開段先查表**：當前 stage 的執行主體＝「主 session 直做」→ 不 spawn（判斷密集段——EP 規劃／judge 裁決／post-build 編排／commit consent，AIR-24 分工律）；spawn 類 → 取 registry name＋tier 欄。**implementation work unit 判定 role-based**：改變 behavior-bearing artifact 或其驗證物者一律 spawn（一行也算；purely editorial＋Marshal 本職豁免；「小範圍／單檔」不是豁免條件）——定義源＝[agents/AGENTS.md](../../agents/AGENTS.md)「全生命週期 execution contract」註 b
    > **判據操作化（AIR-315 紅隊收斂）**：「過閘證零行為」＝對應機械閘綠燈（editorial→lint／single-source suite；卡面→validator——session 自讀自證不算證）；config／deploy／preset 的註解行亦視為 behavior-bearing（指令性註解與誤觸風險——無對應閘可過則 spawn）；本職列舉封閉——「規格」限規劃階段 decision work（EP 語義變更走 5b 版本化重確認，非順手改）、「機械驗收」限跑閘收證據（不含改 code 過閘）、「失派」＝一切未得可用 worker 交付即自做（含慢或品質差接手）——一律走 fallback 列舉，禁以本職名義代寫。
-2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 解析＝DispatchPlan（WorkUnitContract → model-routing resolver 七步 → candidate 四元組，[model-routing](../model-routing/SKILL.md)——catalog/presets 供給事實，不在此材料化值）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝旗艦燒機械段；唯讀探察／EP Review 形態用內建 Explore 承接（繼承主 session 旗艦＝正確）
+2. **spawn 形態按 harness**：ZCode＝registry spawn（生成檔 pins 生效）；CC＝named agent（`--agent <name>`／Workflow `agentType`）——全 role 名在 claude/ registry 生成在場（未知名稱仍立即退出）；model/effort 解析＝DispatchPlan（WorkUnitContract → model-routing resolver 七步 → candidate 四元組，[model-routing](../model-routing/SKILL.md)——catalog/presets 供給事實，不在此材料化值）；**lite／機械角色任務 spawn 型別必須是 registry 角色**——harness 內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型，lite 任務用內建型別＝座位模型燒機械段；唯讀探察／EP Review 形態用內建 Explore 承接（繼承主 session 座位模型（現值 standard；座位降 lite 時本條不適用）＝正確）
 3. **failure fallback 照表走**：重試 ≤2（classifier unavailable／1302）→ 顯式 failover／改派記錄（見下「spawn 失敗階梯」）；commit consent 行的 fallback 恆為「等用戶」，不可降級繞過
 4. **模型歸因抽查**（tier 欄落地驗證）：registry pin 是否真達 wire 用 per-message modelID 對帳（ZCode db.sqlite），不信 session 自述（[model-routing](../model-routing/SKILL.md) 歸因紀律）
 5. **DispatchPlan→carrier 三路**（換載體規則，語義單一源＝[model-routing](../model-routing/SKILL.md) DispatchPlan 條）：selected binding 等於 named preset default → registry spawn；harness 支援 spawn override → 同 WorkUnitContract／ExecutionPreset 只換 binding（動態升級不被固定 pin 吞掉）；否則 main-or-bridge 換載體，並把 Role／authority／surface 與**禁止再委派**完整裝入 work order（[work-order.md](../_common/work-order.md)；批次工單——單次 dispatch 承載多 unit 引用——照同檔「批次 envelope」：review units 不共 worker context、跨 authority／required 獨立 lens 不合併、逐 unit PASS/FAIL/未做收回）。ArcPlan 弧的每腿 dispatch 由 resolver 當下 JIT 填 DispatchSlice runtime 欄（family／model／binding／ledger／dispatch_id——schema 留欄、resolver 填值，validator＝`scripts/arc_spec.py`）；`uv run python scripts/arc_spec.py validate <slice檔> --kind dispatch-slice --stage dispatch` 派工前驗——缺欄禁派工。
@@ -65,7 +65,7 @@ Claude Code 官方四個**首類並行方法**（[官方比較](https://code.cla
 |---------------------|---------|
 | `claude-opus-*` | opus（full） |
 | `claude-sonnet-*` / `claude-haiku-*` | sonnet／haiku（lite） |
-| `glm-5.3`（無 `-flash` 後綴） | 旗艦（full） |
+| `glm-5.3`（無 `-flash` 後綴） | standard（full） |
 | `glm-5.3-flash` | lite |
 
 > CC 詞彙面的背後接線＝machine-local（user 維護，訂閱變更自換）——本表只記詞彙面→tier 歸屬，接線變更不需同步本表；GLM 原生名即 ZCode 實載 model id（非接線細節）。
@@ -303,7 +303,7 @@ Rules 檔在 session 啟動時載入，但**更新不會傳播到已 spawn 的 a
 ### Agent tool spawn 前
 
 - [ ] 已查「並發上限」表確認——以將 spawn 的 agent 所在 tier 為準（[model-routing](../model-routing/SKILL.md) 並發表）；Agent **model 依角色 tier**
-- [ ] **lite／機械角色任務 spawn 型別＝registry 角色**（內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型——lite 任務用內建型別＝旗艦跑機械段；唯讀探察／review 形態用內建 Explore 承接＝rule research/explore 列）
+- [ ] **lite／機械角色任務 spawn 型別＝registry 角色**（內建 `general-purpose`／`Explore` 無 pin、繼承主 session 模型——lite 任務用內建型別＝座位模型跑機械段；唯讀探察／review 形態用內建 Explore 承接＝rule research/explore 列）
 - [ ] 已印出 `[Agent] model=X, max=N, current=M`
 - [ ] consequential dispatch 前已印出 `[Dispatch] unit=…` 完整 preview 行（派工前契約揭露；`[Agent]`/`[Bridge]` 是執行面回報，不可替代）
 - [ ] 當前 Agent 數量未超過上限

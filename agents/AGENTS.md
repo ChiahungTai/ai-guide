@@ -46,7 +46,7 @@ agents/
 | EP review（雙家族） | 主 session 編排：GLM 側 spawn code-reviewer×2；muse 側**`task` 形態＝`--background` fire-and-forget 提交＋`wait`／`show` 晚收（不佔 agent 並發、不佔 caller session，可跨 session 認領）；`review` 形態仍背景 Bash 阻塞（`review` 無 `--background`）** | code-reviewer（fresh）＋code-reviewer-primed（primed）——preset default＝execution binding（`glm-5.3-flash`）；高保護面／跨邊界語義面＝spawn override 換 decision binding（同 WorkUnitContract 只換 binding／載體——carrier adapter 三路，見 model-routing skill）；muse review（bridge 工單） | diff＋EP→findings→judge 處置表 | classifier／1302 重試≤2→顯式降級記錄；muse 額度不足→in-harness 雙 context（顯式記錄） |
 | build 實作段 | 主 session 編排；implementation work unit 一律 spawn（role-based 定義＝註 b——「機械可規格化段」舊門檻退役，一行也算） | impl-lite（zcode→`glm-5.3-flash`——execution） | EP 段→code＋測試＋驗證證據 | 失敗家系處置（註 a）→alternate qualified carrier／等待 availability／declared no-candidate（**禁主 session 直做**——no-silent-downgrade）；lite 測試＝規格陳述→驗收證據 full 複驗 |
 | build 內 Agent Review | spawn（審查配置由風險 profile 推導——單一源＝[review-engine](../skills/review-engine/SKILL.md)「review 執行預設」，掛點＝[implement](../skills/implement/SKILL.md) Agent Review） | 腿組合依 profile（ordinary 單 reviewer／boundary fresh＋intent 分離——見 implement Agent Review rows；可用 preset＝code-reviewer／code-reviewer-primed，高保護面換 decision binding）；錨點驗證＝lite-verify（execution） | diff→findings（錨點驗證後浮出） | 失敗家系處置（註 a）→主 session 自審＋fallback 標記 |
-| judge 裁決 | 主 session 直做（判斷密集；不派 agent） | —（decision work unit；seat 非 full 時升級外派 bridge，禁 in-session 降級自判） | findings→✅/❌/⚠️ 處置表 | — |
+| judge 裁決 | 主 session 直做（判斷密集；不派 agent） | —（decision work unit；seat 未達 decision floor 時升級外派 bridge，禁 in-session 降級自判） | findings→✅/❌/⚠️ 處置表 | — |
 | post-build 編排 | 主 session 直做（判斷密集） | —（decision work unit；Reviewer legs 依保護面選 execution／decision binding——authority 固定 findings） | 收尾鏈：code-review（審查配置由風險 profile 推導——掛點＝[post-build](../skills/post-build/SKILL.md)）→judge-review→修正→consistency→metadata-sync→殼 refresh | — |
 | 機械驗證／consistency gate | spawn | lite-verify（zcode→`glm-5.3-flash`——execution） | 查證清單→逐項機械證據（rg 命中／exit code／file:line） | 失敗家系處置（註 a）→主 session 跑組合命令 |
 | 視覺驗收 | spawn | vision-review（zcode→`glm-5.3-flash`——native_vision ∩ binding image_transport；pin 禁降非影像款，生成期防線） | 圖檔→逐張 verdict | 失敗家系處置（註 a）→標「未驗證」（禁主 session 直讀圖） |
@@ -120,7 +120,7 @@ markdown + YAML frontmatter，正文 = 系統提示詞。兩家必填欄位同�
 ## ZCode 限制（共用定義的邊界）
 
 - Beta 僅 user 級（無 workspace 層）；內建 `general-purpose` / `Explore` 名稱不可複用（不可建同名覆蓋檔 — Claude 端可以覆蓋 Explore，這是兩家不對稱點）
-- 內建 `general-purpose`／`Explore` **無 registry pin——繼承 spawning session 主模型**（ZCode 設計行為，官方 qa 文檔；設定頁可為內建單獨釘模型）；lite 角色任務誤派 general-purpose＝旗艦跑機械段（AIR-50 弧兩次實例）——要省成本層必派 registry lite agent
+- 內建 `general-purpose`／`Explore` **無 registry pin——繼承 spawning session 主模型**（ZCode 設計行為，官方 qa 文檔；設定頁可為內建單獨釘模型）；lite 角色任務誤派 general-purpose＝座位模型跑機械段（AIR-50 弧兩次實例）——要省成本層必派 registry lite agent
 - 子智能體內**不能再派發子智能體**（Claude 可多層巢狀——官方文檔對深度上限記載版本間不一，勿釘死數字）→ 共用的系統提示詞不可依賴「spawn 下屬 agent」
 - 定義修改**延遲刷新**傳播——非即時熱更新、亦非啟動時釘死（2026-10-02 AIR-227 三數據點實測：merge 後同 session 立即 spawn＝舊面、同 session 經時延後 spawn＝新面、事後 fresh session spawn＝新面；機制觸發點未究——cache TTL 或事件驅動重讀，「換 session 即時刷新」未單獨實證；前記「啟動時快照、需新 session」強宣稱已撤回——官方文檔仍載快照制，文檔與 runtime 不一致，以 AIR-227 實測為準）。**實務**：依賴新定義的 spawn 應經時延後或換 session——同 session 變更後立即 spawn 得舊面，不得據此下「接線失敗」結論（真實案例：AIR-227 live spawn 收據曾因此誤判 FAIL；2026-08-22 雙層快照觀察——新檔案不進 registry、body/tools 修改即時 spawn 不生效——即延遲窗內樣本）。重啟 app 後**續接同對話即刷新**仍成立——session id 不變但快照已更新，無需開新對話
 - 自 v3.7.1 起子智能體預設注入 user 級 + workspace AGENTS.md（與 Claude subagents 載入 CLAUDE.md layers 對稱）

@@ -76,6 +76,8 @@ _EFFORT_ENCODINGS = frozenset({"field", "param", "slug_fixed", "unsupported"})
 _TRANSPORT_CAPS = frozenset({"image_transport"})
 _CAPABILITY_NAMES = frozenset({"native_vision"})
 _QUAL_STATUSES = frozenset({"qualified", "conditional", "unqualified"})
+# AIR-332：model 三級（capability ladder）；缺席合法——native 退表款不帶 tier
+_TIERS = frozenset({"flagship", "standard", "lite"})
 _EVIDENCE_SOURCES = frozenset(
     {"user_observed", "repo_observed", "official_documentation", "pending_first_use"}
 )
@@ -123,6 +125,7 @@ class ModelIdentity:
     id: str
     label: str
     capabilities: tuple[ModelCapability, ...]
+    tier: str | None = None  # AIR-332 三級（flagship/standard/lite）；None＝退表款
 
 
 @dataclass(frozen=True)
@@ -236,11 +239,16 @@ def parse_catalog(text: str) -> ModelCatalog:
     identity_rows = data.get("model_identity", [])
     for row in identity_rows:
         _catalog_keys_ok(
-            row, frozenset({"id", "label", "capability"}), "model_identity"
+            row, frozenset({"id", "label", "capability", "tier"}), "model_identity"
         )
         _catalog_required(row, ("id",), "model_identity")
         mid = row["id"]
         assert mid not in identities, f"catalog: duplicate model_identity id {mid!r}"
+        tier = row.get("tier")
+        assert tier is None or tier in _TIERS, (
+            f"catalog: model_identity {mid!r} tier {tier!r} 不在三級詞彙"
+            f"（合法：{sorted(_TIERS)}；缺席合法——退表款不帶 tier）"
+        )
         capabilities: list[ModelCapability] = []
         cap_names: set[str] = set()
         for cap in row.get("capability", []):
@@ -259,7 +267,9 @@ def parse_catalog(text: str) -> ModelCatalog:
             )
             cap_names.add(cap["name"])
             capabilities.append(ModelCapability(cap["name"], cap["evidence"]))
-        identities[mid] = ModelIdentity(mid, row.get("label", mid), tuple(capabilities))
+        identities[mid] = ModelIdentity(
+            mid, row.get("label", mid), tuple(capabilities), tier
+        )
 
     # --- dispatch_binding ---
     bindings: dict[str, DispatchBinding] = {}
@@ -1188,7 +1198,7 @@ def _lint_model_tokens(
     for no, line in enumerate(lines, start=1):
         for match in _MODEL_TOKEN_RE.finditer(line):
             raw = match.group(0).lower()
-            if raw.endswith("/*") or raw.endswith("-*"):
+            if raw.endswith(("/*", "-*")):
                 continue  # 萬用族指稱（chatgpt-web/*、chatgpt-web-*），非具名 token
             token = raw.rstrip(".-*")
             if token in known:

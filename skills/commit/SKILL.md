@@ -179,7 +179,7 @@ board 細節單一源＝kanban-board skill；核心正典（一次授權≠永�
 4. **identity fresh**：receipt 後 working tree 產生新變更（`git status` 非空＋revision 變）＝須補 delta review 後重產 receipt，方可 commit；
 5. **委任面核對**：commit 內容屬該弧範圍（staged 逐檔對照 EP／卡 scope）。
 
-每次 commit 獨立驗五件；commit 後刷新 receipt `head_sha`（同上段機制，下一 commit 須重產 receipt 重驗）。push／deploy／跨 repo 寫不在委任內恆停；verdict（旗艦裁決）非本程序輸入。
+每次 commit 獨立驗五件；commit 後刷新 receipt `head_sha`（同上段機制，下一 commit 須重產 receipt 重驗）。push／deploy／跨 repo 寫不在委任內恆停；verdict（judge 裁決）非本程序輸入。
 
 ### 互動 receipt-gate 驗收程序（AIR-183——conditional delegation 擴及互動弧收尾，session-agnostic 同制）
 

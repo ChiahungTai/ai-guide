@@ -42,14 +42,19 @@ harness_alias_tokens = ["sonnet", "haiku", "opus"]
 families = ["glm", "muse", "codex", "anthropic", "xai"]
 
 # ---- ModelIdentity（穩定概念 key；wire token 一律住 dispatch_binding）----
+# tier 三級（AIR-332 capability ladder：flagship/standard/lite）——缺席合法＝
+# 退表款（codex native sol/terra/luna）不入三級表；成本／availability 不入
+# tier 標籤（正交軸：capabilities／窗口語義／AvailabilitySnapshot）。
 
 [[model_identity]]
 id = "glm-5.3"
 label = "GLM 5.3"
+tier = "standard"
 
 [[model_identity]]
 id = "glm-5.3-flash"
 label = "GLM 5.3 Flash"
+tier = "lite"
 [[model_identity.capability]]
 name = "native_vision"
 evidence = "repo_observed"
@@ -57,10 +62,12 @@ evidence = "repo_observed"
 [[model_identity]]
 id = "claude-opus"
 label = "Claude Opus"
+tier = "standard"
 
 [[model_identity]]
 id = "chatgpt-web-high"
 label = "ChatGPT Web High"
+tier = "standard"
 
 [[model_identity]]
 id = "gpt-5.6-sol"
@@ -69,8 +76,9 @@ label = "Sol"
 [[model_identity]]
 id = "gpt-6-astra"
 label = "Astra"
+tier = "flagship"
 
-# fabel：xai 家旗艦的概念 identity（user 稱呼）。wire token＝grok-4.7（隨
+# fabel：xai 家 flagship 的概念 identity（user 稱呼）。wire token＝grok-4.7（隨
 # 版本漂移）、dispatch 路徑雙軌——grok CLI direct headless（AIR-218 direct
 # binding grok-cli-grok-4.7）＋bridge family（AIR-226 開 bridge-grok-grok-4.7，
 # direct/bridge admission 分立不混寫；qualification 分腿記錄——bridge binding
@@ -78,10 +86,12 @@ label = "Astra"
 [[model_identity]]
 id = "fabel"
 label = "Fabel"
+tier = "flagship"
 
 [[model_identity]]
 id = "muse-spark-1.3"
 label = "Muse Spark 1.3"
+tier = "lite"
 [[model_identity.capability]]
 name = "native_vision"
 evidence = "repo_observed"
@@ -89,9 +99,19 @@ evidence = "repo_observed"
 [[model_identity]]
 id = "muse-wonder-1.0"
 label = "Muse Wonder 1.0"
+tier = "standard"
 [[model_identity.capability]]
 name = "native_vision"
 evidence = "repo_observed"
+
+# AIR-332：wonder-full-1.0（2026-10-14 muse 方案升級 Power/Max 解鎖，user 實證
+# ——qualification 播 pending_first_use 種子，首派取樣後轉正；先例＝wonder-1.0
+# 換代播種）。bridge binding 未開（VALID_MODELS 未實測）——qualification scope
+# 萬用待 binding 落地後收窄。
+[[model_identity]]
+id = "muse-wonder-full-1.0"
+label = "Muse Wonder Full 1.0"
+tier = "flagship"
 
 # ---- DispatchBinding（carrier/surface 可用 wire token；native／alias／slug 分欄）----
 
@@ -421,6 +441,29 @@ status = "conditional"
 evidence_source = "pending_first_use"
 binding_scope = ["bridge-muse-wonder-1.0"]
 
+# AIR-332 wonder-full-1.0 種子（workload 對齊既有 muse 家族 rows；scope 萬用
+# ——bridge binding 未開，首派取樣轉正後隨 binding 落地收窄）
+[[qualification]]
+workload = "ep_synthesis"
+model_identity = "muse-wonder-full-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "adjudication"
+model_identity = "muse-wonder-full-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "implement_from_accepted_ep"
+model_identity = "muse-wonder-full-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["*"]
+
 # AIR-168 repo_observed（sc-router 0923 TDD 六段）：codex chatgpt-web/high 寫測試失敗＝工單形狀錯（路徑非內聯；webgpt 內聯規則既有實例），不記 unqualified
 # muse xhigh 寫測試 caveat：class-body scoping 陷阱（見 test-driven-development 反模式表）＋回覆混散文須 strip
 # GLM-5.3 adjudication corroboration：bridge judge/resume PASS（sc-router 0923 弧；tri adjudication＝job-mueq12g4-lj1iy1）
@@ -467,3 +510,18 @@ model_identity = "muse-wonder-1.0"
 status = "conditional"
 evidence_source = "pending_first_use"
 binding_scope = ["bridge-muse-wonder-1.0"]
+
+# AIR-332 wonder-full-1.0 種子續（execution workload 對齊 muse 家族）
+[[qualification]]
+workload = "evidence_retrieval"
+model_identity = "muse-wonder-full-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["*"]
+
+[[qualification]]
+workload = "review_findings"
+model_identity = "muse-wonder-full-1.0"
+status = "conditional"
+evidence_source = "pending_first_use"
+binding_scope = ["*"]
