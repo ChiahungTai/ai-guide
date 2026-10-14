@@ -1,10 +1,10 @@
 ---
 id: AIR-337
 title: AIR-330 face-啟用增補——cr-query 契約節轉入消費語義（CR face 0.14.0 已交付）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-14 20:27'
-updated_date: '2026-10-14 20:29'
+updated_date: '2026-10-14 21:27'
 labels: []
 dependencies: []
 ordinal: 322000
