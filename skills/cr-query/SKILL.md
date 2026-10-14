@@ -120,9 +120,9 @@ delta-freshness 契約（契約先行）：stale graph 從二元 verdict 升級�
 - **`no-coverage`**——查詢目標在該 index 的 source set 之外（如 WT 碰區）＝**absent 非 stale**：交 live LSP。
 - 🔴 **生效 gate（本節鐵律）**：CR 端 face（slot base commit／freshness delta 輸出／查詢面逐筆標註＋MCP face）落地前，本節為**契約宣告非消費語義**——現行二元 verdict 規則（fresh 消費／stale 以 committed-baseline 姿態＋標註／negative verdict 禁 stale）**一字不變**；face 在場的機械判準由 CR 端交付時補（delta 欄位在場與否）。
 - **producer version 綁定（硬欄位）**：exactness 相對 producer 版本（同 bytes＋同 producer ⇒ 同 facts）——三層標註必須攜帶 producer version；缺 version 或跨版本的標註一律視為 unavailable（不得消費）。
-- **negative scope-分離例外（機械條件，按查詢類型）**：直接 inbound 查詢——delta 輸出機驗**變更檔集對查詢目標符號零觸及**（完整 outbound 引用清單比對）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂；transitive 可達集查詢——須①的健全證明在場，否則 negative verdict 維持禁令不 terminal。判定必須引用 delta 輸出的機械證據，**禁 LLM 自由心證**。
+- **negative scope-分離例外（機械條件，按查詢類型）**：直接 inbound 查詢——delta 輸出機驗**變更檔集對查詢目標符號零觸及**（完整 outbound 引用清單**兩態聯集**比對——單相位不健全：僅新態漏移除向、僅舊態漏新增向）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂；transitive 可達集查詢——須上開 transitive exact 條目的健全證明在場，否則 negative verdict 維持禁令不 terminal。判定必須引用 delta 輸出的機械證據，**禁 LLM 自由心證**。
 - **degraded reason 值域擴充**：`stale-delta-exact`／`stale-delta-possibly-stale`／`stale-delta-no-coverage` 納入 degraded reason 建議值（沿 AIR-228 慣例：reason 值面自由承載，[workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar 不動）。
-- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）；CR 端 (b) delta 輸出契約須含 per-changed-file 完整 outbound 符號引用清單（該檔引用的一切非本檔定義符號——同 repo 與第三方皆含）——缺此欄＝negative 例外整體不生效（生效 gate 照舊）。
+- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）；CR 端 (b) delta 輸出契約須含 per-changed-file 完整 outbound 符號引用清單（該檔引用的一切非本檔定義符號——同 repo 與第三方皆含；須涵蓋變更前後兩態——聯集或 added/removed 成對輸出）——缺此欄或單相位＝negative 例外整體不生效（生效 gate 照舊）。
 
 本節與「Stale graph check」段（二元現行語義）並存不互斥——face 未落地前以該段為準，落地後三層標註為 stale 態的細化。
 
