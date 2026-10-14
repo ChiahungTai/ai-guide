@@ -9,7 +9,7 @@ bootstrap-pointer: "符號/引用/呼叫鏈/簽名/型別/邊界/循環查詢先
 
 ## 核心原則（cr-first 路由）
 
-搜尋前分清符號/引用/呼叫鏈與字串/config：符號優先 code-reality（refs/callers/closure，核對 [SRC] provenance/stale），型別走 code-reality-lsp-bridge hover/check_file（缺場退 LSP），文字 rg、檔案 fd；即時 working-tree 回饋用 LSP——index 是 build-time，編輯後須重 harvest。載體對照、staleness 處置、rg 反例群見 symbol-query-routing skill。
+搜尋前分清符號/引用/呼叫鏈與字串/config：符號優先 code-reality（refs/callers/closure，核對 [SRC] provenance、查詢 annotation（[CR_VERDICT]／[CR-META]）與 freshness；無標註時依 cr-query 的二元降級規則），型別走 code-reality-lsp-bridge hover/check_file（缺場退 LSP），文字 rg、檔案 fd；即時 working-tree 回饋用 LSP——index 是 build-time，編輯後須重 harvest。載體對照、staleness 處置、rg 反例群見 symbol-query-routing skill。
 
 ## 任務啟動 gate（符號查詢任務強制）
 

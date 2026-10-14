@@ -181,6 +181,8 @@ review finding 可經多層驗證，**各層都可能錯**：
 
 9. **CR freshness preflight（風險 profile 派發側 cheap check——AIR-164，吸收 AIR-161 改動點 4）**：風險 profile 判定後、review 腿 spawn 前跑 **<1s 機械檢查**——①`.code-reality/graph.db` 存在性；②freshness face 消費——`code-reality freshness --repo <root> --json`（機制真相源＝[cr-query](../cr-query/SKILL.md)「Stale graph check」；**freshness 判 stale 以 source identity 為準，不用 graph.db mtime**——mtime 不反映語義變更；**freshness 判準單一源＝AIR-135 invariant（ai-development-guide「AIR-135 協作 invariant」條 2）：`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`**——face 即判準的機械求值，content-addressed identity 涵蓋 dirty WT/content）。**<1s 的兩個誠實前提**：冷啟首跑為全量 hash，可超過 1s——<1s 成立前提＝warm cache（stamp sidecar 在場）；同尺寸＋同 mtime 的內容替換可逃過 cache gate——stamp 端全量重 hash 兜底，最壞 false-stale（安全方向）。**fresh=true → 正常派發，可宣稱新鮮**；**stale 或 legacy index（無 identity 戳記，face 自回報 legacy-signals）→ 既有兩態擇一**：背景 rebuild（異步，不阻塞本次 dispatch——本次 review 以降級姿態進行並明文記錄）或明文降級收據（與 `[cr:unavailable]` 同級消費——見下「bridge review 的 CR 證據分類與消費」）。**禁阻塞式同步 rebuild**（scip ~8min 是不可接受的 dispatch 稅——cheap check 同步、rebuild 永不擋路）。**card WT 場景**（WT 缺自有 graph／freshness≠true）：補建時機＝evidence-demand 觸發 single-flight 背景 build（正向 lookup 借主 checkout committed-baseline）＋build 失敗不擋工作、只限證據權限（degraded＋`unverified-by-graph`＋negative verdict 不 terminal 收斂）——列舉 trigger 與語義單一源＝[cr-query](../cr-query/SKILL.md)「card-WT 結構證據供給（AIR-228）」節，此處不重抄。engine 未安裝 → 既有「未裝跳過不阻擋」降級語義不變，不重複檢查。
 
+CR freshness preflight 判定來源新鮮度；單次查詢的 tier、exhaustive 與 refusal 由 cr-query 消費規則裁決。stale 不等於查詢全無證據：可保留已回傳的 committed-baseline 正向事實，但不得據此形成 current-tree 的 negative/exhaustive 結論。
+
 ### spawn prompt 工具紀律（review agent 通用）
 
 spawn review agent 時，prompt 內的工具使用紀律（源方法論「token 紀律」的**限縮吸收**——原版「All tools are functional and will work without error」宣稱與本 repo 的 degraded contract 衝突，不吸收該宣稱）：
@@ -200,13 +202,13 @@ spawn review agent 時，prompt 內的工具使用紀律（源方法論「token 
 
 > 標的＝**delegate-bridge review material**（`review --base` 自動附掛 code-reality graph-checked 機械證據段——bounded 輸出，material 尾段恆以四態 marker 之一收尾：`[cr:present]` / `[cr:empty]` / `[cr:unavailable]` / `[cr:skipped]`）。本節是 review 消費面的分類與消費**單一源**；bridge 側 attach 行為與 CR write-face（build/snapshot/建 index 歸 harness 互動面）不在此範圍。
 
-**證據地位（準入裁決）**：CR 段＝**A 級機械證據**（graph-checked——獨立機械產物，非敘事、非 marshal 篩選面），**優先於敘事宣稱**（implementer 解讀、dispatcher 結論摘要、receipts 敘事），**準入 fresh leg**——不在餵料排除清單（放行條文見執行預設點 7「spawn prompt 餵料衛生」）。anti-over-reliance 不變：graph＝structure≠behavior，dynamic dispatch/config 不在圖裡（見 [cr-query](../cr-query/SKILL.md)）。
+**證據地位（準入裁決）**：CR 段＝**A 級機械證據**（graph-checked——獨立機械產物，非敘事、非 marshal 篩選面；地位範圍依四態表逐態消費），**優先於敘事宣稱**（implementer 解讀、dispatcher 結論摘要、receipts 敘事），**準入 fresh leg**——不在餵料排除清單（放行條文見執行預設點 7「spawn prompt 餵料衛生」）。anti-over-reliance 不變：graph＝structure≠behavior，dynamic dispatch/config 不在圖裡（見 [cr-query](../cr-query/SKILL.md)）。
 
 **四態 marker 消費表**：
 
 | marker | 態義 | 消費動作 |
 |--------|------|---------|
-| `[cr:present]` | CR 證據已附掛且有內容 | **直接採用**——作 A 級機械證據參與 finding 查證與 judge 裁決；與敘事宣稱衝突時機械證據優先 |
+| `[cr:present]` | CR 證據已附掛且有內容 | [cr:present] 表示 bridge material 有 CR 證據內容；A 級機械證據地位僅及實際查詢及其已驗證的 provenance、freshness、tier 與覆蓋範圍。judge 須依 cr-query 解析 annotation；possibly-stale 僅作 baseline positive evidence，no-coverage／indeterminate 不形成完整性宣稱，negative_verdict=unavailable 必須保留 refusal。marker 在場不代表查詢結果 exact。 |
 | `[cr:empty]` | engine 在場、查詢無 CR 覆蓋 | **如實記錄**「無 CR 覆蓋」——不虛構覆蓋存在，查證退回既有 LSP/rg 腿 |
 | `[cr:unavailable]` | index 缺／過期等不可用 | **升級裁決（禁靜默吞）**——judge 兩態擇一：rebuild index 後重派 review，或明文接受降級（理由記入 judge 決策） |
 | `[cr:skipped]` | 未觸發 CR 附掛（無觸發面等） | **如實記錄**「CR 未觸發」——等價既有「CR 接線查證 N/A」註記，不需升級 |

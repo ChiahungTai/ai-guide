@@ -21,7 +21,7 @@ A graph edge (A calls B / A imports B) is a *static, parse-time fact*. It says a
 This skill assumes the project has the code-reality engine. Detect once per task:
 
 1. **MCP tools present** — code-reality engine tools callable (impact_radius / detect_changes / hub_nodes / bridge_nodes / list_communities / architecture_overview / list_flows / affected_flows / semantic_search / get_review_context / get_minimal_context / refs / callers / closure / audit) → engine live, use it. 兩種部署形態共用這組工具名：plugin stdio（ZCode/Claude plugin per-session spawn `code-reality-mcp --stdio`）與共享 HTTP resident（`127.0.0.1:8200/mcp`，選配——服務由 OS 服務層管理，目前未部署、現值以 launchctl 為準）。
-2. **Graph DB exists ≠ graph usable** — `.code-reality/graph.db` 在場只證「曾 build」；present 與新鮮度判定須過 freshness face（`code-reality freshness --repo <root>`，exit 映射：0＝fresh → current-tree 消費；1＝stale → **合法 verdict**，以 committed-baseline 姿態消費並標註，禁被 `&&` 鏈當 shell failure 吞掉——判 stale 須佐 stdout `[WARN] stale`／`--json` `fresh=false`，stderr `[FAIL]`＝crash face 走 fail-loud；2＝no-slot/unavailable → fail-loud 無 graph 可用）。MCP tools absent 時用 CLI `code-reality graph_query <op> --repo <root>`（見 Fallback）。review preflight 場景 detect＋freshness 收斂為一跳（freshness 收斂 owner＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」點 9；注入語義 owner＝同檔「CR 接線查證段」）；全域 symbol-query 任務啟動 gate 的 cr-在場確認不受本條改寫（rules/symbol-query-routing 另一使用情境）。
+2. **Graph DB exists ≠ graph usable** — `.code-reality/graph.db` 在場只證「曾 build」；present 與新鮮度判定須過 freshness face（`code-reality freshness --repo <root>`，exit 映射：0＝fresh → current-tree 消費；1＝stale → **合法 verdict**，以 committed-baseline 姿態消費並標註，禁被 `&&` 鏈當 shell failure 吞掉——判 stale 須佐 stdout `[WARN] stale`／`--json` `fresh=false`，stderr `[FAIL]`＝crash face 走 fail-loud；2＝no-slot/unavailable → fail-loud 無 graph 可用）。MCP tools absent 時用 CLI `code-reality graph_query <op> --repo <root>`（見 Fallback）。review preflight 場景 detect＋freshness 收斂為一跳（freshness 收斂 owner＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」點 9；注入語義 owner＝同檔「CR 接線查證段」）；全域 symbol-query 任務啟動 gate 的 cr-在場確認不受本條改寫（rules/symbol-query-routing 另一使用情境）。freshness 的 fresh/stale verdict 與查詢 annotation 分軸；MCP freshness 回傳 stale 是合法結果，查詢結果是否可供完整性宣稱另看單次 annotation。
 3. **Neither** — engine not present in this project.
 
 **Worktree 借用處方（AIR-206）**：card WT 無自有索引時，可對主 checkout 借用——`code-reality freshness --repo <主checkout>` 判讀後以 **committed-baseline 姿態**（`serves=committed-baseline`）消費；禁同步 rebuild（寫入面歸主 checkout 互動）。借來的 fresh 只證「index 對主 checkout 新鮮」，**禁支撐 negative verdict**（零 caller／可刪／不影響 X——WT 的 branch commits 與 dirty tree 跟該 index 的 source relation 無機械證據）；要 current-tree 消費就在背景自建 `code-reality graph_db build --repo <WT>`（何時必須自建＝evidence-demand trigger，列舉判定單一源見下「card-WT 結構證據供給（AIR-228）」節）。真實案例（0926）：主 checkout 併入當日弧後 freshness＝exit 1 `[WARN] stale——serves committed-baseline`（`stale_reasons`＝content-drift、doc-set-drift；`head_drift` 為獨立 WARN 行、非 stale reason）——stale 即合法 verdict 的 live 例。
@@ -86,7 +86,7 @@ Two facts backends, complementary not competing:
 - ② 無 graph／stale：退 `rg "<符號>" tests/ -l`
 - ③ 輸出證據三級標記：`graph-derived`／`text-derived`／`未驗證 dynamic consumers`——`rg` 命中 ≠ 完整 impact（動態派發與字串鍵耦合是 CR 盲區，graph 亦盲）
 
-> **Stale graph check:** Rust repos — `code-reality scip_refs <sym> --repo` 的 `[SRC]` 行只作 per-symbol provenance 顯示，**不對照 repo HEAD 判新鮮**（舊 HEAD 對照觸發重建的語義已廢）；**新鮮判定一律走 freshness face**——`code-reality freshness --repo <root> --json`，`head_drift` 為獨立欄位、不進 `stale_reasons`（HEAD 前進不算過期，identity 相同即 fresh）。Graph freshness — rebuild with `graph_db build --repo <root>` (Python cache first: `pyrefly-index --repo <root>`). Graph facts are build-time; stale graph = stale facts (parallel: LSP workspace state-dependence — re-verify before concluding). **freshness 判準單一源＝AIR-135 invariant（ai-development-guide「AIR-135 協作 invariant」條 2）：`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`（content-addressed identity，涵蓋 dirty WT/content）**——判準由 freshness face 機械求值：`code-reality freshness --repo <root> --json`，欄位 `fresh`／`stale_reasons`／identity pair `indexed_source_identity` vs `current_source_identity`／`identity_algo`／`serves`；`fresh=true` → graph 可宣稱新鮮；stale 或 legacy index（無 identity 戳記，face 經 `stale_reasons` 回報 legacy-signals）→ 既有降級語義（graph 只當 committed baseline）。identity 覆蓋未提交 dirty content，編輯中即時 delta 仍以 live LSP 為準。
+> **Stale graph check:** Rust repos — `code-reality scip_refs <sym> --repo` 的 `[SRC]` 行只作 per-symbol provenance 顯示，**不對照 repo HEAD 判新鮮**（舊 HEAD 對照觸發重建的語義已廢）；**新鮮判定一律走 freshness face**——`code-reality freshness --repo <root> --json`，`head_drift` 為獨立欄位、不進 `stale_reasons`（HEAD 前進不算過期，identity 相同即 fresh）。Graph freshness — rebuild with `graph_db build --repo <root>` (Python cache first: `pyrefly-index --repo <root>`). Graph facts are build-time; stale graph = stale facts (parallel: LSP workspace state-dependence — re-verify before concluding). **freshness 判準單一源＝AIR-135 invariant（ai-development-guide「AIR-135 協作 invariant」條 2）：`fresh ⇔ indexed_source_identity == requested_consumer_source_identity`（content-addressed identity，涵蓋 dirty WT/content）**——判準由 freshness face 機械求值：`code-reality freshness --repo <root> --json`，欄位 `fresh`／`stale_reasons`／identity pair `indexed_source_identity` vs `current_source_identity`／`identity_algo`／`serves`；`fresh=true` → graph 可宣稱新鮮；stale 或 legacy index（無 identity 戳記，face 經 `stale_reasons` 回報 legacy-signals）→ 既有降級語義（graph 只當 committed baseline）。identity 覆蓋未提交 dirty content，編輯中即時 delta 仍以 live LSP 為準。freshness face 僅判定 index 相對 consumer source identity 的新鮮度；單次查詢的 tier、exhaustive 與 negative_verdict 另依「stale-delta 查詢標註與消費」節判讀。freshness=true 不免除查詢標註與 producer provenance 驗證。
 
 ## card-WT 結構證據供給（AIR-228）
 
@@ -94,9 +94,9 @@ Two facts backends, complementary not competing:
 
 - **committed-baseline 借用判準**：WT 缺自有 graph（`<wt>/.code-reality/graph.db` 不在）或 freshness≠true（`code-reality freshness --repo <wt> --json`）時，**正向 lookup**（理解既有 symbol／確認存在性——不涉 current-tree 改判）可借主 checkout graph 消費——`code-reality <tool> --repo <primary>`；借用姿態（`serves=committed-baseline`）與禁同步 rebuild 同上「Worktree 借用處方（AIR-206）」，receipt 註明採單一機械格式：payload 內 `evidence=<ref>, provenance=baseline-borrowed`（逗號+空格+鍵值；provenance 標註面，非 route 值域擴張——凍結 grammar 不動；lint 將其吸入 evidence 值屬已知且可接受——格式凍結後消費端可機械剝離後綴）。
 - **current-tree demand trigger（列舉式——命中任一即必須 current-tree 證據，baseline 借用不足）**：①branch 新增/修改 symbol 的 refs／callers／closure／impact 查證（借來的 graph 對 WT branch commits 與 dirty tree 無 source relation）；②negative/exhaustive verdict——零 caller／唯一消費者／可刪／不影響 X（AIR-206 同禁）。命中而 WT graph 缺席或 stale → **single-flight 背景 build**：`code-reality build --repo <wt>`（＝graph_db build 傘形——code-reality SKILL.md:58 主入口）背景執行一次；已在跑不重啟（build 冪等，重複觸發收斂同一結果）；**禁同步阻塞等 build**（dispatch 同步面＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」的背景 rebuild 語義）。
-- **build 失敗語義（不擋開工、不擋實作——只限證據權限）**：該次查證走 degraded 路線——受影響 claim 逐條 `unverified-by-graph`＋negative structural verdict **不得 terminal 收斂**（與 AIR-224 receipt 模型相容：`cr(route=degraded, reason=…)` 承載）；degraded reason 建議值＝`WT-graph-absent`／`WT-graph-stale`（本節區域慣例——供 AIR-224.1 觀察窗 telemetry 區分「WT graph 缺席/過期」降級成因；reason 值面本為自由承載，不動 [workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar）。
+- **build 失敗語義（不擋開工、不擋實作——只限證據權限）**：該次查證走 degraded 路線——受影響 claim 逐條 `unverified-by-graph`＋negative structural verdict **不得 terminal 收斂**（與 AIR-224 receipt 模型相容：`cr(route=degraded, reason=…)` 承載）；degraded reason 建議值＝`WT-graph-absent`／`WT-graph-stale`（本節區域慣例——供 AIR-224.1 觀察窗 telemetry 區分「WT graph 缺席/過期」降級成因；reason 值面本為自由承載，不動 [workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar）。即使 stale 查詢取得有效 [CR_VERDICT] 或 [CR-META]，也須依查詢 tier 與 exhaustive 限制證據用途；annotated positive baseline 不自動升級為 current-tree evidence。
 - **升級語義**：背景 build 成功且 freshness=true 後，後續查證升級 current-tree evidence（同 symbol 重查即得 current-tree verdict，先前的 baseline-borrowed 標註不再適用）。升級 current-tree 後舊標註辨識＝剝離 `, provenance=baseline-borrowed` 後綴；lint/cr_usage 感知面歸 AIR-224.1 觀察窗或後續弧。
-- **契約指針（AIR-330）**：negative 禁令未來的 scope-分離例外與 degraded reason `stale-delta-*` 值域擴充見「stale-delta 三層標註（AIR-330——契約宣告）」節——face 落地前本節語義不變。
+- **stale-delta 消費指針**：query-time tier、exhaustive、negative refusal 與 scope-分離例外的生效條件，統一依「stale-delta 查詢標註與消費」節；card-WT evidence-demand 與背景 build 規則維持本節。
 
 ## primary post-merge warm-up（AIR-329）
 
@@ -109,22 +109,190 @@ Two facts backends, complementary not competing:
 - **AIR-228 scope amendment**：「AIR-228 維持 card-WT evidence-demand single-flight。新增 primary post-merge opportunistic warm-up，僅改善 graph availability，不提供 freshness acceptance。」——消費前驗證（AIR-135 條 2）不變；禁把 warm-up 改造成 review 阻塞式前置。
 - **量測**：warm-up reuse rate＝下一弧實際消費該次 build identity 的弧數／成功 warm-up 弧數；每次 kick 記 merge SHA／verdict／build 結果與耗時（收尾報告＋卡 notes 承載）；receipt token 細化為數據源；命中率高且重複成本低 → 再評估腳本自動派工。
 
-## stale-delta 三層標註（AIR-330——契約宣告）
+## stale-delta 查詢標註與消費
 
-delta-freshness 契約（契約先行）：stale graph 從二元 verdict 升級為三層標註，查詢範圍與 stale 變更集可證分離時仍可精確消費（如 docs-only 變更後，未動檔的符號事實查詢實為 exact——契約目標態，非現行消費語義，生效 gate 見下）。
+CR 查詢證據分兩軸判讀：
 
-- **`exact`（符號事實查詢）**——定義／簽名等「讀未變檔內容」的查詢，且目標檔不在變更集：未變檔內 facts 與 fresh 可證等價（byte-identical ⇒ 同 index ⇒ 同 facts）。
-- **`exact`（直接 inbound 查詢）**——refs／直接 callers／零 caller／唯一消費者等「誰引用目標」的查詢：**目標檔未變不足夠**（變更檔可新增指向未變符號的 inbound edge——stale index 必漏）；須 producer 提供**引用面證明**方可判 exact；無此證據 → `possibly-stale`。
-- **`exact`（transitive 可達集查詢）**——closure／impact 等可達集語義查詢：**引用面證明不適格**（可達集內部節點的 outbound 邊可住在變更檔——引用清單零觸及目標符號 closure 答案仍可變）；須 producer 另提供**可達集語義的健全證明**（候選 predicate：「stale index 上查詢目標的可達集不含任何變更檔」——delta 輸出＋stale index 機驗；健全性論證與確定形式歸 CR 端 (b) 契約定義），未定義前 → `possibly-stale`。
-- **`possibly-stale`**——查詢範圍與變更集**相交**：標註須列相交變更檔。
-- **`no-coverage`**——查詢目標在該 index 的 source set 之外（如 WT 碰區）＝**absent 非 stale**：交 live LSP。
-- 🔴 **生效 gate（本節鐵律）**：CR 端 face（slot base commit／freshness delta 輸出／查詢面逐筆標註＋MCP face）落地前，本節為**契約宣告非消費語義**——現行二元 verdict 規則（fresh 消費／stale 以 committed-baseline 姿態＋標註／negative verdict 禁 stale）**一字不變**；face 在場的機械判準由 CR 端交付時補（delta 欄位在場與否）。
-- **producer version 綁定（硬欄位）**：exactness 相對 producer 版本（同 bytes＋同 producer ⇒ 同 facts）——三層標註必須攜帶 producer version；缺 version 或跨版本的標註一律視為 unavailable（不得消費）。
-- **negative scope-分離例外（機械條件，按查詢類型）**：直接 inbound 查詢——delta 輸出機驗**變更檔集對查詢目標符號零觸及**（完整 outbound 引用清單**兩態聯集**比對——單相位不健全：僅新態漏移除向、僅舊態漏新增向）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂；transitive 可達集查詢——須上開 transitive exact 條目的健全證明在場，否則 negative verdict 維持禁令不 terminal。判定必須引用 delta 輸出的機械證據，**禁 LLM 自由心證**。
-- **degraded reason 值域擴充**：`stale-delta-exact`／`stale-delta-possibly-stale`／`stale-delta-no-coverage` 納入 degraded reason 建議值（沿 AIR-228 慣例：reason 值面自由承載，[workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar 不動）。
-- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）；CR 端 (b) delta 輸出契約須含 per-changed-file 完整 outbound 符號引用清單（該檔引用的一切非本檔定義符號——同 repo 與第三方皆含；須涵蓋變更前後兩態——聯集或 added/removed 成對輸出）——缺此欄或單相位＝negative 例外整體不生效（生效 gate 照舊）。
+- **freshness（來源可用性）**：由 freshness face
+  對 indexed source identity 與 consumer source identity
+  機械求值；fresh 可作 current-tree 證據，
+  stale 僅以 committed-baseline 姿態消費。
+- **tier（單次答案品質）**：由查詢輸出中的
+  `[CR_VERDICT]` 或 `[CR-META]` 決定。
+  tier 不覆寫 freshness，freshness 也不推導 tier。
+  `exhaustive` 另表示該次查詢是否具有完整性保證。
 
-本節與「Stale graph check」段（二元現行語義）並存不互斥——face 未落地前以該段為準，落地後三層標註為 stale 態的細化。
+**標註面偵測與後備**：
+
+- scip_refs：`[SRC]` 為第一行；
+  第二行須有可解析的 `[CR_VERDICT] v=1`。
+- graph_query：`[OK] graph_query <op>` 為第一行；
+  第二行須有可解析的 `[CR-META]` JSON，
+  其中 `v=1`。
+- 解析須驗證 tier、exhaustive、negative_verdict、
+  producer_version 等必要欄位與型別。
+  缺少標註、schema 不支援或無法確認標註面時，
+  保留既有二元語義：
+  fresh → current-tree；
+  stale → committed-baseline；
+  stale negative verdict 不得 terminal。
+- 標註行存在但損壞、截斷或內容矛盾，
+  屬 unverified/error，不得視為有效標註；
+  禁從缺少標註推導 fresh。
+  此類不適用上條二元後備
+  （缺標註才後備；在場但損壞＝fail-closed，
+  不得以 baseline 姿態消費）。
+- MCP 工具數、binary 版本字串與工具名稱在場
+  均不能代替單次查詢的標註驗證。
+
+**tier 消費規則**：
+
+- `exact`：僅在來源身份、producer provenance、
+  查詢覆蓋及執行完整性均成立時，
+  作為該次查詢範圍內的精確結構證據。
+- `possibly-stale`：只採用已觀察到的
+  committed-baseline 正向事實；
+  不得宣稱完整列舉或 negative verdict。
+- `no-coverage`：該查詢在此 index 無有效覆蓋；
+  交 live LSP 或其他互補查證面，
+  不得將查無結果解讀為 source 不存在。
+- `indeterminate`：provenance、delta、
+  generation binding 或執行結果無法確認；
+  記錄 `delta_unavailable` reason
+  （N/A 時為 null——indeterminate 亦可因
+  provenance／generation binding 無法驗證
+  而 delta 本身可得），
+  轉 live LSP 或重新取得可驗證證據。
+  不得升級成 exact 或推論完整性。
+
+**negative verdict 硬閘**：
+
+- `negative_verdict=unavailable` 優先於 tier；
+  consumer 必須視為拒絕，不得讀取空結果作為零命中。
+- scip_refs 的 stale gated-empty：
+  `[CR_VERDICT] negative_verdict=unavailable`
+  且 CLI exit 1；與查無 DEF 的 exit 1
+  必須依標註內容區分。
+- graph_query 的 stale gated-empty：
+  `[CR-META] negative_verdict=unavailable`，
+  被拒絕的結果欄位為 null，不得當作空陣列。
+- MCP refusal 為 error，content 內含
+  `stale-negative-unavailable`；
+  MCP freshness 回傳 stale 則是合法 verdict，
+  不因 stale 本身視為工具失敗。
+- `negative_verdict=null` 不代表允許 negative claim。
+  negative/exhaustive 結論仍須具備
+  可驗證的 fresh 來源、`tier=exact`、
+  `exhaustive=true` 及該操作的覆蓋證據；
+  動態引用等 graph 盲區仍須互補查證。
+- 無標註的操作（如 period-1 免標註面：
+  hub_refs／hazard_registry／audit／
+  chain_tour／delta_tour／snapshot／boundary）
+  不得支撐 negative／exhaustive 宣稱
+  （fixture 定其為 unverified）——
+  negative 結論須 fresh＋tier=exact＋
+  exhaustive=true＋覆蓋證據，
+  無標註通道永不滿足。
+- stale 且 delta 無法判定時，
+  tier 可降為 `indeterminate`，
+  但 producer stale negative refusal
+  （CR 端 D7）仍須執行。
+
+**delta 證據邊界**：
+
+- delta 的 authoritative changed/added/removed
+  檔案集合以 `freshness --json` 為準。
+- `[CR_VERDICT]` 的 `delta_paths`
+  只是截斷式顯示摘要，不可作為完整集合；
+  `delta_paths_total` 才是完整數量。
+- `[CR-META]` 的 `delta_summary`
+  提供彙總資訊，不代替逐檔證明。
+- `delta_complete` 僅表示檔案列舉完整，
+  不等於符號引用、transitive 可達集
+  或 negative verdict 已獲完整性證明。
+- `content_verification` 另揭露檔案內容驗證方式；
+  不得把 `stat-cache` 宣稱成 `full-rehash`。
+- consumer 不得依檔名沒有相交、
+  目標檔未修改或自行推測依賴關係，
+  將 producer 的 `possibly-stale` 升級成 `exact`。
+
+**producer 與 generation 綁定**：
+
+- `producer_version` 為建置時 producer identity，
+  不得以查詢當下 binary 版本代替。
+- scip_refs 使用 index producer version；
+  graph_query 使用 graph 建置時的 builder revision。
+  兩者屬不同 producer face，不要求字串相等。
+- 欄位缺失、值為 null 或 provenance 無法驗證時，
+  不得將該標註作為 exactness 證明。
+- 比較不同查詢結果時，須先確認其 serving artifact
+  與 producer provenance 可比較；
+  不得將跨 generation 的證據拼成同一完整結果。
+- graph-served 查詢的 `graph_snapshot_id`
+  綁定實際服務該次查詢的 graph generation。
+  legacy 或 generation mismatch 不得推導 exact。
+- scip-served 的 symbols bypass
+  可有 `graph_snapshot_id=null`；
+  這表示 graph generation 不適用，
+  不是單憑 null 判定標註損壞。
+
+**stale negative scope-分離例外**：
+
+目前 producer 僅提供 file-level delta，
+沒有完整的 symbol-level outbound 引用證明。
+因此 stale negative 例外不生效；
+D7 refusal 與 negative 禁令照舊。
+
+未來啟動直接 inbound 例外須同時具備：
+
+1. producer 版本化提供 per-changed-file
+   完整 outbound 符號引用清單，
+   涵蓋變更前後兩態。
+2. 該清單與實際 serving generation、
+   source identity 具有可機械驗證的綁定。
+3. producer 定義並驗證目標符號的
+   scope-separated exact predicate。
+4. producer 的 negative gate 明確支援此例外，
+   且查詢結果提供可驗證的完整性證據。
+
+transitive 查詢另須 producer 提供
+可達集語義的健全證明；
+直接 inbound 的 scope 證明不得替代。
+
+任一條件缺失，例外整體不生效。
+consumer 禁用 LLM 自由判斷繞過 D7。
+
+**degraded receipt**：
+
+`possibly-stale`、`no-coverage`、
+`indeterminate` 依實際原因記錄降級，
+受影響的 negative/exhaustive claim
+須標註 `unverified-by-graph`。
+
+degraded reason 可採
+`stale-delta-possibly-stale`、
+`stale-delta-no-coverage`、
+`stale-delta-indeterminate`；
+本地 reason 值域仍依既有自由承載契約，
+不修改 receipt grammar。
+
+`exact` 本身不屬 degraded，
+不得僅因標註在場便記成 degraded success。
+
+**跨面指針**：
+
+bridge 收到 CR 查詢證據時，
+以本節規則消費其 provenance、tier、
+exhaustive 與 negative_verdict；
+bridge 的 supply/route 狀態
+不代替單次查詢的證據判定。
+
+CR producer 輸出契約以其凍結 fixture 為準
+（code-reality repo
+`ai-analysis/execution-plans/_done/2026-10-14-cr-delta-freshness/contract-fixture-v1.md`）；
+consumer 不自行新增 CR tier、
+推導未提供的 symbol-level scope proof，
+或改寫 producer refusal。
 
 ## 🔴 Anti-over-reliance (the failure this skill prevents)
 
