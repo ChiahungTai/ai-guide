@@ -1,12 +1,14 @@
 ---
 id: AIR-331
 title: review_ledger 零 findings 帳本誤報 FAIL——header-only 表豁免（D-009）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-14 00:36'
-updated_date: '2026-10-14 00:50'
+updated_date: '2026-10-14 00:36'
 labels: []
 dependencies: []
+references:
+  - skills/post-build/scripts/review_ledger.py
 ordinal: 316000
 ---
 
