@@ -4,7 +4,7 @@ title: D-011 抓地——probe／spine 的 muse unknown 與 codex 分帳消費�
 status: Done
 assignee: []
 created_date: '2026-10-14 12:25'
-updated_date: '2026-10-14 13:01'
+updated_date: '2026-10-14 13:17'
 labels: []
 dependencies: []
 ordinal: 320000
@@ -48,6 +48,12 @@ flowchart LR
 <!-- SECTION:PLAN:BEGIN -->
 〔baseline：ai-guide 49f9eb19〕〔已決策勿重辯：①bi-panel 討論收斂案（muse 測試釘面分析為準）：probe WARN muse family 分支（verdict 行不動——endswith 多點逐字釘；codex exhaustion 行不加——單池作用域；availability_snapshot:222 記債不動）②spine 兩行（line 8 例外指針＋line 14 消費句，除「待探測」種子，as-of 不刷新）③SKILL:80 muse 例外句＝政策正典④錨點片語「實派即探測」四檔對帳⑤不做 hook/閘〕範圍：probe_entitlements.py＋tests＋SKILL.md＋spine 外部檔；驗收＝scoped 65 passed＋錨點四檔＋probe 實跑新句可見。
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+drift 債收回（2026-10-14，user 指示「直接修一修」）：availability_snapshot.py:222 stale 分支改 family-aware（muse 行＝「無機械探測面，須以 user 實證／TUI /usage 刷新 as-of，禁從歷史推定」——stale 語境正確動作是刷新證據非實派；非 muse 保留探測句）。bi post-build：codex approve／muse 1F（措辭無 pin）採納修復 test_stale_muse_wording_pinned。tri-state/exit 語義零變動。
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
