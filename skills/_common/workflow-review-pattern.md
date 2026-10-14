@@ -215,6 +215,8 @@ Review agent 回傳的 `DimensionVerdict.findings[]` 是**發現時**狀態。�
 
 cell 內出現 pipe(`|`)一律寫轉義形 `\|`(驗證式欄 rg pattern 常見)——`review_ledger.py` lint/parse 容錯讀取轉義形,未轉義裸 pipe 會拆壞欄位。
 
+**多表帳本（AIR-333 join-aware 分類）**：第一張含 ID 欄的表＝**Finding 定義表**（全 canonical 欄位）；其後的 keyed 表若 header 含「狀態」或「決策」欄、且全部資料列 fid 已見於前表＝**狀態 patch 表**（欄位可 partial——歷史 Apply 記錄表 `ID｜狀態｜apply 落點` 屬此形；lint 豁免 columns.missing、在場欄位值域照查）；引入新 fid 或缺狀態／決策欄者＝第二張 Finding 定義表（全欄位檢查——新 fid 首次出現必經全 canonical 檢查）。converged 值域以跨表 ID-join 後每 fid 終態為準（與 parse 共用同一 last-wins join——單一源 `review_ledger.py` `join_keyed_tables`）：主表發現時態列（open／—）被 patch 覆寫成 terminal／合法決策即收斂。`parse` PASS ≠ `lint` PASS——parse 是歷史帳本容錯讀者（unknown 計未決），lint 是新寫入 canonical gate：新帳本落盤前跑 lint，FAIL 先修帳本（把 patch 併回主表或補欄），不以 parse 結果主張 canonical。
+
 ---
 
 ## 腳本骨架

@@ -138,11 +138,16 @@ def test_parse_identity_stale():
 
 
 def test_lint_air91_reports_missing_scope_and_columns():
+    # AIR-333 join 後語義：air-91 後表（ID｜狀態｜apply 落點）＝patch 表（fid 全
+    # 已見＋含狀態欄）——columns.missing 只報第一張定義表；converged 以 join 後
+    # 終態論：F-01~F-05 全被後表覆寫成 resolved（terminal，不再報
+    # status.not_terminal），但兩表皆無決策欄 → 決策 unknown → decision.domain
     r = run_cli("lint", fixture("air-91.md"))
     assert r.returncode == EXIT_FAIL
     assert "identity.missing_scope" in r.stdout
     assert "columns.missing" in r.stdout
-    assert "status.not_terminal" in r.stdout
+    assert "decision.domain" in r.stdout
+    assert "status.not_terminal" not in r.stdout
 
 
 def test_lint_air75_strict_identity_stale():
@@ -357,6 +362,10 @@ def test_module_loads_with_exit_contract_constants():
         2,
         3,
     )
+    # AIR-333：join 語義單一源——parse_ledger 與 cmd_lint converged 共用同一
+    # join helper（禁兩套 last-wins 實作並存漂移）
+    assert callable(mod.join_keyed_tables)
+    assert callable(mod.find_keyed_tables)
 
 
 # ---------- per-leg CR receipt lint（AIR-224——TC-1~4＋EP Amendment） ----------
@@ -751,10 +760,15 @@ def test_lint_header_only_zero_findings_still_checks_cr_receipt(tmp_path):
     assert "cr.receipt.roster_missing" in r.stdout
 
 
-# ---------- 多張 keyed 表逐表 lint（對齊 parse_ledger 已有的 multi-keyed-table 語義）──
-# parse_ledger 的 ID-join 覆蓋全部 keyed 表（last-wins）；lint 只查第一張＝後續表的
-# canonical 欄位／decision 值域／status 終態／malformed 全不驗。第一張 canonical-good、
-# 第二張違規的雙表帳本：違規只可能在第二張——現行實作 EXIT_OK＝RED 的機械重現。
+# ---------- 多張 keyed 表 join-aware 分類 lint（AIR-333 裁決③）──
+# 第一張 keyed 表＝Finding 定義表（全 canonical，不變）；其後 keyed 表 (a) header
+# 含「狀態」或「決策」欄且 (b) 全部資料列 fid 已見於前表＝patch 表（豁免
+# columns.missing、在場欄位值域/malformed 照查）；含新 fid 或缺 (a)＝整表按
+# Finding Record 全檢（混合表整表計，不逐列豁免）；零資料列後表＝vacuous
+# patch。不變式：每 fid 首次出現必落在受全 canonical 檢查的表。converged 值域
+# 改 join 後每 fid 終態檢查（與 parse_ledger 共用 join helper——單一 last-wins
+# 語義）；discovery 維持不查值域。驗收矩陣＝codex 九案（AIR-333 卡 notes）＋
+# muse 測試調整案（d5214238 (a) patch 語義翻 PASS、FAIL 案以新 fid 重建）。
 
 
 def _two_table_ledger(
@@ -762,8 +776,11 @@ def _two_table_ledger(
     name: str,
     table2_header: tuple[str, ...],
     table2_rows: tuple[str, ...],
+    table1_rows: tuple[str, ...] = (
+        "| F-01 | Important | a.py:1 | 第一表 finding（fixture 資料） | 修法 | `true` | verified | ✅ |",
+    ),
 ) -> Path:
-    """第一張表 canonical-good（F-01 verified ✅）＋第二張表（footer）的合成帳本。"""
+    """第一張表 canonical-good＋第二張表（footer）的合成帳本（預設 F-01 終態）。"""
     return write_ledger(
         tmp_path,
         (
@@ -771,9 +788,7 @@ def _two_table_ledger(
             "- L1: cr: n/a（reason=無結構查證 trigger；fixture synthetic）",
         ),
         name=name,
-        table_rows=(
-            "| F-01 | Important | a.py:1 | 第一表 finding（fixture 資料） | 修法 | `true` | verified | ✅ |",
-        ),
+        table_rows=table1_rows,
         footer_lines=(
             "",
             "## Apply 記錄",
@@ -784,13 +799,18 @@ def _two_table_ledger(
     )
 
 
-def test_lint_second_keyed_table_missing_columns_fails(tmp_path):
-    # (a) 第二張 keyed 表缺 canonical 欄 → columns.missing（逐表查 header）
+PATCH_TABLE_HEADER = ("| ID | 狀態 | apply 落點 |", "|---|---|---|")
+
+
+def test_lint_second_keyed_table_new_fid_partial_fails(tmp_path):
+    # (a)［codex 案 4；d5214238 案重建——原案 F-01 已見＝patch 語義應 PASS］
+    # partial 後表含「新 fid」→ 整表按 Finding Record 全檢（patch 豁免不適用）
+    # → columns.missing FAIL
     ledger = _two_table_ledger(
         tmp_path,
-        "multi-cols.md",
-        ("| ID | 狀態 | apply 落點 |", "|---|---|---|"),
-        ("| F-01 | resolved | fixture |",),
+        "multi-newfid.md",
+        PATCH_TABLE_HEADER,
+        ("| F-02 | resolved | fixture |",),
     )
     r = run_cli("lint", ledger)
     assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
@@ -798,8 +818,170 @@ def test_lint_second_keyed_table_missing_columns_fails(tmp_path):
     assert "[OK]" not in r.stdout
 
 
+def test_lint_patch_table_same_fid_passes(tmp_path):
+    # (a')［codex 案 2 patch-pass；muse 測試調整案——d5214238 (a) 翻綠］
+    # partial 後表 fid 全已見＋含狀態欄＝patch 表：豁免 columns.missing，
+    # 在場欄位（狀態）照查 → converged 與 discovery 皆 PASS
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-patch.md",
+        PATCH_TABLE_HEADER,
+        ("| F-01 | closed | fixture |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "columns.missing" not in r.stdout
+    r2 = run_cli("lint", ledger, "--stage", "discovery")
+    assert r2.returncode == EXIT_OK, r2.stdout + r2.stderr
+
+
+def test_lint_patch_table_missing_state_and_decision_col_fails(tmp_path):
+    # (a'') patch 分類缺 (a) 條件：後表 fid 全已見但無狀態／決策欄 → 整表按
+    # Finding Record 全檢 → columns.missing FAIL（muse 補案之二）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-nostate.md",
+        ("| ID | apply 落點 |", "|---|---|"),
+        ("| F-01 | fixture |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "columns.missing" in r.stdout
+    assert "[OK]" not in r.stdout
+
+
+def test_lint_converged_patch_override_terminal_passes(tmp_path):
+    # (e)［codex 案 3——現行 FAIL 翻綠案］主表發現時態（open／—）＋後表
+    # verified／✅ 覆寫同 fid：converged 以 join 後終態論 → PASS
+    #（pre-join 逐列值域檢查會誤判主表 open 列——AIR-333 裁決②移除面）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-override.md",
+        ("| ID | 狀態 | 決策 |", "|---|---|---|"),
+        ("| F-01 | verified | ✅ |",),
+        table1_rows=(
+            "| F-01 | Important | a.py:1 | 發現時態（fixture 資料） | 修法 | `true` | open | — |",
+        ),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "status.not_terminal" not in r.stdout
+    assert "decision.domain" not in r.stdout
+
+
+def test_lint_converged_joined_decision_unknown_fails(tmp_path):
+    # (f)［codex 案 7 變體］patch 只修狀態、決策仍 unknown（主表「—」未被覆寫）：
+    # join 後終態 decision 非 emoji → decision.domain FAIL（狀態已 terminal 不報）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-unknown-dec.md",
+        PATCH_TABLE_HEADER,
+        ("| F-01 | verified | fixture |",),
+        table1_rows=(
+            "| F-01 | Important | a.py:1 | 發現時態（fixture 資料） | 修法 | `true` | open | — |",
+        ),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "decision.domain: F-01" in r.stdout
+    assert "status.not_terminal" not in r.stdout
+
+
+def test_lint_converged_joined_still_open_fails(tmp_path):
+    # (g)［codex 案 7］合併後仍有 open → converged FAIL（patch 逐列＋join 後終態
+    # 兩處命中同一 fid——去重後只列一次）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-still-open.md",
+        PATCH_TABLE_HEADER,
+        ("| F-01 | open | fixture |",),
+        table1_rows=(
+            "| F-01 | Important | a.py:1 | 發現時態（fixture 資料） | 修法 | `true` | open | — |",
+        ),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "status.not_terminal: F-01" in r.stdout
+    assert "F-01,F-01" not in r.stdout  # 跨表聚合去重（AIR-333 附帶③）
+    assert "decision.domain: F-01" in r.stdout  # 決策未被覆寫仍 unknown
+
+
+def test_lint_patch_table_illegal_decision_dedup(tmp_path):
+    # (h)［codex 案 6］patch 表在場決策欄逐列值域查：非法決策（無 emoji）→
+    # decision.domain；patch 逐列與 join 後終態命中同 fid——保序去重只列一次
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-bad-dec.md",
+        ("| ID | 決策 | apply 落點 |", "|---|---|---|"),
+        ("| F-01 | 待定 | fixture |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "decision.domain: F-01" in r.stdout
+    assert "F-01,F-01" not in r.stdout
+
+
+def test_lint_mixed_second_table_new_fid_full_check(tmp_path):
+    # (i) 混合表整表計：後表同時含已見 fid 與新 fid → 不逐列豁免，整表按
+    # Finding Record 全檢 → columns.missing FAIL（不變式：新 fid 首次出現必經
+    # 全 canonical 檢查）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-mixed.md",
+        ("| ID | 狀態 |", "|---|---|"),
+        ("| F-01 | closed |", "| F-02 | resolved |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "columns.missing" in r.stdout
+    assert "[OK]" not in r.stdout
+
+
+def test_lint_vacuous_patch_header_only_second_table_passes(tmp_path):
+    # (j)［muse 判準④］零資料列後表＝vacuous patch（無檢查項）→ PASS
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-vacuous.md",
+        ("| ID | 備註 |", "|---|---|"),
+        (),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "columns.missing" not in r.stdout
+
+
+def test_lint_patch_table_row_malformed_fails(tmp_path):
+    # (k)［codex 案 5 於 patch 表面］patch 表豁免只及 columns.missing——欄數
+    # 不足列照報 row.malformed（fid 定位）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-patch-malformed.md",
+        PATCH_TABLE_HEADER,
+        ("| F-01 |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "row.malformed" in r.stdout
+    assert "F-01" in r.stdout
+
+
+def test_lint_join_last_wins_fixture_patch_semantics():
+    # sanctioned fixture 釘死（muse 實測取證檔）：discovery 不再因 patch 表缺欄
+    # FAIL；converged 以 join 後終態論——columns.missing 消失，殘留違規只剩
+    # 真未收斂面（F-01 決策 unknown、F-02 未 patch 仍 open）
+    r = run_cli("lint", fixture("join-last-wins.md"), "--stage", "discovery")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    r2 = run_cli("lint", fixture("join-last-wins.md"), "--stage", "converged")
+    assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+    assert "columns.missing" not in r2.stdout
+    assert "decision.domain: F-01" in r2.stdout
+    assert "status.not_terminal: F-02" in r2.stdout
+
+
 def test_lint_second_keyed_table_decision_domain_fails(tmp_path):
-    # (b) 第二張 keyed 表 decision 不含合法 emoji → decision.domain（fid 定位）
+    # (b)［codex 案 4 變體——full-canonical 後表帶新 fid］第二張 keyed 表 decision
+    # 不含合法 emoji → 整表 Finding Record（新 fid）；decision.domain 由 join 後
+    # 終態檢查承接（fid 定位）
     ledger = _two_table_ledger(
         tmp_path,
         "multi-decision.md",
@@ -813,7 +995,8 @@ def test_lint_second_keyed_table_decision_domain_fails(tmp_path):
 
 
 def test_lint_second_keyed_table_row_malformed_fails(tmp_path):
-    # (c) 第二張 keyed 表資料列欄數不足 → row.malformed（fid 定位）
+    # (c)［codex 案 5——full-canonical 後表帶新 fid］第二張 keyed 表資料列欄數
+    # 不足 → row.malformed（fid 定位）
     ledger = _two_table_ledger(
         tmp_path,
         "multi-malformed.md",
@@ -827,7 +1010,8 @@ def test_lint_second_keyed_table_row_malformed_fails(tmp_path):
 
 
 def test_lint_both_keyed_tables_canonical_ok(tmp_path):
-    # 防矯枉過正：兩張 keyed 表皆 canonical → EXIT_OK
+    # (d)［codex 案 1 延伸］兩張 keyed 表皆 canonical（後表新 fid＝第二張定義表）
+    # → EXIT_OK
     ledger = _two_table_ledger(
         tmp_path,
         "multi-ok.md",
@@ -837,4 +1021,120 @@ def test_lint_both_keyed_tables_canonical_ok(tmp_path):
     r = run_cli("lint", ledger)
     assert r.returncode == EXIT_OK, r.stdout + r.stderr
     assert "[OK]" in r.stdout
+
+
+# ---------- AIR-333 post-build 修正迴圈（帳本 F-01/F-02/F-03——apply 腿，RED 先行）
+
+
+def test_lint_definition_multi_emoji_decision_fails_converged(tmp_path):
+    # F-01（high）：定義表決策 cell「✅❌」多 emoji 並存——join 禁縮水成首個 emoji
+    # 過閘；converged 要求終態 cell 恰一 distinct emoji → decision.domain FAIL。
+    # discovery 值域不查（生命週期邊界不變）→ OK
+    ledger = write_ledger(
+        tmp_path,
+        (
+            "- legs：L1 fixture-job-f01 n/a",
+            "- L1: cr: n/a（reason=無結構查證 trigger；fixture synthetic）",
+        ),
+        name="multi-emoji-def.md",
+        table_rows=(
+            "| F-01 | Important | a.py:1 | 定義表多 emoji（fixture 資料） | 修法 | `true` | verified | ✅❌ |",
+        ),
+    )
+    r = run_cli("lint", ledger, "--stage", "converged")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "decision.domain: F-01" in r.stdout
+    r2 = run_cli("lint", ledger, "--stage", "discovery")
+    assert r2.returncode == EXIT_OK, r2.stdout + r2.stderr
+
+
+def test_lint_multi_emoji_history_overridden_by_legal_patch_passes(tmp_path):
+    # F-01 last-wins 釘死：歷史 cell「✅❌」被後續合法 patch（單一 ✅）覆寫——
+    # 查終態 cell 即過 → converged PASS
+    ledger = _two_table_ledger(
+        tmp_path,
+        "multi-emoji-last-wins.md",
+        ("| ID | 狀態 | 決策 |", "|---|---|---|"),
+        ("| F-01 | verified | ✅ |",),
+        table1_rows=(
+            "| F-01 | Important | a.py:1 | 歷史 cell 多 emoji（fixture 資料） | 修法 | `true` | open | ✅❌ |",
+        ),
+    )
+    r = run_cli("lint", ledger, "--stage", "converged")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "decision.domain" not in r.stdout
+
+
+def test_lint_patch_row_missing_trailing_column_malformed(tmp_path):
+    # F-02（medium）：patch 表列完整性以 header 宣告欄位數為準——「F-01 | closed」
+    # 缺 apply 落點尾欄 → row.malformed（舊判準 max(id,dec,st) 索引漏報）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "patch-short-tail.md",
+        PATCH_TABLE_HEADER,
+        ("| F-01 | closed |",),
+    )
+    r = run_cli("lint", ledger)
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "row.malformed" in r.stdout
+    assert "F-01" in r.stdout
+
+
+def test_lint_blank_fid_in_patch_candidate_fails_both_stages(tmp_path):
+    # F-03（medium）：空白 fid fail-closed——patch 候選表含空白 ID 列（其餘合法
+    # terminal/✅）→ fid.blank 獨立 violation，discovery 與 converged 皆拒；
+    # 空白列不入 (b) 全∈seen 判定 → 整表掉出 patch 分類（columns.missing 照報）
+    ledger = _two_table_ledger(
+        tmp_path,
+        "blank-fid-patch.md",
+        PATCH_TABLE_HEADER,
+        ("|  | verified | fixture |", "| F-01 | closed | fixture |",),
+    )
+    r = run_cli("lint", ledger, "--stage", "discovery")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "fid.blank" in r.stdout
+    r2 = run_cli("lint", ledger, "--stage", "converged")
+    assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+    assert "fid.blank" in r2.stdout
+
+
+def test_lint_blank_fid_in_definition_table_no_pseudo_finding(tmp_path):
+    # F-03 遍及全 keyed 表：定義表（第一張）空白 ID 列同樣 fid.blank，且不得經
+    # (rowN) 補名成為偽 finding 入 converged 值域檢查（decision.domain 不出現）
+    ledger = write_ledger(
+        tmp_path,
+        (
+            "- legs：L1 fixture-job-blank n/a",
+            "- L1: cr: n/a（reason=無結構查證 trigger；fixture synthetic）",
+        ),
+        name="blank-fid-def.md",
+        table_rows=(
+            "|  | Important | a.py:1 | 空白 ID（fixture 資料） | 修法 | `true` | verified | ✅ |",
+            "| F-01 | Important | a.py:2 | 合法列（fixture 資料） | 修法 | `true` | closed | ✅ |",
+        ),
+    )
+    r = run_cli("lint", ledger, "--stage", "discovery")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "fid.blank" in r.stdout
+    r2 = run_cli("lint", ledger, "--stage", "converged")
+    assert r2.returncode == EXIT_FAIL, r2.stdout + r2.stderr
+    assert "fid.blank" in r2.stdout
+    assert "decision.domain" not in r2.stdout
+
+
+def test_parse_blank_fid_row_not_a_finding(tmp_path):
+    # F-03 parse 面：空白 ID 列不入 findings、計 unparsed（禁 (rowN) 補名偽 finding）
+    ledger = write_ledger(
+        tmp_path,
+        (),
+        name="blank-fid-parse.md",
+        table_rows=(
+            "|  | Important | a.py:1 | 空白 ID（fixture 資料） | 修法 | `true` | verified | ✅ |",
+            "| F-01 | Important | a.py:2 | 合法列（fixture 資料） | 修法 | `true` | closed | ✅ |",
+        ),
+    )
+    r = run_cli("parse", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "findings=1" in r.stdout
+    assert "unparsed=1" in r.stdout
 

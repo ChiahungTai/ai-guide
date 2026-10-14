@@ -25,14 +25,37 @@
   含 ID 欄表頭的 header-only 表（零資料列）＝零 findings 的合法編碼、非拒收
   對象（AIR-331——缺 ID 表頭仍 fail-closed）。
 
+多表語義（AIR-333 裁決③ join-aware 分類）：lint 與 parse 共用表定位
+（``find_keyed_tables``）與 join 實作（``join_keyed_tables``——單一 last-wins
+語義，禁兩套並存）。對 lint：第一張 keyed 表＝Finding 定義表（全 canonical 欄位，
+不變）；其後的 keyed 表若 header 含「狀態」或「決策」欄、且全部資料列 fid
+（strip 後非空）已見於前表＝狀態 patch 表（歷史 Apply 記錄表 ``ID｜狀態｜…``
+形）——豁免 columns.missing，在場欄位值域與 malformed 照查；零資料列後表＝
+vacuous patch；引入新 fid、缺狀態／決策欄或含空白 fid 列＝整表按 Finding Record
+全檢（混合表整表計，不逐列豁免）——不變式：每 fid 首次出現必落在受全 canonical
+檢查的表。converged 值域以 join 後每 fid 終態為準：主表發現時態列（open／—）被
+patch 覆寫成 terminal／合法決策即收斂，不因前表歷史列誤判；decision last-wins
+以「最終生效 cell」為單位（F-01）——cell 內多 emoji 並存（如「✅❌」）不縮水成
+首個 emoji，converged 要求終態 cell 恰一 distinct emoji（歷史非法 cell 被後續
+合法 patch 覆寫＝查終態即過）。keyed 表資料列完整性以 header 宣告欄位數為準
+（F-02——lint 面 ``len(row)`` 須涵蓋 header 非 empty cells，不足＝row.malformed）；
+全 keyed 表逐列查空白 fid（F-03）＝獨立 violation ``fid.blank``（discovery＋
+converged 皆拒），join 對空白 fid 當 unparsed 省略、禁 ``(rowN)`` 補名偽 finding。
+跨表聚合違規（decision.domain／status.not_terminal／fid.blank／row.malformed）
+同一 fid 保序去重（``dict.fromkeys``）；columns.missing 逐表列報不去重——靜默去重
+會遮蔽第二張壞表。
+
 exit 契約：``0`` 成功／``1`` 解析失敗（fail-closed）／``2`` 帳本不存在／
 ``3`` identity stale。
 
 嚴格度分工：lint 是 canonical gate（identity 錨＝``reviewed=`` 或
 ``reviewed revision`` 兩形皆 canonical——對齊 canonical 模板與歷史帳本，F-3）；
-parse 是容錯讀者（任何 ``reviewed`` 行即可錨定）。歷史漂移語義：狀態自由文字
+parse 是容錯讀者（任何 ``reviewed`` 行即可錨定）。**parse PASS ≠ lint PASS**：
+parse 容忍歷史帳本的 partial Apply／缺欄／unknown（一律計入「未決」），lint 是
+新寫入帳本的 canonical gate——新帳本落盤前跑 lint，FAIL 先修帳本（把 patch 併回
+主表或補欄），不以 parse 結果主張 canonical。歷史漂移語義：狀態自由文字
 （如 implemented）不計 terminal、欄位缺席＝unknown——誤差方向安全：只省略
-不捏造，unknown 一律計入「未決」。cell 內出現 pipe 一律寫轉義形 ``\\|``
+不捏造。cell 內出現 pipe 一律寫轉義形 ``\\|``
 （驗證式欄 rg pattern 常見）——split_row 容錯讀取此形，未轉義裸 pipe 會拆壞
 欄位（F-7）。
 """
@@ -145,6 +168,9 @@ class FindingRow:
     fid: str
     decision: str | None
     raw_status: str | None
+    # F-01：終態 decision cell（last-wins）的 distinct emoji 集——多 emoji 並存
+    # 不縮水；``decision`` 仍為首 emoji（parse 容錯計數），converged gate 用本欄
+    decision_emojis: tuple[str, ...] = ()
 
 
 # ---------- 表格解析 ----------
@@ -272,6 +298,12 @@ def cell_decision(cell: str) -> str | None:
     return None
 
 
+def cell_decision_emojis(cell: str) -> tuple[str, ...]:
+    """cell 內 distinct 決策 emoji（DECISION_EMOJI 順序）——F-01：join 保留終態
+    cell 的完整 emoji 集，多 emoji 並存（「✅❌」）不縮水成首個 emoji。"""
+    return tuple(d for d in DECISION_EMOJI if d in cell)
+
+
 # ---------- per-leg CR receipt（AIR-224） ----------
 
 
@@ -393,20 +425,34 @@ def status_bucket(raw: str | None) -> str:
 # ---------- 核心解析（容錯讀） ----------
 
 
-def parse_ledger(text: str) -> dict | None:
-    """回 None＝找不到含 ID 欄的 findings 表（fail-closed 拒收）。"""
-    lines = text.splitlines()
-    raw_tables = split_tables(lines)
-    # header-only 表（含 ID 欄表頭、零資料列）保留——零資料列＝零 findings 的合法
-    # 編碼，整表濾掉會把合法帳本誤殺成 no_findings_table（AIR-331）
-    tables = [t for t in (normalize_table(r) for r in raw_tables) if t]
-
+def find_keyed_tables(
+    tables: list[list[list[str]]],
+) -> list[tuple[int, list[list[str]]]]:
+    """含 ID 欄的 keyed 表（文件順序保序）——parse 與 lint 共用的表定位。"""
     keyed: list[tuple[int, list[list[str]]]] = []
     for rows in tables:
-        id_i = id_col_index(rows[0])
-        if id_i is not None:
-            keyed.append((id_i, rows))
+        idx = id_col_index(rows[0])
+        if idx is not None:
+            keyed.append((idx, rows))
+    return keyed
 
+
+def join_keyed_tables(
+    keyed: list[tuple[int, list[list[str]]]],
+) -> tuple[dict[str, FindingRow], int, int, str]:
+    """跨表 ID-join last-wins——parse_ledger 與 cmd_lint converged 共用的唯一
+    join 實作（AIR-333：兩子命令共用同一資料解釋語義，禁兩套 last-wins 並存
+    漂移；嚴格度差異歸各自的消費端檢查，不歸 join 本身）。
+
+    後表有 decision/status 欄即覆蓋前表值（發現時態 → apply 終態）；decision
+    覆蓋以原始 cell 為單位（F-01——同時保留終態 cell 的 distinct emoji 集
+    ``decision_emojis``，多 emoji 並存不縮水成首個 emoji；``decision`` 仍為首
+    emoji，供 parse 容錯計數）；後表缺欄保留前表值（``_KEEP`` 哨兵）；欄數不足
+    列與空白 fid 列（F-03——禁 ``(rowN)`` 補名偽 finding 繞過首現不變式）不入帳
+    （計 unparsed——fail-closed 只省略不捏造；空白 fid 的 violation 歸 lint
+    ``fid.blank``）。回 (fid→合併 FindingRow, unparsed 列數, 掃過資料列數,
+    decision_source)。
+    """
     joined: dict[str, FindingRow] = {}
     decision_source = "none"
     unparsed = 0
@@ -424,25 +470,45 @@ def parse_ledger(text: str) -> dict | None:
             if len(row) <= needed:
                 unparsed += 1
                 continue
-            fid = row[id_i].strip() or f"(row{total_rows})"
-            new_dec = cell_decision(row[dec_i]) if dec_i is not None else _KEEP
+            fid = row[id_i].strip()
+            if not fid:
+                unparsed += 1
+                continue
+            new_dec_cell = row[dec_i] if dec_i is not None else _KEEP
             new_status = row[st_i] if st_i is not None else _KEEP
             existing = joined.get(fid)
             if existing is None:
                 joined[fid] = FindingRow(
                     fid=fid,
-                    decision=None if new_dec is _KEEP else new_dec,
+                    decision=None if new_dec_cell is _KEEP else cell_decision(new_dec_cell),
                     raw_status=None if new_status is _KEEP else new_status,
+                    decision_emojis=(
+                        () if new_dec_cell is _KEEP else cell_decision_emojis(new_dec_cell)
+                    ),
                 )
             else:
-                # ID-join last-wins：後表有該欄即覆蓋（發現時態 → apply 終態）
-                if new_dec is not _KEEP:
-                    existing.decision = new_dec
+                # ID-join last-wins：後表有該欄即覆蓋（發現時態 → apply 終態）；
+                # decision 覆蓋以原始 cell 為單位（F-01——emoji 集隨 cell 重算）
+                if new_dec_cell is not _KEEP:
+                    existing.decision = cell_decision(new_dec_cell)
+                    existing.decision_emojis = cell_decision_emojis(new_dec_cell)
                 if new_status is not _KEEP:
                     existing.raw_status = new_status
+    return joined, unparsed, total_rows, decision_source
 
+
+def parse_ledger(text: str) -> dict | None:
+    """回 None＝找不到含 ID 欄的 findings 表（fail-closed 拒收）。"""
+    lines = text.splitlines()
+    raw_tables = split_tables(lines)
+    # header-only 表（含 ID 欄表頭、零資料列）保留——零資料列＝零 findings 的合法
+    # 編碼，整表濾掉會把合法帳本誤殺成 no_findings_table（AIR-331）
+    tables = [t for t in (normalize_table(r) for r in raw_tables) if t]
+    keyed = find_keyed_tables(tables)
     if not keyed:
         return None
+
+    joined, unparsed, _total_rows, decision_source = join_keyed_tables(keyed)
 
     decisions = {d: 0 for d in DECISION_EMOJI}
     decisions["unknown"] = 0
@@ -524,57 +590,106 @@ def cmd_lint(text: str, name: str, stage: str = "converged") -> int:
         for t in (normalize_table(r) for r in split_tables(text.splitlines()))
         if t
     ]
-    keyed_tables: list[tuple[int, list[list[str]]]] = []
-    for rows in tables:
-        idx = id_col_index(rows[0])
-        if idx is not None:
-            keyed_tables.append((idx, rows))
+    keyed_tables = find_keyed_tables(tables)
     if not keyed_tables:
         violations.append("table.missing: 無 Finding Record 表（找不到含 ID 欄的表格）")
         for v in violations:
             print(f"[{name}] [FAIL] {v}")
         return EXIT_FAIL
 
-    # 全部 keyed 表逐表檢查（與 parse_ledger 的 multi-keyed-table ID-join 對齊——
-    # 只查第一張＝後續表的欄位／值域／malformed 全不驗）：canonical 欄位完整性
-    # 逐表查（各表 header 各自判）；decision/status/malformed 的 fid 跨表合併
-    # （ID-join 語義下 fid 跨表唯一）。header-only 表零資料列＝零資料檢查項、
-    # header 照查（AIR-331 豁免僅及「整表被濾成 table.missing」）。
+    # 多表分類（AIR-333 裁決③ join-aware——與 parse_ledger 的 ID-join 容忍面
+    # 對齊）：第一張 keyed 表＝Finding 定義表（全 canonical 不變）；其後 keyed
+    # 表 (a) header 含「狀態」或「決策」欄且 (b) 全部資料列 fid 已見於前表＝
+    # patch 表（歷史 Apply 記錄表形）——豁免 columns.missing，在場欄位值域與
+    # malformed 照查；零資料列後表＝vacuous patch；含新 fid、缺 (a) 或含空白
+    # fid 列（F-03——空白列不入 (b) 判定，整表掉回全 canonical 檢查）＝整表按
+    # Finding Record 全檢（混合表整表計，不逐列豁免）。不變式：每 fid 首次出現
+    # 必落在受全 canonical 檢查的表——patch 定義上只含 seen fid，新 fid 必使
+    # 整表升級全檢。
     bad_decision: list[str] = []
     bad_status: list[str] = []
     malformed: list[str] = []
-    for id_i, finding_table in keyed_tables:
+    blank_fid: list[str] = []
+    seen: set[str] = set()
+    row_no = 0  # 跨表資料列計數（與 join_keyed_tables total_rows 同軸——fid.blank 定位）
+    for t_idx, (id_i, finding_table) in enumerate(keyed_tables):
         headers = finding_table[0]
-        missing_cols = [
-            c for c, _ in CANONICAL_COLUMNS if find_canonical_col(headers, c) is None
-        ]
-        if missing_cols:
-            violations.append("columns.missing: " + ",".join(missing_cols))
+        data_rows = finding_table[1:]
+        has_state_col = (
+            find_canonical_col(headers, "狀態") is not None
+            or find_canonical_col(headers, "決策") is not None
+        )
+        row_fids: list[str] = []
+        has_blank_fid = False
+        for row in data_rows:
+            row_no += 1
+            if len(row) > id_i and not row[id_i].strip():
+                # F-03：空白 fid fail-closed——獨立 violation（fid.blank），且該列
+                # 破壞 (b)「全∈seen」使整表掉出 patch 分類
+                has_blank_fid = True
+                blank_fid.append(f"row{row_no}")
+            elif len(row) > id_i:
+                row_fids.append(row[id_i].strip())
+        is_patch = t_idx > 0 and not has_blank_fid and (
+            not data_rows or (has_state_col and all(f in seen for f in row_fids))
+        )
+        seen.update(row_fids)
+
+        if not is_patch:
+            missing_cols = [
+                c for c, _ in CANONICAL_COLUMNS if find_canonical_col(headers, c) is None
+            ]
+            if missing_cols:
+                violations.append("columns.missing: " + ",".join(missing_cols))
 
         dec_i = find_canonical_col(headers, "決策")
         st_i = find_canonical_col(headers, "狀態")
-        for row in finding_table[1:]:
-            needed = max(x for x in (id_i, dec_i, st_i) if x is not None)
-            if len(row) <= needed:
+        # 列完整性以 header 宣告欄位數為準（F-02——舊判準 max(id,dec,st) 索引漏
+        # 尾端非狀態欄缺失：「F-01 | closed」缺 apply 落點不報）
+        header_cols = sum(1 for h in headers if h.strip())
+        for row in data_rows:
+            if len(row) < header_cols:
                 malformed.append(
                     row[id_i][:16] if id_i < len(row) else f"row{len(malformed) + 1}"
                 )
                 continue
             fid = row[id_i].strip() or "?"
-            # 值域檢查僅 converged（F-1）：discovery 態 decision=—／status=open 是常態
-            if stage == "converged":
+            # 值域檢查僅 converged（F-1：discovery 態 decision=—／status=open 是
+            # 常態）。patch 表在場欄位逐列照查（AIR-333）；定義表逐列值域由下方
+            # join 後終態檢查承接——主表發現時態列可被後表覆寫，pre-join 逐列查
+            # 會誤判（裁決②移除面）
+            if stage == "converged" and is_patch:
                 if dec_i is not None:
                     matches = [d for d in DECISION_EMOJI if d in row[dec_i]]
                     if len(matches) != 1:
                         bad_decision.append(fid)
                 if st_i is not None and status_bucket(row[st_i]) not in TERMINAL_STATUSES:
                     bad_status.append(fid)
+
+    if stage == "converged":
+        # converged 值域＝join 後每 fid 終態（共用 join_keyed_tables——與 parse
+        # 同一 last-wins 語義；discovery 維持不查值域）。F-01：終態 decision cell
+        # 須恰一 distinct emoji——「✅❌」並存不得縮水成首個 emoji 過閘
+        joined, _unparsed, _total_rows, _source = join_keyed_tables(keyed_tables)
+        for f in joined.values():
+            if f.decision not in DECISION_EMOJI or len(f.decision_emojis) != 1:
+                bad_decision.append(f.fid)
+            if status_bucket(f.raw_status) not in TERMINAL_STATUSES:
+                bad_status.append(f.fid)
+
+    # 跨表聚合違規保序去重（AIR-333 附帶③——同 fid 兩表皆違規只列一次，
+    # 消費皆 substring／exit code 無定位損失）；columns.missing 逐表列報不去重
+    #（靜默去重會遮蔽第二張壞表）
     if bad_decision:
-        violations.append("decision.domain: " + ",".join(bad_decision))
+        violations.append(
+            "decision.domain: " + ",".join(dict.fromkeys(bad_decision))
+        )
     if bad_status:
-        violations.append("status.not_terminal: " + ",".join(bad_status))
+        violations.append("status.not_terminal: " + ",".join(dict.fromkeys(bad_status)))
+    if blank_fid:
+        violations.append("fid.blank: " + ",".join(dict.fromkeys(blank_fid)))
     if malformed:
-        violations.append("row.malformed: " + ",".join(malformed))
+        violations.append("row.malformed: " + ",".join(dict.fromkeys(malformed)))
 
     if violations:
         for v in violations:
