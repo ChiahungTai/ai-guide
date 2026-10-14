@@ -2045,6 +2045,35 @@ def _s2_outbox_snapshot_path(address, state_dir, envelope_id):
         outbox, safe_repo_dirname(envelope_id) + ".json")
 
 
+_SCHEMA_REFUSAL_CODES = frozenset({
+    "invalid-envelope", "unsupported-envelope-schema"})
+
+
+def _is_rejected_envelope_shape(exc):
+    """send 的確定性 envelope schema 拒收判定（AIR-336）。
+
+    producer typed contract：dutymail `parse_strict` 在 store
+    acceptance **前**回報 invalid-envelope／unsupported-envelope-schema
+    （class=usage、retryable=false、exit 2）——信件確定未受理，解 pin
+    安全。三條件缺一不可：error_class 單獨不夠（usage 亦涵蓋 CLI 用法
+    等錯誤）、not retryable 單獨不夠（idempotency-conflict 同為不可
+    重試——可能同 ID 已在 store，解 pin 換 ID 反增重複發信風險）；
+    exit_code 不入 predicate（_call 解析 stdout error object 時
+    exit_code=0）。
+
+    版本前提（AIR-336 修正迴圈 F-2）：本 predicate 依賴「同 bytes
+    跨 dutymail parser 版本 acceptance 語義一致」——若部署期出現
+    混版（舊版已受理、新版拒同 bytes），自動解 pin 有重複寄送風險；
+    屆時限首次 send 使用本判定，或改獨立查證流程（store 受理狀態
+    核對）後再解 pin。"""
+    return (
+        isinstance(exc, DutymailFaceError)
+        and exc.error_class == "usage"
+        and exc.code in _SCHEMA_REFUSAL_CODES
+        and exc.retryable is False
+    )
+
+
 def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
     """S2 回信（一次一封）→ {"cleared": True, "receipt": {...}}。
 
@@ -2060,8 +2089,12 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
     snapshot；snapshot 缺席/損壞（SHA 對不上 pin）＝fail-loud 禁發。
     response-loss 重試冪等——transport 以 envelope ID 去重。一次 send
     調用；成功 receipt 三鍵＋envelope/target 匹配才解除（並清 snapshot）
-    ；任一失敗保留 pending（含 pin）＋snapshot 並 raise。draft 內容不
-    抄入 pending（只 pin ID＋SHA）。
+    ；任何 send outcome 未確認的失敗，保留 pending、reply pin 與
+    snapshot，以原 ID＋原 bytes 重試。僅收到明確的 envelope schema 拒收
+    （invalid-envelope／unsupported-envelope-schema，class=usage，
+    retryable=false），可解除 pin 並清理 snapshot；pending 待回覆義務
+    始終保留。修正 draft 後仍須重新確認寄送授權。draft 內容不抄入
+    pending（只 pin ID＋SHA）。
     """
     if not isinstance(address, str) or not address:
         raise S2Error("address 須為非空字串", 2)
@@ -2108,8 +2141,10 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
         if pinned_id is not None or pinned_sha is not None:
             if draft_sha != pinned_sha or not isinstance(pinned_sha, str):
                 raise S2Error(
-                    "draft bytes 已變更（SHA 不符首次 pin）——重試必須同一"
-                    "實物；要換內容請先以新 draft 重新走授權流程")
+                    "draft bytes 已變更（SHA 不符首次 pin）——send 結果未"
+                    "確認前重試必須同一實物（原 ID＋原 bytes）；重新授權"
+                    "不解 pin，僅確定性 envelope schema 拒收才解除後修正 "
+                    "draft 重寄")
             draft_id_check = draft.get("envelope_id")
             if draft_id_check != pinned_id:
                 raise S2Error(
@@ -2165,9 +2200,59 @@ def send_reply(address, in_reply_to, envelope_file, runner, state_dir=None):
         try:
             receipt = _call(
                 runner, ["send", "--envelope-file", snapshot_path])
-        except (DutymailFaceError, BinaryMissing, OSError) as exc:
+        except DutymailFaceError as exc:
+            if not _is_rejected_envelope_shape(exc):
+                # outcome 未確認（transport/storage/admission/未知）——
+                # 保守保留：同 ID＋原 bytes 可冪等重試。
+                raise S2Error(
+                    f"send 結果未確認——pending/pin/snapshot 保留：{exc!r}"
+                ) from exc
+            # 確定性 schema 拒收＝信件未受理（producer parse_strict 在
+            # store acceptance 前回報）——解 pin、保留 pending 待回覆
+            # 義務，修正 draft 後可重新授權寄送。順序：先持久清 pin、
+            # 後刪 snapshot（清理中途 crash 只會留下無 pin 引用的殘留
+            # snapshot，可被下次合法發送覆寫；反向順序會留下「pin 在、
+            # snapshot 缺」的禁發死鎖）。
+            entry["reply_envelope_id"] = None
+            entry["reply_sha256"] = None
+            try:
+                save_pending_replies(path, doc)
+            except OSError as save_exc:
+                # 持久化失敗＝pin 未清除（原 pin＋snapshot 保留，
+                # fail-loud）。
+                raise S2Error(
+                    "send 被 envelope schema 拒收且 pin 清除持久化失敗"
+                    f"——原 pin＋snapshot 保留（{save_exc!r}）") from save_exc
+            note = ""
+            shared = any(
+                other_id != in_reply_to
+                and isinstance(other, dict)
+                and other.get("reply_envelope_id") == draft_id
+                for other_id, other in doc["replies"].items()
+            )
+            if not shared:
+                try:
+                    os.remove(snapshot_path)
+                except FileNotFoundError:
+                    pass
+                except OSError as rm_exc:
+                    # 殘留 snapshot 已無 pin 引用（可被覆寫），但清理
+                    # 未完成須揭露——禁宣稱完整清理。
+                    note = (f"；殘留 snapshot 清理失敗（{rm_exc!r}；"
+                            f"路徑 {snapshot_path}）")
+            else:
+                # snapshot 路徑僅由 outbound envelope ID 決定——他筆
+                # pending 義務引用同一 ID 時禁刪（誤刪砸掉他筆的
+                # 重試發送源），保留＋揭露。
+                note = (f"；snapshot 保留（另一 pending 義務引用同一 "
+                        f"envelope ID {draft_id!r}）")
             raise S2Error(
-                f"send 失敗——pending 保留（含 pin，同 draft 可重試；{exc!r}）"
+                "send 被 envelope schema 拒收，未受理；reply pin 已解除，"
+                "pending 待回覆保留；修正 draft 後可重新授權寄送" + note
+            ) from exc
+        except (BinaryMissing, OSError) as exc:
+            raise S2Error(
+                f"send 結果未確認——pending/pin/snapshot 保留：{exc!r}"
             ) from exc
         # 成功 receipt 驗證：envelopeId 匹配、acceptanceSeq 正、SHA 形合法。
         # Server SHA 是 canonical-envelope SHA——禁與 draft 檔 pretty-JSON

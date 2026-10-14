@@ -765,3 +765,456 @@ def test_send_missing_snapshot_refuses_retry(tmp_path):
     with pytest.raises(mod.S2Error, match="snapshot 缺席"):
         mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
     assert not any(c[0] == "send" for c in runner.calls)
+
+
+# ── AIR-336：確定性 envelope schema 拒收解 pin（codex §6 測試矩陣）────
+#
+# Producer typed contract（真 binary probe 實證 2026-10-14）：缺
+# message_id 的 envelope → stderr JSON {"code": "invalid-envelope",
+# "class": "usage", "retryable": false}、exit 2、store 零受理
+# （parse_strict 在 store acceptance 前）。
+
+
+def _seed_pending(st, incoming="env-1", pinned_id=None, pinned_sha=None):
+    entry = {"note": "n", "target": ADDR}
+    if pinned_id is not None:
+        entry["reply_envelope_id"] = pinned_id
+    if pinned_sha is not None:
+        entry["reply_sha256"] = pinned_sha
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {incoming: entry}})
+
+
+def _entry(st, incoming="env-1"):
+    doc = mod.load_pending_replies(mod.pending_path(ADDR, st))
+    assert doc is not None, "pending 檔不該缺席"
+    return doc["replies"][incoming]
+
+
+def _draft_without_message_id(path, **kw):
+    """_write_draft 建合法 envelope 後移除 message_id——producer
+    parse_strict 必拒（invalid-envelope: missing field）。wrapper 端
+    欄位驗證（envelope_id/in_reply_to/to.address）不含 message_id，
+    恰好模擬「wrapper 放行、store schema 拒收」的真實死鎖輸入。"""
+    _write_draft(path, **kw)
+    with open(path, "r", encoding="utf-8") as fh:
+        doc = json.load(fh)
+    doc.pop("message_id")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, ensure_ascii=False, indent=2)
+    return path
+
+
+def _file_sha(path):
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+def test_t1_schema_refusal_clears_pin_keeps_pending(tmp_path):
+    """T1：draft 缺 message_id，send 回 invalid-envelope(usage) ⇒
+    pending 存在、兩 pin 為 null、snapshot 清除。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _draft_without_message_id(
+        str(tmp_path / "out.json"), envelope_id="out-1", in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error, match="schema 拒收") as ei:
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert "修正 draft 後可重新授權寄送" in str(ei.value)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] is None
+    assert entry["reply_sha256"] is None
+    assert entry["note"] == "n" and entry["target"] == ADDR
+    assert not os.path.exists(_snapshot_path(st)), "snapshot 應已清除"
+
+
+def test_t2_fixed_draft_resend_full_flow_no_state_surgery(tmp_path):
+    """T2（核心 regression，T1→T2 完整鏈）：修正 draft 後同一 incoming
+    重新 send_reply ⇒ 成功寄送、receipt 合法、pending 解除——全程僅
+    呼叫 send_reply，零 state 檔手術。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    bad_draft = _draft_without_message_id(
+        str(tmp_path / "out.json"), envelope_id="out-1", in_reply_to="env-1")
+    runner1 = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error, match="schema 拒收"):
+        mod.send_reply(ADDR, "env-1", bad_draft, runner1, state_dir=st)
+    # 修正 draft：補回 message_id（_write_draft 整檔重寫＝合法 envelope）。
+    good_draft = _write_draft(
+        bad_draft, envelope_id="out-1", in_reply_to="env-1")
+    runner2 = _seq_runner([_mail_get_doc("env-1"), _send_doc("out-1")])
+    out = mod.send_reply(ADDR, "env-1", good_draft, runner2, state_dir=st)
+    assert out["cleared"] is True
+    assert out["receipt"]["envelopeId"] == "out-1"
+    kept = mod.load_pending_replies(mod.pending_path(ADDR, st))
+    assert kept is None or "env-1" not in kept.get("replies", {})
+    assert not os.path.exists(_snapshot_path(st))
+
+
+def test_t3_unsupported_schema_refusal_also_clears_pin(tmp_path):
+    """T3：unsupported-envelope-schema(usage) 與 T1 同樣解除 pin。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _draft_without_message_id(
+        str(tmp_path / "out.json"), envelope_id="out-1", in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("unsupported-envelope-schema", "usage"),
+    ])
+    with pytest.raises(mod.S2Error, match="schema 拒收"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] is None
+    assert entry["reply_sha256"] is None
+    assert not os.path.exists(_snapshot_path(st))
+
+
+def test_t4_storage_error_retains_pin_and_snapshot(tmp_path):
+    """T4：store-down(storage) ⇒ pin/snapshot 完整保留（outcome 未確認
+    保守路徑）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("store-down", "storage"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+    with open(_snapshot_path(st), "rb") as fh, open(draft, "rb") as fh2:
+        assert fh.read() == fh2.read()
+
+
+def test_t5_after_storage_error_changed_draft_sha_rejected_zero_send(
+        tmp_path):
+    """T5：T4 後修改 draft ⇒ SHA 拒絕、零 send 呼叫。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner1 = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("store-down", "storage"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner1, state_dir=st)
+    with open(draft, "w", encoding="utf-8") as fh:
+        json.dump({"envelope_id": "out-1", "in_reply_to": "env-1",
+                   "tampered": True}, fh)
+    runner2 = _seq_runner([_mail_get_doc("env-1")])
+    with pytest.raises(mod.S2Error, match="bytes 已變更|SHA 不符"):
+        mod.send_reply(ADDR, "env-1", draft, runner2, state_dir=st)
+    assert not any(c[0] == "send" for c in runner2.calls)
+
+
+def test_t6_after_storage_error_same_bytes_retry_sends_snapshot(tmp_path):
+    """T6：T4 後原 bytes 重試 ⇒ 使用原 snapshot 發送並清 pending。"""
+    st = str(tmp_path / "state")
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    with open(draft, "rb") as fh:
+        original = fh.read()
+    runner1 = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("store-down", "storage"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner1, state_dir=st)
+    seen = {}
+
+    def runner_ok(argv):
+        if argv[:2] == ["mail", "get"]:
+            return _mail_get_doc("env-1")
+        seen["path"] = argv[2]
+        with open(argv[2], "rb") as fh:
+            seen["bytes"] = fh.read()
+        return _send_doc("out-1")
+
+    out = mod.send_reply(ADDR, "env-1", draft, runner_ok, state_dir=st)
+    assert out["cleared"] is True
+    assert seen["path"] != draft
+    assert seen["bytes"] == original
+    assert not os.path.exists(_snapshot_path(st))
+
+
+def test_t7_unknown_address_admission_retains_pin(tmp_path):
+    """T7：unknown-address(admission) ⇒ pin 保留。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("unknown-address", "admission"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+
+
+def test_t8_idempotency_conflict_admission_retains_pin(tmp_path):
+    """T8：idempotency-conflict(admission) ⇒ pin 保留（不可重試≠確定
+    未受理——解 pin 換 ID 會增加重複發信風險）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("idempotency-conflict", "admission"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+
+
+def test_t9_other_usage_or_unknown_errors_retain_pin(tmp_path):
+    """T9：其他 usage code（非 schema 二碼）或未知錯誤 ⇒ pin 保留
+    （error_class 單獨不構成解 pin 條件）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("usage", "usage"),
+        _mail_get_doc("env-1"),
+        _face_error("unknown", "unknown"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+
+
+def test_t10_invalid_envelope_retryable_true_retains_pin(tmp_path):
+    """T10：invalid-envelope 但 retryable=True ⇒ pin 保留（predicate
+    要求 retryable is False）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    retryable_exc = mod.DutymailFaceError(
+        code="invalid-envelope", error_class="usage", message="boom",
+        retryable=True, exit_code=2)
+    runner = _seq_runner([_mail_get_doc("env-1"), retryable_exc])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+
+
+def test_t11_pin_clear_save_oserror_keeps_old_pin_and_snapshot(
+        tmp_path, monkeypatch):
+    """T11：解 pin 的 save_pending OSError ⇒ fail-loud；原 pin＋
+    snapshot 保留（持久化失敗＝狀態不動）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    real_save = mod.save_pending_replies
+    calls = {"n": 0}
+
+    def _flaky_save(path, doc):
+        calls["n"] += 1
+        if calls["n"] >= 2:  # 第 1 次＝send 前 pin 寫入；第 2 次＝解 pin
+            raise OSError("disk full (injected)")
+        return real_save(path, doc)
+
+    monkeypatch.setattr(mod, "save_pending_replies", _flaky_save)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error, match="持久化失敗"):
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert calls["n"] == 2
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+    assert os.path.exists(_snapshot_path(st))
+
+
+def test_t12_snapshot_removal_oserror_pins_cleared_orphan_disclosed(
+        tmp_path, monkeypatch):
+    """T12：解 pin 成功後刪 snapshot OSError ⇒ pending 保留（pin 已
+    null）、揭露 orphan snapshot（禁宣稱完整清理）。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    snap = _snapshot_path(st)
+    real_remove = os.remove
+
+    def _boom_remove(p, *args, **kwargs):
+        if os.path.abspath(p) == os.path.abspath(snap):
+            raise OSError("disk full (injected)")
+        return real_remove(p, *args, **kwargs)
+
+    monkeypatch.setattr(mod.os, "remove", _boom_remove)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error, match="schema 拒收") as ei:
+        mod.send_reply(ADDR, "env-1", draft, runner, state_dir=st)
+    assert "殘留 snapshot 清理失敗" in str(ei.value)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] is None
+    assert entry["reply_sha256"] is None
+    assert os.path.exists(snap), "orphan snapshot 應保留並揭露"
+
+
+def test_t13_acked_reread_note_update_keeps_pin_zero_send(tmp_path):
+    """T13：已 ACK mark-read 重看、更新 note ⇒ 原 pin 不變、零 send
+    （reread setdefault 保守語義——response-loss 去重保障）。"""
+    st = str(tmp_path)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    sha = _file_sha(draft)
+    _seed_pending(st, pinned_id="out-1", pinned_sha=sha)
+    runner = _seq_runner([_mail_get_doc("env-1", pending=False)])
+    out = mod.mark_read(ADDR, "env-1", runner, state_dir=st,
+                        note="updated", target=ADDR)
+    assert out["acked"] is False and out["reread"] is True
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == sha
+    assert entry["note"] == "updated"
+    assert not any(c[0] == "send" for c in runner.calls)
+
+
+def test_t14_response_loss_retains_pin_same_id_bytes_retry_succeeds(
+        tmp_path):
+    """T14：成功送達但 receipt 遺失（消費端可見面＝非 schema 錯誤、
+    outcome 未確認）⇒ 原 pin 保留；同 bytes、同 ID 重試成功。"""
+    st = str(tmp_path)
+    _seed_pending(st)
+    draft = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                         in_reply_to="env-1")
+    runner1 = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("unknown", "wait-timeout"),
+    ])
+    with pytest.raises(mod.S2Error, match="結果未確認"):
+        mod.send_reply(ADDR, "env-1", draft, runner1, state_dir=st)
+    entry = _entry(st)
+    assert entry["reply_envelope_id"] == "out-1"
+    assert entry["reply_sha256"] == _file_sha(draft)
+    runner2 = _seq_runner([_mail_get_doc("env-1"), _send_doc("out-1")])
+    out = mod.send_reply(ADDR, "env-1", draft, runner2, state_dir=st)
+    assert out["cleared"] is True
+    assert out["receipt"]["envelopeId"] == "out-1"
+    kept = mod.load_pending_replies(mod.pending_path(ADDR, st))
+    assert kept is None or "env-1" not in kept.get("replies", {})
+
+
+# ── AIR-336 修正迴圈（flash 外審 F-1）：shared snapshot 護衛分支補測───
+#
+# 守衛（duty_receive.py send_reply schema 拒收清理段）：他筆 pending
+# 義務 pin 同一 outbound envelope ID 時禁刪 snapshot（誤刪砸掉他筆
+# 的重試發送源）——保留＋揭露；無共用才刪。
+
+
+def test_t15_schema_refusal_shared_snapshot_kept_and_disclosed(tmp_path):
+    """T15（F-1）：兩筆 pending 義務（不同 in_reply_to）pin 同一
+    outbound envelope ID＋共用 snapshot ⇒ 對第一筆 schema 拒收解 pin
+    後，snapshot 仍被第二筆引用——禁刪＋訊息揭露保留原因；第一筆
+    pin 已解、第二筆 pin 不受影響。"""
+    st = str(tmp_path)
+    draft1 = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                          in_reply_to="env-1")
+    sha = _file_sha(draft1)
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {
+            "env-1": {"note": "n", "target": ADDR,
+                      "reply_envelope_id": "out-1", "reply_sha256": sha},
+            "env-2": {"note": "m", "target": ADDR,
+                      "reply_envelope_id": "out-1", "reply_sha256": sha}}})
+    snap = _snapshot_path(st)
+    os.makedirs(os.path.dirname(snap), exist_ok=True)
+    with open(draft1, "rb") as fh:
+        snap_bytes = fh.read()
+    with open(snap, "wb") as fh:
+        fh.write(snap_bytes)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error) as ei:
+        mod.send_reply(ADDR, "env-1", draft1, runner, state_dir=st)
+    msg = str(ei.value)
+    assert "schema 拒收" in msg
+    assert "snapshot 保留" in msg and "out-1" in msg, msg
+    assert "殘留 snapshot 清理失敗" not in msg
+    assert os.path.exists(snap), "snapshot 仍被 env-2 引用——不該刪"
+    with open(snap, "rb") as fh:
+        assert fh.read() == snap_bytes
+    entry1 = _entry(st, "env-1")
+    assert entry1["reply_envelope_id"] is None
+    assert entry1["reply_sha256"] is None
+    entry2 = _entry(st, "env-2")
+    assert entry2["reply_envelope_id"] == "out-1"
+    assert entry2["reply_sha256"] == sha
+
+
+def test_t16_schema_refusal_unshared_snapshot_removed(tmp_path):
+    """T16（F-1 反向）：第二筆 pending pin 不同 envelope ID（無共用）
+    ⇒ 對第一筆 schema 拒收解 pin 後，snapshot 正常刪除、無保留揭露；
+    第二筆 pin 不受影響。"""
+    st = str(tmp_path)
+    draft1 = _write_draft(str(tmp_path / "out.json"), envelope_id="out-1",
+                          in_reply_to="env-1")
+    sha1 = _file_sha(draft1)
+    mod.save_pending_replies(
+        mod.pending_path(ADDR, st),
+        {"address": ADDR, "replies": {
+            "env-1": {"note": "n", "target": ADDR,
+                      "reply_envelope_id": "out-1", "reply_sha256": sha1},
+            "env-2": {"note": "m", "target": ADDR,
+                      "reply_envelope_id": "out-2", "reply_sha256": sha1}}})
+    snap = _snapshot_path(st)
+    os.makedirs(os.path.dirname(snap), exist_ok=True)
+    with open(draft1, "rb") as fh:
+        snap_bytes = fh.read()
+    with open(snap, "wb") as fh:
+        fh.write(snap_bytes)
+    runner = _seq_runner([
+        _mail_get_doc("env-1"),
+        _face_error("invalid-envelope", "usage"),
+    ])
+    with pytest.raises(mod.S2Error) as ei:
+        mod.send_reply(ADDR, "env-1", draft1, runner, state_dir=st)
+    msg = str(ei.value)
+    assert "schema 拒收" in msg
+    assert "snapshot 保留" not in msg, msg
+    assert not os.path.exists(snap), "無共用——snapshot 應正常刪除"
+    entry1 = _entry(st, "env-1")
+    assert entry1["reply_envelope_id"] is None
+    assert entry1["reply_sha256"] is None
+    entry2 = _entry(st, "env-2")
+    assert entry2["reply_envelope_id"] == "out-2"
+    assert entry2["reply_sha256"] == sha1

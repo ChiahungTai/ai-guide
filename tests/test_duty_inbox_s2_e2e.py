@@ -46,6 +46,14 @@ def _dutymail(store, *argv):
     return json.loads(proc.stdout)["result"]
 
 
+def _dutymail_raw(store, *argv):
+    """不斷言結果的 raw 呼叫（typed refusal 觀察面——stderr JSON＋exit）。"""
+    return subprocess.run(
+        [BIN, "--store-root", str(store), *argv],
+        capture_output=True, text=True, timeout=60, check=False,
+    )
+
+
 def _git_repo(path):
     path.mkdir(parents=True, exist_ok=True)
     subprocess.run(["git", "init", "-q", str(path)], check=True)
@@ -186,5 +194,81 @@ def test_s2_ordinary_inbox_end_to_end():
         p = _run_cli(str(consumer), "inbox", "--address", paddr,
                      "--store-root", str(store))
         assert p.returncode == 2
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@pytest.mark.skipif(not os.path.isfile(BIN), reason="no installed dutymail")
+def test_s2_schema_refusal_typed_contract_isolated_store():
+    """AIR-336：真實 dutymail 對缺 message_id 的 envelope 回 typed
+    invalid-envelope（class=usage、retryable=false、非零 exit），且信件
+    未進 store（parse_strict 在 acceptance 前拒收）——send_reply schema
+    拒收分流的 producer 契約證據。Isolated store；不碰真實信箱。"""
+    pid = os.getpid()
+    root = E2E_ROOT / f"schema-refusal-{pid}"
+    if root.exists():
+        shutil.rmtree(root)
+    store = root / "store"
+    store.mkdir(parents=True)
+    os.chmod(store, 0o700)
+    try:
+        assert _dutymail_raw(store, "store", "init").returncode == 0
+        p = _dutymail_raw(store, "address", "create", "--alias", "s2refuse")
+        assert p.returncode == 0, p.stderr
+        bad = root / "bad.json"
+        env = _envelope(str(uuid.uuid4()), "refuse-1", "s2refuse", "body")
+        env.pop("message_id")
+        bad.write_text(json.dumps(env), encoding="utf-8")
+        p = _dutymail_raw(store, "send", "--envelope-file", str(bad))
+        assert p.returncode != 0
+        err = json.loads(p.stderr)["error"]
+        assert err["code"] == "invalid-envelope"
+        assert err["class"] == "usage"
+        assert err["retryable"] is False
+        # 未受理證據：全箱零 items（拒收發生在 store acceptance 之前）。
+        listed = _dutymail(store, "mail", "list", "--address", "s2refuse",
+                           "--box", "all")
+        assert listed["items"] == []
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+@pytest.mark.skipif(not os.path.isfile(BIN), reason="no installed dutymail")
+def test_s2_unsupported_schema_version_refusal_typed_contract():
+    """AIR-336 codex F-02：schema_version 非 2 的 envelope 由真實
+    dutymail 回 typed unsupported-envelope-schema（class=usage、
+    retryable=false、非零 exit），且信件未進 store（schema gate 在
+    acceptance 前拒收）——`_SCHEMA_REFUSAL_CODES` 第二碼的 producer
+    契約證據（真 binary probe 2026-10-14：sv=1 與 sv=3 同 code；
+    schema_version 缺席走 invalid-envelope missing field，不入本
+    case）。Isolated store；不碰真實信箱。"""
+    pid = os.getpid()
+    root = E2E_ROOT / f"schema-version-refusal-{pid}"
+    if root.exists():
+        shutil.rmtree(root)
+    store = root / "store"
+    store.mkdir(parents=True)
+    os.chmod(store, 0o700)
+    try:
+        assert _dutymail_raw(store, "store", "init").returncode == 0
+        p = _dutymail_raw(store, "address", "create",
+                          "--alias", "s2svrefuse")
+        assert p.returncode == 0, p.stderr
+        for sv in (1, 3):
+            bad = root / f"bad-sv{sv}.json"
+            env = _envelope(str(uuid.uuid4()), f"refuse-sv{sv}",
+                            "s2svrefuse", "body")
+            env["schema_version"] = sv
+            bad.write_text(json.dumps(env), encoding="utf-8")
+            p = _dutymail_raw(store, "send", "--envelope-file", str(bad))
+            assert p.returncode != 0
+            err = json.loads(p.stderr)["error"]
+            assert err["code"] == "unsupported-envelope-schema"
+            assert err["class"] == "usage"
+            assert err["retryable"] is False
+        # 未受理證據：全箱零 items（拒收發生在 store acceptance 之前）。
+        listed = _dutymail(store, "mail", "list", "--address",
+                           "s2svrefuse", "--box", "all")
+        assert listed["items"] == []
     finally:
         shutil.rmtree(root, ignore_errors=True)
