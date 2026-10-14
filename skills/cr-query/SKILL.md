@@ -113,14 +113,15 @@ Two facts backends, complementary not competing:
 
 delta-freshness 契約（契約先行）：stale graph 從二元 verdict 升級為三層標註，查詢範圍與 stale 變更集可證分離時仍可精確消費（如 docs-only 變更後，未動檔的結構查詢實為 exact）。
 
-- **`exact`**——查詢目標的檔案／符號集合與 stale_reasons 相交變更檔集**可證分離**：未變檔內 facts 與 fresh 可證等價（byte-identical ⇒ 同 index ⇒ 同 facts；edge 兩端檔案未動即不可能變）。
+- **`exact`（符號事實查詢）**——定義／簽名等「讀未變檔內容」的查詢，且目標檔不在變更集：未變檔內 facts 與 fresh 可證等價（byte-identical ⇒ 同 index ⇒ 同 facts）。
+- **`exact`（關係／列舉查詢）**——refs／callers／closure／impact 等答案取決於「哪些檔案引用目標」的查詢：**目標檔未變不足夠**（變更檔可新增指向未變符號的 inbound edge——stale index 必漏）；須 producer 額外提供**引用面證明**（per-changed-file 對外部符號的引用清單，機驗變更檔集對查詢目標符號零觸及）方可判 exact；無此證據 → `possibly-stale`。
 - **`possibly-stale`**——查詢範圍與變更集**相交**：標註須列相交變更檔。
 - **`no-coverage`**——查詢目標在該 index 的 source set 之外（如 WT 碰區）＝**absent 非 stale**：交 live LSP。
 - 🔴 **生效 gate（本節鐵律）**：CR 端 face（slot base commit／freshness delta 輸出／查詢面逐筆標註＋MCP face）落地前，本節為**契約宣告非消費語義**——現行二元 verdict 規則（fresh 消費／stale 以 committed-baseline 姿態＋標註／negative verdict 禁 stale）**一字不變**；face 在場的機械判準由 CR 端交付時補（delta 欄位在場與否）。
 - **producer version 綁定（硬欄位）**：exactness 相對 producer 版本（同 bytes＋同 producer ⇒ 同 facts）——三層標註必須攜帶 producer version；缺 version 或跨版本的標註一律視為 unavailable（不得消費）。
-- **negative scope-分離例外（機械條件）**：命中 scope-分離（delta 輸出機驗證明查詢目標集合與變更檔集零相交）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂——判定必須引用 delta 輸出的機械證據（檔案集比對），**禁 LLM 自由心證**；無法機驗分離＝維持現行禁令（negative verdict 不 terminal）。
+- **negative scope-分離例外（機械條件＝引用面證明）**：delta 輸出機驗**變更檔集對查詢目標符號零觸及**（per-changed-file 引用清單比對——非僅目標檔案集相交）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂——判定必須引用 delta 輸出的機械證據，**禁 LLM 自由心證**；producer 無引用面證據＝維持現行禁令（negative verdict 不 terminal）。
 - **degraded reason 值域擴充**：`stale-delta-exact`／`stale-delta-possibly`／`stale-delta-no-coverage` 納入 degraded reason 建議值（沿 AIR-228 慣例：reason 值面自由承載，[workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar 不動）。
-- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）。
+- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）；CR 端 (b) delta 輸出契約須含 per-changed-file 對外部符號的引用清單——缺此欄＝negative 例外整體不生效（生效 gate 照舊）。
 
 本節與「Stale graph check」段（二元現行語義）並存不互斥——face 未落地前以該段為準，落地後三層標註為 stale 態的細化。
 
