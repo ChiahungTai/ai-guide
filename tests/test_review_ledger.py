@@ -36,8 +36,29 @@ def fixture(name: str) -> Path:
     return FIXTURES / name
 
 
-def write_ledger(tmp_path: Path, header_lines: list[str], name: str = "ledger.md") -> Path:
-    """tmp_path 合成 canonical 帳本（不寫 fixtures 目錄——fresh-F6/muse-F9 衛生）。"""
+CANONICAL_TABLE_HEADER = (
+    "| ID | 嚴重度 | 位置 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |",
+    "|---|---|---|---|---|---|---|---|",
+)
+DEFAULT_DATA_ROW = (
+    "| F-01 | Important | a.py:1 | tmp fixture 資料 | 修法 | `true` | verified | ✅ |"
+)
+
+
+def write_ledger(
+    tmp_path: Path,
+    header_lines: list[str],
+    name: str = "ledger.md",
+    *,
+    table_header: tuple[str, ...] = CANONICAL_TABLE_HEADER,
+    table_rows: tuple[str, ...] = (DEFAULT_DATA_ROW,),
+    footer_lines: tuple[str, ...] = (),
+) -> Path:
+    """tmp_path 合成 canonical 帳本（不寫 fixtures 目錄——fresh-F6/muse-F9 衛生）。
+
+    ``table_rows=()``＝header-only 表（AIR-331——零資料列＝零 findings 合法編碼）；
+    ``footer_lines``＝表尾後接段（雙表並存等場景）。
+    """
     lines = [
         "# .review/tmp-synthetic.md — 測試即產帳本（不入 fixtures）",
         "",
@@ -49,9 +70,9 @@ def write_ledger(tmp_path: Path, header_lines: list[str], name: str = "ledger.md
         "",
         "## Finding Record",
         "",
-        "| ID | 嚴重度 | 位置 | 問題 | 建議 | 驗證式 | 狀態 | 決策 |",
-        "|---|---|---|---|---|---|---|---|",
-        "| F-01 | Important | a.py:1 | tmp fixture 資料 | 修法 | `true` | verified | ✅ |",
+        *table_header,
+        *table_rows,
+        *footer_lines,
     ]
     p = tmp_path / name
     p.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -627,4 +648,105 @@ def test_live_cr_empty_evidence_fails(tmp_path):
     assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
     assert "cr.receipt.no_evidence" in r.stdout
     assert "L1" in r.stdout
+
+
+# ---------- AIR-331——header-only 表豁免（零資料列＝零 findings 的合法編碼） ----------
+
+
+def test_parse_header_only_zero_findings_full_tally(tmp_path):
+    # 邊界語義 1（parse 面）：canonical 表頭＋分隔線＋零資料列 → EXIT_OK＋
+    # findings=0＋四決策 0＋未決 0＋unparsed 0（含 ID 欄表頭在場＝合法帳本，
+    # 非 no_findings_table——舊碼整表濾掉誤殺）
+    ledger = write_ledger(tmp_path, (), table_rows=())
+    r = run_cli("parse", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "no_findings_table" not in r.stdout
+    assert "findings=0" in r.stdout
+    assert "tables=1" in r.stdout
+    assert "decisions ✅=0/❌=0/⚠️=0/unknown=0" in r.stdout
+    assert "source=決策" in r.stdout  # ID／決策欄偵測對表頭列照常運作
+    assert "未決=0" in r.stdout
+    assert "unparsed=0" in r.stdout
+
+
+def test_lint_header_only_ok_converged_and_discovery(tmp_path):
+    # 邊界語義 1（lint 面）：零資料列 canonical 帳本（identity 區附合法 legs
+    # 名冊＋receipt）converged 與 discovery 各一 → EXIT_OK
+    ledger = write_ledger(
+        tmp_path,
+        (
+            "- legs：L1 job-air331 trigger",
+            "- L1: cr(route=live-cr:MCP, evidence=docs/provenance.md)",
+        ),
+        table_rows=(),
+    )
+    r = run_cli("lint", ledger, "--stage", "converged")
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "[OK]" in r.stdout
+    r2 = run_cli("lint", ledger, "--stage", "discovery")
+    assert r2.returncode == EXIT_OK, r2.stdout + r2.stderr
+    assert "[OK]" in r2.stdout
+
+
+def test_lint_header_only_missing_canonical_columns_fails(tmp_path):
+    # 邊界語義 3：ID 表頭在場但缺 canonical 欄 → columns.missing FAIL
+    #（header-only 表照查欄位完整性——豁免的只是「零資料列整表被濾」）
+    ledger = write_ledger(
+        tmp_path,
+        (),
+        table_header=("| ID | 備註 |", "|---|---|"),
+        table_rows=(),
+    )
+    r = run_cli("lint", ledger, "--stage", "discovery")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "columns.missing" in r.stdout
+    assert "table.missing" not in r.stdout  # 舊誤報路徑（整表被濾）不復存在
+
+
+def test_parse_header_only_plus_data_table_counts_data_table_only(tmp_path):
+    # 邊界語義 5：header-only 表＋一般資料表並存 → findings 只計資料表
+    #（tables=2 釘兩表都在場；header-only 表零資料列、join 後不貢獻 findings）
+    ledger = write_ledger(
+        tmp_path,
+        (),
+        name="two-tables.md",
+        table_rows=(),
+        footer_lines=(
+            "",
+            "（上表 header-only＝零 findings 合法編碼；下表為唯一資料表）",
+            "",
+            *CANONICAL_TABLE_HEADER,
+            DEFAULT_DATA_ROW,
+        ),
+    )
+    r = run_cli("parse", ledger)
+    assert r.returncode == EXIT_OK, r.stdout + r.stderr
+    assert "findings=1" in r.stdout
+    assert "tables=2" in r.stdout
+    assert "decisions ✅=1/❌=0/⚠️=0/unknown=0" in r.stdout
+    assert "未決=0" in r.stdout
+    assert "unparsed=0" in r.stdout
+
+
+def test_id_header_with_short_garbage_row_malformed_and_unparsed(tmp_path):
+    # 邊界語義 4：有資料列但欄數不足 → lint row.malformed／parse unparsed>0
+    #（資料列在場照查，與零行表可區分——AIR-331 豁免不及於 malformed 列）
+    ledger = write_ledger(tmp_path, (), table_rows=("| F-01 | Important |",))
+    r = run_cli("lint", ledger, "--stage", "discovery")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "row.malformed" in r.stdout
+    assert "F-01" in r.stdout
+    r2 = run_cli("parse", ledger)
+    assert r2.returncode == EXIT_OK, r2.stdout + r2.stderr
+    assert "unparsed=1" in r2.stdout
+    assert "findings=0" in r2.stdout
+
+
+def test_lint_header_only_zero_findings_still_checks_cr_receipt(tmp_path):
+    # 邊界語義 6：converged 零 findings 帳本的 legs 名冊／CR receipt／n/a sentinel
+    # 檢查照查不豁免（identity 區檢查與 findings 數正交——無名冊照 FAIL）
+    ledger = write_ledger(tmp_path, (), table_rows=())
+    r = run_cli("lint", ledger, "--stage", "converged")
+    assert r.returncode == EXIT_FAIL, r.stdout + r.stderr
+    assert "cr.receipt.roster_missing" in r.stdout
 

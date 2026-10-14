@@ -21,7 +21,9 @@
 - ``parse <ledger.md>``：容錯讀＋tally（歷史帳本回歸／消費面）——跨表 ID-join
   last-wins（發現時態表被 apply 終態表覆蓋）、prose 計數禁用（否定句陷阱：
   「零 ❌、零 ⚠️」不得入計數）、解析不出→明確 ``[FAIL]`` 類別拒收（unknown，
-  禁猜 resolved）。``` 圍欄內的表格是格式說明範例非資料表——跳過不計（F-6）。
+  禁猜 resolved）。``` 圍欄內的表格是格式說明範例非資料表——跳過不計（F-6）；
+  含 ID 欄表頭的 header-only 表（零資料列）＝零 findings 的合法編碼、非拒收
+  對象（AIR-331——缺 ID 表頭仍 fail-closed）。
 
 exit 契約：``0`` 成功／``1`` 解析失敗（fail-closed）／``2`` 帳本不存在／
 ``3`` identity stale。
@@ -395,7 +397,9 @@ def parse_ledger(text: str) -> dict | None:
     """回 None＝找不到含 ID 欄的 findings 表（fail-closed 拒收）。"""
     lines = text.splitlines()
     raw_tables = split_tables(lines)
-    tables = [t for t in (normalize_table(r) for r in raw_tables) if len(t) > 1]
+    # header-only 表（含 ID 欄表頭、零資料列）保留——零資料列＝零 findings 的合法
+    # 編碼，整表濾掉會把合法帳本誤殺成 no_findings_table（AIR-331）
+    tables = [t for t in (normalize_table(r) for r in raw_tables) if t]
 
     keyed: list[tuple[int, list[list[str]]]] = []
     for rows in tables:
@@ -513,10 +517,12 @@ def cmd_lint(text: str, name: str, stage: str = "converged") -> int:
             ]
         violations.extend(cr_violations)
 
+    # header-only 表保留（AIR-331——同 parse_ledger；零資料列 canonical 表＝
+    # 合法帳本，濾掉會誤報 table.missing）
     tables = [
         t
         for t in (normalize_table(r) for r in split_tables(text.splitlines()))
-        if len(t) > 1
+        if t
     ]
     finding_table: list[list[str]] | None = None
     id_i: int | None = None
