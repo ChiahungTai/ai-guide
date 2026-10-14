@@ -219,7 +219,12 @@ def main(argv: list[str] | None = None, *, now: datetime | None = None) -> int:
             catalog,
             families_display,
             spine,
-            lambda fam: "unknown（spine stale——先探測再派，禁從歷史 instruction 推定）",
+            lambda fam: (
+                "unknown（spine stale——muse 無機械探測面，須以 user 實證／TUI /usage 刷新 as-of，"
+                "禁從歷史推定）"
+                if fam == "muse"
+                else "unknown（spine stale——先探測再派，禁從歷史 instruction 推定）"
+            ),
         )
         print(
             f"[WARN] spine as-of {spine.as_of} 距今 {age} 天 >{stale_days}"

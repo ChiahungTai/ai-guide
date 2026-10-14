@@ -209,6 +209,32 @@ def test_stale_at_4_days_exit_3_all_unknown(
     assert set(states.values()) == {"unknown"}
 
 
+def test_stale_muse_wording_pinned(capsys: pytest.CaptureFixture[str]) -> None:
+    """stale 分支措辭 family-aware（muse 外審 regression pin）。
+
+    muse 行含「無機械探測面」＋「user 實證」（禁從歷史推定、須 user 實證
+    ／TUI /usage 刷新 as-of）；非 muse family（codex/glm）行含原句
+    「先探測再派」。
+    """
+    rc, out = run_main(
+        ["--spine", str(STALE_4D), "--catalog", str(REAL_CATALOG)], capsys
+    )
+    assert rc == 3
+    lines = out.splitlines()
+
+    def fam_line(fam: str) -> str:
+        hits = [ln for ln in lines if ln.startswith(f"  {fam} = ")]
+        assert hits, f"family {fam} 狀態行缺席（禁靜默省略）"
+        return hits[0]
+
+    # ① muse：family-aware 措辭釘住（無機械探測面 → 只能 user 實證刷新）
+    muse_line = fam_line("muse")
+    assert "無機械探測面" in muse_line
+    assert "user 實證" in muse_line
+    # ② 至少一個非 muse family 維持原句「先探測再派」
+    assert any("先探測再派" in fam_line(fam) for fam in ("codex", "glm"))
+
+
 def test_malformed_available_line_warns_not_crash(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
