@@ -5,8 +5,8 @@ title: >-
   容忍面（＋聚合去重）
 status: To Do
 assignee: []
-updated_date: '2026-10-14 04:40'
 created_date: '2026-10-14 04:33'
+updated_date: '2026-10-14 08:55'
 labels: []
 dependencies: []
 ordinal: 318000
@@ -29,3 +29,9 @@ flowchart LR
   rule --> align["lint 與 parse 容忍面對齊"]
 ```
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+裁決（judge＝主 session 座位模型，2026-10-14）：採③ join-aware 分類 lint——muse job-mv7uu9p3-qce8yc 與 codex job-mv7uu9yu-l5i8ya 獨立收斂同案（兩家皆發現工單未明列事實：converged 值域為逐列 pre-join 檢查 review_ledger.py:565，僅修 columns.missing 不足以對齊 parse；muse 實跑 fixture join-last-wins.md 取證）。要點：①第一張 keyed 表＝Finding 定義表（全 canonical 不變）；後表 fid 全∈seen 且含狀態/決策欄＝patch 表（豁免 columns.missing，在場欄位值域/malformed 照查）；含新 fid 或缺條件＝整表按 Finding Record 全檢（混合表整表計不逐列豁免）；零資料列後表＝vacuous patch；不變式＝每 fid 首次出現必經全 canonical 檢查。②converged 值域改 join 後終態檢查，lint/parse 共用 join helper（防 drift——不可兩套 last-wins 實作）。③附帶去重：bad_decision/bad_status/malformed 以 dict.fromkeys 保序去重；columns.missing 不靜默去重（會遮蔽第二壞表）。驗收基準＝codex 九案矩陣＋muse 測試調整案（d5214238 patch 語義測試翻 PASS、FAIL 案以新 fid partial 後表重建、補 patch-pass 與 patch 表缺狀態/決策欄兩案）。落地須同步消費端（single-source drift 掃描）：workflow-review-pattern.md、post-build/judge-review/commit SKILL、腳本 docstring。意見全文：.agent-tmp/air333/{muse,codex}-answer.md。實作另段派工。
+<!-- SECTION:NOTES:END -->
