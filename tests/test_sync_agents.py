@@ -1230,9 +1230,11 @@ def test_real_catalog_tier_ladder():
     assert {mid for mid, t in tiers.items() if t is None} == {"gpt-5.6-sol"}
 
 
-def test_real_catalog_wonder_full_pending_first_use():
-    """AIR-332：wonder-full-1.0 播 pending_first_use 種子（workload 對齊既有
-    muse 家族 rows；無 binding 前 scope 萬用——首次實測後轉正再收窄）。"""
+def test_real_catalog_wonder_full_post_sampling_state():
+    """AIR-332 播種→AIR-334 首派取樣轉正：execution workload（唯一取樣，
+    job-mv7uyu4b-mrpz6l）qualified/repo_observed；判斷 workload 與
+    review_findings 未取樣維持 pending_first_use；全部 scope 收窄至實際
+    binding（bridge-muse-wonder-full-1.0）。"""
     cat = sync.load_catalog(REPO_ROOT)
     recs = [
         rec
@@ -1246,10 +1248,19 @@ def test_real_catalog_wonder_full_pending_first_use():
         "evidence_retrieval",
         "review_findings",
     }
+    by_workload = {rec.workload: rec for rec in recs}
+    sampled = by_workload["implement_from_accepted_ep"]
+    assert sampled.status == "qualified"
+    assert sampled.evidence_source == "repo_observed"
     assert all(
         rec.status == "conditional" and rec.evidence_source == "pending_first_use"
         for rec in recs
+        if rec.workload != "implement_from_accepted_ep"
     )
+    assert all(
+        tuple(rec.binding_scope) == ("bridge-muse-wonder-full-1.0",) for rec in recs
+    )
+    assert "bridge-muse-wonder-full-1.0" in cat.bindings
 
 
 # --- 選擇層 table fixtures（executable spec——demand 表在測試側；

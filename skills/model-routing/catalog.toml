@@ -106,8 +106,10 @@ evidence = "repo_observed"
 
 # AIR-332：wonder-full-1.0（2026-10-14 muse 方案升級 Power/Max 解鎖，user 實證
 # ——qualification 播 pending_first_use 種子，首派取樣後轉正；先例＝wonder-1.0
-# 換代播種）。bridge binding 未開（VALID_MODELS 未實測）——qualification scope
-# 萬用待 binding 落地後收窄。
+# 換代播種）。bridge binding 已開（AIR-334 首派取樣 job-mv7uyu4b-mrpz6l 實測
+# VALID_MODELS 接受，2026-10-14）——execution workload 取樣轉正並收窄 scope；
+# 判斷 workload（ep_synthesis/adjudication）與 review_findings 未取樣，維持
+# pending_first_use（政策：首派取樣限執行／advisory 腿，禁 judge）。
 [[model_identity]]
 id = "muse-wonder-full-1.0"
 label = "Muse Wonder Full 1.0"
@@ -232,6 +234,21 @@ family = "muse"
 effort_encoding = "param"
 effort_values = ["low", "medium", "high", "xhigh", "max", "ultra"]
 transport = ["image_transport"] # --image 輸入（repo-observed）
+
+# AIR-334 wonder-full bridge binding 開啟：首派取樣 job-mv7uyu4b-mrpz6l 實測
+# --model muse-wonder-full-1.0 被 bridge 3.16.0 VALID_MODELS 接受並完跑
+# （2026-10-14）。effort 值域對齊 wonder 代（CLI 含 max）；image transport 未
+# 單獨取樣，不宣稱。
+[[dispatch_binding]]
+id = "bridge-muse-wonder-full-1.0"
+model_identity = "muse-wonder-full-1.0"
+carrier = "bridge"
+surface = "muse-family"
+token = "muse-wonder-full-1.0"
+token_kind = "provider_native"
+family = "muse"
+effort_encoding = "param"
+effort_values = ["low", "medium", "high", "xhigh", "max", "ultra"]
 
 # AIR-218 direct binding：grok CLI headless 直呼（`grok -p`）——fabel 身分
 # 不變（identity＝穩定概念 key doctrine），grok-4.7 是 wire token（1.0.44
@@ -441,28 +458,30 @@ status = "conditional"
 evidence_source = "pending_first_use"
 binding_scope = ["bridge-muse-wonder-1.0"]
 
-# AIR-332 wonder-full-1.0 種子（workload 對齊既有 muse 家族 rows；scope 萬用
-# ——bridge binding 未開，首派取樣轉正後隨 binding 落地收窄）
+# AIR-332 wonder-full-1.0 種子（workload 對齊既有 muse 家族 rows；AIR-334 binding
+# 落地後 scope 收窄——判斷 workload 未取樣，維持 pending_first_use）
 [[qualification]]
 workload = "ep_synthesis"
 model_identity = "muse-wonder-full-1.0"
 status = "conditional"
 evidence_source = "pending_first_use"
-binding_scope = ["*"]
+binding_scope = ["bridge-muse-wonder-full-1.0"]
 
 [[qualification]]
 workload = "adjudication"
 model_identity = "muse-wonder-full-1.0"
 status = "conditional"
 evidence_source = "pending_first_use"
-binding_scope = ["*"]
+binding_scope = ["bridge-muse-wonder-full-1.0"]
 
+# AIR-334 首派取樣轉正（job-mv7uyu4b-mrpz6l：AIR-334 瘦身競稿 execution 腿
+# 完跑交付，2026-10-14）——唯一已取樣 workload；scope 收窄至實際 binding。
 [[qualification]]
 workload = "implement_from_accepted_ep"
 model_identity = "muse-wonder-full-1.0"
-status = "conditional"
-evidence_source = "pending_first_use"
-binding_scope = ["*"]
+status = "qualified"
+evidence_source = "repo_observed"
+binding_scope = ["bridge-muse-wonder-full-1.0"]
 
 # AIR-168 repo_observed（sc-router 0923 TDD 六段）：codex chatgpt-web/high 寫測試失敗＝工單形狀錯（路徑非內聯；webgpt 內聯規則既有實例），不記 unqualified
 # muse xhigh 寫測試 caveat：class-body scoping 陷阱（見 test-driven-development 反模式表）＋回覆混散文須 strip
@@ -511,17 +530,18 @@ status = "conditional"
 evidence_source = "pending_first_use"
 binding_scope = ["bridge-muse-wonder-1.0"]
 
-# AIR-332 wonder-full-1.0 種子續（execution workload 對齊 muse 家族）
+# AIR-332 wonder-full-1.0 種子續（evidence_retrieval／review_findings 未單獨取樣
+# ——AIR-334 取樣為競稿 execution 腿，維持 pending_first_use，scope 已收窄）
 [[qualification]]
 workload = "evidence_retrieval"
 model_identity = "muse-wonder-full-1.0"
 status = "conditional"
 evidence_source = "pending_first_use"
-binding_scope = ["*"]
+binding_scope = ["bridge-muse-wonder-full-1.0"]
 
 [[qualification]]
 workload = "review_findings"
 model_identity = "muse-wonder-full-1.0"
 status = "conditional"
 evidence_source = "pending_first_use"
-binding_scope = ["*"]
+binding_scope = ["bridge-muse-wonder-full-1.0"]
