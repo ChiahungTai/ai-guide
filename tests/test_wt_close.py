@@ -58,7 +58,7 @@ def _seed_repo(base: Path) -> Path:
 
 def _open_card_wt(repo: Path, card: str = "air-1") -> Path:
     """模擬 wt-open：worktree add＋手工 identity contract（owning 線＝main）。"""
-    wt = repo.parent / f"repo-{card}"
+    wt = repo.parent / f"repo-{card.replace('/', '-')}"  # slash branch→目錄名攤平
     _git(repo, "worktree", "add", "-b", card, str(wt))
     ident_dir = wt / ".agent-tmp"
     ident_dir.mkdir()
@@ -316,4 +316,145 @@ def test_zero_commit_close_receipt_plain_pass(tmp_path: Path) -> None:
     assert "CR freshness" not in done.stderr
     assert _last_full_result(repo) == "pass"  # 純 pass，不進快檢
     assert _git(repo, "rev-parse", "main") == main_tip  # trunk 未被推動
+    assert not wt.exists()
+
+
+# ---------- receipt freshness gate 路徑根契約（root＝arc session 的 owning WT）────
+# 寫入端契約：skills/post-build/SKILL.md「寫 .agent-tmp/post-build-receipts/…」與
+# 消費端 hooks/post-build-gate.py（repo=cwd=owning WT）都以 owning WT 為根；
+# slash branch 檔名編碼 `/`→`__` 單一源＝post-build-gate._branch_key。wt-close 的
+# 讀取端必須同根同編碼，否則 card WT 形態下 gate 靜默失效。
+
+
+def _write_receipt(wt: Path, branch: str, head_sha: str) -> Path:
+    """owning WT 根寫 post-build receipt（寫入端契約形；slash branch 走編碼檔名）。"""
+    receipt_dir = wt / ".agent-tmp" / "post-build-receipts"
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    p = receipt_dir / f"{branch.replace('/', '__')}.json"
+    p.write_text(
+        json.dumps({"head_sha": head_sha, "completed_at": "2026-10-14T00:00:00+00:00"}),
+        encoding="utf-8",
+    )
+    return p
+
+
+def _all_full_results(repo: Path) -> list[str]:
+    """receipt log 全部 full 行的 result 欄（單次 close 可有多筆 full receipt）。"""
+    return [
+        ln.split("|")[4]
+        for ln in (repo / ".git" / "wt-close.log")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if "|full|" in ln
+    ]
+
+
+def test_receipt_fresh_at_wt_root_passes(tmp_path: Path) -> None:
+    """(a) receipt 寫在 owning WT 根且 head_sha==branch HEAD → 放行（receipt-fresh）。"""
+    repo = _seed_repo(tmp_path)
+    wt, tip = _card_wt_with_work(repo)
+    _write_receipt(wt, "air-1", tip)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": true}'; exit 0\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "receipt stale" not in done.stderr
+    assert any(
+        r.startswith("receipt-fresh(sha=") for r in _all_full_results(repo)
+    ), _all_full_results(repo)
+    assert not wt.exists()  # 正常收線
+
+
+def test_receipt_stale_at_wt_root_dies(tmp_path: Path) -> None:
+    """(b) 同位置但 head_sha≠branch HEAD → die（receipt stale，rebase 後未重驗）。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    stale_sha = "0" * 40
+    _write_receipt(wt, "air-1", stale_sha)
+
+    done = _close(wt)
+
+    assert done.returncode == 3, done.stderr  # die＝exit 3
+    assert "receipt stale" in done.stderr
+    assert stale_sha in done.stderr
+    assert wt.exists()  # die 保現場——WT 未被移除
+
+
+def test_receipt_only_at_primary_root_not_misjudged_stale(tmp_path: Path) -> None:
+    """(c) 只有 PRIMARY 根殘留 stale receipt、owning WT 根沒有 → 不得誤判 stale
+    （讀取端根錯誤會把「WT 根無 receipt」讀成 PRIMARY 的 stale → 假擋收線）。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    primary_receipts = repo / ".agent-tmp" / "post-build-receipts"
+    primary_receipts.mkdir(parents=True)  # .agent-tmp/ 已 gitignored（_seed_repo）
+    (primary_receipts / "air-1.json").write_text(
+        json.dumps({"head_sha": "0" * 40}), encoding="utf-8"
+    )
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": true}'; exit 0\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "receipt stale" not in done.stderr
+    assert "receipt 缺席" in done.stderr  # 正確讀 owning WT 根 → 缺席 warn（不擋）
+    assert any(r == "receipt-absent" for r in _all_full_results(repo))
+    assert not wt.exists()
+
+
+def test_receipt_empty_json_object_dies(tmp_path: Path) -> None:
+    """(e) receipt 存在但 JSON={}（缺 head_sha）→ die（fail-closed）——空 sha 跳過
+    stale 判斷＝gate 有洞（A-01：損壞比缺失危險，對齊 post-build-gate missing 語義）。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    receipt_dir = wt / ".agent-tmp" / "post-build-receipts"
+    receipt_dir.mkdir(parents=True)
+    receipt_file = receipt_dir / "air-1.json"
+    receipt_file.write_text("{}", encoding="utf-8")
+
+    done = _close(wt)
+
+    assert done.returncode == 3, done.stderr  # die＝exit 3
+    assert "receipt 解析失敗或缺 head_sha" in done.stderr
+    assert str(receipt_file) in done.stderr  # 訊息含 receipt 路徑
+    assert wt.exists()  # die 保現場——WT 未被移除
+
+
+def test_receipt_bad_json_dies(tmp_path: Path) -> None:
+    """(f) receipt 存在但非 JSON 文本（解析失敗）→ die（fail-closed），不得靜默照收。"""
+    repo = _seed_repo(tmp_path)
+    wt, _tip = _card_wt_with_work(repo)
+    receipt_dir = wt / ".agent-tmp" / "post-build-receipts"
+    receipt_dir.mkdir(parents=True)
+    receipt_file = receipt_dir / "air-1.json"
+    receipt_file.write_text("not-json{{", encoding="utf-8")
+
+    done = _close(wt)
+
+    assert done.returncode == 3, done.stderr  # die＝exit 3
+    assert "receipt 解析失敗或缺 head_sha" in done.stderr
+    assert str(receipt_file) in done.stderr  # 訊息含 receipt 路徑
+    assert wt.exists()  # die 保現場——WT 未被移除
+
+
+def test_receipt_slash_branch_encoded_key_at_wt_root(tmp_path: Path) -> None:
+    """(d) slash branch：receipt 落 owning WT 根編碼檔名（/→__，對齊
+    post-build-gate._branch_key）→ receipt-fresh（讀取端須同編碼才讀得到）。"""
+    repo = _seed_repo(tmp_path)
+    card = "feat/sub"
+    wt = _open_card_wt(repo, card)
+    (wt / "w.txt").write_text("y\n", encoding="utf-8")
+    _git(wt, "add", "-A")
+    _git(wt, "commit", "-m", "(feat/sub) work")
+    tip = _git(wt, "rev-parse", "HEAD")
+    _write_receipt(wt, card, tip)
+    stub = _stub_code_reality(tmp_path, "echo '{\"fresh\": true}'; exit 0\n")
+
+    done = _close(wt, path=f"{stub}:{os.environ['PATH']}")
+
+    assert done.returncode == 0, done.stderr
+    assert "receipt stale" not in done.stderr
+    assert any(
+        r.startswith("receipt-fresh(sha=") for r in _all_full_results(repo)
+    ), _all_full_results(repo)
     assert not wt.exists()

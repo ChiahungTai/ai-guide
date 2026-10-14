@@ -336,12 +336,20 @@ MERGE_TARGET_BRANCH="$CUR_BR"
 # receipt freshness gate（AIR-200——merge-time enforcement）：full 收斂前驗卡 branch 的
 # post-build receipt head_sha 與 branch HEAD 一致——rebase 後 receipt stale＝收線前置失敗
 # （fail loud；predicate 正典＝outward rule「Commit 專屬段」邊界宣告①）。receipt 缺席＝
-# 警告不擋（純文檔/卡務弧無 receipt 是合法形態）
+# 警告不擋（純文檔/卡務弧無 receipt 是合法形態）；receipt 在場但解析失敗／缺 head_sha＝
+# die fail-closed（對齊 post-build-gate missing 語義——損壞比缺失危險，A-01）
 BRANCH_HEAD=$(git -C "$WT_PATH" rev-parse HEAD)
-RECEIPT_FILE="$PRIMARY/.agent-tmp/post-build-receipts/$MERGE_TARGET_BRANCH.json"
+# 讀取端根＝arc session 的 owning WT（寫入端契約＝skills/post-build/SKILL.md；另一
+# 消費端 hooks/post-build-gate.py 同根）——讀 PRIMARY 會在 card WT 形態下靜默失效。
+# slash branch 檔名編碼 `/`→`__` 對齊 post-build-gate._branch_key。
+ENCODED_BRANCH="${MERGE_TARGET_BRANCH//\//__}"
+RECEIPT_FILE="$WT_PATH/.agent-tmp/post-build-receipts/$ENCODED_BRANCH.json"
 if [ -f "$RECEIPT_FILE" ]; then
   RECEIPT_SHA=$(python3 -c "import json,sys;print(json.load(open('$RECEIPT_FILE')).get('head_sha',''))" 2>/dev/null || true)
-  if [ -n "$RECEIPT_SHA" ] && [ "$RECEIPT_SHA" != "$BRANCH_HEAD" ]; then
+  if [ -z "$RECEIPT_SHA" ]; then
+    die "receipt 解析失敗或缺 head_sha：${RECEIPT_FILE}——fail-closed（對齊 post-build-gate missing 語義）"
+  fi
+  if [ "$RECEIPT_SHA" != "$BRANCH_HEAD" ]; then
     die "receipt stale：${MERGE_TARGET_BRANCH}.json head_sha=${RECEIPT_SHA} ≠ branch HEAD=${BRANCH_HEAD}——rebase 後須重驗（post-build receipt 刷新）再收線（AIR-200 邊界宣告①）"
   fi
   receipt "receipt-fresh(sha=$RECEIPT_SHA)"
