@@ -4,7 +4,7 @@ title: duty_receive invalid-envelope pin 死鎖——transport 拒收信不應 p
 status: Done
 assignee: []
 created_date: '2026-10-14 19:59'
-updated_date: '2026-10-14 21:16'
+updated_date: '2026-10-14 21:17'
 labels: []
 dependencies: []
 ordinal: 321000
@@ -50,6 +50,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 post-build 收斂落卡（AIR-121）：review_ledger converged parse＝findings 7／✅ 7／verified 6＋closed 1／未決 0。panel＝bi(muse→flash)——muse failed-usage 額度缺額由 in-harness flash code-reviewer 替補（工單註明）。三腿處置：codex C-1＝base-drift 假象（分支 ff 吸收 main 消除，AIR-337 卡 alive）、C-2＝真 binary probe 補證（sv=1/3→unsupported-envelope-schema usage/retryable-false/exit2、store 零受理、e2e 釘死）；flash M-1＝T15/T16 shared 護衛雙向補測、M-2＝docstring 混版前提句、M-3＝記 candidate 不阻塞、M-4＝D-012 improvement 台帳（nonblocking）、M-5＝情報無動作。scoped 47／e2e 3／全量 3998 passed；ruff 零新增。watcher-ack 調查否證記錄見前則 notes。
+
+附帶調查（watcher 折疊 ack 假說——否證）：lite-verify 唯讀取證結論①watcher 結構上不可能折疊 ack（mail_waiter.py:148-149 allowlist 僅 wait/events；dutymail wait face INV-6 mutates nothing）②transport delivered 事件本身就是 ack（唯一發射點 receive ack 交易；ack 為 primary_cursor 唯一寫入者；pending＝delivery_seq>primary_cursor）③seq 15 於 accept 後 64 秒被無 note S2 mark-read 消費（簽名唯一吻合 duty_receive.py prepare→ack→release；執行者無法機械歸因——候選＝04:08 被舊 watcher 喚醒的 session）④信未遺失：inbox --box acked 原文完整。時間校正：舊 watcher exit=04:08:05；gen19 armed=04:38:47。修復候選（非本卡主修）：mail-handle skill 補「pending 空＋events 有 accepted→查 box=acked/show」指引＋無 note mark-read 的 CLI 可見性警告（候選）。調查報告：.agent-tmp/air336/watcher-ack-investigation.md。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
