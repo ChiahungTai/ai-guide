@@ -1315,6 +1315,20 @@ def test_verdict_muse_unsupported_is_unknown(tmp_path: Path) -> None:
     assert _line_with(lines, "dispatch_verdict: muse=").endswith("muse=unknown")
 
 
+def test_verdict_muse_warn_full_text_pinned(tmp_path: Path) -> None:
+    """muse WARN 全文逐字釘（AIR-335）——muse 分支文案防回歸；codex 全文釘＝
+    test_verdict_default_pool_unknown_yields_unknown_verdict。"""
+    out_dir = tmp_path / "probe"
+    write_record(out_dir, record_from_bridge_entry(MUSE_UNSUPPORTED_ENTRY, NOW_ISO))
+    lines = _mod.verdict_lines(out_dir, {"muse"}, NOW)
+    expected = (
+        "[WARN] muse default pool unknown——無機械探測面，勿以此停派："
+        "查 spine 條目 model-runtime-entitlements 之 as-of／user 實證，"
+        "未記耗盡即實派（實派即探測，failed-usage 才停）"
+    )
+    assert expected in lines
+
+
 # ---- main 接線：verdict 投影真的印到 stdout ----
 
 

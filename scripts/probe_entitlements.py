@@ -698,6 +698,12 @@ def _warn_pool_unknown(family: str, pool: str, role: str) -> str:
 
 
 def _warn_default_pool(family: str) -> str:
+    if family == "muse":
+        return (
+            "[WARN] muse default pool unknown——無機械探測面，勿以此停派："
+            "查 spine 條目 model-runtime-entitlements 之 as-of／user 實證，"
+            "未記耗盡即實派（實派即探測，failed-usage 才停）"
+        )
     return f"[WARN] {family} default pool unknown——先探測再派，禁推定 available"
 
 
