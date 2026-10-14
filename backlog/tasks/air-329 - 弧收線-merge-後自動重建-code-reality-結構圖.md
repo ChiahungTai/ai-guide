@@ -4,7 +4,7 @@ title: 弧收線 merge 後自動重建 code-reality 結構圖
 status: In Progress
 assignee: []
 created_date: '2026-10-13 23:07'
-updated_date: '2026-10-13 23:59'
+updated_date: '2026-10-14 00:04'
 labels: []
 dependencies: []
 references:
@@ -65,4 +65,6 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 AIR-329 收線結算：實作 2365adcc＋修正 ac503756；雙家族 review（muse job-mv7ba4xe-tsnnlc 3 findings＋codex job-mv7ba56w-fkcgbu 2 findings→同位同 claim 合併 3 條，F1/F3 跨家族交叉命中）＋GLM-5.3 judge（job-mv7bhsig-shg8fm 三條全 ✅、無 additional）＋修正迴圈（job-mv7bpsj1-0h9sjj，TDD RED 4 failed→GREEN）；帳本 .review/air-329.md 收斂（✅3／未決 0）；全 repo 3938 passed（pre-commit）；followup-review 腿未派——orchestrator 機驗替代已顯性揭露於帳本收斂記錄（機械驗證式＋突變測試獨立重跑）；evidence 隨 WT 拆除自動歸檔 .agent-tmp/wt-evidence/AIR-329/
+
+warm-up 首次 kick 量測記錄（契約⑥）：merge SHA 8c7fe499、freshness verdict＝confirmed-stale（content-drift，exit 1）、背景 build 已踢（非阻塞 single-flight；session 級——完成與否不保證，消費前 freshness gate 兜底）。備查：本弧收線由舊碼執行（bootstrap 性質——收線腳本必為 merge 前版），新三態碼首次實戰＝下一弧收線；receipt 路徑根差異發現（wt-close 讀 primary .agent-tmp，本弧誤寫 WT 側被 sensitivity-scan 部分歸檔）已記收尾報告待下弧修
 <!-- SECTION:NOTES:END -->
