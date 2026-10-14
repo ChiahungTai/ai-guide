@@ -3,10 +3,10 @@ id: AIR-333
 title: >-
   review_ledger 多表 lint 嚴格度設計裁決——columns 逐表全 canonical vs parse ID-join
   容忍面（＋聚合去重）
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-14 04:33'
-updated_date: '2026-10-14 08:55'
+updated_date: '2026-10-14 11:17'
 labels: []
 dependencies: []
 ordinal: 318000
