@@ -96,6 +96,7 @@ Two facts backends, complementary not competing:
 - **current-tree demand trigger（列舉式——命中任一即必須 current-tree 證據，baseline 借用不足）**：①branch 新增/修改 symbol 的 refs／callers／closure／impact 查證（借來的 graph 對 WT branch commits 與 dirty tree 無 source relation）；②negative/exhaustive verdict——零 caller／唯一消費者／可刪／不影響 X（AIR-206 同禁）。命中而 WT graph 缺席或 stale → **single-flight 背景 build**：`code-reality build --repo <wt>`（＝graph_db build 傘形——code-reality SKILL.md:58 主入口）背景執行一次；已在跑不重啟（build 冪等，重複觸發收斂同一結果）；**禁同步阻塞等 build**（dispatch 同步面＝[review-engine](../review-engine/SKILL.md)「CR freshness preflight」的背景 rebuild 語義）。
 - **build 失敗語義（不擋開工、不擋實作——只限證據權限）**：該次查證走 degraded 路線——受影響 claim 逐條 `unverified-by-graph`＋negative structural verdict **不得 terminal 收斂**（與 AIR-224 receipt 模型相容：`cr(route=degraded, reason=…)` 承載）；degraded reason 建議值＝`WT-graph-absent`／`WT-graph-stale`（本節區域慣例——供 AIR-224.1 觀察窗 telemetry 區分「WT graph 缺席/過期」降級成因；reason 值面本為自由承載，不動 [workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar）。
 - **升級語義**：背景 build 成功且 freshness=true 後，後續查證升級 current-tree evidence（同 symbol 重查即得 current-tree verdict，先前的 baseline-borrowed 標註不再適用）。升級 current-tree 後舊標註辨識＝剝離 `, provenance=baseline-borrowed` 後綴；lint/cr_usage 感知面歸 AIR-224.1 觀察窗或後續弧。
+- **契約指針（AIR-330）**：negative 禁令未來的 scope-分離例外與 degraded reason `stale-delta-*` 值域擴充見「stale-delta 三層標註（AIR-330——契約宣告）」節——face 落地前本節語義不變。
 
 ## primary post-merge warm-up（AIR-329）
 
@@ -107,6 +108,21 @@ Two facts backends, complementary not competing:
 - **邊界**：非阻塞 best-effort；失敗不影響 merge 收線；session 級背景 shell 隨 session 消亡屬良性（消費前 freshness gate 兜底）。
 - **AIR-228 scope amendment**：「AIR-228 維持 card-WT evidence-demand single-flight。新增 primary post-merge opportunistic warm-up，僅改善 graph availability，不提供 freshness acceptance。」——消費前驗證（AIR-135 條 2）不變；禁把 warm-up 改造成 review 阻塞式前置。
 - **量測**：warm-up reuse rate＝下一弧實際消費該次 build identity 的弧數／成功 warm-up 弧數；每次 kick 記 merge SHA／verdict／build 結果與耗時（收尾報告＋卡 notes 承載）；receipt token 細化為數據源；命中率高且重複成本低 → 再評估腳本自動派工。
+
+## stale-delta 三層標註（AIR-330——契約宣告）
+
+delta-freshness 契約（契約先行）：stale graph 從二元 verdict 升級為三層標註，查詢範圍與 stale 變更集可證分離時仍可精確消費（如 docs-only 變更後，未動檔的結構查詢實為 exact）。
+
+- **`exact`**——查詢目標的檔案／符號集合與 stale_reasons 相交變更檔集**可證分離**：未變檔內 facts 與 fresh 可證等價（byte-identical ⇒ 同 index ⇒ 同 facts；edge 兩端檔案未動即不可能變）。
+- **`possibly-stale`**——查詢範圍與變更集**相交**：標註須列相交變更檔。
+- **`no-coverage`**——查詢目標在該 index 的 source set 之外（如 WT 碰區）＝**absent 非 stale**：交 live LSP。
+- 🔴 **生效 gate（本節鐵律）**：CR 端 face（slot base commit／freshness delta 輸出／查詢面逐筆標註＋MCP face）落地前，本節為**契約宣告非消費語義**——現行二元 verdict 規則（fresh 消費／stale 以 committed-baseline 姿態＋標註／negative verdict 禁 stale）**一字不變**；face 在場的機械判準由 CR 端交付時補（delta 欄位在場與否）。
+- **producer version 綁定（硬欄位）**：exactness 相對 producer 版本（同 bytes＋同 producer ⇒ 同 facts）——三層標註必須攜帶 producer version；缺 version 或跨版本的標註一律視為 unavailable（不得消費）。
+- **negative scope-分離例外（機械條件）**：命中 scope-分離（delta 輸出機驗證明查詢目標集合與變更檔集零相交）時，exact negative verdict（零 caller／唯一消費者等）**可**在 stale graph 上收斂——判定必須引用 delta 輸出的機械證據（檔案集比對），**禁 LLM 自由心證**；無法機驗分離＝維持現行禁令（negative verdict 不 terminal）。
+- **degraded reason 值域擴充**：`stale-delta-exact`／`stale-delta-possibly`／`stale-delta-no-coverage` 納入 degraded reason 建議值（沿 AIR-228 慣例：reason 值面自由承載，[workflow-review-pattern](../_common/workflow-review-pattern.md) 凍結 grammar 不動）。
+- **跨面指針**：bridge 端 DB-101 supply 閘改 supply-with-delta 後，glm 腿收到的 stale graph 屬本節管轄；demand 卡回指本節（CR 端落地進度＝code-reality repo 卡）。
+
+本節與「Stale graph check」段（二元現行語義）並存不互斥——face 未落地前以該段為準，落地後三層標註為 stale 態的細化。
 
 ## 🔴 Anti-over-reliance (the failure this skill prevents)
 
