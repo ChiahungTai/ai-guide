@@ -1,10 +1,10 @@
 ---
 id: AIR-329
 title: 弧收線 merge 後自動重建 code-reality 結構圖
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-13 23:07'
-updated_date: '2026-10-14 00:04'
+updated_date: '2026-10-14 00:09'
 labels: []
 dependencies: []
 references:
@@ -45,12 +45,12 @@ flowchart LR
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 - [ ] wt-close.sh：full 收斂且 trunk 實際前進＋MERGE_WT==primary 時，對 primary 跑 `code-reality freshness --repo <primary> --json`，輸出三態（confirmed-stale 附確切 rebuild 命令／fresh／unavailable fail-open——binary 缺席或 exit 2 不擋收線）；MERGE_WT≠primary 時輸出 skip note 不判 build
-- [ ] receipt token 細化：graph-stale-reminded 換為 graph-stale=confirmed／graph-fresh／freshness-unavailable／graph-warmup-skipped 四值（舊 token 引用面 rg 全掃零殘留或標退役）
-- [ ] skills/cr-query/SKILL.md 新節「primary post-merge warm-up」＝契約單一源：AIR-228 amendment 條文（codex 擬句原文在場）、single-flight 共用、build 後重驗 identity、非阻塞與 session 背景壽命邊界、量測欄位
-- [ ] skills/commit/SKILL.md 收尾段：merge --ff-only 成功後新增一步（freshness→confirmed-stale 踢背景 single-flight build），引用 cr-query 節不重抄
-- [ ] `bash -n scripts/wt-close.sh` 過；修改段以暫時 fixture repo＋stub code-reality 演練三態；實際 full 收線為 live 驗證點
-- [ ] `uv run python scripts/card_validate.py` exit 0；instruction 條文變更走落地前審查閘（muse＋codex review＋GLM-5.3 judge）
+- [x] #1 - [x] wt-close.sh：full 收斂且 trunk 實際前進＋MERGE_WT==primary 時，對 primary 跑 `code-reality freshness --repo <primary> --json`，輸出三態（confirmed-stale 附確切 rebuild 命令／fresh／unavailable fail-open——binary 缺席或 exit 2 不擋收線）；MERGE_WT≠primary 時輸出 skip note 不判 build——〔證據：tests/test_wt_close.py 12 passed（三態＋skip＋缺席案例；F3 突變測試 RED/GREEN 親驗）〕
+- [x] receipt token 細化：graph-stale-reminded 換為 graph-stale=confirmed／graph-fresh／freshness-unavailable／graph-warmup-skipped 四值（舊 token 引用面 rg 全掃零殘留或標退役）——〔證據：writer report＋orchestrator 複掃 skills/AGENTS.md/hooks/scripts 零殘留；air-166 歷史卡記載依工單不動〕
+- [x] skills/cr-query/SKILL.md 新節「primary post-merge warm-up」＝契約單一源：AIR-228 amendment 條文（codex 擬句原文在場）、single-flight 共用、build 後重驗 identity、非阻塞與 session 背景壽命邊界、量測欄位——〔證據：cr-query:100 新節；judge Additional 掃描「文檔三處互指單一源一致」〕
+- [x] skills/commit/SKILL.md 收尾段：merge --ff-only 成功後新增一步（freshness→confirmed-stale 踢背景 single-flight build），引用 cr-query 節不重抄——〔證據：commit/SKILL.md:196 尾句，只帶指針〕
+- [x] `bash -n scripts/wt-close.sh` 過；修改段以暫時 fixture repo＋stub code-reality 演練三態；實際 full 收線為 live 驗證點——〔證據：bash -n 乾淨＋stub 演練 12 案例全綠；live 點＝bootstrap 性質落下一弧收線（本弧收線必為 merge 前舊碼），已記卡 notes〕
+- [x] `uv run python scripts/card_validate.py` exit 0；instruction 條文變更走落地前審查閘（muse＋codex review＋GLM-5.3 judge）——〔證據：validate PASS；雙家族 review＋GLM-5.3 judge job-mv7bhsig-shg8fm 三條全 ✅＋修正迴圈 ac503756；全 repo 3938 passed〕
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -68,3 +68,21 @@ AIR-329 收線結算：實作 2365adcc＋修正 ac503756；雙家族 review（mu
 
 warm-up 首次 kick 量測記錄（契約⑥）：merge SHA 8c7fe499、freshness verdict＝confirmed-stale（content-drift，exit 1）、背景 build 已踢（非阻塞 single-flight；session 級——完成與否不保證，消費前 freshness gate 兜底）。備查：本弧收線由舊碼執行（bootstrap 性質——收線腳本必為 merge 前版），新三態碼首次實戰＝下一弧收線；receipt 路徑根差異發現（wt-close 讀 primary .agent-tmp，本弧誤寫 WT 側被 sensitivity-scan 部分歸檔）已記收尾報告待下弧修
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+收線 merge 後 graph 自動保溫上線——wt-close 三態快檢（RC 帶入判定＋身份防護）＋cr-query 契約單一源＋commit 收尾步；上線當弧即完成首次手動全鏈（stale→背景重建→fresh current-tree）。as-built：
+
+```mermaid
+flowchart LR
+    A["卡弧收線 merge 進主線"] --> B{"主 checkout 持有合併後主線?"}
+    B -- "否" --> X["skip note＋receipt graph-warmup-skipped"]
+    B -- "是" --> C["freshness 快檢 RC 帶入三態"]
+    C -- "rc=0 且 fresh=true" --> Y["graph-fresh 免重建"]
+    C -- "rc=1 且 fresh=false" --> D["confirmed-stale"]
+    C -- "其餘組合" --> Z["freshness-unavailable fail-open"]
+    D --> E["marshal 踢背景單飛重建"]
+    E --> F["build 後重驗 identity 下一弧 fresh"]
+```
+<!-- SECTION:FINAL_SUMMARY:END -->
