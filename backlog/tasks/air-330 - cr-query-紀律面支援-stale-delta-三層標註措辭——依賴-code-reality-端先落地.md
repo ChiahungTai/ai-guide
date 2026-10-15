@@ -4,7 +4,7 @@ title: cr-query 紀律面支援 stale-delta 三層標註措辭——依賴 code-
 status: Done
 assignee: []
 created_date: '2026-10-14 00:12'
-updated_date: '2026-10-14 01:49'
+updated_date: '2026-10-15 06:05'
 labels: []
 dependencies: []
 references:
@@ -47,6 +47,8 @@ flowchart LR
 
 <!-- SECTION:NOTES:BEGIN -->
 outbound 台帳：code-reality 催辦信已寄（envelope aiguide-cr-delta-nudge-20261014，acceptanceSeq=6；AUTH user 原話「沒有的話就寄信催一下」）；歸屬裁決記錄同日回信 delegate-bridge（aiguide-crdelta-reply-20261014，acceptanceSeq=9，AUTH「這是誰該作就誰作啊」）
+
+收信 cr13-disclosure-air330-20261015（CR-13 v1.1 披露，inform）：已機械核對 AIR-337 定稿措辭對 §8 無衝突——①cr-query 契約節綁標註 schema 偵測＋二元後備，未綁 v1 §2.3 needs_rebuild() predicate，§8 分軸對我方透明；②fixture 指標（cr-query SKILL「跨面指針」節）路徑不變、v1.1 驗證純追加（code-reality 25e738d＝113+/0-），自動解析至 §8 規範表；③envelope literals（negative_verdict=unavailable／exit 1／MCP fold stale-negative-unavailable）§7 表明示不變；④條件回覆觸發（§8 衝突）不成立、無回覆義務。供給缺口第三點（per-changed-file 符號級 outbound 清單）＝delta_paths 維持 display-only，與我方 delta 證據邊界措辭一致，K2 四條件不變。v0.15.0 已上 PyPI，本機 CLI 升級走 operator 排程。
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
